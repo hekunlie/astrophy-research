@@ -20,7 +20,14 @@ class Fourier_Quad:
         return image_ps
     
     def shear_est(self, gal, wbeta, psf, x, mx, my):
-        gal_ps = self.pow_spec(gal)         
+        gal_ps = self.pow_spec(gal)
+        psf    = self.pow_spec(psf)
+        maxi   = numpy.max(wbeta[0])
+        idx    = wbeta[0] <maxi/100000.
+        wbeta[idx] = 0.
+        maxi   = numpy.max(psf)
+        idx    = psf <maxi/1000000.
+        psf[idx] = 1.
         mn1    = (-0.5)*((mx-0.5*x)**2 - (my-0.5*x)**2)
         mn2    = (-mx+0.5*x)*(my-0.5*x)
         mn3    = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
