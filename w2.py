@@ -1,5 +1,3 @@
-import sys
-import math
 import numpy
 import galsim
 import os
@@ -12,10 +10,12 @@ from multiprocessing import Pool
 from scipy.optimize import least_squares
 from scipy.optimize import fmin_cg
 import gc
+import copy
 ###############################################
 class Fourier_Quad:                
 
-    def pow_spec(self, image):
+    def pow_spec(self, arr):
+        image = copy.deepcopy(arr)
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)        
         return image_ps
     
@@ -24,22 +24,22 @@ class Fourier_Quad:
         psf    = self.pow_spec(psf)
         maxi   = numpy.max(wbeta[0])
         idx    = wbeta[0] <maxi/100000.
-        wbeta[idx] = 0.
+        wbeta[0][idx] = 0.
         maxi   = numpy.max(psf)
         idx    = psf <maxi/1000000.
         psf[idx] = 1.
         mn1    = (-0.5)*((mx-0.5*x)**2 - (my-0.5*x)**2)
         mn2    = (-mx+0.5*x)*(my-0.5*x)
         mn3    = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
-        dg1    = (mn1*wbeta[0]/psf*gal_ps).sum()
-        dg2    = (mn2*wbeta[0]/psf*gal_ps).sum()
-        dn     = (mn3*wbeta[0]/psf*gal_ps).sum()
+        dg1    = numpy.sum(mn1*wbeta[0]/psf*gal_ps)
+        dg2    = numpy.sum(mn2*wbeta[0]/psf*gal_ps)
+        dn     = numpy.sum(mn3*wbeta[0]/psf*gal_ps)
         return dg1,dg2,dn
     
     def wbeta(self, beta, x, mx, my):
         w_temp  = numpy.exp(-((mx-0.5*x)**2+(my-0.5*x)**2)/2./beta**2)        
         wk_beta = self.pow_spec(w_temp)
-        beta1   = beta*2.0*math.pi/x        
+        beta1   = beta*2.0*numpy.pi/x
         return wk_beta,beta1
         
     def ran_pos(self,num,imagesize):
@@ -49,7 +49,7 @@ class Fourier_Quad:
         return position
         
     def rotate(self, pos, theta):
-        rot_matrix = numpy.matrix([[math.cos(theta),math.sin(theta)],[-math.sin(theta),math.cos(theta)]])
+        rot_matrix = numpy.matrix([[numpy.cos(theta),numpy.sin(theta)],[-numpy.sin(theta),numpy.cos(theta)]])
         rot_pos    = rot_matrix*pos
         return rot_pos
     
@@ -100,8 +100,8 @@ class Fourier_Quad:
         maxi = numpy.max(image)
         flux = numpy.sum(image)        
         y,x  = numpy.where(image==maxi)
-        y    = int(y)
-        x    = int(x)
+        y    = int(y[0])
+        x    = int(x[0])
         yy,xx= numpy.mgrid[0:size,0:size]        
         xx  = numpy.abs(xx-x)
         yy  = numpy.abs(yy-y)
@@ -123,7 +123,8 @@ class Fourier_Quad:
             hlr = 2.        
         return hlr
 
-    def get_hlr(arr):
+    def get_hlr(self,image):
+        arr  =  copy.deepcopy(image)
         maxi = numpy.max(arr)
         y, x = numpy.where(arr == maxi)
         idx = arr < maxi / 2
@@ -131,16 +132,16 @@ class Fourier_Quad:
         idx = arr > 0.
         arr[idx] = 1.
         pool = []
-        pool.append((int(y), int(x)))
+        pool.append((int(y[0]), int(x[0])))
 
         def check(x):  # x is a two components  tuple -like input
-            if arr[x[0] - 1, x[1]] == 1 and (x[0] - 1, x[1]) not in pool:
+            if (x[0] - 1, x[1]) not in pool and arr[x[0] - 1, x[1]] == 1:
                 pool.append((x[0] - 1, x[1]))
-            if arr[x[0] + 1, x[1]] == 1 and (x[0] + 1, x[1]) not in pool:
+            if (x[0] + 1, x[1]) not in pool and arr[x[0] + 1, x[1]] == 1:
                 pool.append((x[0] + 1, x[1]))
-            if arr[x[0], x[1] + 1] == 1 and (x[0], x[1] + 1) not in pool:
+            if (x[0], x[1] + 1) not in pool and arr[x[0], x[1] + 1] == 1:
                 pool.append((x[0], x[1] + 1))
-            if arr[x[0], x[1] - 1] == 1 and (x[0], x[1] - 1) not in pool:
+            if (x[0], x[1] - 1) not in pool and arr[x[0], x[1] - 1] == 1:
                 pool.append((x[0], x[1] - 1))
             return len(pool)
 
@@ -252,9 +253,7 @@ class Fourier_Quad:
         for i in range(x):
             if numpy.sum(star[-1])==0:
                 star.pop()
-        return star  # a list of psfs      
-
-
+        return star  # a list of psfs
     
     def fitting(self,star_stamps,star_data,stampsize):
         psf_fit = self.divide_stamps(star_stamps,stampsize=stampsize)
