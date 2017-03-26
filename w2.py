@@ -135,14 +135,14 @@ class Fourier_Quad:
         pool.append((int(y[0]), int(x[0])))
 
         def check(x):  # x is a two components  tuple -like input
-            if (x[0] - 1, x[1]) not in pool and arr[x[0] - 1, x[1]] == 1:
-                pool.append((x[0] - 1, x[1]))
-            if (x[0] + 1, x[1]) not in pool and arr[x[0] + 1, x[1]] == 1:
-                pool.append((x[0] + 1, x[1]))
-            if (x[0], x[1] + 1) not in pool and arr[x[0], x[1] + 1] == 1:
-                pool.append((x[0], x[1] + 1))
-            if (x[0], x[1] - 1) not in pool and arr[x[0], x[1] - 1] == 1:
-                pool.append((x[0], x[1] - 1))
+            if (x[0]-1, x[1]) not in pool and arr[x[0]-1, x[1]] == 1:
+                pool.append((x[0]-1, x[1]))
+            if (x[0]+1, x[1]) not in pool and arr[x[0]+1, x[1]] == 1:
+                pool.append((x[0]+1, x[1]))
+            if (x[0], x[1]+1) not in pool and arr[x[0], x[1]+1] == 1:
+                pool.append((x[0], x[1]+1))
+            if (x[0], x[1]-1) not in pool and arr[x[0], x[1]-1] == 1:
+                pool.append((x[0], x[1]-1))
             return len(pool)
 
         while True:
@@ -313,79 +313,78 @@ class Fourier_Quad:
    
     
 def measure(path_list):
-
+    ahead = '/run/media/lihekun/My Passport/w2/'
+    prcocess_id = os.getpgid()
     for list_num in range(len(path_list)):
         t1=time.time()
         stampsize = 48
         path   = path_list[list_num]
-        location = path[-19:-13]
-        number = path[-6::]
-        print "Shear measurement of exposure %s in area %s is starting..."%(number,location)
+        location,number = path.split('/')
+        print "Process %d: shear measurement of exposure %s in area %s starts..."%(prcocess_id,number,location)
         
-        shear_path = '/run/media/lihekun/My Passport/w2/'+location +'/step2/'
+        shear_path = ahead+location +'/step2/'
         res_path = '/run/media/lihekun/My Passport/result/'+location+ '_exposure_%s.txt'%number
         res_data = open(res_path,'w+')
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
                             +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\n")
         
         for k in range(1,chipsnum+1):
-            try:
-                kk = str(k).zfill(2)
-                gal_img_path   = path.strip(number)+'gal_%s_%s.fits'%(number,kk)
-                gal_data_path  = path.strip(number)+'gal_info%s_%s.dat'%(number,kk)
-                star_img_path  = path.strip(number)+'star_%s_%s.fits'%(number,kk)
-                star_data_path = path.strip(number)+'star_info%s_%s.dat'%(number,kk)
-                shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
-            
-                gal_stamps = fits.open(gal_img_path)[0].data
-                gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
-                gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:19]
-                star_stamps= fits.open(star_img_path)[0].data
-                star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
-                shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
-                ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
-                galnum = len(gal_pool)
-                if len(shear_data)==0:
-                    shear_data=numpy.zeros((galnum,2))
-            except:
-                print "Something went wrong in the exposure %s of location %"%(number,location)
-            else:
-                for i in range(galnum):
 
-                    galo = gal_pool[i]
-                    gal_x= gal_data[i,0]
-                    gal_y= gal_data[i,1]
-                    psfo  = (gal_x-stampsize/2)*ax+(gal_y-stampsize/2)*by+c
+            kk = str(k).zfill(2)
+            gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
+            gal_data_path  = ahead+location+'/step1/'+'gal_info%s_%s.dat'%(number,kk)
+            star_img_path  = ahead+location+'/step1/'+'star_%s_%s.fits'%(number,kk)
+            star_data_path = ahead+location+'/step1/'+'star_info%s_%s.dat'%(number,kk)
+            shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
 
-                    if numpy.sum(galo[46:48])==0:
-                        galo = galo[0:32,0:32]
-                        psfo = psfo[8:40,8:40]
-                
-                    gal_f = galo
-                    psf_f = psfo
-                    gal = galsim.Image(galo)
-                    psf = galsim.Image(psfo)
-                
-                    res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
+            if os.path.getsize(gal_data_path)/1024 < 30 or os.path.getsize(shear_data_path)/1024 < 30:
+                continue
 
-                    res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
-                
-                    res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
-                
-                    image_size = gal_f.shape[0]
-                    beta   = 1.4*Fourier_Quad().gethlr(psf_f,disp=False)
-                    xx     = numpy.linspace(0,image_size-1,image_size)
-                    mx,my  = numpy.meshgrid(xx,xx)
-                    w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
-                    psf_ps = Fourier_Quad().pow_spec(psf_f)
-                    G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_ps, image_size, mx, my)
+            gal_stamps = fits.open(gal_img_path)[0].data
+            gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
+            gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:19]
+            star_stamps= fits.open(star_img_path)[0].data
+            star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
+            shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
+            ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
+            galnum = len(gal_pool)
 
-                    res_data.writelines(str(res_k.corrected_g1)+"\t"+str(res_b.corrected_e1)+"\t"+str(res_r.corrected_e1)+"\t"+str(G1)+"\t"+str(N)+"\t"
-                                    +str(shear_data[i,0])+"\t"+str(res_k.corrected_g2)+"\t"+str(res_b.corrected_e2)+"\t"+str(res_b.corrected_e2)
-                                    +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')        
+
+            for i in range(galnum):
+
+                galo = gal_pool[i]
+                gal_x= gal_data[i,0]
+                gal_y= gal_data[i,1]
+                psfo  = gal_x*ax+gal_y*by+c
+
+                if numpy.sum(galo[46:48])==0:
+                    galo = galo[0:32,0:32]
+                    psfo = psfo[8:40,8:40]
+
+                gal_f = galo
+                psf_f = psfo
+                gal = galsim.Image(galo)
+                psf = galsim.Image(psfo)
+
+                res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
+
+                res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
+
+                res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
+
+                image_size = gal_f.shape[0]
+                beta   = 1.4*Fourier_Quad().get_hlr(psf_f)
+                xx     = numpy.linspace(0,image_size-1,image_size)
+                mx,my  = numpy.meshgrid(xx,xx)
+                w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
+                G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_f, image_size, mx, my)
+
+                res_data.writelines(str(res_k.corrected_g1)+"\t"+str(res_b.corrected_e1)+"\t"+str(res_r.corrected_e1)+"\t"+str(G1)+"\t"+str(N)+"\t"
+                                +str(shear_data[i,0])+"\t"+str(res_k.corrected_g2)+"\t"+str(res_b.corrected_e2)+"\t"+str(res_b.corrected_e2)
+                                +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
         res_data.close()
         t2=time.time()
-        print "Progress %d/%d:exposure %s in %s area has been done within %f sec."%(list_num+1,len(path_list),number,location,t2-t1)
+        print "Process %d: (%d/%d) exposure %s in %s area has been done within %f sec."%(prcocess_id,list_num+1,len(path_list),number,location,t2-t1)
         #gc.collect()
     
 if __name__=="__main__":
@@ -403,7 +402,7 @@ if __name__=="__main__":
         if 'w' in content:
             head = content
         else:
-            path = '/run/media/lihekun/My Passport/w2/' + head + '/step1/' + content  
+            path =  head + '/'+content
             paths.append(path)
     data.seek(0)
     data.close()
