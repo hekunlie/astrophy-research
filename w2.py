@@ -312,83 +312,86 @@ class Fourier_Quad:
 ###########################################################
    
     
-def measure(path_list):
+def measure(path_list,tag):
     ahead = '/run/media/lihekun/My Passport/w2/'
-    prcocess_id = os.getpgid()
-    for list_num in range(len(path_list)):
+
+    for list_num in range(1):
         t1=time.time()
         stampsize = 48
         path   = path_list[list_num]
         location,number = path.split('/')
-        print "Process %d: shear measurement of exposure %s in area %s starts..."%(prcocess_id,number,location)
-        
+        print "Process %d shear measurement of exposure %s in area %s starts..."%(tag,number,location)
+
         shear_path = ahead+location +'/step2/'
         res_path = '/run/media/lihekun/My Passport/result/'+location+ '_exposure_%s.txt'%number
         res_data = open(res_path,'w+')
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
                             +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\n")
-        
-        for k in range(1,chipsnum+1):
-
+        print 'Process %d begin to do in each chips' %tag
+        for k in range(2,3):
             kk = str(k).zfill(2)
             gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
             gal_data_path  = ahead+location+'/step1/'+'gal_info%s_%s.dat'%(number,kk)
             star_img_path  = ahead+location+'/step1/'+'star_%s_%s.fits'%(number,kk)
             star_data_path = ahead+location+'/step1/'+'star_info%s_%s.dat'%(number,kk)
             shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
-
+            print 'Process %d get all paths on chip %s'%(tag,kk)
             if os.path.getsize(gal_data_path)/1024 < 30 or os.path.getsize(shear_data_path)/1024 < 30:
-                continue
+                print 'Process %d skipped chip %s'%(tag,kk)
 
-            gal_stamps = fits.open(gal_img_path)[0].data
-            gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
-            gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:19]
-            star_stamps= fits.open(star_img_path)[0].data
-            star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
-            shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
-            ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
-            galnum = len(gal_pool)
+            else:
+                print 'Process %d begin to measure on chip %s' %(tag,kk)
+                gal_stamps = fits.open(gal_img_path)[0].data
+                gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
+                gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:19]
+                star_stamps= fits.open(star_img_path)[0].data
+                star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
+                shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
+                ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
+                galnum = len(gal_pool)
 
+                print 'Process %d ready to go on chip %s'%(tag,kk)
+                for i in range(13,14):
+                    galo = gal_pool[i]
+                    gal_x= gal_data[i,0]
+                    gal_y= gal_data[i,1]
+                    psfo = gal_x*ax+gal_y*by+c
+                    print gal_x,gal_y
+                    if numpy.sum(galo[46:48])==0:
+                        galo = galo[0:32,0:32]
+                        psfo = psfo[8:40,8:40]
 
-            for i in range(galnum):
+                    gal_f = galo
+                    psf_f = psfo
+                    gal = galsim.Image(galo)
+                    psf = galsim.Image(psfo)
 
-                galo = gal_pool[i]
-                gal_x= gal_data[i,0]
-                gal_y= gal_data[i,1]
-                psfo  = gal_x*ax+gal_y*by+c
+                    res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
 
-                if numpy.sum(galo[46:48])==0:
-                    galo = galo[0:32,0:32]
-                    psfo = psfo[8:40,8:40]
+                    res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
 
-                gal_f = galo
-                psf_f = psfo
-                gal = galsim.Image(galo)
-                psf = galsim.Image(psfo)
+                    res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
 
-                res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
+                    image_size = gal_f.shape[0]
 
-                res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
+                    beta   = 1.4*Fourier_Quad().get_hlr(psf_f)
+                    xx     = numpy.linspace(0,image_size-1,image_size)
+                    mx,my  = numpy.meshgrid(xx,xx)
+                    w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
+                    G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_f, image_size, mx, my)
 
-                res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
-
-                image_size = gal_f.shape[0]
-                beta   = 1.4*Fourier_Quad().get_hlr(psf_f)
-                xx     = numpy.linspace(0,image_size-1,image_size)
-                mx,my  = numpy.meshgrid(xx,xx)
-                w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
-                G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_f, image_size, mx, my)
-
-                res_data.writelines(str(res_k.corrected_g1)+"\t"+str(res_b.corrected_e1)+"\t"+str(res_r.corrected_e1)+"\t"+str(G1)+"\t"+str(N)+"\t"
-                                +str(shear_data[i,0])+"\t"+str(res_k.corrected_g2)+"\t"+str(res_b.corrected_e2)+"\t"+str(res_b.corrected_e2)
-                                +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
+                    res_data.writelines(str(res_k.corrected_g1)+"\t"+str(res_b.corrected_e1)+"\t"+str(res_r.corrected_e1)+"\t"+str(G1)+"\t"+str(N)+"\t"
+                                    +str(shear_data[i,0])+"\t"+str(res_k.corrected_g2)+"\t"+str(res_b.corrected_e2)+"\t"+str(res_b.corrected_e2)
+                                    +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
+                print 'Process %d done on chip %s'%(tag,kk)
         res_data.close()
         t2=time.time()
-        print "Process %d: (%d/%d) exposure %s in %s area has been done within %f sec."%(prcocess_id,list_num+1,len(path_list),number,location,t2-t1)
+
+        print tag,"Process %d/%d: exposure %s in %s area has been done within %f sec."%(list_num+1,len(path_list),number,location,t2-t1)
         #gc.collect()
-    
+
 if __name__=="__main__":
-    corenum =3  
+    corenum =3
     chipsnum = 36
     paths   = []
     paths_pool = {}
@@ -423,15 +426,15 @@ if __name__=="__main__":
     print "all paths have been distributed"
     
     print "Progress starts..."
-    p = Pool()
-    ts=time.time()
-    for i in range(corenum):
-        p.apply_async(measure,args=(paths_pool[i],))
-    p.close()
-    p.join()
-    te=time.time()
-    print "Progress completes consuming %.3f hours."%((te-ts)/3600.)
-    
+    # p = Pool()
+    # ts=time.time()
+    # for i in range(corenum):
+    #     p.apply_async(measure,args=(paths_pool[i],i,))
+    # p.close()
+    # p.join()
+    # te=time.time()
+    # print "Progress completes consuming %.3f hours."%((te-ts)/3600.)
+    measure(paths_pool[2],2)
     
     
     
