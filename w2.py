@@ -21,7 +21,7 @@ class Fourier_Quad:
     
     def shear_est(self, gal, wbeta, psf, x, mx, my):
         gal_ps = self.pow_spec(gal)
-        psf    = self.pow_spec(psf)
+        #psf    = self.pow_spec(psf)
         maxi   = numpy.max(wbeta[0])
         idx    = wbeta[0] <maxi/100000.
         wbeta[0][idx] = 0.
@@ -123,7 +123,7 @@ class Fourier_Quad:
             hlr = 2.        
         return hlr
 
-    def get_hlr(self,image):
+    def get_hlr(self,image):# hlr =1.17*sigma(sgima in Gaussian function)
         arr  =  copy.deepcopy(image)
         maxi = numpy.max(arr)
         y, x = numpy.where(arr == maxi)
@@ -248,7 +248,7 @@ class Fourier_Quad:
     def gaussfilter(self,psfimage):
         x, y = numpy.mgrid[0:3, 0:3]
         xc, yc = 1.0, 1.0
-        w = 1.2
+        w = 1.3
         ker = (1.0/2.0/numpy.pi/w/w)*numpy.exp(-0.5*((x-xc)**2+(y-yc)**2)/2.0/w/w)
         imcov = signal.convolve(psfimage, ker, mode='same')
         return imcov
@@ -316,14 +316,17 @@ class Fourier_Quad:
         sxy = numpy.sum(x*y)
         sx  = numpy.sum(x)
         sy  = numpy.sum(y)
-        sz  = 0
-        szx = 0
-        szy = 0
+        sz  = 0.
+        szx = 0.
+        szy = 0.
         for i in range(len(psf_fit_pool)):
-            arr = psf_fit_pool[i]/numpy.max(psf_fit_pool[i])
-            conv = self.gaussfilter(arr)
-            x,y  = self.mfpoly(conv)
-            psf = ndimage.shift(arr,(23.5-x,23.5-y))
+            #arr = psf_fit_pool[i]/numpy.max(psf_fit_pool[i])
+            # conv = self.gaussfilter(arr)
+            # dx,dy  = self.mfpoly(conv)
+            # psf = ndimage.shift(arr,(23.5-dx,23.5-dy))
+            psf = self.pow_spec(psf_fit_pool[i])
+            psf = self.gaussfilter(psf)
+            psf = psf/numpy.max(psf)
             sz += psf
             szx+= psf*x[i]
             szy+= psf*y[i]
@@ -353,7 +356,7 @@ def measure(path_list,tag):
         print "Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location)
 
         shear_path = ahead+location +'/step2/'
-        res_path = '/run/media/lihekun/My Passport/result/'+location+ '_exposure_%s.txt'%number
+        res_path = '/run/media/lihekun/My Passport/result/'+location+ '_exposure_%s.dat'%number
         res_data = open(res_path,'w+')
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
                             +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\n")
@@ -389,30 +392,29 @@ def measure(path_list,tag):
 
                     gal_f = galo
                     psf_f = psfo
-                    gal = galsim.Image(galo)
-                    psf = galsim.Image(psfo)
-
-                    res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
-
-                    res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
-
-                    res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
+                    # gal = galsim.Image(galo)
+                    # psf = galsim.Image(psfo)
+                    #
+                    # res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
+                    #
+                    # res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
+                    #
+                    # res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
 
                     image_size = gal_f.shape[0]
-                    beta   = 1.4*Fourier_Quad().get_hlr(psf_f)
-                    xx     = numpy.linspace(0,image_size-1,image_size)
-                    mx,my  = numpy.meshgrid(xx,xx)
+                    beta   = image_size/2./numpy.pi/Fourier_Quad().get_hlr(psf_f)/1.3
+                    my,mx  = numpy.mgrid[0:image_size,0:image_size]
                     w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
                     G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_f, image_size, mx, my)
 
-                    res_data.writelines(str(res_k.corrected_g1)+"\t"+str(res_b.corrected_e1)+"\t"+str(res_r.corrected_e1)+"\t"+str(G1)+"\t"+str(N)+"\t"
-                                    +str(shear_data[i,0])+"\t"+str(res_k.corrected_g2)+"\t"+str(res_b.corrected_e2)+"\t"+str(res_b.corrected_e2)
+                    res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
+                                    +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
                                     +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
 
         res_data.close()
         t2=time.time()
 
-        print "Process %d : (%d/%d) exposure %s in %s area has been done within %f sec."%(tag,list_num+1,len(path_list),number,location,t2-t1)
+        print "Process %d : (%d/%d) done in exposure %s of %s area within %f sec."%(tag,list_num+1,len(path_list),number,location,t2-t1)
 
 
 if __name__=="__main__":
@@ -460,7 +462,6 @@ if __name__=="__main__":
     te=time.time()
     print "Progress completes consuming %.3f hours."%((te-ts)/3600.)
 
-    
     
     
     
