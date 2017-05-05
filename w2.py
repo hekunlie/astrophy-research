@@ -1,11 +1,11 @@
 import numpy
-import galsim
+#import galsim
 import os
 from numpy import fft
 import astropy.io
 from astropy.io import fits
 import time
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from scipy.optimize import least_squares
 from scipy.optimize import fmin_cg
@@ -19,14 +19,14 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)        
         return image_ps
     
-    def shear_est(self, gal, wbeta, psf, x, mx, my):
-        gal_ps = self.pow_spec(gal)
+    def shear_est(self, gal, noise_bg, wbeta, psf, x, mx, my):
+        gal_ps = self.pow_spec(gal)-noise_bg
         #psf    = self.pow_spec(psf)
         maxi   = numpy.max(wbeta[0])
         idx    = wbeta[0] <maxi/100000.
         wbeta[0][idx] = 0.
         maxi   = numpy.max(psf)
-        idx    = psf <maxi/1000000.
+        idx    = psf <maxi/100000.
         psf[idx] = 1.
         mn1    = (-0.5)*((mx-0.5*x)**2 - (my-0.5*x)**2)
         mn2    = (-mx+0.5*x)*(my-0.5*x)
@@ -119,7 +119,7 @@ class Fourier_Quad:
                     break
         else:
             if disp==1:                
-                print "Failed! The sum of image array is non-positive!"
+                print ("Failed! The sum of image array is non-positive!")
             hlr = 2.        
         return hlr
 
@@ -274,38 +274,14 @@ class Fourier_Quad:
 
     def divide_stamps(self,image,stampsize):
         shape = image.shape
-        y = shape[0]/stampsize
-        x = shape[1]/stampsize    
+        y = int(shape[0]/stampsize)
+        x = int(shape[1]/stampsize)    
         star=[image[iy*stampsize:(iy+1)*stampsize,ix*stampsize:(ix+1)*stampsize] for iy in range(y) for ix in range(x)]
         for i in range(x):
             if numpy.sum(star[-1])==0:
                 star.pop()
         return star  # a list of psfs
-    
-    def fitting(self,star_stamps,star_data,stampsize):
-        psf_fit = self.divide_stamps(star_stamps,stampsize=stampsize)
-        y,x = numpy.mgrid[0:48,0:48]
-        psfn= len(psf_fit)
-        data_list = [(self.psf_align(psf_fit[i]/numpy.sum(psf_fit[i])), 
-                      star_data[i,0]-int(numpy.where(psf_fit[i]==numpy.max(psf_fit[i]))[1])+x, 
-                      star_data[i,1]-int(numpy.where(psf_fit[i]==numpy.max(psf_fit[i]))[0])+y) for i in range(psfn)]   #[..[],..,([psf],[x],[y]),..]
 
-        arr = numpy.array([[(data_list[i][0][m,n],
-                             data_list[i][1][m,n],
-                             data_list[i][2][m,n]) for i in range(psfn)] for m in range(stampsize) for n in range(stampsize)])
-        #[[],...,[the array(3 columns) of the (m,n) element of all psf and the corespongding coordinates x and y]...]
-        def func(alpha,x,y,z):
-            return alpha[0]*x+alpha[1]*y+alpha[2]-z
-        x0=numpy.array([0,0,0])       
-        para_list=[(least_squares(func,x0,args=(arr[i][:,1],arr[i][:,2],arr[i][:,0])).x[0],
-                    least_squares(func,x0,args=(arr[i][:,1],arr[i][:,2],arr[i][:,0])).x[1],
-                    least_squares(func,x0,args=(arr[i][:,1],arr[i][:,2],arr[i][:,0])).x[2]) for i in range(stampsize**2)]
-        para_arr = numpy.array(para_list)
-        para_x=para_arr[:,0].reshape((stampsize,stampsize))
-        para_y=para_arr[:,1].reshape((stampsize,stampsize))
-        para_c=para_arr[:,2].reshape((stampsize,stampsize))
-        
-        return para_x, para_y, para_c
 
     def fit(self,star_stamps,star_data,stampsize):
         psf_fit_pool = self.divide_stamps(star_stamps,stampsize)
@@ -325,7 +301,7 @@ class Fourier_Quad:
             # dx,dy  = self.mfpoly(conv)
             # psf = ndimage.shift(arr,(23.5-dx,23.5-dy))
             psf = self.pow_spec(psf_fit_pool[i])
-            psf = self.gaussfilter(psf)
+            psf = self.smooth(psf,2,2)
             psf = psf/numpy.max(psf)
             sz += psf
             szx+= psf*x[i]
@@ -340,27 +316,70 @@ class Fourier_Quad:
                a[m,n]=re[0]
                b[m,n]=re[1]
                c[m,n]=re[2]
-        return a,b,c        
+        return a,b,c
+
+    def smooth(self, image, edge, ra):
+        xl = image.shape[0]
+        image = numpy.log10(image)
+        arr = copy.deepcopy(image)
+        mx, my = numpy.mgrid[0: 2 * ra + 1, 0: 2 * ra + 1]
+        nx = mx.flatten()
+        x = numpy.delete(nx, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
+        ny = my.flatten()
+        y = numpy.delete(ny, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
+        x4 = numpy.sum(x ** 4)
+        x2y2 = numpy.sum(x ** 2 * (y ** 2))
+        x3y = numpy.sum(x ** 3 * y)
+        x3 = numpy.sum(x ** 3)
+        x2y = numpy.sum(x ** 2 * y)
+        x2 = numpy.sum(x ** 2)
+        y4 = numpy.sum(y ** 4)
+        xy3 = numpy.sum(x * (y ** 3))
+        xy2 = numpy.sum(y ** 2 * x)
+        y3 = numpy.sum(y ** 3)
+        y2 = numpy.sum(y ** 2)
+        xy = numpy.sum(x * y)
+        sx = numpy.sum(x)
+        sy = numpy.sum(y)
+        n = len(y)
+        for i in range(edge, xl - edge):
+            for k in range(edge, xl - edge):
+                farr = image[i - ra:i + ra + 1, k - ra:k + ra + 1].flatten()
+                farr = numpy.delete(farr, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
+                szx2 = numpy.sum(farr * (x ** 2))
+                szy2 = numpy.sum(farr * (y ** 2))
+                szxy = numpy.sum(farr * x * y)
+                szx = numpy.sum(farr * x)
+                szy = numpy.sum(farr * y)
+                sz = numpy.sum(farr)
+                co_matr = numpy.array([[x4, x2y2, x3y, x3, x2y, x2], [x2y2, y4, xy3, xy2, y3, y2], [x3y, xy3, x2y2, x2y, xy2, xy],
+                     [x3, xy2, x2y, x2, xy, sx], [x2y, y3, xy2, xy, y2, sy], [x2, y2, xy, sx, sy, n]])
+                val = numpy.array([szx2, szy2, szxy, szx, szy, sz])
+                re = numpy.linalg.solve(co_matr, val)
+                arr[i, k] = ra ** 2 * (re[0] + re[1] + re[2]) + (re[3] + re[4]) * ra + re[5]
+        return numpy.power(10, arr)
+
 
 ###########################################################
    
     
 def measure(path_list,tag):
-    ahead = '/run/media/lihekun/My Passport/w2/'
+    ahead = '/run/media/lihekun/KLEE/w2/'
 
     for list_num in range(len(path_list)):
         t1=time.time()
         stampsize = 48
         path   = path_list[list_num]
         location,number = path.split('/')
-        print "Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location)
+        print ("Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location))
 
         shear_path = ahead+location +'/step2/'
-        res_path = '/run/media/lihekun/My Passport/result/'+location+ '_exposure_%s.dat'%number
-        res_data = open(res_path,'w+')
+        res_path = "/run/media/lihekun/KLEE/result/"+location+ "_exposure_%s.dat"%number
+        res_data = open(res_path,"w+")
+        
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
                             +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\n")
-
+        
         for k in range(1,37):
             kk = str(k).zfill(2)
             gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
@@ -369,52 +388,68 @@ def measure(path_list,tag):
             star_data_path = ahead+location+'/step1/'+'star_info%s_%s.dat'%(number,kk)
             shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
 
-            if os.path.getsize(gal_data_path)/1024 < 30 or os.path.getsize(shear_data_path)/1024 < 30:
-                print 'Process %d skipped chip %s'%(tag,kk)
+            noise_path = ahead+location+'/step1/'+'noise'+'%s_%s.fits'%(number,kk)
+
+            if os.path.getsize(gal_data_path)/1024. < 30 or os.path.getsize(shear_data_path)/1024. < 30:
+                print ('Process %d skipped chip %s'%(tag,kk))
 
             else:
+                
                 gal_stamps = fits.open(gal_img_path)[0].data
                 gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
-                gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:19]
+                gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:20]
+
                 star_stamps= fits.open(star_img_path)[0].data
                 star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
+
+                noise_stamps = fits.open(noise_path)[0].data
+
+                noise_pool   = Fourier_Quad().divide_stamps(noise_stamps,48)
+
+
                 shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
                 ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
+                #print (kk)
                 galnum = len(gal_pool)
                 for i in range(galnum):
-                    galo = gal_pool[i]
-                    gal_x= gal_data[i,0]
-                    gal_y= gal_data[i,1]
-                    psfo = gal_x*ax+gal_y*by+c
-                    if numpy.sum(galo[46:48])==0:
-                        galo = galo[0:32,0:32]
-                        psfo = psfo[8:40,8:40]
+                    if gal_data[i,2]>=10.:
+                        galo = gal_pool[i]
+                        noiseo = noise_pool[i]
+                        gal_x= gal_data[i,0]
+                        gal_y= gal_data[i,1]
+                        psfo = gal_x*ax+gal_y*by+c
 
-                    gal_f = galo
-                    psf_f = psfo
-                    # gal = galsim.Image(galo)
-                    # psf = galsim.Image(psfo)
-                    #
-                    # res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
-                    #
-                    # res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
-                    #
-                    # res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
+                        if numpy.sum(galo[46:48])==0:
+                            galo = galo[0:32,0:32]
+                            psfo = psfo[8:40,8:40]
+                            noiseo = noiseo[0:32,0:32]
+                        gal_f = galo
+                        psf_f = psfo
+                        noise_f = Fourier_Quad().pow_spec(noiseo)
+                        # gal = galsim.Image(galo)
+                        # psf = galsim.Image(psfo)
+                        #
+                        # res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
+                        #
+                        # res_b = galsim.hsm.EstimateShear(gal,psf,shear_est='BJ',strict=False)
+                        #
+                        # res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
 
-                    image_size = gal_f.shape[0]
-                    beta   = image_size/2./numpy.pi/Fourier_Quad().get_hlr(psf_f)/1.3
-                    my,mx  = numpy.mgrid[0:image_size,0:image_size]
-                    w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
-                    G1,G2,N= Fourier_Quad().shear_est(gal_f, w_beta, psf_f, image_size, mx, my)
+                        image_size = gal_f.shape[0]
+                        beta   = image_size/2./numpy.pi/Fourier_Quad().get_hlr(psf_f)/1.2
+                        my,mx  = numpy.mgrid[0:image_size,0:image_size]
+                        w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
+                        G1,G2,N= Fourier_Quad().shear_est(gal_f, noise_f, w_beta, psf_f, image_size, mx, my)
 
-                    res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
-                                    +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
-                                    +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
+                        res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
+                                        +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
+                                        +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
+
 
         res_data.close()
         t2=time.time()
 
-        print "Process %d : (%d/%d) done in exposure %s of %s area within %f sec."%(tag,list_num+1,len(path_list),number,location,t2-t1)
+        print ("Process %d : (%d/%d) done in exposure %s of %s area within %f sec."%(tag,list_num+1,len(path_list),number,location,t2-t1))
 
 
 if __name__=="__main__":
@@ -423,7 +458,7 @@ if __name__=="__main__":
     paths   = []
     paths_pool = {}
     data    = open('nname.dat')
-    print "open nname.data"
+    print( "open nname.data")
     datalen = len(data.readlines())
     data.seek(0)
 
@@ -436,7 +471,7 @@ if __name__=="__main__":
             paths.append(path)
     data.seek(0)
     data.close()
-    print "get all paths"
+    print( "get all paths")
     
     m,n = divmod(len(paths),corenum)
     if m==0 and n!=0:
@@ -449,10 +484,10 @@ if __name__=="__main__":
             for i in range(n):
                 paths_pool[i].append(paths[-i-1])
     else:
-        print "Caution! Something goes wrong!!!"
-    print "all paths have been distributed"
+        print( "Caution! Something goes wrong!!!")
+    print ("all paths have been distributed")
     
-    print "Progress starts..."
+    print( "Progress starts...")
     p = Pool()
     ts=time.time()
     for i in range(corenum):
@@ -460,10 +495,10 @@ if __name__=="__main__":
     p.close()
     p.join()
     te=time.time()
-    print "Progress completes consuming %.3f hours."%((te-ts)/3600.)
+    print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
+   
 
-    
-    
+
     
     
     
