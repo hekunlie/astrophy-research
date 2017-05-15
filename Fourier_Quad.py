@@ -4,6 +4,9 @@ from scipy.optimize import least_squares
 from scipy.optimize import fmin_cg
 from scipy import ndimage,signal
 import copy
+from astropy.io import fits
+import matplotlib.pyplot as plt
+import time
 
 class Fourier_Quad:
 
@@ -279,6 +282,20 @@ class Fourier_Quad:
                 star.pop()
         return star  # a list of psfs
 
+    def image_stack(self, image_list, stampsize, columns): #the inverse operation of divide_stamps
+        num = len(image_list)
+        row_num, c = divmod(num, columns)
+        if c != 0:
+            row_num += 1
+        arr = numpy.zeros((stampsize, row_num * columns * stampsize))
+        for i in range(num):
+            arr[0:stampsize, i * stampsize:(i + 1) * stampsize] = image_list[i]
+        arr0 = arr[0:stampsize, 0:columns * stampsize]
+        for i in range(1, row_num):
+            img = numpy.row_stack((arr0, arr[0:stampsize, i * columns * stampsize:(i + 1) * columns * stampsize]))
+            arr0 = img
+        return img
+
     def fit(self, star_stamps, star_data, stampsize):
         psf_fit_pool = self.divide_stamps(star_stamps, stampsize)
         x = star_data[:, 0]
@@ -354,3 +371,4 @@ class Fourier_Quad:
                 re = numpy.linalg.solve(co_matr, val)
                 arr[i, k] = ra ** 2 * (re[0] + re[1] + re[2]) + (re[3] + re[4]) * ra + re[5]
         return numpy.power(10, arr)
+
