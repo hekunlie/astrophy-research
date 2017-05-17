@@ -7,17 +7,21 @@ import copy
 
 
 class Fourier_Quad:
-    def pow_spec(self, arr):
-        image = copy.deepcopy(arr)
-        image_ps = fft.fftshift((numpy.abs(fft.fft2(image))) ** 2)
+
+    def pow_spec(self, image):
+        image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, noise_bg, wbeta, psf, x, mx, my, F=True):
+    def shear_est(self, gal, wbeta, psf, imagesize, mx, my, backgroud_noise, N=True, F=True):
 
+        x = imagesize
         gal_ps = self.pow_spec(gal)
-        gal_pnoise = (numpy.sum(gal_ps[0,1:x]+gal_ps[x-1,0:x-1])+numpy.sum(gal_ps[0:x-1,0]+gal_ps[1:x,x-1]))/(x*4-4)
-        noise_bg_pnoise = (numpy.sum(noise_bg[0, 1:x] + noise_bg[x - 1, 0:x-1])+numpy.sum(noise_bg[0:x-1,0]+noise_bg[1:x,x-1]))/(x*4-4)
-        gal_ps = gal_ps-gal_pnoise-noise_bg+noise_bg_pnoise
+        if N==False:
+            d=1
+            nbg = self.pow_spec(backgroud_noise)
+            gal_pnoise = (numpy.sum(gal_ps[0:d]+gal_ps[x-d:x])+numpy.sum(gal_ps[d:x-d,0:d]+gal_ps[d:x-d,x-d:x]))/(d*x*4-4*d*d)
+            nbg_pnoise = (numpy.sum(nbg[0:d]+nbg[x-d:x])+numpy.sum(nbg[d:x-d,0:d]+nbg[d:x-d,x-d:x]))/(d*x*4-4*d*d)
+            gal_ps = gal_ps - gal_pnoise - nbg + nbg_pnoise
 
         if F == True:
             psf = psf
@@ -31,18 +35,18 @@ class Fourier_Quad:
         idx = psf < maxi / 100000.
         psf[idx] = 1.
 
-        mn1 = (-0.5) * ((mx - 0.5 * x) ** 2 - (my - 0.5 * x) ** 2)
-        mn2 = (-mx + 0.5 * x) * (my - 0.5 * x)
+        mn1 = (-0.5)*((mx-0.5*x)**2-(my-0.5*x)**2)
+        mn2 = (-mx+0.5*x)*(my-0.5*x)
         mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
         dg1 = numpy.sum(mn1 * wbeta[0] / psf * gal_ps)
         dg2 = numpy.sum(mn2 * wbeta[0] / psf * gal_ps)
         dn = numpy.sum(mn3 * wbeta[0] / psf * gal_ps)
         return dg1, dg2, dn
 
-    def wbeta(self, beta, x, mx, my):
-        sigma = beta / 1.414
-        w_temp = numpy.exp(-((mx - 0.5 * x) ** 2 + (my - 0.5 * x) ** 2) / 2. / sigma ** 2)
-        beta = 1. / beta
+    def wbeta(self, beta, imagesize, mx, my):
+        sigma = beta/numpy.sqrt(2)
+        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
+        beta = 1./beta
         return w_temp, beta
 
     def ran_pos(self, num, imagesize):
@@ -57,45 +61,44 @@ class Fourier_Quad:
         return rot_pos
 
     def shear(self, pos, g1, g2):
-        shear_matrix = numpy.matrix(([(1+g1)/(1-g1**2-g2**2), g2/(1 - g1 ** 2 - g2 ** 2)],
-                                     [g2/(1-g1**2-g2**2), (1-g1)/(1 - g1 ** 2 - g2 ** 2)]))
+        shear_matrix = numpy.matrix(([(1+g1)/(1-g1**2-g2**2), g2/(1-g1**2-g2**2)],
+                                     [g2/(1-g1**2-g2**2), (1-g1)/(1-g1**2-g2**2)]))
         shear_pos = shear_matrix * pos
         return shear_pos
 
     def image_arr(self, pos, psf_scale, imagesize, mx, my, psf="GAUSS"):
         x = pos.shape[1]
-        pos = numpy.array(pos + imagesize / 2.)
+        pos = numpy.array(pos+imagesize / 2.)
         arr = numpy.zeros((imagesize, imagesize))
 
         if psf is 'GAUSS':
             for i in range(x):
-                arr += numpy.exp(-((mx - pos[0, i]) ** 2 + (my - pos[1, i]) ** 2) / 2. / psf_scale ** 2)
+                arr += numpy.exp(-((mx-pos[0,i])**2+(my-pos[1,i])** 2)/2./psf_scale**2)
             return arr
         elif psf is "Moffat":
             for l in range(x):
-                hstep = 3 * psf_scale - numpy.sqrt((mx - pos[0, l]) ** 2 + (my - pos[1, l]) ** 2)
+                hstep = 3 * psf_scale-numpy.sqrt((mx-pos[0,l])**2+(my-pos[1,l])**2)
                 idx = hstep < 0.
                 hstep[idx] = 0.
                 idx = hstep != 0.
                 hstep[idx] = 1.
-                arr += (1 + ((mx - pos[0, l]) ** 2 + (my - pos[1, l]) ** 2) / psf_scale ** 2) ** (-3.5) * hstep
+                arr += (1+((mx-pos[0,l])**2+(my-pos[1,l])**2)/psf_scale**2)**(-3.5)*hstep
             return arr
 
     def cre_psf(self, psf_scale, imagesize, psf="GAUSS", x=0, y=0):
         xx = numpy.linspace(0, imagesize - 1, imagesize)
         mx, my = numpy.meshgrid(xx, xx)
         if psf is 'GAUSS':
-            arr = numpy.exp(-((mx - imagesize / 2. + x) ** 2 + (my - imagesize / 2. + y) ** 2) / 2. / psf_scale ** 2)
+            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
             return arr
 
         if psf is 'Moffat':
-            hstep = 3 * psf_scale - numpy.sqrt((mx - imagesize / 2. + x) ** 2 + (my - imagesize / 2. + y) ** 2)
+            hstep = 3*psf_scale-numpy.sqrt((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)
             idx = hstep < 0.
             hstep[idx] = 0.
             idx = hstep != 0.
             hstep[idx] = 1.
-            arr = (1 + ((mx - imagesize / 2. + x) ** 2 + (my - imagesize / 2. + y) ** 2) / psf_scale ** 2) ** (
-                -3.5) * hstep
+            arr = (1+((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/psf_scale**2)**(-3.5)*hstep
             return arr
 
     def gethlr(self, image, disp=1):  # the sum of the image array must be positive!!! or it will fail
@@ -125,10 +128,10 @@ class Fourier_Quad:
         else:
             if disp == 1:
                 print ("Failed! The sum of image array is non-positive!")
-            hlr = 2.
+            hlr = 20.
         return hlr
 
-    def get_hlr(self, image, scale):  # get the radius of the flux descends to the maximum/scale
+    def get_radius(self, image, scale):  # get the radius of the flux descends to the maximum/scale
         arr = copy.deepcopy(image)
         maxi = numpy.max(arr)
         y, x = numpy.where(arr == maxi)
@@ -237,25 +240,25 @@ class Fourier_Quad:
         yy = numpy.mod(yy + 24, 48) - 24
         fk = numpy.abs(image_f) ** 2
         line = numpy.sort(numpy.array(fk.flat))
-        idx = fk < 4 * line[imagesize ** 2 / 2]
+        idx = fk < 4 * line[imagesize ** 2/ 2]
         fk[idx] = 0
-        weight = fk / line[imagesize ** 2 / 2]
+        weight = fk / line[imagesize ** 2/ 2]
         kx = xx * 2 * numpy.pi / imagesize
         ky = yy * 2 * numpy.pi / imagesize
 
         def pha(p):
             x, y = p
-            return numpy.sum((numpy.angle(image_f * numpy.exp(-1.0j * (kx * x + ky * y)))) ** 2 * weight)
+            return numpy.sum((numpy.angle(image_f*numpy.exp(-1.0j*(kx*x+ky*y))))**2*weight)
 
         res = fmin_cg(pha, [0, 0], disp=False)
-        inve = fft.fftshift(numpy.real(fft.ifft2(image_f * numpy.exp(-1.0j * (kx * res[0] + ky * res[1])))))
+        inve = fft.fftshift(numpy.real(fft.ifft2(image_f*numpy.exp(-1.0j*(kx*res[0]+ky*res[1])))))
         return inve
 
     def gaussfilter(self, psfimage):
         x, y = numpy.mgrid[0:3, 0:3]
         xc, yc = 1.0, 1.0
         w = 1.3
-        ker = (1.0 / 2.0 / numpy.pi / w / w) * numpy.exp(-0.5 * ((x - xc) ** 2 + (y - yc) ** 2) / 2.0 / w / w)
+        ker = (1.0/2.0/numpy.pi/w/w)*numpy.exp(-0.5*((x-xc)**2+(y-yc)**2)/2.0/w/w)
         imcov = signal.convolve(psfimage, ker, mode='same')
         return imcov
 
@@ -296,15 +299,16 @@ class Fourier_Quad:
             row_num += 1
         arr = numpy.zeros((stampsize, row_num * columns * stampsize))
         for i in range(num):
-            arr[0:stampsize, i * stampsize:(i + 1) * stampsize] = image_list[i]
+            arr[0:stampsize, i*stampsize:(i+1)*stampsize]=image_list[i]
         arr0 = arr[0:stampsize, 0:columns * stampsize]
         for i in range(1, row_num):
-            img = numpy.row_stack((arr0, arr[0:stampsize, i * columns * stampsize:(i + 1) * columns * stampsize]))
-            arr0 = img
-        return img
+            arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
 
-    def fit(self, star_stamps, star_data, stampsize):
-        psf_fit_pool = self.divide_stamps(star_stamps, stampsize)
+        return arr0
+
+    def fit(self, star_stamps, star_noise, star_data, stampsize):
+        psf_pool = self.divide_stamps(star_stamps, stampsize)
+        noise_pool = self.divide_stamps(star_noise, stampsize)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)
@@ -315,12 +319,17 @@ class Fourier_Quad:
         sz = 0.
         szx = 0.
         szy = 0.
-        for i in range(len(psf_fit_pool)):
+        d=1
+        for i in range(len(psf_pool)):
             # arr = psf_fit_pool[i]/numpy.max(psf_fit_pool[i])
             # conv = self.gaussfilter(arr)
             # dx,dy = self.mfpoly(conv)
             # psf = ndimage.shift(arr,(24-dx,24-dy))
-            psf = self.pow_spec(psf_fit_pool[i])
+            psf = self.pow_spec(psf_pool[i])
+            noise = self.pow_spec(noise_pool[i])
+            psf_pnoise = (numpy.sum(psf[0:d] + psf[stampsize - d:stampsize])+numpy.sum(psf[d:stampsize - d, 0:d]+psf[d:stampsize-d, stampsize-d:stampsize]))/(d*stampsize*4-4*d*d)
+            noise_pnoise = (numpy.sum(noise[0:d] + noise[stampsize - d:stampsize])+numpy.sum(noise[d:stampsize - d, 0:d]+noise[d:stampsize-d, stampsize-d:stampsize]))/(d*stampsize*4-4*d*d)
+            psf =psf - noise -psf_pnoise+noise_pnoise
             psf = psf / numpy.max(psf)
             sz += psf
             szx += psf * x[i]
@@ -363,8 +372,8 @@ class Fourier_Quad:
         n = len(y)
         for i in range(edge, xl - edge):
             for k in range(edge, xl - edge):
-                farr = image[i - ra:i + ra + 1, k - ra:k + ra + 1].flatten()
-                farr = numpy.delete(farr, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
+                farr = image[i - ra:i + ra+1, k-ra:k + ra + 1].flatten()
+                farr = numpy.delete(farr, (0, 2*ra, 4*ra**2+2*ra,4*ra**2+4*ra))
                 szx2 = numpy.sum(farr * (x ** 2))
                 szy2 = numpy.sum(farr * (y ** 2))
                 szxy = numpy.sum(farr * x * y)
@@ -372,9 +381,10 @@ class Fourier_Quad:
                 szy = numpy.sum(farr * y)
                 sz = numpy.sum(farr)
                 co_matr = numpy.array(
-                    [[x4, x2y2, x3y, x3, x2y, x2], [x2y2, y4, xy3, xy2, y3, y2], [x3y, xy3, x2y2, x2y, xy2, xy],
-                     [x3, xy2, x2y, x2, xy, sx], [x2y, y3, xy2, xy, y2, sy], [x2, y2, xy, sx, sy, n]])
+                    [[x4, x2y2, x3y, x3, x2y, x2], [x2y2, y4, xy3, xy2, y3, y2],
+                     [x3y, xy3, x2y2, x2y, xy2, xy],[x3, xy2, x2y, x2, xy, sx],
+                     [x2y, y3, xy2, xy, y2, sy], [x2, y2, xy, sx, sy, n]])
                 val = numpy.array([szx2, szy2, szxy, szx, szy, sz])
                 re = numpy.linalg.solve(co_matr, val)
-                arr[i, k] = ra ** 2 * (re[0] + re[1] + re[2]) + (re[3] + re[4]) * ra + re[5]
+                arr[i, k] = ra**2*(re[0]+re[1]+re[2])+(re[3]+re[4])*ra+re[5]
         return numpy.power(10, arr)

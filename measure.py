@@ -8,17 +8,18 @@ import matplotlib.pyplot as plt
 import  classification
 
 def measure(path_list,tag):
-    ahead = '/run/media/lihekun/KLEE3/w1/'
+    ahead = '/run/media/lihekun/KLEE/w2/'
 
     for list_num in range(len(path_list)):
         t1=time.time()
         stampsize = 48
+        my, mx = numpy.mgrid[0:stampsize, 0:stampsize]
         path   = path_list[list_num]
         location,number = path.split('/')
         print ("Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location))
 
         shear_path = ahead+location +'/step2/'
-        res_path = "/run/media/lihekun/KLEE/result/w1/"+location+ "_exposure_%s.txt"%number
+        res_path = "/run/media/lihekun/KLEE/result/w2/"+location+ "_exposure_%s.txt"%number
         res_data = open(res_path,"w+")
 
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
@@ -32,8 +33,10 @@ def measure(path_list,tag):
             star_data_path = ahead+location+'/step1/'+'star_info%s_%s.dat'%(number,kk)
             shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
             noise_path = ahead+location+'/step1/'+'noise'+'%s_%s.fits'%(number,kk)
+            star_noise_path = ahead+location+'/step1/'+'star_noise_'+'%s_%s.fits'%(number,kk)
+            star_data = numpy.loadtxt(star_data_path, skiprows=1)[:, 1:3]
 
-            if os.path.getsize(gal_data_path)/1024. < 30 or os.path.getsize(shear_data_path)/1024. < 30:
+            if os.path.getsize(gal_data_path)/1024. < 20 or os.path.getsize(shear_data_path)/1024. < 20 or len(star_data)<20:
                 print ('Process %d skipped chip %s'%(tag,kk))
 
             else:
@@ -42,32 +45,26 @@ def measure(path_list,tag):
                 gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:20]
 
                 star_stamps= fits.open(star_img_path)[0].data
-                star_data  = numpy.loadtxt(star_data_path,skiprows=1)[:,1:3]
+                star_noise = fits.open(star_noise_path)[0].data
+
 
                 noise_stamps = fits.open(noise_path)[0].data
-                noise_pool   = Fourier_Quad().divide_stamps(noise_stamps,48)
+                noise_pool   = Fourier_Quad().divide_stamps(noise_stamps,stampsize)
 
                 shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
-                ax,by,c    = Fourier_Quad().fit(star_stamps,star_data,stampsize)
+                ax,by,c    = Fourier_Quad().fit(star_stamps,star_noise,star_data,stampsize)
                 galnum = len(gal_pool)
 
                 for i in range(galnum):
 
                     if gal_data[i,2]>=10.:
-                        galo = gal_pool[i]
-                        noiseo = noise_pool[i]
+                        gal = gal_pool[i]
+                        noise = noise_pool[i]
                         gal_x= gal_data[i,0]
                         gal_y= gal_data[i,1]
-                        psfo = gal_x*ax+gal_y*by+c
+                        psf = gal_x*ax+gal_y*by+c
 
-                        if numpy.sum(galo[46:48])==0:
-                            galo = galo[0:32,0:32]
-                            psfo = psfo[8:40,8:40]
-                            noiseo = noiseo[8:40,8:40]
 
-                        gal_f = galo
-                        psf_f = psfo
-                        noise_f = Fourier_Quad().pow_spec(noiseo)
                         # gal = galsim.Image(galo)
                         # psf = galsim.Image(psfo)
 
@@ -78,12 +75,9 @@ def measure(path_list,tag):
                         # res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
                         # res_r.corrected_e1
 
-
-                        image_size = gal_f.shape[0]
-                        beta   = Fourier_Quad().get_hlr(psf_f,2.)
-                        my,mx  = numpy.mgrid[0:image_size,0:image_size]
-                        w_beta = Fourier_Quad().wbeta(beta, image_size, mx, my)
-                        G1,G2,N= Fourier_Quad().shear_est(gal_f, noise_f, w_beta, psf_f, image_size, mx, my)
+                        beta   = Fourier_Quad().get_radius(psf,2.)
+                        w_beta = Fourier_Quad().wbeta(beta, stampsize, mx, my)
+                        G1,G2,N= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, mx, my,noise,N=True)
 
                         res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
                                         +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
@@ -101,7 +95,7 @@ if __name__=="__main__":
     chipsnum = 36
     paths   = []
     paths_pool = {}
-    data    = open('/run/media/lihekun/KLEE3/w1/nname.dat')
+    data    = open('/run/media/lihekun/KLEE/w2/nname.dat')
     print( "open nname.data")
     datalen = len(data.readlines())
     data.seek(0)
@@ -133,12 +127,12 @@ if __name__=="__main__":
     
     print( "Progress starts...")
     g1num = 11
-    g2num = 21
+    g2num = 23
     g1s = -0.005
     g1e = 0.005
-    g2s = -0.01
-    g2e = 0.01
-    result_path = ''
+    g2s = -0.011
+    g2e = 0.011
+    result_path = '/run/media/lihekun/KLEE/result/w2/'
     p = Pool()
     ts=time.time()
     for i in range(corenum):
@@ -148,7 +142,6 @@ if __name__=="__main__":
     classification.classify(g1num,g2num,g1s,g1e,g2s,g2e,result_path)
     te=time.time()
     print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
-
 
 
     
