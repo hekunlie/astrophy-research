@@ -9,12 +9,8 @@ import numpy
 import time
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-<<<<<<< HEAD
-
-
-=======
 from scipy import optimize
->>>>>>> 62afe52bfaded1225e49a4bd9e2955bb9096d549
+
 
 ts =time.clock()
 snr= 'SNR>10'
