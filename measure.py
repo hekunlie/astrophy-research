@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import  classification
 
 def measure(path_list,tag):
-    ahead = '/run/media/lihekun/KLEE/w2/'
+    ahead = '/home/lmc/w1/'
+    res_ahead = '/home/hklee/venvs/hklee-astro/result/w1/'
 
     for list_num in range(len(path_list)):
         t1=time.time()
@@ -19,11 +20,11 @@ def measure(path_list,tag):
         print ("Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location))
 
         shear_path = ahead+location +'/step2/'
-        res_path = "/run/media/lihekun/KLEE/result/w2/"+location+ "_exposure_%s.txt"%number
+        res_path = res_ahead+location+ "_exposure_%s.txt"%number
         res_data = open(res_path,"w+")
 
         res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
-                            +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\n")
+                            +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\t"+"FQ_U"+"\t"+"FQ_V"+"\n")
         
         for k in range(1,37):
             kk = str(k).zfill(2)
@@ -95,7 +96,7 @@ if __name__=="__main__":
     chipsnum = 36
     paths   = []
     paths_pool = {}
-    data    = open('/run/media/lihekun/KLEE/w2/nname.dat')
+    data    = open('/home/lmc/w1/nname.dat')
     print( "open nname.data")
     datalen = len(data.readlines())
     data.seek(0)

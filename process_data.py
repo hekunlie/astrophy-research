@@ -20,8 +20,8 @@ fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/run/media/lihekun/lmc/w1/" #where the result data file are placed
-pic_path = '/run/media/lihekun/lmc/w1/'#where the result figures will be created
+path  = "/home/hklee/venvs/hklee-astro/reslut/w1/" #where the result data file are placed
+pic_path = '/home/hklee/venvs/hklee-astro/reslut/pic/w1/'#where the result figures will be created
 exist = os.path.exists(path+'cache.dat')
 
 if exist:
