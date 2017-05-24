@@ -35,19 +35,17 @@ def measure(path_list,tag):
             shear_data_path= shear_path+"shear_info%s_%s.dat"%(number,kk)
             noise_path = ahead+location+'/step1/'+'noise'+'%s_%s.fits'%(number,kk)
             star_noise_path = ahead+location+'/step1/'+'star_noise_'+'%s_%s.fits'%(number,kk)
-            star_data = numpy.loadtxt(star_data_path, skiprows=1)[:, 1:3]
 
-            if os.path.getsize(gal_data_path)/1024. < 20 or os.path.getsize(shear_data_path)/1024. < 20 or len(star_data)<20:
+            if os.path.getsize(gal_data_path)/1024. < 20 or os.path.getsize(shear_data_path)/1024. < 20 or os.path.getsize(star_data_path)<2000:
                 print ('Process %d skipped chip %s'%(tag,kk))
-
             else:
+                star_data = numpy.loadtxt(star_data_path, skiprows=1)[:, 1:3]
                 gal_stamps = fits.open(gal_img_path)[0].data
                 gal_pool   = Fourier_Quad().divide_stamps(gal_stamps,stampsize)
                 gal_data   = numpy.loadtxt(gal_data_path,skiprows=1)[:,17:20]
 
                 star_stamps= fits.open(star_img_path)[0].data
                 star_noise = fits.open(star_noise_path)[0].data
-
 
                 noise_stamps = fits.open(noise_path)[0].data
                 noise_pool   = Fourier_Quad().divide_stamps(noise_stamps,stampsize)
@@ -64,7 +62,6 @@ def measure(path_list,tag):
                         gal_x= gal_data[i,0]
                         gal_y= gal_data[i,1]
                         psf = gal_x*ax+gal_y*by+c
-
 
                         # gal = galsim.Image(galo)
                         # psf = galsim.Image(psfo)
