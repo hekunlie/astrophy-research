@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def measure(path_list,tag):
-    ahead = '/home/lmc/w1/'
+    ahead = '/lmc/w1/'
     res_ahead = '/home/hklee/venvs/hklee-astro/result/w1/'
 
     for list_num in range(len(path_list)):
@@ -96,7 +96,7 @@ if __name__=="__main__":
     chipsnum = 36
     paths   = []
     paths_pool = {}
-    data    = open('/home/lmc/w1/nname.dat')
+    data    = open('/lmc/w1/nname.dat')
     print( "open nname.data")
     datalen = len(data.readlines())
     data.seek(0)
