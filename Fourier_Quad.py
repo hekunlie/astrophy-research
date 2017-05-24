@@ -35,13 +35,19 @@ class Fourier_Quad:
         idx = psf < maxi / 100000.
         psf[idx] = 1.
 
+        tk  = wbeta[0] / psf * gal_ps
         mn1 = (-0.5)*((mx-0.5*x)**2-(my-0.5*x)**2)
         mn2 = (-mx+0.5*x)*(my-0.5*x)
         mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
-        dg1 = numpy.sum(mn1 * wbeta[0] / psf * gal_ps)
-        dg2 = numpy.sum(mn2 * wbeta[0] / psf * gal_ps)
-        dn = numpy.sum(mn3 * wbeta[0] / psf * gal_ps)
-        return dg1, dg2, dn
+        mn4 = mx**4 - 6*mx**2*my**2 + my**4
+        mn5 = mx**3*my - mx*my**3
+
+        g1 = numpy.sum(mn1 * tk)
+        g2 = numpy.sum(mn2 * tk)
+        n  = numpy.sum(mn3 * tk)
+        u  = numpy.sum(mn4 * tk)*(-0.5*wbeta[1]**2)
+        v  = numpy.sum(mn5 * tk)*(-2.*wbeta[1]**2)
+        return g1, g2, n, u, v
 
     def wbeta(self, beta, imagesize, mx, my):
         sigma = beta/numpy.sqrt(2)
