@@ -4,7 +4,7 @@ from astropy.io import fits
 import time
 from multiprocessing import Pool
 from Fourier_Quad import *
-import matplotlib.pyplot as plt
+
 
 
 def measure(path_list,tag):
