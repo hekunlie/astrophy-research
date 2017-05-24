@@ -126,20 +126,12 @@ if __name__=="__main__":
     print ("all paths have been distributed")
     
     print( "Progress starts...")
-    g1num = 11
-    g2num = 23
-    g1s = -0.005
-    g1e = 0.005
-    g2s = -0.011
-    g2e = 0.011
-    result_path = '/run/media/lihekun/KLEE/result/w2/'
     p = Pool()
     ts=time.time()
     for i in range(corenum):
         p.apply_async(measure,args=(paths_pool[i],i,))
     p.close()
     p.join()
-    classification.classify(g1num,g2num,g1s,g1e,g2s,g2e,result_path)
     te=time.time()
     print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
 
