@@ -16,6 +16,7 @@ class Fourier_Quad:
 
         x = imagesize
         gal_ps = self.pow_spec(gal)
+
         if N==False:
             d=1
             nbg = self.pow_spec(backgroud_noise)

@@ -5,7 +5,7 @@ import time
 from multiprocessing import Pool
 from Fourier_Quad import *
 import matplotlib.pyplot as plt
-import  classification
+
 
 def measure(path_list,tag):
     ahead = '/home/lmc/w1/'
@@ -78,11 +78,11 @@ def measure(path_list,tag):
 
                         beta   = Fourier_Quad().get_radius(psf,2.)
                         w_beta = Fourier_Quad().wbeta(beta, stampsize, mx, my)
-                        G1,G2,N= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, mx, my,noise,N=True)
+                        G1,G2,N,U,V= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, mx, my,noise,N=True)
 
                         res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
                                         +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
-                                        +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+'\n')
+                                        +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+"\t"+str(U)+"\t"+str(V)+'\n')
 
 
         res_data.close()
@@ -92,7 +92,7 @@ def measure(path_list,tag):
 
 
 if __name__=="__main__":
-    corenum =3
+    corenum =6
     chipsnum = 36
     paths   = []
     paths_pool = {}
