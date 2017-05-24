@@ -8,7 +8,7 @@ from Fourier_Quad import *
 
 
 def measure(path_list,tag):
-    ahead = '/lmc/w1/'
+    ahead = '/lmc/w2/'
     res_ahead = '/home/hklee/venvs/hklee-astro/result/w1/'
 
     for list_num in range(len(path_list)):
