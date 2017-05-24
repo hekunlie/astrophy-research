@@ -17,7 +17,7 @@ class Fourier_Quad:
         x = imagesize
         gal_ps = self.pow_spec(gal)
 
-        if N==False:
+        if N==True:
             d=1
             nbg = self.pow_spec(backgroud_noise)
             gal_pnoise = (numpy.sum(gal_ps[0:d]+gal_ps[x-d:x])+numpy.sum(gal_ps[d:x-d,0:d]+gal_ps[d:x-d,x-d:x]))/(d*x*4-4*d*d)
