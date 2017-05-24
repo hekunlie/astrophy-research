@@ -13,15 +13,24 @@ from scipy import optimize
 
 ts =time.clock()
 snr= 'SNR>10'
+<<<<<<< HEAD
 g1num = 11
+=======
+g1num = 9
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
 g2num = 17
 fg1 = numpy.linspace(-0.005, 0.005, g1num)
 fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
+<<<<<<< HEAD
 path  = "/home/hklee/venvs/hklee-astro/reslut/w1/" #where the result data file are placed
 pic_path = '/home/hklee/venvs/hklee-astro/reslut/pic/w1/'#where the result figures will be created
+=======
+path  = "/run/media/lihekun/lmc/w1/" #where the result data file are placed
+pic_path = '/run/media/lihekun/lmc/w1/'#where the result figures will be created
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
 exist = os.path.exists(path+'cache.dat')
 
 if exist:
@@ -42,14 +51,18 @@ if not exist or comm==1:
     g2 = {}
     fn1 = {}  # for FQ method
     fn2 = {}
+<<<<<<< HEAD
     fu1 ={}
     fv1={}
     fu2 ={}
     fv2={}
+=======
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
     # name: 0:KSB,1:BJ,2:RG,3:F_Q
     for name in range(4):  # dict g1/g2 = {'0':..{fg1/2[i]:[]},{fg1/2[i+1]:[]}..,'1':..,'2"...}
         for i in fg1:
             g1.setdefault(name, {})[i] = []
+<<<<<<< HEAD
             if name == 3:
                 fn1[i] = []
                 fu1[i] = []
@@ -61,6 +74,12 @@ if not exist or comm==1:
                 fu2[i] = []
                 fv2[i] = []
 
+=======
+            fn1[i] = []
+        for i in fg2:
+            g2.setdefault(name, {})[i] = []
+            fn2[i] = []
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
 
     for k in paths:  # put the data into the corresponding list
         data = numpy.loadtxt(k, skiprows=1)
@@ -68,7 +87,10 @@ if not exist or comm==1:
         tag1.shape = (len(tag1),1)
         tag2 = data[:,11]
         tag2.shape = (len(tag2),1)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
         for i in range(g1num):
             idx1 = tag1 < fg1[i] + dfg1/2
             idx2 = tag1 > fg1[i] - dfg1/2
@@ -79,6 +101,7 @@ if not exist or comm==1:
                 if na ==3:
                     n1 = data[:,na+1]
                     n1.shape = (len(n1),1)
+<<<<<<< HEAD
                     u1 = data[:,12]
                     u1.shape = (len(u1), 1)
                     v1 = data[:,13]
@@ -87,6 +110,9 @@ if not exist or comm==1:
                     fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
                     fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1&idx2]))
 
+=======
+                    fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
         for i in range(g2num):
             idx1 = tag2 < fg2[i] + dfg2/2
             idx2 = tag2 > fg2[i] - dfg2/2
@@ -97,6 +123,7 @@ if not exist or comm==1:
                 if na==3:
                     n2 = data[:,na+7]
                     n2.shape = (len(n2),1)
+<<<<<<< HEAD
                     u2 = data[:,12]
                     u2.shape = (len(u1), 1)
                     v2 = data[:,13]
@@ -104,6 +131,9 @@ if not exist or comm==1:
                     fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
                     fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
                     fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
+=======
+                    fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
+>>>>>>> 9fb945f3b160f37949416d7c23bec6c976afe829
 
         # for i in range(len(data)):
         #     a1 = numpy.abs(fg1 - data[i, 5])
