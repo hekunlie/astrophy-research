@@ -133,7 +133,7 @@ if not exist or comm==1:
                 n1 = num_in_bins[0:3]
                 p2 = num_distri[3:]
                 n2 = num_in_bins[3:]
-                sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1-n2)))
+                sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
                 #sigma1 = numpy.std(arr1) / numpy.mean(narr1) / numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = sigma1
@@ -167,13 +167,13 @@ if not exist or comm==1:
                 n1 = num_in_bins[0:3]
                 p2 = num_distri[3:]
                 n2 = num_in_bins[3:]
-                sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1-n2)))
+                sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = sigma2
                 res_arr2[i + 8, m] = num2
     print ("Classification complete")
 
-    with open(path+'cache.dat','w+') as cache:
+    with open(path+'cache.dat','wb') as cache:
         numpy.savetxt(cache,numpy.column_stack((res_arr1,res_arr2)))
 else:
     text = numpy.loadtxt(path+'cache.dat')
