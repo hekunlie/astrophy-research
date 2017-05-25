@@ -17,8 +17,8 @@ fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "D:/result/w1/" #where the result data file are placed
-pic_path = 'D:/result/pic/w1/'#where the result figures will be created
+path  = "/home/hklee/result/w1/" #where the result data file are placed
+pic_path = '/home/hklee/result/pic/w1/'#where the result figures will be created
 exist = os.path.exists(path+'cache.dat')
 
 if exist:
@@ -120,14 +120,15 @@ if not exist or comm==1:
                     g1_h = G1-B1*g
                     bin_num = 6
                     bins,num = Fourier_Quad().set_bins(g1_h,6)[0:2]
-                    n1 = num[0:bin_num/2]
-                    n2 = num[bin_num/2:]
-                    return  (n1-n2)**2/(n1+n2)
-                g1_h = optimize.fmin_cg(fun,[0],disp=False).x[0]
+                    n1 = num[0:int(bin_num/2)]
+                    n2 = num[int(bin_num/2):]
+                    return  numpy.sum((n1-n2)**2/(n1+n2))
+
+                g1_h = optimize.fmin_cg(fun,[0],disp=False)[0]
                 num1 = len(G1)
                 G_h = G1-B1*g1_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
-                num_distri = num_distri/numpy.sum(num_in_bins)
+                num_distri = num_in_bins/numpy.sum(num_in_bins)
                 p1 = num_distri[0:3]
                 n1 = num_in_bins[0:3]
                 p2 = num_distri[3:]
@@ -153,15 +154,15 @@ if not exist or comm==1:
                 def fun(g):
                     g2_h = G2 - B2 * g
                     bin_num = 6
-                    bins, num = Fourier_Quad().set_bins(g2_h, 6)
-                    n1 = num[0:bin_num / 2]
-                    n2 = num[bin_num / 2:]
-                    return (n1 - n2) ** 2 / (n1 + n2)
-                g2_h = optimize.fmin_cg(fun, [0], disp=False).x[0]
+                    bins, num = Fourier_Quad().set_bins(g2_h, 6)[0:2]
+                    n1 = num[0:int(bin_num / 2)]
+                    n2 = num[int(bin_num / 2):]
+                    return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
+                g2_h = optimize.fmin_cg(fun, [0], disp=False)[0]
                 num2 = len(G2)
                 G_h = G2-B2*g2_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
-                num_distri = num_distri/numpy.sum(num_in_bins)
+                num_distri = num_in_bins/numpy.sum(num_in_bins)
                 p1 = num_distri[0:3]
                 n1 = num_in_bins[0:3]
                 p2 = num_distri[3:]
