@@ -45,12 +45,11 @@ class Fourier_Quad:
         mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
         mn4 = mx**4 - 6*(mx**2)*(my**2) + my**4
         mn5 = (mx**3)*my - mx*(my**3)
-
-        g1 = numpy.sum(mn1 * tk)*alpha**4
-        g2 = numpy.sum(mn2 * tk)*alpha**4
-        n  = numpy.sum(mn3 * tk)*alpha**4
-        u  = numpy.sum(mn4 * tk)*(-0.5*(wbeta[1]**2))*alpha**4
-        v  = numpy.sum(mn5 * tk)*(-2.*(wbeta[1]**2))*alpha**4
+        g1 = numpy.sum(mn1 * tk)*(alpha**4)
+        g2 = numpy.sum(mn2 * tk)*(alpha**4)
+        n  = numpy.sum(mn3 * tk)*(alpha**4)
+        u  = numpy.sum(mn4 * tk)*(-0.5*(wbeta[1]**2))*(alpha**4)
+        v  = numpy.sum(mn5 * tk)*(-2.*(wbeta[1]**2))*(alpha**4)
         return g1, g2, n, u, v
 
     def wbeta(self, beta, imagesize, mx, my):
@@ -342,7 +341,9 @@ class Fourier_Quad:
             psf_pnoise = rim*psf/n
             noise_pnoise = rim*noise/n
             psf =psf - noise -psf_pnoise+noise_pnoise
-            psf = psf / numpy.max(psf)
+            pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
+            psf = psf / pmax
+            psf[24,24]=1
             sz += psf
             szx += psf * x[i]
             szy += psf * y[i]
