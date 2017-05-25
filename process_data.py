@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Mar 15 14:29:31 2017
 
-@author: 33471
-"""
 import os
 import numpy
 import time
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy import optimize
+from Fourier_Quad import *
 
 ts =time.clock()
 snr= 'SNR>10'
@@ -20,8 +17,8 @@ fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/home/hklee/venvs/hklee-astro/reslut/w1/" #where the result data file are placed
-pic_path = '/home/hklee/venvs/hklee-astro/reslut/pic/w1/'#where the result figures will be created
+path  = "/home/hklee//lmc/result/w1/" #where the result data file are placed
+pic_path = 'D:/result/pic/w1/'#where the result figures will be created
 exist = os.path.exists(path+'cache.dat')
 
 if exist:
@@ -103,21 +100,6 @@ if not exist or comm==1:
                     fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
                     fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
 
-        # for i in range(len(data)):
-        #     a1 = numpy.abs(fg1 - data[i, 5])
-        #     a1m = numpy.where(a1 == numpy.min(a1))[0][0]
-        #     a2 = numpy.abs(fg2 - data[i, 11])
-        #     a2m = numpy.where(a2 == numpy.min(a2))[0][0]
-        #     for m in range(3):
-        #         if data[i, m] != -10.:
-        #             g1[m][fg1[a1m]].append(data[i, m])
-        #         if data[i, m + 6] != -10.:
-        #             g2[m][fg2[a2m]].append(data[i, m + 6])
-        #     g1[3][fg1[a1m]].append(data[i, 3])
-        #     fn1[fg1[a1m]].append(data[i, 4])
-        #     g2[3][fg2[a2m]].append(data[i, 9])
-        #     fn2[fg2[a2m]].append(data[i, 10])
-
     res_arr1 = numpy.zeros((12, g1num))    # the first 4 rows are the ellipticity,
     res_arr2 = numpy.zeros((12, g2num))    # the second 4 rows are the correspongding error bar,
                                             # the third 4 rows are the correspongding number of samples.
@@ -132,12 +114,22 @@ if not exist or comm==1:
                 res_arr1[i + 4, m] = err1
                 res_arr1[i + 8, m] = num1
             else:
-                num1 = len(g1[i][fg1[m]])
-                arr1 = numpy.array(g1[i][fg1[m]])
-                narr1 = numpy.array(fn1[fg1[m]])
-                ava1 = numpy.sum(arr1) / numpy.sum(narr1)  # g1
+                G1 = numpy.array(g1[i][fg1[m]])
+                B1 = numpy.array(fn1[fg1[m]]) + numpy.array(fu1[fg1[m]])
+                def fun(g):
+                    g1_h = G1-B1*g
+                    bin_num = 6
+                    bins,num = Fourier_Quad().set_bins(g1_h,6)
+                    n1 = num[0:bin_num/2]
+                    n2 = num[bin_num/2:]
+                    return  (n1-n2)**2/(n1+n2)
+                g1_h = optimize.fmin_cg(fun,[0],disp=False).x[0]
+                num1 = len(G1)
+                # arr1 = numpy.array(g1[i][fg1[m]])
+                # narr1 = numpy.array(fn1[fg1[m]])
+                # ava1 = numpy.sum(arr1) / numpy.sum(narr1)  # g1
                 err1 = numpy.std(arr1) / numpy.mean(narr1) / numpy.sqrt(num1)
-                res_arr1[i, m] = ava1
+                res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = err1
                 res_arr1[i + 8, m] = num1
 
@@ -151,12 +143,22 @@ if not exist or comm==1:
                 res_arr2[i + 4, m] = err2
                 res_arr2[i + 8, m] = num2
             else:
-                num2 = len(g2[i][fg2[m]])
-                arr2 = numpy.array(g2[i][fg2[m]])
-                narr2 = numpy.array(fn2[fg2[m]])
-                ava2 = numpy.sum(arr2) / numpy.sum(narr2)  # g2
+                G2 = numpy.array(g2[i][fg2[m]])
+                B2 = numpy.array(fn2[fg2[m]]) + numpy.array(fu2[fg2[m]])
+                def fun(g):
+                    g2_h = G2 - B2 * g
+                    bin_num = 6
+                    bins, num = Fourier_Quad().set_bins(g2_h, 6)
+                    n1 = num[0:bin_num / 2]
+                    n2 = num[bin_num / 2:]
+                    return (n1 - n2) ** 2 / (n1 + n2)
+                g2_h = optimize.fmin_cg(fun, [0], disp=False).x[0]
+                num2 = len(G2)
+                # arr2 = numpy.array(g2[i][fg2[m]])
+                # narr2 = numpy.array(fn2[fg2[m]])
+                # ava2 = numpy.sum(arr2) / numpy.sum(narr2)  # g2
                 err2 = numpy.std(arr2) / numpy.mean(narr2) / numpy.sqrt(num2)
-                res_arr2[i, m] = ava2
+                res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = err2
                 res_arr2[i + 8, m] = num2
     print ("Classification complete")
