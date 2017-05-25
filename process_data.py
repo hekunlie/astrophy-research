@@ -125,9 +125,6 @@ if not exist or comm==1:
                     return  (n1-n2)**2/(n1+n2)
                 g1_h = optimize.fmin_cg(fun,[0],disp=False).x[0]
                 num1 = len(G1)
-                # arr1 = numpy.array(g1[i][fg1[m]])
-                # narr1 = numpy.array(fn1[fg1[m]])
-                # ava1 = numpy.sum(arr1) / numpy.sum(narr1)  # g1
                 G_h = G1-B1*g1_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
                 num_distri = num_distri/numpy.sum(num_in_bins)
@@ -162,9 +159,6 @@ if not exist or comm==1:
                     return (n1 - n2) ** 2 / (n1 + n2)
                 g2_h = optimize.fmin_cg(fun, [0], disp=False).x[0]
                 num2 = len(G2)
-                # arr2 = numpy.array(g2[i][fg2[m]])
-                # narr2 = numpy.array(fn2[fg2[m]])
-                # ava2 = numpy.sum(arr2) / numpy.sum(narr2)  # g2
                 G_h = G2-B2*g2_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
                 num_distri = num_distri/numpy.sum(num_in_bins)
