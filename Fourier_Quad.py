@@ -41,7 +41,7 @@ class Fourier_Quad:
         tk  = wbeta[0] / psf * gal_ps
         alpha = 2*numpy.pi/x
         mn1 = (-0.5)*((mx-0.5*x)**2-(my-0.5*x)**2)
-        mn2 = (-mx+0.5*x)*(my-0.5*x)*
+        mn2 = (-mx+0.5*x)*(my-0.5*x)
         mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
         mn4 = mx**4 - 6*(mx**2)*(my**2) + my**4
         mn5 = (mx**3)*my - mx*(my**3)
