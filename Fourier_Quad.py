@@ -39,17 +39,18 @@ class Fourier_Quad:
         psf[idx] = 1.
 
         tk  = wbeta[0] / psf * gal_ps
+        alpha = 2*numpy.pi/x
         mn1 = (-0.5)*((mx-0.5*x)**2-(my-0.5*x)**2)
-        mn2 = (-mx+0.5*x)*(my-0.5*x)
+        mn2 = (-mx+0.5*x)*(my-0.5*x)*
         mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
-        mn4 = mx**4 - 6*mx**2*my**2 + my**4
-        mn5 = mx**3*my - mx*my**3
+        mn4 = mx**4 - 6*(mx**2)*(my**2) + my**4
+        mn5 = (mx**3)*my - mx*(my**3)
 
-        g1 = numpy.sum(mn1 * tk)
-        g2 = numpy.sum(mn2 * tk)
-        n  = numpy.sum(mn3 * tk)
-        u  = numpy.sum(mn4 * tk)*(-0.5*wbeta[1]**2)
-        v  = numpy.sum(mn5 * tk)*(-2.*wbeta[1]**2)
+        g1 = numpy.sum(mn1 * tk)*alpha**4
+        g2 = numpy.sum(mn2 * tk)*alpha**4
+        n  = numpy.sum(mn3 * tk)*alpha**4
+        u  = numpy.sum(mn4 * tk)*(-0.5*(wbeta[1]**2))*alpha**4
+        v  = numpy.sum(mn5 * tk)*(-2.*(wbeta[1]**2))*alpha**4
         return g1, g2, n, u, v
 
     def wbeta(self, beta, imagesize, mx, my):
