@@ -412,7 +412,7 @@ class Fourier_Quad:
         mi = numpy.min(array)
         ma = numpy.max(array)
         bins0 = numpy.linspace(mi,ma,bin_num+1)
-        print(bins0)
+        bin_size = bin0[1]-bin0[0]
         bins = numpy.delete(bins0,-1)
         arr = numpy.digitize(array,bins)
         tag = numpy.linspace(1,bin_num,bin_num)
@@ -420,5 +420,5 @@ class Fourier_Quad:
         for i in range(bin_num):
             idx = arr ==tag[i]
             points_num[i] = len(arr[idx])
-        return bins0,points_num
+        return bins0,points_num,bin_size
 

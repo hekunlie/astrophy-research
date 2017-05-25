@@ -17,7 +17,7 @@ fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/home/hklee//lmc/result/w1/" #where the result data file are placed
+path  = "D:/result/w1/" #where the result data file are placed
 pic_path = 'D:/result/pic/w1/'#where the result figures will be created
 exist = os.path.exists(path+'cache.dat')
 
@@ -119,7 +119,7 @@ if not exist or comm==1:
                 def fun(g):
                     g1_h = G1-B1*g
                     bin_num = 6
-                    bins,num = Fourier_Quad().set_bins(g1_h,6)
+                    bins,num = Fourier_Quad().set_bins(g1_h,6)[0:2]
                     n1 = num[0:bin_num/2]
                     n2 = num[bin_num/2:]
                     return  (n1-n2)**2/(n1+n2)
@@ -128,9 +128,17 @@ if not exist or comm==1:
                 # arr1 = numpy.array(g1[i][fg1[m]])
                 # narr1 = numpy.array(fn1[fg1[m]])
                 # ava1 = numpy.sum(arr1) / numpy.sum(narr1)  # g1
-                err1 = numpy.std(arr1) / numpy.mean(narr1) / numpy.sqrt(num1)
+                G_h = G1-B1*g1_h
+                num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
+                num_distri = num_distri/numpy.sum(num_in_bins)
+                p1 = num_distri[0:3]
+                n1 = num_in_bins[0:3]
+                p2 = num_distri[3:]
+                n2 = num_in_bins[3:]
+                sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1-n2)))
+                #sigma1 = numpy.std(arr1) / numpy.mean(narr1) / numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
-                res_arr1[i + 4, m] = err1
+                res_arr1[i + 4, m] = sigma1
                 res_arr1[i + 8, m] = num1
 
         for m in range(len(fg2)):
@@ -157,9 +165,16 @@ if not exist or comm==1:
                 # arr2 = numpy.array(g2[i][fg2[m]])
                 # narr2 = numpy.array(fn2[fg2[m]])
                 # ava2 = numpy.sum(arr2) / numpy.sum(narr2)  # g2
-                err2 = numpy.std(arr2) / numpy.mean(narr2) / numpy.sqrt(num2)
+                G_h = G2-B2*g2_h
+                num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
+                num_distri = num_distri/numpy.sum(num_in_bins)
+                p1 = num_distri[0:3]
+                n1 = num_in_bins[0:3]
+                p2 = num_distri[3:]
+                n2 = num_in_bins[3:]
+                sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1-n2)))
                 res_arr2[i, m] = g2_h
-                res_arr2[i + 4, m] = err2
+                res_arr2[i + 4, m] = sigma2
                 res_arr2[i + 8, m] = num2
     print ("Classification complete")
 
