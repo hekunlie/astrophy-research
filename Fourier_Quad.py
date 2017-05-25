@@ -407,3 +407,18 @@ class Fourier_Quad:
             arr = numpy.ones((size,size))
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
+
+    def set_bins(self,array,bin_num):# The input must be one dimensional array.(1,n)
+        mi = numpy.min(array)
+        ma = numpy.max(array)
+        bins0 = numpy.linspace(mi,ma,bin_num+1)
+        print(bins0)
+        bins = numpy.delete(bins0,-1)
+        arr = numpy.digitize(array,bins)
+        tag = numpy.linspace(1,bin_num,bin_num)
+        points_num = numpy.zeros((bin_num))
+        for i in range(bin_num):
+            idx = arr ==tag[i]
+            points_num[i] = len(arr[idx])
+        return bins0,points_num
+
