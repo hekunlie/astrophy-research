@@ -13,7 +13,6 @@ from scipy import optimize
 
 ts =time.clock()
 snr= 'SNR>10'
-g1num = 11
 g1num = 9
 g2num = 17
 fg1 = numpy.linspace(-0.005, 0.005, g1num)

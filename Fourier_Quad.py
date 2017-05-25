@@ -20,8 +20,10 @@ class Fourier_Quad:
         if N==True:
             d=1
             nbg = self.pow_spec(backgroud_noise)
-            gal_pnoise = (numpy.sum(gal_ps[0:d]+gal_ps[x-d:x])+numpy.sum(gal_ps[d:x-d,0:d]+gal_ps[d:x-d,x-d:x]))/(d*x*4-4*d*d)
-            nbg_pnoise = (numpy.sum(nbg[0:d]+nbg[x-d:x])+numpy.sum(nbg[d:x-d,0:d]+nbg[d:x-d,x-d:x]))/(d*x*4-4*d*d)
+            rim = self.border(d,x)
+            n    = numpy.sum(rim)
+            gal_pnoise = gal_ps*rim/n
+            nbg_pnoise =nbg*rim/n
             gal_ps = gal_ps - gal_pnoise - nbg + nbg_pnoise
 
         if F == True:
@@ -327,6 +329,8 @@ class Fourier_Quad:
         szx = 0.
         szy = 0.
         d=1
+        rim = self.border(d,stampsize)
+        n = numpy.sum(rim)
         for i in range(len(psf_pool)):
             # arr = psf_fit_pool[i]/numpy.max(psf_fit_pool[i])
             # conv = self.gaussfilter(arr)
@@ -334,8 +338,8 @@ class Fourier_Quad:
             # psf = ndimage.shift(arr,(24-dx,24-dy))
             psf = self.pow_spec(psf_pool[i])
             noise = self.pow_spec(noise_pool[i])
-            psf_pnoise = (numpy.sum(psf[0:d] + psf[stampsize - d:stampsize])+numpy.sum(psf[d:stampsize - d, 0:d]+psf[d:stampsize-d, stampsize-d:stampsize]))/(d*stampsize*4-4*d*d)
-            noise_pnoise = (numpy.sum(noise[0:d] + noise[stampsize - d:stampsize])+numpy.sum(noise[d:stampsize - d, 0:d]+noise[d:stampsize-d, stampsize-d:stampsize]))/(d*stampsize*4-4*d*d)
+            psf_pnoise = rim*psf/n
+            noise_pnoise = rim*noise/n
             psf =psf - noise -psf_pnoise+noise_pnoise
             psf = psf / numpy.max(psf)
             sz += psf
@@ -395,3 +399,11 @@ class Fourier_Quad:
                 re = numpy.linalg.solve(co_matr, val)
                 arr[i, k] = ra**2*(re[0]+re[1]+re[2])+(re[3]+re[4])*ra+re[5]
         return numpy.power(10, arr)
+
+    def border(self,edge,size):
+        if edge>=size/2. :
+            print("Edge must be smaller than half of  the size!")
+        else:
+            arr = numpy.ones((size,size))
+            arr[edge:size-edge,edge:size-edge] = 0.
+            return arr
