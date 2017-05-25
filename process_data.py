@@ -3,6 +3,8 @@
 import os
 import numpy
 import time
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy import optimize
@@ -150,7 +152,7 @@ if not exist or comm==1:
                 res_arr2[i + 8, m] = num2
             else:
                 G2 = numpy.array(g2[i][fg2[m]])
-                B2 = numpy.array(fn2[fg2[m]]) + numpy.array(fu2[fg2[m]])
+                B2 = numpy.array(fn2[fg2[m]]) - numpy.array(fu2[fg2[m]])
                 def fun(g):
                     g2_h = G2 - B2 * g
                     bin_num = 6
