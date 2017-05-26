@@ -4,10 +4,11 @@ from astropy.io import fits
 import time
 from multiprocessing import Pool
 from Fourier_Quad import *
+from sys import argv
 
-def measure(path_list,tag):
-    ahead = '/lmc/w1/'
-    res_ahead = '/home/hklee/result/w1/'
+def measure(path_list,tag,area):
+    ahead = '/lmc/'+area
+    res_ahead = '/home/hklee/result/'+area
 
     for list_num in range(len(path_list)):
         t1=time.time()
@@ -87,11 +88,12 @@ def measure(path_list,tag):
 
 
 if __name__=="__main__":
-    corenum =6
+    area ,ncpu= argv[1:3]
+    corenum =int(ncpu)
     chipsnum = 36
     paths   = []
     paths_pool = {}
-    data    = open('/lmc/w1/nname.dat')
+    data    = open('/lmc/'+area+'/nname.dat')
     print( "open nname.data")
     datalen = len(data.readlines())
     data.seek(0)
@@ -125,7 +127,7 @@ if __name__=="__main__":
     p = Pool()
     ts=time.time()
     for i in range(corenum):
-        p.apply_async(measure,args=(paths_pool[i],i,))
+        p.apply_async(measure,args=(paths_pool[i],i,area))
     p.close()
     p.join()
     te=time.time()
