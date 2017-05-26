@@ -83,7 +83,7 @@ def measure(path_list,tag,area):
         res_data.close()
         t2=time.time()
 
-        print ("Process %d : (%d/%d) %s_%s done within %f sec."%(tag,list_num+1,len(path_list),location,number,t2-t1),)
+        print ("Process %d :  %s_%s done within %.2f sec (%d/%d)"%(tag,location,number,t2-t1,list_num+1,len(path_list)))
 
 
 if __name__=="__main__":
