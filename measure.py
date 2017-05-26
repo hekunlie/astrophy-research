@@ -5,11 +5,9 @@ import time
 from multiprocessing import Pool
 from Fourier_Quad import *
 
-
-
 def measure(path_list,tag):
-    ahead = '/lmc/w2/'
-    res_ahead = '/home/hklee/venvs/hklee-astro/result/w1/'
+    ahead = '/lmc/w1/'
+    res_ahead = '/home/hklee/result/w1/'
 
     for list_num in range(len(path_list)):
         t1=time.time()
@@ -17,13 +15,13 @@ def measure(path_list,tag):
         my, mx = numpy.mgrid[0:stampsize, 0:stampsize]
         path   = path_list[list_num]
         location,number = path.split('/')
-        print ("Process %d: shear measurement of exposure %s in area %s starts..."%(tag,number,location))
+        print ("Process %d: %s_%s starts..."%(tag,location,number))
 
         shear_path = ahead+location +'/step2/'
         res_path = res_ahead+location+ "_exposure_%s.txt"%number
         res_data = open(res_path,"w+")
 
-        res_data.writelines("KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
+        res_data.writelines("chip"+'\t'+"KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
                             +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\t"+"FQ_U"+"\t"+"FQ_V"+"\n")
         
         for k in range(1,37):
@@ -36,8 +34,8 @@ def measure(path_list,tag):
             noise_path = ahead+location+'/step1/'+'noise'+'%s_%s.fits'%(number,kk)
             star_noise_path = ahead+location+'/step1/'+'star_noise_'+'%s_%s.fits'%(number,kk)
 
-            if os.path.getsize(gal_data_path)/1024. < 20 or os.path.getsize(shear_data_path)/1024. < 20 or os.path.getsize(star_data_path)<2000:
-                print ('Process %d skipped chip %s'%(tag,kk))
+            if os.path.getsize(gal_data_path)/1024. < 20 or os.path.getsize(shear_data_path)/1024. < 20 or os.path.getsize(star_data_path)<2100:
+                print ('Process %d: skipped chip %s'%(tag,kk))
             else:
                 star_data = numpy.loadtxt(star_data_path, skiprows=1)[:, 1:3]
                 gal_stamps = fits.open(gal_img_path)[0].data
@@ -77,7 +75,7 @@ def measure(path_list,tag):
                         w_beta = Fourier_Quad().wbeta(beta, stampsize, mx, my)
                         G1,G2,N,U,V= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, mx, my,noise,N=True)
 
-                        res_data.writelines(str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
+                        res_data.writelines(kk+'\t'+str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t"
                                         +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
                                         +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+"\t"+str(U)+"\t"+str(V)+'\n')
 
@@ -85,7 +83,7 @@ def measure(path_list,tag):
         res_data.close()
         t2=time.time()
 
-        print ("Process %d : (%d/%d) done in exposure %s of %s area within %f sec."%(tag,list_num+1,len(path_list),number,location,t2-t1))
+        print ("Process %d : (%d/%d) %s_%s done within %f sec."%(tag,list_num+1,len(path_list),location,number,t2-t1),)
 
 
 if __name__=="__main__":
