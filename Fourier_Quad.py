@@ -12,18 +12,18 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, wbeta, psf, imagesize, mx, my, backgroud_noise, N=True, F=True):
-
-        x = imagesize
+    def shear_est(self, gal, wbeta, psf,  background_noise, N=True, F=True):
+        x = int(gal.shape[0]) #resolution of the image
+        my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal)
 
-        if N==True:
+        if N==True: # to deduct the noise
             d=1
-            nbg = self.pow_spec(backgroud_noise)
+            nbg = self.pow_spec(background_noise)
             rim = self.border(d,x)
             n    = numpy.sum(rim)
-            gal_pnoise = gal_ps*rim/n
-            nbg_pnoise =nbg*rim/n
+            gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
+            nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
             gal_ps = gal_ps - gal_pnoise - nbg + nbg_pnoise
 
         if F == True:
@@ -52,7 +52,8 @@ class Fourier_Quad:
         v  = numpy.sum(mn5 * tk)*(-2.*(wbeta[1]**2))*(alpha**4)
         return g1, g2, n, u, v
 
-    def wbeta(self, beta, imagesize, mx, my):
+    def wbeta(self, beta, imagesize):
+        my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
         sigma = beta/numpy.sqrt(2)
         w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
         beta = 1./beta
@@ -312,7 +313,6 @@ class Fourier_Quad:
         arr0 = arr[0:stampsize, 0:columns * stampsize]
         for i in range(1, row_num):
             arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
-
         return arr0
 
     def fit(self, star_stamps, star_noise, star_data, stampsize):
@@ -338,8 +338,8 @@ class Fourier_Quad:
             # psf = ndimage.shift(arr,(24-dx,24-dy))
             psf = self.pow_spec(psf_pool[i])
             noise = self.pow_spec(noise_pool[i])
-            psf_pnoise = rim*psf/n
-            noise_pnoise = rim*noise/n
+            psf_pnoise = numpy.sum(rim*psf)/n
+            noise_pnoise = numpy.sum(rim*noise)/n
             psf =psf - noise -psf_pnoise+noise_pnoise
             pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
             psf = psf / pmax
