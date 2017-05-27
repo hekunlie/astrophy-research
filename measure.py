@@ -5,6 +5,7 @@ import time
 from multiprocessing import Pool
 from Fourier_Quad import  Fourier_Quad
 from sys import argv
+import numpy
 
 def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
