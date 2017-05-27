@@ -10,10 +10,9 @@ import numpy
 def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
     res_ahead = '/home/hklee/result/'+area+'/'
-
+    stampsize = 48
     for list_num in range(len(path_list)):
         t1=time.time()
-        stampsize = 48
         path   = path_list[list_num]
         location,number = path.split('/')
         print ("Process %d: %s_%s starts..."%(tag,location,number))
@@ -74,7 +73,7 @@ def measure(path_list,tag,area):
 
                         beta   = Fourier_Quad().get_radius(psf,2.)
                         w_beta = Fourier_Quad().wbeta(beta, stampsize)
-                        G1,G2,N,U,V= Fourier_Quad().shear_est(gal, w_beta, psf,noise,N=True)
+                        G1,G2,N,U,V= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, noise)
 
                         res_data.writelines(kk+'\t'+str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t" +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
                                         +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+"\t"+str(U)+"\t"+str(V)+'\n')

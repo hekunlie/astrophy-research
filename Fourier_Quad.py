@@ -12,8 +12,8 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, wbeta, psf,  background_noise, N=True, F=True):
-        x = int(gal.shape[0]) #resolution of the image
+    def shear_est(self, gal, wbeta, psf, imagesize, background_noise, N=True, F=True):
+        x = imagesize#int(gal.shape[0]) #resolution of the image
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal)
 
@@ -24,7 +24,7 @@ class Fourier_Quad:
             n    = numpy.sum(rim)
             gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
             nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
-            gal_ps = gal_ps - gal_pnoise - nbg + nbg_pnoise
+            gal_ps = (gal_ps - gal_pnoise) - (nbg - nbg_pnoise)
 
         if F == True:
             psf = psf
