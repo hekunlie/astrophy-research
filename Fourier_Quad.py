@@ -414,7 +414,7 @@ class Fourier_Quad:
         mi = numpy.min(array)
         ma = numpy.max(array)
         bins0 = numpy.linspace(mi,ma,bin_num+1)
-        bin_size = bin0[1]-bin0[0]
+        bin_size = bins0[1]-bins0[0]
         bins = numpy.delete(bins0,-1)
         arr = numpy.digitize(array,bins)
         tag = numpy.linspace(1,bin_num,bin_num)

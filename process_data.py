@@ -9,18 +9,21 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy import optimize
 from Fourier_Quad import *
+from sys import argv
+
+area,g1num,g2num= argv[1:4]
 
 ts =time.clock()
 snr= 'SNR>10'
-g1num = 9
-g2num = 17
+g1num = int(g1num)
+g2num = int(g2num)
 fg1 = numpy.linspace(-0.005, 0.005, g1num)
 fg2 = numpy.linspace(-0.011, 0.011, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/home/hklee/result/w1/" #where the result data file are placed
-pic_path = '/home/hklee/result/pic/w1/'#where the result figures will be created
+path  = "/home/hklee/result/"+area+'/'           #where the result data file are placed
+pic_path = '/home/hklee/result/pic/'+area+'/'    #where the result figures will be created
 exist = os.path.exists(path+'cache.dat')
 
 if exist:
@@ -105,7 +108,7 @@ if not exist or comm==1:
     res_arr1 = numpy.zeros((12, g1num))    # the first 4 rows are the ellipticity,
     res_arr2 = numpy.zeros((12, g2num))    # the second 4 rows are the correspongding error bar,
                                             # the third 4 rows are the correspongding number of samples.
-    for i in range(4):
+    for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:
                 num1 = len(g1[i][fg1[m]])
@@ -117,6 +120,7 @@ if not exist or comm==1:
                 res_arr1[i + 8, m] = num1
             else:
                 G1 = numpy.array(g1[i][fg1[m]])
+                print(len(G1),type(G1))
                 B1 = numpy.array(fn1[fg1[m]]) + numpy.array(fu1[fg1[m]])
                 def fun(g):
                     g1_h = G1-B1*g
@@ -152,7 +156,7 @@ if not exist or comm==1:
                 res_arr2[i + 8, m] = num2
             else:
                 G2 = numpy.array(g2[i][fg2[m]])
-                B2 = numpy.array(fn2[fg2[m]]) - numpy.array(fu2[fg2[m]])
+                B2 = numpy.array(fn2[fg2[m]]) + numpy.array(fu2[fg2[m]])
                 def fun(g):
                     g2_h = G2 - B2 * g
                     bin_num = 6
