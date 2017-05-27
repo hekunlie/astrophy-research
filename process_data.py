@@ -125,16 +125,15 @@ if not exist or comm==1:
                 B1 = numpy.array(fn1[fg1[m]]) + numpy.array(fu1[fg1[m]])
                 def fun(g):
                     g1_h = G1-B1*g
-                    bins,num = Fourier_Quad().set_bins(g1_h,6)[0:2]
+                    bins,num = Fourier_Quad().set_bins(g1_h,bin_num)[0:2]
                     n1 = num[0:int(bin_num/2)]
                     n2 = num[int(bin_num/2):][inverse]
                     return  numpy.sum((n1-n2)**2/(n1+n2))
 
                 g1_h = optimize.fmin_cg(fun,[0],disp=False)[0]
-                print(g1_h)
                 num1 = len(G1)
                 G_h = G1-B1*g1_h
-                num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
+                num_in_bins,size= Fourier_Quad().set_bins(G_h,bin_num)[1:3]
                 num_distri = num_in_bins/numpy.sum(num_in_bins)
                 p1 = num_distri[0:int(bin_num/2)]
                 n1 = num_in_bins[0:int(bin_num/2)]
@@ -157,7 +156,7 @@ if not exist or comm==1:
                 res_arr2[i + 8, m] = num2
             else:
                 G2 = numpy.array(g2[i][fg2[m]])
-                B2 = numpy.array(fn2[fg2[m]]) + numpy.array(fu2[fg2[m]])
+                B2 = numpy.array(fn2[fg2[m]]) - numpy.array(fu2[fg2[m]])
                 def fun(g):
                     g2_h = G2 - B2 * g
                     bins, num = Fourier_Quad().set_bins(g2_h, 6)[0:2]
