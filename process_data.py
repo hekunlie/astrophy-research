@@ -120,25 +120,26 @@ if not exist or comm==1:
                 res_arr1[i + 8, m] = num1
             else:
                 G1 = numpy.array(g1[i][fg1[m]])
-                print(len(G1),type(G1))
+                bin_num = 6
+                inverse = range(int(bin_num/2-1),-1,-1)
                 B1 = numpy.array(fn1[fg1[m]]) + numpy.array(fu1[fg1[m]])
                 def fun(g):
                     g1_h = G1-B1*g
-                    bin_num = 6
                     bins,num = Fourier_Quad().set_bins(g1_h,6)[0:2]
                     n1 = num[0:int(bin_num/2)]
-                    n2 = num[int(bin_num/2):]
+                    n2 = num[int(bin_num/2):][inverse]
                     return  numpy.sum((n1-n2)**2/(n1+n2))
 
                 g1_h = optimize.fmin_cg(fun,[0],disp=False)[0]
+                print(g1_h)
                 num1 = len(G1)
                 G_h = G1-B1*g1_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
                 num_distri = num_in_bins/numpy.sum(num_in_bins)
-                p1 = num_distri[0:3]
-                n1 = num_in_bins[0:3]
-                p2 = num_distri[3:]
-                n2 = num_in_bins[3:]
+                p1 = num_distri[0:int(bin_num/2)]
+                n1 = num_in_bins[0:int(bin_num/2)]
+                p2 = num_distri[int(bin_num/2):][inverse]
+                n2 = num_in_bins[int(bin_num/2):][inverse]
                 sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
                 #sigma1 = numpy.std(arr1) / numpy.mean(narr1) / numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
@@ -159,20 +160,19 @@ if not exist or comm==1:
                 B2 = numpy.array(fn2[fg2[m]]) + numpy.array(fu2[fg2[m]])
                 def fun(g):
                     g2_h = G2 - B2 * g
-                    bin_num = 6
                     bins, num = Fourier_Quad().set_bins(g2_h, 6)[0:2]
                     n1 = num[0:int(bin_num / 2)]
-                    n2 = num[int(bin_num / 2):]
+                    n2 = num[int(bin_num / 2):][inverse]
                     return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
                 g2_h = optimize.fmin_cg(fun, [0], disp=False)[0]
                 num2 = len(G2)
                 G_h = G2-B2*g2_h
                 num_in_bins,size= Fourier_Quad().set_bins(G_h,6)[1:3]
                 num_distri = num_in_bins/numpy.sum(num_in_bins)
-                p1 = num_distri[0:3]
-                n1 = num_in_bins[0:3]
-                p2 = num_distri[3:]
-                n2 = num_in_bins[3:]
+                p1 = num_distri[0:int(bin_num/2)]
+                n1 = num_in_bins[0:int(bin_num/2)]
+                p2 = num_distri[int(bin_num/2):][inverse]
+                n2 = num_in_bins[int(bin_num/2):][inverse]
                 sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = sigma2
