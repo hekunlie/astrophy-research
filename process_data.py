@@ -64,6 +64,8 @@ if not exist or comm==1:
                 fv2[i] = []
 
     for k in paths:  # put the data into the corresponding list
+        if os.path.getsize(k)<1000:
+            continue
         data = numpy.loadtxt(k, skiprows=1)[:,1:]
         tag1 = data[:,5]
         tag1.shape = (len(tag1),1)

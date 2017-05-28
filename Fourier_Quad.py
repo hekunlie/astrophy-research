@@ -422,5 +422,5 @@ class Fourier_Quad:
         for i in range(bin_num):
             idx = arr ==tag[i]
             points_num[i] = len(arr[idx])
-        return bins0,points_num,bin_size
+        return bins,points_num,bin_size
 
