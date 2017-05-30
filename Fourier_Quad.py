@@ -414,10 +414,14 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,array,bin_num):# The input must be one dimensional array.(1,n)
+    def set_bins(self,array,bin_num,sym=False):# The input must be one dimensional array.(1,n)
         mi = numpy.min(array)
         ma = numpy.max(array)
-        bins0 = numpy.linspace(mi,ma,bin_num+1)
+        if sym==True: # if the data are symmetric respect to zero
+            radius = max(numpy.abs(mi),ma)
+            bins0 = numpy.linspace(-radius,radius,bin_num+1)
+        else:
+            bins0 = numpy.linspace(mi,ma,bin_num+1)
         bin_size = bins0[1]-bins0[0]
         bins = numpy.delete(bins0,-1)
         arr = numpy.digitize(array,bins)

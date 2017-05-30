@@ -10,9 +10,12 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy import optimize
 from Fourier_Quad import *
 from sys import argv
+import shelve
 
-area,g1num,g2num= argv[1:4]
-
+#area,g1num,g2num= argv[1:4]
+area = 'w1'
+g1num = 9
+g2num = 17
 ts =time.clock()
 snr= 'SNR>10'
 g1num = int(g1num)
@@ -22,94 +25,124 @@ fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/home/hklee/result/"+area+'/'           #where the result data file are placed
-pic_path = '/home/hklee/result/pic/'+area+'/'    #where the result figures will be created
-exist = os.path.exists(path+'cache.dat')
+path  = "G:/result/"+area+'/'           #where the result data file are placed
+pic_path = 'G:/result/pic/'+area+'/'    #where the result figures will be created
 
-if exist:
-    print ('0: use the cache data existed')
-    print ('1: overwrite it')
+exist = os.path.exists(path+'cache.dat')
+if exist:#check the final result cache
+    print('0: use the result cache data existed\n1: overwrite it')
     comm = int(input('0/1?:'))
 else :
-    print('no cache exists')
+    print('no result cache exists')
 
 if not exist or comm==1:
-    files = os.listdir(path)
-    print ('starting...')
-    for i in files:
-        if ".txt" in i:
-            paths.append(path + i)
 
-    g1 = {}
-    g2 = {}
-    fn1 = {}  # for FQ method
-    fn2 = {}
-    fu1 ={}
-    fv1={}
-    fu2 ={}
-    fv2={}
-    # name: 0:KSB,1:BJ,2:RG,3:F_Q
-    for name in range(4):  # dict g1/g2 = {'0':..{fg1/2[i]:[]},{fg1/2[i+1]:[]}..,'1':..,'2"...}
-        for i in fg1:
-            g1.setdefault(name, {})[i] = []
-            if name == 3:
-                fn1[i] = []
-                fu1[i] = []
-                fv1[i] = []
-        for i in fg2:
-            g2.setdefault(name, {})[i] = []
-            if name==3:
-                fn2[i] = []
-                fu2[i] = []
-                fv2[i] = []
+    dict_cache_exist = os.path.exists(path+'dict_cache.bak')  #check the classification cache
+    if dict_cache_exist:
+        print('0: use the classification cache data existed\n1: overwrite it')
+        dict_comm = int(input('0/1?:'))
+    else:
+        print('no classification cache')
 
-    for k in paths:  # put the data into the corresponding list
-        if os.path.getsize(k)<1000:
-            continue
-        data = numpy.loadtxt(k, skiprows=1)[:,1:]
-        tag1 = data[:,5]            #field distortion fg1
-        tag1.shape = (len(tag1),1)
-        tag2 = data[:,11]           #field distortion fg2
-        tag2.shape = (len(tag2),1)
+    if not dict_cache_exist or dict_comm==1:
+        files = os.listdir(path)
+        print ('starting...')
+        for i in files:
+            if ".txt" in i:
+                paths.append(path + i)
 
-        for i in range(g1num):
-            idx1 = tag1 < fg1[i] + dfg1/2
-            idx2 = tag1 > fg1[i] - dfg1/2
-            for na in range(4):
-                ellip1 = data[:,na]
-                ellip1.shape = (len(ellip1),1)
-                g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
-                if na ==3:
-                    n1 = data[:,na+1]
-                    n1.shape = (len(n1),1)
-                    u1 = data[:,12]
-                    u1.shape = (len(u1), 1)
-                    v1 = data[:,13]
-                    v1.shape = (len(v1), 1)
-                    fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
-                    fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
-                    fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1&idx2]))
-        for i in range(g2num):
-            idx1 = tag2 < fg2[i] + dfg2/2
-            idx2 = tag2 > fg2[i] - dfg2/2
-            for na in range(4):
-                ellip2 = data[:,na+6]
-                ellip2.shape = (len(ellip2),1)
-                g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
-                if na==3:
-                    n2 = data[:,na+7]
-                    n2.shape = (len(n2),1)
-                    u2 = data[:,12]
-                    u2.shape = (len(u2), 1)
-                    v2 = data[:,13]
-                    v2.shape = (len(v2), 1)
-                    fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
-                    fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
-                    fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
+        g1 = {}
+        g2 = {}
+        fn1 = {}  # for FQ method
+        fn2 = {}
+        fu1 ={}
+        fv1={}
+        fu2 ={}
+        fv2={}
+        # name: 0:KSB,1:BJ,2:RG,3:F_Q
+        for name in range(4):  # dict g1/g2 = {'0':..{fg1/2[i]:[]},{fg1/2[i+1]:[]}..,'1':..,'2"...}
+            for i in fg1:
+                g1.setdefault(name, {})[i] = []
+                if name == 3:
+                    fn1[i] = []
+                    fu1[i] = []
+                    fv1[i] = []
+            for i in fg2:
+                g2.setdefault(name, {})[i] = []
+                if name==3:
+                    fn2[i] = []
+                    fu2[i] = []
+                    fv2[i] = []
+
+        for k in paths:  # put the data into the corresponding list
+            if os.path.getsize(k)<1000:
+                continue
+            data = numpy.loadtxt(k, skiprows=1)[:,1:]
+            tag1 = data[:,5]            #field distortion fg1
+            tag1.shape = (len(tag1),1)
+            tag2 = data[:,11]           #field distortion fg2
+            tag2.shape = (len(tag2),1)
+
+            for i in range(g1num):
+                idx1 = tag1 < fg1[i] + dfg1/2
+                idx2 = tag1 > fg1[i] - dfg1/2
+                for na in range(4):
+                    ellip1 = data[:,na]
+                    ellip1.shape = (len(ellip1),1)
+                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
+                    if na ==3:
+                        n1 = data[:,na+1]
+                        n1.shape = (len(n1),1)
+                        u1 = data[:,12]
+                        u1.shape = (len(u1), 1)
+                        v1 = data[:,13]
+                        v1.shape = (len(v1), 1)
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1&idx2]))
+            for i in range(g2num):
+                idx1 = tag2 < fg2[i] + dfg2/2
+                idx2 = tag2 > fg2[i] - dfg2/2
+                for na in range(4):
+                    ellip2 = data[:,na+6]
+                    ellip2.shape = (len(ellip2),1)
+                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
+                    if na==3:
+                        n2 = data[:,na+7]
+                        n2.shape = (len(n2),1)
+                        u2 = data[:,12]
+                        u2.shape = (len(u2), 1)
+                        v2 = data[:,13]
+                        v2.shape = (len(v2), 1)
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
+         # create the cache of the classification
+        dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
+        dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
+        dict_cache = shelve.open(path+'dict_cache')
+        for i in range(len(dict_name)):
+            dict_cache[dict_name[i]] = dict[i]
+        dict_cache.close()
+        print("Classification complete")
+
+    else:  #load the classification cache
+        print('load classification cache')
+        dict_cache = shelve.open(path+'dict_cache')
+        g1 =dict_cache['g1']
+        g2 = dict_cache['g2']
+        fn1 = dict_cache['fn1']
+        fn2 = dict_cache['fn2']
+        fu1 = dict_cache['fu1']
+        fu2 = dict_cache['fu2']
+        fv1 = dict_cache['fv1']
+        fv2 = dict_cache['fv2']
+
 
     res_arr1 = numpy.zeros((12, g1num))    # the first 4 rows are the ellipticity,
     res_arr2 = numpy.zeros((12, g2num))    # the second 4 rows are the correspongding error bar,
                                             # the third 4 rows are the correspongding number of samples.
+    print('calculate shears ')
     for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:     #for KSB, BJ, REGAUSS
@@ -123,26 +156,30 @@ if not exist or comm==1:
             else: #for Fourier_Quad
                 G1 = numpy.array(g1[i][fg1[m]])
                 num1 = len(G1)
-                bin_num = 20
+                bin_num =6
                 inverse = range(int(bin_num/2-1),-1,-1)
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 B1 = N1 + U1
-                def fun(g):
-                    G1_h = G1-B1*g
-                    bins,num = Fourier_Quad().set_bins(G1_h,bin_num)[0:2]
-                    n1 = num[0:int(bin_num/2)]
-                    n2 = num[int(bin_num/2):][inverse]
-                    return  numpy.sum((n1-n2)**2/(n1+n2))
-
-                g1_h = optimize.fmin_cg(fun,[0.],disp=False)
-                G1_h = G1-B1*g1_h
-                num_in_bins= Fourier_Quad().set_bins(G1_h,bin_num)[1]
-                n1 = num_in_bins[0:int(bin_num/2)]
-                n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma1 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
-                # g1_h = numpy.mean(G1)/numpy.mean(N1)
-                # sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
+                # def fun(g,*args):
+                #     G1,B1=args[0:2]
+                #     G1_h = G1-B1*g
+                #     num = Fourier_Quad().set_bins(G1_h,6,sym=True)[1]
+                #     n1 = num[0:int(bin_num/2)]
+                #     n2 = num[int(bin_num/2):][inverse]
+                #     return  numpy.sum((n1-n2)**2/(n1+n2))
+                #
+                # g1_h = optimize.fmin(fun,[0.],args=(G1,B1),disp=False)[0]
+                # G1_h = G1-B1*g1_h
+                # bins,num_in_bins,size= Fourier_Quad().set_bins(G1_h,bin_num,sym=True)[0:3]
+                # print(g1_h)
+                # plt.bar(bins,num_in_bins,width=size,align='edge')
+                # plt.show()
+                # n1 = num_in_bins[0:int(bin_num/2)]
+                # n2 = num_in_bins[int(bin_num/2):][inverse]
+                # sigma1 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
+                g1_h = numpy.mean(G1)/numpy.mean(N1)
+                sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = sigma1
                 res_arr1[i + 8, m] = num1
@@ -162,25 +199,25 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 B2 =  N2 - U2
-                def fun(g):
-                    G2_h = G2 - B2 * g
-                    bins, num = Fourier_Quad().set_bins(G2_h, bin_num)[0:2]
-                    n1 = num[0:int(bin_num / 2)]
-                    n2 = num[int(bin_num / 2):][inverse]
-                    return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
-
-                g2_h = optimize.fmin_cg(fun, [0.], disp=False)
-                G2_h = G2-B2*g2_h
-                num_in_bins,size= Fourier_Quad().set_bins(G2_h,bin_num)[1:3]
-                n1 = num_in_bins[0:int(bin_num/2)]
-                n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma2 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
-                # g2_h = numpy.mean(G2)/numpy.mean(N2)
-                # sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
+                # def fun(g):
+                #     G2_h = G2 - B2 * g
+                #     num = Fourier_Quad().set_bins(G2_h, bin_num,sym=True)[1]
+                #     n1 = num[0:int(bin_num / 2)]
+                #     n2 = num[int(bin_num / 2):][inverse]
+                #     return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
+                #
+                # g2_h = optimize.fmin_cg(fun, [0.], disp=False)[0]
+                # G2_h = G2-B2*g2_h
+                # num_in_bins,size= Fourier_Quad().set_bins(G2_h,bin_num,sym=True)[1:3]
+                # n1 = num_in_bins[0:int(bin_num/2)]
+                # n2 = num_in_bins[int(bin_num/2):][inverse]
+                # sigma2 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
+                g2_h = numpy.mean(G2)/numpy.mean(N2)
+                sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = sigma2
                 res_arr2[i + 8, m] = num2
-    print ("Classification complete")
+
 
     with open(path+'cache.dat','wb') as cache:
         numpy.savetxt(cache,numpy.column_stack((res_arr1,res_arr2)))
@@ -194,7 +231,7 @@ start1=0
 end1 =0
 start2=0
 end2=0
-
+print('done\nbegin to plot the lines')
 arr1 = res_arr1[:, start1:g1num-end1]
 arr2 = res_arr2[:, start2:g2num-end2]
 fgn1 = fg1[start1:g1num-end1]
@@ -204,6 +241,7 @@ name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
 for i in range(3,4):
     A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
     Y1  = arr1[i].T
+    print(Y1)
     C1  = numpy.diag((arr1[i+4].T**2))  #sigma^2
 
     A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
@@ -217,6 +255,7 @@ for i in range(3,4):
     R2 = numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),Y2)
 
     e1mc = numpy.dot(L1,R1)
+
     e2mc = numpy.dot(L2,R2)
 
     fig = plt.figure(figsize=(10, 10))
@@ -304,9 +343,3 @@ for i in range(3,4):
 te = time.clock()
 print ("Complete")
 print(tm-ts,te-tm)
-
-
-
-                   
-        
-        
