@@ -67,9 +67,9 @@ if not exist or comm==1:
         if os.path.getsize(k)<1000:
             continue
         data = numpy.loadtxt(k, skiprows=1)[:,1:]
-        tag1 = data[:,5]
+        tag1 = data[:,5]            #field distortion fg1
         tag1.shape = (len(tag1),1)
-        tag2 = data[:,11]
+        tag2 = data[:,11]           #field distortion fg2
         tag2.shape = (len(tag2),1)
 
         for i in range(g1num):
@@ -100,9 +100,9 @@ if not exist or comm==1:
                     n2 = data[:,na+7]
                     n2.shape = (len(n2),1)
                     u2 = data[:,12]
-                    u2.shape = (len(u1), 1)
+                    u2.shape = (len(u2), 1)
                     v2 = data[:,13]
-                    v2.shape = (len(v1), 1)
+                    v2.shape = (len(v2), 1)
                     fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
                     fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
                     fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
@@ -112,7 +112,7 @@ if not exist or comm==1:
                                             # the third 4 rows are the correspongding number of samples.
     for i in range(3,4):
         for m in range(len(fg1)):
-            if i != 3:
+            if i != 3:     #for KSB, BJ, REGAUSS
                 num1 = len(g1[i][fg1[m]])
                 arr1 = numpy.array(g1[i][fg1[m]])
                 ava1 = numpy.sum(arr1) / num1 / 1.6  # g1
@@ -120,32 +120,32 @@ if not exist or comm==1:
                 res_arr1[i, m] = ava1
                 res_arr1[i + 4, m] = err1
                 res_arr1[i + 8, m] = num1
-            else:
+            else: #for Fourier_Quad
                 G1 = numpy.array(g1[i][fg1[m]])
-                bin_num = 8
+                num1 = len(G1)
+                bin_num = 20
                 inverse = range(int(bin_num/2-1),-1,-1)
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
-                # B1 = N1 + U1
-                # def fun(g):
-                #     g1_h = G1-B1*g
-                #     bins,num = Fourier_Quad().set_bins(g1_h,bin_num)[0:2]
-                #     n1 = num[0:int(bin_num/2)]
-                #     n2 = num[int(bin_num/2):][inverse]
-                #     return  numpy.sum((n1-n2)**2/(n1+n2))
-                #
-                # g1_h = optimize.fmin_cg(fun,[0],disp=False)[0]
-                num1 = len(G1)
-                # G_h = G1-B1*g1_h
-                # num_in_bins,size= Fourier_Quad().set_bins(G_h,bin_num)[1:3]
-                # num_distri = num_in_bins/numpy.sum(num_in_bins)
-                # p1 = num_distri[0:int(bin_num/2)]
-                # n1 = num_in_bins[0:int(bin_num/2)]
-                # p2 = num_distri[int(bin_num/2):][inverse]
-                # n2 = num_in_bins[int(bin_num/2):][inverse]
-                # sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
-                g1_h = numpy.mean(G1)/numpy.mean(N1)
-                sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
+                B1 = N1 + U1
+                def fun(g):
+                    G1_h = G1-B1*g
+                    bins,num = Fourier_Quad().set_bins(G1_h,bin_num)[0:2]
+                    n1 = num[0:int(bin_num/2)]
+                    n2 = num[int(bin_num/2):][inverse]
+                    return  numpy.sum((n1-n2)**2/(n1+n2))
+
+                g1_h = optimize.fmin_cg(fun,[0.1],disp=False)
+                G1_h = G1-B1*g1_h
+                num_in_bins,size= Fourier_Quad().set_bins(G1_h,bin_num)[1:3]
+                num_distri = num_in_bins/numpy.sum(num_in_bins)
+                p1 = num_distri[0:int(bin_num/2)]
+                n1 = num_in_bins[0:int(bin_num/2)]
+                p2 = num_distri[int(bin_num/2):][inverse]
+                n2 = num_in_bins[int(bin_num/2):][inverse]
+                sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
+                # g1_h = numpy.mean(G1)/numpy.mean(N1)
+                # sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = sigma1
                 res_arr1[i + 8, m] = num1
@@ -161,27 +161,28 @@ if not exist or comm==1:
                 res_arr2[i + 8, m] = num2
             else:
                 G2 = numpy.array(g2[i][fg2[m]])
+                num2 = len(G2)
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
-                # B2 =  N2 - U2
-                # def fun(g):
-                #     g2_h = G2 - B2 * g
-                #     bins, num = Fourier_Quad().set_bins(g2_h, bin_num)[0:2]
-                #     n1 = num[0:int(bin_num / 2)]
-                #     n2 = num[int(bin_num / 2):][inverse]
-                #     return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
-                # g2_h = optimize.fmin_cg(fun, [0], disp=False)[0]
-                num2 = len(G2)
-                # G_h = G2-B2*g2_h
-                # num_in_bins,size= Fourier_Quad().set_bins(G_h,bin_num)[1:3]
-                # num_distri = num_in_bins/numpy.sum(num_in_bins)
-                # p1 = num_distri[0:int(bin_num/2)]
-                # n1 = num_in_bins[0:int(bin_num/2)]
-                # p2 = num_distri[int(bin_num/2):][inverse]
-                # n2 = num_in_bins[int(bin_num/2):][inverse]
-                # sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
-                g2_h = numpy.mean(G2)/numpy.mean(N2)
-                sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
+                B2 =  N2 - U2
+                def fun(g):
+                    G2_h = G2 - B2 * g
+                    bins, num = Fourier_Quad().set_bins(G2_h, bin_num)[0:2]
+                    n1 = num[0:int(bin_num / 2)]
+                    n2 = num[int(bin_num / 2):][inverse]
+                    return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
+                g2_h = optimize.fmin_cg(fun, [0.1], disp=False)
+
+                G2_h = G2-B2*g2_h
+                num_in_bins,size= Fourier_Quad().set_bins(G2_h,bin_num)[1:3]
+                num_distri = num_in_bins/numpy.sum(num_in_bins)
+                p1 = num_distri[0:int(bin_num/2)]
+                n1 = num_in_bins[0:int(bin_num/2)]
+                p2 = num_distri[int(bin_num/2):][inverse]
+                n2 = num_in_bins[int(bin_num/2):][inverse]
+                sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
+                # g2_h = numpy.mean(G2)/numpy.mean(N2)
+                # sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = sigma2
                 res_arr2[i + 8, m] = num2
@@ -251,7 +252,7 @@ for i in range(3,4):
     for j in range(g1num):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
     plt.xlim(-0.006, 0.006)
-    plt.ylim(-0.015, 0.015)
+#    plt.ylim(-0.015, 0.015)
     m = 'm=' + str(round(e1mc[1] - 1, 5))
     c = 'c=' + str(round(e1mc[0], 5))
     ax.text(0.2, 0.9, m, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
@@ -292,7 +293,7 @@ for i in range(3,4):
     for j in range(g2num):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     plt.xlim(-0.012, 0.012)
-    plt.ylim(-0.03, 0.03)
+#    plt.ylim(-0.03, 0.03)
     m = 'm=' + str(round(e2mc[1] - 1, 5))
     c = 'c=' + str(round(e2mc[0], 5))
 

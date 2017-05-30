@@ -71,9 +71,7 @@ def measure(path_list,tag,area):
                         # res_r = galsim.hsm.EstimateShear(gal,psf,shear_est='REGAUSS',strict=False)
                         # res_r.corrected_e1
 
-                        beta   = Fourier_Quad().get_radius(psf,2.)
-                        w_beta = Fourier_Quad().wbeta(beta, stampsize)
-                        G1,G2,N,U,V= Fourier_Quad().shear_est(gal, w_beta, psf, stampsize, noise)
+                        G1,G2,N,U,V= Fourier_Quad().shear_est(gal, psf, stampsize, noise)
 
                         res_data.writelines(kk+'\t'+str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t" +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
                                         +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+"\t"+str(U)+"\t"+str(V)+'\n')

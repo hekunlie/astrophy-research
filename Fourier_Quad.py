@@ -12,7 +12,7 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, wbeta, psf, imagesize, background_noise, N=True, F=True):
+    def shear_est(self, gal, psf, imagesize, background_noise, N=True, F=True):
         x = imagesize#int(gal.shape[0]) #resolution of the image
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal)
@@ -31,25 +31,29 @@ class Fourier_Quad:
         else:
             psf = self.pow_spec(psf)
 
-        maxi = numpy.max(wbeta[0])
-        idx = wbeta[0] < maxi / 100000.
-        wbeta[0][idx] = 0.
+        hlr = self.get_radius(psf,2.)
+        wb,beta = self.wbeta(hlr,x)
+        maxi = numpy.max(wb)
+        idx = wb < maxi / 100000.
+        wb[idx] = 0.
         maxi = numpy.max(psf)
         idx = psf < maxi / 100000.
         psf[idx] = 1.
 
-        tk  = wbeta[0] / psf * gal_ps
+        tk  = wb/ psf * gal_ps
         alpha = 2.*numpy.pi/x
-        mn1 = (-0.5)*((mx-0.5*x)**2-(my-0.5*x)**2)
-        mn2 = (-mx+0.5*x)*(my-0.5*x)
-        mn3 = (mx-0.5*x)**2+(my-0.5*x)**2-0.5*wbeta[1]**2*((mx-0.5*x)**2+(my-0.5*x)**2)**2
-        mn4 = mx**4 - 6*(mx**2)*(my**2) + my**4
-        mn5 = (mx**3)*my - mx*(my**3)
+        kx = mx-0.5*x
+        ky = my-0.5*x
+        mn1 = (-0.5)*(kx**2 - ky**2)
+        mn2 = -kx*ky
+        mn3 = kx**2 + ky**2 - 0.5*beta**2*( kx**2 + ky**2 )**2
+        mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
+        mn5 = kx**3*ky - kx*ky**3
         g1 = numpy.sum(mn1 * tk)*(alpha**4)
         g2 = numpy.sum(mn2 * tk)*(alpha**4)
         n  = numpy.sum(mn3 * tk)*(alpha**4)
-        u  = numpy.sum(mn4 * tk)*(-0.5*(wbeta[1]**2))*(alpha**4)
-        v  = numpy.sum(mn5 * tk)*(-2.*(wbeta[1]**2))*(alpha**4)
+        u  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*(alpha**4)
+        v  = numpy.sum(mn5 * tk)*(-2.*beta**2)*(alpha**4)
         return g1, g2, n, u, v
 
     def wbeta(self, beta, imagesize):
