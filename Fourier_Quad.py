@@ -12,12 +12,12 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, psf, imagesize, background_noise, N=True, F=True):
+    def shear_est(self, gal, psf, imagesize, background_noise=None, F=True):
         x = imagesize#int(gal.shape[0]) #resolution of the image
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal)
 
-        if N==True: # to deduct the noise
+        if background_noise is not None: # to deduct the noise
             d=1
             nbg = self.pow_spec(background_noise)
             rim = self.border(d,x)
@@ -80,8 +80,9 @@ class Fourier_Quad:
         shear_pos = shear_matrix * pos
         return shear_pos
 
-    def image_arr(self, pos, psf_scale, imagesize, mx, my, psf="GAUSS"):
+    def convolve_psf(self, pos, psf_scale, imagesize, psf="GAUSS"):
         x = pos.shape[1]
+        my,mx = numpy.mgrid[0:imagesize,0:imagesize]
         pos = numpy.array(pos+imagesize / 2.)
         arr = numpy.zeros((imagesize, imagesize))
 

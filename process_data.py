@@ -227,9 +227,9 @@ else:
     res_arr2 = text[:,g1num:]
 tm =time.clock()
 # fit the line
-start1=0
+start1=1
 end1 =0
-start2=0
+start2=1
 end2=0
 print('done\nbegin to plot the lines')
 arr1 = res_arr1[:, start1:g1num-end1]
@@ -241,7 +241,6 @@ name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
 for i in range(3,4):
     A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
     Y1  = arr1[i].T
-    print(Y1)
     C1  = numpy.diag((arr1[i+4].T**2))  #sigma^2
 
     A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
