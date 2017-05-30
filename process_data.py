@@ -18,7 +18,7 @@ snr= 'SNR>10'
 g1num = int(g1num)
 g2num = int(g2num)
 fg1 = numpy.linspace(-0.005, 0.005, g1num)
-fg2 = numpy.linspace(-0.011, 0.011, g2num)
+fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
@@ -135,15 +135,12 @@ if not exist or comm==1:
                     n2 = num[int(bin_num/2):][inverse]
                     return  numpy.sum((n1-n2)**2/(n1+n2))
 
-                g1_h = optimize.fmin_cg(fun,[0.1],disp=False)
+                g1_h = optimize.fmin_cg(fun,[0.],disp=False)
                 G1_h = G1-B1*g1_h
-                num_in_bins,size= Fourier_Quad().set_bins(G1_h,bin_num)[1:3]
-                num_distri = num_in_bins/numpy.sum(num_in_bins)
-                p1 = num_distri[0:int(bin_num/2)]
+                num_in_bins= Fourier_Quad().set_bins(G1_h,bin_num)[1]
                 n1 = num_in_bins[0:int(bin_num/2)]
-                p2 = num_distri[int(bin_num/2):][inverse]
                 n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma1 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
+                sigma1 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
                 # g1_h = numpy.mean(G1)/numpy.mean(N1)
                 # sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
@@ -171,16 +168,13 @@ if not exist or comm==1:
                     n1 = num[0:int(bin_num / 2)]
                     n2 = num[int(bin_num / 2):][inverse]
                     return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
-                g2_h = optimize.fmin_cg(fun, [0.1], disp=False)
 
+                g2_h = optimize.fmin_cg(fun, [0.], disp=False)
                 G2_h = G2-B2*g2_h
                 num_in_bins,size= Fourier_Quad().set_bins(G2_h,bin_num)[1:3]
-                num_distri = num_in_bins/numpy.sum(num_in_bins)
-                p1 = num_distri[0:int(bin_num/2)]
                 n1 = num_in_bins[0:int(bin_num/2)]
-                p2 = num_distri[int(bin_num/2):][inverse]
                 n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma2 = 1./2/size/numpy.sqrt(numpy.sum((p1-p2)**2/(n1+n2)))
+                sigma2 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
                 # g2_h = numpy.mean(G2)/numpy.mean(N2)
                 # sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
