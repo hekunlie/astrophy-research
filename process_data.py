@@ -11,11 +11,10 @@ from scipy import optimize
 from Fourier_Quad import *
 from sys import argv
 import shelve
+import pandas
 
-#area,g1num,g2num= argv[1:4]
-area = 'w1'
-g1num = 11
-g2num = 21
+area,g1num,g2num= argv[1:4]
+# area = 'w1'
 ts =time.clock()
 snr= 'SNR>10'
 g1num = int(g1num)
@@ -25,8 +24,8 @@ fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "G:/result/w1/"          #where the result data file are placed
-pic_path = 'G:/result/pic/' #where the result figures will be created
+path  = "/lmc/result/w1/"          #where the result data file are placed
+pic_path = 'lmc/result/pic/' #where the result figures will be created
 
 exist = os.path.exists(path+'cache.dat')
 if exist:#check the final result cache
@@ -48,7 +47,7 @@ if not exist or comm==1:
         print ('starting...')
         files = os.listdir(path)
         for i in files:
-            if ".txt" in i:
+            if ".xlsx" in i:
                 paths.append(path + i)
 
         g1 = {}
@@ -77,7 +76,7 @@ if not exist or comm==1:
         for k in paths:  # put the data into the corresponding list
             if os.path.getsize(k)<1000:
                 continue
-            data = numpy.loadtxt(k, skiprows=1)[:,1:]
+            data = pandas.read_excel(k).values
             tag1 = data[:,5]            #field distortion fg1
             tag1.shape = (len(tag1),1)
             tag2 = data[:,11]           #field distortion fg2
