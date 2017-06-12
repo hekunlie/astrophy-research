@@ -415,21 +415,46 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,array,bin_num,sym=False):# The input must be one dimensional array.(1,n)
-        mi = numpy.min(array)
-        ma = numpy.max(array)
-        if sym==True: # if the data are symmetric respect to zero
-            radius = max(numpy.abs(mi),ma)
-            bins0 = numpy.linspace(-radius,radius,bin_num+1)
-        else:
-            bins0 = numpy.linspace(mi,ma,bin_num+1)
-        bin_size = bins0[1]-bins0[0]
-        bins = numpy.delete(bins0,-1)
-        arr = numpy.digitize(array,bins)
-        tag = numpy.linspace(1,bin_num,bin_num)
-        points_num = numpy.zeros((bin_num))
-        for i in range(bin_num):
-            idx = arr ==tag[i]
-            points_num[i] = len(arr[idx])
+    def set_bins(self,data_array,bin_num,model=1,sym=False):# The input must be one dimensional array.(1,n)
+        array=copy.copy(data_array)
+        if model ==1:   #set up bins according to the  maximum and minimum of the data
+            mi = numpy.min(array)
+            ma = numpy.max(array)
+            if sym==True: # if the data are symmetric respect to zero
+                radius = max(numpy.abs(mi),ma)
+                bins0 = numpy.linspace(-radius,radius,bin_num+1)
+            else:
+                bins0 = numpy.linspace(mi,ma,bin_num+1)
+            bin_size = bins0[1]-bins0[0]
+            bins = numpy.delete(bins0,-1)
+            arr = numpy.digitize(array,bins)
+            tag = numpy.linspace(1,bin_num,bin_num)
+            points_num = numpy.zeros((bin_num))
+            for i in range(bin_num):
+                idx = arr ==tag[i]
+                points_num[i] = len(arr[idx])
+        else:  #set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
+            if len(array)>10000:
+                idx = numpy.random.randint(0,len(array),2000)
+            else:
+                idx = numpy.random.randint(0,len(array),int(len(array)/10))
+            temp = array[idx]
+            ma = numpy.max(temp)
+            bins = numpy.linspace(-ma,ma,bin_num-1)
+            arr = numpy.digitize(array,bins)
+            points_num = numpy.zeros((bin_num))
+            tag = numpy.arange(0,bin_num)
+            for i in range(bin_num):
+                idx = arr == tag[i]
+                points_num[i] = len(arr[idx])
+            bin_size = bins[1]-bins[0]
+            bins = numpy.append(bins[0]-bin_size,bins)
         return bins,points_num,bin_size
+
+
+
+
+
+
+
 

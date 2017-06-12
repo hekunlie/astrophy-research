@@ -14,19 +14,19 @@ import shelve
 
 #area,g1num,g2num= argv[1:4]
 area = 'w1'
-g1num = 21
+g1num = 11
 g2num = 21
 ts =time.clock()
 snr= 'SNR>10'
 g1num = int(g1num)
 g2num = int(g2num)
-fg1 = numpy.linspace(-0.01, 0.01, g1num)
+fg1 = numpy.linspace(-0.005, 0.005, g1num)
 fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "E:/result/"          #where the result data file are placed
-pic_path = 'E:/result/' #where the result figures will be created
+path  = "G:/result/w1/"          #where the result data file are placed
+pic_path = 'G:/result/pic/' #where the result figures will be created
 
 exist = os.path.exists(path+'cache.dat')
 if exist:#check the final result cache
@@ -127,7 +127,7 @@ if not exist or comm==1:
         print("Classification complete")
 
     else:  #load the classification cache
-        print('load classification cache')
+        print('loading classification cache')
         dict_cache = shelve.open(path+'dict_cache')
         g1 =dict_cache['g1']
         g2 = dict_cache['g2']
@@ -142,7 +142,7 @@ if not exist or comm==1:
     res_arr1 = numpy.zeros((12, g1num))    # the first 4 rows are the ellipticity,
     res_arr2 = numpy.zeros((12, g2num))    # the second 4 rows are the correspongding error bar,
                                             # the third 4 rows are the correspongding number of samples.
-    print('calculate shears ')
+    print('calculating shears ')
     for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:     #for KSB, BJ, REGAUSS
@@ -156,26 +156,26 @@ if not exist or comm==1:
             else: #for Fourier_Quad
                 G1 = numpy.array(g1[i][fg1[m]])
                 num1 = len(G1)
-                bin_num =8
+                bin_num =6
                 inverse = range(int(bin_num/2-1),-1,-1)
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 B1 = N1 + U1
-                def fun(g,):
-                    G1_h = G1-B1*g
-                    num = Fourier_Quad().set_bins(G1_h,bin_num,sym=True)[1]
+                def fun(g,*args):
+                    half1,G,B,=args
+                    G1_h = G - B * g
+                    num = Fourier_Quad().set_bins(G1_h,bin_num,model=0)[1]
                     n1 = num[0:int(bin_num/2)]
                     n2 = num[int(bin_num/2):][inverse]
-                    return  numpy.sum((n1-n2)**2/(n1+n2))
-
-                g1_h = optimize.fmin(fun,[0.],disp=False)[0]
-                G1_h = G1-B1*g1_h
-                bins,num_in_bins,size= Fourier_Quad().set_bins(G1_h,bin_num,sym=True)[0:3]
-                n1 = num_in_bins[0:int(bin_num/2)]
-                n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma1 = numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
+                    return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-half1[0])
+                args=([0],G1,B1,)
+                g1_h = optimize.fmin(fun,[0.01],args=args,disp=False)[0]
+                args = ([fun(g1_h,[0],G1,B1,)*2], G1, B1,)
+                g1_hsig = optimize.fmin(fun,[0.01],args=args,disp=False)
+                print(g1_h,g1_hsig,abs(g1_h-g1_hsig))
+                #sigma1 = abs(g1_h-optimize.fmin(fun,[0],args=args,disp=False)[0])
                 # g1_h = numpy.mean(G1)/numpy.mean(N1)
-                # sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
+                sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = sigma1
                 res_arr1[i + 8, m] = num1
@@ -195,21 +195,19 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 B2 =  N2 - U2
-                def fun(g):
-                    G2_h = G2 - B2 * g
-                    num = Fourier_Quad().set_bins(G2_h, bin_num,sym=True)[1]
+                def fun(g,*args):
+                    half2,G,B = args
+                    G2_h = G - B * g
+                    num = Fourier_Quad().set_bins(G2_h, bin_num,model=0)[1]
                     n1 = num[0:int(bin_num / 2)]
                     n2 = num[int(bin_num / 2):][inverse]
-                    return numpy.sum((n1 - n2) ** 2 / (n1 + n2))
-
-                g2_h = optimize.fmin(fun, [0.], disp=False)[0]
-                G2_h = G2-B2*g2_h
-                num_in_bins,size= Fourier_Quad().set_bins(G2_h,bin_num,sym=True)[1:3]
-                n1 = num_in_bins[0:int(bin_num/2)]
-                n2 = num_in_bins[int(bin_num/2):][inverse]
-                sigma2 = 1./numpy.sqrt(2*numpy.sum((n1-n2)**2/(n1+n2)))
+                    return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2))*0.5-half2[0])
+                args = ([0],G2,B2)
+                g2_h = optimize.fmin(fun, [0.],args=args,disp=False)[0]
+                args = ([fun(g2_h,[0],G2,B2)*2], G2, B2,)
+                sigma2 = numpy.abs(g2_h-optimize.fmin(fun,[0],args=args,disp=False)[0])
                 # g2_h = numpy.mean(G2)/numpy.mean(N2)
-                # sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
+                #sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = sigma2
                 res_arr2[i + 8, m] = num2
@@ -225,8 +223,8 @@ tm =time.clock()
 # fit the line
 start1=0
 end1 =0
-start2=0
-end2=0
+start2=10
+end2=10
 print('done\nbegin to plot the lines')
 arr1 = res_arr1[:, start1:g1num-end1]
 arr2 = res_arr2[:, start2:g2num-end2]
@@ -256,24 +254,24 @@ for i in range(3,4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    # xmajorLocator = MultipleLocator(0.005)
-    # xmajorFormatter = FormatStrFormatter('%1.3f')
-    # xminorLocator = MultipleLocator(0.001)
-    #
-    # ymajorLocator   = MultipleLocator(0.005)
-    # ymajorFormatter = FormatStrFormatter('%1.3f')
-    # yminorLocator   = MultipleLocator(0.001)
-    #
-    # ax.xaxis.set_major_locator(xmajorLocator)
-    # ax.xaxis.set_major_formatter(xmajorFormatter)
-    #
-    # ax.yaxis.set_major_locator(ymajorLocator)
-    # ax.yaxis.set_major_formatter(ymajorFormatter)
-    #
-    # ax.xaxis.set_minor_locator(xminorLocator)
-    # ax.yaxis.set_minor_locator(yminorLocator)
+    xmajorLocator = MultipleLocator(0.005)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.001)
 
-    #ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
+    ymajorLocator   = MultipleLocator(0.005)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.001)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
+
+    ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
     ax.plot(fgn1, fgn1, label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
@@ -297,24 +295,24 @@ for i in range(3,4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    # xmajorLocator = MultipleLocator(0.01)
-    # xmajorFormatter = FormatStrFormatter('%1.3f')
-    # xminorLocator = MultipleLocator(0.002)
-    #
-    # ymajorLocator   = MultipleLocator(0.01)
-    # ymajorFormatter = FormatStrFormatter('%1.3f')
-    # yminorLocator   = MultipleLocator(0.005)
-    #
-    # ax.xaxis.set_major_locator(xmajorLocator)
-    # ax.xaxis.set_major_formatter(xmajorFormatter)
-    #
-    # ax.yaxis.set_major_locator(ymajorLocator)
-    # ax.yaxis.set_major_formatter(ymajorFormatter)
-    #
-    # ax.xaxis.set_minor_locator(xminorLocator)
-    # ax.yaxis.set_minor_locator(yminorLocator)
+    xmajorLocator = MultipleLocator(0.01)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.002)
 
-    #ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
+    ymajorLocator   = MultipleLocator(0.01)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.005)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
+
+    ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
     ax.plot(fgn2, fgn2, label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')

@@ -6,7 +6,7 @@ from multiprocessing import Pool
 from Fourier_Quad import  Fourier_Quad
 from sys import argv
 import numpy
-
+import pandas
 def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
     res_ahead = '/home/hklee/result/'+area+'/'
@@ -18,12 +18,9 @@ def measure(path_list,tag,area):
         print ("Process %d: %s_%s starts..."%(tag,location,number))
 
         shear_path = ahead+location +'/step2/'
-        res_path = res_ahead+location+ "_exposure_%s.txt"%number
-        res_data = open(res_path,"w+")
+        res_path = res_ahead+location+ "_exposure_%s.xlsx"%number
+        data_col = ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V"]
 
-        res_data.writelines("chip"+'\t'+"KSB_e1"+"\t"+"BJ_e1"+"\t"+"RG_e1"+"\t"+"FQ_G1"+"\t"+"FG_N"+"\t"+"fg1"+"\t"
-                            +"KSB_e2"+"\t"+"BJ_e2"+"\t"+"RG_e2"+"\t"+"FQ_G2"+"\t"+"FG_N"+"\t"+"fg2"+"\t"+"FQ_U"+"\t"+"FQ_V"+"\n")
-        
         for k in range(1,37):
             kk = str(k).zfill(2)
             gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
@@ -51,10 +48,12 @@ def measure(path_list,tag,area):
                 shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
                 ax,by,c    = Fourier_Quad().fit(star_stamps,star_noise,star_data,stampsize)
                 galnum = len(gal_pool)
-
+                gal_index = []
+                galnum_len=len(str(galnum))
                 for i in range(galnum):
-
                     if gal_data[i,2]>=10.:
+                        index = kk+"_"+str(i).zfill(galnum_len)
+                        gal_index.append(index)
                         gal = gal_pool[i]
                         noise = noise_pool[i]
                         gal_x= gal_data[i,0]
@@ -72,12 +71,15 @@ def measure(path_list,tag,area):
                         # res_r.corrected_e1
 
                         G1,G2,N,U,V= Fourier_Quad().shear_est(gal, psf, stampsize, noise)
+                        ith_row = numpy.array([0, 0, 0, G1, N, shear_data[i,0], 0, 0, 0, G2, N, shear_data[i,1], U, V ])
+                        if i==0:
+                            data_matrix =ith_row
+                        else:
+                            data_matrix = numpy.row_stack((data_matrix,ith_row))
 
-                        res_data.writelines(kk+'\t'+str(0)+"\t"+str(0)+"\t"+str(0)+"\t"+str(G1)+"\t"+str(N)+"\t" +str(shear_data[i,0])+"\t"+str(0)+"\t"+str(0)+"\t"+str(0)
-                                        +"\t"+str(G2)+"\t"+str(N)+"\t"+str(shear_data[i,1])+"\t"+str(U)+"\t"+str(V)+'\n')
-
-
-        res_data.close()
+                df = pandas.DataFrame(data_matrix, index =gal_index,columns=data_col )
+                df.columns.name='Chip&NO'
+                df.to_excel(res_path)
         t2=time.time()
 
         print ("Process %d: %s_%s done within %.2f sec (%d/%d)"%(tag,location,number,t2-t1,list_num+1,len(path_list)))
