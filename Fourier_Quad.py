@@ -364,49 +364,6 @@ class Fourier_Quad:
                 c[m, n] = re[2]
         return a, b, c
 
-    def smooth(self, image, edge, ra):
-        xl = image.shape[0]
-        image = numpy.log10(image)
-        arr = copy.deepcopy(image)
-        mx, my = numpy.mgrid[0: 2 * ra + 1, 0: 2 * ra + 1]
-        nx = mx.flatten()
-        x = numpy.delete(nx, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
-        ny = my.flatten()
-        y = numpy.delete(ny, (0, 2 * ra, 4 * ra ** 2 + 2 * ra, 4 * ra ** 2 + 4 * ra))
-        x4 = numpy.sum(x ** 4)
-        x2y2 = numpy.sum(x ** 2 * (y ** 2))
-        x3y = numpy.sum(x ** 3 * y)
-        x3 = numpy.sum(x ** 3)
-        x2y = numpy.sum(x ** 2 * y)
-        x2 = numpy.sum(x ** 2)
-        y4 = numpy.sum(y ** 4)
-        xy3 = numpy.sum(x * (y ** 3))
-        xy2 = numpy.sum(y ** 2 * x)
-        y3 = numpy.sum(y ** 3)
-        y2 = numpy.sum(y ** 2)
-        xy = numpy.sum(x * y)
-        sx = numpy.sum(x)
-        sy = numpy.sum(y)
-        n = len(y)
-        for i in range(edge, xl - edge):
-            for k in range(edge, xl - edge):
-                farr = image[i - ra:i + ra+1, k-ra:k + ra + 1].flatten()
-                farr = numpy.delete(farr, (0, 2*ra, 4*ra**2+2*ra,4*ra**2+4*ra))
-                szx2 = numpy.sum(farr * (x ** 2))
-                szy2 = numpy.sum(farr * (y ** 2))
-                szxy = numpy.sum(farr * x * y)
-                szx = numpy.sum(farr * x)
-                szy = numpy.sum(farr * y)
-                sz = numpy.sum(farr)
-                co_matr = numpy.array(
-                    [[x4, x2y2, x3y, x3, x2y, x2], [x2y2, y4, xy3, xy2, y3, y2],
-                     [x3y, xy3, x2y2, x2y, xy2, xy],[x3, xy2, x2y, x2, xy, sx],
-                     [x2y, y3, xy2, xy, y2, sy], [x2, y2, xy, sx, sy, n]])
-                val = numpy.array([szx2, szy2, szxy, szx, szy, sz])
-                re = numpy.linalg.solve(co_matr, val)
-                arr[i, k] = ra**2*(re[0]+re[1]+re[2])+(re[3]+re[4])*ra+re[5]
-        return numpy.power(10, arr)
-
     def border(self,edge,size):
         if edge>=size/2. :
             print("Edge must be smaller than half of  the size!")
