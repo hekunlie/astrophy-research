@@ -429,27 +429,33 @@ class Fourier_Quad:
             bins = numpy.delete(bins0,-1)
             arr = numpy.digitize(array,bins)
             tag = numpy.linspace(1,bin_num,bin_num)
-            points_num = numpy.zeros((bin_num))
+            num_in_bin = numpy.zeros((bin_num))
             for i in range(bin_num):
                 idx = arr ==tag[i]
-                points_num[i] = len(arr[idx])
-        else:  #set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
-            if len(array)>10000:
-                idx = numpy.random.randint(0,len(array),2000)
+                num_in_bin[i] = len(arr[idx])
+        else:  # set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
+            datalen = len(array)
+            if datalen> 10000:
+                idx = numpy.random.randint(0, datalen, 5000)
             else:
-                idx = numpy.random.randint(0,len(array),int(len(array)/10))
+                idx = numpy.random.randint(0, datalen, int(len(array) / 10))
             temp = array[idx]
             ma = numpy.max(temp)
-            bins = numpy.linspace(-ma,ma,bin_num-1)
-            arr = numpy.digitize(array,bins)
-            points_num = numpy.zeros((bin_num))
-            tag = numpy.arange(0,bin_num)
+            bins = []
+            for i in range(int(bin_num / 2)):
+                bins.append(ma * i * 2 / bin_num)
+                if i != 0:
+                    bins.append(-ma * i * 2 / bin_num)
+            bins = numpy.sort(bins)
+            arr = numpy.digitize(array, bins)
+            num_in_bin = numpy.zeros((bin_num))
+            tag = numpy.arange(0, bin_num)
             for i in range(bin_num):
                 idx = arr == tag[i]
-                points_num[i] = len(arr[idx])
-            bin_size = bins[1]-bins[0]
-            bins = numpy.append(bins[0]-bin_size,bins)
-        return bins,points_num,bin_size
+                num_in_bin[i] = len(arr[idx])
+            bin_size = bins[1] - bins[0]
+            bins = numpy.append(bins[0] - bin_size, bins)
+        return bins, num_in_bin, bin_size
 
 
 
