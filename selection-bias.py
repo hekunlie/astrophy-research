@@ -1,13 +1,14 @@
 import numpy
 import galsim
 from astropy.io import fits
-from Fourier_Quad import *
-import matplotlib.pyplot as plt
+from Fourier_Quad import Fourier_Quad
 import lsstetc
 import time
+import os
 from multiprocessing import Pool
+import pandas
 
-def simulate(g1,g2,NO):
+def simulate(g1, g2, NO):
 
     print('Process %d: begin>>>>>>')%NO
 
@@ -19,33 +20,39 @@ def simulate(g1,g2,NO):
     prop = lsstetc.ETC(band='i', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
     psf  = galsim.Gaussian(half_light_radius=1.0)
-    psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale)
+    psf  = psf.shear(e1=0.1,e2=-0.3)
+    psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
 
     ellip1 = numpy.random.normal(loc=0, scale=0.1, size=1000000)
     ellip2 = numpy.random.normal(loc=0, scale=0.1, size=1000000)
 
+    ahead = '/lmc/selection_bias/%d/' % NO
+    if not os.path.isdir(ahead):
+        os.mkdir(ahead)
+
     for k in range(100):      # 100 chips
-        kk = str(k).zfill(3)  # chip number
+        kk = str(k).zfill(2)      # chip number
         ts = time.time()
         print('Process %d: Chip %s')%(NO,kk)
 
-        chip_path = ''
-        data_path = ''
-        psf_path  = ''
+        gal_chip_path = ahead + 'gal_chip_%s.fits'%kk
+        noise_chip_path = ahead + 'nosie_chip_%s.fits'%kk
+        data_path = ahead + 'gal_info_%s.xlsx'%kk
+        psf_path    = ahead + 'psf.fits'
 
         gal_pool   = []
         noise_pool = []
 
-        snr_data   = numpy.zeros((gal_num,4))
-        tag        = range(int(k * 10000), int((k + 1) * 10000))
-        maglists   = mag_list[tag]
+        snr_data    = numpy.zeros((gal_num,4))
+        tag             = range(int(k * 10000), int((k + 1) * 10000))
+        mag_piece = mag_list[tag]
         ell1       = ellip1[tag]
         ell2       = ellip2[tag]
 
         for i in range(gal_num):
             e1 = ell1[i]
             e2 = ell2[i]
-            mag= maglists[i]
+            mag= mag_piece[i]
             n = numpy.random.randint(1,3,1)[0]
 
             if n==1:
@@ -77,19 +84,22 @@ def simulate(g1,g2,NO):
             gal_pool.append(gal_img.array)
             noise_pool.append(noise_img.array)
 
+        label = range(0,10000)
+        col = ['snr','mag','noise_sigma','err']
+        df = pandas.DataFrame(data= snr_data,index = label,columns=col)
+        df.to_excel(data_path)
 
-        numpy.savetxt('/home/lmc/Downloads/snr.txt',snr_data)
+        gal_chip = Fourier_Quad().image_stack(gal_pool,stamp_size,100)
+        hdu = fits.PrimaryHDU(gal_chip)
+        hdu.writeto(gal_chip_path,overwrite=True)
 
-        final = Fourier_Quad().image_stack(gal_pool,48,100)
-        hdu = fits.PrimaryHDU(final)
-        hdu.writeto('/home/lihekun/Downloads/gal_image.fits',overwrite=True)
+        noise_chip = Fourier_Quad().image_stack(noise_pool,stamp_size,100)
+        hdu = fits.PrimaryHDU(noise_chip)
+        hdu.writeto(noise_chip_path,overwrite=True)
 
-        final = Fourier_Quad().image_stack(noise_pool,48,100)
-        hdu = fits.PrimaryHDU(final)
-        hdu.writeto('/home/lihekun/Downloads/noise_image.fits',overwrite=True)
+        hdu = fits.PrimaryHDU(psf_img)
+        hdu.writeto(psf_path,overwrite=True)
 
-        hdu = fits.PrimaryHDU(final)
-        hdu.writeto('/home/lihekun/Downloads/psf_image.fits',overwrite=True)
         te = time.time()
         print('Process %d: Completed with time comsuming: %.2f')%(NO,te-ts)
 
@@ -97,7 +107,7 @@ if __name__=='__main__':
     shear1 = numpy.linspace(-0.005, 0.005, 11)
     shear2 = numpy.linspace(-0.005, 0.005, 11)
     numpy.random.shuffle(shear1)
-    numpy.random.shuffle(shear2)
+    numpy.savez('/lmc/selection_bias/shear',shear1,shear2)
     p = Pool()
     t1 = time.time()
     for m in range(11):
