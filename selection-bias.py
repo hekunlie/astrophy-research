@@ -14,13 +14,14 @@ def simulate(g1, g2, NO):
 
     gal_num = 10000
     stamp_size = 60
-    pixel_scale = 0.2
-
+    pixel_scale = 0.3
+    col = ['mophology', 'snr', 'mag', 'noise_sigma', 'err']
+    label = range(0, 10000)
     mag_list = numpy.sort(numpy.loadtxt('lsstmagsims'))
-    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+    prop = lsstetc.ETC(band='i', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
-    psf  = galsim.Gaussian(half_light_radius=0.7)
-    psf  = psf.shear(e1=0.01,e2=-0.03)
+    psf  = galsim.Gaussian(half_light_radius=1.0)
+    psf  = psf.shear(e1=0.1,e2=-0.3)
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
 
     ellip1 = numpy.random.normal(loc=0, scale=0.1, size=1000000)
@@ -48,46 +49,44 @@ def simulate(g1, g2, NO):
         mag_piece = mag_list[tag]
         ell1       = ellip1[tag]
         ell2       = ellip2[tag]
-
+        r0 = numpy.random.random(gal_num)
+        idx = r0 <0.3
+        r0[idx]=0.3
         for i in range(gal_num):
             e1 = ell1[i]
             e2 = ell2[i]
             mag= mag_piece[i]
-            mopho = int(numpy.random.randint(1,4,1)[0])
+            mopho = numpy.random.randint(1,4,1)[0]
 
             if mopho==1:
-                r0  = numpy.random.randint(15,27,1)[0]/10.
-                gal = galsim.Exponential(flux=1.0, half_light_radius=r0)
+                r   = r0[i]*1.2+0.3
+                gal = galsim.Exponential(flux=1.0, half_light_radius=r)
 
             elif mopho==2:
-                r0    = numpy.random.randint(10, 14,1)[0]/10.
-                bulge = galsim.DeVaucouleurs(flux=0.4, half_light_radius=r0)
-                disk  = galsim.Exponential(flux=0.6,half_light_radius=2*r0)
-                gal   = galsim.Add([bulge,disk])
+                rb     = r0[i]*1.2+0.3
+                rd     = r0[i]+0.5
+                bulge = galsim.Sersic(half_light_radius=rb,n=3.5)
+                disk  = galsim.Sersic(scale_radius=rd,n=1.5)
+                gal   = bulge*0.3+disk*0.7
 
             else:
-                r0  = numpy.random.randint(15, 27,1)[0] / 10.
-                gal = galsim.Gaussian(flux=1.0,half_light_radius=r0)
+                r   = r0[i] * 1.2 + 0.3
+                gal = galsim.Gaussian(flux=1.0,half_light_radius=r)
 
             if e1**2+e2**2>1:
                 e1 = e1/2
                 e2 = e2/2
+
             gal = gal.shear(e1=e1,e2=e2)
             gal = gal.shear(g1=g1,g2=g2)
             gal = galsim.Convolve([psf,gal]) #the final galaxy profile
 
-            gal_img, noise_img = prop.draw(gal,mag,i,noise=1)
-
-            snr = prop.SNR(gal,mag)
-            err = prop.err(gal,mag)
-
-            snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, err
-
+            gal_img, noise_img, snr = prop.draw(gal,mag,i,noise=1)
+            snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, 2.5/numpy.log(10)/snr
             gal_pool.append(gal_img.array)
             noise_pool.append(noise_img.array)
 
-        label = range(0,10000)
-        col = ['snr','mag','noise_sigma','err']
+
         df = pandas.DataFrame(data= snr_data,index = label,columns=col)
         df.to_excel(data_path)
 
@@ -113,9 +112,9 @@ if __name__=='__main__':
     p = Pool()
     t1 = time.time()
     for m in range(11):
-        g1 = shear1[m]
-        g2 = shear2[m]
-        p.apply_async(simulate, args=(g1,g2,m,))
+       g1 = shear1[m]
+       g2 = shear2[m]
+       p.apply_async(simulate, args=(g1,g2,m,))
     p.close()
     p.join()
     t2 = time.time()

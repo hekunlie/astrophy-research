@@ -71,6 +71,9 @@ class ETC(object):
         img = galsim.ImageD(self.stamp_size, self.stamp_size, scale=self.pixel_scale)
         profile = profile.withFlux(self.flux(mag))
         profile.drawImage(image=img)
+        signal = np.sum(img.array**2)
+        noise = np.sqrt((signal * self.sky).sum())
+        snr = signal/noise
         if noise:
             bd = galsim.BaseDeviate(seed)
             gd = galsim.GaussianNoise(bd, sigma = self.sigma_sky)
@@ -79,7 +82,7 @@ class ETC(object):
             bdn = galsim.BaseDeviate(seed+2)
             gdn = galsim.GaussianNoise(bdn, sigma = self.sigma_sky)
             noise_img.addNoise(gdn)
-            return img, noise_img
+            return img, noise_img,snr
         else:
             return img
 
