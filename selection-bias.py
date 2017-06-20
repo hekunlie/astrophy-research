@@ -18,7 +18,7 @@ def simulate(g1, g2, NO):
     col = ['mophology', 'snr', 'mag', 'noise_sigma', 'err']
     label = range(0, 10000)
     mag_list = numpy.sort(numpy.loadtxt('lsstmagsims'))
-    prop = lsstetc.ETC(band='i', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
     psf  = galsim.Gaussian(half_light_radius=1.0)
     psf  = psf.shear(e1=0.1,e2=-0.3)
