@@ -6,14 +6,19 @@ from multiprocessing import Pool
 import pandas
 import galsim
 import  time
-def est_shear(m,g1,g2):
 
+def est_shear(m,g1,g2):
+    print('Process %d: beginning>>>>')%m
     stamp_size = 60
     ahead = '/lmc/selection_bias/%s/'%m
     res_path = '/lmc/selection_bias/result/data/'
+    if not os.path.isdir(res_path):
+        os.mkdir(res_path)
     psf = fits.open(ahead+'psf.fits')[0].data
     col =  ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V","SNR_ORI"]
     for k in range(100):
+        ts = time.time()
+        print('Process %d: chip %s beginning>>>>')%(m,kk)
         kk = str(k).zfill(2)
         gal_path = ahead + 'gal_chip_%s.fits'%kk
         gal_img   = fits.open(gal_path)[0].data
@@ -24,15 +29,17 @@ def est_shear(m,g1,g2):
 
         gal_pool = Fourier_Quad().divide_stamps(gal_img,stamp_size)
         noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
+        gal_index =[]
         for gal in range(len(gal_pool)):
             gg = str(gal).zfill(4)
-            gal_index = KK+'_%s'%gg
+            idx  = KK+'_%s'%gg
+            gal_index.append(idx)
             gal = gal_pool[gal]
             noise = noise_pool[gal]
             res_k = galsim.hsm.EstimateShear(gal,psf,shear_est='KSB',strict=False)
             res_b = galsim.hsm.EstimateShear(gal, psf, shear_est='BJ', strict=False)
             res_r = galsim.hsm.EstimateShear(gal, psf, shear_est='REGAUSS', strict=False)
-            G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)[0:4]
+            G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
             ith_row = numpy.array([res_k.corrected_g1, res_b.corrected_e1, res_r.corrected_e1, G1, N, g1, res_k.corrected_g2, res_b.corrected_e2, res_r.corrected_e2, G2, N, g2, U, V,data[i]])
             if i == 0:
                 data_matrix = ith_row
@@ -41,7 +48,10 @@ def est_shear(m,g1,g2):
 
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
         df.columns.name = 'Chip&NO'
+        res_path = res_path+'%d_chip_%s.xlsx'%(m,kk)
         df.to_excel(res_path)
+        te =time.time()
+        print('Process %d: chip %s complete with time consuming %.2f')%(m,kk,te-ts)
 
 if __name__=='__main__':
     shear = numpy.load('/lmc/selection_bias/shear.npz')
