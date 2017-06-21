@@ -37,7 +37,7 @@ def simulate(g1, g2, NO):
         print('Process %d: Chip %s')%(NO,kk)
 
         gal_chip_path = ahead + 'gal_chip_%s.fits'%kk
-        noise_chip_path = ahead + 'nosie_chip_%s.fits'%kk
+        noise_chip_path = ahead + 'noise_chip_%s.fits'%kk
         data_path = ahead + 'gal_info_%s.xlsx'%kk
         psf_path    = ahead + 'psf.fits'
 

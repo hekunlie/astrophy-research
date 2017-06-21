@@ -11,18 +11,18 @@ def est_shear(m,g1,g2):
     print('Process %d: beginning>>>>')%m
     stamp_size = 60
     ahead = '/lmc/selection_bias/%s/'%m
-    res_path = '/lmc/selection_bias/result/data/'
-    if not os.path.isdir(res_path):
-        os.mkdir(res_path)
+    respath = '/lmc/selection_bias/result/data/'
+    if not os.path.isdir(respath):
+        os.makedirs(respath)
     psf = fits.open(ahead+'psf.fits')[0].data
     col =  ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V","SNR_ORI"]
     for k in range(100):
         ts = time.time()
-        print('Process %d: chip %s beginning>>>>')%(m,kk)
         kk = str(k).zfill(2)
+        print('Process %d: chip %s beginning>>>>')%(m,kk)
         gal_path = ahead + 'gal_chip_%s.fits'%kk
         gal_img   = fits.open(gal_path)[0].data
-        noise_path = ahead + 'noise_chip_%s.fits'%kk
+        noise_path = ahead + 'nosie_chip_%s.fits'%kk
         noise_img  = fits.open(noise_path)[0].data
         cat_path = ahead + 'gal_info_%s.xlsx'%kk
         data        = pandas.read_excel(cat_path).values[:1]
@@ -48,7 +48,7 @@ def est_shear(m,g1,g2):
 
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
         df.columns.name = 'Chip&NO'
-        res_path = res_path+'%d_chip_%s.xlsx'%(m,kk)
+        res_path = respath+'%d_chip_%s.xlsx'%(m,kk)
         df.to_excel(res_path)
         te =time.time()
         print('Process %d: chip %s complete with time consuming %.2f')%(m,kk,te-ts)
