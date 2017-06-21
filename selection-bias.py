@@ -14,9 +14,9 @@ def simulate(g1, g2, NO):
 
     gal_num = 10000
     stamp_size = 60
-    pixel_scale = 0.3
+    pixel_scale = 0.2
     col = ['mophology', 'snr', 'mag', 'noise_sigma', 'err']
-    label = range(0, 10000)
+    label = range(0, gal_num)
     mag_list = numpy.sort(numpy.loadtxt('lsstmagsims'))
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
@@ -45,7 +45,7 @@ def simulate(g1, g2, NO):
         noise_pool = []
 
         snr_data    = numpy.zeros((gal_num,5))
-        tag             = range(int(k * 10000), int((k + 1) * 10000))
+        tag             = range(int(k * gal_num), int((k + 1) * gal_num))
         mag_piece = mag_list[tag]
         ell1       = ellip1[tag]
         ell2       = ellip2[tag]
