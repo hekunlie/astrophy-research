@@ -27,7 +27,11 @@ if not os.path.isdir(results_path):
     os.makedirs(results_path)
 if not os.path.isdir(pic_path):
     os.makedirs(pic_path)
-exist = os.path.exists(results_path+'cache.dat')
+
+shear_cache_path = results_path+'shear_cache_snr%f'%snr_cut
+classi_cache_path = results_path+'classification_cache_snr%f'%snr_cut
+
+exist = os.path.exists(shear_cache_path)
 if exist:#check the final result cache
     print('0: use the result cache data existed\n1: overwrite it')
     comm = int(input('0/1?:'))
@@ -35,15 +39,14 @@ else :
     print('no result cache exists')
 
 if not exist or comm==1:
-
-    dict_cache_exist = os.path.exists(results_path+'dict_cache.bak')  #check the classification cache
-    if dict_cache_exist:
+    classi_cache_exist = os.path.exists(classi_cache_path) #check the classification cache
+    if classi_cache_exist:
         print('0: use the classification cache data existed\n1: overwrite it')
         dict_comm = int(input('0/1?:'))
     else:
         print('no classification cache')
 
-    if not dict_cache_exist or dict_comm==1:
+    if not classi_cache_exist or dict_comm==1:
         print ('starting...')
         files = os.listdir(results_path)
         for i in files:
@@ -111,7 +114,7 @@ if not exist or comm==1:
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2']
-        dict_cache = shelve.open(results_path+'dict_cache')
+        dict_cache = shelve.open(classi_cache_path)
         for i in range(len(dict_name)):
             dict_cache[dict_name[i]] = dict[i]
         dict_cache.close()
@@ -119,7 +122,7 @@ if not exist or comm==1:
 
     else:  #load the classification cache
         print('loading classification cache')
-        dict_cache = shelve.open(results_path+'dict_cache')
+        dict_cache = shelve.open(classi_cache_path)
         g1 = dict_cache['g1']
         g2 = dict_cache['g2']
         fn1 = dict_cache['fn1']
@@ -158,11 +161,11 @@ if not exist or comm==1:
                 a = -0.1
                 b = 0.1
                 for times in range(4):
-                    point = numpy.linspace[a, b, 10]
+                    point = numpy.linspace(a, b, 10)
+                    mini0 = G1_fun(point[0], 0)
+                    kk = 0
+                    g1_h = point[0]
                     for k in range(len(point)):
-                        mini0 = G1_fun(point[0],0)
-                        kk    = 0
-                        g1_h  = point[0]
                         mini = G1_fun(point[0],0)
                         if mini < mini0:
                             mini0 = mini
@@ -174,11 +177,11 @@ if not exist or comm==1:
                 b = 0.1
                 twi = 2*mini0
                 for times in range(4):
-                    point = numpy.linspace[a, b, 10]
+                    point = numpy.linspace(a, b, 10)
+                    mini0 = G1_fun(point[0], twi)
+                    kk = 0
+                    del_g1 = point[0]
                     for k in range(len(point)):
-                        mini0 = G1_fun(point[0],twi)
-                        kk    = 0
-                        del_g1  = point[0]
                         mini = G1_fun(point[k],twi)
                         if mini < mini0:
                             mini0 = mini
@@ -231,11 +234,11 @@ if not exist or comm==1:
                 a = -0.1
                 b = 0.1
                 for times in range(4):
-                    point = numpy.linspace[a, b, 10]
+                    point = numpy.linspace(a, b, 10)
+                    mini0 = G2_fun(point[0], 0)
+                    kk = 0
+                    g2_h = point[0]
                     for k in range(len(point)):
-                        mini0 = G2_fun(point[0],0)
-                        kk    = 0
-                        g2_h  = point[0]
                         mini = G2_fun(point[0],0)
                         if mini < mini0:
                             mini0 = mini
@@ -247,11 +250,11 @@ if not exist or comm==1:
                 b = 0.1
                 twi = 2*mini0
                 for times in range(4):
-                    point = numpy.linspace[a, b, 10]
+                    point = numpy.linspace(a, b, 10)
+                    mini0 = G2_fun(point[0], twi)
+                    kk = 0
+                    del_g1 = point[0]
                     for k in range(len(point)):
-                        mini0 = G2_fun(point[0],twi)
-                        kk    = 0
-                        del_g1  = point[0]
                         mini = G2_fun(point[0],twi)
                         if mini < mini0:
                             mini0 = mini
@@ -279,25 +282,21 @@ if not exist or comm==1:
 
     dict = [res_arr1,res_arr2]
     dict_name = ['arr1','arr2']
-    dict_path = path+'/snr_cut/dict_cache_snr>%d'%snr_cut
-    dict_cache = shelve.open(dict_path)
-    if not os.paht.isdir(dict_path):
-        os.makedirs(dict_path)
+    dict_cache = shelve.open(shear_cache_path)
     for i in range(len(dict_name)):
         dict_cache[dict_name[i]] = dict[i]
     dict_cache.close()
 
 else:
-    dict_path = path + '/snr_cut/dict_cache_snr>%d' % snr_cut
-    data_arr = numpy.load(dict_path)
+    data_arr = numpy.load(shear_cache_path)
     res_arr1 = data_arr["arr_0"]
     res_arr2 = data_arr["arr_1"]
 tm =time.clock()
 # fit the line
 start1=0
 end1 =0
-start2=10
-end2=10
+start2=0
+end2=0
 print('done\nbegin to plot the lines')
 arr1 = res_arr1
 arr2 = res_arr2
