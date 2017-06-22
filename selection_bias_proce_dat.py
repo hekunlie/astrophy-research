@@ -22,7 +22,11 @@ dfg2 = fg2[1]-fg2[0]
 paths   = []
 
 results_path = "/lmc/selection_bias/result/data/"
-
+pic_path = "/lmc/selection_bias/result/pic/"
+if not os.path.isdir(results_path):
+    os.makedirs(results_path)
+if not os.path.isdir(pic_path):
+    os.makedirs(pic_path)
 exist = os.path.exists(path+'cache.dat')
 if exist:#check the final result cache
     print('0: use the result cache data existed\n1: overwrite it')
@@ -151,7 +155,7 @@ if not exist or comm==1:
                     return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-twi)
                 a = -0.1
                 b = 0.1
-                for i in range(4):
+                for times in range(4):
                     point = numpy.linspace[a, b, 10]
                     for k in range(len(point)):
                         mini0 = G1_fun(point[0],0)
@@ -167,7 +171,7 @@ if not exist or comm==1:
                 a = g1_h
                 b = 0.1
                 twi = 2*mini0
-                for i in range(4):
+                for times in range(4):
                     point = numpy.linspace[a, b, 10]
                     for k in range(len(point)):
                         mini0 = G1_fun(point[0],twi)
@@ -224,7 +228,7 @@ if not exist or comm==1:
                     return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-twi)
                 a = -0.1
                 b = 0.1
-                for i in range(4):
+                for times in range(4):
                     point = numpy.linspace[a, b, 10]
                     for k in range(len(point)):
                         mini0 = G2_fun(point[0],0)
@@ -240,7 +244,7 @@ if not exist or comm==1:
                 a = g2_h
                 b = 0.1
                 twi = 2*mini0
-                for i in range(4):
+                for times in range(4):
                     point = numpy.linspace[a, b, 10]
                     for k in range(len(point)):
                         mini0 = G2_fun(point[0],twi)
@@ -285,7 +289,7 @@ else:
     dict_path = path + '/snr_cut/dict_cache_snr>%d' % snr_cut
     data_arr = numpy.load(dict_path)
     res_arr1 = data_arr["arr_0"]
-    res_arr2 = data_arr["arr_0"]
+    res_arr2 = data_arr["arr_1"]
 tm =time.clock()
 # fit the line
 start1=0
@@ -293,7 +297,113 @@ end1 =0
 start2=10
 end2=10
 print('done\nbegin to plot the lines')
-arr1 = res_arr1[:, start1:g1num-end1]
-arr2 = res_arr2[:, start2:g2num-end2]
+arr1 = res_arr1
+arr2 = res_arr2
 fgn1 = fg1[start1:g1num-end1]
 fgn2 = fg2[start2:g2num-end2]
+
+name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
+for i in range(4):
+    A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
+    Y1  = arr1[i].T
+    C1  = numpy.diag((arr1[i+4].T**2))  #sigma^2
+
+    A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
+    Y2  = arr2[i].T
+    C2  = numpy.diag((arr2[i+4].T**2)) #sigma^2
+
+    L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
+    R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
+
+    L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),A2))
+    R2 = numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),Y2)
+
+    e1mc = numpy.dot(L1,R1)
+
+    e2mc = numpy.dot(L2,R2)
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111)
+
+    xmajorLocator = MultipleLocator(0.005)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.001)
+
+    ymajorLocator   = MultipleLocator(0.005)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.001)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
+
+    ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
+    ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
+    ax.plot(fgn1, fgn1, label='y=x', color='blue')
+    ax.scatter(fg1, res_arr1[i, :], c='black')
+    for j in range(g1num):
+        ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
+  #  plt.xlim(-0.006, 0.006)
+#    plt.ylim(-0.015, 0.015)
+    m = 'm=' + str(round(e1mc[1] - 1, 5))
+    c = 'c=' + str(round(e1mc[0], 5))
+    ax.text(0.2, 0.9, m, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.85, c, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    plt.xlabel('True  g1', fontsize=20)
+    plt.ylabel('Est  g1', fontsize=20)
+    plt.title(name[i], fontsize=20)
+    plt.legend(fontsize=15)
+    nm1 = pic_path + name[i] + "_g1.png"
+    plt.savefig(nm1)
+    print ('plotted g1')
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111)
+
+    xmajorLocator = MultipleLocator(0.01)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.002)
+
+    ymajorLocator   = MultipleLocator(0.01)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.005)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
+
+    ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
+    ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
+    ax.plot(fgn2, fgn2, label='y=x', color='blue')
+    ax.scatter(fg2, res_arr2[i, :], c='black')
+    for j in range(g2num):
+        ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
+  #  plt.xlim(-0.012, 0.012)
+#    plt.ylim(-0.03, 0.03)
+    m = 'm=' + str(round(e2mc[1] - 1, 5))
+    c = 'c=' + str(round(e2mc[0], 5))
+
+    ax.text(0.2, 0.9, m, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.85, c, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    plt.xlabel('True  g2', fontsize=20)
+    plt.ylabel('Est  g2', fontsize=20)
+    plt.title(name[i], fontsize=20)
+    plt.legend(fontsize=15)
+    nm2 = pic_path + name[i] + "_g2.png"
+    plt.savefig(nm2)
+    print('plotted g2')
+te = time.clock()
+print ("Complete")
+print(tm-ts,te-tm)
