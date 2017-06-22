@@ -27,7 +27,7 @@ if not os.path.isdir(results_path):
     os.makedirs(results_path)
 if not os.path.isdir(pic_path):
     os.makedirs(pic_path)
-exist = os.path.exists(path+'cache.dat')
+exist = os.path.exists(results_path+'cache.dat')
 if exist:#check the final result cache
     print('0: use the result cache data existed\n1: overwrite it')
     comm = int(input('0/1?:'))
@@ -36,7 +36,7 @@ else :
 
 if not exist or comm==1:
 
-    dict_cache_exist = os.path.exists(path+'dict_cache.bak')  #check the classification cache
+    dict_cache_exist = os.path.exists(results_path+'dict_cache.bak')  #check the classification cache
     if dict_cache_exist:
         print('0: use the classification cache data existed\n1: overwrite it')
         dict_comm = int(input('0/1?:'))
@@ -45,10 +45,10 @@ if not exist or comm==1:
 
     if not dict_cache_exist or dict_comm==1:
         print ('starting...')
-        files = os.listdir(path)
+        files = os.listdir(results_path)
         for i in files:
             if ".xlsx" in i:
-                paths.append(path + i)
+                paths.append(results_path + i)
 
         g1 = {}
         g2 = {}
@@ -73,43 +73,45 @@ if not exist or comm==1:
         for k in paths:  # put the data into the corresponding list
             # if os.path.getsize(k)<1000:
             #     continue
-            data = pandas.read_excel(k).values
+            data = numpy.array(pandas.read_excel(k).values)
             tag1 = data[:,5]            #input g1
             tag1.shape = (len(tag1),1)
             tag2 = data[:,11]           #input g2
             tag2.shape = (len(tag2),1)
-            snr_ori  = data[:,-1]
-            idx_snr  = snr_ori > snr_cut
+            snr_ori  = data[:,14]
+            snr_ori.shape  = (len(snr_ori),1)
             for i in range(g1num):
-                idx = tag1 = fg1[i]
+                idx1 = tag1 == fg1[i]
+                idx2 = snr_ori > snr_cut
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx&idx_snr]))
+                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
                     if na ==3:
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
                         u1.shape = (len(u1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx&idx_snr]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx&idx_snr]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
             for i in range(g2num):
-                idx = tag2 = fg2[i]
+                idx1 = tag2 == fg2[i]
+                idx2 = snr_ori > snr_cut
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
-                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx&idx_snr]))
+                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
                     if na==3:
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)
                         u2 = data[:,12]
                         u2.shape = (len(u2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx&idx_snr]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx&idx_snr]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2']
-        dict_cache = shelve.open(path+'dict_cache')
+        dict_cache = shelve.open(results_path+'dict_cache')
         for i in range(len(dict_name)):
             dict_cache[dict_name[i]] = dict[i]
         dict_cache.close()
@@ -117,7 +119,7 @@ if not exist or comm==1:
 
     else:  #load the classification cache
         print('loading classification cache')
-        dict_cache = shelve.open(path+'dict_cache')
+        dict_cache = shelve.open(results_path+'dict_cache')
         g1 = dict_cache['g1']
         g2 = dict_cache['g2']
         fn1 = dict_cache['fn1']
