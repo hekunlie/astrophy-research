@@ -427,16 +427,16 @@ class Fourier_Quad:
         return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5 - twi)
 
 
-    def fmin_g(self, g, u, v,model,twi=0,left=-0.1,right=0.1,iters=4):
-        #model 1 for  g1
+    def fmin_g(self, g, u, v, model, twi=0, left=-0.1, right=0.1, iters=4):
+        # model 1 for  g1
         # model 2 for g2
-        # 'twi ' is set to twice of  the minimum of the G_bin result to find the corresponding 'g' value
+        # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             point = numpy.linspace(left, right, 10)
             mini0 = self.G_fun(g,u,v,left,model,twi=twi)
             g_h = point[0]
             for k in range(len(point)):
-                mini = self.G_fun(g,u,v,left,model,twi=twi)
+                mini = self.G_fun(g,u,v,point[k],model,twi=twi)
                 if mini < mini0:
                     mini0 = mini
                     g_h = point[k]
