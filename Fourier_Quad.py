@@ -415,28 +415,28 @@ class Fourier_Quad:
                                                                                     # which is for plotting the histogram (the first ploint)
         return bins, num_in_bin, bin_size
 
-    def G_bin(self, g, u, v, g_h, model, twi = 0, bin_num=8):
+    def G_bin(self, g, u, n, g_h, model, twi = 0, bin_num=8):
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         if model==1:    #for g1
-            G_h = g - (u+v)*g_h
+            G_h = g - (n+u)*g_h
         else:                  #for g2
-            G_h = g - (u-v)*g_h
+            G_h = g - (n-u)*g_h
         num = self.set_bins(G_h, bin_num, model=2)[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5 - twi)
 
 
-    def fmin_g(self, g, u, v, model, twi=0, left=-0.1, right=0.1, iters=4):
+    def fmin_g(self, g, u, n, model, twi=0, left=-0.1, right=0.1, iters=4):
         # model 1 for  g1
         # model 2 for g2
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             point = numpy.linspace(left, right, 10)
-            mini0 = self.G_fun(g,u,v,left,model,twi=twi)
+            mini0 = self.G_fun(g,u,n,left,model,twi=twi)
             g_h = point[0]
             for k in range(len(point)):
-                mini = self.G_fun(g,u,v,point[k],model,twi=twi)
+                mini = self.G_fun(g,u,n,point[k],model,twi=twi)
                 if mini < mini0:
                     mini0 = mini
                     g_h = point[k]
