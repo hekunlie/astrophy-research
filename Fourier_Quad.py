@@ -393,7 +393,7 @@ class Fourier_Quad:
         else:  # set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
             datalen = len(array)
             if datalen> 10000:
-                idx = numpy.random.randint(0, datalen, 5000)
+                idx = numpy.random.randint(0, datalen, int(len(array) / 10))
             else:
                 idx = numpy.random.randint(0, datalen, int(len(array) / 10))
             temp = array[idx]
@@ -411,13 +411,38 @@ class Fourier_Quad:
                 idx = arr == tag[i]
                 num_in_bin[i] = len(arr[idx])
             bin_size = bins[1] - bins[0]
-            bins = numpy.append(bins[0] - bin_size, bins)
+            bins = numpy.append(bins[0] - bin_size, bins) #appending a number to the head of bins array
+                                                                                    # which is for plotting the histogram (the first ploint)
         return bins, num_in_bin, bin_size
 
+    def G_bin(self, g, u, v, g_h, model, twi = 0, bin_num=8):
+        inverse = range(int(bin_num / 2 - 1), -1, -1)
+        if model==1:    #for g1
+            G_h = g - (u+v)*g_h
+        else:                  #for g2
+            G_h = g - (u-v)*g_h
+        num = self.set_bins(G_h, bin_num, model=2)[1]
+        n1 = num[0:int(bin_num / 2)]
+        n2 = num[int(bin_num / 2):][inverse]
+        return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5 - twi)
 
 
-
-
+    def fmin_g(self, g, u, v,model,twi=0,left=-0.1,right=0.1,iters=4):
+        #model 1 for  g1
+        # model 2 for g2
+        # 'twi ' is set to twice of  the minimum of the G_bin result to find the corresponding 'g' value
+        for times in range(iters):
+            point = numpy.linspace(left, right, 10)
+            mini0 = self.G_fun(g,u,v,left,model,twi=twi)
+            g_h = point[0]
+            for k in range(len(point)):
+                mini = self.G_fun(g,u,v,left,model,twi=twi)
+                if mini < mini0:
+                    mini0 = mini
+                    g_h = point[k]
+            left   = g_h - (right-left) / 10
+            right = g_h + (right-left) / 10
+        return g_h
 
 
 

@@ -171,8 +171,8 @@ if not exist or comm==1:
                             mini0 = mini
                             kk = k
                             g1_h = point[kk]
-                    a = point[kk-1]
-                    b = point[kk+1]
+                    a = g1_h - (b-a)/10
+                    b = g1_h + (b-a)/10
                 a = g1_h
                 b = 0.1
                 twi = 2*mini0
@@ -187,8 +187,8 @@ if not exist or comm==1:
                             mini0 = mini
                             kk = k
                             del_g1 = point[kk]
-                    a = point[kk-1]
-                    b = point[kk+1]
+                    a = del_g1 - (b-a)/10
+                    b = del_g1 + (b-a)/10
                 sigma1 =del_g1-g1_h
 
                 # def fun(g,*args):
@@ -225,7 +225,7 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 B2 =  N2 - U2
-                def G1_fun(g,twi):
+                def G2_fun(g,twi):
                     G2_h = G2-B2*g
                     num = Fourier_Quad().set_bins(G2_h, bin_num, model=0)[1]
                     n1 = num[0:int(bin_num/2)]
@@ -244,8 +244,8 @@ if not exist or comm==1:
                             mini0 = mini
                             kk = k
                             g2_h = point[kk]
-                    a = point[kk-1]
-                    b = point[kk+1]
+                    a = g2_h - (b-a)/10
+                    b = g2_h + (b-a)/10
                 a = g2_h
                 b = 0.1
                 twi = 2*mini0
@@ -253,15 +253,15 @@ if not exist or comm==1:
                     point = numpy.linspace(a, b, 10)
                     mini0 = G2_fun(point[0], twi)
                     kk = 0
-                    del_g1 = point[0]
+                    del_g2 = point[0]
                     for k in range(len(point)):
                         mini = G2_fun(point[0],twi)
                         if mini < mini0:
                             mini0 = mini
                             kk = k
-                            del_g1 = point[kk]
-                    a = point[kk-1]
-                    b = point[kk+1]
+                            del_g2 = point[kk]
+                    a = del_g2 - (b-a)/10
+                    b = del_g2 + (b-a)/10
                 sigma2 =del_g2-g2_h
                 # def fun(g,*args):
                 #     half2,G,B = args
@@ -355,7 +355,7 @@ for i in range(4):
     c = 'c=' + str(round(e1mc[0], 5))
     ax.text(0.2, 0.9, m, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, c, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.8, snr_cut, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
