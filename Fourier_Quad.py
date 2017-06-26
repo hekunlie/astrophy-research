@@ -424,7 +424,7 @@ class Fourier_Quad:
         num = self.set_bins(G_h, bin_num, model=2)[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
-        return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5 - twi)
+        return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
 
 
     def fmin_g(self, g, u, n, model, twi=0, left=-0.1, right=0.1, iters=4):
@@ -440,8 +440,8 @@ class Fourier_Quad:
                 if mini < mini0:
                     mini0 = mini
                     g_h = point[k]
-            left   = g_h - (right-left) / 10
-            right = g_h + (right-left) / 10
+            left   = g_h - (right-left) / 9
+            right = g_h + (right-left) / 9
         return g_h
 
 

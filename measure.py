@@ -50,6 +50,7 @@ def measure(path_list,tag,area):
                 galnum = len(gal_pool)
                 gal_index = []
                 galnum_len=len(str(galnum))
+                p = 0
                 for i in range(galnum):
                     if gal_data[i,2]>=10.:
                         index = kk+"_"+str(i).zfill(galnum_len)
@@ -72,10 +73,11 @@ def measure(path_list,tag,area):
 
                         G1,G2,N,U,V= Fourier_Quad().shear_est(gal, psf, stampsize, noise)
                         ith_row = numpy.array([0, 0, 0, G1, N, shear_data[i,0], 0, 0, 0, G2, N, shear_data[i,1], U, V ])
-                        if i==0:
+                        if p==0:
                             data_matrix =ith_row
                         else:
                             data_matrix = numpy.row_stack((data_matrix,ith_row))
+                        p+=1
 
                 df = pandas.DataFrame(data_matrix, index =gal_index,columns=data_col )
                 df.columns.name='Chip&NO'
