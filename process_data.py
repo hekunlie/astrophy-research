@@ -24,8 +24,8 @@ fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/lmc/"+area+'/'          #where the result data file are placed
-pic_path = '/lmc/pic/' +area+'/'#where the result figures will be created
+path  = "/home/hklee/result/"+area+'/'          #where the result data file are placed
+pic_path = '/home/hklee/result/pic/' +area+'/'#where the result figures will be created
 
 exist = os.path.exists(path+'cache.dat')
 if exist:#check the final result cache
@@ -142,7 +142,7 @@ if not exist or comm==1:
     res_arr2 = numpy.zeros((12, g2num))    # the second 4 rows are the correspongding error bar,
                                             # the third 4 rows are the correspongding number of samples.
     print('calculating shears ')
-    for i in range(4):
+    for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:     #for KSB, BJ, REGAUSS
                 num1 = len(g1[i][fg1[m]])
@@ -161,7 +161,7 @@ if not exist or comm==1:
                 U1 = numpy.array(fu1[fg1[m]])
                 #B1 = N1 + U1
                 g1_h = Fourier_Quad().fmin_g(G1,U1,N1,model=1)
-                xi1_sq_min = Fourier_Quad().G_bin(G1,U1,N1,model=1)
+                xi1_sq_min = Fourier_Quad().G_bin(G1,U1,N1,g1_h,model=1)
                 g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,model=1,twi=2*xi1_sq_min,left=g1_h)
                 # def G1_fun(g,twi):
                 #     G1_h = G1-B1*g
@@ -236,7 +236,7 @@ if not exist or comm==1:
                 U2 = numpy.array(fu2[fg2[m]])
                 #B2 =  N2 - U2
                 g2_h           = Fourier_Quad().fmin_g(G2, U2, N2, model=2)
-                xi2_sq_min = Fourier_Quad().G_bin(G2,U2,N2,model=2)
+                xi2_sq_min = Fourier_Quad().G_bin(G2,U2,N2,g2_h,model=2)
                 g2_h_p       = Fourier_Quad().fmin_g(G2,U2,N2,model=2,twi=2*xi2_sq_min,left=g2_h)
                 # def G1_fun(g,twi):
                 #     G2_h = G2-B2*g

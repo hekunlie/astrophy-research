@@ -29,8 +29,8 @@
       <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3028">
-              <caret line="336" column="8" lean-forward="false" selection-start-line="336" selection-start-column="8" selection-end-line="336" selection-end-column="8" />
+            <state relative-caret-position="468">
+              <caret line="442" column="31" lean-forward="true" selection-start-line="442" selection-start-column="31" selection-end-line="442" selection-end-column="31" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -51,9 +51,12 @@
       <file leaf-file-name="process_data.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/process_data.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="527">
-              <caret line="238" column="67" lean-forward="true" selection-start-line="238" selection-start-column="67" selection-end-line="238" selection-end-column="67" />
-              <folding />
+            <state relative-caret-position="342">
+              <caret line="30" column="38" lean-forward="true" selection-start-line="30" selection-start-column="38" selection-end-line="30" selection-end-column="38" />
+              <folding>
+                <element signature="e#6406#6426#0" expanded="false" />
+                <element signature="e#9958#9978#0" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -68,6 +71,7 @@
       <list>
         <option value="$USER_HOME$/Downloads/w2-17.3.23.py" />
         <option value="$USER_HOME$/Downloads/w2-17.3.20.py" />
+        <option value="$PROJECT_DIR$/Fourier_Quad.py" />
         <option value="$PROJECT_DIR$/process_data.py" />
       </list>
     </option>
@@ -407,8 +411,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3028">
-          <caret line="336" column="8" lean-forward="false" selection-start-line="336" selection-start-column="8" selection-end-line="336" selection-end-column="8" />
+        <state relative-caret-position="468">
+          <caret line="442" column="31" lean-forward="true" selection-start-line="442" selection-start-column="31" selection-end-line="442" selection-end-column="31" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
@@ -417,9 +421,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/process_data.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
-          <caret line="238" column="67" lean-forward="true" selection-start-line="238" selection-start-column="67" selection-end-line="238" selection-end-column="67" />
-          <folding />
+        <state relative-caret-position="342">
+          <caret line="30" column="38" lean-forward="true" selection-start-line="30" selection-start-column="38" selection-end-line="30" selection-end-column="38" />
+          <folding>
+            <element signature="e#6406#6426#0" expanded="false" />
+            <element signature="e#9958#9978#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>

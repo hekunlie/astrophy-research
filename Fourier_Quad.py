@@ -412,7 +412,7 @@ class Fourier_Quad:
                 num_in_bin[i] = len(arr[idx])
         else:  # set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
             datalen = len(array)
-            if datalen> 10000:
+            if datalen> 5000:
                 idx = numpy.random.randint(0, datalen, int(len(array) / 10))
             else:
                 idx = numpy.random.randint(0, datalen, int(len(array) / 3))
@@ -453,10 +453,10 @@ class Fourier_Quad:
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             point = numpy.linspace(left, right, 10)
-            mini0 = self.G_fun(g,u,n,left,model,twi=twi)
+            mini0 = self.G_bin(g,u,n,left,model,twi=twi)
             g_h = point[0]
             for k in range(len(point)):
-                mini = self.G_fun(g,u,n,point[k],model,twi=twi)
+                mini = self.G_bin(g,u,n,point[k],model,twi=twi)
                 if mini < mini0:
                     mini0 = mini
                     g_h = point[k]
