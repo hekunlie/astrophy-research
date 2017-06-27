@@ -334,9 +334,9 @@ class Fourier_Quad:
             arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
         return arr0
 
-    def fit(self, star_stamp, noise_stamp, star_data, stampsize,model=1):
-        psf_pool = star_stamp#self.divide_stamps(star_stamp, stampsize)
-        # noise_pool = self.divide_stamps(noise_stamp, stampsize)
+    def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
+        psf_pool = self.divide_stamps(star_stamp, stampsize)
+        noise_pool = self.divide_stamps(noise_stamp, stampsize)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)
@@ -347,25 +347,25 @@ class Fourier_Quad:
         sz = 0.
         szx = 0.
         szy = 0.
-        # d=1
-        # rim = self.border(d,stampsize)
-        # n = numpy.sum(rim)
+        d=1
+        rim = self.border(d,stampsize)
+        n = numpy.sum(rim)
         for i in range(len(psf_pool)):
-            if model==1:
+            if mode==1:
                 p = numpy.where(psf_pool[i]==numpy.max(psf_pool[i]))
                 arr = psf_pool[i]/numpy.max(psf_pool[i])#[p[0][0]-1:p[0][0]+1,p[1][0]-1:p[1][0]+1])
                 conv = self.gaussfilter(arr)
                 dy,dx = self.mfpoly(conv)
                 psf = ndimage.shift(arr,(24-dy,24-dx),mode='reflect')
-            elif model==2:
+            elif mode==2:
                 psf = self.pow_spec(psf_pool[i])
+                noise = self.pow_spec(noise_pool[i])
+                # psf_pnoise = numpy.sum(rim*psf)/n
+                # noise_pnoise = numpy.sum(rim*noise)/n
+                psf =psf - noise# -psf_pnoise+noise_pnoise
                 pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
                 psf = psf / pmax
                 psf[24,24]=1
-                # noise = self.pow_spec(noise_pool[i])
-                # psf_pnoise = numpy.sum(rim*psf)/n
-                # noise_pnoise = numpy.sum(rim*noise)/n
-                # psf =psf - noise -psf_pnoise+noise_pnoise
             else:
                 psf = self.psf_align(psf_pool[i])
                 psf = psf/numpy.max(psf)
@@ -392,9 +392,9 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,model=1,sym=False):# The input must be one dimensional array.(1,n)
+    def set_bins(self,data_array,bin_num,mode=1,sym=False):# The input must be one dimensional array.(1,n)
         array=copy.copy(data_array)
-        if model ==1:   #set up bins according to the  maximum and minimum of the data
+        if mode ==1:   #set up bins according to the  maximum and minimum of the data
             mi = numpy.min(array)
             ma = numpy.max(array)
             if sym==True: # if the data are symmetric respect to zero
@@ -435,28 +435,28 @@ class Fourier_Quad:
                                                                                     # which is for plotting the histogram (the first ploint)
         return bins, num_in_bin, bin_size
 
-    def G_bin(self, g, u, n, g_h, model, twi = 0, bin_num=8):
+    def G_bin(self, g, u, n, g_h, mode, twi = 0, bin_num=8):
         inverse = range(int(bin_num / 2 - 1), -1, -1)
-        if model==1:    #for g1
+        if mode==1:    #for g1
             G_h = g - (n+u)*g_h
         else:                  #for g2
             G_h = g - (n-u)*g_h
-        num = self.set_bins(G_h, bin_num, model=2)[1]
+        num = self.set_bins(G_h, bin_num, mode=2)[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
 
 
-    def fmin_g(self, g, u, n, model, twi=0, left=-0.1, right=0.1, iters=4):
+    def fmin_g(self, g, u, n, mode, twi=0, left=-0.1, right=0.1, iters=4):
         # model 1 for  g1
         # model 2 for g2
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             point = numpy.linspace(left, right, 10)
-            mini0 = self.G_bin(g,u,n,left,model,twi=twi)
+            mini0 = self.G_bin(g,u,n,left,mode,twi=twi)
             g_h = point[0]
             for k in range(len(point)):
-                mini = self.G_bin(g,u,n,point[k],model,twi=twi)
+                mini = self.G_bin(g,u,n,point[k],mode,twi=twi)
                 if mini < mini0:
                     mini0 = mini
                     g_h = point[k]
@@ -464,14 +464,14 @@ class Fourier_Quad:
             right = g_h + (right-left) / 9
         return g_h
 
-    def ellip_plot(self, ellip, coordi, lent, width, model=1):
+    def ellip_plot(self, ellip, coordi, lent, width, mode=1):
         e1 = ellip[:, 0]
         e2 = ellip[:, 1]
         e = numpy.sqrt(e1 ** 2 + e2 ** 2)
         scale = numpy.mean(1 / e)
         x = coordi[:, 0]
         y = coordi[:, 1]
-        if model == 1:
+        if mode== 1:
             dx = lent * e1 / e / 2
             dy = lent * e2 / e / 2
         else:

@@ -20,7 +20,7 @@ def measure(path_list,tag,area):
         shear_path = ahead+location +'/step2/'
         res_path = res_ahead+location+ "_exposure_%s.xlsx"%number
         data_col = ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V"]
-
+        p = 0
         for k in range(1,37):
             kk = str(k).zfill(2)
             gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
@@ -46,11 +46,10 @@ def measure(path_list,tag,area):
                 noise_pool   = Fourier_Quad().divide_stamps(noise_stamps,stampsize)
 
                 shear_data = numpy.loadtxt(shear_data_path,skiprows=1)[:,31:33]
-                ax,by,c    = Fourier_Quad().fit(star_stamps,star_noise,star_data,stampsize)
+                ax,by,c    = Fourier_Quad().fit(star_stamps,star_noise,star_data,stampsize,mode=2)
                 galnum = len(gal_pool)
                 gal_index = []
                 galnum_len=len(str(galnum))
-                p = 0
                 for i in range(galnum):
                     if gal_data[i,2]>=10.:
                         index = kk+"_"+str(i).zfill(galnum_len)
@@ -73,15 +72,15 @@ def measure(path_list,tag,area):
 
                         G1,G2,N,U,V= Fourier_Quad().shear_est(gal, psf, stampsize, noise)
                         ith_row = numpy.array([0, 0, 0, G1, N, shear_data[i,0], 0, 0, 0, G2, N, shear_data[i,1], U, V ])
-                        if p==0:
+                        if p==0 and k==1:
                             data_matrix =ith_row
                         else:
                             data_matrix = numpy.row_stack((data_matrix,ith_row))
-                        p+=1
+                        p=1
 
-                df = pandas.DataFrame(data_matrix, index =gal_index,columns=data_col )
-                df.columns.name='Chip&NO'
-                df.to_excel(res_path)
+        df = pandas.DataFrame(data_matrix, index =gal_index,columns=data_col )
+        df.columns.name='Chip&NO'
+        df.to_excel(res_path)
         t2=time.time()
 
         print ("Process %d: %s_%s done within %.2f sec (%d/%d)"%(tag,location,number,t2-t1,list_num+1,len(path_list)))

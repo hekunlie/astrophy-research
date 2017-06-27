@@ -50,6 +50,7 @@ if not exist or comm==1:
             if ".xlsx" in i:
                 paths.append(path + i)
 
+
         g1 = {}
         g2 = {}
         fn1 = {}  # for FQ method
@@ -74,8 +75,8 @@ if not exist or comm==1:
                     fv2[i] = []
 
         for k in paths:  # put the data into the corresponding list
-            if os.path.getsize(k)<1000:
-                continue
+            # if os.path.getsize(k)<1000:
+            #     continue
             data = pandas.read_excel(k).values
             tag1 = data[:,5]            #field distortion fg1
             tag1.shape = (len(tag1),1)
@@ -99,6 +100,7 @@ if not exist or comm==1:
                         fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
                         fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
                         fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1&idx2]))
+
             for i in range(g2num):
                 idx1 = tag2 < fg2[i] + dfg2/2
                 idx2 = tag2 > fg2[i] - dfg2/2
@@ -117,6 +119,7 @@ if not exist or comm==1:
                         fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
                         fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
          # create the cache of the classification
+        print(g1[3])
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
         dict_cache = shelve.open(path+'dict_cache')
@@ -124,6 +127,7 @@ if not exist or comm==1:
             dict_cache[dict_name[i]] = dict[i]
         dict_cache.close()
         print("Classification complete")
+
 
     else:  #load the classification cache
         print('loading classification cache')
