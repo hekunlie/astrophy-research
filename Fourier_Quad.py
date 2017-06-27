@@ -4,7 +4,7 @@ from scipy.optimize import least_squares
 from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
-
+import matplotlib.pyplot as plt
 
 class Fourier_Quad:
 
@@ -239,12 +239,26 @@ class Fourier_Quad:
                 arr = numpy.column_stack((arr, arr_x))
                 return arr
 
-    def get_centroid(self, image):
-        m0 = numpy.sum(image)
+    def get_centroid(self, image,filt=False,radius=2):
+        y0,x0 = self.mfpoly(image)
         y, x = numpy.mgrid[0:image.shape[0], 0:image.shape[1]]
-        x0 = numpy.sum(x * image) / m0
-        y0 = numpy.sum(y * image) / m0
-        return x0, y0
+        # m0 = numpy.sum(image)
+        # mx  = numpy.sum(x * image)
+        # my  = numpy.sum(y * image)
+        # x0 = mx / m0
+        # y0 = my / m0
+        #yc,xc = numpy.where(image==numpy.max(image))
+        y = y - y0
+        x = x - x0
+        if filt == True:
+            gaus_filt = numpy.exp(-(y**2+x**2)/2/numpy.pi/radius**2)
+            image = image *gaus_filt
+        mxx = numpy.sum(x*x*image)
+        mxy = numpy.sum(x * y * image)
+        myy = numpy.sum(y* y * image)
+        e1 = (mxx-myy)/(mxx+myy)
+        e2 = 2*mxy/(mxx+myy)
+        return y0, x0,e1,e2
 
     def psf_align(self, image):
         imagesize = image.shape[0]
@@ -255,9 +269,9 @@ class Fourier_Quad:
         yy = numpy.mod(yy + 24, 48) - 24
         fk = numpy.abs(image_f) ** 2
         line = numpy.sort(numpy.array(fk.flat))
-        idx = fk < 4 * line[imagesize ** 2/ 2]
+        idx = fk < 4 * line[int(imagesize ** 2/ 2)]
         fk[idx] = 0
-        weight = fk / line[imagesize ** 2/ 2]
+        weight = fk / line[int(imagesize ** 2/ 2)]
         kx = xx * 2 * numpy.pi / imagesize
         ky = yy * 2 * numpy.pi / imagesize
 
@@ -277,24 +291,24 @@ class Fourier_Quad:
         imcov = signal.convolve(psfimage, ker, mode='same')
         return imcov
 
-    def mfpoly(self, psfimage):
-        p = numpy.where(psfimage == numpy.max(psfimage))
-        xr, yr = p[1][0], p[0][0]
-        xp, yp = numpy.mgrid[xr - 1:xr + 2, yr - 1:yr + 2]
-        patchim = psfimage[xr - 1:xr + 2, yr - 1:yr + 2]
-        zz = patchim.reshape(9)
+    def mfpoly(self,psf):
+        p = numpy.where(psf == numpy.max(psf))
+        yr, xr = p[0][0], p[1][0]
+        yp, xp = numpy.mgrid[yr - 1:yr + 2, xr - 1:xr + 2]
+        patch = psf[yr - 1:yr + 2, xr - 1:xr + 2]
+        zz = patch.reshape(9)
         xx = xp.reshape(9)
         yy = yp.reshape(9)
         xy = xx * yy
         x2 = xx * xx
         y2 = yy * yy
-        mA = numpy.array([numpy.ones_like(zz), xx, yy, x2, xy, y2]).T
-        cov = numpy.linalg.inv(numpy.dot(mA.T, mA))
-        a, b, c, d, e, f = numpy.dot(cov, numpy.dot(mA.T, zz))
+        A = numpy.array([numpy.ones_like(zz), xx, yy, x2, xy, y2]).T
+        cov = numpy.linalg.inv(numpy.dot(A.T, A))
+        a, b, c, d, e, f = numpy.dot(cov, numpy.dot(A.T, zz))
         coeffs = numpy.array([[2.0 * d, e], [e, 2.0 * f]])
         mult = numpy.array([-b, -c])
         xc, yc = numpy.dot(numpy.linalg.inv(coeffs), mult)
-        return xc, yc
+        return yc, xc
 
     def divide_stamps(self, image, stampsize):
         shape = image.shape
@@ -320,9 +334,9 @@ class Fourier_Quad:
             arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
         return arr0
 
-    def fit(self, star_stamps, star_noise, star_data, stampsize):
-        psf_pool = self.divide_stamps(star_stamps, stampsize)
-        noise_pool = self.divide_stamps(star_noise, stampsize)
+    def fit(self, star_stamp, noise_stamp, star_data, stampsize,model=1):
+        psf_pool = star_stamp#self.divide_stamps(star_stamp, stampsize)
+        # noise_pool = self.divide_stamps(noise_stamp, stampsize)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)
@@ -333,22 +347,28 @@ class Fourier_Quad:
         sz = 0.
         szx = 0.
         szy = 0.
-        d=1
-        rim = self.border(d,stampsize)
-        n = numpy.sum(rim)
+        # d=1
+        # rim = self.border(d,stampsize)
+        # n = numpy.sum(rim)
         for i in range(len(psf_pool)):
-            # arr = psf_fit_pool[i]/numpy.max(psf_fit_pool[i])
-            # conv = self.gaussfilter(arr)
-            # dx,dy = self.mfpoly(conv)
-            # psf = ndimage.shift(arr,(24-dx,24-dy))
-            psf = self.pow_spec(psf_pool[i])
-            noise = self.pow_spec(noise_pool[i])
-            psf_pnoise = numpy.sum(rim*psf)/n
-            noise_pnoise = numpy.sum(rim*noise)/n
-            psf =psf - noise -psf_pnoise+noise_pnoise
-            pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
-            psf = psf / pmax
-            psf[24,24]=1
+            if model==1:
+                p = numpy.where(psf_pool[i]==numpy.max(psf_pool[i]))
+                arr = psf_pool[i]/numpy.max(psf_pool[i])#[p[0][0]-1:p[0][0]+1,p[1][0]-1:p[1][0]+1])
+                conv = self.gaussfilter(arr)
+                dy,dx = self.mfpoly(conv)
+                psf = ndimage.shift(arr,(24-dy,24-dx),mode='reflect')
+            elif model==2:
+                psf = self.pow_spec(psf_pool[i])
+                pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
+                psf = psf / pmax
+                psf[24,24]=1
+                # noise = self.pow_spec(noise_pool[i])
+                # psf_pnoise = numpy.sum(rim*psf)/n
+                # noise_pnoise = numpy.sum(rim*noise)/n
+                # psf =psf - noise -psf_pnoise+noise_pnoise
+            else:
+                psf = self.psf_align(psf_pool[i])
+                psf = psf/numpy.max(psf)
             sz += psf
             szx += psf * x[i]
             szy += psf * y[i]
@@ -395,7 +415,7 @@ class Fourier_Quad:
             if datalen> 10000:
                 idx = numpy.random.randint(0, datalen, int(len(array) / 10))
             else:
-                idx = numpy.random.randint(0, datalen, int(len(array) / 10))
+                idx = numpy.random.randint(0, datalen, int(len(array) / 3))
             temp = array[idx]
             ma = numpy.max(temp)
             bins = []
@@ -444,5 +464,32 @@ class Fourier_Quad:
             right = g_h + (right-left) / 9
         return g_h
 
-
+    def ellip_plot(self, ellip, coordi, lent, width, model=1):
+        e1 = ellip[:, 0]
+        e2 = ellip[:, 1]
+        e = numpy.sqrt(e1 ** 2 + e2 ** 2)
+        scale = numpy.mean(1 / e)
+        x = coordi[:, 0]
+        y = coordi[:, 1]
+        if model == 1:
+            dx = lent * e1 / e / 2
+            dy = lent * e2 / e / 2
+        else:
+            dx = scale * lent * e1 / e / 2
+            dy = scale * lent * e2 / e / 2
+        x1 = x + dx
+        x2 = x - dx
+        y1 = y + dy
+        y2 = y - dy
+        norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
+        cmap = plt.get_cmap('hot')
+        fig = plt.figure(figsize=(8, 4))
+        plt.axes().set_aspect('equal', 'datalim')
+        for i in range(len(x)):
+            cl = cmap(norm(e[i]))
+            plt.plot([y1[i], y2[i]], [x1[i], x2[i]], color=cl, linewidth=width)
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm._A = []
+        plt.colorbar(sm)
+        plt.show()
 

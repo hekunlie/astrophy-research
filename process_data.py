@@ -24,8 +24,8 @@ fg2 = numpy.linspace(-0.01, 0.01, g2num)
 dfg1 = fg1[1]-fg1[0] #the lenght of the intervel
 dfg2 = fg2[1]-fg2[0]
 paths   = []
-path  = "/lmc/result/"+area+'/'          #where the result data file are placed
-pic_path = '/lmc/result/pic/' +area+'/'#where the result figures will be created
+path  = "/lmc/"+area+'/'          #where the result data file are placed
+pic_path = '/lmc/pic/' +area+'/'#where the result figures will be created
 
 exist = os.path.exists(path+'cache.dat')
 if exist:#check the final result cache
