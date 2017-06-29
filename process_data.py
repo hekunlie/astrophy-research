@@ -36,7 +36,7 @@ else :
 
 if not exist or comm==1:
 
-    dict_cache_exist = os.path.exists(path+'dict_cache.bak')  #check the classification cache
+    dict_cache_exist = os.path.exists(path+'dict_cache')  #check the classification cache
     if dict_cache_exist:
         print('0: use the classification cache data existed\n1: overwrite it')
         dict_comm = int(input('0/1?:'))
@@ -119,7 +119,6 @@ if not exist or comm==1:
                         fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
                         fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
          # create the cache of the classification
-        print(g1[3])
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
         dict_cache = shelve.open(path+'dict_cache')
@@ -164,9 +163,9 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 #B1 = N1 + U1
-                g1_h = Fourier_Quad().fmin_g(G1,U1,N1,model=1)
-                xi1_sq_min = Fourier_Quad().G_bin(G1,U1,N1,g1_h,model=1)
-                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,model=1,twi=2*xi1_sq_min,left=g1_h)
+                g1_h = Fourier_Quad().fmin_g(G1,U1,N1,mode=1)
+                xi1_sq_min = Fourier_Quad().G_bin(G1,U1,N1,g1_h,mode=1)
+                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,twi=2*xi1_sq_min,left=g1_h)
                 # def G1_fun(g,twi):
                 #     G1_h = G1-B1*g
                 #     num = Fourier_Quad().set_bins(G1_h, bin_num, model=0)[1]
@@ -239,9 +238,9 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 #B2 =  N2 - U2
-                g2_h           = Fourier_Quad().fmin_g(G2, U2, N2, model=2)
-                xi2_sq_min = Fourier_Quad().G_bin(G2,U2,N2,g2_h,model=2)
-                g2_h_p       = Fourier_Quad().fmin_g(G2,U2,N2,model=2,twi=2*xi2_sq_min,left=g2_h)
+                g2_h           = Fourier_Quad().fmin_g(G2, U2, N2, mode=2)
+                xi2_sq_min = Fourier_Quad().G_bin(G2,U2,N2,g2_h,mode=2)
+                g2_h_p       = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,twi=2*xi2_sq_min,left=g2_h)
                 # def G1_fun(g,twi):
                 #     G2_h = G2-B2*g
                 #     num = Fourier_Quad().set_bins(G2_h, bin_num, model=0)[1]

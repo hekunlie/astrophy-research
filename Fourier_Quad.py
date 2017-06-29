@@ -5,7 +5,7 @@ from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-
+import random
 class Fourier_Quad:
 
     def pow_spec(self, image):
@@ -335,8 +335,8 @@ class Fourier_Quad:
         return arr0
 
     def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
-        psf_pool = self.divide_stamps(star_stamp, stampsize)
-        noise_pool = self.divide_stamps(noise_stamp, stampsize)
+        psf_pool = star_stamp#self.divide_stamps(star_stamp, stampsize)
+        noise_pool = noise_stamp#self.divide_stamps(noise_stamp, stampsize)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)
@@ -352,8 +352,8 @@ class Fourier_Quad:
         n = numpy.sum(rim)
         for i in range(len(psf_pool)):
             if mode==1:
-                p = numpy.where(psf_pool[i]==numpy.max(psf_pool[i]))
-                arr = psf_pool[i]/numpy.max(psf_pool[i])#[p[0][0]-1:p[0][0]+1,p[1][0]-1:p[1][0]+1])
+                pmax = numpy.max(psf_pool[i])
+                arr = psf_pool[i]/pmax#[p[0][0]-1:p[0][0]+1,p[1][0]-1:p[1][0]+1])
                 conv = self.gaussfilter(arr)
                 dy,dx = self.mfpoly(conv)
                 psf = ndimage.shift(arr,(24-dy,24-dx),mode='reflect')
@@ -364,6 +364,7 @@ class Fourier_Quad:
                 # noise_pnoise = numpy.sum(rim*noise)/n
                 psf =psf - noise# -psf_pnoise+noise_pnoise
                 pmax = (psf[23,24]+psf[24,23]+psf[24,25]+psf[25,24])/4
+                #pmax = numpy.sum(psf)
                 psf = psf / pmax
                 psf[24,24]=1
             else:
@@ -412,11 +413,10 @@ class Fourier_Quad:
                 num_in_bin[i] = len(arr[idx])
         else:  # set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
             datalen = len(array)
-            if datalen> 5000:
-                idx = numpy.random.randint(0, datalen, int(len(array) / 10))
+            if datalen> 20000:
+                temp = random.sample(array,8000)
             else:
-                idx = numpy.random.randint(0, datalen, int(len(array) / 3))
-            temp = array[idx]
+                temp = array
             ma = numpy.max(temp)
             bins = []
             for i in range(int(bin_num / 2)):
@@ -464,26 +464,38 @@ class Fourier_Quad:
             right = g_h + (right-left) / 9
         return g_h
 
-    def ellip_plot(self, ellip, coordi, lent, width, mode=1):
+    def ellip_plot(self, ellip, ellip_refer,coordi, lent, width, mode=1,path=None,show=True):
         e1 = ellip[:, 0]
         e2 = ellip[:, 1]
+        e1r =ellip_refer[:,0]
+        e2r = ellip_refer[:, 1]
         e = numpy.sqrt(e1 ** 2 + e2 ** 2)
+        er = numpy.sqrt(e1r**2+ e2r**2)
+
         scale = numpy.mean(1 / e)
         x = coordi[:, 0]
         y = coordi[:, 1]
         if mode== 1:
             dx = lent * e1 / e / 2
             dy = lent * e2 / e / 2
+            dxr = lent * e1r / er / 2
+            dyr = lent * e2r / er / 2
         else:
             dx = scale * lent * e1 / e / 2
             dy = scale * lent * e2 / e / 2
+            dxr = scale * lent * e1r / er/ 2
+            dyr = scale * lent * e2r / er / 2
         x1 = x + dx
         x2 = x - dx
         y1 = y + dy
         y2 = y - dy
+        x1r = x + dxr
+        x2r = x - dxr
+        y1r = y + dyr
+        y2r = y - dyr
         norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
-        cmap = plt.get_cmap('hot')
-        fig = plt.figure(figsize=(8, 4))
+        cmap = plt.get_cmap('YlOrRd')
+        fig = plt.figure(figuresize=(20,10))
         plt.axes().set_aspect('equal', 'datalim')
         for i in range(len(x)):
             cl = cmap(norm(e[i]))
@@ -491,5 +503,10 @@ class Fourier_Quad:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []
         plt.colorbar(sm)
-        plt.show()
+        plt.title('Ellipticity residual on the chip',fontsize = 18)
+        if path is not None:
+            plt.savefig(path)
+        if show is True:
+            plt.show()
+
 

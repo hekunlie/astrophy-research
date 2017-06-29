@@ -11,7 +11,7 @@ def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
     res_ahead = '/home/hklee/result/'+area+'/'
     stampsize = 48
-    for list_num in range(len(path_list)):
+    for list_num in range(13,len(path_list)):
         t1=time.time()
         path   = path_list[list_num]
         location,number = path.split('/')
@@ -78,7 +78,7 @@ def measure(path_list,tag,area):
                         else:
                             data_matrix = numpy.row_stack((data_matrix,ith_row))
                         p=1
-        df = pandas.DataFrame(data_matrix, index =gal_index,columns=data_col )
+        df = pandas.DataFrame(data_matrix,columns=data_col )
         df.columns.name='Chip&NO'
         df.to_excel(res_path)
         t2=time.time()
@@ -129,6 +129,7 @@ if __name__=="__main__":
         p.apply_async(measure,args=(paths_pool[i],i,area))
     p.close()
     p.join()
+    # measure(paths_pool[5],5,area)
     te=time.time()
     print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
 
