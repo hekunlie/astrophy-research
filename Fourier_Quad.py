@@ -1,21 +1,21 @@
 import numpy
 from numpy import fft
-from scipy.optimize import least_squares
 from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
 import random
+
 class Fourier_Quad:
 
     def pow_spec(self, image):
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal, psf, imagesize, background_noise=None, F=True):
+    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=True):
         x = imagesize#int(gal.shape[0]) #resolution of the image
         my, mx = numpy.mgrid[0:x, 0:x]
-        gal_ps = self.pow_spec(gal)
+        gal_ps = self.pow_spec(gal_image)
 
         if background_noise is not None: # to deduct the noise
             d=1
@@ -27,20 +27,20 @@ class Fourier_Quad:
             gal_ps = (gal_ps - gal_pnoise) - (nbg - nbg_pnoise)
 
         if F == True:
-            psf = psf
+            psf_ps = psf_image
         else:
-            psf = self.pow_spec(psf)
+            psf_ps = self.pow_spec(psf_image)
 
-        hlr = self.get_radius(psf,2.)
+        hlr = self.get_radius_new(psf_ps,2.)
         wb,beta = self.wbeta(hlr,x)
         maxi = numpy.max(wb)
         idx = wb < maxi / 100000.
         wb[idx] = 0.
-        maxi = numpy.max(psf)
-        idx = psf < maxi / 100000.
-        psf[idx] = 1.
+        maxi = numpy.max(psf_ps)
+        idx = psf_ps < maxi / 100000.
+        psf_ps[idx] = 1.
 
-        tk  = wb/ psf * gal_ps
+        tk  = wb/ psf_ps * gal_ps
         alpha = 2.*numpy.pi/x
         kx = mx-0.5*x
         ky = my-0.5*x
@@ -100,14 +100,14 @@ class Fourier_Quad:
                 arr += (1+((mx-pos[0,l])**2+(my-pos[1,l])**2)/psf_scale**2)**(-3.5)*hstep
             return arr
 
-    def cre_psf(self, psf_scale, imagesize, psf="GAUSS", x=0, y=0):
+    def cre_psf(self, psf_scale, imagesize, model="GAUSS", x=0, y=0):
         xx = numpy.linspace(0, imagesize - 1, imagesize)
         mx, my = numpy.meshgrid(xx, xx)
-        if psf is 'GAUSS':
+        if model is 'GAUSS':
             arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
             return arr
 
-        if psf is 'Moffat':
+        if model is 'Moffat':
             hstep = 3*psf_scale-numpy.sqrt((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)
             idx = hstep < 0.
             hstep[idx] = 0.
@@ -116,65 +116,57 @@ class Fourier_Quad:
             arr = (1+((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/psf_scale**2)**(-3.5)*hstep
             return arr
 
-    def gethlr(self, image, disp=1):  # the sum of the image array must be positive!!! or it will fail
-        size = image.shape[0]
-        ra = size / 2 * 10
-        half = 0.
-        maxi = numpy.max(image)
-        flux = numpy.sum(image)
-        y, x = numpy.where(image == maxi)
-        y = int(y[0])
-        x = int(x[0])
-        yy, xx = numpy.mgrid[0:size, 0:size]
-        xx = numpy.abs(xx - x)
-        yy = numpy.abs(yy - y)
-        if flux > 0:
-            for r in range(10, ra, 2):
-                if half < flux / 2.:
-                    cir = xx ** 2 + yy ** 2 - (r / 10.) ** 2
-                    idx = cir <= 0.
-                    cir[idx] = 1.
-                    idx = cir > 1.
-                    cir[idx] = 0.
-                    half = numpy.sum(cir * image)
-                    hlr = r / 10.
-                else:
-                    break
-        else:
-            if disp == 1:
-                print ("Failed! The sum of image array is non-positive!")
-            hlr = 20.
-        return hlr
-
-    def get_radius(self, image, scale):  # get the radius of the flux descends to the maximum/scale
-        arr = copy.deepcopy(image)
-        maxi = numpy.max(arr)
-        y, x = numpy.where(arr == maxi)
-        idx = arr < maxi / scale
-        arr[idx] = 0.
-        idx = arr > 0.
-        arr[idx] = 1.
-        pool = []
-        pool.append((int(y[0]), int(x[0])))
+    def get_radius(self, image, scale):
+        # get the radius of the flux descends to the maximum/scale
+        radi_arr = copy.copy(image)
+        maxi = numpy.max(radi_arr)
+        y, x = numpy.where(radi_arr == maxi)
+        idx = radi_arr < maxi / scale
+        radi_arr[idx] = 0.
+        idx = radi_arr > 0.
+        radi_arr[idx] = 1.
+        half_radi_pool = []
+        half_radi_pool.append((int(y[0]), int(x[0])))
 
         def check(x):  # x is a two components  tuple -like input
-            if (x[0] - 1, x[1]) not in pool and arr[x[0] - 1, x[1]] == 1:
-                pool.append((x[0] - 1, x[1]))
-            if (x[0] + 1, x[1]) not in pool and arr[x[0] + 1, x[1]] == 1:
-                pool.append((x[0] + 1, x[1]))
-            if (x[0], x[1] + 1) not in pool and arr[x[0], x[1] + 1] == 1:
-                pool.append((x[0], x[1] + 1))
-            if (x[0], x[1] - 1) not in pool and arr[x[0], x[1] - 1] == 1:
-                pool.append((x[0], x[1] - 1))
-            return len(pool)
+            if (x[0] - 1, x[1]) not in half_radi_pool and radi_arr[x[0] - 1, x[1]] == 1:
+                half_radi_pool.append((x[0] - 1, x[1]))
+            if (x[0] + 1, x[1]) not in half_radi_pool and radi_arr[x[0] + 1, x[1]] == 1:
+                half_radi_pool.append((x[0] + 1, x[1]))
+            if (x[0], x[1] + 1) not in half_radi_pool and radi_arr[x[0], x[1] + 1] == 1:
+                half_radi_pool.append((x[0], x[1] + 1))
+            if (x[0], x[1] - 1) not in half_radi_pool and radi_arr[x[0], x[1] - 1] == 1:
+                half_radi_pool.append((x[0], x[1] - 1))
+            return len(half_radi_pool)
 
         while True:
-            for cor in pool:
-                num0 = len(pool)
+            for cor in half_radi_pool:
+                num0 = len(half_radi_pool)
                 num1 = check(cor)
             if num0 == num1:
                 break
-        return numpy.sqrt(len(pool) / numpy.pi)
+        return numpy.sqrt(len(half_radi_pool) / numpy.pi)
+
+    def get_radius_new(self, image, scale):
+        # get the radius of the flux descends to the maximum/scale
+        radi_arr = copy.copy(image)
+        maxi = numpy.max(radi_arr)
+        y, x = numpy.where(radi_arr == maxi)
+        idx = radi_arr < maxi / scale
+        radi_arr[idx] = 0.
+        half_radi_pool = []
+
+        def detect(mask, ini_y, ini_x, signal):
+            if mask[ini_y, ini_x] > 0:
+                signal.append((ini_y, ini_x))
+                mask[ini_y, ini_x] = 0
+                for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    if mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+                        detect(mask, ini_y + cor[0], ini_x + cor[1], signal)
+            return signal
+        half_radi_pool = detect(radi_arr,y[0],x[0],half_radi_pool)
+
+        return numpy.sqrt(len(half_radi_pool) / numpy.pi)
 
     def move(self, image, x, y):
         imagesize = image.shape[0]
@@ -321,7 +313,8 @@ class Fourier_Quad:
                 star.pop()
         return star  # a list of psfs
 
-    def image_stack(self, image_list, stampsize, columns):  # the inverse operation of divide_stamps
+    def image_stack(self, image_list, stampsize, columns):
+        # the inverse operation of divide_stamps
         num = len(image_list)
         row_num, c = divmod(num, columns)
         if c != 0:
@@ -393,76 +386,52 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,mode=1,sym=False):# The input must be one dimensional array.(1,n)
-        array=copy.copy(data_array)
-        if mode ==1:   #set up bins according to the  maximum and minimum of the data
-            mi = numpy.min(array)
-            ma = numpy.max(array)
-            if sym==True: # if the data are symmetric respect to zero
-                radius = max(numpy.abs(mi),ma)
-                bins0 = numpy.linspace(-radius,radius,bin_num+1)
-            else:
-                bins0 = numpy.linspace(mi,ma,bin_num+1)
-            bin_size = bins0[1]-bins0[0]
-            bins = numpy.delete(bins0,-1)
-            arr = numpy.digitize(array,bins)
-            tag = numpy.linspace(1,bin_num,bin_num)
-            num_in_bin = numpy.zeros((bin_num))
-            for i in range(bin_num):
-                idx = arr ==tag[i]
-                num_in_bin[i] = len(arr[idx])
-        else:  # set up bins for the middle part  of the data which account for 80% ,then add the data to the two sides of the bins
-            datalen = len(array)
-            if datalen> 20000:
-                temp = random.sample(array,8000)
-            else:
-                temp = array
-            ma = numpy.max(temp)
-            bins = []
-            for i in range(int(bin_num / 2)):
-                bins.append(ma * i * 2 / bin_num)
-                if i != 0:
-                    bins.append(-ma * i * 2 / bin_num)
-            bins = numpy.sort(bins)
-            arr = numpy.digitize(array, bins)
-            num_in_bin = numpy.zeros((bin_num))
-            tag = numpy.arange(0, bin_num)
-            for i in range(bin_num):
-                idx = arr == tag[i]
-                num_in_bin[i] = len(arr[idx])
-            bin_size = bins[1] - bins[0]
-            bins = numpy.append(bins[0] - bin_size, bins) #appending a number to the head of bins array
-                                                                                    # which is for plotting the histogram (the first ploint)
+    def set_bins(self,data_array,bin_num): # checked 2017-6-29!!!
+        # The input must be one dimensional array.(1,n)
+        dat_ma = numpy.max(data_array)
+        bins = numpy.linspace(-dat_ma,dat_ma,bin_num+1)
+        bins = bins[1:-1]
+        dig_arr = numpy.digitize(data_array, bins)
+        num_in_bin = numpy.zeros((bin_num))
+        bin_tag = numpy.arange(0, bin_num)
+        for i in range(bin_num):
+            idx = dig_arr == bin_tag[i]
+            num_in_bin[i] = len(dig_arr[idx])
+        bin_size = bins[1] - bins[0]
+        # appending a number to the head of bins array
+        # which is for plotting the histogram (the first ploint)
+        bins = numpy.append(bins[0] - bin_size, bins)
         return bins, num_in_bin, bin_size
 
-    def G_bin(self, g, u, n, g_h, mode, twi = 0, bin_num=8):
+    def G_bin(self, g, u, n, g_h, mode, bin_num, twi = 0):#checked 2017-6-30!!!
+        #bin_num = len(bins)+1
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         if mode==1:    #for g1
             G_h = g - (n+u)*g_h
         else:                  #for g2
             G_h = g - (n-u)*g_h
-        num = self.set_bins(G_h, bin_num, mode=2)[1]
+        num = self.set_bins(G_h, bin_num )[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
 
 
-    def fmin_g(self, g, u, n, mode, twi=0, left=-0.1, right=0.1, iters=4):
+    def fmin_g(self, g, u, n, mode, bin_num, twi=0, left=-0.1, right=0.1, iters=6): #checked 2017-6-30!!!
         # model 1 for  g1
         # model 2 for g2
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
-            point = numpy.linspace(left, right, 10)
-            mini0 = self.G_bin(g,u,n,left,mode,twi=twi)
-            g_h = point[0]
-            for k in range(len(point)):
-                mini = self.G_bin(g,u,n,point[k],mode,twi=twi)
-                if mini < mini0:
-                    mini0 = mini
-                    g_h = point[k]
+            g_range = numpy.linspace(left, right, 10)
+            xs_mini0 = self.G_bin(g,u,n,left,mode,bin_num,twi=twi)
+            g_h = g_range[0]
+            for k in range(len(g_range)):
+                xs_mini = self.G_bin(g,u,n,g_range[k],mode,bin_num,twi=twi)
+                if xs_mini < xs_mini0:
+                    xs_mini0 = xs_mini
+                    g_h = g_range[k]
             left   = g_h - (right-left) / 9
             right = g_h + (right-left) / 9
-        return g_h
+        return g_h,xs_mini0
 
     def ellip_plot(self, ellip, ellip_refer,coordi, lent, width, mode=1,path=None,show=True):
         e1 = ellip[:, 0]
