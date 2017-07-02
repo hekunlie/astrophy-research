@@ -147,7 +147,8 @@ if not exist or comm==1:
     print('calculating shears ')
     for i in range(3,4):
         for m in range(len(fg1)):
-            if i != 3:     #for KSB, BJ, REGAUSS
+            if i != 3:
+                #for KSB, BJ, REGAUSS
                 num1 = len(g1[i][fg1[m]])
                 arr1 = numpy.array(g1[i][fg1[m]])
                 ava1 = numpy.sum(arr1) / num1 / 1.6  # g1
@@ -155,70 +156,17 @@ if not exist or comm==1:
                 res_arr1[i, m] = ava1
                 res_arr1[i + 4, m] = err1
                 res_arr1[i + 8, m] = num1
-            else: #for Fourier_Quad
+            else:
+                #for Fourier_Quad
                 G1 = numpy.array(g1[i][fg1[m]])
                 num1 = len(G1)
                 bin_num =6
                 inverse = range(int(bin_num/2-1),-1,-1)
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
-                #B1 = N1 + U1
                 g1_h = Fourier_Quad().fmin_g(G1,U1,N1,mode=1)
                 xi1_sq_min = Fourier_Quad().G_bin(G1,U1,N1,g1_h,mode=1)
                 g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,twi=2*xi1_sq_min,left=g1_h)
-                # def G1_fun(g,twi):
-                #     G1_h = G1-B1*g
-                #     num = Fourier_Quad().set_bins(G1_h, bin_num, model=0)[1]
-                #     n1 = num[0:int(bin_num/2)]
-                #     n2 = num[int(bin_num/2):][inverse]
-                #     return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-twi)
-                # a = -0.1
-                # b = 0.1
-                # for times in range(4):
-                #     point = numpy.linspace[a, b, 10]
-                #     for k in range(len(point)):
-                #         mini0 = G1_fun(point[0],0)
-                #         kk    = 0
-                #         g1_h  = point[0]
-                #         mini = G1_fun(point[0],0)
-                #         if mini < mini0:
-                #             mini0 = mini
-                #             kk = k
-                #             g1_h = point[kk]
-                #     a = point[kk-1]
-                #     b = point[kk+1]
-                # a = g1_h
-                # b = 0.1
-                # twi = 2*mini0
-                # for times in range(4):
-                #     point = numpy.linspace[a, b, 10]
-                #     for k in range(len(point)):
-                #         mini0 = G1_fun(point[0],twi)
-                #         kk    = 0
-                #         del_g1  = point[0]
-                #         mini = G1_fun(point[k],twi)
-                #         if mini < mini0:
-                #             mini0 = mini
-                #             kk = k
-                #             del_g1 = point[kk]
-                #     a = point[kk-1]
-                #     b = point[kk+1]
-                # sigma1 =del_g1-g1_h
-                # def fun(g,*args):
-                #     half1,G,B,=args
-                #     G1_h = G - B * g
-                #     num = Fourier_Quad().set_bins(G1_h,bin_num,model=0)[1]
-                #     n1 = num[0:int(bin_num/2)]
-                #     n2 = num[int(bin_num/2):][inverse]
-                #     return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-half1[0])
-                # args=([0],G1,B1,)
-                # g1_h = optimize.fmin(fun,[0.01],args=args,disp=False)[0]
-                # args = ([fun(g1_h,[0],G1,B1,)*2], G1, B1,)
-                # g1_hsig = optimize.fmin(fun,[0.01],args=args,disp=False)
-                # print(g1_h,g1_hsig,abs(g1_h-g1_hsig))
-                #sigma1 = abs(g1_h-optimize.fmin(fun,[0],args=args,disp=False)[0])
-                # g1_h = numpy.mean(G1)/numpy.mean(N1)
-                #sigma1 = numpy.std(G1)/numpy.mean(N1)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = g1_h_p-g1_h
                 res_arr1[i + 8, m] = num1
@@ -237,61 +185,9 @@ if not exist or comm==1:
                 num2 = len(G2)
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
-                #B2 =  N2 - U2
                 g2_h           = Fourier_Quad().fmin_g(G2, U2, N2, mode=2)
                 xi2_sq_min = Fourier_Quad().G_bin(G2,U2,N2,g2_h,mode=2)
                 g2_h_p       = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,twi=2*xi2_sq_min,left=g2_h)
-                # def G1_fun(g,twi):
-                #     G2_h = G2-B2*g
-                #     num = Fourier_Quad().set_bins(G2_h, bin_num, model=0)[1]
-                #     n1 = num[0:int(bin_num/2)]
-                #     n2 = num[int(bin_num/2):][inverse]
-                #     return  abs(numpy.sum((n1-n2)**2/(n1+n2))*0.5-twi)
-                # a = -0.1
-                # b = 0.1
-                # for times in range(4):
-                #     point = numpy.linspace[a, b, 10]
-                #     for k in range(len(point)):
-                #         mini0 = G2_fun(point[0],0)
-                #         kk    = 0
-                #         g2_h  = point[0]
-                #         mini = G2_fun(point[0],0)
-                #         if mini < mini0:
-                #             mini0 = mini
-                #             kk = k
-                #             g2_h = point[kk]
-                #     a = point[kk-1]
-                #     b = point[kk+1]
-                # a = g2_h
-                # b = 0.1
-                # twi = 2*mini0
-                # for times in range(4):
-                #     point = numpy.linspace[a, b, 10]
-                #     for k in range(len(point)):
-                #         mini0 = G2_fun(point[0],twi)
-                #         kk    = 0
-                #         del_g1  = point[0]
-                #         mini = G2_fun(point[0],twi)
-                #         if mini < mini0:
-                #             mini0 = mini
-                #             kk = k
-                #             del_g1 = point[kk]
-                #     a = point[kk-1]
-                #     b = point[kk+1]
-                # sigma2 =del_g2-g2_h
-                # def fun(g,*args):
-                #     half2,G,B = args
-                #     G2_h = G - B * g
-                #     num = Fourier_Quad().set_bins(G2_h, bin_num,model=0)[1]
-                #     n1 = num[0:int(bin_num / 2)]
-                #     n2 = num[int(bin_num / 2):][inverse]
-                #     return abs(numpy.sum((n1 - n2) ** 2 / (n1 + n2))*0.5-half2[0])
-                # args = ([0],G2,B2)
-                # g2_h = optimize.fmin(fun, [0.],args=args,disp=False)[0]
-                # args = ([fun(g2_h,[0],G2,B2)*2], G2, B2,)
-                # sigma2 = numpy.abs(g2_h-optimize.fmin(fun,[0],args=args,disp=False)[0])
-                # g2_h = numpy.mean(G2)/numpy.mean(N2)
-                #sigma2 = numpy.std(G2)/numpy.mean(N2)/numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_p-g2_h
                 res_arr2[i + 8, m] = num2
