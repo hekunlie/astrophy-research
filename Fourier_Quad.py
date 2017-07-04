@@ -386,46 +386,45 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num): # checked 2017-6-29!!!
+    def set_bins(self,data_array,bin_num,sample=None,normed=False): # checked 2017-7-3!!!
         # The input must be one dimensional array.(1,n)
-        dat_ma = numpy.max(data_array)
+        if sample is not None:
+            temp = numpy.random.choice(data_array,sample)
+        else:
+            temp = data_array
+        dat_ma = numpy.max(temp)
+        bound = numpy.max(data_array)*2
         bins = numpy.linspace(-dat_ma,dat_ma,bin_num+1)
-        bins = bins[1:-1]
-        dig_arr = numpy.digitize(data_array, bins)
-        num_in_bin = numpy.zeros((bin_num))
-        bin_tag = numpy.arange(0, bin_num)
-        for i in range(bin_num):
-            idx = dig_arr == bin_tag[i]
-            num_in_bin[i] = len(dig_arr[idx])
+        bins_r = bins[:-1]
         bin_size = bins[1] - bins[0]
-        # appending a number to the head of bins array
-        # which is for plotting the histogram (the first ploint)
-        bins = numpy.append(bins[0] - bin_size, bins)
-        return bins, num_in_bin, bin_size
+        # Because of the bins set up which bases on a sample of the original data,
+        # the bins should be extended to include some data points that are out of the bounds.
+        bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
+        num_in_bin = plt.hist(data_array,bins,normed=normed)[0]
+        return bins_r, num_in_bin, bin_size
 
-    def G_bin(self, g, u, n, g_h, mode, bin_num, twi = 0):#checked 2017-6-30!!!
-        #bin_num = len(bins)+1
+    def G_bin(self, g, u, n, g_h, mode, bin_num, sample=None, twi = 0):#checked 2017-7-3!!!
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         if mode==1:    #for g1
             G_h = g - (n+u)*g_h
         else:                  #for g2
             G_h = g - (n-u)*g_h
-        num = self.set_bins(G_h, bin_num )[1]
+        num = self.set_bins(G_h, bin_num,sample=sample )[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
 
 
-    def fmin_g(self, g, u, n, mode, bin_num, twi=0, left=-0.1, right=0.1, iters=6): #checked 2017-6-30!!!
+    def fmin_g(self, g, u, n, mode, bin_num, sample=None, twi=0, left=-0.1, right=0.1, iters=6): #checked 2017-6-30!!!
         # model 1 for  g1
         # model 2 for g2
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             g_range = numpy.linspace(left, right, 10)
-            xs_mini0 = self.G_bin(g,u,n,left,mode,bin_num,twi=twi)
+            xs_mini0 = self.G_bin(g,u,n,left,mode,bin_num,sample=sample, twi=twi)
             g_h = g_range[0]
             for k in range(len(g_range)):
-                xs_mini = self.G_bin(g,u,n,g_range[k],mode,bin_num,twi=twi)
+                xs_mini = self.G_bin(g,u,n,g_range[k],mode,bin_num,sample=sample,twi=twi)
                 if xs_mini < xs_mini0:
                     xs_mini0 = xs_mini
                     g_h = g_range[k]

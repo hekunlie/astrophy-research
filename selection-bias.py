@@ -81,7 +81,7 @@ def simulate(g1, g2, NO):
             gal = gal.shear(g1=g1,g2=g2)
             gal = galsim.Convolve([psf,gal]) #the final galaxy profile
 
-            gal_img, noise_img, snr = prop.draw(gal,mag,i,noise=1)
+            gal_img, noise_img, snr = prop.draw(gal,mag,i,add_noise=1)
             snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, 2.5/numpy.log(10)/snr
             gal_pool.append(gal_img.array)
             noise_pool.append(noise_img.array)
