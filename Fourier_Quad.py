@@ -386,28 +386,31 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,sample=None,normed=False): # checked 2017-7-3!!!
+    def set_bins(self,data_array,bin_num,sample=False ,normed=False): # checked 2017-7-3!!!
         # The input must be one dimensional array.(1,n)
-        if sample is not None:
+        if sample :
             temp = numpy.random.choice(data_array,sample)
         else:
             temp = data_array
         dat_ma = numpy.max(temp)
-        bound = numpy.max(data_array)*2
-        bins = numpy.linspace(-dat_ma,dat_ma,bin_num+1)
+        bins = numpy.linspace(-dat_ma, dat_ma, bin_num + 1)
+        bound = numpy.max(data_array)*1.5
         bins_r = bins[:-1]
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
         # the bins should be extended to include some data points that are out of the bounds.
-        bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
-        num_in_bin = plt.hist(data_array,bins,normed=normed)[0]
+        if sample :
+            bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
+        num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
         return bins_r, num_in_bin, bin_size
 
-    def G_bin(self, g, u, n, g_h, mode, bin_num, sample=None, twi = 0):#checked 2017-7-3!!!
+    def G_bin(self, g, u, n, g_h, mode, bin_num, twi = 0,sample=True):#checked 2017-7-3!!!
+        # mode 1 is for g1
+        # mode 2 is for g2
         inverse = range(int(bin_num / 2 - 1), -1, -1)
-        if mode==1:    #for g1
+        if mode==1:
             G_h = g - (n+u)*g_h
-        else:                  #for g2
+        else:
             G_h = g - (n-u)*g_h
         num = self.set_bins(G_h, bin_num,sample=sample )[1]
         n1 = num[0:int(bin_num / 2)]
@@ -415,7 +418,7 @@ class Fourier_Quad:
         return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
 
 
-    def fmin_g(self, g, u, n, mode, bin_num, sample=None, twi=0, left=-0.1, right=0.1, iters=6): #checked 2017-6-30!!!
+    def fmin_g(self, g, u, n, mode, bin_num,  twi=0, left=-0.1, right=0.1, iters=6,sample=True): #checked 2017-6-30!!!
         # model 1 for  g1
         # model 2 for g2
         # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
