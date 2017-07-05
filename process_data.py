@@ -179,9 +179,9 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                bin_num =8
+                bin_num =6
                 g1_h,xi1_sq_min = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num)
-                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num,twi=2*xi1_sq_min,left=g1_h)
+                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num,twi=2*xi1_sq_min,left=g1_h)[0]
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = g1_h_p-g1_h
                 res_arr1[i + 8, m] = num1
@@ -200,9 +200,9 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
-                bin_num = 8
+                bin_num = 6
                 g2_h,xi2_sq_min = Fourier_Quad().fmin_g(G2, U2, N2, mode=2,bin_num=bin_num)
-                g2_h_p  = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,bin_num=bin_num,twi=2*xi2_sq_min,left=g2_h)
+                g2_h_p  = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,bin_num=bin_num,twi=2*xi2_sq_min,left=g2_h)[0]
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_p-g2_h
                 res_arr2[i + 8, m] = num2

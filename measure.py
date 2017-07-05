@@ -7,11 +7,12 @@ from Fourier_Quad import  Fourier_Quad
 from sys import argv
 import numpy
 import pandas
+
 def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
     res_ahead = '/home/hklee/result/'+area+'/'
     stampsize = 48
-    for list_num in range(13,len(path_list)):
+    for list_num in range(len(path_list)):
         t1=time.time()
         path   = path_list[list_num]
         location,number = path.split('/')
@@ -21,7 +22,6 @@ def measure(path_list,tag,area):
         res_path = res_ahead+location+ "_exposure_%s.xlsx"%number
         data_col = ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V"]
         p = 0
-        gal_index = []
         for k in range(1,37):
             kk = str(k).zfill(2)
             gal_img_path   = ahead+location+'/step1/'+'gal_%s_%s.fits'%(number,kk)
@@ -50,11 +50,10 @@ def measure(path_list,tag,area):
                 ax,by,c    = Fourier_Quad().fit(star_stamps,star_noise,star_data,stampsize,mode=2)
                 galnum = len(gal_pool)
 
-                galnum_len=len(str(galnum))
                 for i in range(galnum):
                     if gal_data[i,2]>=10.:
-                        index = kk+"_"+str(i).zfill(galnum_len)
-                        gal_index.append(index)
+                        # index = kk+"_"+str(i).zfill(galnum_len)
+                        # gal_index.append(index)
                         gal = gal_pool[i]
                         noise = noise_pool[i]
                         gal_x= gal_data[i,0]
@@ -129,7 +128,7 @@ if __name__=="__main__":
         p.apply_async(measure,args=(paths_pool[i],i,area))
     p.close()
     p.join()
-    # measure(paths_pool[5],5,area)
+   #measure(paths_pool[5],5,area)
     te=time.time()
     print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
 
