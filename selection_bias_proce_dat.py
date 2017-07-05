@@ -213,16 +213,11 @@ else:
     arr2 = text['arr_1']
 tm =time.clock()
 # fit the line
-start1=0
-end1 =0
-start2=0
-end2=0
 print('done\nbegin to plot the lines')
-
 fgn1 = fg1
 fgn2 = fg2
-
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
+
 for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -234,10 +229,10 @@ for i in range(4):
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
     A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
     Y1  = arr1[i].T
-    C1  = numpy.diag((arr1[i+4].T**2))
+    C1  = numpy.diag(arr1[i+4]**2)
     A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
     Y2  = arr2[i].T
-    C2  = numpy.diag((arr2[i+4].T**2))
+    C2  = numpy.diag(arr2[i+4]**2)
 
     L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
     R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
@@ -254,29 +249,29 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    xmajorLocator = MultipleLocator(0.005)
-    xmajorFormatter = FormatStrFormatter('%1.3f')
-    xminorLocator = MultipleLocator(0.001)
-
-    ymajorLocator   = MultipleLocator(0.005)
-    ymajorFormatter = FormatStrFormatter('%1.3f')
-    yminorLocator   = MultipleLocator(0.001)
-
-    ax.xaxis.set_major_locator(xmajorLocator)
-    ax.xaxis.set_major_formatter(xmajorFormatter)
-
-    ax.yaxis.set_major_locator(ymajorLocator)
-    ax.yaxis.set_major_formatter(ymajorFormatter)
-
-    ax.xaxis.set_minor_locator(xminorLocator)
-    ax.yaxis.set_minor_locator(yminorLocator)
+    # xmajorLocator = MultipleLocator(0.005)
+    # xmajorFormatter = FormatStrFormatter('%1.3f')
+    # xminorLocator = MultipleLocator(0.001)
+    #
+    # ymajorLocator   = MultipleLocator(0.005)
+    # ymajorFormatter = FormatStrFormatter('%1.3f')
+    # yminorLocator   = MultipleLocator(0.001)
+    #
+    # ax.xaxis.set_major_locator(xmajorLocator)
+    # ax.xaxis.set_major_formatter(xmajorFormatter)
+    #
+    # ax.yaxis.set_major_locator(ymajorLocator)
+    # ax.yaxis.set_major_formatter(ymajorFormatter)
+    #
+    # ax.xaxis.set_minor_locator(xminorLocator)
+    # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
     ax.plot(fgn1, fgn1, label='y=x', color='blue')
-    ax.scatter(fg1, res_arr1[i, :], c='black')
+    ax.scatter(fg1, arr1[i, :], c='black')
     for j in range(len(fg1)):
-        ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax.text(fg1[j], arr1[i, j], str(round(arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
     ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
@@ -293,29 +288,29 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    xmajorLocator = MultipleLocator(0.01)
-    xmajorFormatter = FormatStrFormatter('%1.3f')
-    xminorLocator = MultipleLocator(0.002)
-
-    ymajorLocator   = MultipleLocator(0.01)
-    ymajorFormatter = FormatStrFormatter('%1.3f')
-    yminorLocator   = MultipleLocator(0.002)
-
-    ax.xaxis.set_major_locator(xmajorLocator)
-    ax.xaxis.set_major_formatter(xmajorFormatter)
-
-    ax.yaxis.set_major_locator(ymajorLocator)
-    ax.yaxis.set_major_formatter(ymajorFormatter)
-
-    ax.xaxis.set_minor_locator(xminorLocator)
-    ax.yaxis.set_minor_locator(yminorLocator)
+    # xmajorLocator = MultipleLocator(0.01)
+    # xmajorFormatter = FormatStrFormatter('%1.3f')
+    # xminorLocator = MultipleLocator(0.002)
+    #
+    # ymajorLocator   = MultipleLocator(0.01)
+    # ymajorFormatter = FormatStrFormatter('%1.3f')
+    # yminorLocator   = MultipleLocator(0.002)
+    #
+    # ax.xaxis.set_major_locator(xmajorLocator)
+    # ax.xaxis.set_major_formatter(xmajorFormatter)
+    #
+    # ax.yaxis.set_major_locator(ymajorLocator)
+    # ax.yaxis.set_major_formatter(ymajorFormatter)
+    #
+    # ax.xaxis.set_minor_locator(xminorLocator)
+    # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
     ax.plot(fgn2, fgn2, label='y=x', color='blue')
-    ax.scatter(fg2, res_arr2[i, :], c='black')
+    ax.scatter(fg2, arr2[i, :], c='black')
     for j in range(len(fg1)):
-        ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax.text(fg2[j], arr2[i, j], str(round(arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)

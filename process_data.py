@@ -240,10 +240,10 @@ for i in range(3,4):
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
     A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
     Y1  = arr1[i].T
-    C1  = numpy.diag((arr1[i+4].T**2))
+    C1  = numpy.diag(arr1[i+4].T**2)
     A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
     Y2  = arr2[i].T
-    C2  = numpy.diag((arr2[i+4].T**2))
+    C2  = numpy.diag(arr2[i+4].T**2)
 
     L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
     R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
@@ -282,7 +282,7 @@ for i in range(3,4):
     ax.plot(fgn1, fgn1, label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(g1num):
-        ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax.text(fg1[j], arr1[i, j], str(round(arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
     ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
@@ -319,9 +319,9 @@ for i in range(3,4):
     ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
     ax.plot(fgn2, fgn2, label='y=x', color='blue')
-    ax.scatter(fg2, res_arr2[i, :], c='black')
+    ax.scatter(fg2, arr2[i, :], c='black')
     for j in range(g2num):
-        ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax.text(fg2[j], arr2[i, j], str(round(arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
