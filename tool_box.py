@@ -2,6 +2,8 @@ import Fourier_Quad
 import pandas
 from multiprocessing import Pool, Manager
 import numpy
+import time
+
 
 def task_distri(target_list, cpu_num):
     # it will divide the target_list into some piece (small lists in a diction) of which the number depends on the specific cpu core number
@@ -31,15 +33,17 @@ def list_add(target_list,files_paths):
             temp_data = data
         else:
             temp_data = numpy.row_stack((temp_data,data))
-    target_list.append(temp_data)
+    target_list.extend(temp_data)
     target_list.reverse()
 
 def classify(files_path_list, cpu_num):
     paths_distri = task_distri(files_path_list,cpu_num)
     final_data_list = Manager().list()
     p = Pool()
+    cl_ts = time.clock()
     for i in range(cpu_num):
         p.apply_async(list_add, args=(final_data_list,paths_distri[i],))
     p.close()
     p.join()
-    return final_data_list
+    cl_te = time.clock()
+    return final_data_list,cl_te-cl_ts
