@@ -100,7 +100,8 @@ if not exist or comm==1:
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1]))
+                    idx2 = ellip1!=-10
+                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
                     if na ==3:
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
@@ -113,11 +114,12 @@ if not exist or comm==1:
                         fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1]))
 
             for i in range(len(fg2)):
-                idx2 = tag2 == fg2[i]
+                idx1 = tag2 == fg2[i]
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
-                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx2]))
+                    idx2 = ellip1 != -10
+                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
                     if na==3:
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)
@@ -249,22 +251,22 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    # xmajorLocator = MultipleLocator(0.005)
-    # xmajorFormatter = FormatStrFormatter('%1.3f')
-    # xminorLocator = MultipleLocator(0.001)
-    #
-    # ymajorLocator   = MultipleLocator(0.005)
-    # ymajorFormatter = FormatStrFormatter('%1.3f')
-    # yminorLocator   = MultipleLocator(0.001)
-    #
-    # ax.xaxis.set_major_locator(xmajorLocator)
-    # ax.xaxis.set_major_formatter(xmajorFormatter)
-    #
-    # ax.yaxis.set_major_locator(ymajorLocator)
-    # ax.yaxis.set_major_formatter(ymajorFormatter)
-    #
-    # ax.xaxis.set_minor_locator(xminorLocator)
-    # ax.yaxis.set_minor_locator(yminorLocator)
+    xmajorLocator = MultipleLocator(0.005)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.001)
+
+    ymajorLocator   = MultipleLocator(0.005)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.001)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
@@ -288,22 +290,22 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    # xmajorLocator = MultipleLocator(0.01)
-    # xmajorFormatter = FormatStrFormatter('%1.3f')
-    # xminorLocator = MultipleLocator(0.002)
-    #
-    # ymajorLocator   = MultipleLocator(0.01)
-    # ymajorFormatter = FormatStrFormatter('%1.3f')
-    # yminorLocator   = MultipleLocator(0.002)
-    #
-    # ax.xaxis.set_major_locator(xmajorLocator)
-    # ax.xaxis.set_major_formatter(xmajorFormatter)
-    #
-    # ax.yaxis.set_major_locator(ymajorLocator)
-    # ax.yaxis.set_major_formatter(ymajorFormatter)
-    #
-    # ax.xaxis.set_minor_locator(xminorLocator)
-    # ax.yaxis.set_minor_locator(yminorLocator)
+    xmajorLocator = MultipleLocator(0.01)
+    xmajorFormatter = FormatStrFormatter('%1.3f')
+    xminorLocator = MultipleLocator(0.002)
+
+    ymajorLocator   = MultipleLocator(0.01)
+    ymajorFormatter = FormatStrFormatter('%1.3f')
+    yminorLocator   = MultipleLocator(0.002)
+
+    ax.xaxis.set_major_locator(xmajorLocator)
+    ax.xaxis.set_major_formatter(xmajorFormatter)
+
+    ax.yaxis.set_major_locator(ymajorLocator)
+    ax.yaxis.set_major_formatter(ymajorFormatter)
+
+    ax.xaxis.set_minor_locator(xminorLocator)
+    ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
