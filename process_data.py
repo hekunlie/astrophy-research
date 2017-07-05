@@ -104,7 +104,8 @@ if not exist or comm==1:
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
+                    idx3 = ellip1 != -10
+                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2&idx3]))
                     if na ==3:
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
@@ -122,7 +123,8 @@ if not exist or comm==1:
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
-                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
+                    idx3 = ellip2 != -10
+                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2&idx3]))
                     if na==3:
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)

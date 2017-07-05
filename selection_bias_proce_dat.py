@@ -127,9 +127,9 @@ if not exist or comm==1:
                         u2.shape = (len(u2), 1)
                         v2 = data[:,13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx2]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx2]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx2]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1]))
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
