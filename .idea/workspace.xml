@@ -12,7 +12,7 @@
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/astrophy_research$extractor.coverage" NAME="extractor Coverage Results" MODIFIED="1499137614583" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/sources_extractor" />
     <SUITE FILE_PATH="coverage/astrophy_research$temp.coverage" NAME="temp Coverage Results" MODIFIED="1499240478006" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
-    <SUITE FILE_PATH="coverage/astrophy_research$psf_interpolation.coverage" NAME="psf_interpolation Coverage Results" MODIFIED="1498640814175" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
+    <SUITE FILE_PATH="coverage/astrophy_research$psf_interpolation.coverage" NAME="psf_interpolation Coverage Results" MODIFIED="1499246424605" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
     <SUITE FILE_PATH="coverage/astrophy_research$Fourier_Quad.coverage" NAME="Fourier_Quad Coverage Results" MODIFIED="1498640289598" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="CreatePatchCommitExecutor">
@@ -35,8 +35,8 @@
       <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="5366">
-              <caret line="481" column="0" lean-forward="false" selection-start-line="481" selection-start-column="0" selection-end-line="481" selection-end-column="0" />
+            <state relative-caret-position="466">
+              <caret line="465" column="23" lean-forward="false" selection-start-line="465" selection-start-column="23" selection-end-line="465" selection-end-column="23" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -47,8 +47,8 @@
       <file leaf-file-name="tool_box.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tool_box.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="47">
-              <caret line="36" column="25" lean-forward="true" selection-start-line="36" selection-start-column="25" selection-end-line="36" selection-end-column="25" />
+            <state relative-caret-position="272">
+              <caret line="38" column="39" lean-forward="true" selection-start-line="38" selection-start-column="39" selection-end-line="38" selection-end-column="39" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -60,7 +60,7 @@
         <entry file="file://$PROJECT_DIR$/measure.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-289">
-              <caret line="109" column="52" lean-forward="true" selection-start-line="109" selection-start-column="52" selection-end-line="109" selection-end-column="52" />
+              <caret line="109" column="52" lean-forward="false" selection-start-line="109" selection-start-column="52" selection-end-line="109" selection-end-column="52" />
               <folding>
                 <element signature="e#15#24#0" expanded="true" />
                 <element signature="e#2922#2948#0" expanded="false" />
@@ -73,7 +73,7 @@
         <entry file="file://$PROJECT_DIR$/process_data.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-7325">
-              <caret line="77" column="31" lean-forward="true" selection-start-line="77" selection-start-column="31" selection-end-line="77" selection-end-column="31" />
+              <caret line="77" column="31" lean-forward="false" selection-start-line="77" selection-start-column="31" selection-end-line="77" selection-end-column="31" />
               <folding />
             </state>
           </provider>
@@ -83,7 +83,7 @@
         <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="406">
-              <caret line="53" column="23" lean-forward="true" selection-start-line="53" selection-start-column="23" selection-end-line="53" selection-end-column="23" />
+              <caret line="53" column="23" lean-forward="false" selection-start-line="53" selection-start-column="23" selection-end-line="53" selection-end-column="23" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
               </folding>
@@ -107,7 +107,7 @@
         <entry file="file://$PROJECT_DIR$/selection-bias.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="-2871">
-              <caret line="36" column="44" lean-forward="true" selection-start-line="36" selection-start-column="44" selection-end-line="36" selection-end-column="44" />
+              <caret line="36" column="44" lean-forward="false" selection-start-line="36" selection-start-column="44" selection-end-line="36" selection-end-column="44" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -118,8 +118,8 @@
       <file leaf-file-name="extractor.py" pinned="false" current-in-tab="false">
         <entry file="file://E:/cosmic shear/sources_extractor/extractor.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2196">
-              <caret line="83" column="30" lean-forward="true" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
+            <state relative-caret-position="1656">
+              <caret line="83" column="30" lean-forward="false" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -131,7 +131,7 @@
         <entry file="file://E:/cosmic shear/python code/temp.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="494">
-              <caret line="43" column="42" lean-forward="false" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
+              <caret line="34" column="31" lean-forward="false" selection-start-line="34" selection-start-column="31" selection-end-line="34" selection-end-column="31" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -142,8 +142,8 @@
       <file leaf-file-name="psf_interpolation.py" pinned="false" current-in-tab="false">
         <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4488">
-              <caret line="132" column="39" lean-forward="true" selection-start-line="132" selection-start-column="39" selection-end-line="132" selection-end-column="39" />
+            <state relative-caret-position="1799">
+              <caret line="189" column="49" lean-forward="true" selection-start-line="189" selection-start-column="49" selection-end-line="189" selection-end-column="49" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -169,15 +169,15 @@
       <list>
         <option value="$USER_HOME$/Downloads/w2-17.3.23.py" />
         <option value="$USER_HOME$/Downloads/w2-17.3.20.py" />
-        <option value="E:/cosmic shear/python code/psf_interpolation.py" />
         <option value="$PROJECT_DIR$/lsstetc.py" />
         <option value="$PROJECT_DIR$/selection-bias.py" />
         <option value="E:/cosmic shear/sources_extractor/extractor.py" />
         <option value="$PROJECT_DIR$/process_data.py" />
         <option value="$PROJECT_DIR$/measure.py" />
-        <option value="$PROJECT_DIR$/Fourier_Quad.py" />
         <option value="E:/cosmic shear/python code/temp.py" />
         <option value="$PROJECT_DIR$/tool_box.py" />
+        <option value="$PROJECT_DIR$/Fourier_Quad.py" />
+        <option value="E:/cosmic shear/python code/psf_interpolation.py" />
       </list>
     </option>
   </component>
@@ -230,7 +230,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.temp">
+  <component name="RunManager" selected="Python.psf_interpolation">
     <configuration default="false" name="psf_interpolation" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -497,9 +497,9 @@
     </list>
     <recent_temporary>
       <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python.temp" />
-        <item index="1" class="java.lang.String" itemvalue="Python.extractor" />
-        <item index="2" class="java.lang.String" itemvalue="Python.psf_interpolation" />
+        <item index="0" class="java.lang.String" itemvalue="Python.psf_interpolation" />
+        <item index="1" class="java.lang.String" itemvalue="Python.temp" />
+        <item index="2" class="java.lang.String" itemvalue="Python.extractor" />
         <item index="3" class="java.lang.String" itemvalue="Python.Fourier_Quad" />
       </list>
     </recent_temporary>
@@ -554,7 +554,7 @@
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32939914" sideWeight="0.5" order="6" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="true" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" show_stripe_button="true" weight="0.4307036" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="1920" y="0" width="1600" height="870" />
+      <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" show_stripe_button="true" weight="0.4307036" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="1920" y="0" width="1600" height="870" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -946,30 +946,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4488">
-          <caret line="132" column="39" lean-forward="true" selection-start-line="132" selection-start-column="39" selection-end-line="132" selection-end-column="39" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5366">
-          <caret line="481" column="0" lean-forward="false" selection-start-line="481" selection-start-column="0" selection-end-line="481" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/process_data.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-7325">
-          <caret line="77" column="31" lean-forward="true" selection-start-line="77" selection-start-column="31" selection-end-line="77" selection-end-column="31" />
+          <caret line="77" column="31" lean-forward="false" selection-start-line="77" selection-start-column="31" selection-end-line="77" selection-end-column="31" />
           <folding />
         </state>
       </provider>
@@ -977,7 +957,7 @@
     <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="406">
-          <caret line="53" column="23" lean-forward="true" selection-start-line="53" selection-start-column="23" selection-end-line="53" selection-end-column="23" />
+          <caret line="53" column="23" lean-forward="false" selection-start-line="53" selection-start-column="23" selection-end-line="53" selection-end-column="23" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
@@ -997,7 +977,7 @@
     <entry file="file://$PROJECT_DIR$/selection-bias.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-2871">
-          <caret line="36" column="44" lean-forward="true" selection-start-line="36" selection-start-column="44" selection-end-line="36" selection-end-column="44" />
+          <caret line="36" column="44" lean-forward="false" selection-start-line="36" selection-start-column="44" selection-end-line="36" selection-end-column="44" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
@@ -1007,7 +987,7 @@
     <entry file="file://$PROJECT_DIR$/measure.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-289">
-          <caret line="109" column="52" lean-forward="true" selection-start-line="109" selection-start-column="52" selection-end-line="109" selection-end-column="52" />
+          <caret line="109" column="52" lean-forward="false" selection-start-line="109" selection-start-column="52" selection-end-line="109" selection-end-column="52" />
           <folding>
             <element signature="e#15#24#0" expanded="true" />
             <element signature="e#2922#2948#0" expanded="false" />
@@ -1017,10 +997,20 @@
     </entry>
     <entry file="file://E:/cosmic shear/sources_extractor/extractor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2196">
-          <caret line="83" column="30" lean-forward="true" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
+        <state relative-caret-position="1656">
+          <caret line="83" column="30" lean-forward="false" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="466">
+          <caret line="465" column="23" lean-forward="false" selection-start-line="465" selection-start-column="23" selection-end-line="465" selection-end-column="23" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1028,7 +1018,17 @@
     <entry file="file://E:/cosmic shear/python code/temp.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="494">
-          <caret line="43" column="42" lean-forward="false" selection-start-line="43" selection-start-column="42" selection-end-line="43" selection-end-column="42" />
+          <caret line="34" column="31" lean-forward="false" selection-start-line="34" selection-start-column="31" selection-end-line="34" selection-end-column="31" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1799">
+          <caret line="189" column="49" lean-forward="true" selection-start-line="189" selection-start-column="49" selection-end-line="189" selection-end-column="49" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>
@@ -1037,8 +1037,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tool_box.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="47">
-          <caret line="36" column="25" lean-forward="true" selection-start-line="36" selection-start-column="25" selection-end-line="36" selection-end-column="25" />
+        <state relative-caret-position="272">
+          <caret line="38" column="39" lean-forward="true" selection-start-line="38" selection-start-column="39" selection-end-line="38" selection-end-column="39" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>

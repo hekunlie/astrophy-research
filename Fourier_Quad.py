@@ -435,38 +435,27 @@ class Fourier_Quad:
             right = g_h + (right-left) / 9
         return g_h,xs_mini0
 
-    def ellip_plot(self, ellip, ellip_refer,coordi, lent, width, mode=1,path=None,show=True):
+    def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
         e1 = ellip[:, 0]
         e2 = ellip[:, 1]
-        e1r =ellip_refer[:,0]
-        e2r = ellip_refer[:, 1]
         e = numpy.sqrt(e1 ** 2 + e2 ** 2)
-        er = numpy.sqrt(e1r**2+ e2r**2)
-
         scale = numpy.mean(1 / e)
         x = coordi[:, 0]
         y = coordi[:, 1]
         if mode== 1:
             dx = lent * e1 / e / 2
             dy = lent * e2 / e / 2
-            dxr = lent * e1r / er / 2
-            dyr = lent * e2r / er / 2
         else:
             dx = scale * lent * e1 / e / 2
             dy = scale * lent * e2 / e / 2
-            dxr = scale * lent * e1r / er/ 2
-            dyr = scale * lent * e2r / er / 2
         x1 = x + dx
         x2 = x - dx
         y1 = y + dy
         y2 = y - dy
-        x1r = x + dxr
-        x2r = x - dxr
-        y1r = y + dyr
-        y2r = y - dyr
+
         norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
         cmap = plt.get_cmap('YlOrRd')
-        fig = plt.figure(figuresize=(20,10))
+        fig = plt.figure(figsize=(20,10))
         plt.axes().set_aspect('equal', 'datalim')
         for i in range(len(x)):
             cl = cmap(norm(e[i]))
@@ -474,7 +463,7 @@ class Fourier_Quad:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []
         plt.colorbar(sm)
-        plt.title('Ellipticity residual on the chip',fontsize = 18)
+        plt.title(title,fontsize = 18)
         if path is not None:
             plt.savefig(path)
         if show is True:

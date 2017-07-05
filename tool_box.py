@@ -33,7 +33,7 @@ def list_add(target_list,files_paths):
             temp_data = data
         else:
             temp_data = numpy.row_stack((temp_data,data))
-    target_list.extend(temp_data)
+    target_list.append(temp_data)
     target_list.reverse()
 
 def classify(files_path_list, cpu_num):
