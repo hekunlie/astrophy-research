@@ -7,7 +7,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
-from scipy import optimize
+import tool_box
 from Fourier_Quad import *
 from sys import argv
 import shelve
@@ -83,10 +83,12 @@ if not exist or comm==1:
                     fn2[i] = []
                     fu2[i] = []
                     fv2[i] = []
-
-        for k in paths:
+        # collect the data from the files and put into 'data_list'
+        # elements in data-list are the data arrays
+        data_list = tool_box.classify(paths,8)
+        for k in len(data_list):
             # put the data into the corresponding list
-            data = pandas.read_excel(k).values
+            data = data_list[k]
 
             # field distortion fg1
             tag1 = data[:,5]
