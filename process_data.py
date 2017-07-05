@@ -34,7 +34,7 @@ path  = "/home/hklee/result/"+area+'/'
 pic_path = '/home/hklee/result/pic/' +area+'/'
 
 # check the final result cache
-exist = os.path.exists(path+'final_cache.dat')
+exist = os.path.exists(path+'final_cache.npz')
 if exist:
     # 0: to use the result cache data existed to plot the line and estimate the bias, 'm' and 'c'
     # 1: run the program to classify the data ( it could be skipped if this result cache exists) and estimate the shear
