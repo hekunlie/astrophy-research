@@ -7,6 +7,7 @@ from Fourier_Quad import  Fourier_Quad
 from sys import argv
 import numpy
 import pandas
+import tool_box
 
 def measure(path_list,tag,area):
     ahead = '/lmc/'+area+'/'
@@ -106,20 +107,20 @@ if __name__=="__main__":
     data.seek(0)
     data.close()
     print( "get all paths")
-    
-    m,n = divmod(len(paths),corenum)
-    if m==0 and n!=0:
-        for i in range(n):
-            paths_pool[i]=map(int,str(paths[i]))
-    elif m!=0:
-        for i in range(corenum):
-            paths_pool[i]=paths[i*m:(i+1)*m]
-        if n!=0:
-            for i in range(n):
-                paths_pool[i].append(paths[-i-1])
-    else:
-        print( "Caution! Something goes wrong!!!")
-    print ("all paths have been distributed")
+    paths_pool = tool_box.task_distri(paths,corenum)
+    # m,n = divmod(len(paths),corenum)
+    # if m==0 and n!=0:
+    #     for i in range(n):
+    #         paths_pool[i]=map(int,str(paths[i]))
+    # elif m!=0:
+    #     for i in range(corenum):
+    #         paths_pool[i]=paths[i*m:(i+1)*m]
+    #     if n!=0:
+    #         for i in range(n):
+    #             paths_pool[i].append(paths[-i-1])
+    # else:
+    #     print( "Caution! Something goes wrong!!!")
+    # print ("all paths have been distributed")
     
     print( "Progress starts...")
     p = Pool()

@@ -479,5 +479,3 @@ class Fourier_Quad:
             plt.savefig(path)
         if show is True:
             plt.show()
-
-
