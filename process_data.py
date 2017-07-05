@@ -85,8 +85,8 @@ if not exist or comm==1:
                     fv2[i] = []
         # collect the data from the files and put into 'data_list'
         # elements in data-list are the data arrays
-        data_list = tool_box.classify(paths,8)
-        for k in len(data_list):
+        data_list = tool_box.classify(paths,8)[0]
+        for k in range(len(data_list)):
             # put the data into the corresponding list
             data = data_list[k]
 
