@@ -96,40 +96,44 @@ if not exist or comm==1:
             tag2.shape = (len(tag2),1)
 
             for i in range(len(fg1)):
-                idx1 = tag1 == fg1[i]
+                idx11 = tag1 == fg1[i]
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    idx2 = ellip1!=-10
-                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2]))
-                    if na ==3:
+                    if na!=3:
+                        idx12 = ellip1!=-10
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
+                    else:
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11]))
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
                         u1.shape = (len(u1), 1)
                         v1 = data[:,13]
                         v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11]))
 
             for i in range(len(fg2)):
-                idx1 = tag2 == fg2[i]
+                idx21 = tag2 == fg2[i]
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
-                    idx2 = ellip1 != -10
-                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2]))
-                    if na==3:
+                    if na!=3:
+                        idx22 = ellip1 != -10
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22]))
+                    else:
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21]))
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)
                         u2 = data[:,12]
                         u2.shape = (len(u2), 1)
                         v2 = data[:,13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21]))
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
@@ -230,11 +234,11 @@ for i in range(4):
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
     A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
-    Y1  = arr1[i].T
-    C1  = numpy.diag(arr1[i+4]**2)
+    Y1  = arr1[i,:].T
+    C1  = numpy.diag(arr1[i+4,:]**2)
     A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
-    Y2  = arr2[i].T
-    C2  = numpy.diag(arr2[i+4]**2)
+    Y2  = arr2[i,:].T
+    C2  = numpy.diag(arr2[i+4,:]**2)
 
     L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
     R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
@@ -251,22 +255,22 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    xmajorLocator = MultipleLocator(0.005)
-    xmajorFormatter = FormatStrFormatter('%1.3f')
-    xminorLocator = MultipleLocator(0.001)
-
-    ymajorLocator   = MultipleLocator(0.005)
-    ymajorFormatter = FormatStrFormatter('%1.3f')
-    yminorLocator   = MultipleLocator(0.001)
-
-    ax.xaxis.set_major_locator(xmajorLocator)
-    ax.xaxis.set_major_formatter(xmajorFormatter)
-
-    ax.yaxis.set_major_locator(ymajorLocator)
-    ax.yaxis.set_major_formatter(ymajorFormatter)
-
-    ax.xaxis.set_minor_locator(xminorLocator)
-    ax.yaxis.set_minor_locator(yminorLocator)
+    # xmajorLocator = MultipleLocator(0.005)
+    # xmajorFormatter = FormatStrFormatter('%1.3f')
+    # xminorLocator = MultipleLocator(0.001)
+    #
+    # ymajorLocator   = MultipleLocator(0.005)
+    # ymajorFormatter = FormatStrFormatter('%1.3f')
+    # yminorLocator   = MultipleLocator(0.001)
+    #
+    # ax.xaxis.set_major_locator(xmajorLocator)
+    # ax.xaxis.set_major_formatter(xmajorFormatter)
+    #
+    # ax.yaxis.set_major_locator(ymajorLocator)
+    # ax.yaxis.set_major_formatter(ymajorFormatter)
+    #
+    # ax.xaxis.set_minor_locator(xminorLocator)
+    # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
@@ -290,22 +294,22 @@ for i in range(4):
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
 
-    xmajorLocator = MultipleLocator(0.01)
-    xmajorFormatter = FormatStrFormatter('%1.3f')
-    xminorLocator = MultipleLocator(0.002)
-
-    ymajorLocator   = MultipleLocator(0.01)
-    ymajorFormatter = FormatStrFormatter('%1.3f')
-    yminorLocator   = MultipleLocator(0.002)
-
-    ax.xaxis.set_major_locator(xmajorLocator)
-    ax.xaxis.set_major_formatter(xmajorFormatter)
-
-    ax.yaxis.set_major_locator(ymajorLocator)
-    ax.yaxis.set_major_formatter(ymajorFormatter)
-
-    ax.xaxis.set_minor_locator(xminorLocator)
-    ax.yaxis.set_minor_locator(yminorLocator)
+    # xmajorLocator = MultipleLocator(0.01)
+    # xmajorFormatter = FormatStrFormatter('%1.3f')
+    # xminorLocator = MultipleLocator(0.002)
+    #
+    # ymajorLocator   = MultipleLocator(0.01)
+    # ymajorFormatter = FormatStrFormatter('%1.3f')
+    # yminorLocator   = MultipleLocator(0.002)
+    #
+    # ax.xaxis.set_major_locator(xmajorLocator)
+    # ax.xaxis.set_major_formatter(xmajorFormatter)
+    #
+    # ax.yaxis.set_major_locator(ymajorLocator)
+    # ax.yaxis.set_major_formatter(ymajorFormatter)
+    #
+    # ax.xaxis.set_minor_locator(xminorLocator)
+    # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')

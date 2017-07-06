@@ -99,42 +99,46 @@ if not exist or comm==1:
             tag2.shape = (len(tag2),1)
 
             for i in range(g1num):
-                idx1 = tag1 < fg1[i] + dfg1/2
-                idx2 = tag1 > fg1[i] - dfg1/2
+                idx11 = tag1 < fg1[i] + dfg1/2
+                idx12 = tag1 > fg1[i] - dfg1/2
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    idx3 = ellip1 != -10
-                    g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx1&idx2&idx3]))
-                    if na ==3:
+                    if na!=3:
+                        idx13 = ellip1 != -10
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13]))
+                    else:
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11 & idx12]))
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
                         u1.shape = (len(u1), 1)
                         v1 = data[:,13]
                         v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx1&idx2]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx1&idx2]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx1&idx2]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12]))
 
             for i in range(g2num):
-                idx1 = tag2 < fg2[i] + dfg2/2
-                idx2 = tag2 > fg2[i] - dfg2/2
+                idx21 = tag2 < fg2[i] + dfg2/2
+                idx22 = tag2 > fg2[i] - dfg2/2
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
-                    idx3 = ellip2 != -10
-                    g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx1&idx2&idx3]))
-                    if na==3:
+                    if na!=3:
+                        idx23 = ellip2 != -10
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23]))
+                    else:
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22 ]))
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)
                         u2 = data[:,12]
                         u2.shape = (len(u2), 1)
                         v2 = data[:,13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx1&idx2]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx1&idx2]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx1&idx2]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22]))
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
