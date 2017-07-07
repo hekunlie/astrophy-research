@@ -60,18 +60,17 @@ def get_threshold(image, bin_num,upper_percent, noise_scale, bad_pix_num):
     noise = image[int(bad_pix_num+1):int(len(image)*upper_percent)]
 
     num, bins = numpy.histogram(noise, bin_num, normed=False)[0:2]
-
+    print(len(num),len(bins))
     # let the middle value of the bin interval  present the corresponding noise value
     size = bins[1]-bins[0]
     bins +=size/2.
     abs_bins = numpy.abs(bins)
     bin_min = numpy.min(abs_bins)
     mid = numpy.where(abs_bins==bin_min)[0][0]
-
     bins = bins[mid- noise_scale:mid+ noise_scale]
     pxs = num[mid - noise_scale:mid + noise_scale]
     pxs = pxs/numpy.sum(pxs)
-
+    print(len(bins),len(pxs))
     def fun(x,*para):
         return para[0]*numpy.exp(-(x-para[1])**2/2./para[2]**2)
     paras = optimize.curve_fit(fun,bins,pxs,p0=[50,20,100])[0]
@@ -96,6 +95,6 @@ def detect( mask, ini_y, ini_x,signal,maxi,max_p):
             maxi = mask[ini_y,ini_x]
         mask[ini_y,ini_x]=0
         for cor in ((-1,0),(1,0),(0,-1),(0,1)):
-            if mask[ini_y+cor[0],ini_x+cor[1]]>0:
+            if ini_y+cor[0]<= y_shape-1 and ini_x+cor[1]<= x_shape-1 and mask[ini_y+cor[0],ini_x+cor[1]]>0:
                 max_p = detect(mask,ini_y+cor[0],ini_x+cor[1],signal,maxi,max_p)
     return max_p
