@@ -165,7 +165,7 @@ if not exist or comm==1:
     res_arr2 = numpy.zeros((12, len(fg2)))
 
     print('calculating shears ')
-    for i in range(4):
+    for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:
                 #for KSB, BJ, REGAUSS
@@ -182,11 +182,10 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                bin_num =6
-                g1_h,xi1_sq_min = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num)
-                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num,twi=2*xi1_sq_min,left=g1_h)[0]
+                bin_num =8
+                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1,bin_num=bin_num)
                 res_arr1[i, m] = g1_h
-                res_arr1[i + 4, m] = g1_h_p-g1_h
+                res_arr1[i + 4, m] = g1_h_sig
                 res_arr1[i + 8, m] = num1
 
         for m in range(len(fg2)):
@@ -203,11 +202,10 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
-                bin_num = 6
-                g2_h,xi2_sq_min = Fourier_Quad().fmin_g(G2, U2, N2, mode=2,bin_num=bin_num)
-                g2_h_p  = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,bin_num=bin_num,twi=2*xi2_sq_min,left=g2_h)[0]
+                bin_num = 8
+                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2,U2, mode=2,bin_num=bin_num)
                 res_arr2[i, m] = g2_h
-                res_arr2[i + 4, m] = g2_h_p-g2_h
+                res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
 
     final_cache_path = path+'final_cache'
@@ -215,16 +213,13 @@ if not exist or comm==1:
 
 else:
     text = numpy.load(path+'final_cache.npz')
-    arr1 = text['arr_0']
-    arr2 = text['arr_1']
+    res_arr1 = text['arr_0']
+    res_arr2 = text['arr_1']
 tm =time.clock()
 # fit the line
 print('done\nbegin to plot the lines')
-fgn1 = fg1
-fgn2 = fg2
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
-
-for i in range(4):
+for i in range(3, 4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
     # A = [[1,1,1,1,...]
@@ -233,12 +228,13 @@ for i in range(4):
     # C = diag[sig1^2, sig2^2, sig3^2, .....]
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
-    A1 = numpy.column_stack((numpy.ones_like(fgn1.T),fgn1.T))
-    Y1  = arr1[i,:].T
-    C1  = numpy.diag(arr1[i+4,:]**2)
-    A2 = numpy.column_stack((numpy.ones_like(fgn2.T),fgn2.T))
-    Y2  = arr2[i,:].T
-    C2  = numpy.diag(arr2[i+4,:]**2)
+    A1 = numpy.column_stack((numpy.ones_like(fg1.T),fg1.T))
+    Y1  = res_arr1[i].T
+    C1  = numpy.diag(res_arr1[i+4]**2)
+
+    A2 = numpy.column_stack((numpy.ones_like(fg2.T),fg2.T))
+    Y2  = res_arr2[i].T
+    C2  = numpy.diag(res_arr2[i+4]**2)
 
     L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
     R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
@@ -272,12 +268,12 @@ for i in range(4):
     # ax.xaxis.set_minor_locator(xminorLocator)
     # ax.yaxis.set_minor_locator(yminorLocator)
 
-    ax.errorbar(fgn1, arr1[i, :], arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
-    ax.plot(fgn1, e1mc[1] * fgn1 + e1mc[0], label=name[i], color='red')
-    ax.plot(fgn1, fgn1, label='y=x', color='blue')
-    ax.scatter(fg1, arr1[i, :], c='black')
+    ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
+    ax.plot(fg1, e1mc[1] * fg1 + e1mc[0], label=name[i], color='red')
+    ax.plot(fg1, fg1, label='y=x', color='blue')
+    ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
-        ax.text(fg1[j], arr1[i, j], str(round(arr1[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
     ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
@@ -311,12 +307,12 @@ for i in range(4):
     # ax.xaxis.set_minor_locator(xminorLocator)
     # ax.yaxis.set_minor_locator(yminorLocator)
 
-    ax.errorbar(fgn2, arr2[i, :], arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
-    ax.plot(fgn2, e2mc[1] * fgn2 + e2mc[0], label=name[i], color='red')
-    ax.plot(fgn2, fgn2, label='y=x', color='blue')
-    ax.scatter(fg2, arr2[i, :], c='black')
-    for j in range(len(fg1)):
-        ax.text(fg2[j], arr2[i, j], str(round(arr2[i + 8, j] / 1000, 1)) + "K", color="red")
+    ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
+    ax.plot(fg2, e2mc[1] * fg2 + e2mc[0], label=name[i], color='red')
+    ax.plot(fg2, fg2, label='y=x', color='blue')
+    ax.scatter(fg2, res_arr2[i, :], c='black')
+    for j in range(len(fg2)):
+        ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)

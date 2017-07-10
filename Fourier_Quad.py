@@ -386,15 +386,15 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,sample=None ,normed=False): # checked 2017-7-4!!!
-        # The input must be one dimensional array.(1,n)
+    def set_bins(self,data_array,bin_num,sample=None ,normed=False): # checked 2017-7-9!!!
+        # The input must be one dimensional array.
         if sample is not None:
-            temp = numpy.random.choice(data_array,sample,replace=False)
+            temp = numpy.sort(data_array)[sample:-sample]
         else:
             temp = data_array
-        dat_ma = numpy.max(temp)
+        dat_ma = numpy.max(numpy.abs(temp))
         bins = numpy.linspace(-dat_ma, dat_ma, bin_num + 1)
-        bound = numpy.max(data_array)*1.5
+        bound = numpy.max(numpy.abs(data_array))+1
         bins_r = bins[:-1]
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
@@ -404,7 +404,7 @@ class Fourier_Quad:
         num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
         return bins_r, num_in_bin, bin_size
 
-    def G_bin(self, g, u, n, g_h, mode, bin_num, twi = 0,sample=8000):#checked 2017-7-4!!!
+    def G_bin(self, g, n, u, g_h, mode, bin_num,sample=None):#checked 2017-7-9!!!
         # mode 1 is for g1
         # mode 2 is for g2
         inverse = range(int(bin_num / 2 - 1), -1, -1)
@@ -415,25 +415,43 @@ class Fourier_Quad:
         num = self.set_bins(G_h, bin_num,sample=sample )[1]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
-        return abs(numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5 - twi)
+        return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
 
 
-    def fmin_g(self, g, u, n, mode, bin_num,  twi=0, left=-0.1, right=0.1, iters=6,sample=8000): #checked 2017-7-4!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, iters=8, sample=100): #checked 2017-7-9!!!
         # model 1 for  g1
         # model 2 for g2
-        # 'twi ' is set to be twice of  the minimum of the G_bin result to find the corresponding 'g' value
         for times in range(iters):
             g_range = numpy.linspace(left, right, 10)
-            xs_mini0 = self.G_bin(g,u,n,left,mode,bin_num,sample=sample, twi=twi)
+            step = g_range[1]-g_range[0]
+            xs_mini0 = self.G_bin(g,n,u,left,mode,bin_num,sample=sample)
             g_h = g_range[0]
             for k in range(len(g_range)):
-                xs_mini = self.G_bin(g,u,n,g_range[k],mode,bin_num,sample=sample,twi=twi)
+                xs_mini = self.G_bin(g,n,u,g_range[k],mode,bin_num,sample=sample)
                 if xs_mini < xs_mini0:
                     xs_mini0 = xs_mini
                     g_h = g_range[k]
-            left   = g_h - (right-left) / 9
-            right = g_h + (right-left) / 9
-        return g_h,xs_mini0
+            left   = g_h - step
+            right = g_h + step
+        # fitting
+        g_range = numpy.linspace(g_h-0.005,g_h+0.005,21)
+        xi2 = [self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range]
+        gg4 = numpy.sum(g_range ** 4)
+        gg3 = numpy.sum(g_range ** 3)
+        gg2 = numpy.sum(g_range ** 2)
+        gg1 = numpy.sum(g_range)
+        xigg2 = numpy.sum(xi2 * g_range ** 2)
+        xigg1 = numpy.sum(xi2 * g_range)
+        xigg0 = numpy.sum(xi2)
+        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, 21]]))
+        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+        g_sig = numpy.sqrt(1/2./paras[0])
+        # x = numpy.linspace(g_h-0.005,g_h+0.005,50)
+        # g_sig = numpy.sqrt(paras[2] / paras[0] - paras[1] ** 2 / paras[0] ** 2 / 4)
+        # plt.scatter(g_range,xi2,linewidths=1)
+        # plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
+        # plt.show()
+        return g_h,g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
         e1 = ellip[:, 0]

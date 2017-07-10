@@ -1,6 +1,6 @@
 import Fourier_Quad
 import pandas
-from multiprocessing import Pool, Manager
+from multiprocessing import Pool, Manager,freeze_support
 import numpy
 import time
 from scipy import optimize
@@ -60,7 +60,6 @@ def get_threshold(image, bin_num,upper_percent, noise_scale, bad_pix_num):
     noise = image[int(bad_pix_num+1):int(len(image)*upper_percent)]
 
     num, bins = numpy.histogram(noise, bin_num, normed=False)[0:2]
-    print(len(num),len(bins))
     # let the middle value of the bin interval  present the corresponding noise value
     size = bins[1]-bins[0]
     bins +=size/2.
@@ -70,7 +69,6 @@ def get_threshold(image, bin_num,upper_percent, noise_scale, bad_pix_num):
     bins = bins[mid- noise_scale:mid+ noise_scale]
     pxs = num[mid - noise_scale:mid + noise_scale]
     pxs = pxs/numpy.sum(pxs)
-    print(len(bins),len(pxs))
     def fun(x,*para):
         return para[0]*numpy.exp(-(x-para[1])**2/2./para[2]**2)
     paras = optimize.curve_fit(fun,bins,pxs,p0=[50,20,100])[0]
@@ -98,3 +96,6 @@ def detect( mask, ini_y, ini_x,signal,maxi,max_p):
             if ini_y+cor[0]<= y_shape-1 and ini_x+cor[1]<= x_shape-1 and mask[ini_y+cor[0],ini_x+cor[1]]>0:
                 max_p = detect(mask,ini_y+cor[0],ini_x+cor[1],signal,maxi,max_p)
     return max_p
+
+# if __name__=='__main__':
+#     freeze_support()

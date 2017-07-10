@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import numpy
 import time
 import matplotlib
 matplotlib.use('Agg')
@@ -11,7 +10,7 @@ import tool_box
 from Fourier_Quad import *
 from sys import argv
 import shelve
-import pandas
+import numpy
 
 area,g1num,g2num= argv[1:4]
 # area = 'w1'
@@ -187,11 +186,10 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                bin_num =6
-                g1_h,xi1_sq_min = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num)
-                g1_h_p = Fourier_Quad().fmin_g(G1,U1,N1,mode=1,bin_num=bin_num,twi=0.5,left=g1_h)[0]
+                bin_num =8
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1, mode=1,bin_num=bin_num)
                 res_arr1[i, m] = g1_h
-                res_arr1[i + 4, m] = g1_h_p-g1_h
+                res_arr1[i + 4, m] = g1_h_sig
                 res_arr1[i + 8, m] = num1
 
         for m in range(len(fg2)):
@@ -208,11 +206,11 @@ if not exist or comm==1:
                 N2 = numpy.array(fn2[fg2[m]])
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
-                bin_num = 6
-                g2_h,xi2_sq_min = Fourier_Quad().fmin_g(G2, U2, N2, mode=2,bin_num=bin_num)
-                g2_h_p  = Fourier_Quad().fmin_g(G2,U2,N2,mode=2,bin_num=bin_num,twi=0.5,left=g2_h)[0]
+                bin_num = 8
+                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2,U2, mode=2,bin_num=bin_num)
+
                 res_arr2[i, m] = g2_h
-                res_arr2[i + 4, m] = g2_h_p-g2_h
+                res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
 
     final_cache_path = path+'final_cache'
@@ -290,8 +288,8 @@ for i in range(3,4):
     for j in range(g1num):
         ax.text(fg1[j], arr1[i, j], str(round(arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
-    ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,8)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,8)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
@@ -328,8 +326,8 @@ for i in range(3,4):
     ax.scatter(fg2, arr2[i, :], c='black')
     for j in range(g2num):
         ax.text(fg2[j], arr2[i, j], str(round(arr2[i + 8, j] / 1000, 1)) + "K", color="red")
-    ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,8)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,8)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
