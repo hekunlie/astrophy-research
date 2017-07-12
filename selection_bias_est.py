@@ -22,7 +22,7 @@ def est_shear(m,g1,g2):
         print('Process %d: chip %s beginning>>>>')%(m,kk)
         gal_path = ahead + 'gal_chip_%s.fits'%kk
         gal_img   = fits.open(gal_path)[0].data
-        noise_path = ahead + 'nosie_chip_%s.fits'%kk
+        noise_path = ahead + 'noise_chip_%s.fits'%kk
         noise_img  = fits.open(noise_path)[0].data
         cat_path = ahead + 'gal_info_%s.xlsx'%kk
         data        = pandas.read_excel(cat_path).values[::,1]

@@ -20,12 +20,22 @@ def simulate(g1, g2, NO):
     mag_list = numpy.sort(numpy.loadtxt('lsstmagsims'))
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
-    psf  = galsim.Gaussian(half_light_radius=1.0)
-    psf  = psf.shear(e1=0.1,e2=-0.3)
-    psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
+    psf  = galsim.Gaussian(half_light_radius=1.2)
+    psf  = psf.shear(e1=0.05,e2=-0.03)
 
-    ellip1 = numpy.random.normal(loc=0, scale=0.1, size=1000000)
-    ellip2 = numpy.random.normal(loc=0, scale=0.1, size=1000000)
+    psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
+    ellip1_gener = numpy.abs(numpy.random.normal(loc=0, scale=0.15, size=500000))
+    idx = ellip1_gener >0.6
+    ellip1_gener[idx] = 0.6
+    ellip1 = numpy.append(-ellip1_gener,ellip1_gener)
+
+    ellip2_gener = numpy.abs(numpy.random.normal(loc=0, scale=0.15, size=500000))
+    idx = ellip2_gener >0.6
+    ellip2_gener[idx] = 0.6
+    ellip2 = numpy.append(-ellip2_gener,ellip2_gener)
+
+    numpy.random.shuffle(ellip1)
+    numpy.random.shuffle(ellip2)
 
     ahead = '/lmc/selection_bias/%d/' %NO
     if not os.path.isdir(ahead):
@@ -57,31 +67,25 @@ def simulate(g1, g2, NO):
             e2 = ell2[i]
             mag= mag_piece[i]
             mopho = numpy.random.randint(1,4,1)[0]
+            r = r0[i] * 1.2 + 0.3
 
             if mopho==1:
-                r   = r0[i]*1.2+0.3
                 gal = galsim.Exponential(flux=1.0, half_light_radius=r)
 
             elif mopho==2:
-                rb     = r0[i]*1.2+0.3
                 rd     = r0[i]+0.5
-                bulge = galsim.Sersic(half_light_radius=rb,n=3.5)
+                bulge = galsim.Sersic(half_light_radius=r,n=3.5)
                 disk  = galsim.Sersic(scale_radius=rd,n=1.5)
                 gal   = bulge*0.3+disk*0.7
 
             else:
-                r   = r0[i] * 1.2 + 0.3
                 gal = galsim.Gaussian(flux=1.0,half_light_radius=r)
 
-            if e1**2+e2**2>1:
-                e1 = e1/2
-                e2 = e2/2
+            gal_s = gal.shear(e1=e1,e2=e2)
+            gal_g = gal_s.shear(g1=g1,g2=g2)
+            gal_c = galsim.Convolve([psf,gal_g]) #the final galaxy profile
 
-            gal = gal.shear(e1=e1,e2=e2)
-            gal = gal.shear(g1=g1,g2=g2)
-            gal = galsim.Convolve([psf,gal]) #the final galaxy profile
-
-            gal_img, noise_img, snr = prop.draw(gal,mag,i,add_noise=1)
+            gal_img, noise_img, snr = prop.draw(gal_c,mag,i,add_noise=1)
             snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, 2.5/numpy.log(10)/snr
             gal_pool.append(gal_img.array)
             noise_pool.append(noise_img.array)
@@ -105,17 +109,20 @@ def simulate(g1, g2, NO):
         print('Process %d: Completed with time comsuming: %.2f')%(NO,te-ts)
 
 if __name__=='__main__':
-    shear1 = numpy.linspace(-0.005, 0.005, 11)
-    shear2 = numpy.linspace(-0.005, 0.005, 11)
-    numpy.random.shuffle(shear1)
-    numpy.savez('/lmc/selection_bias/shear',shear1,shear2)
+    # shear1 = numpy.linspace(-0.005, 0.005, 11)
+    # shear2 = numpy.linspace(-0.005, 0.005, 11)
+    # numpy.random.shuffle(shear1)
+    arr = numpy.load('/lmc/selection_bias/shear.npz')
+    shear1 = arr['arr_0']
+    shear2 = arr['arr_1']
     p = Pool()
     t1 = time.time()
-    for m in range(11):
+    for m in range(1,11):
        g1 = shear1[m]
        g2 = shear2[m]
        p.apply_async(simulate, args=(g1,g2,m,))
     p.close()
     p.join()
+
     t2 = time.time()
     print('Time comsuming: %.2f')%(t2-t1)

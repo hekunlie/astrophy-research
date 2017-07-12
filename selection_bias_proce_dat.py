@@ -14,7 +14,7 @@ import shelve
 
 
 ts =time.clock()
-snr= 'SNR>10'
+snr= 'SNR>0'
 
 fg1 = numpy.linspace(-0.005, 0.005, 11)
 fg2 = numpy.linspace(-0.005, 0.005, 11)
@@ -82,7 +82,9 @@ if not exist or comm==1:
                     fv2[i] = []
         # collect the data from the files and put into 'data_list'
         # elements in data-list are the data arrays
+        tc1 = time.time()
         data_list = tool_box.classify(paths,10)[0]
+        tc2 = time.time()
         for k in range(len(data_list)):
             # put the data into the corresponding list
             data = data_list[k]
@@ -134,6 +136,8 @@ if not exist or comm==1:
                         fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21]))
                         fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21]))
                         fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21]))
+        tc3 = time.time()
+        print(tc2-tc1,tc3-tc2)
          # create the cache of the classification
         dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
         dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
@@ -165,13 +169,14 @@ if not exist or comm==1:
     res_arr2 = numpy.zeros((12, len(fg2)))
 
     print('calculating shears ')
-    for i in range(3,4):
+    ts = time.time()
+    for i in range(4):
         for m in range(len(fg1)):
             if i != 3:
                 #for KSB, BJ, REGAUSS
                 num1 = len(g1[i][fg1[m]])
                 arr1 = numpy.array(g1[i][fg1[m]])
-                ava1 = numpy.sum(arr1) / num1 / 1.6  # g1
+                ava1 = numpy.mean(arr1)  # g1
                 err1 = numpy.std(arr1) / numpy.sqrt(num1)   #error bar
                 res_arr1[i, m] = ava1
                 res_arr1[i + 4, m] = err1
@@ -192,7 +197,7 @@ if not exist or comm==1:
             if i != 3:
                 num2 = len(g2[i][fg2[m]])
                 arr2 = numpy.array(g2[i][fg2[m]])
-                ava2 = numpy.sum(arr2) / num2 / 1.6  # g2
+                ava2 = numpy.mean(arr2)   # g2
                 err2 = numpy.std(arr2) / numpy.sqrt(num2 )  #error bar
                 res_arr2[i, m] = ava2
                 res_arr2[i + 4, m] = err2
@@ -207,7 +212,8 @@ if not exist or comm==1:
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
-
+    te = time.time()
+    print(te-ts)
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path,res_arr1,res_arr2)
 
@@ -216,10 +222,11 @@ else:
     res_arr1 = text['arr_0']
     res_arr2 = text['arr_1']
 tm =time.clock()
+
 # fit the line
 print('done\nbegin to plot the lines')
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
-for i in range(3, 4):
+for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
     # A = [[1,1,1,1,...]
