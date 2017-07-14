@@ -394,7 +394,7 @@ class Fourier_Quad:
             temp = data_array
         dat_ma = numpy.max(numpy.abs(temp))
         bins = numpy.linspace(-dat_ma, dat_ma, bin_num + 1)
-        bound = numpy.max(numpy.abs(data_array))+1
+        bound = numpy.max(numpy.abs(data_array))*1.5
         bins_r = bins[:-1]
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
@@ -421,21 +421,20 @@ class Fourier_Quad:
     def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, iters=8, sample=100): #checked 2017-7-9!!!
         # model 1 for  g1
         # model 2 for g2
-        # for times in range(iters):
-        #     g_range = numpy.linspace(left, right, 10)
-        #     step = g_range[1]-g_range[0]
-        #     xs_mini0 = self.G_bin(g,n,u,left,mode,bin_num,sample=sample)
-        #     g_h = g_range[0]
-        #     for k in range(len(g_range)):
-        #         xs_mini = self.G_bin(g,n,u,g_range[k],mode,bin_num,sample=sample)
-        #         if xs_mini < xs_mini0:
-        #             xs_mini0 = xs_mini
-        #             g_h = g_range[k]
-        #     left   = g_h - step
-        #     right = g_h + step
+        for times in range(iters):
+            g_range = numpy.linspace(left, right, 10)
+            step = g_range[1]-g_range[0]
+            xs_mini0 = self.G_bin(g,n,u,left,mode,bin_num,sample=sample)
+            g_h = g_range[0]
+            for k in range(len(g_range)):
+                xs_mini = self.G_bin(g,n,u,g_range[k],mode,bin_num,sample=sample)
+                if xs_mini < xs_mini0:
+                    xs_mini0 = xs_mini
+                    g_h = g_range[k]
+            left   = g_h - step
+            right = g_h + step
         # fitting
-        #g_range = numpy.linspace(g_h-0.005,g_h+0.005,21)
-        g_range = numpy.linspace(left,right, iters)
+        g_range = numpy.linspace(g_h-0.005,g_h+0.005,21)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
@@ -447,7 +446,6 @@ class Fourier_Quad:
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1/2./paras[0])
-        g_h = -paras[1]/2/paras[0]
         # x = numpy.linspace(g_h-0.005,g_h+0.005,50)
         # g_sig = numpy.sqrt(paras[2] / paras[0] - paras[1] ** 2 / paras[0] ** 2 / 4)
         # plt.scatter(g_range,xi2,linewidths=1)

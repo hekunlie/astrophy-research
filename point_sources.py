@@ -44,11 +44,11 @@ for i in range(len(og1)):
     g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
 
-    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=5,sample=None)[0:2]
-    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=5, sample=None)[0:2]
+    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=8,sample=1)[0:2]
+    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=8, sample=1)[0:2]
     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
-    # print(g1,g1_est_mean,g1_est)
-    # print(g2,g2_est_mean,g2_est)
+    print(g1,g1_est_mean,g1_est)
+    print(g2,g2_est_mean,g2_est)
 numpy.savez('cache.npz',mean_method,smpdf)
 
 result = numpy.load('cache.npz')
@@ -86,12 +86,12 @@ pR1 = numpy.dot(numpy.dot(pA1.T,numpy.linalg.inv(pC1)),pY1)
 pL2 = numpy.linalg.inv(numpy.dot(numpy.dot(pA2.T,numpy.linalg.inv(pC2)),pA2))
 pR2 = numpy.dot(numpy.dot(pA2.T,numpy.linalg.inv(pC2)),pY2)
 
-psig_m1 = numpy.sqrt(mL1[1, 1])
-psig_c1 = numpy.sqrt(mL1[0, 0])
-psig_m2 = numpy.sqrt(mL2[1, 1])
-psig_c2 = numpy.sqrt(mL2[0, 0])
-pe1mc = numpy.dot(mL1, mR1)
-pe2mc = numpy.dot(mL2, mR2)
+psig_m1 = numpy.sqrt(pL1[1, 1])
+psig_c1 = numpy.sqrt(pL1[0, 0])
+psig_m2 = numpy.sqrt(pL2[1, 1])
+psig_c2 = numpy.sqrt(pL2[0, 0])
+pe1mc = numpy.dot(pL1, pR1)
+pe2mc = numpy.dot(pL2, pR2)
 
 x = numpy.linspace(-0.02,0.02,100)
 print(me1mc,me2mc)
@@ -99,15 +99,17 @@ print(pe1mc,pe2mc)
 # plt.figure(figsize=(20,10))
 plt.subplot(121)
 #mean
-plt.scatter(og1,mean_method[:,0],c='g')
-plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='g')
-plt.plot(x,me1mc[1]*x+me1mc[0],color='g',label='mean')
+labelm1 = 'y=%.6f*x+%7.f'%(me1mc[1],me1mc[0])
+labelp1 = 'y=%.6f*x+%7.f'%(pe1mc[1],pe1mc[0])
+plt.scatter(og1,mean_method[:,0],c='b')
+plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='b')
+plt.plot(x,me1mc[1]*x+me1mc[0],color='b',label=labelm1)
 #sym-PDF
 plt.scatter(og1,smpdf[:,0],c='r')
 plt.errorbar(og1,smpdf[:,0],smpdf[:,1],fmt='none',ecolor='r')
-plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label='sym-PDF')
+plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label=labelp1)
 #y=x
-plt.plot(x,x,color='k')
+plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.02,0.02)
 plt.ylim(-0.02,0.02)
@@ -115,21 +117,23 @@ plt.legend()
 plt.subplot(122)
 
 #mean
-plt.scatter(smpdf[:,-1],mean_method[:,2],c='g')
-plt.errorbar(smpdf[:,-1],mean_method[:,2],mean_method[:,3],fmt='none',ecolor='g')
-plt.plot(x,me2mc[1]*x+me2mc[0],color='g',label = 'mean')
+labelm2 = 'y=%.6f*x+%7.f'%(me2mc[1],me2mc[0])
+labelp2 = 'y=%.6f*x+%7.f'%(pe2mc[1],pe2mc[0])
+plt.scatter(smpdf[:,-1],mean_method[:,2],c='b')
+plt.errorbar(smpdf[:,-1],mean_method[:,2],mean_method[:,3],fmt='none',ecolor='b')
+plt.plot(x,me2mc[1]*x+me2mc[0],color='b',label = labelm2)
 #sym-PDF
 plt.scatter(smpdf[:,-1],smpdf[:,2],c='r')
 plt.errorbar(smpdf[:,-1],smpdf[:,2],smpdf[:,3],fmt='none',ecolor='r')
-plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label= 'sym-PDF',linestyle='-.')
+plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label= labelp2)
 #y=x
-plt.plot(x,x,color='k',linestyle='-')
+plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.02,0.02)
 plt.ylim(-0.02,0.02)
 
 plt.legend()
-plt.show()
+plt.savefig('points.fig')
 
 
 
