@@ -1,60 +1,52 @@
-from Fourier_Quad import Fourier_Quad
+from Fourier_Quad import *
 import numpy
 import pandas
 import matplotlib.pyplot as plt
+from scipy import optimize
+import time
+import os
 
-og1 = numpy.linspace(-0.01,0.01,21)
-og2 = numpy.linspace(-0.01,0.01,21)
-print(og1.shape)
-numpy.random.shuffle(og2)
 
-size = 60
-psf_ori = Fourier_Quad().cre_psf(4,size)
-
-mean_method = numpy.zeros((21,6))
-smpdf = numpy.zeros((21,6))
-for i in range(len(og1)):
-    g1 = og1[i]
-    g2 = og2[i]
-    data_matrix = 0
-    p=0
-    for m in range(2000):
-        points= Fourier_Quad().ran_pos(50,size)
-        for k in range(4):
-            angle = numpy.pi*k/4
-            points_rotate = Fourier_Quad().rotate(points,angle)
-            points_shear = Fourier_Quad().shear(points_rotate,g1,g2)
-            final = Fourier_Quad().convolve_psf(points_shear,4,size)
-            G1,G2,N,U = Fourier_Quad().shear_est(final,psf_ori,size,F=False)[0:4]
-            ith_row = numpy.array([ G1, G2, N,U,g1,g2])
-            if p == 0:
-                data_matrix = ith_row
-            else:
-                data_matrix = numpy.row_stack((data_matrix, ith_row))
-            p = 1
-    G1 = data_matrix[:,0]
-    G2 = data_matrix[:,1]
-    N = data_matrix[:,2]
-    U = data_matrix[:,3]
-
-    g1_est_mean = numpy.sum(G1)/numpy.sum(N)
-
-    g1_est_mean_sig = numpy.std(G1/N)/numpy.sqrt(len(N))
-    g2_est_mean = numpy.sum(G2) / numpy.sum(N)
-    g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
-    mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
-
-    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=8,sample=1)[0:2]
-    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=8, sample=1)[0:2]
-    smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
-    print(g1,g1_est_mean,g1_est)
-    print(g2,g2_est_mean,g2_est)
-numpy.savez('cache.npz',mean_method,smpdf)
+mean_method = numpy.zeros((11,6))
+smpdf = numpy.zeros((11,6))
+# pdf_g = numpy.zeros((11,4))
+files = os.listdir('E:/Github/astrophy-research/')
+path = []
+for file in files:
+    if 'gal_test_' in file:
+        path.append(file)
+print(path)
+# for i in range(len(path)):
+#     data_matrix = numpy.load(path[i])['arr_0']
+#     G1 = data_matrix[:,0]
+#     G2 = data_matrix[:,1]
+#     N = data_matrix[:,2]
+#     U = data_matrix[:,3]
+#     g1 = data_matrix[0,-2]
+#     g2 = data_matrix[0, -1]
+#     g1_est_mean = numpy.sum(G1)/numpy.sum(N)
+#     g1_est_mean_sig = numpy.std(G1/N)/numpy.sqrt(len(N))
+#     g2_est_mean = numpy.sum(G2) / numpy.sum(N)
+#     g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
+#     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+#     g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,sample=40000)[0:2]
+#     g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6,sample=40000)[0:2]
+#
+#     print(g1,g1_est_mean,g2,g2_est_mean)
+#     print(g1,g1_est,g2,g2_est)
+#     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
+#     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+#
+#
+#
+#
+# numpy.savez('cache.npz',mean_method,smpdf)
 
 result = numpy.load('cache.npz')
 mean_method = result['arr_0']
 smpdf = result['arr_1']
-
+og1= mean_method[:,-2]
+og2 = mean_method[:,-1]
 mA1 = numpy.column_stack((numpy.ones_like(og1),og1))
 mY1  = mean_method[:,0]
 mC1  = numpy.diag(mean_method[:,1]**2)
@@ -99,8 +91,8 @@ print(pe1mc,pe2mc)
 # plt.figure(figsize=(20,10))
 plt.subplot(121)
 #mean
-labelm1 = 'y=%.6f*x+%7.f'%(me1mc[1],me1mc[0])
-labelp1 = 'y=%.6f*x+%7.f'%(pe1mc[1],pe1mc[0])
+labelm1 = 'y=%.6f*x+%.7f'%(me1mc[1],me1mc[0])
+labelp1 = 'y=%.6f*x+%.7f'%(pe1mc[1],pe1mc[0])
 plt.scatter(og1,mean_method[:,0],c='b')
 plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='b')
 plt.plot(x,me1mc[1]*x+me1mc[0],color='b',label=labelm1)
@@ -111,14 +103,15 @@ plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label=labelp1)
 #y=x
 plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
-plt.xlim(-0.02,0.02)
-plt.ylim(-0.02,0.02)
+plt.xlim(-0.015,0.015)
+plt.ylim(-0.015,0.015)
 plt.legend()
+plt.title('g1:200K gals each point')
 plt.subplot(122)
 
 #mean
-labelm2 = 'y=%.6f*x+%7.f'%(me2mc[1],me2mc[0])
-labelp2 = 'y=%.6f*x+%7.f'%(pe2mc[1],pe2mc[0])
+labelm2 = 'y=%.6f*x+%.7f'%(me2mc[1],me2mc[0])
+labelp2 = 'y=%.6f*x+%.7f'%(pe2mc[1],pe2mc[0])
 plt.scatter(smpdf[:,-1],mean_method[:,2],c='b')
 plt.errorbar(smpdf[:,-1],mean_method[:,2],mean_method[:,3],fmt='none',ecolor='b')
 plt.plot(x,me2mc[1]*x+me2mc[0],color='b',label = labelm2)
@@ -129,11 +122,13 @@ plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label= labelp2)
 #y=x
 plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
-plt.xlim(-0.02,0.02)
-plt.ylim(-0.02,0.02)
+plt.xlim(-0.015,0.015)
+plt.ylim(-0.015,0.015)
 
 plt.legend()
-plt.savefig('points.fig')
+plt.title('g2:200K gals each point')
+plt.show()
+
 
 
 

@@ -1,2 +1,4 @@
 import numpy as np
-print(len(np.linspace(-0.1,0.1,10)))
+
+a = [x for x in range(5)]
+print(a,type(a),np.where(a==np.max(a))[0])

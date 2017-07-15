@@ -5,7 +5,7 @@ from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
 import random
-
+from scipy import optimize
 class Fourier_Quad:
 
     def pow_spec(self, image):
@@ -41,7 +41,7 @@ class Fourier_Quad:
         psf_ps[idx] = 1.
 
         tk  = wb/ psf_ps * gal_ps
-        alpha = 2.*numpy.pi/x
+        alpha =1# 2.*numpy.pi/x
         kx = mx-0.5*x
         ky = my-0.5*x
         mn1 = (-0.5)*(kx**2 - ky**2)
@@ -399,12 +399,11 @@ class Fourier_Quad:
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
         # the bins should be extended to include some data points that are out of the bounds.
-        if sample is not None:
-            bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
+        bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
         num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
         return bins_r, num_in_bin, bin_size
 
-    def G_bin(self, g, n, u, g_h, mode, bin_num,sample=None):#checked 2017-7-9!!!
+    def G_bin(self, g, n, u, g_h, mode, bin_num,sample):#checked 2017-7-9!!!
         # mode 1 is for g1
         # mode 2 is for g2
         inverse = range(int(bin_num / 2 - 1), -1, -1)
@@ -418,23 +417,15 @@ class Fourier_Quad:
         return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
 
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, iters=8, sample=100): #checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, iters=20,sample=100): #checked 2017-7-9!!!
         # model 1 for  g1
         # model 2 for g2
-        for times in range(iters):
-            g_range = numpy.linspace(left, right, 10)
-            step = g_range[1]-g_range[0]
-            xs_mini0 = self.G_bin(g,n,u,left,mode,bin_num,sample=sample)
-            g_h = g_range[0]
-            for k in range(len(g_range)):
-                xs_mini = self.G_bin(g,n,u,g_range[k],mode,bin_num,sample=sample)
-                if xs_mini < xs_mini0:
-                    xs_mini0 = xs_mini
-                    g_h = g_range[k]
-            left   = g_h - step
-            right = g_h + step
+        def func(g_g):
+            return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
+        g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8, disp=False)[0]
+
         # fitting
-        g_range = numpy.linspace(g_h-0.005,g_h+0.005,21)
+        g_range = numpy.linspace(g_h-0.01,g_h+0.01,21)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
