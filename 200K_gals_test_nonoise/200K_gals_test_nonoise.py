@@ -1,4 +1,6 @@
-from Fourier_Quad import *
+from sys import path
+#path.append('E:/Github/astrophy-research')
+from Fourier_Quad import Fourier_Quad
 import numpy
 import pandas
 import matplotlib.pyplot as plt
@@ -10,37 +12,37 @@ import os
 mean_method = numpy.zeros((11,6))
 smpdf = numpy.zeros((11,6))
 # pdf_g = numpy.zeros((11,4))
-files = os.listdir('E:/Github/astrophy-research/')
+files = os.listdir('E:/Github/astrophy-research/200K_gals_test_nonoise/')
 path = []
 for file in files:
     if 'gal_test_' in file:
         path.append(file)
-print(path)
-# for i in range(len(path)):
-#     data_matrix = numpy.load(path[i])['arr_0']
-#     G1 = data_matrix[:,0]
-#     G2 = data_matrix[:,1]
-#     N = data_matrix[:,2]
-#     U = data_matrix[:,3]
-#     g1 = data_matrix[0,-2]
-#     g2 = data_matrix[0, -1]
-#     g1_est_mean = numpy.sum(G1)/numpy.sum(N)
-#     g1_est_mean_sig = numpy.std(G1/N)/numpy.sqrt(len(N))
-#     g2_est_mean = numpy.sum(G2) / numpy.sum(N)
-#     g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
-#     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
-#     g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,sample=40000)[0:2]
-#     g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6,sample=40000)[0:2]
-#
-#     print(g1,g1_est_mean,g2,g2_est_mean)
-#     print(g1,g1_est,g2,g2_est)
-#     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
-#     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
-#
-#
-#
-#
-# numpy.savez('cache.npz',mean_method,smpdf)
+
+for i in range(len(path)):
+    data_matrix = numpy.load(path[i])['arr_0']
+    G1 = data_matrix[:,0]
+    G2 = data_matrix[:,1]
+    N = data_matrix[:,2]
+    U = data_matrix[:,3]
+    g1 = data_matrix[0,-2]
+    g2 = data_matrix[0, -1]
+    g1_est_mean = numpy.sum(G1)/numpy.sum(N)
+    g1_est_mean_sig = numpy.std(G1/N)/numpy.sqrt(len(N))
+    g2_est_mean = numpy.sum(G2) / numpy.sum(N)
+    g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
+    mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=8,sample=20000)[0:2]
+    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=8,sample=20000)[0:2]
+
+    #print(g1,g1_est_mean,g2,g2_est_mean)
+    print(g1,g1_est,sig1,g2,g2_est,sig2)
+    smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
+    mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+
+
+
+
+numpy.savez('cache.npz',mean_method,smpdf)
 
 result = numpy.load('cache.npz')
 mean_method = result['arr_0']
@@ -131,8 +133,4 @@ plt.show()
 
 
 
-
-
-# df = pandas.DataFrame(data_matrix )
-# df.to_excel('E:/data.xlsx')
 

@@ -1,4 +1,4 @@
 import numpy as np
 
-a = [x for x in range(5)]
-print(a,type(a),np.where(a==np.max(a))[0])
+a = [x for x in range(20)]
+print(max(1,1,1,1))

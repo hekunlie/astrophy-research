@@ -389,8 +389,8 @@ class Fourier_Quad:
     def set_bins(self,data_array,bin_num,sample=None ,normed=False): # checked 2017-7-9!!!
         # The input must be one dimensional array.
         if sample is not None:
-            temp = numpy.sort(data_array)[sample:-sample]
-            #temp = numpy.random.choice(data_array,sample,replace=False)
+            #temp = numpy.sort(data_array)[sample:-sample]
+            temp = numpy.random.choice(data_array,sample,replace=1)
         else:
             temp = data_array
         dat_ma = numpy.max(numpy.abs(temp))
@@ -490,6 +490,7 @@ class Fourier_Quad:
                 if abs(left-right)<1.e-6:
                     g_h = left
                     break
+
         # fitting
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
