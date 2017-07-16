@@ -426,7 +426,11 @@ class Fourier_Quad:
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
+            iters = 0
+            same = 0
             while True:
+                templ = left
+                tempr = right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -487,9 +491,16 @@ class Fourier_Quad:
                     elif fR < fm1 and fR <fm3:
                         left = m3
 
-                if abs(left-right)<1.e-6:
-                    g_h = left
+                if abs(left-right)<1.e-5:
+                    g_h = (left+right)/2.
                     break
+                iters+=1
+                if left==templ and right==tempr:
+                    same+=1
+                if iters>15 and same>3:
+                    g_h = (left+right)/2.
+                    break
+                #print(left,right,abs(left-right))
         # fitting
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
