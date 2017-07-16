@@ -497,7 +497,7 @@ class Fourier_Quad:
                 iters+=1
                 if left==templ and right==tempr:
                     same+=1
-                if iters>15 and same>3:
+                if iters>10 and same>3 or iters>15:
                     g_h = (left+right)/2.
                     break
                 #print(left,right,abs(left-right))

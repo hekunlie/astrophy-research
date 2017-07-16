@@ -10,7 +10,7 @@ res2 = numpy.zeros((40,3))
 for k in range(-20,20):
     while True:
         G2 = numpy.random.normal(loc=0,scale=0.4,size=10000000)
-        if numpy.abs(numpy.mean(G2))<1.e-6:
+        if numpy.abs(numpy.mean(G2))<1.e-5:
             break
     print(numpy.mean(G2))
     G2=G2-10.*k/1000.
