@@ -11,6 +11,7 @@ import os
 
 mean_method = numpy.zeros((11,6))
 smpdf = numpy.zeros((11,6))
+# pdf_g = numpy.zeros((11,4))
 files = os.listdir('E:/Github/astrophy-research/200K_gals_test_nonoise/')
 path = []
 for file in files:
@@ -33,11 +34,12 @@ for i in range(len(path)):
     g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=8,sample=20000)[0:2]
     g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=8,sample=20000)[0:2]
 
-
     #print(g1,g1_est_mean,g2,g2_est_mean)
     print(g1,g1_est,sig1,g2,g2_est,sig2)
     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+
+
 
 
 numpy.savez('cache.npz',mean_method,smpdf)
@@ -88,8 +90,7 @@ pe2mc = numpy.dot(pL2, pR2)
 x = numpy.linspace(-0.02,0.02,100)
 print(me1mc,me2mc)
 print(pe1mc,pe2mc)
-
-
+# plt.figure(figsize=(20,10))
 plt.subplot(121)
 #mean
 labelm1 = 'y=%.6f*x+%.7f'%(me1mc[1],me1mc[0])
@@ -103,12 +104,13 @@ plt.errorbar(og1,smpdf[:,0],smpdf[:,1],fmt='none',ecolor='r')
 plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label=labelp1)
 #y=x
 plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
+#plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.015,0.015)
 plt.ylim(-0.015,0.015)
 plt.legend()
 plt.title('g1:200K gals each point')
-
 plt.subplot(122)
+
 #mean
 labelm2 = 'y=%.6f*x+%.7f'%(me2mc[1],me2mc[0])
 labelp2 = 'y=%.6f*x+%.7f'%(pe2mc[1],pe2mc[0])
@@ -124,6 +126,7 @@ plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.015,0.015)
 plt.ylim(-0.015,0.015)
+
 plt.legend()
 plt.title('g2:200K gals each point')
 plt.show()

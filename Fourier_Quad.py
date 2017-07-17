@@ -502,7 +502,6 @@ class Fourier_Quad:
                     break
                 #print(left,right,abs(left-right))
         # fitting
-
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
