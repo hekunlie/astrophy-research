@@ -400,9 +400,8 @@ class Fourier_Quad:
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
         # the bins should be extended to include some data points that are out of the bounds.
-
         bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
-        num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
+        num_in_bin = numpy.histogram(data_array,bins)[0]
         return bins_r, num_in_bin, bin_size
 
     def G_bin(self, g, n, u, g_h, mode, bin_num,sample):#checked 2017-7-9!!!
@@ -506,7 +505,6 @@ class Fourier_Quad:
 
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
-
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)

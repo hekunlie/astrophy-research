@@ -24,8 +24,13 @@ def simulate(g1, g2, NO):
     psf  = psf.shear(e1=0.05,e2=-0.03)
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
-    ellip = numpy.random.normal(loc=0,scale= 0.15,size=1000000)
-    ellip1 = ellip*numpy.cos()
+    while True:
+        ellip = numpy.random.normal(loc=0,scale=0.15,size=1000000)
+        theta = 4*numpy.random.uniform(0,1,1000000)*numpy.pi
+        ellip1 = ellip*numpy.cos(theta)
+        ellip2 = ellip*numpy.sin(theta)
+        if numpy.abs(numpy.mean(ellip2))<1.e-5 and numpy.abs(numpy.mean(ellip1))<1.e-5:
+            break
 
     ahead = '/lmc/selection_bias/%d/' %NO
     if not os.path.isdir(ahead):
