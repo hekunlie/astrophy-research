@@ -400,21 +400,12 @@ class Fourier_Quad:
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
         # the bins should be extended to include some data points that are out of the bounds.
-<<<<<<< HEAD
-        if sample is not None:
-            bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
-        num_in_bin = numpy.histogram(data_array,bins)[0]
-        print(num_in_bin)
-        return bins_r, num_in_bin, bin_size
 
-    def G_bin(self, g, n, u, g_h, mode, bin_num, sample):#checked 2017-7-9!!!
-=======
         bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
         num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
         return bins_r, num_in_bin, bin_size
 
     def G_bin(self, g, n, u, g_h, mode, bin_num,sample):#checked 2017-7-9!!!
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         # mode 1 is for g1
         # mode 2 is for g2
         inverse = range(int(bin_num / 2 - 1), -1, -1)
@@ -512,14 +503,10 @@ class Fourier_Quad:
                     break
                 #print(left,right,abs(left-right))
         # fitting
-<<<<<<< HEAD
-        dn=21
-        g_range = numpy.linspace(g_h-0.005,g_h+0.005,dn)
-        xi2 =numpy.array( [self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
-=======
+
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
+
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)
@@ -527,17 +514,13 @@ class Fourier_Quad:
         xigg2 = numpy.sum(xi2 * (g_range ** 2))
         xigg1 = numpy.sum(xi2 * g_range)
         xigg0 = numpy.sum(xi2)
-<<<<<<< HEAD
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, dn]]))
-=======
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1/2./paras[0])
-        x = numpy.linspace(g_h-0.005,g_h+0.005,50)
-        plt.scatter(g_range,xi2,linewidths=1)
-        plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
-        plt.show()
+        # x = numpy.linspace(g_h-0.005,g_h+0.005,50)
+        # plt.scatter(g_range,xi2,linewidths=1)
+        # plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
+        # plt.show()
         return g_h,g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
