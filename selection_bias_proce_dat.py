@@ -170,7 +170,7 @@ if not exist or comm==1:
 
     print('calculating shears ')
     ts = time.time()
-    for i in range(4):
+    for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:
                 #for KSB, BJ, REGAUSS
@@ -188,7 +188,9 @@ if not exist or comm==1:
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
                 bin_num =8
-                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1,bin_num=bin_num)
+                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1,bin_num=bin_num,iters=200,sample=50)
+                # g1_h = numpy.sum(G1)/numpy.sum(N1)
+                # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = g1_h_sig
                 res_arr1[i + 8, m] = num1
@@ -208,7 +210,9 @@ if not exist or comm==1:
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
                 bin_num = 8
-                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2,U2, mode=2,bin_num=bin_num)
+                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2,U2, mode=2,bin_num=bin_num,iters=200,sample=50)
+                # g2_h = numpy.sum(G2) / numpy.sum(N2)
+                # g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
@@ -226,7 +230,7 @@ tm =time.clock()
 # fit the line
 print('done\nbegin to plot the lines')
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
-for i in range(4):
+for i in range(3,4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
     # A = [[1,1,1,1,...]
@@ -277,7 +281,7 @@ for i in range(4):
 
     ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fg1, e1mc[1] * fg1 + e1mc[0], label=name[i], color='red')
-    ax.plot(fg1, fg1, label='y=x', color='blue')
+    ax.plot([-0.01,0.01], [-0.01,0.01], label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
@@ -289,6 +293,8 @@ for i in range(4):
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
+    plt.ylim(-0.01,0.01)
+    plt.xlim(-0.01, 0.01)
     nm1 = pic_path + name[i] + "_g1.png"
     plt.savefig(nm1)
     print ('plotted g1')
@@ -316,7 +322,7 @@ for i in range(4):
 
     ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fg2, e2mc[1] * fg2 + e2mc[0], label=name[i], color='red')
-    ax.plot(fg2, fg2, label='y=x', color='blue')
+    ax.plot([-0.01,0.01], [-0.01,0.01], label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
@@ -327,6 +333,8 @@ for i in range(4):
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
+    plt.ylim(-0.01,0.01)
+    plt.xlim(-0.01,0.01)
     nm2 = pic_path + name[i] + "_g2.png"
     plt.savefig(nm2)
     print('plotted g2')

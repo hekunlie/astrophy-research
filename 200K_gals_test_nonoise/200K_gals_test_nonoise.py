@@ -1,7 +1,10 @@
+from sys import path
+#path.append('E:/Github/astrophy-research')
 from Fourier_Quad import Fourier_Quad
 import numpy
 import pandas
 import matplotlib.pyplot as plt
+<<<<<<< HEAD:point_sources.py
 
 
 def g_fit(G,N,U,mode,num,left=-0.06,right=0.06):
@@ -49,29 +52,61 @@ for i in range(len(og1)):
             else:
                 data_matrix = numpy.row_stack((data_matrix, ith_row))
             p = 1
+=======
+from scipy import optimize
+import time
+import os
+
+
+mean_method = numpy.zeros((11,6))
+smpdf = numpy.zeros((11,6))
+# pdf_g = numpy.zeros((11,4))
+files = os.listdir('E:/Github/astrophy-research/200K_gals_test_nonoise/')
+path = []
+for file in files:
+    if 'gal_test_' in file:
+        path.append(file)
+
+for i in range(len(path)):
+    data_matrix = numpy.load(path[i])['arr_0']
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2:200K_gals_test_nonoise/200K_gals_test_nonoise.py
     G1 = data_matrix[:,0]
     G2 = data_matrix[:,1]
     N = data_matrix[:,2]
     U = data_matrix[:,3]
-
+    g1 = data_matrix[0,-2]
+    g2 = data_matrix[0, -1]
     g1_est_mean = numpy.sum(G1)/numpy.sum(N)
-
     g1_est_mean_sig = numpy.std(G1/N)/numpy.sqrt(len(N))
     g2_est_mean = numpy.sum(G2) / numpy.sum(N)
     g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=8,sample=20000)[0:2]
+    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=8,sample=20000)[0:2]
 
+<<<<<<< HEAD:point_sources.py
     g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=12,sample=None)[0:2]
     g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=12, sample=None)[0:2]
     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
     print(g1,g1_est_mean,g1_est)
     print(g2,g2_est_mean,g2_est)
+=======
+    #print(g1,g1_est_mean,g2,g2_est_mean)
+    print(g1,g1_est,sig1,g2,g2_est,sig2)
+    smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
+    mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+
+
+
+
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2:200K_gals_test_nonoise/200K_gals_test_nonoise.py
 numpy.savez('cache.npz',mean_method,smpdf)
 
 result = numpy.load('cache.npz')
 mean_method = result['arr_0']
 smpdf = result['arr_1']
-
+og1= mean_method[:,-2]
+og2 = mean_method[:,-1]
 mA1 = numpy.column_stack((numpy.ones_like(og1),og1))
 mY1  = mean_method[:,0]
 mC1  = numpy.diag(mean_method[:,1]**2)
@@ -116,24 +151,38 @@ print(pe1mc,pe2mc)
 # plt.figure(figsize=(20,10))
 plt.subplot(121)
 #mean
+<<<<<<< HEAD:point_sources.py
 labelm1 = 'y = %.6f*x+%.9f'%(me1mc[1],me1mc[0])
 plt.scatter(og1,mean_method[:,0],c='g')
 plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='g')
 plt.plot(x,me1mc[1]*x+me1mc[0],color='g',label=labelm1)
+=======
+labelm1 = 'y=%.6f*x+%.7f'%(me1mc[1],me1mc[0])
+labelp1 = 'y=%.6f*x+%.7f'%(pe1mc[1],pe1mc[0])
+plt.scatter(og1,mean_method[:,0],c='b')
+plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='b')
+plt.plot(x,me1mc[1]*x+me1mc[0],color='b',label=labelm1)
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2:200K_gals_test_nonoise/200K_gals_test_nonoise.py
 #sym-PDF
 labelp1 = 'y = %.6f*x+%.9f'%(pe1mc[1],pe1mc[0])
 plt.scatter(og1,smpdf[:,0],c='r')
 plt.errorbar(og1,smpdf[:,0],smpdf[:,1],fmt='none',ecolor='r')
 plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label=labelp1)
 #y=x
-plt.plot(x,x,color='k')
+plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
 #plt.axes().set_aspect('equal', 'datalim')
-plt.xlim(-0.02,0.02)
-plt.ylim(-0.02,0.02)
+plt.xlim(-0.015,0.015)
+plt.ylim(-0.015,0.015)
 plt.legend()
+<<<<<<< HEAD:point_sources.py
+=======
+plt.title('g1:200K gals each point')
+plt.subplot(122)
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2:200K_gals_test_nonoise/200K_gals_test_nonoise.py
 
 plt.subplot(122)
 #mean
+<<<<<<< HEAD:point_sources.py
 labelm2 = 'y = %.6f*x+%.9f'%(me2mc[1],me2mc[0])
 labelp2 = 'y = %.6f*x+%.9f'%(pe2mc[1],pe2mc[0])
 plt.scatter(smpdf[:,-1],mean_method[:,2],c='g')
@@ -147,13 +196,27 @@ plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label=labelp2 )
 plt.plot(x,x,color='k',linestyle='-')
 plt.xlim(-0.02,0.02)
 plt.ylim(-0.02,0.02)
+=======
+labelm2 = 'y=%.6f*x+%.7f'%(me2mc[1],me2mc[0])
+labelp2 = 'y=%.6f*x+%.7f'%(pe2mc[1],pe2mc[0])
+plt.scatter(smpdf[:,-1],mean_method[:,2],c='b')
+plt.errorbar(smpdf[:,-1],mean_method[:,2],mean_method[:,3],fmt='none',ecolor='b')
+plt.plot(x,me2mc[1]*x+me2mc[0],color='b',label = labelm2)
+#sym-PDF
+plt.scatter(smpdf[:,-1],smpdf[:,2],c='r')
+plt.errorbar(smpdf[:,-1],smpdf[:,2],smpdf[:,3],fmt='none',ecolor='r')
+plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label= labelp2)
+#y=x
+plt.plot([-0.02,0.02],[-0.02,0.02],color='k')
+#plt.axes().set_aspect('equal', 'datalim')
+plt.xlim(-0.015,0.015)
+plt.ylim(-0.015,0.015)
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2:200K_gals_test_nonoise/200K_gals_test_nonoise.py
 
 plt.legend()
+plt.title('g2:200K gals each point')
 plt.show()
 
 
 
-
-# df = pandas.DataFrame(data_matrix )
-# df.to_excel('E:/data.xlsx')
 

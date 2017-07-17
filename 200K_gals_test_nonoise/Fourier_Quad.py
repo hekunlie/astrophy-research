@@ -12,7 +12,7 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False):
+    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=True):
         x = imagesize
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal_image)
@@ -386,11 +386,11 @@ class Fourier_Quad:
             arr[edge:size-edge,edge:size-edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,sample=None): # checked 2017-7-9!!!
+    def set_bins(self,data_array,bin_num,sample=None ,normed=False): # checked 2017-7-9!!!
         # The input must be one dimensional array.
         if sample is not None:
-            temp = numpy.sort(data_array)[sample:-sample]
-            #temp = numpy.random.choice(data_array,sample,replace=False)
+            #temp = numpy.sort(data_array)[sample:-sample]
+            temp = numpy.random.choice(data_array,sample,replace=1)
         else:
             temp = data_array
         dat_ma = numpy.max(numpy.abs(temp))
@@ -400,21 +400,11 @@ class Fourier_Quad:
         bin_size = bins[1] - bins[0]
         # Because of the bins set up which bases on a sample of the original data,
         # the bins should be extended to include some data points that are out of the bounds.
-<<<<<<< HEAD
-        if sample is not None:
-            bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
-        num_in_bin = numpy.histogram(data_array,bins)[0]
-        print(num_in_bin)
-        return bins_r, num_in_bin, bin_size
-
-    def G_bin(self, g, n, u, g_h, mode, bin_num, sample):#checked 2017-7-9!!!
-=======
         bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
         num_in_bin = numpy.histogram(data_array,bins,normed=normed)[0]
         return bins_r, num_in_bin, bin_size
 
     def G_bin(self, g, n, u, g_h, mode, bin_num,sample):#checked 2017-7-9!!!
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         # mode 1 is for g1
         # mode 2 is for g2
         inverse = range(int(bin_num / 2 - 1), -1, -1)
@@ -436,11 +426,7 @@ class Fourier_Quad:
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
-            iters = 0
-            same = 0
             while True:
-                templ = left
-                tempr = right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -501,25 +487,13 @@ class Fourier_Quad:
                     elif fR < fm1 and fR <fm3:
                         left = m3
 
-                if abs(left-right)<1.e-5:
-                    g_h = (left+right)/2.
+                if abs(left-right)<1.e-6:
+                    g_h = left
                     break
-                iters+=1
-                if left==templ and right==tempr:
-                    same+=1
-                if iters>10 and same>3 or iters>15:
-                    g_h = (left+right)/2.
-                    break
-                #print(left,right,abs(left-right))
+
         # fitting
-<<<<<<< HEAD
-        dn=21
-        g_range = numpy.linspace(g_h-0.005,g_h+0.005,dn)
-        xi2 =numpy.array( [self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
-=======
         g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)
@@ -527,17 +501,14 @@ class Fourier_Quad:
         xigg2 = numpy.sum(xi2 * (g_range ** 2))
         xigg1 = numpy.sum(xi2 * g_range)
         xigg0 = numpy.sum(xi2)
-<<<<<<< HEAD
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, dn]]))
-=======
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
->>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1/2./paras[0])
-        x = numpy.linspace(g_h-0.005,g_h+0.005,50)
-        plt.scatter(g_range,xi2,linewidths=1)
-        plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
-        plt.show()
+        # x = numpy.linspace(g_h-0.005,g_h+0.005,50)
+        # g_sig = numpy.sqrt(paras[2] / paras[0] - paras[1] ** 2 / paras[0] ** 2 / 4)
+        # plt.scatter(g_range,xi2,linewidths=1)
+        # plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
+        # plt.show()
         return g_h,g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):

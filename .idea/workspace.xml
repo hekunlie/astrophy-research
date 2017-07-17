@@ -10,21 +10,37 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
+<<<<<<< HEAD
     <SUITE FILE_PATH="coverage/astrophy_research$extractor.coverage" NAME="extractor Coverage Results" MODIFIED="1499391835478" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/sources_extractor" />
     <SUITE FILE_PATH="coverage/astrophy_research$process_data.coverage" NAME="process_data Coverage Results" MODIFIED="1499662565301" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/result/w1" />
     <SUITE FILE_PATH="coverage/astrophy_research$temp.coverage" NAME="temp Coverage Results" MODIFIED="1499942839696" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
     <SUITE FILE_PATH="coverage/astrophy_research$process_data__1_.coverage" NAME="process_data (1) Coverage Results" MODIFIED="1499416027980" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/astrophy_research$tool_box.coverage" NAME="tool_box Coverage Results" MODIFIED="1499309363937" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+=======
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
     <SUITE FILE_PATH="coverage/astrophy_research$psf_interpolation.coverage" NAME="psf_interpolation Coverage Results" MODIFIED="1499246424605" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
-    <SUITE FILE_PATH="coverage/astrophy_research$demo.coverage" NAME="demo Coverage Results" MODIFIED="1499423357931" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/result/w1" />
+    <SUITE FILE_PATH="coverage/astrophy_research$tool_box.coverage" NAME="tool_box Coverage Results" MODIFIED="1499309363937" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/astrophy_research$point_sources.coverage" NAME="point_sources Coverage Results" MODIFIED="1499668018357" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/astrophy_research$process_data__1_.coverage" NAME="process_data (1) Coverage Results" MODIFIED="1499416027980" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/astrophy_research$temp__1_.coverage" NAME="temp (1) Coverage Results" MODIFIED="1500192854483" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/astrophy_research$Fourier_Quad.coverage" NAME="Fourier_Quad Coverage Results" MODIFIED="1498640289598" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/astrophy_research$demo.coverage" NAME="demo Coverage Results" MODIFIED="1499423357931" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/result/w1" />
+    <SUITE FILE_PATH="coverage/astrophy_research$temp.coverage" NAME="temp Coverage Results" MODIFIED="1499741451309" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
+    <SUITE FILE_PATH="coverage/astrophy_research$process_data.coverage" NAME="process_data Coverage Results" MODIFIED="1499662565301" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/result/w1" />
     <SUITE FILE_PATH="coverage/astrophy_research$SNR_estimator.coverage" NAME="SNR_estimator Coverage Results" MODIFIED="1499329064786" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+<<<<<<< HEAD
     <SUITE FILE_PATH="coverage/astrophy_research$point_sources.coverage" NAME="point_sources Coverage Results" MODIFIED="1499936364837" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+=======
+    <SUITE FILE_PATH="coverage/astrophy_research$extractor.coverage" NAME="extractor Coverage Results" MODIFIED="1499391835478" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/sources_extractor" />
+    <SUITE FILE_PATH="coverage/astrophy_research$200K_gals_test_nonoise.coverage" NAME="200K_gals_test_nonoise Coverage Results" MODIFIED="1500197537352" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/200K_gals_test_nonoise" />
+    <SUITE FILE_PATH="coverage/astrophy_research$algorithm_test.coverage" NAME="algorithm_test Coverage Results" MODIFIED="1500217628674" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
   </component>
   <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
     <option name="GROUP_SCHEMA" value="true" />
     <option name="GROUP_CONTENTS" value="false" />
     <option name="SORT_POSITIONED" value="false" />
@@ -38,11 +54,16 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="-1291">
               <caret line="396" column="50" lean-forward="true" selection-start-line="396" selection-start-column="50" selection-end-line="396" selection-end-column="50" />
+=======
+            <state relative-caret-position="2145">
+              <caret line="498" column="27" lean-forward="true" selection-start-line="498" selection-start-column="27" selection-end-line="498" selection-end-column="27" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -53,8 +74,13 @@
       <file leaf-file-name="point_sources.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/point_sources.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="340">
               <caret line="49" column="69" lean-forward="true" selection-start-line="49" selection-start-column="69" selection-end-line="49" selection-end-column="69" />
+=======
+            <state relative-caret-position="152">
+              <caret line="13" column="26" lean-forward="false" selection-start-line="13" selection-start-column="26" selection-end-line="13" selection-end-column="26" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
                 <element signature="e#0#37#0" expanded="true" />
                 <element signature="e#152#757#0" expanded="false" />
@@ -63,6 +89,7 @@
           </provider>
         </entry>
       </file>
+<<<<<<< HEAD
       <file leaf-file-name="tool_box.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tool_box.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -80,6 +107,13 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="144">
               <caret line="204" column="47" lean-forward="true" selection-start-line="204" selection-start-column="47" selection-end-line="204" selection-end-column="47" />
+=======
+      <file leaf-file-name="process_data.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/process_data.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3933">
+              <caret line="209" column="50" lean-forward="false" selection-start-line="209" selection-start-column="50" selection-end-line="209" selection-end-column="50" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
                 <element signature="e#25#34#0" expanded="true" />
               </folding>
@@ -90,45 +124,100 @@
       <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="299">
+=======
+            <state relative-caret-position="247">
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <caret line="16" column="12" lean-forward="false" selection-start-line="16" selection-start-column="12" selection-end-line="16" selection-end-column="12" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
+<<<<<<< HEAD
       <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection-bias.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="167">
               <caret line="27" column="29" lean-forward="false" selection-start-line="27" selection-start-column="29" selection-end-line="27" selection-end-column="29" />
+=======
+      <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="285">
+              <caret line="22" column="16" lean-forward="false" selection-start-line="22" selection-start-column="16" selection-end-line="22" selection-end-column="17" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="fmin_g_test.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/fmin_g_test.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="416">
+              <caret line="37" column="39" lean-forward="false" selection-start-line="37" selection-start-column="39" selection-end-line="37" selection-end-column="39" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
-                <element signature="e#0#12#0" expanded="true" />
+                <element signature="e#0#26#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="lsstetc.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lsstetc.py">
+      <file leaf-file-name="algorithm_test.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/algorithm_test.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="259">
               <caret line="55" column="36" lean-forward="true" selection-start-line="55" selection-start-column="36" selection-end-line="55" selection-end-column="36" />
+=======
+            <state relative-caret-position="282">
+              <caret line="11" column="63" lean-forward="true" selection-start-line="11" selection-start-column="63" selection-end-line="11" selection-end-column="63" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
-                <element signature="e#222#240#0" expanded="true" />
+                <element signature="e#0#26#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
+<<<<<<< HEAD
       <file leaf-file-name="temp.py" pinned="false" current-in-tab="true">
         <entry file="file://E:/cosmic shear/python code/temp.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="452">
               <caret line="54" column="0" lean-forward="true" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
+=======
+      <file leaf-file-name="200K_gals_test_nonoise.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/200K_gals_test_nonoise/200K_gals_test_nonoise.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="495">
+              <caret line="34" column="86" lean-forward="false" selection-start-line="34" selection-start-column="86" selection-end-line="34" selection-end-column="86" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
               <folding>
-                <element signature="e#0#10#0" expanded="true" />
+                <element signature="e#0#20#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/200K_gals_test_nonoise/Fourier_Quad.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="9253">
+              <caret line="494" column="50" lean-forward="false" selection-start-line="494" selection-start-column="50" selection-end-line="494" selection-end-column="50" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="temp.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/temp.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="57">
+              <caret line="3" column="19" lean-forward="false" selection-start-line="3" selection-start-column="19" selection-end-line="3" selection-end-column="19" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -163,10 +252,18 @@
         <option value="$USER_HOME$/Downloads/demo.py" />
         <option value="$PROJECT_DIR$/selection_bias_est.py" />
         <option value="$PROJECT_DIR$/selection_bias_proce_dat.py" />
+<<<<<<< HEAD
         <option value="$PROJECT_DIR$/point_sources.py" />
         <option value="$PROJECT_DIR$/selection-bias.py" />
         <option value="$PROJECT_DIR$/Fourier_Quad.py" />
         <option value="E:/cosmic shear/python code/temp.py" />
+=======
+        <option value="$PROJECT_DIR$/temp.py" />
+        <option value="$PROJECT_DIR$/200K_gals_test_nonoise/Fourier_Quad.py" />
+        <option value="$PROJECT_DIR$/200K_gals_test_nonoise/200K_gals_test_nonoise.py" />
+        <option value="$PROJECT_DIR$/algorithm_test.py" />
+        <option value="$PROJECT_DIR$/Fourier_Quad.py" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
       </list>
     </option>
   </component>
@@ -177,13 +274,13 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="-9" />
-    <option name="y" value="-9" />
-    <option name="width" value="1938" />
-    <option name="height" value="1060" />
+    <option name="x" value="-8" />
+    <option name="y" value="-8" />
+    <option name="width" value="1936" />
+    <option name="height" value="1066" />
   </component>
   <component name="ProjectView">
-    <navigator proportions="" version="1">
+    <navigator currentView="ProjectPane" proportions="" version="1">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -196,12 +293,21 @@
       <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes />
+    <panes>
+      <pane id="ProjectPane" />
+      <pane id="Scratches" />
+      <pane id="Scope" />
+    </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
+<<<<<<< HEAD
     <property name="last_opened_file_path" value="E:/cosmic shear/python code/temp.py" />
     <property name="settings.editor.selected.configurable" value="vcs.Git" />
+=======
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
     <property name="settings.editor.splitter.proportion" value="0.27509654" />
     <property name="nodejs_interpreter_path" value="/usr/bin/node" />
     <property name="js.eslint.eslintPackage" value="" />
@@ -220,7 +326,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.temp">
+  <component name="RunManager" selected="Python.algorithm_test">
     <configuration default="false" name="temp" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -259,26 +365,7 @@
       <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
-    <configuration default="false" name="process_data" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="E:/result/w1" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="astrophy-research" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="E:/result/w1/process_data.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="process_data (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration default="false" name="temp (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -291,26 +378,45 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="astrophy-research" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/process_data.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/temp.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <method />
     </configuration>
-    <configuration default="false" name="demo" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration default="false" name="200K_gals_test_nonoise" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="E:/result/w1" />
-      <option name="IS_MODULE_SDK" value="false" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/200K_gals_test_nonoise" />
+      <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="astrophy-research" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="E:/result/w1/demo.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/200K_gals_test_nonoise/200K_gals_test_nonoise.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="algorithm_test" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="astrophy-research" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/algorithm_test.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -501,17 +607,17 @@
     <list size="5">
       <item index="0" class="java.lang.String" itemvalue="Python.temp" />
       <item index="1" class="java.lang.String" itemvalue="Python.point_sources" />
-      <item index="2" class="java.lang.String" itemvalue="Python.process_data" />
-      <item index="3" class="java.lang.String" itemvalue="Python.process_data (1)" />
-      <item index="4" class="java.lang.String" itemvalue="Python.demo" />
+      <item index="2" class="java.lang.String" itemvalue="Python.temp (1)" />
+      <item index="3" class="java.lang.String" itemvalue="Python.200K_gals_test_nonoise" />
+      <item index="4" class="java.lang.String" itemvalue="Python.algorithm_test" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.temp" />
-        <item index="1" class="java.lang.String" itemvalue="Python.point_sources" />
-        <item index="2" class="java.lang.String" itemvalue="Python.process_data" />
-        <item index="3" class="java.lang.String" itemvalue="Python.demo" />
-        <item index="4" class="java.lang.String" itemvalue="Python.process_data (1)" />
+        <item index="0" class="java.lang.String" itemvalue="Python.algorithm_test" />
+        <item index="1" class="java.lang.String" itemvalue="Python.200K_gals_test_nonoise" />
+        <item index="2" class="java.lang.String" itemvalue="Python.temp (1)" />
+        <item index="3" class="java.lang.String" itemvalue="Python.temp" />
+        <item index="4" class="java.lang.String" itemvalue="Python.point_sources" />
       </list>
     </recent_temporary>
     <configuration default="true" type="tests" factoryName="Attests">
@@ -561,7 +667,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-9" y="-9" width="1938" height="1060" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1066" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18229167" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -570,7 +676,11 @@
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+<<<<<<< HEAD
       <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" show_stripe_button="true" weight="0.36319742" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="1978" y="23" width="1515" height="795" />
+=======
+      <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33697918" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="0" y="12" width="1437" height="845" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
@@ -617,11 +727,12 @@
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="4" />
+      <option name="time" value="5" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
+<<<<<<< HEAD
     <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2806">
@@ -673,23 +784,17 @@
         </state>
       </provider>
     </entry>
+=======
+    <entry file="file://E:/cosmic shear/sources_extractor/extractor.py" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
     <entry file="file://E:/cosmic shear/python code/temp.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="230">
           <caret line="18" column="20" lean-forward="false" selection-start-line="18" selection-start-column="20" selection-end-line="18" selection-end-column="20" />
-          <folding>
-            <element signature="e#0#10#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2806">
-          <caret line="127" column="32" lean-forward="false" selection-start-line="127" selection-start-column="32" selection-end-line="127" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py" />
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="10212">
@@ -707,13 +812,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2806">
-          <caret line="127" column="32" lean-forward="false" selection-start-line="127" selection-start-column="32" selection-end-line="127" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py" />
     <entry file="file://$PROJECT_DIR$/process_data.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4278">
@@ -751,13 +850,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2806">
-          <caret line="127" column="32" lean-forward="true" selection-start-line="127" selection-start-column="32" selection-end-line="127" selection-end-column="32" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py" />
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="10028">
@@ -805,6 +898,7 @@
     <entry file="file:///run/media/lihekun/My Passport/CODE/new_gethlr.py" />
     <entry file="file://$USER_HOME$/Downloads/w2-17.3.20.py" />
     <entry file="file://$USER_HOME$/Downloads/w2-17.3.23.py" />
+<<<<<<< HEAD
     <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/random/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="344">
@@ -856,6 +950,17 @@
         </state>
       </provider>
     </entry>
+=======
+    <entry file="file://E:/Program Files/Anaconda3/Lib/random.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/random/__init__.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/scipy/optimize/_lsq/least_squares.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/scipy/optimize/minpack.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/__init__.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/core/function_base.py" />
+    <entry file="file://$USER_HOME$/.PyCharm2017.1/system/python_stubs/-622520107/numpy/random/mtrand.py" />
+    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/scipy/signal/signaltools.py" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
     <entry file="file://$PROJECT_DIR$/SNR_estimator.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2100">
@@ -863,28 +968,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/cosmic shear/sources_extractor/extractor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="420">
-          <caret line="12" column="20" lean-forward="true" selection-start-line="12" selection-start-column="20" selection-end-line="12" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://E:/result/w1/demo.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="469">
-          <caret line="20" column="50" lean-forward="true" selection-start-line="20" selection-start-column="50" selection-end-line="20" selection-end-column="50" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/lib/function_base.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="23">
-          <caret line="649" column="26" lean-forward="false" selection-start-line="649" selection-start-column="26" selection-end-line="649" selection-end-column="26" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://E:/cosmic shear/sources_extractor/extractor.py" />
+    <entry file="file://E:/result/w1/demo.py" />
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/lib/function_base.py" />
     <entry file="file://$PROJECT_DIR$/measure.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="736">
@@ -892,20 +978,40 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/matplotlib/pyplot.py">
+    <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/matplotlib/pyplot.py" />
+    <entry file="file://E:/result/w1/process_data.py" />
+    <entry file="file://$PROJECT_DIR$/point_sources.py" />
+    <entry file="file://$PROJECT_DIR$/lsstetc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="278">
-          <caret line="3305" column="4" lean-forward="false" selection-start-line="3305" selection-start-column="4" selection-end-line="3305" selection-end-column="4" />
+        <state relative-caret-position="1558">
+          <caret line="84" column="37" lean-forward="false" selection-start-line="84" selection-start-column="37" selection-end-line="84" selection-end-column="37" />
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/result/w1/process_data.py">
+    <entry file="file://$USER_HOME$/Downloads/demo.py" />
+    <entry file="file://E:/cosmic shear/python code/temp.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="598">
-          <caret line="354" column="27" lean-forward="false" selection-start-line="354" selection-start-column="27" selection-end-line="354" selection-end-column="27" />
+        <state relative-caret-position="-6913">
+          <caret line="36" column="24" lean-forward="false" selection-start-line="36" selection-start-column="23" selection-end-line="36" selection-end-column="24" />
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/selection-bias.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2109">
+          <caret line="119" column="25" lean-forward="false" selection-start-line="119" selection-start-column="25" selection-end-line="119" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="247">
+          <caret line="16" column="12" lean-forward="false" selection-start-line="16" selection-start-column="12" selection-end-line="16" selection-end-column="12" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
     <entry file="file://$USER_HOME$/Downloads/demo.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="280">
@@ -926,12 +1032,23 @@
         <state relative-caret-position="299">
           <caret line="16" column="12" lean-forward="false" selection-start-line="16" selection-start-column="12" selection-end-line="16" selection-end-column="12" />
           <folding />
+=======
+    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="22" column="16" lean-forward="false" selection-start-line="22" selection-start-column="16" selection-end-line="22" selection-end-column="17" />
+          <folding />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tool_box.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
         <state relative-caret-position="299">
+=======
+        <state relative-caret-position="152">
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           <caret line="13" column="26" lean-forward="false" selection-start-line="13" selection-start-column="26" selection-end-line="13" selection-end-column="26" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
@@ -939,6 +1056,7 @@
         </state>
       </provider>
     </entry>
+<<<<<<< HEAD
     <entry file="file://E:/Program Files/Anaconda3/Lib/site-packages/numpy/core/numeric.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1322">
@@ -959,12 +1077,29 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="643">
           <caret line="743" column="0" lean-forward="false" selection-start-line="743" selection-start-column="0" selection-end-line="743" selection-end-column="0" />
+=======
+    <entry file="file://$PROJECT_DIR$/process_data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3933">
+          <caret line="209" column="50" lean-forward="false" selection-start-line="209" selection-start-column="50" selection-end-line="209" selection-end-column="50" />
+          <folding>
+            <element signature="e#25#34#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/ProgramData/Anaconda3/Lib/site-packages/scipy/optimize/optimize.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="282">
+          <caret line="321" column="53" lean-forward="false" selection-start-line="321" selection-start-column="53" selection-end-line="321" selection-end-column="53" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lsstetc.py">
+    <entry file="file://$PROJECT_DIR$/temp.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
         <state relative-caret-position="259">
           <caret line="55" column="36" lean-forward="true" selection-start-line="55" selection-start-column="36" selection-end-line="55" selection-end-column="36" />
           <folding>
@@ -990,34 +1125,81 @@
           <caret line="204" column="47" lean-forward="true" selection-start-line="204" selection-start-column="47" selection-end-line="204" selection-end-column="47" />
           <folding>
             <element signature="e#25#34#0" expanded="true" />
+=======
+        <state relative-caret-position="57">
+          <caret line="3" column="19" lean-forward="false" selection-start-line="3" selection-start-column="19" selection-end-line="3" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/200K_gals_test_nonoise/Fourier_Quad.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9253">
+          <caret line="494" column="50" lean-forward="false" selection-start-line="494" selection-start-column="50" selection-end-line="494" selection-end-column="50" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/fmin_g_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="416">
+          <caret line="37" column="39" lean-forward="false" selection-start-line="37" selection-start-column="39" selection-end-line="37" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#26#0" expanded="true" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           </folding>
         </state>
       </provider>
     </entry>
+<<<<<<< HEAD
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1291">
           <caret line="396" column="50" lean-forward="true" selection-start-line="396" selection-start-column="50" selection-end-line="396" selection-end-column="50" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
+=======
+    <entry file="file://$PROJECT_DIR$/200K_gals_test_nonoise/200K_gals_test_nonoise.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="495">
+          <caret line="34" column="86" lean-forward="false" selection-start-line="34" selection-start-column="86" selection-end-line="34" selection-end-column="86" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           </folding>
         </state>
       </provider>
     </entry>
+<<<<<<< HEAD
     <entry file="file://$PROJECT_DIR$/selection-bias.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="167">
           <caret line="27" column="29" lean-forward="false" selection-start-line="27" selection-start-column="29" selection-end-line="27" selection-end-column="29" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
+=======
+    <entry file="file://$PROJECT_DIR$/algorithm_test.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="282">
+          <caret line="11" column="63" lean-forward="true" selection-start-line="11" selection-start-column="63" selection-end-line="11" selection-end-column="63" />
+          <folding>
+            <element signature="e#0#26#0" expanded="true" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           </folding>
         </state>
       </provider>
     </entry>
+<<<<<<< HEAD
     <entry file="file://E:/cosmic shear/python code/temp.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="452">
           <caret line="54" column="0" lean-forward="true" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
+=======
+    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2145">
+          <caret line="498" column="27" lean-forward="true" selection-start-line="498" selection-start-column="27" selection-end-line="498" selection-end-column="27" />
+>>>>>>> 16cb26ce1feeb597502df492eb0f8d6d6aacc6f2
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>

@@ -1,2 +1,4 @@
 
 *.npz
+extractor.py
+temp.py
