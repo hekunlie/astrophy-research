@@ -24,18 +24,8 @@ def simulate(g1, g2, NO):
     psf  = psf.shear(e1=0.05,e2=-0.03)
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
-    ellip1_gener = numpy.abs(numpy.random.normal(loc=0, scale=0.15, size=500000))
-    idx = ellip1_gener >0.6
-    ellip1_gener[idx] = 0.6
-    ellip1 = numpy.append(-ellip1_gener,ellip1_gener)
-
-    ellip2_gener = numpy.abs(numpy.random.normal(loc=0, scale=0.15, size=500000))
-    idx = ellip2_gener >0.6
-    ellip2_gener[idx] = 0.6
-    ellip2 = numpy.append(-ellip2_gener,ellip2_gener)
-
-    numpy.random.shuffle(ellip1)
-    numpy.random.shuffle(ellip2)
+    ellip = numpy.random.normal(loc=0,scale= 0.15,size=1000000)
+    ellip1 = ellip*numpy.cos()
 
     ahead = '/lmc/selection_bias/%d/' %NO
     if not os.path.isdir(ahead):

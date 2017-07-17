@@ -3,22 +3,39 @@ import numpy
 import pandas
 import matplotlib.pyplot as plt
 
-og1 = numpy.linspace(-0.01,0.01,21)
-og2 = numpy.linspace(-0.01,0.01,21)
-print(og1.shape)
+
+def g_fit(G,N,U,mode,num,left=-0.06,right=0.06):
+    g_range = numpy.linspace(left,right,num)
+    xisq = [Fourier_Quad().G_bin(G,N,U,g_h,mode,8) for g_h in g_range]
+    gg4 = numpy.sum(g_range ** 4)
+    gg3 = numpy.sum(g_range ** 3)
+    gg2 = numpy.sum(g_range ** 2)
+    gg1 = numpy.sum(g_range)
+    xigg2 = numpy.sum(xisq * g_range ** 2)
+    xigg1 = numpy.sum(xisq * g_range)
+    xigg0 = numpy.sum(xisq)
+    cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, num]]))
+    paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+    g_sig = numpy.sqrt(1 / 2. / paras[0])
+    g_est = -paras[1]/2/paras[0]
+    return g_est,g_sig
+
+og1 = numpy.linspace(-0.01,0.01,11)
+og2 = numpy.linspace(-0.01,0.01,11)
 numpy.random.shuffle(og2)
 
 size = 60
 psf_ori = Fourier_Quad().cre_psf(4,size)
 
-mean_method = numpy.zeros((21,6))
-smpdf = numpy.zeros((21,6))
+mean_method = numpy.zeros((11,6))
+smpdf = numpy.zeros((11,6))
+
 for i in range(len(og1)):
     g1 = og1[i]
     g2 = og2[i]
     data_matrix = 0
     p=0
-    for m in range(2000):
+    for m in range(500):
         points= Fourier_Quad().ran_pos(50,size)
         for k in range(4):
             angle = numpy.pi*k/4
@@ -44,11 +61,11 @@ for i in range(len(og1)):
     g2_est_mean_sig = numpy.std(G2 / N) / numpy.sqrt(len(N))
     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
 
-    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=5,sample=None)[0:2]
-    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=5, sample=None)[0:2]
+    g1_est,sig1  = Fourier_Quad().fmin_g(G1,N,U,mode=1,bin_num=6,left=-0.02,right=0.02,iters=12,sample=None)[0:2]
+    g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=6, left=-0.02, right=0.02,iters=12, sample=None)[0:2]
     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
-    # print(g1,g1_est_mean,g1_est)
-    # print(g2,g2_est_mean,g2_est)
+    print(g1,g1_est_mean,g1_est)
+    print(g2,g2_est_mean,g2_est)
 numpy.savez('cache.npz',mean_method,smpdf)
 
 result = numpy.load('cache.npz')
@@ -86,12 +103,12 @@ pR1 = numpy.dot(numpy.dot(pA1.T,numpy.linalg.inv(pC1)),pY1)
 pL2 = numpy.linalg.inv(numpy.dot(numpy.dot(pA2.T,numpy.linalg.inv(pC2)),pA2))
 pR2 = numpy.dot(numpy.dot(pA2.T,numpy.linalg.inv(pC2)),pY2)
 
-psig_m1 = numpy.sqrt(mL1[1, 1])
-psig_c1 = numpy.sqrt(mL1[0, 0])
-psig_m2 = numpy.sqrt(mL2[1, 1])
-psig_c2 = numpy.sqrt(mL2[0, 0])
-pe1mc = numpy.dot(mL1, mR1)
-pe2mc = numpy.dot(mL2, mR2)
+psig_m1 = numpy.sqrt(pL1[1, 1])
+psig_c1 = numpy.sqrt(pL1[0, 0])
+psig_m2 = numpy.sqrt(pL2[1, 1])
+psig_c2 = numpy.sqrt(pL2[0, 0])
+pe1mc = numpy.dot(pL1, pR1)
+pe2mc = numpy.dot(pL2, pR2)
 
 x = numpy.linspace(-0.02,0.02,100)
 print(me1mc,me2mc)
@@ -99,32 +116,35 @@ print(pe1mc,pe2mc)
 # plt.figure(figsize=(20,10))
 plt.subplot(121)
 #mean
+labelm1 = 'y = %.6f*x+%.9f'%(me1mc[1],me1mc[0])
 plt.scatter(og1,mean_method[:,0],c='g')
 plt.errorbar(og1,mean_method[:,0],mean_method[:,1],fmt='none',ecolor='g')
-plt.plot(x,me1mc[1]*x+me1mc[0],color='g',label='mean')
+plt.plot(x,me1mc[1]*x+me1mc[0],color='g',label=labelm1)
 #sym-PDF
+labelp1 = 'y = %.6f*x+%.9f'%(pe1mc[1],pe1mc[0])
 plt.scatter(og1,smpdf[:,0],c='r')
 plt.errorbar(og1,smpdf[:,0],smpdf[:,1],fmt='none',ecolor='r')
-plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label='sym-PDF')
+plt.plot(x,pe1mc[1]*x+pe1mc[0],color='r',label=labelp1)
 #y=x
 plt.plot(x,x,color='k')
 #plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.02,0.02)
 plt.ylim(-0.02,0.02)
 plt.legend()
-plt.subplot(122)
 
+plt.subplot(122)
 #mean
+labelm2 = 'y = %.6f*x+%.9f'%(me2mc[1],me2mc[0])
+labelp2 = 'y = %.6f*x+%.9f'%(pe2mc[1],pe2mc[0])
 plt.scatter(smpdf[:,-1],mean_method[:,2],c='g')
 plt.errorbar(smpdf[:,-1],mean_method[:,2],mean_method[:,3],fmt='none',ecolor='g')
-plt.plot(x,me2mc[1]*x+me2mc[0],color='g',label = 'mean')
+plt.plot(x,me2mc[1]*x+me2mc[0],color='g',label = labelm2)
 #sym-PDF
 plt.scatter(smpdf[:,-1],smpdf[:,2],c='r')
 plt.errorbar(smpdf[:,-1],smpdf[:,2],smpdf[:,3],fmt='none',ecolor='r')
-plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label= 'sym-PDF',linestyle='-.')
+plt.plot(x,pe2mc[1]*x+pe2mc[0],color='r',label=labelp2 )
 #y=x
 plt.plot(x,x,color='k',linestyle='-')
-#plt.axes().set_aspect('equal', 'datalim')
 plt.xlim(-0.02,0.02)
 plt.ylim(-0.02,0.02)
 
