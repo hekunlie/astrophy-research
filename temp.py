@@ -1,4 +1,5 @@
 import numpy as np
+
 import matplotlib.pyplot as plt
 print(np.sort(np.random.randint(1,10000,100)))
 #####################################################
@@ -73,3 +74,4 @@ print(np.sort(np.random.randint(1,10000,100)))
 # plt.show()
 
 #####################################################
+

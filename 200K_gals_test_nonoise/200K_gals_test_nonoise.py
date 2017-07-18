@@ -11,6 +11,7 @@ import os
 
 mean_method = numpy.zeros((11,6))
 smpdf = numpy.zeros((11,6))
+# pdf_g = numpy.zeros((11,4))
 files = os.listdir('E:/Github/astrophy-research/200K_gals_test_nonoise/')
 path = []
 for file in files:
@@ -41,7 +42,6 @@ for i in range(11):
     g2_est,sig2 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=8,sample=20000)[0:2]
     g2_est22, sig22 = Fourier_Quad().fmin_g(G2, N, U, mode=2, bin_num=8, method =1,sample=20000)[0:2]
 
-
     #print(g1,g1_est_mean,g2,g2_est_mean)
     print(g1,abs(g1-g1_est),abs(g1-g1_est11))
     print(g1, g1_est, g1_est11,t2-t1)
@@ -51,6 +51,7 @@ for i in range(11):
     new.append(g2-g2_est22)
     smpdf[i] = g1_est,sig1,g2_est,sig2,g1,g2
     mean_method[i] = g1_est_mean,g1_est_mean_sig,g2_est_mean,g2_est_mean_sig,g1,g2
+
 
 print(numpy.std(old),numpy.std(new))
 # numpy.savez('cache.npz',mean_method,smpdf)
@@ -140,7 +141,3 @@ print(numpy.std(old),numpy.std(new))
 # plt.legend()
 # plt.title('g2:200K gals each point')
 # plt.show()
-
-
-
-
