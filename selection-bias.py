@@ -35,7 +35,7 @@ def simulate(g1, g2, NO):
     ahead = '/lmc/selection_bias/%d/' %NO
     if not os.path.isdir(ahead):
         os.mkdir(ahead)
-
+    seed_ori = numpy.random.randint(0, 10000000, 1000000)
     for k in range(100):      # 100 chips
         kk = str(k).zfill(2)      # chip number
         ts = time.time()
@@ -55,8 +55,7 @@ def simulate(g1, g2, NO):
         ell1       = ellip1[tag]
         ell2       = ellip2[tag]
         r0 = numpy.random.random(gal_num)
-        idx = r0 <0.3
-        r0[idx]=0.3
+        seed_k = seed_ori[tag]
         for i in range(gal_num):
             e1 = ell1[i]
             e2 = ell2[i]
@@ -79,8 +78,8 @@ def simulate(g1, g2, NO):
             gal_s = gal.shear(e1=e1,e2=e2)
             gal_g = gal_s.shear(g1=g1,g2=g2)
             gal_c = galsim.Convolve([psf,gal_g]) #the final galaxy profile
-
-            gal_img, noise_img, snr = prop.draw(gal_c,mag,i,add_noise=1)
+            seed = seed_k[i]
+            gal_img, noise_img, snr = prop.draw(gal_c,mag,seed,add_noise=1)
             snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, 2.5/numpy.log(10)/snr
             gal_pool.append(gal_img.array)
             noise_pool.append(noise_img.array)
@@ -112,12 +111,11 @@ if __name__=='__main__':
     shear2 = arr['arr_1']
     p = Pool()
     t1 = time.time()
-    for m in range(1,11):
+    for m in range(11):
        g1 = shear1[m]
        g2 = shear2[m]
        p.apply_async(simulate, args=(g1,g2,m,))
     p.close()
     p.join()
-
     t2 = time.time()
     print('Time comsuming: %.2f')%(t2-t1)

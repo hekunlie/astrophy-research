@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+print(np.sort(np.random.randint(1,10000,100)))
 #####################################################
 # There are some demos to show how the matpotlib works
 # delete the '#' ahead of the codes of each demo to see how it works

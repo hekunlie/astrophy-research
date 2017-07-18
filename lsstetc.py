@@ -72,7 +72,7 @@ class ETC(object):
         profile = profile.withFlux(self.flux(mag))
         profile.drawImage(image=img)
         signal = np.sum(img.array**2)
-        noise = np.sqrt((signal * self.sky).sum())
+        noise = np.sqrt(signal * self.sky)
         snr = signal/noise
         if add_noise is not None:
             bd = galsim.BaseDeviate(seed)
@@ -87,7 +87,7 @@ class ETC(object):
             return img
 
     def SNR(self, profile, mag):
-        img = self.draw(profile, mag,noise=False)
+        img = self.draw(profile, mag,add_noise=False)
         mask = img.array > (self.threshold * self.sigma_sky)
         imgsqr = img.array**2*mask
         signal = imgsqr.sum()
