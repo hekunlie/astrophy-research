@@ -30,6 +30,7 @@ def est_shear(m,g1,g2):
         gal_pool = Fourier_Quad().divide_stamps(gal_img,stamp_size)
         noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
         gal_index =[]
+        data_matrix = numpy.zeros((len(col),len(gal_pool)))
         for j in range(len(gal_pool)):
             gg = str(j).zfill(4)
             idx  = kk+'_%s'%gg
@@ -42,12 +43,7 @@ def est_shear(m,g1,g2):
             res_b = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='BJ', strict=False)
             res_r  = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='REGAUSS', strict=False)
             G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
-            ith_row = numpy.array([res_k.corrected_g1, res_b.corrected_e1, res_r.corrected_e1, G1, N, g1, res_k.corrected_g2, res_b.corrected_e2, res_r.corrected_e2, G2, N, g2, U, V,data[j]])
-            if j == 0:
-                data_matrix = ith_row
-            else:
-                data_matrix = numpy.row_stack((data_matrix, ith_row))
-
+            data_matrix[j,:] =res_k.corrected_g1, res_b.corrected_e1, res_r.corrected_e1, G1, N, g1, res_k.corrected_g2, res_b.corrected_e2, res_r.corrected_e2, G2, N, g2, U, V,data[j]
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
         df.columns.name = 'Chip&NO'
         res_path = respath+'%d_chip_%s.xlsx'%(m,kk)
