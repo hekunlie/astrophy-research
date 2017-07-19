@@ -1,17 +1,20 @@
 import numpy
 import time
 import matplotlib.pyplot as plt
-# t1=time.clock()
-# while True:
-#     ellip = numpy.random.normal(loc=0, scale=0.15, size=1000000)
-#     theta = 4 * numpy.random.uniform(0, 1, 1000000) * numpy.pi
-#     ellip1 = ellip * numpy.cos(theta)
-#     ellip2 = ellip * numpy.sin(theta)
-#     if numpy.abs(numpy.mean(ellip2)) < 1.e-5 and numpy.abs(numpy.mean(ellip1)) < 1.e-5:
-#         break
-# t2=time.clock()
-# print(t2-t1)
-print(numpy.linspace(0,0.015,6))
+t1=time.clock()
+while True:
+    ellip = numpy.random.normal(loc=0, scale=0.18, size=1000000)
+    theta = 4 * numpy.random.uniform(0, 1, 1000000) * numpy.pi
+    ellip1 = ellip * numpy.cos(theta)
+    ellip2 = ellip * numpy.sin(theta)
+    if numpy.abs(numpy.mean(ellip2)) < 1.e-5 and numpy.abs(numpy.mean(ellip1)) < 1.e-5:
+        print(numpy.abs(numpy.mean(ellip1)),numpy.abs(numpy.mean(ellip2)))
+        break
+plt.hist(ellip,30)
+plt.show()
+t2=time.clock()
+print(t2-t1)
+
 #####################################################
 # There are some demos to show how the matpotlib works
 # delete the '#' ahead of the codes of each demo to see how it works

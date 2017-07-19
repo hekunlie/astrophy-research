@@ -23,12 +23,12 @@ def est_shear(m,g1,g2):
         gal_path = ahead + 'gal_chip_%s.fits'%kk
         gal_img   = fits.open(gal_path)[0].data
         noise_path = ahead + 'noise_chip_%s.fits'%kk
-        noise_img  = fits.open(noise_path)[0].data
+        #noise_img  = fits.open(noise_path)[0].data
         cat_path = ahead + 'gal_info_%s.xlsx'%kk
         data        = pandas.read_excel(cat_path).values[::,1]
 
         gal_pool = Fourier_Quad().divide_stamps(gal_img,stamp_size)
-        noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
+        #noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
         gal_index =[]
         data_matrix = numpy.zeros((len(col),len(gal_pool)))
         for j in range(len(gal_pool)):
@@ -36,13 +36,14 @@ def est_shear(m,g1,g2):
             idx  = kk+'_%s'%gg
             gal_index.append(idx)
             gal = gal_pool[j]
-            noise = noise_pool[j]
+            #noise = noise_pool[j]
             gal_g = galsim.Image(gal)
             psf_g = galsim.Image(psf)
             res_k = galsim.hsm.EstimateShear(gal_g,psf_g,shear_est='KSB',strict=False)
             res_b = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='BJ', strict=False)
             res_r  = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='REGAUSS', strict=False)
-            G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
+            #G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
+            G1, G2, N, U, V = Fourier_Quad().shear_est(gal, psf, stamp_size,  F=False)
             data_matrix[j,:] =res_k.corrected_g1, res_b.corrected_e1, res_r.corrected_e1, G1, N, g1, res_k.corrected_g2, res_b.corrected_e2, res_r.corrected_e2, G2, N, g2, U, V,data[j]
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
         df.columns.name = 'Chip&NO'

@@ -25,7 +25,7 @@ def simulate(g1, g2, NO):
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
     while True:
-        ellip = numpy.random.normal(loc=0,scale=0.15,size=1000000)
+        ellip = numpy.random.normal(loc=0,scale=0.18,size=1000000)
         theta = 4*numpy.random.uniform(0,1,1000000)*numpy.pi
         ellip1 = ellip*numpy.cos(theta)
         ellip2 = ellip*numpy.sin(theta)
@@ -79,10 +79,11 @@ def simulate(g1, g2, NO):
             gal_g = gal_s.shear(g1=g1,g2=g2)
             gal_c = galsim.Convolve([psf,gal_g]) #the final galaxy profile
             seed = seed_k[i]
-            gal_img, noise_img, snr = prop.draw(gal_c,mag,seed,add_noise=1)
-            snr_data[i,0:5] = mopho, snr, mag, prop.sigma_sky, 2.5/numpy.log(10)/snr
+            #gal_img, noise_img, snr = prop.draw(gal_c,mag,seed,add_noise=1)
+            gal_img = prop.draw(gal_c, mag, seed, add_noise=None)
+            snr_data[i,0:5] = mopho, 999, mag, prop.sigma_sky, 2.5/numpy.log(10)/999
             gal_pool.append(gal_img.array)
-            noise_pool.append(noise_img.array)
+            #noise_pool.append(noise_img.array)
 
 
         df = pandas.DataFrame(data= snr_data,index = label,columns=col)
@@ -92,9 +93,9 @@ def simulate(g1, g2, NO):
         hdu = fits.PrimaryHDU(gal_chip)
         hdu.writeto(gal_chip_path,overwrite=True)
 
-        noise_chip = Fourier_Quad().image_stack(noise_pool,stamp_size,100)
-        hdu = fits.PrimaryHDU(noise_chip)
-        hdu.writeto(noise_chip_path,overwrite=True)
+        # noise_chip = Fourier_Quad().image_stack(noise_pool,stamp_size,100)
+        # hdu = fits.PrimaryHDU(noise_chip)
+        # hdu.writeto(noise_chip_path,overwrite=True)
 
         hdu = fits.PrimaryHDU(psf_img)
         hdu.writeto(psf_path,overwrite=True)

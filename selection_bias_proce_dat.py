@@ -12,7 +12,7 @@ from Fourier_Quad import *
 import shelve
 
 
-ts =time.clock()
+ts =time.time()
 snr= 'SNR>0'
 
 fg1 = numpy.linspace(-0.005, 0.005, 11)
@@ -168,7 +168,6 @@ if not exist or comm==1:
     res_arr2 = numpy.zeros((12, len(fg2)))
 
     print('calculating shears ')
-    ts = time.time()
     for i in range(3,4):
         for m in range(len(fg1)):
             if i != 3:
@@ -215,8 +214,7 @@ if not exist or comm==1:
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
-    te = time.time()
-    print(te-ts)
+
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path,res_arr1,res_arr2)
 
@@ -224,7 +222,7 @@ else:
     text = numpy.load(path+'final_cache.npz')
     res_arr1 = text['arr_0']
     res_arr2 = text['arr_1']
-tm =time.clock()
+tm =time.time()
 
 # fit the line
 print('done\nbegin to plot the lines')
@@ -337,6 +335,6 @@ for i in range(3,4):
     nm2 = pic_path + name[i] + "_g2.png"
     plt.savefig(nm2)
     print('plotted g2')
-te = time.clock()
+te = time.time()
 print ("Complete")
 print(tm-ts,te-tm)
