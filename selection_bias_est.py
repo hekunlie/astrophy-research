@@ -30,7 +30,7 @@ def est_shear(m,g1,g2):
         gal_pool = Fourier_Quad().divide_stamps(gal_img,stamp_size)
         #noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
         gal_index = []
-        data_matrix = numpy.zeros((len(col),len(gal_pool)))
+        data_matrix = numpy.zeros((len(gal_pool),len(col)))
         for j in range(len(gal_pool)):
             gg = str(j).zfill(4)
             idx  = kk+'_%s'%gg
@@ -66,5 +66,6 @@ if __name__=='__main__':
     p.close()
     p.join()
     t2 = time.time()
+    #est_shear(0,shear1[0],shear2[0])
     print('Time comsuming: %.2f') % (t2 - t1)
-    os.system('python selection_bias_proce_dat.py')
+    #os.system('python selection_bias_proce_dat.py')
