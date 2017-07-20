@@ -20,7 +20,7 @@ def simulate(g1, g2, NO):
     mag_list = numpy.sort(numpy.loadtxt('lsstmagsims'))
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
-    psf  = galsim.Gaussian(half_light_radius=1.2)
+    psf  = galsim.Gaussian(half_light_radius=0.8)
     psf  = psf.shear(e1=0.05,e2=-0.03)
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
@@ -36,38 +36,38 @@ def simulate(g1, g2, NO):
     if not os.path.isdir(ahead):
         os.mkdir(ahead)
     seed_ori = numpy.random.randint(0, 10000000, 1000000)
-    for k in range(100):      # 100 chips
-        kk = str(k).zfill(2)      # chip number
+    for k in range(30):            # 100 chips
+        kk = str(k).zfill(2)        # chip number
         ts = time.time()
         print('Process %d: Chip %s')%(NO,kk)
 
         gal_chip_path = ahead + 'gal_chip_%s.fits'%kk
         noise_chip_path = ahead + 'noise_chip_%s.fits'%kk
         data_path = ahead + 'gal_info_%s.xlsx'%kk
-        psf_path    = ahead + 'psf.fits'
+        psf_path  = ahead + 'psf.fits'
 
         gal_pool   = []
         noise_pool = []
 
-        snr_data    = numpy.zeros((gal_num,5))
-        tag             = range(int(k * gal_num), int((k + 1) * gal_num))
+        snr_data  = numpy.zeros((gal_num,5))
+        tag       = range(int(k * gal_num), int((k + 1) * gal_num))
         mag_piece = mag_list[tag]
-        ell1       = ellip1[tag]
-        ell2       = ellip2[tag]
-        r0 = numpy.random.random(gal_num)
+        ell1      = ellip1[tag]
+        ell2      = ellip2[tag]
+        r0 = numpy.random.uniform(0.2,1.2,gal_num)
         seed_k = seed_ori[tag]
         for i in range(gal_num):
             e1 = ell1[i]
             e2 = ell2[i]
             mag= mag_piece[i]
             mopho = numpy.random.randint(1,4,1)[0]
-            r = r0[i] * 1.2 + 0.3
+            r = r0[i]
 
             if mopho==1:
                 gal = galsim.Exponential(flux=1.0, half_light_radius=r)
 
             elif mopho==2:
-                rd     = r0[i]+0.5
+                rd    = r0[i]+0.5
                 bulge = galsim.Sersic(half_light_radius=r,n=3.5)
                 disk  = galsim.Sersic(scale_radius=rd,n=1.5)
                 gal   = bulge*0.3+disk*0.7
@@ -86,7 +86,7 @@ def simulate(g1, g2, NO):
             #noise_pool.append(noise_img.array)
 
 
-        df = pandas.DataFrame(data= snr_data,index = label,columns=col)
+        df = pandas.DataFrame(data= snr_data, index = label, columns=col)
         df.to_excel(data_path)
 
         gal_chip = Fourier_Quad().image_stack(gal_pool,stamp_size,100)
@@ -104,9 +104,12 @@ def simulate(g1, g2, NO):
         print('Process %d: Completed with time comsuming: %.2f')%(NO,te-ts)
 
 if __name__=='__main__':
-    # shear1 = numpy.linspace(-0.005, 0.005, 11)
-    # shear2 = numpy.linspace(-0.005, 0.005, 11)
-    # numpy.random.shuffle(shear1)
+    shear1 = numpy.linspace(-0.05, 0.05, 11)
+    shear2 = numpy.linspace(-0.05, 0.05, 11)
+    shear1 = numpy.delete(shear1, 5)
+    shear2 = numpy.delete(shear2, 5)
+    numpy.random.shuffle(shear1)
+    numpy.savez('shear.npz',shear1,shear2)
     arr = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = arr['arr_0']
     shear2 = arr['arr_1']
@@ -119,5 +122,6 @@ if __name__=='__main__':
     p.close()
     p.join()
     t2 = time.time()
+    print('Time comsuming: %.2f') % (t2 - t1)
     os.system('python selection_bias_est.py')
-    print('Time comsuming: %.2f')%(t2-t1)
+

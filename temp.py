@@ -2,8 +2,8 @@ import numpy
 import time
 import matplotlib.pyplot as plt
 import ctypes
-
-arr = numpy.loadtxt('E:/0.0.txt')
+arr = numpy.linspace(-0.05,0.05,11)
+arr = numpy.delete(arr,5)
 print(arr)
 #####################################################
 # There are some demos to show how the matpotlib works
