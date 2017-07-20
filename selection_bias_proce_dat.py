@@ -15,8 +15,10 @@ import shelve
 ts =time.time()
 snr= 'SNR>0'
 
-fg1 = numpy.linspace(-0.005, 0.005, 11)
-fg2 = numpy.linspace(-0.005, 0.005, 11)
+fg1 = numpy.linspace(-0.05, 0.05, 11)
+fg1 = numpy.delete(fg1,5)
+fg2 = numpy.linspace(-0.05, 0.05, 11)
+fg2 = numpy.delete(fg2,5)
 
 #the lenght of the intervel
 dfg1 = fg1[1]-fg1[0]

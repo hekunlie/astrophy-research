@@ -115,7 +115,7 @@ if __name__=='__main__':
     shear2 = arr['arr_1']
     p = Pool()
     t1 = time.time()
-    for m in range(11):
+    for m in range(len(shear1)):
        g1 = shear1[m]
        g2 = shear2[m]
        p.apply_async(simulate, args=(g1,g2,m,))
