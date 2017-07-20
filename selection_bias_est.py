@@ -65,4 +65,5 @@ if __name__=='__main__':
     p.close()
     p.join()
     t2 = time.time()
+    os.system('python selection_bias_proce_dat.py')
     print('Time comsuming: %.2f')%(t2-t1)
