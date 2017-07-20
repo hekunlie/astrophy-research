@@ -188,7 +188,7 @@ if not exist or comm==1:
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
                 bin_num =8
-                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1,method =1, bin_num=bin_num, sample=500)
+                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1, bin_num=bin_num, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
@@ -210,7 +210,7 @@ if not exist or comm==1:
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
                 bin_num = 8
-                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=1, bin_num=bin_num, sample=500)
+                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=bin_num, sample=500)
                 #g2_h = numpy.sum(G2) / numpy.sum(N2)
                 #g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h

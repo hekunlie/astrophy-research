@@ -418,7 +418,7 @@ class Fourier_Quad:
         return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
 
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, method=2,sample=100): #checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1, method=2,sample=100): #checked 2017-7-9!!!
         # model 1 for  g1
         # model 2 for g2
         if method==1:
