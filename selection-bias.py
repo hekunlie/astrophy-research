@@ -13,6 +13,8 @@ def simulate(g1, g2, NO):
     print('Process %d: begin>>>>>>')%NO
 
     gal_num = 10000
+    chip_num = 30
+    total_num = chip_num*gal_num
     stamp_size = 60
     pixel_scale = 0.2
     col = ['mophology', 'snr', 'mag', 'noise_sigma', 'err']
@@ -25,8 +27,8 @@ def simulate(g1, g2, NO):
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
     while True:
-        ellip = numpy.random.normal(loc=0,scale=0.18,size=1000000)
-        theta = 4*numpy.random.uniform(0,1,1000000)*numpy.pi
+        ellip = numpy.random.normal(loc=0,scale=0.18,size=total_num)
+        theta = 4*numpy.random.uniform(0,1,total_num)*numpy.pi
         ellip1 = ellip*numpy.cos(theta)
         ellip2 = ellip*numpy.sin(theta)
         if numpy.abs(numpy.mean(ellip2))<1.e-5 and numpy.abs(numpy.mean(ellip1))<1.e-5:
@@ -35,8 +37,8 @@ def simulate(g1, g2, NO):
     ahead = '/lmc/selection_bias/%d/' %NO
     if not os.path.isdir(ahead):
         os.mkdir(ahead)
-    seed_ori = numpy.random.randint(0, 10000000, 1000000)
-    for k in range(30):            # 100 chips
+    seed_ori = numpy.random.randint(0, total_num*10, total_num)
+    for k in range(chip_num):            # 100 chips
         kk = str(k).zfill(2)        # chip number
         ts = time.time()
         print('Process %d: Chip %s')%(NO,kk)
@@ -104,12 +106,12 @@ def simulate(g1, g2, NO):
         print('Process %d: Completed with time comsuming: %.2f')%(NO,te-ts)
 
 if __name__=='__main__':
-    shear1 = numpy.linspace(-0.05, 0.05, 11)
-    shear2 = numpy.linspace(-0.05, 0.05, 11)
-    shear1 = numpy.delete(shear1, 5)
-    shear2 = numpy.delete(shear2, 5)
-    numpy.random.shuffle(shear1)
-    numpy.savez('/lmc/selection_bias/shear.npz',shear1,shear2)
+    # shear1 = numpy.linspace(-0.05, 0.05, 11)
+    # shear2 = numpy.linspace(-0.05, 0.05, 11)
+    # shear1 = numpy.delete(shear1, 5)
+    # shear2 = numpy.delete(shear2, 5)
+    # numpy.random.shuffle(shear1)
+    # numpy.savez('/lmc/selection_bias/shear.npz',shear1,shear2)
     arr = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = arr['arr_0']
     shear2 = arr['arr_1']

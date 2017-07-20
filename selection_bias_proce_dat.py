@@ -14,11 +14,9 @@ import shelve
 
 ts =time.time()
 snr= 'SNR>0'
-
-fg1 = numpy.linspace(-0.05, 0.05, 11)
-fg1 = numpy.delete(fg1,5)
-fg2 = numpy.linspace(-0.05, 0.05, 11)
-fg2 = numpy.delete(fg2,5)
+shear_input = numpy.load('/lmc/selection_bias/shear.npz')
+fg1 = shear_input['arr_0']
+fg2 = shear_input['arr_1']
 
 #the lenght of the intervel
 dfg1 = fg1[1]-fg1[0]
@@ -90,11 +88,11 @@ if not exist or comm==1:
             # put the data into the corresponding list
             data = data_list[k]
 
-            # field distortion fg1
+            # input g1
             tag1 = data[:,5]
             tag1.shape = (len(tag1),1)
 
-            # field distortion fg2
+            # input g2
             tag2 = data[:,11]
             tag2.shape = (len(tag2),1)
 
@@ -108,6 +106,7 @@ if not exist or comm==1:
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
                     else:
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11]))
+                        print(fg1[i],len(ellip1[idx11]))
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
@@ -187,6 +186,7 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
+                print(num1,numpy.mean(G1)/numpy.mean(N1))
                 bin_num =8
                 g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1, bin_num=bin_num, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
@@ -194,6 +194,7 @@ if not exist or comm==1:
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = g1_h_sig
                 res_arr1[i + 8, m] = num1
+                print(g1_h)
 
         for m in range(len(fg2)):
             if i != 3:

@@ -22,7 +22,7 @@
     <SUITE FILE_PATH="coverage/astrophy_research$temp.coverage" NAME="temp Coverage Results" MODIFIED="1499741451309" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/cosmic shear/python code" />
     <SUITE FILE_PATH="coverage/astrophy_research$tool_box.coverage" NAME="tool_box Coverage Results" MODIFIED="1499309363937" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/astrophy_research$Fourier_Quad.coverage" NAME="Fourier_Quad Coverage Results" MODIFIED="1498640289598" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/astrophy_research$temp__1_.coverage" NAME="temp (1) Coverage Results" MODIFIED="1500543072524" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/astrophy_research$temp__1_.coverage" NAME="temp (1) Coverage Results" MODIFIED="1500555970136" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
@@ -42,11 +42,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3143">
-              <caret line="505" column="42" lean-forward="false" selection-start-line="505" selection-start-column="42" selection-end-line="505" selection-end-column="42" />
+            <state relative-caret-position="10955">
+              <caret line="437" column="77" lean-forward="false" selection-start-line="437" selection-start-column="77" selection-end-line="437" selection-end-column="77" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -54,23 +54,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tool_box.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tool_box.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="426">
-              <caret line="39" column="38" lean-forward="true" selection-start-line="39" selection-start-column="38" selection-end-line="39" selection-end-column="38" />
-              <folding>
-                <element signature="e#0#19#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="646">
-              <caret line="190" column="70" lean-forward="false" selection-start-line="190" selection-start-column="70" selection-end-line="190" selection-end-column="70" />
+            <state relative-caret-position="1015">
+              <caret line="53" column="0" lean-forward="false" selection-start-line="53" selection-start-column="0" selection-end-line="55" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -79,8 +67,8 @@
       <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2205">
-              <caret line="70" column="52" lean-forward="true" selection-start-line="70" selection-start-column="52" selection-end-line="70" selection-end-column="52" />
+            <state relative-caret-position="307">
+              <caret line="47" column="69" lean-forward="false" selection-start-line="47" selection-start-column="69" selection-end-line="47" selection-end-column="69" />
               <folding />
             </state>
           </provider>
@@ -89,8 +77,8 @@
       <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection-bias.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="85">
-              <caret line="112" column="53" lean-forward="true" selection-start-line="112" selection-start-column="53" selection-end-line="112" selection-end-column="53" />
+            <state relative-caret-position="-1163">
+              <caret line="39" column="63" lean-forward="true" selection-start-line="39" selection-start-column="63" selection-end-line="39" selection-end-column="63" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -101,10 +89,22 @@
       <file leaf-file-name="temp.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/temp.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="245">
-              <caret line="8" column="32" lean-forward="true" selection-start-line="8" selection-start-column="32" selection-end-line="8" selection-end-column="32" />
+            <state relative-caret-position="560">
+              <caret line="16" column="25" lean-forward="true" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="tool_box.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tool_box.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="350">
+              <caret line="49" column="38" lean-forward="true" selection-start-line="49" selection-start-column="38" selection-end-line="49" selection-end-column="38" />
+              <folding>
+                <element signature="e#0#19#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -132,7 +132,6 @@
         <option value="$PROJECT_DIR$/SNR_estimator.py" />
         <option value="E:/cosmic shear/sources_extractor/extractor.py" />
         <option value="E:/result/w1/demo.py" />
-        <option value="$PROJECT_DIR$/tool_box.py" />
         <option value="E:/result/w1/process_data.py" />
         <option value="$PROJECT_DIR$/point_sources.py" />
         <option value="$PROJECT_DIR$/process_data.py" />
@@ -143,11 +142,12 @@
         <option value="$PROJECT_DIR$/algorithm_test.py" />
         <option value="$PROJECT_DIR$/lsstetc.py" />
         <option value="$PROJECT_DIR$/measure.py" />
-        <option value="$PROJECT_DIR$/temp.py" />
-        <option value="$PROJECT_DIR$/selection-bias.py" />
         <option value="$PROJECT_DIR$/selection_bias_est.py" />
         <option value="$PROJECT_DIR$/Fourier_Quad.py" />
+        <option value="$PROJECT_DIR$/tool_box.py" />
         <option value="$PROJECT_DIR$/selection_bias_proce_dat.py" />
+        <option value="$PROJECT_DIR$/selection-bias.py" />
+        <option value="$PROJECT_DIR$/temp.py" />
       </list>
     </option>
   </component>
@@ -545,16 +545,15 @@
     <frame x="-9" y="-9" width="1938" height="1060" extended-state="6" />
     <editor active="true" />
     <layout>
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18186696" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32849163" sideWeight="0.5" order="6" side_tool="true" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.14898178" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="0" y="88" width="1135" height="687" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18186696" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.36752138" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" x="0" y="88" width="1135" height="687" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3988827" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3299356" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -563,6 +562,7 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
     <layout-to-restore>
@@ -626,9 +626,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4278">
           <caret line="241" column="68" lean-forward="true" selection-start-line="241" selection-start-column="68" selection-end-line="241" selection-end-column="68" />
-          <folding>
-            <element signature="e#25#34#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -653,9 +650,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="7199">
           <caret line="418" column="17" lean-forward="false" selection-start-line="418" selection-start-column="17" selection-end-line="418" selection-end-column="17" />
-          <folding>
-            <element signature="e#25#34#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -681,9 +675,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1702">
           <caret line="77" column="0" lean-forward="false" selection-start-line="77" selection-start-column="0" selection-end-line="78" selection-end-column="26" />
-          <folding>
-            <element signature="e#25#34#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -747,22 +738,14 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1527">
           <caret line="1711" column="4" lean-forward="false" selection-start-line="1711" selection-start-column="4" selection-end-line="1711" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/algorithm_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="7" column="0" lean-forward="false" selection-start-line="7" selection-start-column="0" selection-end-line="18" selection-end-column="37" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://E:/algorithm_test.py" />
     <entry file="file://$PROJECT_DIR$/lsstetc.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="2555">
           <caret line="75" column="7" lean-forward="false" selection-start-line="75" selection-start-column="7" selection-end-line="75" selection-end-column="26" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -770,9 +753,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="7245">
           <caret line="209" column="50" lean-forward="false" selection-start-line="209" selection-start-column="50" selection-end-line="209" selection-end-column="50" />
-          <folding>
-            <element signature="e#25#34#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -780,7 +760,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-12">
           <caret line="24" column="33" lean-forward="false" selection-start-line="24" selection-start-column="33" selection-end-line="24" selection-end-column="33" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -788,7 +767,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="408">
           <caret line="50" column="27" lean-forward="false" selection-start-line="50" selection-start-column="27" selection-end-line="50" selection-end-column="27" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -796,7 +774,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="286">
           <caret line="107" column="45" lean-forward="true" selection-start-line="107" selection-start-column="45" selection-end-line="107" selection-end-column="45" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -804,7 +781,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="470">
           <caret line="94" column="45" lean-forward="true" selection-start-line="94" selection-start-column="45" selection-end-line="94" selection-end-column="45" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -820,54 +796,23 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="155">
           <caret line="23" column="0" lean-forward="false" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#26#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/temp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="245">
-          <caret line="8" column="32" lean-forward="true" selection-start-line="8" selection-start-column="32" selection-end-line="8" selection-end-column="32" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/selection-bias.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="85">
-          <caret line="112" column="53" lean-forward="true" selection-start-line="112" selection-start-column="53" selection-end-line="112" selection-end-column="53" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tool_box.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="426">
-          <caret line="39" column="38" lean-forward="true" selection-start-line="39" selection-start-column="38" selection-end-line="39" selection-end-column="38" />
+        <state relative-caret-position="350">
+          <caret line="49" column="38" lean-forward="true" selection-start-line="49" selection-start-column="38" selection-end-line="49" selection-end-column="38" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+    <entry file="file://$PROJECT_DIR$/selection-bias.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2205">
-          <caret line="70" column="52" lean-forward="true" selection-start-line="70" selection-start-column="52" selection-end-line="70" selection-end-column="52" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3143">
-          <caret line="505" column="42" lean-forward="false" selection-start-line="505" selection-start-column="42" selection-end-line="505" selection-end-column="42" />
+        <state relative-caret-position="-1163">
+          <caret line="39" column="63" lean-forward="true" selection-start-line="39" selection-start-column="63" selection-end-line="39" selection-end-column="63" />
           <folding>
             <element signature="e#0#12#0" expanded="true" />
           </folding>
@@ -876,9 +821,37 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="646">
-          <caret line="190" column="70" lean-forward="false" selection-start-line="190" selection-start-column="70" selection-end-line="190" selection-end-column="70" />
+        <state relative-caret-position="1015">
+          <caret line="53" column="0" lean-forward="false" selection-start-line="53" selection-start-column="0" selection-end-line="55" selection-end-column="38" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="307">
+          <caret line="47" column="69" lean-forward="false" selection-start-line="47" selection-start-column="69" selection-end-line="47" selection-end-column="69" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/temp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="560">
+          <caret line="16" column="25" lean-forward="true" selection-start-line="16" selection-start-column="25" selection-end-line="16" selection-end-column="25" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="10955">
+          <caret line="437" column="77" lean-forward="false" selection-start-line="437" selection-start-column="77" selection-end-line="437" selection-end-column="77" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
