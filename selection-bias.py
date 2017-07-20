@@ -109,7 +109,7 @@ if __name__=='__main__':
     shear1 = numpy.delete(shear1, 5)
     shear2 = numpy.delete(shear2, 5)
     numpy.random.shuffle(shear1)
-    numpy.savez('shear.npz',shear1,shear2)
+    numpy.savez('/lmc/selection_bias/shear.npz',shear1,shear2)
     arr = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = arr['arr_0']
     shear2 = arr['arr_1']

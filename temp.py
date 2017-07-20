@@ -2,9 +2,12 @@ import numpy
 import time
 import matplotlib.pyplot as plt
 import ctypes
-arr = numpy.linspace(-0.05,0.05,11)
-arr = numpy.delete(arr,5)
-print(arr)
+
+shear1 = numpy.linspace(-0.05, 0.05, 11)
+shear2 = numpy.linspace(-0.05, 0.05, 11)
+shear1 = numpy.delete(shear1, 5)
+shear2 = numpy.delete(shear2, 5)
+print(len(shear2))
 #####################################################
 # There are some demos to show how the matpotlib works
 # delete the '#' ahead of the codes of each demo to see how it works
