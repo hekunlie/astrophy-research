@@ -23,7 +23,7 @@ def simulate(g1, g2, NO):
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
     psf  = galsim.Gaussian(half_light_radius=0.8)
-    psf  = psf.shear(e1=0.05,e2=-0.03)
+    #psf  = psf.shear(e1=0.05,e2=-0.03)
 
     psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
     while True:
@@ -38,8 +38,8 @@ def simulate(g1, g2, NO):
     if not os.path.isdir(ahead):
         os.mkdir(ahead)
     seed_ori = numpy.random.randint(0, total_num*10, total_num)
-    for k in range(chip_num):            # 100 chips
-        kk = str(k).zfill(2)        # chip number
+    for k in range(chip_num):
+        kk = str(k).zfill(2)
         ts = time.time()
         print('Process %d: Chip %s')%(NO,kk)
 

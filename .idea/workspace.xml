@@ -57,14 +57,14 @@
       <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-218">
+            <state relative-caret-position="-323">
               <caret line="266" column="29" lean-forward="true" selection-start-line="266" selection-start-column="29" selection-end-line="266" selection-end-column="29" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="412">
@@ -74,11 +74,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/selection-bias.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="350">
-              <caret line="36" column="41" lean-forward="true" selection-start-line="36" selection-start-column="41" selection-end-line="36" selection-end-column="41" />
+            <state relative-caret-position="490">
+              <caret line="74" column="42" lean-forward="true" selection-start-line="74" selection-start-column="42" selection-end-line="74" selection-end-column="42" />
               <folding>
                 <element signature="e#0#12#0" expanded="true" />
               </folding>
@@ -145,9 +145,9 @@
         <option value="$PROJECT_DIR$/selection_bias_est.py" />
         <option value="$PROJECT_DIR$/Fourier_Quad.py" />
         <option value="$PROJECT_DIR$/tool_box.py" />
-        <option value="$PROJECT_DIR$/selection-bias.py" />
         <option value="$PROJECT_DIR$/temp.py" />
         <option value="$PROJECT_DIR$/selection_bias_proce_dat.py" />
+        <option value="$PROJECT_DIR$/selection-bias.py" />
       </list>
     </option>
   </component>
@@ -603,7 +603,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://E:/cosmic shear/python code/psf_interpolation.py" />
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="10212">
@@ -829,19 +828,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection-bias.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="350">
-          <caret line="36" column="41" lean-forward="true" selection-start-line="36" selection-start-column="41" selection-end-line="36" selection-end-column="41" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-218">
+        <state relative-caret-position="-323">
           <caret line="266" column="29" lean-forward="true" selection-start-line="266" selection-start-column="29" selection-end-line="266" selection-end-column="29" />
           <folding />
         </state>
@@ -852,6 +841,26 @@
         <state relative-caret-position="412">
           <caret line="47" column="68" lean-forward="false" selection-start-line="47" selection-start-column="68" selection-end-line="47" selection-end-column="68" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/cosmic shear/selection_log/30W_EXP&amp;SER&amp;GAU_noN/selection-bias.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-315">
+          <caret line="84" column="65" lean-forward="true" selection-start-line="84" selection-start-column="65" selection-end-line="84" selection-end-column="65" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection-bias.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="490">
+          <caret line="74" column="42" lean-forward="true" selection-start-line="74" selection-start-column="42" selection-end-line="74" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
