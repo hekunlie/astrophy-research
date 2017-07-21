@@ -10,13 +10,14 @@ import  time
 def est_shear(m,g1,g2):
     print('Process %d: beginning>>>>')%m
     stamp_size = 60
+    chip_num = 30
     ahead = '/lmc/selection_bias/%s/'%m
     respath = '/lmc/selection_bias/result/data/'
     if not os.path.isdir(respath):
         os.makedirs(respath)
     psf = fits.open(ahead+'psf.fits')[0].data
     col =  ["KSB_e1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_e2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V","SNR_ORI"]
-    for k in range(30):
+    for k in range(chip_num):
         ts = time.time()
         kk = str(k).zfill(2)
         print('Process %d: chip %s beginning>>>>')%(m,kk)
