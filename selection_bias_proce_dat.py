@@ -97,45 +97,48 @@ if not exist or comm==1:
             tag2.shape = (len(tag2),1)
 
             for i in range(len(fg1)):
-                idx11 = tag1 == fg1[i]
+                idx11 = tag1 > fg1[i] - 0.001
+                idx12 = tag1 < fg1[i] + 0.001
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
+                    print(len(ellip1))
                     if na!=3:
-                        idx12 = ellip1!=-10
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
+                        idx13 = ellip1!=-10
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13]))
                     else:
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11]))
-                        print(fg1[i],len(ellip1[idx11]))
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
+
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
                         u1.shape = (len(u1), 1)
                         v1 = data[:,13]
                         v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12]))
 
             for i in range(len(fg2)):
-                idx21 = tag2 == fg2[i]
+                idx21 = tag2 > fg2[i] - 0.001
+                idx22 = tag2 < fg2[i] + 0.001
                 for na in range(4):
                     ellip2 = data[:,na+6]
                     ellip2.shape = (len(ellip2),1)
                     if na!=3:
-                        idx22 = ellip1 != -10
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22]))
+                        idx23 = ellip1 != -10
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23]))
                     else:
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21]))
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22]))
                         n2 = data[:,na+7]
                         n2.shape = (len(n2),1)
                         u2 = data[:,12]
                         u2.shape = (len(u2), 1)
                         v2 = data[:,13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22]))
         tc3 = time.time()
         print(tc2-tc1,tc3-tc2)
          # create the cache of the classification
@@ -186,7 +189,8 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                print(num1,numpy.mean(G1)/numpy.mean(N1))
+                print(num1)
+                print(numpy.mean(G1)/numpy.mean(N1))
                 bin_num =8
                 g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1, bin_num=bin_num, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
@@ -281,7 +285,7 @@ for i in range(3,4):
 
     ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fg1, e1mc[1] * fg1 + e1mc[0], label=name[i], color='red')
-    ax.plot([-0.01,0.01], [-0.01,0.01], label='y=x', color='blue')
+    ax.plot([-0.1,0.1], [-0.1,0.1], label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
@@ -293,8 +297,8 @@ for i in range(3,4):
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.01,0.01)
-    plt.xlim(-0.01, 0.01)
+    plt.ylim(-0.07,0.07)
+    plt.xlim(-0.07, 0.07)
     nm1 = pic_path + name[i] + "_g1.png"
     plt.savefig(nm1)
     print ('plotted g1')
@@ -322,7 +326,7 @@ for i in range(3,4):
 
     ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fg2, e2mc[1] * fg2 + e2mc[0], label=name[i], color='red')
-    ax.plot([-0.01,0.01], [-0.01,0.01], label='y=x', color='blue')
+    ax.plot([-0.1,0.1], [-0.1,0.1], label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
@@ -333,8 +337,8 @@ for i in range(3,4):
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.01,0.01)
-    plt.xlim(-0.01,0.01)
+    plt.ylim(-0.07,0.07)
+    plt.xlim(-0.07,0.07)
     nm2 = pic_path + name[i] + "_g2.png"
     plt.savefig(nm2)
     print('plotted g2')
