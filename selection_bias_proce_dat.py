@@ -102,13 +102,11 @@ if not exist or comm==1:
                 for na in range(4):
                     ellip1 = data[:,na]
                     ellip1.shape = (len(ellip1),1)
-                    print(len(ellip1))
                     if na!=3:
                         idx13 = ellip1!=-10
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13]))
                     else:
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
-
                         n1 = data[:,na+1]
                         n1.shape = (len(n1),1)
                         u1 = data[:,12]
@@ -189,8 +187,6 @@ if not exist or comm==1:
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                print(num1)
-                print(numpy.mean(G1)/numpy.mean(N1))
                 bin_num =8
                 g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1, bin_num=bin_num, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
@@ -198,7 +194,6 @@ if not exist or comm==1:
                 res_arr1[i, m] = g1_h
                 res_arr1[i + 4, m] = g1_h_sig
                 res_arr1[i + 8, m] = num1
-                print(g1_h)
 
         for m in range(len(fg2)):
             if i != 3:
