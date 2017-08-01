@@ -313,19 +313,18 @@ class Fourier_Quad:
                 star.pop()
         return star  # a list of psfs
 
-    def image_stack(self, image_list, stampsize, columns):
+    def image_stack(self, image_array, stampsize, columns):
         # the inverse operation of divide_stamps
-        num = len(image_list)
+        # the image_array is a three dimensional array of which the length equals the number of the stamps
+        num = len(image_array)
         row_num, c = divmod(num, columns)
         if c != 0:
             row_num += 1
-        arr = numpy.zeros((stampsize, row_num * columns * stampsize))
-        for i in range(num):
-            arr[0:stampsize, i*stampsize:(i+1)*stampsize]=image_list[i]
-        arr0 = arr[0:stampsize, 0:columns * stampsize]
-        for i in range(1, row_num):
-            arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
-        return arr0
+        arr = numpy.zeros((row_num*stampsize, columns * stampsize))
+        for j in range(row_num):
+            for i in range(columns):
+                arr[j*stampsize:(j+1)*stampsize,i*stampsize:(i+1)*stampsize]=image_array[i+j*columns]
+        return arr
 
     def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
         psf_pool = self.divide_stamps(star_stamp, stampsize)
