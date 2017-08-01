@@ -123,7 +123,8 @@ def simulate(g1, g2, NO):
             else:
                 texp+=delt
                 ne+=1
-        print('gaussian %.2f, sersic %.2f, exponential %.2f'%(tgau/ng,tser/ns,texp/ne))
+        print('gaussian %d %.7f, sersic %d %.7f, exponential %d %.7f'%(ng,tgau/ng,ns,tser/ns,ne,texp/ne))
+        tm2 =time.time()
         df = pandas.DataFrame(data= snr_data, index = label, columns=col)
         df.to_excel(data_path)
 
@@ -139,6 +140,7 @@ def simulate(g1, g2, NO):
         hdu.writeto(psf_path,overwrite=True)
 
         te = time.time()
+        print("stack %.4f"%(te-tm2))
         print('Process %d: Simulation completed with time comsuming: %.2f,%.2f'%(NO,te-tm,tm-ts))
 
 if __name__=='__main__':
