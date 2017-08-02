@@ -37,6 +37,7 @@ def list_add(target_list,files_paths):
     target_list.reverse()
 
 def classify(files_path_list, cpu_num):
+    # the data will be assembled into same big arrays of which the number equals to cpu_num
     paths_distri = task_distri(files_path_list,cpu_num)
     final_data_list = Manager().list()
     p = Pool()

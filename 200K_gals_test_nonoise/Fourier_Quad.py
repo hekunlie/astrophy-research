@@ -426,7 +426,11 @@ class Fourier_Quad:
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
+            same =0
+            iters = 0
             while True:
+                templ =left
+                tempr =right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -487,12 +491,18 @@ class Fourier_Quad:
                     elif fR < fm1 and fR <fm3:
                         left = m3
 
-                if abs(left-right)<1.e-6:
-                    g_h = left
+                if abs(left-right)<1.e-5:
+                    g_h = (left+right)/2.
+                    break
+                iters+=1
+                if left==templ and right==tempr:
+                    same+=1
+                if iters>10 and same>3 or iters>13:
+                    g_h = (left+right)/2.
                     break
 
         # fitting
-        g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
+        g_range = numpy.linspace(g_h-0.005,g_h+0.005,11)
         xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
@@ -510,6 +520,7 @@ class Fourier_Quad:
         # plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
         # plt.show()
         return g_h,g_sig
+
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
         e1 = ellip[:, 0]

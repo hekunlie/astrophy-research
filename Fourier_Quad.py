@@ -313,19 +313,18 @@ class Fourier_Quad:
                 star.pop()
         return star  # a list of psfs
 
-    def image_stack(self, image_list, stampsize, columns):
+    def image_stack(self, image_array, stampsize, columns):
         # the inverse operation of divide_stamps
-        num = len(image_list)
+        # the image_array is a three dimensional array of which the length equals the number of the stamps
+        num = len(image_array)
         row_num, c = divmod(num, columns)
         if c != 0:
             row_num += 1
-        arr = numpy.zeros((stampsize, row_num * columns * stampsize))
-        for i in range(num):
-            arr[0:stampsize, i*stampsize:(i+1)*stampsize]=image_list[i]
-        arr0 = arr[0:stampsize, 0:columns * stampsize]
-        for i in range(1, row_num):
-            arr0 = numpy.row_stack((arr0,arr[0:stampsize,i*columns*stampsize:(i+1)*columns*stampsize]))
-        return arr0
+        arr = numpy.zeros((row_num*stampsize, columns * stampsize))
+        for j in range(row_num):
+            for i in range(columns):
+                arr[j*stampsize:(j+1)*stampsize,i*stampsize:(i+1)*stampsize]=image_array[i+j*columns]
+        return arr
 
     def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
         psf_pool = self.divide_stamps(star_stamp, stampsize)
@@ -418,7 +417,7 @@ class Fourier_Quad:
         return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
 
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.05, right=0.05, method=2,sample=100): #checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1, method=2,sample=100): #checked 2017-7-9!!!
         # model 1 for  g1
         # model 2 for g2
         if method==1:
@@ -426,11 +425,11 @@ class Fourier_Quad:
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
+            same =0
             iters = 0
-            same = 0
             while True:
-                templ = left
-                tempr = right
+                templ =left
+                tempr =right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -497,13 +496,14 @@ class Fourier_Quad:
                 iters+=1
                 if left==templ and right==tempr:
                     same+=1
-                if iters>10 and same>3 or iters>15:
+                if iters>10 and same>3 or iters>13:
                     g_h = (left+right)/2.
                     break
                 #print(left,right,abs(left-right))
+
         # fitting
-        g_range = numpy.linspace(g_h-0.01,g_h+0.01,11)
-        xi2 = numpy.array([self.G_bin(g,n,u,g_hat,mode,bin_num,sample=sample) for g_hat in g_range])
+        g_range = numpy.linspace(g_h-0.005, g_h+0.005, 11)
+        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)
@@ -513,11 +513,8 @@ class Fourier_Quad:
         xigg0 = numpy.sum(xi2)
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-        g_sig = numpy.sqrt(1/2./paras[0])
-        # x = numpy.linspace(g_h-0.005,g_h+0.005,50)
-        # plt.scatter(g_range,xi2,linewidths=1)
-        # plt.plot(x,paras[0]*x**2+paras[1]*x+paras[2])
-        # plt.show()
+        g_sig = numpy.sqrt(1 / 2. / paras[0])
+        #g_h = -paras[1] / 2 / paras[0]
         return g_h,g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):

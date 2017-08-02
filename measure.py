@@ -131,7 +131,9 @@ if __name__=="__main__":
     p.join()
    #measure(paths_pool[5],5,area)
     te=time.time()
-    print ("Progress completes consuming %.3f hours."%((te-ts)/3600.))
+    print("Progress completes consuming %.3f hours." % ((te - ts) / 3600.))
+    os.system('python process_data.py')
+
 
 
     
