@@ -164,9 +164,9 @@ class Fourier_Quad:
                     if mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal)
             return signal
-        half_radi_pool = detect(radi_arr,y[0],x[0],half_radi_pool)
+        half_radi_pool = detect(radi_arr, y[0], x[0], half_radi_pool)
 
-        return numpy.sqrt(len(half_radi_pool) / numpy.pi)
+        return numpy.sqrt(len(half_radi_pool) / numpy.pi), half_radi_pool
 
     def move(self, image, x, y):
         imagesize = image.shape[0]

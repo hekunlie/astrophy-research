@@ -14,7 +14,7 @@ def simulate(g1, g2, mag_list, NO):
     gal_num = 10000
     chip_num = 100
     total_num = chip_num*gal_num
-    stamp_size = 70
+    stamp_size = 80
     pixel_scale = 0.2
     col = ['morphology', 'mag', 'snr', 'noise_sigma']
     label = range(0, gal_num)
@@ -66,7 +66,7 @@ def simulate(g1, g2, mag_list, NO):
         mag_piece = mag_list[tag]
         ell1      = ellip1[tag]
         ell2      = ellip2[tag]
-        r0 = numpy.random.uniform(0.4, 1.2, gal_num)
+        r0 = numpy.random.uniform(0.45, 1.2, gal_num)
         seed_k = seed_ori[tag]
         for i in range(gal_num):
             e1 = ell1[i]
@@ -79,8 +79,8 @@ def simulate(g1, g2, mag_list, NO):
                 gal = galsim.Exponential(flux=1.0, half_light_radius=r)
 
             elif morpho==2:
-                rb    = r0[i]/2.5 + 0.4
-                rd    = r0[i]/2.5 + 1.0
+                rb    = r0[i]/2
+                rd    = r0[i]/2 + 0.6
                 bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
                 disk  = galsim.Sersic(half_light_radius=rd, n=1.5)
                 gal   = bulge*0.3+disk*0.7
