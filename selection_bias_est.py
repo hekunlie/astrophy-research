@@ -15,7 +15,7 @@ def est_shear(m,g1,g2):
     if not os.path.isdir(respath):
         os.makedirs(respath)
     psf = fits.open(ahead+'psf.fits')[0].data
-    col =  ["KSB_g1","BJ_e1","RG_e1","FQ_G1","FG_N","fg1", "KSB_g2","BJ_e2","RG_e2","FQ_G2","FG_N","fg2","FQ_U","FQ_V","SNR_ORI"]
+    col =  ["KSB_g1","BJ_e1","RG_e1","FQ_G1","FG_N", "fg1", "KSB_g2","BJ_e2","RG_e2","FQ_G2", "FG_N", "fg2", "FQ_U", "FQ_V", "SNR_ORI", "BJ_CORRECT", "RG_CORRECT"]
     for k in range(chip_num):
         ts = time.time()
         kk = str(k).zfill(2)
@@ -27,8 +27,8 @@ def est_shear(m,g1,g2):
         cat_path  = ahead + 'gal_info_%s.xlsx'%kk
         cat_data  = pandas.read_excel(cat_path).values[:,2]
 
-        gal_pool = Fourier_Quad().divide_stamps(gal_img,stamp_size)
-        noise_pool = Fourier_Quad().divide_stamps(noise_img,stamp_size)
+        gal_pool = Fourier_Quad().divide_stamps(gal_img, stamp_size)
+        noise_pool = Fourier_Quad().divide_stamps(noise_img, stamp_size)
         gal_index = []
         data_matrix = numpy.zeros((len(gal_pool),len(col)))
         for j in range(len(gal_pool)):
@@ -40,10 +40,19 @@ def est_shear(m,g1,g2):
             gal_g = galsim.Image(gal)
             psf_g = galsim.Image(psf)
             res_k = galsim.hsm.EstimateShear(gal_g,psf_g,shear_est='KSB',strict=False)
+            ksb_g1 = res_k.corrected_g1
+            ksb_g2 = res_k.corrected_g2
             res_b = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='BJ', strict=False)
+            bj_e1 = res_b.corrected_e1
+            bj_e2 = res_b.corrected_e2
+            bj_correct = 2 - (res_b.observed_shape.e1**2 + res_b.observed_shape.e2**2)
             res_r = galsim.hsm.EstimateShear(gal_g,psf_g, shear_est='REGAUSS', strict=False)
-            G1,G2,N,U,V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
-            data_matrix[j,:] = res_k.corrected_g1, res_b.corrected_e1, res_r.corrected_e1, G1, N, g1, res_k.corrected_g2, res_b.corrected_e2, res_r.corrected_e2, G2, N, g2, U, V,cat_data[j]
+            re_e1 = res_r.corrected_e1
+            re_e2 = res_r.corrected_e2
+            re_correct = 2 - (res_r.observed_shape.e1**2 + res_r.observed_shape.e2**2)
+            G1, G2, N, U, V = Fourier_Quad().shear_est(gal,psf,stamp_size,noise,F=False)
+            data_matrix[j, :] = ksb_g1, bj_e1, re_e1, G1, N, g1, ksb_g2, bj_e2, re_e2, G2, N, g2, U, V,cat_data[j], bj_correct, re_correct
+
             #data_matrix[j,:] = 0, 0, 0, G1, N, g1, 0, 0, 0, G2, N, g2, U, V,cat_data[j]
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
         df.columns.name = 'Chip&NO'

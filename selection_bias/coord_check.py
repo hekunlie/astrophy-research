@@ -30,8 +30,8 @@ def check(path,chip_num,stampsize,tag):
 
 
 if __name__=='__main__':
-    chip_num = 40
-    size = 50
+    chip_num = 100
+    size = 80
     head = '/lmc/selection_bias/'
     paths = [ head+str(i)+'/' for i in range(10)]
     p = Pool()

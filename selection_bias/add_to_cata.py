@@ -4,7 +4,7 @@ import time
 from multiprocessing import Pool
 import numpy
 
-def cat_add(path,chip_num,stampsize,id_tag,type):
+def cat_add(path, chip_num, stampsize, id_tag, fil_type):
     for k in range(chip_num):
         kk = str(k).zfill(2)
         print('Process %d: chip_%s start>>>>'%(id_tag,kk))
@@ -23,15 +23,15 @@ def cat_add(path,chip_num,stampsize,id_tag,type):
             my,mody = divmod(yy,stampsize)
             tag = int(100*my+mx)
             sex_data[tag] = snr[i],xx,yy
-        col = [type] + ['sex_x','sex_y']
-        df = pd.DataFrame(data=sex_data,columns=col)
-        df_merge = pd.concat([gal_info,df],axis=1)
+        col = [fil_type] + ['sex_x', 'sex_y']
+        df = pd.DataFrame(data=sex_data, columns=col)
+        df_merge = pd.concat([gal_info, df], axis=1)
         df_merge.to_excel(gal_info_path)
-        print('Process %d: chip_%s complete<<<<'%(id_tag,kk))
+        print('Process %d: chip_%s complete<<<<'%(id_tag, kk))
 
 
 if __name__=='__main__':
-    type = 'tophat'
+    filter_type = 'gauss_5_9'
     chip_num = 100
     size = 80
     head = '/lmc/selection_bias/'
@@ -39,7 +39,7 @@ if __name__=='__main__':
     p = Pool()
     t1 =time.time()
     for i in range(len(paths)):
-        p.apply_async(cat_add,args=(paths[i],chip_num,size,i,type))
+        p.apply_async(cat_add,args=(paths[i], chip_num, size, i, filter_type))
     p.close()
     p.join()
     #cat_add(paths[1],40,50)
