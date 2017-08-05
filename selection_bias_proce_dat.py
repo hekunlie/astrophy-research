@@ -14,8 +14,8 @@ import shelve
 
 
 ts =time.time()
-snr_cut = 0
-snr_brand = 'SNR > %d'%snr_cut
+snr_cut_s = 0
+snr_cut_e = 4000
 
 shear_input = numpy.load('/lmc/selection_bias/shear.npz')
 fg1 = shear_input['arr_0']
@@ -82,7 +82,7 @@ if not exist or comm == 1:
             for i in fg2:
                 g2.setdefault(name, {})[i] = []
                 g2_cor.setdefault(name, {})[i] = []
-                if name==3:
+                if name == 3:
                     fn2[i] = []
                     fu2[i] = []
                     fv2[i] = []
@@ -98,7 +98,8 @@ if not exist or comm == 1:
             # snr
             snr = data[:, -1]
             snr.shape = (len(snr), 1)
-            idxs = snr > snr_cut
+            idxs = snr >= snr_cut_s
+            idxe = snr <= snr_cut_e
 
             # input g1
             tag1 = data[:, 5]
@@ -116,22 +117,22 @@ if not exist or comm == 1:
                     ellip1.shape = (len(ellip1), 1)
                     if na != 3:
                         idx13 = ellip1 != -10
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13&idxs]))
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13&idxs&idxe]))
                         if na != 0:
                             cor_term1 = data[:, int(na+14)]
                             cor_term1.shape = (len(cor_term1), 1)
-                            g1_cor[na][fg1[i]].extend(numpy.ndarray.tolist(cor_term1[idx11&idx12&idx13&idxs]))
+                            g1_cor[na][fg1[i]].extend(numpy.ndarray.tolist(cor_term1[idx11&idx12&idx13&idxs&idxe]))
                     else:
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idxs]))
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idxs&idxe]))
                         n1 = data[:, na+1]
                         n1.shape = (len(n1), 1)
                         u1 = data[:, 12]
                         u1.shape = (len(u1), 1)
                         v1 = data[:, 13]
                         v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12&idxs]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12&idxs]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12&idxs]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12&idxs&idxe]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12&idxs&idxe]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12&idxs&idxe]))
 
             for i in range(len(fg2)):
                 idx21 = tag2 > fg2[i] - 0.001
@@ -141,22 +142,22 @@ if not exist or comm == 1:
                     ellip2.shape = (len(ellip2), 1)
                     if na != 3:
                         idx23 = ellip2 != -10
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23&idxs]))
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23&idxs&idxe]))
                         if na != 0:
                             cor_term2 = data[:, int(na+14)]
                             cor_term2.shape = (len(cor_term2), 1)
-                            g2_cor[na][fg2[i]].extend(numpy.ndarray.tolist(cor_term2[idx21&idx22&idx23&idxs]))
+                            g2_cor[na][fg2[i]].extend(numpy.ndarray.tolist(cor_term2[idx21&idx22&idx23&idxs&idxe]))
                     else:
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idxs]))
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idxs&idxe]))
                         n2 = data[:, na+7]
                         n2.shape = (len(n2), 1)
                         u2 = data[:, 12]
                         u2.shape = (len(u2), 1)
                         v2 = data[:, 13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22&idxs]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22&idxs]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22&idxs]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22&idxs&idxe]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22&idxs&idxe]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22&idxs&idxe]))
         tc3 = time.time()
         print(tc2-tc1, tc3-tc2)
         # create the cache of the classification
@@ -307,12 +308,12 @@ for i in range(4):
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
     A1 = numpy.column_stack((numpy.ones_like(fg1.T),fg1.T))
-    Y1  = res_arr1[i].T
-    C1  = numpy.diag(res_arr1[i+4]**2)
+    Y1 = res_arr1[i].T
+    C1 = numpy.diag(res_arr1[i+4]**2)
 
     A2 = numpy.column_stack((numpy.ones_like(fg2.T),fg2.T))
-    Y2  = res_arr2[i].T
-    C2  = numpy.diag(res_arr2[i+4]**2)
+    Y2 = res_arr2[i].T
+    C2 = numpy.diag(res_arr2[i+4]**2)
 
     L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
     R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
@@ -320,9 +321,9 @@ for i in range(4):
     R2 = numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),Y2)
 
     sig_m1 = numpy.sqrt(L1[1,1])
-    sig_c1   = numpy.sqrt(L1[0,0])
+    sig_c1 = numpy.sqrt(L1[0,0])
     sig_m2 = numpy.sqrt(L2[1,1])
-    sig_c2   = numpy.sqrt(L2[0,0])
+    sig_c2 = numpy.sqrt(L2[0,0])
     e1mc = numpy.dot(L1,R1)
     e2mc = numpy.dot(L2,R2)
     # plot g1 line
@@ -348,23 +349,23 @@ for i in range(4):
 
     ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
     ax.plot(fg1, e1mc[1] * fg1 + e1mc[0], label=name[i], color='red')
-    ax.plot([-0.1,0.1], [-0.1,0.1], label='y=x', color='blue')
+    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
-    ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.8, snr_brand, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(snr_cut_s)+"$\geq"+"S/N"+"$\leq" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07,0.07)
+    plt.ylim(-0.07, 0.07)
     plt.xlim(-0.07, 0.07)
     nm1 = pic_path + name[i] + "_g1.png"
     plt.savefig(nm1)
-    print ('plotted g1')
+    print('plotted g1')
 
     #plot g2 line
     fig = plt.figure(figsize=(10, 10))
@@ -389,22 +390,22 @@ for i in range(4):
 
     ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
     ax.plot(fg2, e2mc[1] * fg2 + e2mc[0], label=name[i], color='red')
-    ax.plot([-0.1,0.1], [-0.1,0.1], label='y=x', color='blue')
+    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
-    ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.8, snr_brand, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(snr_cut_s)+"$\geq"+"S/N"+"$\leq" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07,0.07)
-    plt.xlim(-0.07,0.07)
+    plt.ylim(-0.07, 0.07)
+    plt.xlim(-0.07, 0.07)
     nm2 = pic_path + name[i] + "_g2.png"
     plt.savefig(nm2)
     print('plotted g2')
 te = time.time()
-print ("Complete")
+print("Complete")
 print(tm-ts, te-tm)

@@ -48,21 +48,19 @@
       <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="87">
-              <caret line="487" column="34" lean-forward="true" selection-start-line="487" selection-start-column="34" selection-end-line="487" selection-end-column="34" />
+            <state relative-caret-position="598">
+              <caret line="517" column="24" lean-forward="true" selection-start-line="517" selection-start-column="24" selection-end-line="517" selection-end-column="24" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="276">
-              <caret line="16" column="11" lean-forward="true" selection-start-line="16" selection-start-column="11" selection-end-line="16" selection-end-column="11" />
-              <folding>
-                <element signature="e#4011#4610#0" expanded="false" />
-              </folding>
+            <state relative-caret-position="2175">
+              <caret line="81" column="25" lean-forward="true" selection-start-line="81" selection-start-column="25" selection-end-line="81" selection-end-column="25" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -77,7 +75,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="selection-bias.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection-bias.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="29">
@@ -90,8 +88,8 @@
       <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="29">
-              <caret line="1" column="33" lean-forward="true" selection-start-line="1" selection-start-column="33" selection-end-line="1" selection-end-column="33" />
+            <state relative-caret-position="493">
+              <caret line="50" column="35" lean-forward="false" selection-start-line="50" selection-start-column="35" selection-end-line="50" selection-end-column="35" />
               <folding />
             </state>
           </provider>
@@ -785,14 +783,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="29">
-          <caret line="1" column="33" lean-forward="true" selection-start-line="1" selection-start-column="33" selection-end-line="1" selection-end-column="33" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/selection_bias/add_to_cata.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="928">
@@ -800,14 +790,6 @@
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="87">
-          <caret line="487" column="34" lean-forward="true" selection-start-line="487" selection-start-column="34" selection-end-line="487" selection-end-column="34" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -819,20 +801,34 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="16" column="11" lean-forward="true" selection-start-line="16" selection-start-column="11" selection-end-line="16" selection-end-column="11" />
-          <folding>
-            <element signature="e#4011#4610#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/selection-bias.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="29">
           <caret line="1" column="33" lean-forward="false" selection-start-line="1" selection-start-column="33" selection-end-line="1" selection-end-column="33" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="598">
+          <caret line="517" column="24" lean-forward="true" selection-start-line="517" selection-start-column="24" selection-end-line="517" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="493">
+          <caret line="50" column="35" lean-forward="false" selection-start-line="50" selection-start-column="35" selection-end-line="50" selection-end-column="35" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2175">
+          <caret line="81" column="25" lean-forward="true" selection-start-line="81" selection-start-column="25" selection-end-line="81" selection-end-column="25" />
           <folding />
         </state>
       </provider>
