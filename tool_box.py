@@ -49,36 +49,6 @@ def classify(files_path_list, cpu_num):
     cl_te = time.clock()
     return final_data_list,cl_te-cl_ts
 
-def get_threshold(image, bin_num,upper_percent, noise_scale, bad_pix_num):
-    # return the sigma of the Gaussian noise
-    # bin_num is the number of the bins for estimating the distribution of the noise
-    # upper_percent decides the number of chosen pixels
-    # noise_scale is number of the corresponding bins interval around zero point
-    # bad_pix_num is the number of bad pixels which will be ignored
-
-    image = image.flatten()
-    image = numpy.sort(image)
-    noise = image[int(bad_pix_num+1):int(len(image)*upper_percent)]
-
-    num, bins = numpy.histogram(noise, bin_num, normed=False)[0:2]
-    # let the middle value of the bin interval  present the corresponding noise value
-    size = bins[1]-bins[0]
-    bins +=size/2.
-    abs_bins = numpy.abs(bins)
-    bin_min = numpy.min(abs_bins)
-    mid = numpy.where(abs_bins==bin_min)[0][0]
-    bins = bins[mid- noise_scale:mid+ noise_scale]
-    pxs = num[mid - noise_scale:mid + noise_scale]
-    pxs = pxs/numpy.sum(pxs)
-    def fun(x,*para):
-        return para[0]*numpy.exp(-(x-para[1])**2/2./para[2]**2)
-    paras = optimize.curve_fit(fun,bins,pxs,p0=[50,20,100])[0]
-    # plt.figure()
-    # plt.plot(bins, pxs, color='g')
-    # plt.plot(bins, paras[0]*numpy.exp(-(bins-paras[1])**2/2/paras[2]**2),color='r')
-    # plt.show()
-    return paras
-
 def detect( mask, ini_y, ini_x,signal,maxi,max_p):
     # this function will add the source coordinates to the input signal list and return the cooridnates of  maximum value of the source
     # mask is the masked image of the original of which the values of pixels are either 1 (>signal threshold) or 0 (<signal threshold)

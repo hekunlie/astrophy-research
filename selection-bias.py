@@ -1,3 +1,5 @@
+from sys import path
+path.append('/home/hklee/codes/')
 import numpy
 import galsim
 from astropy.io import fits

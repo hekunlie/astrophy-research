@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+from sys import path
+path.append('/home/hklee/codes/')
 import os
 import numpy
 import time
@@ -13,20 +14,22 @@ import shelve
 
 
 ts =time.time()
-snr= 'SNR>0'
+snr_cut = 0
+snr_brand = 'SNR > %d'%snr_cut
+
 shear_input = numpy.load('/lmc/selection_bias/shear.npz')
 fg1 = shear_input['arr_0']
 fg2 = shear_input['arr_1']
 
-#the lenght of the intervel
+# the length of the interval
 dfg1 = fg1[1]-fg1[0]
 dfg2 = fg2[1]-fg2[0]
 
-paths   = []
+paths = []
 
-#where the result data file are placed
-path  = '/lmc/selection_bias/result/data/'
-#where the result figures will be created
+# where the result data file are placed
+path = '/lmc/selection_bias/result/data/'
+# where the result figures will be created
 pic_path = '/lmc/selection_bias/result/pic/'
 
 # check the final result cache
@@ -36,10 +39,10 @@ if exist:
     # 1: run the program to classify the data ( it could be skipped if this result cache exists) and estimate the shear
     print('0: use the result cache data existed\n1: overwrite it')
     comm = int(input('0/1?:'))
-else :
+else:
     print('no result cache exists')
 
-if not exist or comm==1:
+if not exist or comm == 1:
     # check the classification cache
     dict_cache_exist = os.path.exists(path+'dict_cache')
     if dict_cache_exist:
@@ -48,7 +51,7 @@ if not exist or comm==1:
     else:
         print('no classification cache')
 
-    if not dict_cache_exist or dict_comm==1:
+    if not dict_cache_exist or dict_comm == 1:
         print ('starting...')
         files = os.listdir(path)
         for i in files:
@@ -56,7 +59,9 @@ if not exist or comm==1:
                 paths.append(path + i)
 
         g1 = {}
+        g1_cor = {}
         g2 = {}
+        g2_cor = {}
         # for FQ method
         fn1 = {}
         fn2 = {}
@@ -69,12 +74,14 @@ if not exist or comm==1:
         for name in range(4):
             for i in fg1:
                 g1.setdefault(name, {})[i] = []
+                g1_cor.setdefault(name, {})[i] = []
                 if name == 3:
                     fn1[i] = []
                     fu1[i] = []
                     fv1[i] = []
             for i in fg2:
                 g2.setdefault(name, {})[i] = []
+                g2_cor.setdefault(name, {})[i] = []
                 if name==3:
                     fn2[i] = []
                     fu2[i] = []
@@ -88,60 +95,73 @@ if not exist or comm==1:
             # put the data into the corresponding list
             data = data_list[k]
 
+            # snr
+            snr = data[:, -1]
+            snr.shape = (len(snr), 1)
+            idxs = snr > snr_cut
+
             # input g1
-            tag1 = data[:,5]
-            tag1.shape = (len(tag1),1)
+            tag1 = data[:, 5]
+            tag1.shape = (len(tag1), 1)
 
             # input g2
-            tag2 = data[:,11]
-            tag2.shape = (len(tag2),1)
+            tag2 = data[:, 11]
+            tag2.shape = (len(tag2), 1)
 
             for i in range(len(fg1)):
                 idx11 = tag1 > fg1[i] - 0.001
                 idx12 = tag1 < fg1[i] + 0.001
                 for na in range(4):
-                    ellip1 = data[:,na]
-                    ellip1.shape = (len(ellip1),1)
-                    if na!=3:
-                        idx13 = ellip1!=-10
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13]))
+                    ellip1 = data[:, na]
+                    ellip1.shape = (len(ellip1), 1)
+                    if na != 3:
+                        idx13 = ellip1 != -10
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13&idxs]))
+                        if na != 0:
+                            cor_term1 = data[:, int(na+14)]
+                            cor_term1.shape = (len(cor_term1), 1)
+                            g1_cor[na][fg1[i]].extend(numpy.ndarray.tolist(cor_term1[idx11&idx12&idx13&idxs]))
                     else:
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12]))
-                        n1 = data[:,na+1]
-                        n1.shape = (len(n1),1)
-                        u1 = data[:,12]
+                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idxs]))
+                        n1 = data[:, na+1]
+                        n1.shape = (len(n1), 1)
+                        u1 = data[:, 12]
                         u1.shape = (len(u1), 1)
-                        v1 = data[:,13]
+                        v1 = data[:, 13]
                         v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12]))
+                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12&idxs]))
+                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12&idxs]))
+                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12&idxs]))
 
             for i in range(len(fg2)):
                 idx21 = tag2 > fg2[i] - 0.001
                 idx22 = tag2 < fg2[i] + 0.001
                 for na in range(4):
-                    ellip2 = data[:,na+6]
-                    ellip2.shape = (len(ellip2),1)
-                    if na!=3:
-                        idx23 = ellip1 != -10
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23]))
+                    ellip2 = data[:, na+6]
+                    ellip2.shape = (len(ellip2), 1)
+                    if na != 3:
+                        idx23 = ellip2 != -10
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23&idxs]))
+                        if na != 0:
+                            cor_term2 = data[:, int(na+14)]
+                            cor_term2.shape = (len(cor_term2), 1)
+                            g2_cor[na][fg2[i]].extend(numpy.ndarray.tolist(cor_term2[idx21&idx22&idx23&idxs]))
                     else:
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22]))
-                        n2 = data[:,na+7]
-                        n2.shape = (len(n2),1)
-                        u2 = data[:,12]
+                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idxs]))
+                        n2 = data[:, na+7]
+                        n2.shape = (len(n2), 1)
+                        u2 = data[:, 12]
                         u2.shape = (len(u2), 1)
-                        v2 = data[:,13]
+                        v2 = data[:, 13]
                         v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22]))
+                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22&idxs]))
+                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22&idxs]))
+                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22&idxs]))
         tc3 = time.time()
-        print(tc2-tc1,tc3-tc2)
-         # create the cache of the classification
-        dict = [g1,g2,fn1,fn2,fu1,fu2,fv1,fv2]
-        dict_name = ['g1','g2','fn1','fn2','fu1','fu2','fv1','fv2']
+        print(tc2-tc1, tc3-tc2)
+        # create the cache of the classification
+        dict = [g1, g2, fn1, fn2, fu1, fu2, fv1, fv2, g1_cor, g2_cor]
+        dict_name = ['g1', 'g2', 'fn1', 'fn2', 'fu1', 'fu2', 'fv1', 'fv2', 'g1_cor', 'g2_cor']
         dict_cache = shelve.open(path+'dict_cache')
         for i in range(len(dict_name)):
             dict_cache[dict_name[i]] = dict[i]
@@ -150,11 +170,13 @@ if not exist or comm==1:
 
 
     else:
-        #load the classification cache
+        # load the classification cache
         print('loading classification cache')
         dict_cache = shelve.open(path+'dict_cache')
         g1 = dict_cache['g1']
+        g1_cor = dict_cache['g1_cor']
         g2 = dict_cache['g2']
+        g2_cor = dict_cache['g2_cor']
         fn1 = dict_cache['fn1']
         fn2 = dict_cache['fn2']
         fu1 = dict_cache['fu1']
@@ -170,25 +192,47 @@ if not exist or comm==1:
     res_arr2 = numpy.zeros((12, len(fg2)))
 
     print('calculating shears ')
-    for i in range(3,4):
+    for i in range(4):
         for m in range(len(fg1)):
             if i != 3:
-                #for KSB, BJ, REGAUSS
-                num1 = len(g1[i][fg1[m]])
-                arr1 = numpy.array(g1[i][fg1[m]])
-                ava1 = numpy.mean(arr1)  # g1
-                err1 = numpy.std(arr1) / numpy.sqrt(num1)   #error bar
-                res_arr1[i, m] = ava1
-                res_arr1[i + 4, m] = err1
-                res_arr1[i + 8, m] = num1
+                if i == 0:
+                    # KSB
+                    # number
+                    num1 = len(g1[i][fg1[m]])
+                    # measured g1
+                    arr1 = numpy.array(g1[i][fg1[m]])
+                    # correction term
+                    cor1 = 2*(1-arr1**2)
+                    # g1
+                    ava1 = numpy.mean(arr1)/numpy.mean(cor1)
+                    # error bar
+                    err1 = numpy.std(arr1/cor1 - ava1) / numpy.sqrt(num1)
+                    res_arr1[i, m] = ava1
+                    res_arr1[i + 4, m] = err1
+                    res_arr1[i + 8, m] = num1
+                else:
+                    # BJ, REGAUSS
+                    # number
+                    num1 = len(g1[i][fg1[m]])
+                    # measured ellipticity
+                    arr1 = numpy.array(g1[i][fg1[m]])
+                    # the correction
+                    cor1 = numpy.array(g1_cor[i][fg1[m]])
+                    # g1
+                    ava1 = numpy.mean(arr1)/numpy.mean(cor1)
+                    # error bar
+                    err1 = numpy.std(arr1/cor1 - ava1) / numpy.sqrt(num1)
+                    res_arr1[i, m] = ava1
+                    res_arr1[i + 4, m] = err1
+                    res_arr1[i + 8, m] = num1
             else:
-                #for Fourier_Quad
+                # for Fourier_Quad
                 G1 = numpy.array(g1[i][fg1[m]])
                 N1 = numpy.array(fn1[fg1[m]])
                 U1 = numpy.array(fu1[fg1[m]])
                 num1 = len(G1)
-                bin_num =8
-                g1_h,g1_h_sig = Fourier_Quad().fmin_g(G1,N1,U1,mode=1, bin_num=bin_num, sample=500)
+                bin_num = 8
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=bin_num, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
                 res_arr1[i, m] = g1_h
@@ -197,13 +241,37 @@ if not exist or comm==1:
 
         for m in range(len(fg2)):
             if i != 3:
-                num2 = len(g2[i][fg2[m]])
-                arr2 = numpy.array(g2[i][fg2[m]])
-                ava2 = numpy.mean(arr2)   # g2
-                err2 = numpy.std(arr2) / numpy.sqrt(num2 )  #error bar
-                res_arr2[i, m] = ava2
-                res_arr2[i + 4, m] = err2
-                res_arr2[i + 8, m] = num2
+                if i == 0:
+                    # KSB
+                    # number
+                    num2 = len(g2[i][fg2[m]])
+                    # the measured g2
+                    arr2 = numpy.array(g2[i][fg2[m]])
+                    # correction term
+                    cor2 = 2*(1-arr2**2)
+                    # g2
+                    ava2 = numpy.mean(arr2)/numpy.mean(cor2)
+                    # error bar
+                    err2 = numpy.std(arr2/cor2 - ava2) / numpy.sqrt(num2)
+                    res_arr2[i, m] = ava2
+                    res_arr2[i + 4, m] = err2
+                    res_arr2[i + 8, m] = num2
+                else:
+                    # BJ, REGAUSS
+                    # number
+                    num2 = len(g2[i][fg2[m]])
+                    # the measured g2
+                    arr2 = numpy.array(g2[i][fg2[m]])
+                    # correction term
+                    cor2 = numpy.array(g2_cor[i][fg2[m]])
+                    # g2
+                    ava2 = numpy.mean(arr2)/numpy.mean(cor2)
+                    # error bar
+                    err2 = numpy.std(arr2/cor2 - ava2) / numpy.sqrt(num2)
+                    res_arr2[i, m] = ava2
+                    res_arr2[i + 4, m] = err2
+                    res_arr2[i + 8, m] = num2
+
             else:
                 G2 = numpy.array(g2[i][fg2[m]])
                 N2 = numpy.array(fn2[fg2[m]])
@@ -211,8 +279,8 @@ if not exist or comm==1:
                 num2 = len(G2)
                 bin_num = 8
                 g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=bin_num, sample=500)
-                #g2_h = numpy.sum(G2) / numpy.sum(N2)
-                #g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
+                # g2_h = numpy.sum(G2) / numpy.sum(N2)
+                # g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h
                 res_arr2[i + 4, m] = g2_h_sig
                 res_arr2[i + 8, m] = num2
@@ -229,7 +297,7 @@ tm =time.time()
 # fit the line
 print('done\nbegin to plot the lines')
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
-for i in range(3,4):
+for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
     # A = [[1,1,1,1,...]
@@ -287,7 +355,7 @@ for i in range(3,4):
 
     ax.text(0.2, 0.9, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.8, snr_brand, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
@@ -327,7 +395,7 @@ for i in range(3,4):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     ax.text(0.2, 0.9, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.2, 0.85, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2,5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.2, 0.8, snr, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.2, 0.8, snr_brand, color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
@@ -339,4 +407,4 @@ for i in range(3,4):
     print('plotted g2')
 te = time.time()
 print ("Complete")
-print(tm-ts,te-tm)
+print(tm-ts, te-tm)
