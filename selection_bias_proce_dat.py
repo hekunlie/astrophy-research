@@ -14,7 +14,7 @@ import shelve
 
 
 ts =time.time()
-snr_cut_s = 0
+snr_cut_s = 20
 snr_cut_e = 4000
 
 shear_input = numpy.load('/lmc/selection_bias/shear.npz')
@@ -356,7 +356,7 @@ for i in range(4):
 
     ax.text(0.1, 0.85, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.1, 0.8, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(snr_cut_s)+"$\geq"+"S/N"+"$\leq" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(snr_cut_s)+"$\leq$"+"S/N"+"$\leq$" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
@@ -396,7 +396,7 @@ for i in range(4):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
     ax.text(0.1, 0.85, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.1, 0.8, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(snr_cut_s)+"$\geq"+"S/N"+"$\leq" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(snr_cut_s)+"$\leq$"+"S/N"+"$\leq$" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
