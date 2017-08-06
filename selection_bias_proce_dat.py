@@ -11,11 +11,13 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import tool_box
 from Fourier_Quad import *
 import shelve
+from sys import argv
 
+snr_s,snr_e = argv[1:3]
 
 ts =time.time()
-snr_cut_s = 20
-snr_cut_e = 4000
+snr_cut_s = int(snr_s)
+snr_cut_e = int(snr_e)
 
 shear_input = numpy.load('/lmc/selection_bias/shear.npz')
 fg1 = shear_input['arr_0']
@@ -287,7 +289,7 @@ if not exist or comm == 1:
                 res_arr2[i + 8, m] = num2
 
     final_cache_path = path+'final_cache'
-    numpy.savez(final_cache_path,res_arr1,res_arr2)
+    numpy.savez(final_cache_path, res_arr1, res_arr2)
 
 else:
     text = numpy.load(path+'final_cache.npz')
@@ -307,25 +309,25 @@ for i in range(4):
     # C = diag[sig1^2, sig2^2, sig3^2, .....]
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
-    A1 = numpy.column_stack((numpy.ones_like(fg1.T),fg1.T))
+    A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
     Y1 = res_arr1[i].T
     C1 = numpy.diag(res_arr1[i+4]**2)
 
-    A2 = numpy.column_stack((numpy.ones_like(fg2.T),fg2.T))
+    A2 = numpy.column_stack((numpy.ones_like(fg2.T), fg2.T))
     Y2 = res_arr2[i].T
     C2 = numpy.diag(res_arr2[i+4]**2)
 
-    L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),A1))
-    R1 = numpy.dot(numpy.dot(A1.T,numpy.linalg.inv(C1)),Y1)
-    L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),A2))
-    R2 = numpy.dot(numpy.dot(A2.T,numpy.linalg.inv(C2)),Y2)
+    L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
+    R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
+    L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), A2))
+    R2 = numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), Y2)
 
-    sig_m1 = numpy.sqrt(L1[1,1])
-    sig_c1 = numpy.sqrt(L1[0,0])
-    sig_m2 = numpy.sqrt(L2[1,1])
-    sig_c2 = numpy.sqrt(L2[0,0])
-    e1mc = numpy.dot(L1,R1)
-    e2mc = numpy.dot(L2,R2)
+    sig_m1 = numpy.sqrt(L1[1, 1])
+    sig_c1 = numpy.sqrt(L1[0, 0])
+    sig_m2 = numpy.sqrt(L2[1, 1])
+    sig_c2 = numpy.sqrt(L2[0, 0])
+    e1mc = numpy.dot(L1, R1)
+    e2mc = numpy.dot(L2, R2)
     # plot g1 line
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
