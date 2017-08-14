@@ -12,7 +12,7 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False):
+    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False, N=False):
         x = imagesize
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal_image)
@@ -20,19 +20,22 @@ class Fourier_Quad:
         if background_noise is not None: # to deduct the noise
             d=1
             nbg = self.pow_spec(background_noise)
-            rim = self.border(d,x)
-            n    = numpy.sum(rim)
-            gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
-            nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
-            gal_ps = gal_ps  - nbg + nbg_pnoise- gal_pnoise
+            if N == False:
+                rim = self.border(d,x)
+                n    = numpy.sum(rim)
+                gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
+                nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
+                gal_ps = gal_ps  - nbg + nbg_pnoise- gal_pnoise
+            else:
+                gal_ps = gal_ps - nbg
 
         if F == True:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
 
-        hlr = self.get_radius_new(psf_ps,2.)
-        wb,beta = self.wbeta(hlr,x)
+        hlr = self.get_radius_new(psf_ps,2.)[0]
+        wb, beta = self.wbeta(hlr, x)
         maxi = numpy.max(wb)
         idx = wb < maxi / 100000.
         wb[idx] = 0.
@@ -40,8 +43,8 @@ class Fourier_Quad:
         idx = psf_ps < maxi / 100000.
         psf_ps[idx] = 1.
 
-        tk  = wb/ psf_ps * gal_ps
-        alpha =2.*numpy.pi/x
+        tk = wb/psf_ps * gal_ps
+        alpha = 2.*numpy.pi/x
         kx = mx-0.5*x
         ky = my-0.5*x
         mn1 = (-0.5)*(kx**2 - ky**2)
@@ -58,7 +61,7 @@ class Fourier_Quad:
 
     def wbeta(self, beta, imagesize):
         my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
-        sigma = beta/numpy.sqrt(2)
+        sigma = beta/numpy.sqrt(2.72)
         w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
         beta = 1./beta
         return w_temp, beta
@@ -82,7 +85,7 @@ class Fourier_Quad:
 
     def convolve_psf(self, pos, psf_scale, imagesize, psf="GAUSS"):
         x = pos.shape[1]
-        my,mx = numpy.mgrid[0:imagesize,0:imagesize]
+        my, mx = numpy.mgrid[0:imagesize,0:imagesize]
         pos = numpy.array(pos+imagesize / 2.)
         arr = numpy.zeros((imagesize, imagesize))
 

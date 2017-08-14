@@ -207,9 +207,9 @@ if not exist or comm == 1:
                     # correction term
                     cor1 = 2*(1-arr1**2)
                     # g1
-                    ava1 = numpy.mean(arr1)/numpy.mean(cor1)
+                    ava1 = numpy.mean(arr1)*numpy.mean(cor1)
                     # error bar
-                    err1 = numpy.std(arr1/cor1 - ava1) / numpy.sqrt(num1)
+                    err1 = numpy.std(arr1)/numpy.sqrt(num1)
                     res_arr1[i, m] = ava1
                     res_arr1[i + 4, m] = err1
                     res_arr1[i + 8, m] = num1
@@ -253,9 +253,9 @@ if not exist or comm == 1:
                     # correction term
                     cor2 = 2*(1-arr2**2)
                     # g2
-                    ava2 = numpy.mean(arr2)/numpy.mean(cor2)
+                    ava2 = numpy.mean(arr2)*numpy.mean(cor2)
                     # error bar
-                    err2 = numpy.std(arr2/cor2 - ava2) / numpy.sqrt(num2)
+                    err2 = numpy.std(arr2) / numpy.sqrt(num2)
                     res_arr2[i, m] = ava2
                     res_arr2[i + 4, m] = err2
                     res_arr2[i + 8, m] = num2
