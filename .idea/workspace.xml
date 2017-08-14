@@ -45,7 +45,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Fourier_Quad.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="522">
@@ -55,11 +55,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="selection_bias_proce_dat.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-29">
-              <caret line="257" column="61" lean-forward="true" selection-start-line="257" selection-start-column="61" selection-end-line="257" selection-end-column="61" />
+            <state relative-caret-position="142">
+              <caret line="173" column="16" lean-forward="true" selection-start-line="173" selection-start-column="16" selection-end-line="173" selection-end-column="16" />
               <folding />
             </state>
           </provider>
@@ -100,7 +100,7 @@
       <file leaf-file-name="selection_bias_est.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1479">
+            <state relative-caret-position="867">
               <caret line="51" column="26" lean-forward="false" selection-start-line="51" selection-start-column="26" selection-end-line="51" selection-end-column="38" />
               <folding />
             </state>
@@ -176,8 +176,8 @@
         <option value="$PROJECT_DIR$/tool_box.py" />
         <option value="E:/cosmic shear/python code/temp.py" />
         <option value="$PROJECT_DIR$/offset_checking.py" />
-        <option value="$PROJECT_DIR$/selection_bias_proce_dat.py" />
         <option value="$PROJECT_DIR$/Fourier_Quad.py" />
+        <option value="$PROJECT_DIR$/selection_bias_proce_dat.py" />
       </list>
     </option>
   </component>
@@ -769,14 +769,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1479">
-          <caret line="51" column="26" lean-forward="false" selection-start-line="51" selection-start-column="26" selection-end-line="51" selection-end-column="38" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/200K_gals_test_nonoise/Fourier_Quad.py" />
     <entry file="file://E:/cosmic shear/python code/temp.py">
       <provider selected="true" editor-type-id="text-editor">
@@ -805,18 +797,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-29">
-          <caret line="257" column="61" lean-forward="true" selection-start-line="257" selection-start-column="61" selection-end-line="257" selection-end-column="61" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Fourier_Quad.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="522">
           <caret line="88" column="45" lean-forward="true" selection-start-line="88" selection-start-column="45" selection-end-line="88" selection-end-column="45" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_est.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="867">
+          <caret line="51" column="26" lean-forward="false" selection-start-line="51" selection-start-column="26" selection-end-line="51" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/selection_bias_proce_dat.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="142">
+          <caret line="173" column="16" lean-forward="true" selection-start-line="173" selection-start-column="16" selection-end-line="173" selection-end-column="16" />
           <folding />
         </state>
       </provider>

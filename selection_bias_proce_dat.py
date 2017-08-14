@@ -164,11 +164,17 @@ if not exist or comm == 1:
         print(tc2-tc1, tc3-tc2)
         # create the cache of the classification
         dict = [g1, g2, fn1, fn2, fu1, fu2, fv1, fv2, g1_cor, g2_cor]
-        dict_name = ['g1', 'g2', 'fn1', 'fn2', 'fu1', 'fu2', 'fv1', 'fv2', 'g1_cor', 'g2_cor']
+        dict_cor = [g1_cor, g2_cor]
+        dict_name = ['g1', 'g2', 'fn1', 'fn2', 'fu1', 'fu2', 'fv1', 'fv2']
+        dict_cor_name = ['g1_cor', 'g2_cor']
         dict_cache = shelve.open(path+'dict_cache')
         for i in range(len(dict_name)):
             dict_cache[dict_name[i]] = dict[i]
         dict_cache.close()
+        dict_cor_cache = shelve.open(path + 'dict_cor_cache')
+        for i in range(len(dict_cor_name)):
+            dict_cor_cache[dict_cor_name[i]] = dict_cor[i]
+        dict_cor_cache.close()
         print("Classification complete")
 
 
@@ -177,9 +183,7 @@ if not exist or comm == 1:
         print('loading classification cache')
         dict_cache = shelve.open(path+'dict_cache')
         g1 = dict_cache['g1']
-        g1_cor = dict_cache['g1_cor']
         g2 = dict_cache['g2']
-        g2_cor = dict_cache['g2_cor']
         fn1 = dict_cache['fn1']
         fn2 = dict_cache['fn2']
         fu1 = dict_cache['fu1']
@@ -187,6 +191,10 @@ if not exist or comm == 1:
         fv1 = dict_cache['fv1']
         fv2 = dict_cache['fv2']
         dict_cache.close()
+        dict_cor_cache = shelve.open(path+'dict_cor_cache')
+        g1_cor = dict_cache['g1_cor']
+        g2_cor = dict_cache['g2_cor']
+        dict_cor_cache.close()
 
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
