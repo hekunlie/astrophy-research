@@ -34,7 +34,7 @@ class Fourier_Quad:
         else:
             psf_ps = self.pow_spec(psf_image)
 
-        hlr = self.get_radius_new(psf_ps,2.)[0]
+        hlr = self.get_radius_new(psf_ps, 2.)[0]
         wb, beta = self.wbeta(hlr, x)
         maxi = numpy.max(wb)
         idx = wb < maxi / 100000.
@@ -49,7 +49,7 @@ class Fourier_Quad:
         ky = my-0.5*x
         mn1 = (-0.5)*(kx**2 - ky**2)
         mn2 = -kx*ky
-        mn3 = kx**2 + ky**2 - 0.5*beta**2*( kx**2 + ky**2 )**2
+        mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
         mn5 = kx**3*ky - kx*ky**3
         g1 = numpy.sum(mn1 * tk)*(alpha**4)
@@ -61,8 +61,8 @@ class Fourier_Quad:
 
     def wbeta(self, beta, imagesize):
         my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
-        sigma = beta/numpy.sqrt(2.72)
-        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
+        sigma = beta/numpy.sqrt(2)
+        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./numpy.pi/sigma**2)
         beta = 1./beta
         return w_temp, beta
 
