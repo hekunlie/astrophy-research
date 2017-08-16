@@ -46,132 +46,61 @@ else:
 
 if not exist or comm == 1:
     # check the classification cache
-    dict_cache_exist = os.path.exists(path+'dict_cache')
-    if dict_cache_exist:
+    data_cache_exist = os.path.exists(path+'data_cache')
+    if data_cache_exist:
         print('0: use the classification cache data existed\n1: overwrite it')
-        dict_comm = int(input('0/1?:'))
+        data_comm = int(input('0/1?:'))
     else:
         print('no classification cache')
 
-    if not dict_cache_exist or dict_comm == 1:
+    if not data_cache_exist or data_comm == 1:
         print('starting...')
         files = os.listdir(path)
         for i in files:
             if ".xlsx" in i:
                 paths.append(path + i)
 
-        g1 = {}
-        g2 = {}
-        # for FQ method
-        fn1 = {}
-        fn2 = {}
-        fu1 ={}
-        fv1={}
-        fu2 ={}
-        fv2={}
-        # name: 0:KSB,1:BJ,2:RG,3:F_Q
-        # dict g1 = {'0':..{fg1[i]:[...]},{fg1[i+1]:[...]}....,'1': ...{fg1[i]:[...]},{fg1[i+1]:[...]}...,'2':...,'3':....}
-        for name in range(4):
-            for i in fg1:
-                g1.setdefault(name, {})[i] = []
-                if name == 3:
-                    fn1[i] = []
-                    fu1[i] = []
-                    fv1[i] = []
-            for i in fg2:
-                g2.setdefault(name, {})[i] = []
-                if name == 3:
-                    fn2[i] = []
-                    fu2[i] = []
-                    fv2[i] = []
         # collect the data from the files and put into 'data_list'
-        # elements in data-list are the data arrays
+        # 'data' is the final array that contains all the data
         tc1 = time.time()
-        data_list = tool_box.classify(paths,10)[0]
+        data_list = tool_box.classify(paths, 10)[0]
+        data = data_list[0]
+        for k in range(1, len(data_list)):
+            data = numpy.row_stack((data, data_list[k]))
+        # cache
+        data_cache = shelve.open('data_cache')
+        data_cache['data'] = data
+        data_cache.close()
         tc2 = time.time()
-        for k in range(len(data_list)):
-            # put the data into the corresponding list
-            data = data_list[k]
-
-            # snr
-            snr = data[:, -1]
-            snr.shape = (len(snr), 1)
-            idxs = snr >= snr_cut_s
-            idxe = snr <= snr_cut_e
-
-            # input g1
-            tag1 = data[:, 5]
-            tag1.shape = (len(tag1), 1)
-
-            # input g2
-            tag2 = data[:, 11]
-            tag2.shape = (len(tag2), 1)
-
-            for i in range(len(fg1)):
-                idx11 = tag1 > fg1[i] - 0.001
-                idx12 = tag1 < fg1[i] + 0.001
-                for na in range(4):
-                    ellip1 = data[:, na]
-                    ellip1.shape = (len(ellip1), 1)
-                    if na != 3:
-                        idx13 = ellip1 != -10
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13&idxs&idxe]))
-                    else:
-                        g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idxs&idxe]))
-                        n1 = data[:, na+1]
-                        n1.shape = (len(n1), 1)
-                        u1 = data[:, 12]
-                        u1.shape = (len(u1), 1)
-                        v1 = data[:, 13]
-                        v1.shape = (len(v1), 1)
-                        fn1[fg1[i]].extend(numpy.ndarray.tolist(n1[idx11&idx12&idxs&idxe]))
-                        fu1[fg1[i]].extend(numpy.ndarray.tolist(u1[idx11&idx12&idxs&idxe]))
-                        fv1[fg1[i]].extend(numpy.ndarray.tolist(v1[idx11&idx12&idxs&idxe]))
-
-            for i in range(len(fg2)):
-                idx21 = tag2 > fg2[i] - 0.001
-                idx22 = tag2 < fg2[i] + 0.001
-                for na in range(4):
-                    ellip2 = data[:, na+6]
-                    ellip2.shape = (len(ellip2), 1)
-                    if na != 3:
-                        idx23 = ellip2 != -10
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23&idxs&idxe]))
-                    else:
-                        g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idxs&idxe]))
-                        n2 = data[:, na+7]
-                        n2.shape = (len(n2), 1)
-                        u2 = data[:, 12]
-                        u2.shape = (len(u2), 1)
-                        v2 = data[:, 13]
-                        v2.shape = (len(v2), 1)
-                        fn2[fg2[i]].extend(numpy.ndarray.tolist(n2[idx21&idx22&idxs&idxe]))
-                        fu2[fg2[i]].extend(numpy.ndarray.tolist(u2[idx21&idx22&idxs&idxe]))
-                        fv2[fg2[i]].extend(numpy.ndarray.tolist(v2[idx21&idx22&idxs&idxe]))
-        tc3 = time.time()
-        print(tc2-tc1, tc3-tc2)
-        # create the cache of the classification
-        dict = [g1, g2, fn1, fn2, fu1, fu2, fv1, fv2]
-        dict_name = ['g1', 'g2', 'fn1', 'fn2', 'fu1', 'fu2', 'fv1', 'fv2']
-        dict_cache = shelve.open(path+'dict_cache')
-        for i in range(len(dict_name)):
-            dict_cache[dict_name[i]] = dict[i]
-        dict_cache.close()
-
+        print("Classification finished within %.3f "%(tc2-tc1))
     else:
-        # load the classification cache
-        print('loading classification cache')
-        dict_cache = shelve.open(path+'dict_cache')
-        g1 = dict_cache['g1']
-        g2 = dict_cache['g2']
-        fn1 = dict_cache['fn1']
-        fn2 = dict_cache['fn2']
-        fu1 = dict_cache['fu1']
-        fu2 = dict_cache['fu2']
-        fv1 = dict_cache['fv1']
-        fv2 = dict_cache['fv2']
-        dict_cache.close()
+        print("Loading data cache")
+        data_cache = shelve.open('data_cache')
+        data = data_cache['data']
+        data_cache.close()
 
+    print("Calculate shear")
+
+    # correction
+    BJ_cor = data[:, 1]**2 + data[:, 7]**2
+    BJ_cor.shape = (len(BJ_cor), 1)
+    RG_cor = data[:, 2]**2 + data[:, 8]**2
+    RG_cor.shape = (len(RG_cor), 1)
+    cor = [0, BJ_cor, RG_cor]
+
+    # snr
+    snr = data[:, -1]
+    snr.shape = (len(snr), 1)
+    idxs = snr >= snr_cut_s
+    idxe = snr <= snr_cut_e
+
+    # input g1
+    tag1 = data[:, 5]
+    tag1.shape = (len(tag1), 1)
+
+    # input g2
+    tag2 = data[:, 11]
+    tag2.shape = (len(tag2), 1)
 
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
@@ -179,91 +108,81 @@ if not exist or comm == 1:
     res_arr1 = numpy.zeros((12, len(fg1)))
     res_arr2 = numpy.zeros((12, len(fg2)))
 
-    print('calculating shears ')
-    for i in range(4):
-        for m in range(len(fg1)):
-            if i != 3:
-                if i == 0:
-                    # KSB
-                    # number
-                    num1 = len(g1[i][fg1[m]])
-                    # measured g1
-                    arr1 = numpy.array(g1[i][fg1[m]])
-                    # g1
-                    ava1 = numpy.mean(arr1)
-                    # error bar
-                    err1 = numpy.std(arr1)/numpy.sqrt(num1)
-                    res_arr1[i, m] = ava1
-                    res_arr1[i + 4, m] = err1
-                    res_arr1[i + 8, m] = num1
+    for i in range(len(fg1)):
+        idx11 = tag1 > fg1[i] - 0.001
+        idx12 = tag1 < fg1[i] + 0.001
+        for na in range(4):
+            if na != 3:
+                ellip1 = data[:, na]
+                ellip1.shape = (len(ellip1), 1)
+                idx13 = ellip1 != -10
+                # the measured e1
+                e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
+                num1 = len(e1)
+                if na==0:
+                    g1_h = numpy.mean(e1)
+                    g1_h_sig = numpy.std(e1)
                 else:
-                    # BJ, REGAUSS
-                    # number
-                    num1 = len(g1[i][fg1[m]])
-                    # measured ellipticity
-                    arr1 = numpy.array(g1[i][fg1[m]])
-                    # g1
-                    ava1 = numpy.mean(arr1)/(2 - numpy.std(arr1))
-                    # error bar
-                    err1 = numpy.std(arr1/(2 - numpy.std(arr1)) - ava1) / numpy.sqrt(num1)
-                    res_arr1[i, m] = ava1
-                    res_arr1[i + 4, m] = err1
-                    res_arr1[i + 8, m] = num1
+                    measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]
+                    g1_h = numpy.mean(e1)/(2 - numpy.mean(measured_esq))
+                    g1_h_sig = numpy.std(e1/measured_esq - g1_h)
             else:
-                # for Fourier_Quad
-                G1 = numpy.array(g1[i][fg1[m]])
-                N1 = numpy.array(fn1[fg1[m]])
-                U1 = numpy.array(fu1[fg1[m]])
+                G1 = data[:, 3]
+                G1.shape = (len(G1), 1)
+                N1 = data[:, 4]
+                N1.shape = (len(N1), 1)
+                U1 = data[:, 12]
+                U1.shape = (len(U1), 1)
+                # V1 = data[:, 13]
+                # V1.shape = (len(V1), 1)
+                G1 = G1[idx11&idx12&idxs&idxe]
+                N1 = N1[idx11&idx12&idxs&idxe]
+                U1 = U1[idx11&idx12&idxs&idxe]
                 num1 = len(G1)
-                bin_num = 8
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=bin_num, sample=500)
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
-                res_arr1[i, m] = g1_h
-                res_arr1[i + 4, m] = g1_h_sig
-                res_arr1[i + 8, m] = num1
+            res_arr1[na, i] = g1_h
+            res_arr1[na+4, i] = g1_h_sig
+            res_arr1[na+8, i] = num1
 
-        for m in range(len(fg2)):
-            if i != 3:
-                if i == 0:
-                    # KSB
-                    # number
-                    num2 = len(g2[i][fg2[m]])
-                    # the measured g2
-                    arr2 = numpy.array(g2[i][fg2[m]])
-                    # g2
-                    ava2 = numpy.mean(arr2)
-                    # error bar
-                    err2 = numpy.std(arr2) / numpy.sqrt(num2)
-                    res_arr2[i, m] = ava2
-                    res_arr2[i + 4, m] = err2
-                    res_arr2[i + 8, m] = num2
+    for i in range(len(fg2)):
+        idx21 = tag2 > fg2[i] - 0.001
+        idx22 = tag2 < fg2[i] + 0.001
+        for na in range(4):
+            if na != 3:
+                ellip2 = data[:, na]
+                ellip2.shape = (len(ellip2), 1)
+                idx23 = ellip2 != -10
+                # the measured e1
+                e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
+                num2 = len(e2)
+                if na==0:
+                    g2_h = numpy.mean(e2)
+                    g2_h_sig = numpy.std(e2)
                 else:
-                    # BJ, REGAUSS
-                    # number
-                    num2 = len(g2[i][fg2[m]])
-                    # the measured g2
-                    arr2 = numpy.array(g2[i][fg2[m]])
-                    # g2
-                    ava2 = numpy.mean(arr2)/(2 - numpy.std(arr2))
-                    # error bar
-                    err2 = numpy.std(arr2/(2 - numpy.std(arr2)) - ava2) / numpy.sqrt(num2)
-                    res_arr2[i, m] = ava2
-                    res_arr2[i + 4, m] = err2
-                    res_arr2[i + 8, m] = num2
-
+                    measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
+                    g2_h = numpy.mean(e2)/(2 - numpy.mean(measured_esq))
+                    g2_h_sig = numpy.std(e2/measured_esq - g2_h)
             else:
-                G2 = numpy.array(g2[i][fg2[m]])
-                N2 = numpy.array(fn2[fg2[m]])
-                U2 = numpy.array(fu2[fg2[m]])
+                G2 = data[:, 3]
+                G2.shape = (len(G2), 1)
+                N2 = data[:, 4]
+                N2.shape = (len(N2), 1)
+                U2 = data[:, 12]
+                U2.shape = (len(U2), 1)
+                # V1 = data[:, 13]
+                # V1.shape = (len(V1), 1)
+                G2 = G2[idx11&idx12&idxs&idxe]
+                N2 = N2[idx11&idx12&idxs&idxe]
+                U2 = U2[idx11&idx12&idxs&idxe]
                 num2 = len(G2)
-                bin_num = 8
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=bin_num, sample=500)
-                # g2_h = numpy.sum(G2) / numpy.sum(N2)
-                # g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
-                res_arr2[i, m] = g2_h
-                res_arr2[i + 4, m] = g2_h_sig
-                res_arr2[i + 8, m] = num2
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
+                # g2_h = numpy.sum(G2)/numpy.sum(N2)
+                # g2_h_sig = numpy.std(G2/N2-g2_h)/numpy.sqrt(num2)
+            res_arr2[na, i] = g2_h
+            res_arr2[na+4, i] = g2_h_sig
+            res_arr2[na+8, i] = num2
 
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
