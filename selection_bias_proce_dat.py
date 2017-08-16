@@ -13,7 +13,7 @@ from Fourier_Quad import *
 import shelve
 from sys import argv
 
-snr_s,snr_e = argv[1:3]
+snr_s, snr_e = argv[1:3]
 
 ts =time.time()
 snr_cut_s = int(snr_s)
@@ -54,16 +54,14 @@ if not exist or comm == 1:
         print('no classification cache')
 
     if not dict_cache_exist or dict_comm == 1:
-        print ('starting...')
+        print('starting...')
         files = os.listdir(path)
         for i in files:
             if ".xlsx" in i:
                 paths.append(path + i)
 
         g1 = {}
-        g1_cor = {}
         g2 = {}
-        g2_cor = {}
         # for FQ method
         fn1 = {}
         fn2 = {}
@@ -76,14 +74,12 @@ if not exist or comm == 1:
         for name in range(4):
             for i in fg1:
                 g1.setdefault(name, {})[i] = []
-                g1_cor.setdefault(name, {})[i] = []
                 if name == 3:
                     fn1[i] = []
                     fu1[i] = []
                     fv1[i] = []
             for i in fg2:
                 g2.setdefault(name, {})[i] = []
-                g2_cor.setdefault(name, {})[i] = []
                 if name == 3:
                     fn2[i] = []
                     fu2[i] = []
@@ -120,10 +116,6 @@ if not exist or comm == 1:
                     if na != 3:
                         idx13 = ellip1 != -10
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idx13&idxs&idxe]))
-                        if na != 0:
-                            cor_term1 = data[:, int(na+14)]
-                            cor_term1.shape = (len(cor_term1), 1)
-                            g1_cor[na][fg1[i]].extend(numpy.ndarray.tolist(cor_term1[idx11&idx12&idx13&idxs&idxe]))
                     else:
                         g1[na][fg1[i]].extend(numpy.ndarray.tolist(ellip1[idx11&idx12&idxs&idxe]))
                         n1 = data[:, na+1]
@@ -145,10 +137,6 @@ if not exist or comm == 1:
                     if na != 3:
                         idx23 = ellip2 != -10
                         g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idx23&idxs&idxe]))
-                        if na != 0:
-                            cor_term2 = data[:, int(na+14)]
-                            cor_term2.shape = (len(cor_term2), 1)
-                            g2_cor[na][fg2[i]].extend(numpy.ndarray.tolist(cor_term2[idx21&idx22&idx23&idxs&idxe]))
                     else:
                         g2[na][fg2[i]].extend(numpy.ndarray.tolist(ellip2[idx21&idx22&idxs&idxe]))
                         n2 = data[:, na+7]
@@ -163,20 +151,12 @@ if not exist or comm == 1:
         tc3 = time.time()
         print(tc2-tc1, tc3-tc2)
         # create the cache of the classification
-        dict = [g1, g2, fn1, fn2, fu1, fu2, fv1, fv2, g1_cor, g2_cor]
-        dict_cor = [g1_cor, g2_cor]
+        dict = [g1, g2, fn1, fn2, fu1, fu2, fv1, fv2]
         dict_name = ['g1', 'g2', 'fn1', 'fn2', 'fu1', 'fu2', 'fv1', 'fv2']
-        dict_cor_name = ['g1_cor', 'g2_cor']
         dict_cache = shelve.open(path+'dict_cache')
         for i in range(len(dict_name)):
             dict_cache[dict_name[i]] = dict[i]
         dict_cache.close()
-        dict_cor_cache = shelve.open(path + 'dict_cor_cache')
-        for i in range(len(dict_cor_name)):
-            dict_cor_cache[dict_cor_name[i]] = dict_cor[i]
-        dict_cor_cache.close()
-        print("Classification complete")
-
 
     else:
         # load the classification cache
@@ -191,10 +171,7 @@ if not exist or comm == 1:
         fv1 = dict_cache['fv1']
         fv2 = dict_cache['fv2']
         dict_cache.close()
-        dict_cor_cache = shelve.open(path+'dict_cor_cache')
-        g1_cor = dict_cache['g1_cor']
-        g2_cor = dict_cache['g2_cor']
-        dict_cor_cache.close()
+
 
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
@@ -212,10 +189,8 @@ if not exist or comm == 1:
                     num1 = len(g1[i][fg1[m]])
                     # measured g1
                     arr1 = numpy.array(g1[i][fg1[m]])
-                    # correction term
-                    cor1 = 2*(1-arr1**2)
                     # g1
-                    ava1 = numpy.mean(arr1)*numpy.mean(cor1)
+                    ava1 = numpy.mean(arr1)
                     # error bar
                     err1 = numpy.std(arr1)/numpy.sqrt(num1)
                     res_arr1[i, m] = ava1
@@ -227,12 +202,10 @@ if not exist or comm == 1:
                     num1 = len(g1[i][fg1[m]])
                     # measured ellipticity
                     arr1 = numpy.array(g1[i][fg1[m]])
-                    # the correction
-                    cor1 = numpy.array(g1_cor[i][fg1[m]])
                     # g1
-                    ava1 = numpy.mean(arr1)/numpy.mean(cor1)
+                    ava1 = numpy.mean(arr1)/(2 - numpy.std(arr1))
                     # error bar
-                    err1 = numpy.std(arr1/cor1 - ava1) / numpy.sqrt(num1)
+                    err1 = numpy.std(arr1/(2 - numpy.std(arr1)) - ava1) / numpy.sqrt(num1)
                     res_arr1[i, m] = ava1
                     res_arr1[i + 4, m] = err1
                     res_arr1[i + 8, m] = num1
@@ -258,10 +231,8 @@ if not exist or comm == 1:
                     num2 = len(g2[i][fg2[m]])
                     # the measured g2
                     arr2 = numpy.array(g2[i][fg2[m]])
-                    # correction term
-                    cor2 = 2*(1-arr2**2)
                     # g2
-                    ava2 = numpy.mean(arr2)*numpy.mean(cor2)
+                    ava2 = numpy.mean(arr2)
                     # error bar
                     err2 = numpy.std(arr2) / numpy.sqrt(num2)
                     res_arr2[i, m] = ava2
@@ -273,12 +244,10 @@ if not exist or comm == 1:
                     num2 = len(g2[i][fg2[m]])
                     # the measured g2
                     arr2 = numpy.array(g2[i][fg2[m]])
-                    # correction term
-                    cor2 = numpy.array(g2_cor[i][fg2[m]])
                     # g2
-                    ava2 = numpy.mean(arr2)/numpy.mean(cor2)
+                    ava2 = numpy.mean(arr2)/(2 - numpy.std(arr2))
                     # error bar
-                    err2 = numpy.std(arr2/cor2 - ava2) / numpy.sqrt(num2)
+                    err2 = numpy.std(arr2/(2 - numpy.std(arr2)) - ava2) / numpy.sqrt(num2)
                     res_arr2[i, m] = ava2
                     res_arr2[i + 4, m] = err2
                     res_arr2[i + 8, m] = num2
@@ -289,7 +258,7 @@ if not exist or comm == 1:
                 U2 = numpy.array(fu2[fg2[m]])
                 num2 = len(G2)
                 bin_num = 8
-                g2_h,g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=bin_num, sample=500)
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=bin_num, sample=500)
                 # g2_h = numpy.sum(G2) / numpy.sum(N2)
                 # g2_h_sig = numpy.std(G2 / N2 - g2_h) / numpy.sqrt(num2)
                 res_arr2[i, m] = g2_h

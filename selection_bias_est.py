@@ -38,7 +38,7 @@ def est_shear(m, g1, g2):
             idx = kk+'_%s'%gg
             gal_index.append(idx)
             gal = gal_pool[j]
-            noise = numpy.random.normal(loc=0., scale=370, size=stamp_size**2).reshape(stamp_size, stamp_size)
+            noise = numpy.random.normal(loc=0., scale=380.4, size=stamp_size**2).reshape(stamp_size, stamp_size)
             gal_g = galsim.Image(gal)
             psf_g = galsim.Image(psf)
             res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
