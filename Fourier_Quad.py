@@ -18,18 +18,17 @@ class Fourier_Quad:
         gal_ps = self.pow_spec(gal_image)
 
         if background_noise is not None: # to deduct the noise
-            d=1
             nbg = self.pow_spec(background_noise)
             if N == False:
-                rim = self.border(d,x)
-                n    = numpy.sum(rim)
+                rim = self.border(1, x)
+                n   = numpy.sum(rim)
                 gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
-                nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
-                gal_ps = gal_ps  - nbg + nbg_pnoise- gal_pnoise
+                nbg_pnoise = numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
+                gal_ps = gal_ps - nbg + nbg_pnoise - gal_pnoise
             else:
                 gal_ps = gal_ps - nbg
 
-        if F == True:
+        if F==True:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
@@ -62,7 +61,7 @@ class Fourier_Quad:
     def wbeta(self, beta, imagesize):
         my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
         sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./numpy.pi/sigma**2)
+        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
         beta = 1./beta
         return w_temp, beta
 
@@ -85,29 +84,29 @@ class Fourier_Quad:
 
     def convolve_psf(self, pos, psf_scale, imagesize, psf="GAUSS"):
         x = pos.shape[1]
-        my, mx = numpy.mgrid[0:imagesize,0:imagesize]
-        pos = numpy.array(pos+imagesize / 2.)
+        my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
+        pos = numpy.array(pos)+imagesize/2.
         arr = numpy.zeros((imagesize, imagesize))
 
         if psf is 'GAUSS':
             for i in range(x):
-                arr += numpy.exp(-((mx-pos[0,i])**2+(my-pos[1,i])** 2)/2./psf_scale**2)
-            return arr
+                arr += numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./numpy.pi/psf_scale**2)
+
         elif psf is "Moffat":
             for l in range(x):
-                hstep = 3 * psf_scale-numpy.sqrt((mx-pos[0,l])**2+(my-pos[1,l])**2)
+                hstep = 3.*psf_scale - numpy.sqrt((mx-pos[0, l])**2+(my-pos[1, l])**2)
                 idx = hstep < 0.
                 hstep[idx] = 0.
                 idx = hstep != 0.
                 hstep[idx] = 1.
-                arr += (1+((mx-pos[0,l])**2+(my-pos[1,l])**2)/psf_scale**2)**(-3.5)*hstep
-            return arr
+                arr += (1+((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2)**(-3.5)*hstep
+        return arr
 
     def cre_psf(self, psf_scale, imagesize, model="GAUSS", x=0, y=0):
         xx = numpy.linspace(0, imagesize - 1, imagesize)
         mx, my = numpy.meshgrid(xx, xx)
         if model is 'GAUSS':
-            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
+            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./numpy.pi/psf_scale**2)
             return arr
 
         if model is 'Moffat':
