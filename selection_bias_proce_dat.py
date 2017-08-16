@@ -27,8 +27,6 @@ fg2 = shear_input['arr_1']
 dfg1 = fg1[1]-fg1[0]
 dfg2 = fg2[1]-fg2[0]
 
-paths = []
-
 # where the result data file are placed
 path = '/lmc/selection_bias/result/data/'
 # where the result figures will be created
@@ -54,8 +52,9 @@ if not exist or comm == 1:
         print('no classification cache')
 
     if not data_cache_exist or data_comm == 1:
-        print('starting...')
+        print('Starting>>>>')
         files = os.listdir(path)
+        paths = []
         for i in files:
             if ".xlsx" in i:
                 paths.append(path + i)
@@ -67,14 +66,16 @@ if not exist or comm == 1:
         data = data_list[0]
         for k in range(1, len(data_list)):
             data = numpy.row_stack((data, data_list[k]))
+
         # cache
         data_cache = shelve.open('data_cache')
         data_cache['data'] = data
         data_cache.close()
         tc2 = time.time()
-        print("Classification finished within %.3f "%(tc2-tc1))
+        print("Classification finished within %.3f <<<<"%(tc2-tc1))
+
     else:
-        print("Loading data cache")
+        print("Loading data cache>>>")
         data_cache = shelve.open('data_cache')
         data = data_cache['data']
         data_cache.close()
@@ -121,11 +122,11 @@ if not exist or comm == 1:
                 num1 = len(e1)
                 if na==0:
                     g1_h = numpy.mean(e1)
-                    g1_h_sig = numpy.std(e1)
+                    g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
                 else:
                     measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]
                     g1_h = numpy.mean(e1)/(2 - numpy.mean(measured_esq))
-                    g1_h_sig = numpy.std(e1/measured_esq - g1_h)
+                    g1_h_sig = numpy.std(e1/measured_esq - g1_h)/numpy.sqrt(num1)
             else:
                 G1 = data[:, 3]
                 G1.shape = (len(G1), 1)
@@ -151,7 +152,7 @@ if not exist or comm == 1:
         idx22 = tag2 < fg2[i] + 0.001
         for na in range(4):
             if na != 3:
-                ellip2 = data[:, na]
+                ellip2 = data[:, na+6]
                 ellip2.shape = (len(ellip2), 1)
                 idx23 = ellip2 != -10
                 # the measured e1
@@ -159,23 +160,23 @@ if not exist or comm == 1:
                 num2 = len(e2)
                 if na==0:
                     g2_h = numpy.mean(e2)
-                    g2_h_sig = numpy.std(e2)
+                    g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
                 else:
                     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
                     g2_h = numpy.mean(e2)/(2 - numpy.mean(measured_esq))
-                    g2_h_sig = numpy.std(e2/measured_esq - g2_h)
+                    g2_h_sig = numpy.std(e2/measured_esq - g2_h)/numpy.sqrt(num2)
             else:
-                G2 = data[:, 3]
+                G2 = data[:, 9]
                 G2.shape = (len(G2), 1)
-                N2 = data[:, 4]
+                N2 = data[:, 10]
                 N2.shape = (len(N2), 1)
                 U2 = data[:, 12]
                 U2.shape = (len(U2), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
-                G2 = G2[idx11&idx12&idxs&idxe]
-                N2 = N2[idx11&idx12&idxs&idxe]
-                U2 = U2[idx11&idx12&idxs&idxe]
+                G2 = G2[idx21&idx22&idxs&idxe]
+                N2 = N2[idx21&idx22&idxs&idxe]
+                U2 = U2[idx21&idx22&idxs&idxe]
                 num2 = len(G2)
                 g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 # g2_h = numpy.sum(G2)/numpy.sum(N2)
