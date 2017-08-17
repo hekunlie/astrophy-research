@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from multiprocessing import Pool, Manager,freeze_support
 from sys import path
 path.append('/home/hklee/codes/')
 import os
@@ -34,6 +35,8 @@ pic_path = '/lmc/selection_bias/result/pic/'
 
 # check the final result cache
 exist = os.path.exists(path+'final_cache.npz')
+data_cache_path = path + 'data_cache.npz'
+
 if exist:
     # 0: to use the result cache data existed to plot the line and estimate the bias, 'm' and 'c'
     # 1: run the program to classify the data ( it could be skipped if this result cache exists) and estimate the shear
@@ -44,7 +47,7 @@ else:
 
 if not exist or comm == 1:
     # check the classification cache
-    data_cache_exist = os.path.exists(path+'data_cache')
+    data_cache_exist = os.path.exists(data_cache_path)
     if data_cache_exist:
         print('0: use the classification cache data existed\n1: overwrite it')
         data_comm = int(input('0/1?:'))
@@ -63,22 +66,21 @@ if not exist or comm == 1:
         # 'data' is the final array that contains all the data
         tc1 = time.time()
         data_list = tool_box.classify(paths, 10)[0]
+        # cache
+        # data_cache = shelve.open(path+'data_cache')
+        # data_cache["data"] = data_list
+        # data_cache.close()
         data = data_list[0]
         for k in range(1, len(data_list)):
+            print(type(data_list[k]))
             data = numpy.row_stack((data, data_list[k]))
-
-        # cache
-        data_cache = shelve.open('data_cache')
-        data_cache['data'] = data
-        data_cache.close()
+        numpy.savez(data_cache_path, data)
         tc2 = time.time()
         print("Classification finished within %.3f <<<<"%(tc2-tc1))
 
     else:
         print("Loading data cache>>>")
-        data_cache = shelve.open('data_cache')
-        data = data_cache['data']
-        data_cache.close()
+        data = numpy.load(data_cache_path)['arr_0']
 
     print("Calculate shear")
 
@@ -125,7 +127,7 @@ if not exist or comm == 1:
                     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
                 else:
                     measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]
-                    g1_h = numpy.mean(e1)/(2 - numpy.mean(measured_esq))
+                    g1_h = numpy.mean(e1)/numpy.mean((2 - measured_esq))
                     g1_h_sig = numpy.std(e1/measured_esq - g1_h)/numpy.sqrt(num1)
             else:
                 G1 = data[:, 3]
@@ -163,7 +165,7 @@ if not exist or comm == 1:
                     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
                 else:
                     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
-                    g2_h = numpy.mean(e2)/(2 - numpy.mean(measured_esq))
+                    g2_h = numpy.mean(e2)/numpy.mean((-measured_esq + 2))
                     g2_h_sig = numpy.std(e2/measured_esq - g2_h)/numpy.sqrt(num2)
             else:
                 G2 = data[:, 9]
