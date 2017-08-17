@@ -17,7 +17,7 @@ def est_shear(m, g1, g2):
     if not os.path.isdir(respath):
         os.makedirs(respath)
     psf = fits.open(ahead+'psf.fits')[0].data
-    col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "FG_N", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "FG_N", "fg2", "FQ_U", "FQ_V", "SNR_ORI"]
+    col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2", "FG_N", "FQ_U", "FQ_V", "SNR_ORI", "BJOBSER_e", "REOBSER_e"]
     for k in range(chip_num):
         ts = time.time()
         kk = str(k).zfill(2)
@@ -47,11 +47,14 @@ def est_shear(m, g1, g2):
             res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
             bj_e1 = res_b.corrected_e1
             bj_e2 = res_b.corrected_e2
+            bj_me = res_b.observed_shape.e1**2 + res_b.observed_shape.e2**2
+
             res_r = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='REGAUSS', strict=False)
             re_e1 = res_r.corrected_e1
             re_e2 = res_r.corrected_e2
+            re_me = res_r.observed_shape.e1**2 + res_r.observed_shape.e2**2
             G1, G2, N, U, V = Fourier_Quad().shear_est(gal, psf, stamp_size, noise, N=True)
-            data_matrix[j, :] = ksb_g1, bj_e1, re_e1, G1, N, g1, ksb_g2, bj_e2, re_e2, G2, N, g2, U, V, cat_data[j]
+            data_matrix[j, :] = ksb_g1, bj_e1, re_e1, G1, g1, ksb_g2, bj_e2, re_e2, G2, g2, N, U, V, cat_data[j], bj_me, re_me
 
             #data_matrix[j,:] = 0, 0, 0, G1, N, g1, 0, 0, 0, G2, N, g2, U, V,cat_data[j]
         df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
