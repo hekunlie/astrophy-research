@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
-from multiprocessing import Pool, Manager,freeze_support
+import matplotlib
+matplotlib.use('Agg')
 from sys import path
 path.append('/home/hklee/codes/')
 import os
-import numpy
 import time
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import tool_box
 from Fourier_Quad import *
-import shelve
 from sys import argv
+import numpy
+import pandas
 
-snr_s, snr_e = argv[1:3]
+snr_s, snr_e, filter_type = argv[1:4]
 
-ts =time.time()
+ts = time.time()
+mc_col1 = filter_type + '/' + snr_s + '~' + snr_e + '/g1'
+mc_col2 = filter_type + '/' + snr_s + '~' + snr_e + '/g2'
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
 
@@ -165,7 +166,7 @@ if not exist or comm == 1:
                     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
                 else:
                     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
-                    g2_h = numpy.mean(e2)/numpy.mean((-measured_esq + 2))
+                    g2_h = numpy.mean(e2)/numpy.mean((2 - measured_esq ))
                     g2_h_sig = numpy.std(e2/measured_esq - g2_h)/numpy.sqrt(num2)
             else:
                 G2 = data[:, 9]
@@ -198,7 +199,11 @@ tm =time.time()
 
 # fit the line
 print('done\nbegin to plot the lines')
+
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
+
+mc_data_path = path + 'mc_data.xlsx'
+mc_data = numpy.zeros((12, 2))
 for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -307,6 +312,27 @@ for i in range(4):
     nm2 = pic_path + name[i] + "_g2.png"
     plt.savefig(nm2)
     print('plotted g2')
+
+    # m1, m2
+    mc_data[i] = e1mc[1], e2mc[1]
+    # delta_m1, delta_m2
+    mc_data[i+4] = sig_m1, sig_m2
+    # c1, c2
+    mc_data[i+8] = e1mc[0], e2mc[0]
+    # delta_c1, delta_c2
+    mc_data[i+12] = sig_c1, sig_c2
+
+if os.path.exists(mc_data_path):
+    df = pandas.read_excel(mc_data_path)
+    df[mc_col1] = mc_data[:, 0]
+    df[mc_col2] = mc_data[:, 1]
+    df.to_excel(mc_data_path)
+else:
+    col = [mc_col1, mc_col2]
+    dex = ['Km', 'Bm', 'Rm', 'Fm', 'Kdm', 'Bdm', 'Rdm', 'Fdm', 'Kc', 'Bc', 'Rc', 'Fc', 'Kdc', 'Bdc', 'Rdc', 'Fdc']
+    mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=col)
+    mc_df.to_excel(mc_data_path)
 te = time.time()
+
 print("Complete")
 print(tm-ts, te-tm)

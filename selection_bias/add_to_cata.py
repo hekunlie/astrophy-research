@@ -3,6 +3,9 @@ import os
 import time
 from multiprocessing import Pool
 import numpy
+from sys import argv
+
+
 
 def cat_add(path, chip_num, stampsize, id_tag, fil_type):
     for k in range(chip_num):
@@ -47,7 +50,7 @@ def cat_add(path, chip_num, stampsize, id_tag, fil_type):
         print('Process %d: chip_%s complete<<<<'%(id_tag, kk))
 
 if __name__=='__main__':
-    filter_type = 'gauss_5_9'
+    filter_type = argv[1]
     chip_num = 100
     size = 80
     head = '/lmc/selection_bias/'
