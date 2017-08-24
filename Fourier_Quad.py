@@ -12,27 +12,29 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False):
+    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False, N=False):
         x = imagesize
         my, mx = numpy.mgrid[0:x, 0:x]
         gal_ps = self.pow_spec(gal_image)
 
         if background_noise is not None: # to deduct the noise
-            d=1
             nbg = self.pow_spec(background_noise)
-            rim = self.border(d,x)
-            n    = numpy.sum(rim)
-            gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
-            nbg_pnoise =numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
-            gal_ps = gal_ps  - nbg + nbg_pnoise- gal_pnoise
+            if N == False:
+                rim = self.border(1, x)
+                n   = numpy.sum(rim)
+                gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
+                nbg_pnoise = numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
+                gal_ps = gal_ps - nbg + nbg_pnoise - gal_pnoise
+            else:
+                gal_ps = gal_ps - nbg
 
-        if F == True:
+        if F==True:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
 
-        hlr = self.get_radius_new(psf_ps,2.)
-        wb,beta = self.wbeta(hlr,x)
+        hlr = self.get_radius_new(psf_ps, 2.)[0]
+        wb, beta = self.wbeta(hlr, x)
         maxi = numpy.max(wb)
         idx = wb < maxi / 100000.
         wb[idx] = 0.
@@ -40,13 +42,13 @@ class Fourier_Quad:
         idx = psf_ps < maxi / 100000.
         psf_ps[idx] = 1.
 
-        tk  = wb/ psf_ps * gal_ps
-        alpha =2.*numpy.pi/x
+        tk = wb/psf_ps * gal_ps
+        alpha = 2.*numpy.pi/x
         kx = mx-0.5*x
         ky = my-0.5*x
         mn1 = (-0.5)*(kx**2 - ky**2)
         mn2 = -kx*ky
-        mn3 = kx**2 + ky**2 - 0.5*beta**2*( kx**2 + ky**2 )**2
+        mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
         mn5 = kx**3*ky - kx*ky**3
         g1 = numpy.sum(mn1 * tk)*(alpha**4)
@@ -82,29 +84,29 @@ class Fourier_Quad:
 
     def convolve_psf(self, pos, psf_scale, imagesize, psf="GAUSS"):
         x = pos.shape[1]
-        my,mx = numpy.mgrid[0:imagesize,0:imagesize]
-        pos = numpy.array(pos+imagesize / 2.)
+        my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
+        pos = numpy.array(pos)+imagesize/2.
         arr = numpy.zeros((imagesize, imagesize))
 
         if psf is 'GAUSS':
             for i in range(x):
-                arr += numpy.exp(-((mx-pos[0,i])**2+(my-pos[1,i])** 2)/2./psf_scale**2)
-            return arr
+                arr += numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./numpy.pi/psf_scale**2)
+
         elif psf is "Moffat":
             for l in range(x):
-                hstep = 3 * psf_scale-numpy.sqrt((mx-pos[0,l])**2+(my-pos[1,l])**2)
+                hstep = 3.*psf_scale - numpy.sqrt((mx-pos[0, l])**2+(my-pos[1, l])**2)
                 idx = hstep < 0.
                 hstep[idx] = 0.
                 idx = hstep != 0.
                 hstep[idx] = 1.
-                arr += (1+((mx-pos[0,l])**2+(my-pos[1,l])**2)/psf_scale**2)**(-3.5)*hstep
-            return arr
+                arr += (1+((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2)**(-3.5)*hstep
+        return arr
 
     def cre_psf(self, psf_scale, imagesize, model="GAUSS", x=0, y=0):
         xx = numpy.linspace(0, imagesize - 1, imagesize)
         mx, my = numpy.meshgrid(xx, xx)
         if model is 'GAUSS':
-            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
+            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./numpy.pi/psf_scale**2)
             return arr
 
         if model is 'Moffat':
@@ -164,9 +166,9 @@ class Fourier_Quad:
                     if mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal)
             return signal
-        half_radi_pool = detect(radi_arr,y[0],x[0],half_radi_pool)
+        half_radi_pool = detect(radi_arr, y[0], x[0], half_radi_pool)
 
-        return numpy.sqrt(len(half_radi_pool) / numpy.pi)
+        return numpy.sqrt(len(half_radi_pool) / numpy.pi), half_radi_pool
 
     def move(self, image, x, y):
         imagesize = image.shape[0]
@@ -418,18 +420,18 @@ class Fourier_Quad:
 
 
     def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1, method=2,sample=100): #checked 2017-7-9!!!
-        # model 1 for  g1
+        # model 1 for g1
         # model 2 for g2
         if method==1:
             def func(g_g):
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
-            same =0
-            iters = 0
+            # same =0
+            # iters = 0
             while True:
-                templ =left
-                tempr =right
+                # templ =left
+                # tempr =right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -438,6 +440,9 @@ class Fourier_Quad:
                 fm1 = self.G_bin(g, n, u, m1, mode, bin_num, sample=sample)
                 fm2 = self.G_bin(g, n, u, m2, mode, bin_num, sample=sample)
                 fm3 = self.G_bin(g, n, u, m3, mode, bin_num, sample=sample)
+                if max(fL,fm2,fm1,fm3,fR) <20:
+                    break
+
                 # print(fL,fm2,fm1,fm3,fR)
                 # print(left,m2,m1,m3,right)
                 # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
@@ -490,19 +495,19 @@ class Fourier_Quad:
                     elif fR < fm1 and fR <fm3:
                         left = m3
 
-                if abs(left-right)<1.e-5:
-                    g_h = (left+right)/2.
-                    break
-                iters+=1
-                if left==templ and right==tempr:
-                    same+=1
-                if iters>10 and same>3 or iters>13:
-                    g_h = (left+right)/2.
-                    break
+                # if abs(left-right)<1.e-5:
+                #     g_h = (left+right)/2.
+                #     break
+                # iters+=1
+                # if left==templ and right==tempr:
+                #     same+=1
+                # if iters>10 and same>3 or iters>13:
+                #     g_h = (left+right)/2.
+                #     break
                 #print(left,right,abs(left-right))
 
         # fitting
-        g_range = numpy.linspace(g_h-0.005, g_h+0.005, 11)
+        g_range = numpy.linspace(left, right, 8)
         xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
@@ -514,7 +519,7 @@ class Fourier_Quad:
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1 / 2. / paras[0])
-        #g_h = -paras[1] / 2 / paras[0]
+        g_h = -paras[1] / 2 / paras[0]
         return g_h,g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
