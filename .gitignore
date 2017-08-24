@@ -5,3 +5,5 @@ temp.py
 *.xml
 *.xml
 *.xml
+.idea/*
+.idea
