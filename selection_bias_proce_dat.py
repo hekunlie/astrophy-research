@@ -16,8 +16,7 @@ import pandas
 snr_s, snr_e, filter_type = argv[1:4]
 
 ts = time.time()
-mc_col1 = filter_type + '/' + snr_s + '~' + snr_e + '/g1'
-mc_col2 = filter_type + '/' + snr_s + '~' + snr_e + '/g2'
+
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
 
@@ -73,7 +72,6 @@ if not exist or comm == 1:
         # data_cache.close()
         data = data_list[0]
         for k in range(1, len(data_list)):
-            print(type(data_list[k]))
             data = numpy.row_stack((data, data_list[k]))
         numpy.savez(data_cache_path, data)
         tc2 = time.time()
@@ -322,16 +320,19 @@ for i in range(4):
     # delta_c1, delta_c2
     mc_data[i+12] = sig_c1, sig_c2
 
-if os.path.exists(mc_data_path):
-    df = pandas.read_excel(mc_data_path)
-    df[mc_col1] = mc_data[:, 0]
-    df[mc_col2] = mc_data[:, 1]
-    df.to_excel(mc_data_path)
-else:
-    col = [mc_col1, mc_col2]
-    dex = ['Km', 'Bm', 'Rm', 'Fm', 'Kdm', 'Bdm', 'Rdm', 'Fdm', 'Kc', 'Bc', 'Rc', 'Fc', 'Kdc', 'Bdc', 'Rdc', 'Fdc']
-    mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=col)
-    mc_df.to_excel(mc_data_path)
+if filter_type is not 'none':
+    mc_col1 = filter_type + '/' + snr_s + '~' + snr_e + '/g1'
+    mc_col2 = filter_type + '/' + snr_s + '~' + snr_e + '/g2'
+    if os.path.exists(mc_data_path):
+        df = pandas.read_excel(mc_data_path)
+        df[mc_col1] = mc_data[:, 0]
+        df[mc_col2] = mc_data[:, 1]
+        df.to_excel(mc_data_path)
+    else:
+        col = [mc_col1, mc_col2]
+        dex = ['Km', 'Bm', 'Rm', 'Fm', 'Kdm', 'Bdm', 'Rdm', 'Fdm', 'Kc', 'Bc', 'Rc', 'Fc', 'Kdc', 'Bdc', 'Rdc', 'Fdc']
+        mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=col)
+        mc_df.to_excel(mc_data_path)
 te = time.time()
 
 print("Complete")
