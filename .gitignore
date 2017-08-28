@@ -2,6 +2,12 @@
 *.npz
 extractor.py
 temp.py
+<<<<<<< HEAD
 .xml
+=======
+*.xml
+*.xml
+*.xml
+>>>>>>> d4c24bdfec44caf9a77ed59c86462e9dcaa65997
 .idea/*
 .idea
