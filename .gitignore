@@ -2,3 +2,4 @@
 *.npz
 extractor.py
 temp.py
+.xml
