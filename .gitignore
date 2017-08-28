@@ -3,3 +3,5 @@
 extractor.py
 temp.py
 .xml
+.idea/*
+.idea
