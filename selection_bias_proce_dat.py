@@ -84,24 +84,26 @@ if not exist or comm == 1:
     print("Calculate shear")
 
     # correction
-    BJ_cor = data[:, 1]**2 + data[:, 7]**2
+    KSB_cor = data[:, 0]**2 + data[:, 5]**2
+    KSB_cor.shape = (len(KSB_cor), 1)
+    BJ_cor = data[:, 1]**2 + data[:, 6]**2
     BJ_cor.shape = (len(BJ_cor), 1)
-    RG_cor = data[:, 2]**2 + data[:, 8]**2
+    RG_cor = data[:, 2]**2 + data[:, 7]**2
     RG_cor.shape = (len(RG_cor), 1)
-    cor = [0, BJ_cor, RG_cor]
+    cor = [KSB_cor, BJ_cor, RG_cor]
 
     # snr
-    snr = data[:, -1]
+    snr = data[:, 13]
     snr.shape = (len(snr), 1)
     idxs = snr >= snr_cut_s
     idxe = snr <= snr_cut_e
 
     # input g1
-    tag1 = data[:, 5]
+    tag1 = data[:, 4]
     tag1.shape = (len(tag1), 1)
 
     # input g2
-    tag2 = data[:, 11]
+    tag2 = data[:, 9]
     tag2.shape = (len(tag2), 1)
 
     # the first 4 rows are the ellipticity,
@@ -118,22 +120,24 @@ if not exist or comm == 1:
                 ellip1 = data[:, na]
                 ellip1.shape = (len(ellip1), 1)
                 idx13 = ellip1 != -10
+                idx14 = ellip1 < 1
+                idx15 = ellip1 > -1
                 # the measured e1
-                e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
+                e1 = ellip1[idx11&idx12&idx13&idx14&idx15&idxs&idxe]
                 num1 = len(e1)
                 if na==0:
                     g1_h = numpy.mean(e1)
                     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
                 else:
-                    measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]
-                    g1_h = numpy.mean(e1)/numpy.mean((2 - measured_esq))
-                    g1_h_sig = numpy.std(e1/measured_esq - g1_h)/numpy.sqrt(num1)
+                    #measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
+                    g1_h = numpy.mean(e1)#/numpy.mean(measured_esq)
+                    g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)#/measured_esq - g1_h)
             else:
                 G1 = data[:, 3]
                 G1.shape = (len(G1), 1)
-                N1 = data[:, 4]
+                N1 = data[:, 10]
                 N1.shape = (len(N1), 1)
-                U1 = data[:, 12]
+                U1 = data[:, 11]
                 U1.shape = (len(U1), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
@@ -153,25 +157,27 @@ if not exist or comm == 1:
         idx22 = tag2 < fg2[i] + 0.001
         for na in range(4):
             if na != 3:
-                ellip2 = data[:, na+6]
+                ellip2 = data[:, na+5]
                 ellip2.shape = (len(ellip2), 1)
                 idx23 = ellip2 != -10
+                idx24 = ellip2 < 1
+                idx25 = ellip2 > -1
                 # the measured e1
-                e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
+                e2 = ellip2[idx21&idx22&idx23&idx24&idx25&idxs&idxe]
                 num2 = len(e2)
                 if na==0:
                     g2_h = numpy.mean(e2)
                     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
                 else:
                     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
-                    g2_h = numpy.mean(e2)/numpy.mean((2 - measured_esq ))
-                    g2_h_sig = numpy.std(e2/measured_esq - g2_h)/numpy.sqrt(num2)
+                    g2_h = numpy.mean(e2)#/numpy.mean((2 - measured_esq ))
+                    g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)#/measured_esq - g2_h)
             else:
-                G2 = data[:, 9]
+                G2 = data[:, 8]
                 G2.shape = (len(G2), 1)
                 N2 = data[:, 10]
                 N2.shape = (len(N2), 1)
-                U2 = data[:, 12]
+                U2 = data[:, 11]
                 U2.shape = (len(U2), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
