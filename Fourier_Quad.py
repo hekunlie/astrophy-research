@@ -494,6 +494,9 @@ class Fourier_Quad:
                         left = m1
                     elif fR < fm1 and fR <fm3:
                         left = m3
+                    elif fm1 == fm3:
+                        left = m1
+                        right = m3
 
                 # if abs(left-right)<1.e-5:
                 #     g_h = (left+right)/2.

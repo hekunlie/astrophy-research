@@ -14,6 +14,7 @@ import numpy
 import pandas
 
 snr_s, snr_e, filter_type = argv[1:4]
+print(filter_type, type(filter_type), filter_type == 'none',filter_type is str("none"))
 
 ts = time.time()
 
@@ -207,7 +208,7 @@ print('done\nbegin to plot the lines')
 name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
 
 mc_data_path = path + 'mc_data.xlsx'
-mc_data = numpy.zeros((12, 2))
+mc_data = numpy.zeros((16, 2))
 for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -326,7 +327,7 @@ for i in range(4):
     # delta_c1, delta_c2
     mc_data[i+12] = sig_c1, sig_c2
 
-if filter_type is not 'none':
+if filter_type != 'none':
     mc_col1 = filter_type + '/' + snr_s + '~' + snr_e + '/g1'
     mc_col2 = filter_type + '/' + snr_s + '~' + snr_e + '/g2'
     if os.path.exists(mc_data_path):
