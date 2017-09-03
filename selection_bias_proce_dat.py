@@ -14,7 +14,6 @@ import numpy
 import pandas
 
 snr_s, snr_e, filter_type = argv[1:4]
-print(filter_type, type(filter_type), filter_type == 'none',filter_type is str("none"))
 
 ts = time.time()
 
@@ -121,18 +120,20 @@ if not exist or comm == 1:
                 ellip1 = data[:, na]
                 ellip1.shape = (len(ellip1), 1)
                 idx13 = ellip1 != -10
-                idx14 = ellip1 < 1
-                idx15 = ellip1 > -1
+                # idx14 = ellip1 < 2
+                # idx15 = ellip1 > -2
                 # the measured e1
-                e1 = ellip1[idx11&idx12&idx13&idx14&idx15&idxs&idxe]
+                e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
                 num1 = len(e1)
-                if na==0:
-                    g1_h = numpy.mean(e1)
-                    g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
-                else:
-                    #measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
-                    g1_h = numpy.mean(e1)#/numpy.mean(measured_esq)
-                    g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)#/measured_esq - g1_h)
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(e1, 1, 0, mode=2, bin_num=8, sample=100)
+                print(na, fg1[i], g1_h, g1_h_sig)
+                # if na==0:
+                #     g1_h = numpy.mean(e1)
+                #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
+                # else:
+                #     #measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
+                #     g1_h = numpy.mean(e1)#/numpy.mean(measured_esq)
+                #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)#/measured_esq - g1_h)
             else:
                 G1 = data[:, 3]
                 G1.shape = (len(G1), 1)
@@ -146,7 +147,7 @@ if not exist or comm == 1:
                 N1 = N1[idx11&idx12&idxs&idxe]
                 U1 = U1[idx11&idx12&idxs&idxe]
                 num1 = len(G1)
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=100)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
             res_arr1[na, i] = g1_h
@@ -161,18 +162,20 @@ if not exist or comm == 1:
                 ellip2 = data[:, na+5]
                 ellip2.shape = (len(ellip2), 1)
                 idx23 = ellip2 != -10
-                idx24 = ellip2 < 1
-                idx25 = ellip2 > -1
+                # idx24 = ellip2 < 2
+                # idx25 = ellip2 > -2
                 # the measured e1
-                e2 = ellip2[idx21&idx22&idx23&idx24&idx25&idxs&idxe]
+                e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
                 num2 = len(e2)
-                if na==0:
-                    g2_h = numpy.mean(e2)
-                    g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
-                else:
-                    measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
-                    g2_h = numpy.mean(e2)#/numpy.mean((2 - measured_esq ))
-                    g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)#/measured_esq - g2_h)
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(e2, 1, 0, mode=2, bin_num=8, sample=100)
+                print(na, fg2[i], g2_h, g2_h_sig)
+                # if na==0:
+                #     g2_h = numpy.mean(e2)
+                #     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
+                # else:
+                #     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
+                #     g2_h = numpy.mean(e2)#/numpy.mean((2 - measured_esq ))
+                #     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)#/measured_esq - g2_h)
             else:
                 G2 = data[:, 8]
                 G2.shape = (len(G2), 1)
@@ -186,7 +189,7 @@ if not exist or comm == 1:
                 N2 = N2[idx21&idx22&idxs&idxe]
                 U2 = U2[idx21&idx22&idxs&idxe]
                 num2 = len(G2)
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=100)
                 # g2_h = numpy.sum(G2)/numpy.sum(N2)
                 # g2_h_sig = numpy.std(G2/N2-g2_h)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h

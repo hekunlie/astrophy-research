@@ -419,7 +419,7 @@ class Fourier_Quad:
         return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
 
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1, method=2,sample=100): #checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.3, right=0.3, method=2,sample=100): #checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
         if method==1:
@@ -427,11 +427,11 @@ class Fourier_Quad:
                 return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
             g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
         else:
-            # same =0
-            # iters = 0
+            same =0
+            iters = 0
             while True:
-                # templ =left
-                # tempr =right
+                templ =left
+                tempr =right
                 m1 = (left+right)/2.
                 m2 = (m1+left)/2.
                 m3 = (m1+right)/2.
@@ -501,12 +501,11 @@ class Fourier_Quad:
                 # if abs(left-right)<1.e-5:
                 #     g_h = (left+right)/2.
                 #     break
-                # iters+=1
-                # if left==templ and right==tempr:
-                #     same+=1
-                # if iters>10 and same>3 or iters>13:
-                #     g_h = (left+right)/2.
-                #     break
+                iters+=1
+                if left==templ and right==tempr:
+                    same+=1
+                if iters>10 and same>3 or iters>13:
+                    break
                 #print(left,right,abs(left-right))
 
         # fitting
