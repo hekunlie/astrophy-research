@@ -208,7 +208,7 @@ tm =time.time()
 # fit the line
 print('done\nbegin to plot the lines')
 
-name = ['KSB', 'BJ', 'REGAUSS', 'Fourier_Quad']
+name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
 mc_data_path = path + 'mc_data.xlsx'
 mc_data = numpy.zeros((16, 2))
@@ -241,8 +241,8 @@ for i in range(4):
     e1mc = numpy.dot(L1, R1)
     e2mc = numpy.dot(L2, R2)
     # plot g1 line
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111)
+    fig = plt.figure(figsize=(20, 10))
+    ax = fig.add_subplot(121)
 
     # xmajorLocator = MultipleLocator(0.005)
     # xmajorFormatter = FormatStrFormatter('%1.3f')
@@ -277,13 +277,10 @@ for i in range(4):
     plt.legend(fontsize=15)
     plt.ylim(-0.07, 0.07)
     plt.xlim(-0.07, 0.07)
-    nm1 = pic_path + name[i] + "_g1.png"
-    plt.savefig(nm1)
     print('plotted g1')
 
     #plot g2 line
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111)
+    ax = fig.add_subplot(122)
 
     # xmajorLocator = MultipleLocator(0.01)
     # xmajorFormatter = FormatStrFormatter('%1.3f')
@@ -317,8 +314,8 @@ for i in range(4):
     plt.legend(fontsize=15)
     plt.ylim(-0.07, 0.07)
     plt.xlim(-0.07, 0.07)
-    nm2 = pic_path + name[i] + "_g2.png"
-    plt.savefig(nm2)
+    nm = pic_path + name[i] + ".png"
+    plt.savefig(nm)
     print('plotted g2')
 
     # m1, m2
