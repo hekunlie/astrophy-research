@@ -67,24 +67,19 @@ class ETC(object):
     def flux(self, mag):
         return self.s0 * 10**(-0.4*(mag - 24.0)) * self.exptime
 
-    def draw(self, profile, mag, seed=None, add_noise=None):
+    def draw(self, profile, mag, input_noise, add_noise=None):
         img = galsim.ImageD(self.stamp_size, self.stamp_size, scale=self.pixel_scale)
         profile = profile.withFlux(self.flux(mag))
         profile.drawImage(image=img)
-        signal = np.sum(img.array**2)
+        image = img.array
+        signal = np.sum(image**2)
         noise = np.sqrt(signal * self.sky)
         snr = signal/noise
         if add_noise is not None:
-            bd = galsim.BaseDeviate(seed)
-            gd = galsim.GaussianNoise(bd, sigma = self.sigma_sky)
-            img.addNoise(gd)
-            noise_img = galsim.ImageD(self.stamp_size, self.stamp_size, scale=self.pixel_scale)
-            bdn = galsim.BaseDeviate(seed+2)
-            gdn = galsim.GaussianNoise(bdn, sigma = self.sigma_sky)
-            noise_img.addNoise(gdn)
-            return img, noise_img,snr
+            dirt_img = image + input_noise
+            return dirt_img, snr
         else:
-            return img
+            return image
 
     def SNR(self, profile, mag):
         img = self.draw(profile, mag,add_noise=False)

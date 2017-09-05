@@ -126,6 +126,8 @@ if not exist or comm == 1:
                 e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
                 num1 = len(e1)
                 g1_h, g1_h_sig = Fourier_Quad().fmin_g(e1, 1, 0, mode=2, bin_num=8, sample=100)
+                if na!=0:
+                    g1_h = g1_h/2.#/(1. - numpy.mean(cor[na]))
                 print(na, fg1[i], g1_h, g1_h_sig)
                 # if na==0:
                 #     g1_h = numpy.mean(e1)
@@ -168,6 +170,8 @@ if not exist or comm == 1:
                 e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
                 num2 = len(e2)
                 g2_h, g2_h_sig = Fourier_Quad().fmin_g(e2, 1, 0, mode=2, bin_num=8, sample=100)
+                if na!=0:
+                    g2_h = g2_h/2.#/(1. - numpy.mean(cor[na]))
                 print(na, fg2[i], g2_h, g2_h_sig)
                 # if na==0:
                 #     g2_h = numpy.mean(e2)
