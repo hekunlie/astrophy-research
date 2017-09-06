@@ -10,9 +10,9 @@ import os
 from multiprocessing import Pool
 import pandas
 
-def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_list, NO):
+def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_list, process_id):
 
-    print('Process %d: Simulation begin>>>>>>')%NO
+    print('Process %d: begin>>>>')%process_id
     gal_num = 10000
     chip_num = 100
     stamp_size = 80
@@ -21,24 +21,25 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
     label = range(0, gal_num)
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
-    psf  = galsim.Gaussian(half_light_radius=1.0)
-    psf  = psf.shear(e1=0.08, e2=-0.1)
-    psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale).array
+    psf_o = galsim.Gaussian(half_light_radius=1.0)
+    psf = psf_o.shear(e1=0.08, e2=-0.06)
+    psf_noise = numpy.random.normal(loc=0, scale=380.8645, size=stamp_size**2).reshape(stamp_size, stamp_size)
+    psf_img = prop.draw(psf, 21, psf_noise, add_noise=1)[0]
 
-    ahead = '/lmc/selection_bias/%d/' %NO
+    ahead = '/lmc/selection_bias/%d/' %process_id
     if not os.path.isdir(ahead):
         os.mkdir(ahead)
     for k in range(chip_num):
         kk = str(k).zfill(2)
         ts = time.time()
-        print('Process %d: Simulate Chip %s')%(NO,kk)
+        print('Process %d: Simulate Chip %s')%(process_id, kk)
 
         gal_chip_path = ahead + 'gal_chip_%s.fits'%kk
         data_path = ahead + 'gal_info_%s.xlsx'%kk
         psf_path = ahead + 'psf.fits'
 
         gal_pool = []
-        snr_data = numpy.zeros((gal_num,4))
+        snr_data = numpy.zeros((gal_num, 4))
         tag = range(int(k * gal_num), int((k + 1) * gal_num))
         mag_piece = mag_list[tag]
         ell1 = ellip1[tag]
@@ -49,7 +50,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
         for i in range(gal_num):
             e1 = ell1[i]
             e2 = ell2[i]
-            mag= mag_piece[i]
+            mag = mag_piece[i]
             morpho = numpy.random.randint(1, 4, 1)[0]
             ra = radius[i]
             rs = gal_radius_s[rs_tag]
@@ -87,7 +88,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
         hdu.writeto(psf_path, overwrite=True)
 
         te = time.time()
-        print('Process %d: Simulation completed with time consuming: %.2f'%(NO,te-ts))
+        print('Process %d: Simulation completed with time consuming: %.2f'%(process_id, te-ts))
 
 if __name__=='__main__':
     arr = numpy.load('/lmc/selection_bias/shear.npz')
@@ -111,5 +112,5 @@ if __name__=='__main__':
     p.join()
     t2 = time.time()
     print('Time consuming: %.2f') % (t2 - t1)
-    #os.system('python selection_bias_est.py')
+    os.system('python selection_bias_est.py')
 
