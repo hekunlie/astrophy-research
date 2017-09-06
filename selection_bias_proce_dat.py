@@ -120,20 +120,21 @@ if not exist or comm == 1:
                 ellip1 = data[:, na]
                 ellip1.shape = (len(ellip1), 1)
                 idx13 = ellip1 != -10
-                # idx14 = ellip1 < 2
-                # idx15 = ellip1 > -2
                 # the measured e1
                 e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
                 num1 = len(e1)
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(e1, 1, 0, mode=2, bin_num=8, sample=100)
-                if na!=0:
-                    g1_h = g1_h/2.#/(1. - numpy.mean(cor[na]))
-                print(na, fg1[i], g1_h, g1_h_sig)
+                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(e1, 1, 0, mode=2, bin_num=8, sample=100)
+                # if na!=0:
+                #     g1_h = g1_h/2.#/(1. - numpy.mean(cor[na]))
+                # print(na, fg1[i], g1_h, g1_h_sig)
+                measured_esq1 = cor[na][idx11 & idx12 & idx13 & idxs & idxe] * (-1.) + 2.
+                g1_h = numpy.mean(e1)/numpy.mean(measured_esq1)
+                g1_h_sig = numpy.std(e1) / numpy.sqrt(num1)
                 # if na==0:
                 #     g1_h = numpy.mean(e1)
                 #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
                 # else:
-                #     #measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
+                #     measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
                 #     g1_h = numpy.mean(e1)#/numpy.mean(measured_esq)
                 #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)#/measured_esq - g1_h)
             else:
@@ -169,10 +170,13 @@ if not exist or comm == 1:
                 # the measured e1
                 e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
                 num2 = len(e2)
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(e2, 1, 0, mode=2, bin_num=8, sample=100)
-                if na!=0:
-                    g2_h = g2_h/2.#/(1. - numpy.mean(cor[na]))
-                print(na, fg2[i], g2_h, g2_h_sig)
+                # g2_h, g2_h_sig = Fourier_Quad().fmin_g(e2, 1, 0, mode=2, bin_num=8, sample=100)
+                # if na!=0:
+                #     g2_h = g2_h/2.#/(1. - numpy.mean(cor[na]))
+                # print(na, fg2[i], g2_h, g2_h_sig)
+                measured_esq2 = cor[na][idx21 & idx22 & idx23 & idxs & idxe]*(-1.) + 2.
+                g2_h = numpy.mean(e2)/numpy.mean(measured_esq2)
+                g2_h_sig = numpy.std(e2) / numpy.sqrt(num2)
                 # if na==0:
                 #     g2_h = numpy.mean(e2)
                 #     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)

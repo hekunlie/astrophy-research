@@ -23,7 +23,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
 
     psf_o = galsim.Gaussian(half_light_radius=1.0)
     psf = psf_o.shear(e1=0.08, e2=-0.06)
-    psf_noise = numpy.random.normal(loc=0, scale=380.8645, size=stamp_size**2).reshape(stamp_size, stamp_size)
+    psf_noise = numpy.random.normal(loc=0, scale=prop.sigma_sky, size=stamp_size**2).reshape(stamp_size, stamp_size)
     psf_img = prop.draw(psf, 21, psf_noise, add_noise=1)[0]
 
     ahead = '/lmc/selection_bias/%d/' %process_id

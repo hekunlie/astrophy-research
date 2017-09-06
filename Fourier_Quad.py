@@ -443,7 +443,7 @@ class Fourier_Quad:
                 if max(fL,fm2,fm1,fm3,fR) <20:
                     break
 
-                # print(fL,fm2,fm1,fm3,fR)
+                print(fL,fm2,fm1,fm3,fR)
                 # print(left,m2,m1,m3,right)
                 # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
                 # plt.show()
