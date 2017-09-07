@@ -117,5 +117,5 @@ if __name__=='__main__':
     p.join()
     t2 = time.time()
     print('Time consuming: %.2f') % (t2 - t1)
-    os.system('python selection_bias_est.py')
+    #os.system('python selection_bias_est.py')
 
