@@ -67,9 +67,9 @@ class ETC(object):
     def flux(self, mag):
         return self.s0 * 10**(-0.4*(mag - 24.0)) * self.exptime
 
-    def draw(self, profile, mag, input_noise, add_noise=None):
+    def draw(self, profile, input_noise, add_noise=None):
         img = galsim.ImageD(self.stamp_size, self.stamp_size, scale=self.pixel_scale)
-        profile = profile.withFlux(self.flux(mag))
+        #profile = profile.withFlux(self.flux(mag))
         profile.drawImage(image=img)
         image = img.array
         signal = np.sum(image**2)
