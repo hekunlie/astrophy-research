@@ -28,13 +28,13 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process
     psf_img = psf_img + psf_noise
 
     ahead = '/lmc/selection_bias/%d/' %process_id
+    if not os.path.isdir(ahead):
+        os.mkdir(ahead)
 
     psf_path = ahead + 'psf.fits'
     hdu = fits.PrimaryHDU(psf_img)
     hdu.writeto(psf_path, overwrite=True)
 
-    if not os.path.isdir(ahead):
-        os.mkdir(ahead)
     for k in range(chip_num):
         kk = str(k).zfill(2)
         ts = time.time()
@@ -66,7 +66,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process
             elif morpho == 2:
                 rs_tag += 1
                 if ra >= 0.55:
-                    ra = numpy.random.uniform(0.3, 0.55, 1)
+                    ra = numpy.random.uniform(0.3, 0.55, 1)[0]
                 rb = ra
                 rd = ra + rs
                 bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
@@ -112,6 +112,7 @@ if __name__=='__main__':
        p.apply_async(simulate, args=(ig1, ig2, ie1, ie2, gal_ra, sersic_rd, mags, m,))
     p.close()
     p.join()
+    #simulate(shear1[0], shear2[0], ie1, ie2, gal_ra, sersic_rd, mags, 0)
     t2 = time.time()
     print('Time consuming: %.2f') % (t2 - t1)
     #os.system('python selection_bias_est.py')
