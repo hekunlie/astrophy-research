@@ -10,7 +10,7 @@ import os
 from multiprocessing import Pool
 import pandas
 
-def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_list, process_id):
+def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process_id):
 
     print('Process %d: begin>>>>')%process_id
     gal_num = 10000
@@ -50,7 +50,6 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
         ell1 = ellip1[tag]
         ell2 = ellip2[tag]
         radius = gal_radius[tag]
-        noise_stamps = noise_imgs[tag]
         rs_tag = 0
         for i in range(gal_num):
             e1 = ell1[i]
@@ -67,7 +66,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
             elif morpho == 2:
                 rs_tag += 1
                 if ra >= 0.55:
-                    ra = 0.55
+                    ra = numpy.random.uniform(0.3, 0.55, 1)
                 rb = ra
                 rd = ra + rs
                 bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
@@ -81,8 +80,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, noise_imgs, mag_l
             gal_s = gal.shear(e1=e1, e2=e2)
             gal_g = gal_s.shear(g1=g1, g2=g2)
             gal_c = galsim.Convolve([psf, gal_g])
-            noise_stamp = noise_stamps[i]
-            gal_img, snr = prop.draw(gal_c, noise_stamp, add_noise=1)
+            gal_img, snr = prop.draw(gal_c, add_noise=1)
             snr_data[i, 0:4] = morpho, mag, snr, prop.sigma_sky
             gal_pool.append(gal_img)
 
@@ -101,7 +99,6 @@ if __name__=='__main__':
     shear1 = arr['arr_0']
     shear2 = arr['arr_1']
     mags = numpy.load('/home/hklee/work/selection_bias/parameters/lsstmagsims.npz')['arr_0']
-    noise = numpy.load('/home/hklee/work/selection_bias/parameters/noise.npz')['arr_0']
     gal_ra = numpy.load('/home/hklee/work/selection_bias/parameters/gal_radius.npz')['arr_0']
     sersic_rd = numpy.load('/home/hklee/work/selection_bias/parameters/sersic_rd.npz')['arr_0']
     e1e2 = numpy.load('/home/hklee/work/selection_bias/parameters/e1e2.npz')
@@ -112,7 +109,7 @@ if __name__=='__main__':
     for m in range(len(shear1)):
        ig1 = shear1[m]
        ig2 = shear2[m]
-       p.apply_async(simulate, args=(ig1, ig2, ie1, ie2, gal_ra, sersic_rd, noise, mags, m,))
+       p.apply_async(simulate, args=(ig1, ig2, ie1, ie2, gal_ra, sersic_rd, mags, m,))
     p.close()
     p.join()
     t2 = time.time()
