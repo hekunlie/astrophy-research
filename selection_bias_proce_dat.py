@@ -2,7 +2,7 @@
 import matplotlib
 matplotlib.use('Agg')
 from sys import path
-path.append('/home/hklee/codes/')
+path.append('/home/hklee/work/fourier_quad/')
 import os
 import time
 import matplotlib.pyplot as plt

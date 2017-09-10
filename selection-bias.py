@@ -1,5 +1,5 @@
 from sys import path
-path.append('/home/hklee/codes/')
+path.append('/home/hklee/work/fourier_quad/')
 import numpy
 import galsim
 from astropy.io import fits

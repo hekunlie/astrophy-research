@@ -1,5 +1,5 @@
 from sys import path
-path.append('/home/hklee/codes/')
+path.append('/home/hklee/work/fourier_quad/')
 from Fourier_Quad import  Fourier_Quad
 import numpy
 from astropy.io import fits
