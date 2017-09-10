@@ -10,7 +10,7 @@ import os
 from multiprocessing import Pool
 import pandas
 
-def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process_id):
+def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, mag_list, process_id):
 
     print('Process %d: begin>>>>')%process_id
     gal_num = 10000
@@ -34,9 +34,6 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process
     psf_path = ahead + 'psf.fits'
     hdu = fits.PrimaryHDU(psf_img)
     hdu.writeto(psf_path, overwrite=True)
-
-    sersic_rb = gal_radius_s['arr_0']
-    sersic_rd = gal_radius_s['arr_1']
     rs_tag = 0
     for k in range(chip_num):
         kk = str(k).zfill(2)
@@ -64,8 +61,8 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_s, mag_list, process
                 gal = galsim.Exponential(flux=gal_flux, half_light_radius=ra)
 
             elif morpho == 2:
-                rb = sersic_rb[tag]
-                rd = sersic_rd[tag]
+                rb = gal_radius_sb[rs_tag]
+                rd = gal_radius_sd[rs_tag]
                 rs_tag += 1
                 bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
                 disk = galsim.Sersic(half_light_radius=rd, n=1.5)
@@ -99,6 +96,8 @@ if __name__=='__main__':
     mags = numpy.load('/home/hklee/work/selection_bias/parameters/lsstmagsims.npz')['arr_0']
     gal_rad = numpy.load('/home/hklee/work/selection_bias/parameters/gal_radius.npz')['arr_0']
     sersic_rad = numpy.load('/home/hklee/work/selection_bias/parameters/sersic_rd.npz')
+    sersic_bulge = sersic_rad['arr_0']
+    sersic_disk = sersic_rad['arr_1']
     e1e2 = numpy.load('/home/hklee/work/selection_bias/parameters/e1e2.npz')
     ie1 = e1e2['arr_0']
     ie2 = e1e2['arr_1']
@@ -107,7 +106,7 @@ if __name__=='__main__':
     for m in range(len(shear1)):
        ig1 = shear1[m]
        ig2 = shear2[m]
-       p.apply_async(simulate, args=(ig1, ig2, ie1, ie2, gal_rad, sersic_rad, mags, m,))
+       p.apply_async(simulate, args=(ig1, ig2, ie1, ie2, gal_rad, sersic_bulge, sersic_disk, mags, m,))
     p.close()
     p.join()
     #simulate(shear1[0], shear2[0], ie1, ie2, gal_ra, sersic_rd, mags, 0)
