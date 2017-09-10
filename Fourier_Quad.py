@@ -443,10 +443,9 @@ class Fourier_Quad:
                 fm1 = self.G_bin(g, n, u, m1, mode, bin_num, sample=sample)
                 fm2 = self.G_bin(g, n, u, m2, mode, bin_num, sample=sample)
                 fm3 = self.G_bin(g, n, u, m3, mode, bin_num, sample=sample)
-                if max(fL,fm2,fm1,fm3,fR) <20:
+                if max(fL, fm2, fm1, fm3, fR) < 40 or min(fL,fm2,fm1,fm3,fR) == 0 :
                     break
-
-                print(fL,fm2,fm1,fm3,fR)
+                # print(fL,fm2,fm1,fm3,fR)
                 # print(left,m2,m1,m3,right)
                 # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
                 # plt.show()
@@ -512,7 +511,7 @@ class Fourier_Quad:
                 #print(left,right,abs(left-right))
 
         # fitting
-        g_range = numpy.linspace(left, right, 8)
+        g_range = numpy.linspace(left, right, 5)
         xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)

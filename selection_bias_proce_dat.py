@@ -59,9 +59,8 @@ if not exist or comm == 1:
         files = os.listdir(path)
         paths = []
         for i in files:
-            if ".xlsx" in i:
+            if ".xlsx" and 'chip' in i:
                 paths.append(path + i)
-
         # collect the data from the files and put into 'data_list'
         # 'data' is the final array that contains all the data
         tc1 = time.time()
@@ -82,7 +81,7 @@ if not exist or comm == 1:
         data = numpy.load(data_cache_path)['arr_0']
 
     print("Calculate shear")
-
+    print(data.shape)
     # correction
     KSB_cor = data[:, 0]**2 + data[:, 5]**2
     KSB_cor.shape = (len(KSB_cor), 1)
@@ -113,8 +112,8 @@ if not exist or comm == 1:
     res_arr2 = numpy.zeros((12, len(fg2)))
 
     for i in range(len(fg1)):
-        idx11 = tag1 > fg1[i] - 0.001
-        idx12 = tag1 < fg1[i] + 0.001
+        idx11 = tag1 > fg1[i] - 0.0001
+        idx12 = tag1 < fg1[i] + 0.0001
         for na in range(4):
             if na != 3:
                 ellip1 = data[:, na]
@@ -146,11 +145,12 @@ if not exist or comm == 1:
                 U1.shape = (len(U1), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
-                G1 = G1[idx11&idx12&idxs&idxe]
-                N1 = N1[idx11&idx12&idxs&idxe]
-                U1 = U1[idx11&idx12&idxs&idxe]
+                G1 = G1[idx11&idx12]#&idxs&idxe]
+                N1 = N1[idx11&idx12]#&idxs&idxe]
+                U1 = U1[idx11&idx12]#&idxs&idxe]
                 num1 = len(G1)
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=100)
+                print(num1)
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=50)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
             res_arr1[na, i] = g1_h
@@ -158,8 +158,8 @@ if not exist or comm == 1:
             res_arr1[na+8, i] = num1
 
     for i in range(len(fg2)):
-        idx21 = tag2 > fg2[i] - 0.001
-        idx22 = tag2 < fg2[i] + 0.001
+        idx21 = tag2 > fg2[i] - 0.0001
+        idx22 = tag2 < fg2[i] + 0.0001
         for na in range(4):
             if na != 3:
                 ellip2 = data[:, na+5]
@@ -193,11 +193,12 @@ if not exist or comm == 1:
                 U2.shape = (len(U2), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
-                G2 = G2[idx21&idx22&idxs&idxe]
-                N2 = N2[idx21&idx22&idxs&idxe]
-                U2 = U2[idx21&idx22&idxs&idxe]
+                G2 = G2[idx21&idx22]#&idxs&idxe]
+                N2 = N2[idx21&idx22]#&idxs&idxe]
+                U2 = U2[idx21&idx22]#&idxs&idxe]
                 num2 = len(G2)
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=100)
+                print(num2)
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=50)
                 # g2_h = numpy.sum(G2)/numpy.sum(N2)
                 # g2_h_sig = numpy.std(G2/N2-g2_h)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
