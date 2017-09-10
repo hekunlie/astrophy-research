@@ -113,5 +113,5 @@ if __name__=='__main__':
     #simulate(shear1[0], shear2[0], ie1, ie2, gal_ra, sersic_rd, mags, 0)
     t2 = time.time()
     print('Time consuming: %.2f') % (t2 - t1)
-    #os.system('python selection_bias_est.py')
+    os.system('python selection_bias_est.py')
 
