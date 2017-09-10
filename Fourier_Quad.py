@@ -325,7 +325,10 @@ class Fourier_Quad:
         arr = numpy.zeros((row_num*stampsize, columns * stampsize))
         for j in range(row_num):
             for i in range(columns):
-                arr[j*stampsize:(j+1)*stampsize,i*stampsize:(i+1)*stampsize]=image_array[i+j*columns]
+                id = i + j * columns
+                if id > num - 1:
+                    break
+                arr[j*stampsize:(j+1)*stampsize,i*stampsize:(i+1)*stampsize]=image_array[id]
         return arr
 
     def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
