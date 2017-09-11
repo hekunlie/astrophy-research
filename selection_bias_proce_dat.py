@@ -149,8 +149,7 @@ if not exist or comm == 1:
                 N1 = N1[idx11&idx12]#&idxs&idxe]
                 U1 = U1[idx11&idx12]#&idxs&idxe]
                 num1 = len(G1)
-                print(num1)
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=50)
+                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
                 # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
             res_arr1[na, i] = g1_h
@@ -197,8 +196,7 @@ if not exist or comm == 1:
                 N2 = N2[idx21&idx22]#&idxs&idxe]
                 U2 = U2[idx21&idx22]#&idxs&idxe]
                 num2 = len(G2)
-                print(num2)
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=50)
+                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 # g2_h = numpy.sum(G2)/numpy.sum(N2)
                 # g2_h_sig = numpy.std(G2/N2-g2_h)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h

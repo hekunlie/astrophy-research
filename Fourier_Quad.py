@@ -156,7 +156,7 @@ class Fourier_Quad:
         y, x = numpy.where(radi_arr == maxi)
         idx = radi_arr < maxi / scale
         radi_arr[idx] = 0.
-        half_radi_pool = []
+        half_radius_pool = []
 
         def detect(mask, ini_y, ini_x, signal):
             if mask[ini_y, ini_x] > 0:
@@ -166,9 +166,9 @@ class Fourier_Quad:
                     if mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal)
             return signal
-        half_radi_pool = detect(radi_arr, y[0], x[0], half_radi_pool)
+        half_radius_pool = detect(radi_arr, y[0], x[0], half_radius_pool)
 
-        return numpy.sqrt(len(half_radi_pool) / numpy.pi), half_radi_pool
+        return numpy.sqrt(len(half_radius_pool) / numpy.pi), half_radius_pool
 
     def move(self, image, x, y):
         imagesize = image.shape[0]
@@ -432,6 +432,7 @@ class Fourier_Quad:
         else:
             same =0
             iters = 0
+            g_h = 0
             while True:
                 templ =left
                 tempr =right
@@ -443,10 +444,14 @@ class Fourier_Quad:
                 fm1 = self.G_bin(g, n, u, m1, mode, bin_num, sample=sample)
                 fm2 = self.G_bin(g, n, u, m2, mode, bin_num, sample=sample)
                 fm3 = self.G_bin(g, n, u, m3, mode, bin_num, sample=sample)
-                if max(fL, fm2, fm1, fm3, fR) < 40 or min(fL,fm2,fm1,fm3,fR) == 0 :
+                values = [fL, fR, fm1, fm2, fm3]
+                points = [left, right, m1, m2, m3]
+                if max(values) < 40 or min(values) == 0 :
+                    for i in range(5):
+                        if values[i] == 0:
+                            g_h = points[i]
                     break
-                # print(fL,fm2,fm1,fm3,fR)
-                # print(left,m2,m1,m3,right)
+                # print(values, points)
                 # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
                 # plt.show()
                 if fL>max(fm1,fm2,fm3) and fR>max(fm1,fm2,fm3):
@@ -511,20 +516,34 @@ class Fourier_Quad:
                 #print(left,right,abs(left-right))
 
         # fitting
-        g_range = numpy.linspace(left, right, 5)
-        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
-        gg4 = numpy.sum(g_range ** 4)
-        gg3 = numpy.sum(g_range ** 3)
-        gg2 = numpy.sum(g_range ** 2)
-        gg1 = numpy.sum(g_range)
-        xigg2 = numpy.sum(xi2 * (g_range ** 2))
-        xigg1 = numpy.sum(xi2 * g_range)
-        xigg0 = numpy.sum(xi2)
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-        g_sig = numpy.sqrt(1 / 2. / paras[0])
-        g_h = -paras[1] / 2 / paras[0]
-        return g_h,g_sig
+        if g_h != 0:
+            g_range = numpy.linspace(g_h-0.003, g_h+0.003, 6)
+            xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
+            gg4 = numpy.sum(g_range ** 4)
+            gg3 = numpy.sum(g_range ** 3)
+            gg2 = numpy.sum(g_range ** 2)
+            gg1 = numpy.sum(g_range)
+            xigg2 = numpy.sum(xi2 * (g_range ** 2))
+            xigg1 = numpy.sum(xi2 * g_range)
+            xigg0 = numpy.sum(xi2)
+            cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
+            paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+            g_sig = numpy.sqrt(1 / 2. / paras[0])
+        else:
+            g_range = numpy.linspace(left, right, 5)
+            xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
+            gg4 = numpy.sum(g_range ** 4)
+            gg3 = numpy.sum(g_range ** 3)
+            gg2 = numpy.sum(g_range ** 2)
+            gg1 = numpy.sum(g_range)
+            xigg2 = numpy.sum(xi2 * (g_range ** 2))
+            xigg1 = numpy.sum(xi2 * g_range)
+            xigg0 = numpy.sum(xi2)
+            cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
+            paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+            g_sig = numpy.sqrt(1 / 2. / paras[0])
+            g_h = -paras[1] / 2 / paras[0]
+        return g_h, g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
         e1 = ellip[:, 0]

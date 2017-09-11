@@ -173,18 +173,5 @@ if __name__ == '__main__':
     etc = ETC(args.band, pixel_scale=args.pixel_scale, stamp_size=args.stamp_size,
               threshold=args.threshold, nvisits=args.nvisits)
 
-    print
-    print "input"
-    print "------"
-    print "band: {}".format(args.band)
-    print "magnitude: {}".format(args.mag)
-    print
-    print "output"
-    print "------"
-    print "signal: {}".format(etc.flux(args.mag))
-    print "sky noise: {}".format(etc.sigma_sky)
-    print "SNR: {}".format(etc.SNR(profile, args.mag))
-    print "mag err: {}".format(etc.err(profile, args.mag))
-
     if args.display:
         etc.display(profile, args.mag)
