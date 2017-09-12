@@ -13,9 +13,9 @@ import pandas
 def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, mag_list, process_id):
 
     print('Process %d: begin>>>>')%process_id
-    gal_num = 5000
-    chip_num = 200
-    stamp_size = 60
+    gal_num = 4000
+    chip_num = 250
+    stamp_size = 70
     pixel_scale = 0.2
     col = ['morphology', 'mag', 'snr', 'noise_sigma']
     label = range(0, gal_num)

@@ -11,8 +11,8 @@ import time
 import lsstetc
 
 def est_shear(m, g1, g2):
-    stamp_size = 60
-    chip_num = 200
+    stamp_size = 70
+    chip_num = 250
     pixel_scale = 0.2
     ahead = '/lmc/selection_bias/%s/'%m
     respath = '/lmc/selection_bias/result/data/'
