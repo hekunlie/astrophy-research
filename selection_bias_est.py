@@ -11,8 +11,8 @@ import time
 import lsstetc
 
 def est_shear(m, g1, g2):
-    stamp_size = 80
-    chip_num = 100
+    stamp_size = 60
+    chip_num = 200
     pixel_scale = 0.2
     ahead = '/lmc/selection_bias/%s/'%m
     respath = '/lmc/selection_bias/result/data/'
@@ -85,5 +85,5 @@ if __name__=='__main__':
     p.join()
     t2 = time.time()
     #est_shear(0,shear1[0],shear2[0])
-    #print('Time comsuming: %.2f') % (t2 - t1)
+    print('Time comsuming: %.2f') % (t2 - t1)
     #os.system('python selection_bias_proce_dat.py')

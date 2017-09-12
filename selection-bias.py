@@ -13,9 +13,9 @@ import pandas
 def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, mag_list, process_id):
 
     print('Process %d: begin>>>>')%process_id
-    gal_num = 10000
-    chip_num = 100
-    stamp_size = 80
+    gal_num = 5000
+    chip_num = 200
+    stamp_size = 60
     pixel_scale = 0.2
     col = ['morphology', 'mag', 'snr', 'noise_sigma']
     label = range(0, gal_num)
@@ -82,7 +82,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, m
         df = pandas.DataFrame(data=snr_data, index=label, columns=col)
         df.to_excel(data_path)
 
-        gal_chip = Fourier_Quad().image_stack(gal_pool, stamp_size, 100)
+        gal_chip = Fourier_Quad().image_stack(gal_pool, stamp_size, 50)
         hdu = fits.PrimaryHDU(gal_chip)
         hdu.writeto(gal_chip_path, overwrite=True)
 
