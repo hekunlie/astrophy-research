@@ -1,23 +1,68 @@
 from sys import path
 path.append('/home/hklee/work/fourier_quad/')
 import numpy
-#import galsim
+import galsim
 from astropy.io import fits
 from Fourier_Quad import Fourier_Quad
-#import lsstetc
+import lsstetc
 import time
 import os
 from multiprocessing import Pool
 import pandas
 import tool_box
 
-def simu(gal_paths_list, info_paths_list, process_id):
+def simu(gal_paths_list, info_paths_list, num_in_chip, stamp_size, process_id):
+    print('Process %d: begin>>>>') % process_id
+
+    stamp_size = 70
+    pixel_scale = 0.2
+    col = ['morphology', 'mag', 'snr', 'noise_sigma']
+    label = range(0, num_in_chip)
+
+    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+
+    psf_o = galsim.Gaussian(half_light_radius=0.8, flux=1.0)
+    psf = psf_o.shear(e1=0.081, e2=-0.066)
+
+
+    for i in range(len(gal_paths_list)):
+        chip_path = gal_paths_list[i]
+        info_path = info_paths_list[i]
+        pool = []
+        for k in range(num_in_chip):
+
+            morpho = numpy.random.randint(1, 4, 1)[0]
+            ra = radius[i]
+            if morpho == 1:
+                gal = galsim.Exponential(flux=gal_flux, half_light_radius=ra)
+
+            elif morpho == 2:
+                rb = gal_radius_sb[rs_tag]
+                rd = gal_radius_sd[rs_tag]
+                rs_tag += 1
+                bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
+                disk = galsim.Sersic(half_light_radius=rd, n=1.5)
+                gal = bulge * 0.3 + disk * 0.7
+                gal = gal.withFlux(gal_flux)
+
+            else:
+                gal = galsim.Gaussian(flux=gal_flux, half_light_radius=ra)
+
+            gal_s = gal.shear(e1=e1, e2=e2)
+            gal_g = gal_s.shear(g1=g1, g2=g2)
+            gal_c = galsim.Convolve([psf, gal_g])
+            gal_img, snr = prop.draw(gal_c, add_noise=1)
+            snr_data[i, 0:4] = morpho, mag, snr, prop.sigma_sky
+            gal_pool.append(gal_img)
+
     pass
 
 
 if __name__=='__main__':
     CPU_num = 20
     chip_num = 250
+    total_num = 1000000
+    stamp_size = 70
 
     for i in range(10):
         files_path = '/lmc/selection_bias/%d/'%i
