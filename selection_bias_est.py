@@ -26,8 +26,8 @@ def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id)
         shear_tag, chip_name = chip_path.split('/')[3:5]
         info_path = '/lmc/selection_bias/%s/gal_info_%s.xlsx' %(shear_tag, chip_name.split('_')[2].split('.')[0])
 
-        g1_input = shear1_in[shear_tag]
-        g2_input = shear2_in[shear_tag]
+        g1_input = shear1_in[int(shear_tag)]
+        g2_input = shear2_in[int(shear_tag)]
 
         gals = fits.open(chip_path)[0].data
         gal_pool = Fourier_Quad().divide_stamps(gals, size)
@@ -65,7 +65,7 @@ def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id)
         print('Proc_%d: (%d/%d) complete within time %.2f s') % (proc_id, i+1, total_chips, te-ts)
 
 if __name__=='__main__':
-    CPU_num = 20
+    CPU_num = 25
     chip_num = 250
     total_num = 1000000
     pixel_scale = 0.2
@@ -79,7 +79,7 @@ if __name__=='__main__':
     shear1 = shear['arr_0']
     shear2 = shear['arr_1']
 
-    chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%d.fits'%(i, j) for i in range(10) for j in range(chip_num)]
+    chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%s.fits'%(i, str(j).zfill(2)) for i in range(10) for j in range(chip_num)]
     chip_paths_list = tool_box.task_distri(chip_paths_pool, CPU_num)
 
     psf = fits.open('/lmc/selection_bias/psf.fits')[0].data
@@ -90,9 +90,9 @@ if __name__=='__main__':
     p = Pool()
     t1 = time.time()
     for m in range(CPU_num):
-       p.apply_async(shear_est, args=(chip_paths_list[m], psf, shear1, shear2, noise_sigma, m))
+       p.apply_async(shear_est, args=(chip_paths_list[m], psf, shear1, shear2, noise_sigma, stamp_size, m))
     p.close()
     p.join()
     t2 = time.time()
-    #shear_est(chip_paths_list[0], psf, shear1, shear2, noise_sigma, 0)
+    #shear_est(chip_paths_list[0], psf, shear1, shear2, noise_sigma, stamp_size, 0)
     print('Time comsuming: %.2f') % (t2 - t1)
