@@ -15,7 +15,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, m
     print('Process %d: begin>>>>')%process_id
     gal_num = 4000
     chip_num = 250
-    stamp_size = 70
+    stamp_size = 80
     pixel_scale = 0.2
     col = ['morphology', 'mag', 'snr', 'noise_sigma']
     label = range(0, gal_num)
@@ -36,7 +36,7 @@ def simulate(g1, g2, ellip1, ellip2, gal_radius, gal_radius_sb, gal_radius_sd, m
     hdu.writeto(psf_path, overwrite=True)
     rs_tag = 0
     for k in range(chip_num):
-        kk = str(k).zfill(2)
+        kk = str(k).zfill(len(str(chip_num)))
         ts = time.time()
         print('Process %d: Simulate Chip %s')%(process_id, kk)
 
@@ -112,5 +112,5 @@ if __name__=='__main__':
     #simulate(shear1[0], shear2[0], ie1, ie2, gal_ra, sersic_rd, mags, 0)
     t2 = time.time()
     print('Time consuming: %.2f') % (t2 - t1)
-    os.system('python selection_bias_est.py')
+    #os.system('python selection_bias_est.py')
 

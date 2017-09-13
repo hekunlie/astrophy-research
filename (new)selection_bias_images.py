@@ -62,7 +62,7 @@ if __name__=='__main__':
     CPU_num = 20
     chip_num = 250
     total_num = 1000000
-    stamp_size = 70
+    stamp_size = 80
 
     for i in range(10):
         files_path = '/lmc/selection_bias/%d/'%i
@@ -71,8 +71,8 @@ if __name__=='__main__':
 
     chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%d.fits'%(i, j) for i in range(10) for j in range(chip_num)]
     info_path_pool = ['/lmc/selection_bias/%d/gal_info_%d.xlsx'%(i, j) for i in range(10) for j in range(chip_num)]
-    chip_paths_list = tool_box.task_distri(chip_paths_pool, 20)
-    info_path_list = tool_box.task_distri(info_path_pool, 20)
+    chip_paths_list = tool_box.task_distri(chip_paths_pool, CPU_num)
+    info_path_list = tool_box.task_distri(info_path_pool, CPU_num)
 
     arr = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = arr['arr_0']

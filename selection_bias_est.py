@@ -9,46 +9,41 @@ import pandas
 import galsim
 import time
 import lsstetc
+import tool_box
 
-def est_shear(m, g1, g2):
-    stamp_size = 70
-    chip_num = 250
-    pixel_scale = 0.2
-    ahead = '/lmc/selection_bias/%s/'%m
-    respath = '/lmc/selection_bias/result/data/'
-    if not os.path.isdir(respath):
-        os.makedirs(respath)
+def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id):
+    print('Proc_%d: begin>>>')%proc_id
+
     col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2",
            "FG_N", "FQ_U", "FQ_V",  'KSB_R', 'BJ_R', 'RG_R', "SNR_ORI"]
-    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
-    psf_i = fits.open(ahead+'psf.fits')[0].data
-    psf_g = galsim.Image(psf_i)
-    psf_pow = Fourier_Quad().pow_spec(psf_i)
+    psf_pow = Fourier_Quad().pow_spec(psf_in)
+    psf_g = galsim.Image(psf_in)
 
-    for k in range(chip_num):
-        ts = time.time()
-        kk = str(k).zfill(2)
-        print('Process %d: Shear estimation chip %s beginning>>>>')%(m, kk)
-        gal_path = ahead + 'gal_chip_%s.fits'%kk
-        gal_img = fits.open(gal_path)[0].data
-        cat_path = ahead + 'gal_info_%s.xlsx'%kk
-        cat_data = pandas.read_excel(cat_path).values[:, 2]
-        gal_pool = Fourier_Quad().divide_stamps(gal_img, stamp_size)
-        gal_index = []
+    total_chips = len(chip_list)
+    for i in range(total_chips):
+        chip_path = chip_list[i]
+        shear_tag, chip_name = chip_path.split('/')[3:5]
+        info_path = '/lmc/selection_bias/%s/gal_info_%s.xlsx' %(shear_tag, chip_name.split('_')[2].split('.')[0])
+
+        g1_input = shear1_in[shear_tag]
+        g2_input = shear2_in[shear_tag]
+
+        gals = fits.open(chip_path)[0].data
+        gal_pool = Fourier_Quad().divide_stamps(gals, size)
+        snr = pandas.read_excel(info_path).values[:, 2]
+
         data_matrix = numpy.zeros((len(gal_pool), len(col)))
-        for j in range(len(gal_pool)):
-            gg = str(j).zfill(4)
-            idx = kk+'_%s'%gg
-            gal_index.append(idx)
-            gal = gal_pool[j]
-            noise = numpy.random.normal(loc=0., scale=prop.sigma_sky, size=stamp_size**2).reshape(stamp_size, stamp_size)
+        data_path = '/lmc/selection_bias/result/data/' + shear_tag + '_' + chip_name + '.xlsx'
+        ts = time.time()
+        for k in range(len(gal_pool)):
+            gal = gal_pool[k]
             gal_g = galsim.Image(gal)
 
             res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
             ksb_g1 = res_k.corrected_g1
             ksb_g2 = res_k.corrected_g2
-            ksb_r  = res_k.resolution_factor
+            ksb_r = res_k.resolution_factor
 
             res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
             bj_e1 = res_b.corrected_e1
@@ -60,30 +55,44 @@ def est_shear(m, g1, g2):
             re_e2 = res_r.corrected_e2
             re_r = res_r.resolution_factor
 
-            G1, G2, N, U, V = Fourier_Quad().shear_est(gal, psf_pow, stamp_size, noise, F=True, N=True)
-            data_matrix[j, :] = ksb_g1, bj_e1, re_e1, G1, g1, ksb_g2, bj_e2, re_e2, G2, g2, N, U, V, ksb_r, bj_r, re_r, cat_data[j]
+            noise = numpy.random.normal(loc=0., scale=noise_sig, size=size**2).reshape(size, size)
+            G1, G2, N, U, V = Fourier_Quad().shear_est(gal, psf_pow, size, noise, F=True, N=True)
 
-            #data_matrix[j,:] = 0, 0, 0, G1, N, g1, 0, 0, 0, G2, N, g2, U, V,cat_data[j]
-        df = pandas.DataFrame(data_matrix, index=gal_index, columns=col)
-        df.columns.name = 'Chip&NO'
-        res_path = respath+'%d_chip_%s.xlsx'%(m, kk)
-        df.to_excel(res_path)
-        te =time.time()
-        print('Process %d: shear estimation chip %s complete with time consuming %.2f')%(m, kk, te-ts)
+            data_matrix[k, :] = ksb_g1, bj_e1, re_e1, G1, g1_input, ksb_g2, bj_e2, re_e2, G2, g2_input, N, U, V, ksb_r, bj_r, re_r, snr[k]
+        df = pandas.DataFrame(data_matrix, columns=col)
+        df.to_excel(data_path)
+        te = time.time()
+        print('Proc_%d: (%d/%d) complete within time %.2f s') % (proc_id, i+1, total_chips, te-ts)
 
 if __name__=='__main__':
+    CPU_num = 20
+    chip_num = 250
+    total_num = 1000000
+    pixel_scale = 0.2
+    stamp_size = 80
+
+    result_path = '/lmc/selection_bias/result/data/'
+    if not os.path.isdir(result_path):
+        os.makedirs(result_path)
+
     shear = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = shear['arr_0']
     shear2 = shear['arr_1']
+
+    chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%d.fits'%(i, j) for i in range(10) for j in range(chip_num)]
+    chip_paths_list = tool_box.task_distri(chip_paths_pool, CPU_num)
+
+    psf = fits.open('/lmc/selection_bias/psf.fits')[0].data
+
+    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+    noise_sigma = prop.sigma_sky
+
     p = Pool()
     t1 = time.time()
-    for m in range(len(shear1)):
-       g1 = shear1[m]
-       g2 = shear2[m]
-       p.apply_async(est_shear, args=(m, g1, g2,))
+    for m in range(CPU_num):
+       p.apply_async(shear_est, args=(chip_paths_list[m], psf, shear1, shear2, noise_sigma, m))
     p.close()
     p.join()
     t2 = time.time()
-    #est_shear(0,shear1[0],shear2[0])
+    #shear_est(chip_paths_list[0], psf, shear1, shear2, noise_sigma, 0)
     print('Time comsuming: %.2f') % (t2 - t1)
-    #os.system('python selection_bias_proce_dat.py')
