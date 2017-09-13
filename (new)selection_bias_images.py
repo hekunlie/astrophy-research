@@ -11,13 +11,12 @@ from multiprocessing import Pool
 import pandas
 import tool_box
 
-def simu(gal_paths_list, info_paths_list, num_in_chip, stamp_size, process_id):
-    print('Process %d: begin>>>>') % process_id
+def simu(gal_paths_list, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, proc_id):
+    print('Process %d: begin>>>>') % proc_id
 
-    stamp_size = 70
+    stamp_size = 80
     pixel_scale = 0.2
     col = ['morphology', 'mag', 'snr', 'noise_sigma']
-    label = range(0, num_in_chip)
 
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 
@@ -27,7 +26,10 @@ def simu(gal_paths_list, info_paths_list, num_in_chip, stamp_size, process_id):
 
     for i in range(len(gal_paths_list)):
         chip_path = gal_paths_list[i]
-        info_path = info_paths_list[i]
+        shear_tag, chip_name = chip_path.split('/')[3:5]
+        info_path = '/lmc/selection_bias/%s/gal_info_%s.xlsx' % (shear_tag, chip_name.split('_')[2].split('.')[0])
+        g1_input = shear1_in[int(shear_tag)]
+        g2_input = shear2_in[int(shear_tag)]
         pool = []
         for k in range(num_in_chip):
 
@@ -49,7 +51,7 @@ def simu(gal_paths_list, info_paths_list, num_in_chip, stamp_size, process_id):
                 gal = galsim.Gaussian(flux=gal_flux, half_light_radius=ra)
 
             gal_s = gal.shear(e1=e1, e2=e2)
-            gal_g = gal_s.shear(g1=g1, g2=g2)
+            gal_g = gal_s.shear(g1=g1_input, g2=g2_input)
             gal_c = galsim.Convolve([psf, gal_g])
             gal_img, snr = prop.draw(gal_c, add_noise=1)
             snr_data[i, 0:4] = morpho, mag, snr, prop.sigma_sky
@@ -69,10 +71,8 @@ if __name__=='__main__':
         if not os.path.isdir(files_path):
             os.mkdir(files_path)
 
-    chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%d.fits'%(i, j) for i in range(10) for j in range(chip_num)]
-    info_path_pool = ['/lmc/selection_bias/%d/gal_info_%d.xlsx'%(i, j) for i in range(10) for j in range(chip_num)]
+    chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%s.fits'%(i, str(j).zfill(2)) for i in range(10) for j in range(chip_num)]
     chip_paths_list = tool_box.task_distri(chip_paths_pool, CPU_num)
-    info_path_list = tool_box.task_distri(info_path_pool, CPU_num)
 
     arr = numpy.load('/lmc/selection_bias/shear.npz')
     shear1 = arr['arr_0']
@@ -89,7 +89,7 @@ if __name__=='__main__':
     p = Pool()
     t1 = time.time()
     for m in range(CPU_num):
-        p.apply_async(simu, args=(chip_paths_list, info_path_list, m,))
+        p.apply_async(simu, args=(chip_paths_list,shear1, shear2, ie1, ie2, m,))
     p.close()
     p.join()
     # simu(shear1[0], shear2[0], ie1, ie2, gal_ra, sersic_rd, mags, 0)
