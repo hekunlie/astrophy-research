@@ -64,7 +64,7 @@ if not exist or comm == 1:
         # collect the data from the files and put into 'data_list'
         # 'data' is the final array that contains all the data
         tc1 = time.time()
-        data_list = tool_box.classify(paths, 10)[0]
+        data_list = tool_box.classify(paths, 16)[0]
         # cache
         # data_cache = shelve.open(path+'data_cache')
         # data_cache["data"] = data_list
@@ -83,27 +83,25 @@ if not exist or comm == 1:
     print("Calculate shear")
     print(data.shape)
     # correction
-    KSB_cor = data[:, 0]**2 + data[:, 5]**2
-    KSB_cor.shape = (len(KSB_cor), 1)
-    BJ_cor = data[:, 1]**2 + data[:, 6]**2
-    BJ_cor.shape = (len(BJ_cor), 1)
-    RG_cor = data[:, 2]**2 + data[:, 7]**2
-    RG_cor.shape = (len(RG_cor), 1)
-    cor = [KSB_cor, BJ_cor, RG_cor]
+    KSB_r = data[:, 13]
+    BJ_r = data[:, 14]
+    RG_r = data[:, 15]
+    r_factor = [KSB_r, BJ_r, RG_r]
+    k_me = data[:, 0]**2 + data[:, 5]**2
+    b_me = data[:, 1]**2 + data[:, 6]**2
+    r_me = data[:, 2]**2 + data[:, 7]**2
+    measured_es = [k_me, b_me, r_me]
 
     # snr
-    snr = data[:, 13]
-    snr.shape = (len(snr), 1)
-    idxs = snr >= snr_cut_s
+    snr = data[:, -1]
+    idxs = snr > snr_cut_s
     idxe = snr <= snr_cut_e
 
     # input g1
     tag1 = data[:, 4]
-    tag1.shape = (len(tag1), 1)
 
     # input g2
     tag2 = data[:, 9]
-    tag2.shape = (len(tag2), 1)
 
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
@@ -117,37 +115,28 @@ if not exist or comm == 1:
         for na in range(4):
             if na != 3:
                 ellip1 = data[:, na]
-                ellip1.shape = (len(ellip1), 1)
                 idx13 = ellip1 != -10
+                r_thresh = r_factor[na]
+                idx_r1 = r_thresh > 0.3
                 # the measured e1
-                e1 = ellip1[idx11&idx12&idx13&idxs&idxe]
+                e1 = ellip1[idx11&idx12&idx13&idxs&idxe&idx_r1]
+                response1 = 2 - measured_es[na][idx11&idx12&idx13&idxs&idxe&idx_r1]
                 num1 = len(e1)
-                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(e1, 1, 0, mode=2, bin_num=8, sample=100)
-                # if na!=0:
-                #     g1_h = g1_h/2.#/(1. - numpy.mean(cor[na]))
-                # print(na, fg1[i], g1_h, g1_h_sig)
-                measured_esq1 = cor[na][idx11 & idx12 & idx13 & idxs & idxe] * (-1.) + 2.
-                g1_h = numpy.mean(e1)/numpy.mean(measured_esq1)
-                g1_h_sig = numpy.std(e1) / numpy.sqrt(num1)
-                # if na==0:
-                #     g1_h = numpy.mean(e1)
-                #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
-                # else:
-                #     measured_esq = cor[na][idx11&idx12&idx13&idxs&idxe]*(-1)+2
-                #     g1_h = numpy.mean(e1)#/numpy.mean(measured_esq)
-                #     g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)#/measured_esq - g1_h)
+                if na!=0:
+                    g1_h = numpy.mean(e1)/2#/numpy.mean(measured_esq1)
+                else:
+                    g1_h = numpy.mean(e1)
+                g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
+
             else:
                 G1 = data[:, 3]
-                G1.shape = (len(G1), 1)
                 N1 = data[:, 10]
-                N1.shape = (len(N1), 1)
                 U1 = data[:, 11]
-                U1.shape = (len(U1), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
-                G1 = G1[idx11&idx12]#&idxs&idxe]
-                N1 = N1[idx11&idx12]#&idxs&idxe]
-                U1 = U1[idx11&idx12]#&idxs&idxe]
+                G1 = G1[idx11&idx12&idxs&idxe]
+                N1 = N1[idx11&idx12&idxs&idxe]
+                U1 = U1[idx11&idx12&idxs&idxe]
                 num1 = len(G1)
                 g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
                 # g1_h = numpy.sum(G1)/numpy.sum(N1)
@@ -162,39 +151,28 @@ if not exist or comm == 1:
         for na in range(4):
             if na != 3:
                 ellip2 = data[:, na+5]
-                ellip2.shape = (len(ellip2), 1)
                 idx23 = ellip2 != -10
-                # idx24 = ellip2 < 2
-                # idx25 = ellip2 > -2
+                r_thresh = r_factor[na]
+                idx_r2 = r_thresh > 0.3
                 # the measured e1
-                e2 = ellip2[idx21&idx22&idx23&idxs&idxe]
+                e2 = ellip2[idx21&idx22&idx23&idxs&idxe&idx_r2]
+                response2 = 2 - measured_es[na][idx21&idx22&idx23&idxs&idxe&idx_r2]
                 num2 = len(e2)
-                # g2_h, g2_h_sig = Fourier_Quad().fmin_g(e2, 1, 0, mode=2, bin_num=8, sample=100)
-                # if na!=0:
-                #     g2_h = g2_h/2.#/(1. - numpy.mean(cor[na]))
-                # print(na, fg2[i], g2_h, g2_h_sig)
-                measured_esq2 = cor[na][idx21 & idx22 & idx23 & idxs & idxe]*(-1.) + 2.
-                g2_h = numpy.mean(e2)/numpy.mean(measured_esq2)
-                g2_h_sig = numpy.std(e2) / numpy.sqrt(num2)
-                # if na==0:
-                #     g2_h = numpy.mean(e2)
-                #     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
-                # else:
-                #     measured_esq = cor[na][idx21&idx22&idx23&idxs&idxe]
-                #     g2_h = numpy.mean(e2)#/numpy.mean((2 - measured_esq ))
-                #     g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)#/measured_esq - g2_h)
+                if na!=0:
+                    g2_h = numpy.mean(e2)/2#/numpy.mean(measured_esq1)
+                else:
+                    g2_h = numpy.mean(e2)
+                g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
+
             else:
                 G2 = data[:, 8]
-                G2.shape = (len(G2), 1)
                 N2 = data[:, 10]
-                N2.shape = (len(N2), 1)
                 U2 = data[:, 11]
-                U2.shape = (len(U2), 1)
                 # V1 = data[:, 13]
                 # V1.shape = (len(V1), 1)
-                G2 = G2[idx21&idx22]#&idxs&idxe]
-                N2 = N2[idx21&idx22]#&idxs&idxe]
-                U2 = U2[idx21&idx22]#&idxs&idxe]
+                G2 = G2[idx21&idx22&idxs&idxe]
+                N2 = N2[idx21&idx22&idxs&idxe]
+                U2 = U2[idx21&idx22&idxs&idxe]
                 num2 = len(G2)
                 g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 # g2_h = numpy.sum(G2)/numpy.sum(N2)
@@ -282,8 +260,8 @@ for i in range(4):
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07, 0.07)
-    plt.xlim(-0.07, 0.07)
+    #plt.ylim(-0.07, 0.07)
+    #plt.xlim(-0.07, 0.07)
     print('plotted g1')
 
     #plot g2 line
@@ -319,8 +297,8 @@ for i in range(4):
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07, 0.07)
-    plt.xlim(-0.07, 0.07)
+    #plt.ylim(-0.07, 0.07)
+    #plt.xlim(-0.07, 0.07)
     nm = pic_path + name[i] + ".png"
     plt.savefig(nm)
     print('plotted g2')
