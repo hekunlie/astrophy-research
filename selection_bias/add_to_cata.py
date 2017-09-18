@@ -14,7 +14,7 @@ def cat_add(path, columns, chip_num, stampsize, id_tag, fil_type):
 
         # the catalog in which the SNR and some other parameters are stored
         gal_info_path = path + str(id_tag) + '/gal_info_' + kk + '.xlsx'
-        # gal_info = pd.read_excel(gal_info_path)
+        gal_info = pd.read_excel(gal_info_path)
 
         # the catalog which produced by sextractor
         cata_path = path + str(id_tag) + '/gal_chip_' + kk + '.fits.cat'
@@ -27,23 +27,26 @@ def cat_add(path, columns, chip_num, stampsize, id_tag, fil_type):
         y = cata_data[:,2]
         snr = cata_data[:,0]
         sex_data = numpy.zeros((len(snr), 3))
-        cross_check = numpy.zeros((len(snr),1))
+        cross_check = numpy.zeros((len(snr), 1))
         for i in range(len(snr)):
             xx = x[i]
             yy = y[i]
             mx, modx = divmod(xx, stampsize)
             my, mody = divmod(yy, stampsize)
             tag = int(columns*my+mx)
-            sex_data[tag] = snr[i], xx, yy
-            if cross_check[i] == 1:
-                print('multi-source in %d\'th stamp in %s')%(tag, cata_path)
-            cross_check[i]+= 1
+
+            distance = numpy.sqrt((modx-stampsize/2)**2 + (mody-stampsize/2)**2)
+
+            if distance <= 6.:
+                if cross_check[tag] == 0 or distance < cross_check[tag]:
+                    sex_data[tag] = snr[i], xx, yy
+                    cross_check[tag] = distance
 
         # add the SNR data to gal_info catalog
-        # gal_info[fil_type] = sex_data[:, 0]
-        # gal_info[fil_type + '_x'] = sex_data[:, 1]
-        # gal_info[fil_type + '_y'] = sex_data[:, 2]
-        # gal_info.to_excel(gal_info_path)
+        gal_info[fil_type] = sex_data[:, 0]
+        gal_info[fil_type + '_x'] = sex_data[:, 1]
+        gal_info[fil_type + '_y'] = sex_data[:, 2]
+        gal_info.to_excel(gal_info_path)
 
         # add the SNR data to shear data catalog
         if os.path.exists(data_path):
@@ -65,7 +68,7 @@ if __name__=='__main__':
         p.apply_async(cat_add, args=(head, column, chip_num, size, i, filter_type,))
     p.close()
     p.join()
-    #cat_add(head, column, chip_num, size, 0, filter_type)
+    # cat_add(head, column, chip_num, size, 0, filter_type)
     t2=time.time()
     print('Complete in %.2f'%(t2-t1))
 

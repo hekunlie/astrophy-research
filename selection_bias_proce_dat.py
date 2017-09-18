@@ -94,7 +94,7 @@ if not exist or comm == 1:
 
     # snr
     snr = data[:, -1]
-    idxs = snr > snr_cut_s
+    idxs = snr >= snr_cut_s
     idxe = snr <= snr_cut_e
 
     # input g1
@@ -117,7 +117,7 @@ if not exist or comm == 1:
                 ellip1 = data[:, na]
                 idx13 = ellip1 != -10
                 r_thresh = r_factor[na]
-                idx_r1 = r_thresh > 0.3
+                idx_r1 = r_thresh > 0.333
                 # the measured e1
                 e1 = ellip1[idx11&idx12&idx13&idxs&idxe&idx_r1]
                 response1 = 2 - measured_es[na][idx11&idx12&idx13&idxs&idxe&idx_r1]
@@ -196,7 +196,7 @@ print('done\nbegin to plot the lines')
 name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
 mc_data_path = path + 'mc_data.xlsx'
-mc_data = numpy.zeros((16, 2))
+mc_data = numpy.zeros((32, 1))
 for i in range(4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -304,26 +304,27 @@ for i in range(4):
     print('plotted g2')
 
     # m1, m2
-    mc_data[i] = e1mc[1], e2mc[1]
+    mc_data[i] = e1mc[1]
+    mc_data[i+16] = e2mc[1]
     # delta_m1, delta_m2
-    mc_data[i+4] = sig_m1, sig_m2
+    mc_data[i+4] = sig_m1
+    mc_data[i+20] = sig_m2
     # c1, c2
-    mc_data[i+8] = e1mc[0], e2mc[0]
+    mc_data[i+8] = e1mc[0]
+    mc_data[i+24] = e2mc[0]
     # delta_c1, delta_c2
-    mc_data[i+12] = sig_c1, sig_c2
+    mc_data[i+12] = sig_c1
+    mc_data[i+28] = sig_c2
 
 if filter_type != 'none':
-    mc_col1 = filter_type + '/' + snr_s + '~' + snr_e + '/g1'
-    mc_col2 = filter_type + '/' + snr_s + '~' + snr_e + '/g2'
+    mc_col = [filter_type + '_' + snr_s + '_' + snr_e ]
     if os.path.exists(mc_data_path):
         df = pandas.read_excel(mc_data_path)
-        df[mc_col1] = mc_data[:, 0]
-        df[mc_col2] = mc_data[:, 1]
+        df[mc_col] = mc_data
         df.to_excel(mc_data_path)
     else:
-        col = [mc_col1, mc_col2]
-        dex = ['Km', 'Bm', 'Rm', 'Fm', 'Kdm', 'Bdm', 'Rdm', 'Fdm', 'Kc', 'Bc', 'Rc', 'Fc', 'Kdc', 'Bdc', 'Rdc', 'Fdc']
-        mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=col)
+        dex = ['Km1', 'Bm1', 'Rm1', 'Fm1', 'Kdm1', 'Bdm1', 'Rdm1', 'Fdm1', 'Kc1', 'Bc1', 'Rc1', 'Fc1', 'Kdc1', 'Bdc1', 'Rdc1', 'Fdc1','Km2', 'Bm2', 'Rm2', 'Fm2', 'Kdm2', 'Bdm2', 'Rdm2', 'Fdm2', 'Kc2', 'Bc2', 'Rc2', 'Fc2', 'Kdc2', 'Bdc2', 'Rdc2', 'Fdc2']
+        mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=mc_col)
         mc_df.to_excel(mc_data_path)
 te = time.time()
 

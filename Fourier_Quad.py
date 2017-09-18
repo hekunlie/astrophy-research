@@ -516,33 +516,19 @@ class Fourier_Quad:
                 #print(left,right,abs(left-right))
 
         # fitting
-        if g_h != 0:
-            g_range = numpy.linspace(g_h-0.003, g_h+0.003, 6)
-            xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
-            gg4 = numpy.sum(g_range ** 4)
-            gg3 = numpy.sum(g_range ** 3)
-            gg2 = numpy.sum(g_range ** 2)
-            gg1 = numpy.sum(g_range)
-            xigg2 = numpy.sum(xi2 * (g_range ** 2))
-            xigg1 = numpy.sum(xi2 * g_range)
-            xigg0 = numpy.sum(xi2)
-            cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-            paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-            g_sig = numpy.sqrt(1 / 2. / paras[0])
-        else:
-            g_range = numpy.linspace(left, right, 5)
-            xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
-            gg4 = numpy.sum(g_range ** 4)
-            gg3 = numpy.sum(g_range ** 3)
-            gg2 = numpy.sum(g_range ** 2)
-            gg1 = numpy.sum(g_range)
-            xigg2 = numpy.sum(xi2 * (g_range ** 2))
-            xigg1 = numpy.sum(xi2 * g_range)
-            xigg0 = numpy.sum(xi2)
-            cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-            paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-            g_sig = numpy.sqrt(1 / 2. / paras[0])
-            g_h = -paras[1] / 2 / paras[0]
+        g_range = numpy.linspace(left, right, 5)
+        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
+        gg4 = numpy.sum(g_range ** 4)
+        gg3 = numpy.sum(g_range ** 3)
+        gg2 = numpy.sum(g_range ** 2)
+        gg1 = numpy.sum(g_range)
+        xigg2 = numpy.sum(xi2 * (g_range ** 2))
+        xigg1 = numpy.sum(xi2 * g_range)
+        xigg0 = numpy.sum(xi2)
+        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
+        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+        g_sig = numpy.sqrt(1 / 2. / paras[0])
+        g_h = -paras[1] / 2 / paras[0]
         return g_h, g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
