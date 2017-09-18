@@ -61,9 +61,18 @@ if __name__=='__main__':
     chip_num = 250
     size = 80
     column = 50
+    os.system('sudo python delete_cat.py')
     head = '/lmc/selection_bias/'
+    for i in range(10):
+        path = head +'%d/' % i
+        files = os.listdir(path)
+        for name in files:
+            if '.cat' in name:
+                cat = path + name
+                os.remove(cat)
+        print('all .cat files have been deleted in path')
     p = Pool()
-    t1 =time.time()
+    t1 = time.time()
     for i in range(10):
         p.apply_async(cat_add, args=(head, column, chip_num, size, i, filter_type,))
     p.close()

@@ -149,7 +149,7 @@ class Fourier_Quad:
                 break
         return numpy.sqrt(len(half_radi_pool) / numpy.pi)
 
-    def get_radius_new(self, image, scale):
+    def get_radius_new(self, image, scale, size):
         # get the radius of the flux descends to the maximum/scale
         radi_arr = copy.copy(image)
         maxi = numpy.max(radi_arr)
@@ -157,18 +157,20 @@ class Fourier_Quad:
         idx = radi_arr < maxi / scale
         radi_arr[idx] = 0.
         half_radius_pool = []
+        flux = []
 
-        def detect(mask, ini_y, ini_x, signal):
+        def detect(mask, ini_y, ini_x, signal, signal_val):
             if mask[ini_y, ini_x] > 0:
                 signal.append((ini_y, ini_x))
+                signal_val.append(mask[ini_y, ini_x])
                 mask[ini_y, ini_x] = 0
                 for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    if mask[ini_y + cor[0], ini_x + cor[1]] > 0:
-                        detect(mask, ini_y + cor[0], ini_x + cor[1], signal)
-            return signal
-        half_radius_pool = detect(radi_arr, y[0], x[0], half_radius_pool)
+                    if ini_y + cor[0] < size and ini_x + cor[1] < size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+                        detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
+            return signal, signal_val
+        half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux)
 
-        return numpy.sqrt(len(half_radius_pool) / numpy.pi), half_radius_pool
+        return numpy.sqrt(len(half_radius_pool) / numpy.pi), half_radius_pool, numpy.sum(flux)
 
     def move(self, image, x, y):
         imagesize = image.shape[0]
