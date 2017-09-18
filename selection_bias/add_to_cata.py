@@ -26,8 +26,8 @@ def cat_add(path, columns, chip_num, stampsize, id_tag, fil_type):
         x = cata_data[:,1]
         y = cata_data[:,2]
         snr = cata_data[:,0]
-        sex_data = numpy.zeros((len(snr), 3))
-        cross_check = numpy.zeros((len(snr), 1))
+        sex_data = numpy.zeros((len(gal_info), 3))
+        cross_check = numpy.zeros((len(gal_info), 1))
         for i in range(len(snr)):
             xx = x[i]
             yy = y[i]
