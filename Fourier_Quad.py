@@ -168,9 +168,10 @@ class Fourier_Quad:
                     if ini_y + cor[0] < size and ini_x + cor[1] < size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
             return signal, signal_val
+
         half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux)
 
-        return numpy.sqrt(len(half_radius_pool) / numpy.pi), half_radius_pool, numpy.sum(flux)
+        return numpy.sqrt(len(half_radius_pool)/numpy.pi), half_radius_pool, numpy.sum(flux), maxi, (y, x)
 
     def move(self, image, x, y):
         imagesize = image.shape[0]
@@ -327,10 +328,10 @@ class Fourier_Quad:
         arr = numpy.zeros((row_num*stampsize, columns * stampsize))
         for j in range(row_num):
             for i in range(columns):
-                id = i + j * columns
-                if id > num - 1:
+                tag = i + j * columns
+                if tag > num - 1:
                     break
-                arr[j*stampsize:(j+1)*stampsize,i*stampsize:(i+1)*stampsize]=image_array[id]
+                arr[j*stampsize:(j+1)*stampsize, i*stampsize:(i+1)*stampsize] = image_array[tag]
         return arr
 
     def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
