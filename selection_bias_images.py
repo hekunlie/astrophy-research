@@ -120,26 +120,28 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
         hdu = fits.PrimaryHDU(gal_chip)
         hdu.writeto(chip_path, overwrite=True)
         t2 = time.time()
-        print('Proc_%d: %d/%d finished within %.2f<<<') % (proc_id, i+1, chips_num, t2-t1)
+        print('Proc_%d: %d/%d finished within %.2f<<<') % (proc_id, path_tag+1, chips_num, t2-t1)
 
 
 if __name__ == '__main__':
-    CPU_num = 20
+    CPU_num = 16
     chip_num = 250
     total_num = 1000000
     num = total_num/chip_num
 
     data_files = os.listdir('/lmc/selection_bias/result/data/')
-    for name in data_files:
-        os.remove('/lmc/selection_bias/result/data/' + name)
+    if len(data_files)!= 0:
+        for name in data_files:
+            os.remove('/lmc/selection_bias/result/data/' + name)
     for i in range(10):
         files_path = '/lmc/selection_bias/%d/' % i
         if not os.path.isdir(files_path):
             os.mkdir(files_path)
         else:
             files = os.listdir(files_path)
-            for name in files:
-                os.remove(files_path + name)
+            if len(files) != 0:
+                for name in files:
+                    os.remove(files_path + name)
 
     chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%s.fits' % (i, str(j).zfill(3)) for i in range(10)
                        for j in range(chip_num)]
