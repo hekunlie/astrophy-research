@@ -188,4 +188,3 @@ if __name__ == '__main__':
     # simu(chip_paths_list[0], psf_m, out_shear1, out_shear2, num, out_ie1, out_ie2, out_mags, out_gal_rad, out_sersic_bulge, out_sersic_disk, 0, 1,)
     te = time.time()
     print('Time consuming: %.2f') % (te - ts)
-    os.system('python selection_bias_est.py')
