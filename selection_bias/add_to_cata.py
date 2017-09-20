@@ -8,7 +8,7 @@ from sys import argv
 def cat_add(path, columns, chip_num, stampsize, id_tag, fil_type):
     for k in range(chip_num):
         kk = str(k).zfill(3)
-        print('Process %d: chip_%s start>>>>' % (id_tag, kk))
+        print('Process %d: adding to chip_%s >>>>' % (id_tag, kk))
 
         # the catalog in which the SNR and some other parameters are stored
         gal_info_path = path + str(id_tag) + '/gal_info_' + kk + '.xlsx'
@@ -52,7 +52,7 @@ def cat_add(path, columns, chip_num, stampsize, id_tag, fil_type):
             data[fil_type] = sex_data[:, 0]
             data.to_excel(data_path)
 
-        print('Process %d: chip_%s complete<<<<' % (id_tag, kk))
+        print('Process %d: added data tochip_%s <<<<' % (id_tag, kk))
 
 if __name__=='__main__':
     filter_type = argv[1]
@@ -60,7 +60,6 @@ if __name__=='__main__':
     size = 80
     column = 50
     head = '/lmc/selection_bias/'
-
     p = Pool()
     t1 = time.time()
     for i in range(10):
@@ -68,7 +67,6 @@ if __name__=='__main__':
     p.close()
     p.join()
     # cat_add(head, column, chip_num, size, 0, filter_type)
-    t2 = time.time()
     # for i in range(10):
     #     path = head + '%d/' % i
     #     files = os.listdir(path)
@@ -77,6 +75,8 @@ if __name__=='__main__':
     #             cat = path + name
     #             os.remove(cat)
     #     print('all .cat files have been deleted in path')
+    t2 = time.time()
+
     print('Complete in %.2f' % (t2-t1))
 
 

@@ -13,7 +13,7 @@ import tool_box
 
 def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, magni, gal_radius, sersic_rb,
          sersic_rd, proc_id, est_switch):
-    print('Process %d: begin>>>>') % proc_id
+    print('Process %d: simulation begin>>>>') % proc_id
 
     stamp_size = 80
     pixel_scale = 0.2
@@ -27,11 +27,12 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
     noise_sig = prop.sigma_sky
 
-    psf_o = galsim.Gaussian(half_light_radius=0.9, flux=1.0)
+    psf_o = galsim.Gaussian(half_light_radius=0.8, flux=1.0)
     psf = psf_o.shear(e1=0.081, e2=-0.066)
 
     chips_num = len(paths_list)
     psf_pow = Fourier_Quad().pow_spec(psf_in)
+    psf_g = galsim.Image(psf_in)
 
     for path_tag in range(chips_num):
         t1 = time.time()
@@ -64,7 +65,7 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
             if morpho == 1:
                 gal = galsim.Exponential(flux=gal_flux, half_light_radius=ra)
 
-            elif morpho == 2:
+            elif morpho == 3:
                 rb = gal_radius_sb[k]
                 rd = gal_radius_sd[k]
                 bulge = galsim.Sersic(half_light_radius=rb, n=3.5)
@@ -80,13 +81,12 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
             gal_c = galsim.Convolve([psf, gal_g])
             gal_img, snr = prop.draw(gal_c, add_noise=1)
             gal_pool.append(gal_img)
-            hl_flux, maximum, cords = Fourier_Quad().get_radius_new(gal_img, 2, stamp_size)[2:5]
+            hl_flux, maximum, cords = Fourier_Quad().get_radius_new(gal_img, 2., stamp_size)[2:5]
             snr_data[k] = morpho, mags[k], snr, hl_flux, maximum, cords[0], cords[1]
 
             # shear estimate
             if est_switch == 1:
                 gal_g = galsim.Image(gal_img)
-                psf_g = galsim.Image(psf_in)
 
                 res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
                 ksb_g1 = res_k.corrected_g1
@@ -116,21 +116,22 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
             data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
             data_df.to_excel(data_path)
 
-        gal_chip = Fourier_Quad().image_stack(gal_pool, stamp_size, 50)
-        hdu = fits.PrimaryHDU(gal_chip)
+        big_chip = Fourier_Quad().image_stack(gal_pool, stamp_size, 50)
+        hdu = fits.PrimaryHDU(big_chip)
         hdu.writeto(chip_path, overwrite=True)
         t2 = time.time()
-        print('Proc_%d: %d/%d finished within %.2f<<<') % (proc_id, path_tag+1, chips_num, t2-t1)
+        print('Proc_%d: simulation %d/%d finished within %.2f<<<') % (proc_id, path_tag+1, chips_num, t2-t1)
 
 
 if __name__ == '__main__':
-    CPU_num = 16
+    CPU_num = 20
     chip_num = 250
     total_num = 1000000
     num = total_num/chip_num
 
+    os.remove('/lmc/selection_bias/psf.fits')
     data_files = os.listdir('/lmc/selection_bias/result/data/')
-    if len(data_files)!= 0:
+    if len(data_files) != 0:
         for name in data_files:
             os.remove('/lmc/selection_bias/result/data/' + name)
     for i in range(10):
@@ -172,7 +173,7 @@ if __name__ == '__main__':
     if not os.path.exists('/lmc/selection_bias/psf.fits'):
         out_prop = lsstetc.ETC(band='r', pixel_scale=0.2, stamp_size=80, nvisits=180)
         out_psf_flux = out_prop.flux(20.5)
-        out_psf = galsim.Gaussian(half_light_radius=0.9, flux=1.0)
+        out_psf = galsim.Gaussian(half_light_radius=0.8, flux=1.0)
         out_psf = out_psf.shear(e1=0.081, e2=-0.066).withFlux(out_psf_flux)
         psf_m = out_prop.draw(out_psf, add_noise=1)[0]
     else:
