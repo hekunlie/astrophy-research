@@ -92,16 +92,22 @@ if not exist or comm == 1:
     r_me = data[:, 2]**2 + data[:, 7]**2
     measured_es = [k_me, b_me, r_me]
 
-    # snr
-    snr = data[:, -1]
-    idxs = snr >= snr_cut_s
-    idxe = snr <= snr_cut_e
+    # flux
+    flux = data[:, 17]
+
+    # peak
+    peak = data[:, 18]
 
     # input g1
     tag1 = data[:, 4]
 
     # input g2
     tag2 = data[:, 9]
+
+    # snr
+    snr = peak/380.4
+    idxs = snr >= snr_cut_s
+    idxe = snr <= snr_cut_e
 
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
@@ -137,10 +143,11 @@ if not exist or comm == 1:
                 G1 = G1[idx11&idx12&idxs&idxe]
                 N1 = N1[idx11&idx12&idxs&idxe]
                 U1 = U1[idx11&idx12&idxs&idxe]
+                weight1 = snr[idx11&idx12&idxs&idxe]
                 num1 = len(G1)
-                g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
-                # g1_h = numpy.sum(G1)/numpy.sum(N1)
-                # g1_h_sig = numpy.std(G1/N1-g1_h)/numpy.sqrt(num1)
+                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
+                g1_h = numpy.sum(G1 * weight1)/numpy.sum(N1 * weight1)
+                g1_h_sig = numpy.std(G1 * weight1/(N1 * weight1) - g1_h)/numpy.sqrt(num1)
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
@@ -173,10 +180,11 @@ if not exist or comm == 1:
                 G2 = G2[idx21&idx22&idxs&idxe]
                 N2 = N2[idx21&idx22&idxs&idxe]
                 U2 = U2[idx21&idx22&idxs&idxe]
+                weight2 = snr[idx21&idx22&idxs&idxe]
                 num2 = len(G2)
-                g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
-                # g2_h = numpy.sum(G2)/numpy.sum(N2)
-                # g2_h_sig = numpy.std(G2/N2-g2_h)/numpy.sqrt(num2)
+                # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
+                g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
+                g2_h_sig = numpy.std((G2 * weight2)/(N2 * weight2) - g2_h)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
