@@ -13,12 +13,13 @@ from sys import argv
 import numpy
 import pandas
 
-snr_s, snr_e, filter_type = argv[1:4]
+snr_s, snr_e, filter_type, power = argv[1:5]
 
 ts = time.time()
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
+wei_pow = int(power)
 
 shear_input = numpy.load('/lmc/selection_bias/shear.npz')
 fg1 = shear_input['arr_0']
@@ -92,11 +93,22 @@ if not exist or comm == 1:
     r_me = data[:, 2]**2 + data[:, 7]**2
     measured_es = [k_me, b_me, r_me]
 
+    # F_Q data
+    FG1 = data[:, 3]
+    FG2 = data[:, 8]
+    FN = data[:, 10]
+    FU = data[:, 11]
+    FV = data[:, 12]
+
     # flux
     flux = data[:, 17]
 
-    # peak
-    peak = data[:, 18]
+    # peak/sigma_noise
+    peak = data[:, 18]/380.4
+    print(numpy.min(peak), numpy.max(peak))
+    plt.hist(peak, 20)
+    plt.savefig('/lmc/selection_bias/result/peak_hist.png')
+    idxp = peak > 4
 
     # input g1
     tag1 = data[:, 4]
@@ -105,7 +117,7 @@ if not exist or comm == 1:
     tag2 = data[:, 9]
 
     # snr
-    snr = data[:, 19]
+    snr = data[:, 16]
     # snr = data[:, 20]
     idx0 = snr != 0
     # ssnr = snr[idx0]
@@ -121,7 +133,8 @@ if not exist or comm == 1:
     for i in range(len(fg1)):
         idx11 = tag1 > fg1[i] - 0.0001
         idx12 = tag1 < fg1[i] + 0.0001
-        ssnr = snr[idx11 & idx12 & idx0]
+        # ssnr = snr[idx11 & idx12 & idx0]
+        ssnr = peak[idx11 & idx12]
         idxs = ssnr >= snr_cut_s
         idxe = ssnr <= snr_cut_e
         for na in range(3, 4):
@@ -141,28 +154,31 @@ if not exist or comm == 1:
                 g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
             else:
-                G1 = data[:, 3]
-                N1 = data[:, 10]
-                U1 = data[:, 11]
-                # V1 = data[:, 13]
-                # V1.shape = (len(V1), 1)
+                G1 = FG1[idx11&idx12][idxs&idxe]
+                N1 = FN[idx11&idx12][idxs&idxe]
+                U1 = FU[idx11&idx12][idxs&idxe]
 
-                G1 = G1[idx11&idx12&idx0]
-                N1 = N1[idx11&idx12&idx0]
-                U1 = U1[idx11&idx12&idx0]
-                G11 = numpy.append(G1[idxs], G1[idxe])
-                N11 = numpy.append(N1[idxs], N1[idxe])
-                U11 = numpy.append(U1[idxs], U1[idxe])
-                weight1 = 1#snr[idx11&idx12&idxs&idxe]
-                num1 = len(G11)
+                # G1 = G1[idxe&idxs]
+                # N1 = N1[idxe&idxs]
+                # U1 = U1[idxe&idxs]
+
+                # G1 = numpy.append(G1[idxs], G1[idxe])
+                # N1 = numpy.append(N1[idxs], N1[idxe])
+                # U1 = numpy.append(U1[idxs], U1[idxe])
+
+                # weight1 = flux[idx11&idx12&idx0]
+                weight1 = peak[idx11&idx12][idxs&idxe]**wei_pow
+
+                num1 = len(G1)
                 # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
+
+                g1_h = numpy.sum(G1 * weight1) / numpy.sum(N1 * weight1)
                 sig1 = []
-                for k in range(20):
-                    choice1 = numpy.random.randint(0, num1, 200000)
-                    sig1.append(numpy.sum(G11[choice1]) / numpy.sum(N11[choice1]))
+                for k in range(200):
+                    choice1 = numpy.random.randint(0, num1, num1)
+                    sig1.append(numpy.sum(G1[choice1] * weight1[choice1]) / numpy.sum(N1[choice1] * weight1[choice1] ))
                 g1_h_sig = numpy.std(sig1)
-                g1_h = numpy.sum(G11 * weight1)/numpy.sum(N11 * weight1)
-                # g1_h_sig = numpy.std(G1 * weight1/(N1 * weight1) - g1_h)/numpy.sqrt(num1)
+
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
@@ -170,7 +186,8 @@ if not exist or comm == 1:
     for i in range(len(fg2)):
         idx21 = tag2 > fg2[i] - 0.0001
         idx22 = tag2 < fg2[i] + 0.0001
-        ssnr = snr[idx21 & idx22 & idx0]
+        # ssnr = snr[idx21 & idx22 & idx0]
+        ssnr = peak[idx21 & idx22]
         idxs = ssnr >= snr_cut_s
         idxe = ssnr <= snr_cut_e
         for na in range(3, 4):
@@ -190,27 +207,29 @@ if not exist or comm == 1:
                 g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
 
             else:
-                G2 = data[:, 8]
-                N2 = data[:, 10]
-                U2 = data[:, 11]
-                # V1 = data[:, 13]
-                # V1.shape = (len(V1), 1)
-                G2 = G2[idx21&idx22&idx0]
-                N2 = N2[idx21&idx22&idx0]
-                U2 = U2[idx21&idx22&idx0]
-                G22 = numpy.append(G2[idxs], G2[idxe])
-                N22 = numpy.append(N2[idxs], N2[idxe])
-                U22 = numpy.append(U2[idxs], U2[idxe])
-                weight2 = 1#snr[idx21&idx22&idxs&idxe]
-                num2 = len(G22)
+                G2 = FG2[idx21&idx22][idxs&idxe]
+                N2 = FN[idx21&idx22][idxs&idxe]
+                U2 = FU[idx21&idx22][idxs&idxe]
+
+                # G2 = G2[idxe&idxs]
+                # N2 = N2[idxe&idxs]
+                # U2 = U2[idxe&idxs]
+
+                # G2 = numpy.append(G2[idxs], G2[idxe])
+                # N2 = numpy.append(N2[idxs], N2[idxe])
+                # U2 = numpy.append(U2[idxs], U2[idxe])
+
+                # weight2 = flux[idx21&idx22&idx0][idxs&idxe]
+                weight2 = peak[idx21&idx22][idxs&idxe]**wei_pow
+
+                num2 = len(G2)
                 # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
-                g2_h = numpy.sum(G22 * weight2)/numpy.sum(N22 * weight2)
+                g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
                 sig2 = []
-                for k in range(20):
-                    choice2 = numpy.random.randint(0, num2, 200000)
-                    sig2.append(numpy.sum(G22[choice2]) / numpy.sum(N22[choice2]))
+                for k in range(200):
+                    choice2 = numpy.random.randint(0, num2, num2)
+                    sig2.append(numpy.sum(G2[choice2] * weight2[choice2]) / numpy.sum(N2[choice2]* weight2[choice2]))
                 g2_h_sig = numpy.std(sig2)
-                # g2_h_sig = numpy.std((G2 * weight2)/(N2 * weight2) - g2_h)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
