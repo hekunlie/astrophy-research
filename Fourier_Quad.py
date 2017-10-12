@@ -65,10 +65,12 @@ class Fourier_Quad:
         beta = 1./beta
         return w_temp, beta
 
-    def ran_pos(self, num, imagesize):
-        position = numpy.matrix(numpy.zeros((2, num)))
-        position[0] = numpy.matrix(numpy.random.normal(loc=0., scale=imagesize / 12., size=num))
-        position[1] = numpy.matrix(numpy.random.normal(loc=0., scale=imagesize / 12., size=num))
+    def ran_pos(self, radius, num):
+        # [[x],
+        #  [y]]
+        step = numpy.random.uniform(low=0, high=radius, size=num)
+        theta = numpy.random.uniform(low=0, high=2*numpy.pi, size=num)
+        position = numpy.matrix([step*numpy.cos(theta), step*numpy.sin(theta)])
         return position
 
     def rotate(self, pos, theta):

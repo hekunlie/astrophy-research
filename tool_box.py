@@ -49,27 +49,27 @@ def classify(files_path_list, cpu_num):
     cl_te = time.clock()
     return final_data_list,cl_te-cl_ts
 
-def detect(mask, ini_y, ini_x, signal, signal_val, img_size):
+def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size):
     if mask[ini_y, ini_x] > 0:
         signal.append((ini_y, ini_x))
         signal_val.append(mask[ini_y, ini_x])
         mask[ini_y, ini_x] = 0
         for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            if ini_y + cor[0] < img_size and ini_x + cor[1] < img_size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
-                detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, img_size)
+            if ini_y + cor[0] < y_size and ini_x + cor[1] < x_size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+                detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, y_size, x_size)
     return signal, signal_val
 
-def stamp_detector(image, thres, size, ra=8, obj='stamp'):
+def stamp_detector(image, thres, y_size, x_size, ra=8):
     # get the source object
     image_c = copy.copy(image)
     img_idx = image_c < thres
     image_c[img_idx] = 0.
 
-    center = image_c[int(size/2-ra):int(size/2+ra), int(size/2-ra):int(size/2+ra)]
+    center = image_c[int(y_size/2-ra):int(y_size/2+ra), int(x_size/2-ra):int(x_size/2+ra)]
     maxi = numpy.max(center)
     y, x = numpy.where(center > 0)
-    y_sour = y + int(size/2-ra)
-    x_sour = x + int(size / 2 - ra)
+    y_sour = y + int(y_size/2 - ra)
+    x_sour = x + int(x_size/2 - ra)
 
     final_obj = []
     final_flux = []
@@ -80,16 +80,42 @@ def stamp_detector(image, thres, size, ra=8, obj='stamp'):
         xp = x_sour[m]
 
         if image_c[yp, xp] > 0:
-            sour_pool, flux = detect(image_c, yp, xp, sour_pool, sour_flux, size)
+            sour_pool, flux = detect(image_c, yp, xp, sour_pool, sour_flux, y_size, x_size)
 
-        if obj == 'stamp':
-            if len(sour_pool) > len(final_obj):
-                final_obj = sour_pool
-                final_flux = sour_flux
-        else:
-            if len(sour_pool) > 5:
-                final_obj.append(sour_pool)
-                final_flux.append(sour_flux)
+        if len(sour_pool) > len(final_obj):
+            final_obj = sour_pool
+            final_flux = sour_flux
 
     return numpy.sqrt(len(final_obj) / numpy.pi), final_obj, numpy.sum(final_flux), maxi
+
+def source_detector(image, thres, y_size, x_size, edge=0):
+    # get the source object
+    image_c = copy.copy(image)
+    # img_idx = image_c < thres
+    # image_c[img_idx] = 0.
+
+    center = image_c#[edge:int(y_size-edge), edge:int(x_size-edge)]
+    y, x = numpy.where(center > 0)
+
+    def detect1(mask, ini_y, ini_x, signal):
+        if mask[ini_y, ini_x] > 0:
+            signal.append((ini_y, ini_x))
+            mask[ini_y, ini_x] = 0
+            for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                yy, xx = ini_y + cor[0], ini_x + cor[1]
+                if 0 <= yy < y_size and 0 <= xx < x_size:
+                    detect1(mask, yy, xx, signal)
+        return signal
+
+    final_obj = []
+    for m in range(len(x)):
+        sour_pool = []
+        yp = int(y[m] + edge)
+        xp = int(x[m] + edge)
+        if image_c[yp, xp] > 0:
+            sour_pool = detect1(image_c, yp, xp, sour_pool)
+            if len(sour_pool) > 5:
+                final_obj.append(sour_pool)
+
+    return final_obj
 
