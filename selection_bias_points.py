@@ -21,10 +21,11 @@ def simu(paths_list, shear1, shear2, num_in_chip, magni, proc_id, est_switch):
     info_col = ['mag', 'hla_flux', 'peak_val', 'peak_y', 'peak_x']
     # the information from measurements
     cat_col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2", "FG_N", "FQ_U",
-               "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "SNR_ORI", "hl_flux", "peak"]
+               "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "hl_flux", "peak"]
 
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
     noise_sig = prop.sigma_sky
+
     psf_in = Fourier_Quad().cre_psf(4, stamp_size, 'Moffat')
 
     chips_num = len(paths_list)
@@ -49,15 +50,18 @@ def simu(paths_list, shear1, shear2, num_in_chip, magni, proc_id, est_switch):
         data_matrix = numpy.zeros((num_in_chip, len(cat_col)))
         for k in range(num_in_chip):
             gal_flux = prop.flux(mags[k])
-            ran_cord = Fourier_Quad().ran_pos()
-
-            gal_pool.append(gal_img)
-            hl_flux, maximum, cords = Fourier_Quad().get_radius_new(gal_img, 2., stamp_size)[2:5]
+            radius = numpy.random.uniform(low=3, high=8, size=1)
+            points = Fourier_Quad().ran_pos(radius=radius, num=50)
+            points_s = Fourier_Quad().shear(pos=points, g1=g1_input, g2=g2_input)
+            gal_final = Fourier_Quad().convolve_psf(pos=points_s, psf_scale=4, imagesize=stamp_size, flux=gal_flux/50,
+                                                    psf='Moffat')
+            gal_pool.append(gal_final)
+            hl_flux, maximum, cords = Fourier_Quad().get_radius_new(gal_final, 2., stamp_size)[2:5]
             snr_data[k] = mags[k], hl_flux, maximum, cords[0], cords[1]
 
             # shear estimate
             if est_switch == 1:
-                gal_g = galsim.Image(gal_img)
+                gal_g = galsim.Image(gal_final)
 
                 res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
                 ksb_g1 = res_k.corrected_g1
@@ -75,10 +79,10 @@ def simu(paths_list, shear1, shear2, num_in_chip, magni, proc_id, est_switch):
                 re_r = res_r.resolution_factor
 
                 noise = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
-                G1, G2, N, U, V = Fourier_Quad().shear_est(gal_img, psf_pow, stamp_size, noise, F=True, N=True)
+                G1, G2, N, U, V = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, noise, F=True, N=True)
 
                 data_matrix[k, :] = ksb_g1, bj_e1, re_e1, G1, g1_input, ksb_g2, bj_e2, re_e2, G2, g2_input, \
-                                    N, U, V, ksb_r, bj_r, re_r, snr, hl_flux, maximum
+                                    N, U, V, ksb_r, bj_r, re_r, hl_flux, maximum
 
         info_df = pandas.DataFrame(data=snr_data, columns=info_col)
         info_df.to_excel(info_path)

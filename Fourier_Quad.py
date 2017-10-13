@@ -84,24 +84,24 @@ class Fourier_Quad:
         shear_pos = shear_matrix * pos
         return shear_pos
 
-    def convolve_psf(self, pos, psf_scale, imagesize, psf="GAUSS"):
+    def convolve_psf(self, pos, psf_scale, imagesize, flux, psf="GAUSS"):
         x = pos.shape[1]
         my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
         pos = numpy.array(pos)+imagesize/2.
         arr = numpy.zeros((imagesize, imagesize))
 
-        if psf is 'GAUSS':
+        if psf == 'GAUSS':
             for i in range(x):
-                arr += numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./numpy.pi/psf_scale**2)
+                arr += flux*numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./numpy.pi/psf_scale**2)
 
-        elif psf is "Moffat":
+        elif psf == "Moffat":
             for l in range(x):
                 hstep = 3.*psf_scale - numpy.sqrt((mx-pos[0, l])**2+(my-pos[1, l])**2)
                 idx = hstep < 0.
                 hstep[idx] = 0.
                 idx = hstep != 0.
                 hstep[idx] = 1.
-                arr += (1+((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2)**(-3.5)*hstep
+                arr += flux*(1+((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2)**(-3.5)*hstep
         return arr
 
     def cre_psf(self, psf_scale, imagesize, model="GAUSS", x=0, y=0):
