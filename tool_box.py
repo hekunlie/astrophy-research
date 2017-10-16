@@ -55,7 +55,7 @@ def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size):
         signal_val.append(mask[ini_y, ini_x])
         mask[ini_y, ini_x] = 0
         for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-            if ini_y + cor[0] < y_size and ini_x + cor[1] < x_size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+            if -1 < ini_y + cor[0] < y_size and -1 < ini_x + cor[1] < x_size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                 detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, y_size, x_size)
     return signal, signal_val
 
