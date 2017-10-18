@@ -18,7 +18,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     pixel_scale = 0.2
 
     # the initial information
-    info_col = ['mag', 'area', 'total_flux', 'peak']
+    info_col = ['mag', 'r', 'area', 'total_flux', 'peak']
     # the information from measurements
     cat_col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2", "FG_N", "FQ_U",
                "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak"]
@@ -61,7 +61,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
 
             gal_pool.append(gal_final)
             obj, flux, peak = tool_box.stamp_detector(gal_final, prop.sigma_sky*1.5, stamp_size, stamp_size)[1:4]
-            snr_data[k] = mags[k], len(obj), flux, peak
+            snr_data[k] = mags[k], radius[k], len(obj), flux, peak
 
             # shear estimate
             if est_switch == 1:
