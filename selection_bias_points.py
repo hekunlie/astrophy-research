@@ -30,7 +30,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
 
     chips_num = len(paths_list)
     psf_pow = Fourier_Quad().pow_spec(psf_in)
-    psf_g = galsim.Image(psf_in)
+    # psf_g = galsim.Image(psf_in)
 
     radius_o = -numpy.sort(-numpy.random.uniform(3, 9, 1000000))
 
@@ -65,28 +65,28 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
 
             # shear estimate
             if est_switch == 1:
-                gal_g = galsim.Image(gal_final)
-
-                res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
-                ksb_g1 = res_k.corrected_g1
-                ksb_g2 = res_k.corrected_g2
-                ksb_r = res_k.resolution_factor
-
-                res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
-                bj_e1 = res_b.corrected_e1
-                bj_e2 = res_b.corrected_e2
-                bj_r = res_b.resolution_factor
-
-                res_r = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='REGAUSS', strict=False)
-                re_e1 = res_r.corrected_e1
-                re_e2 = res_r.corrected_e2
-                re_r = res_r.resolution_factor
+                # gal_g = galsim.Image(gal_final)
+                #
+                # res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
+                # ksb_g1 = res_k.corrected_g1
+                # ksb_g2 = res_k.corrected_g2
+                # ksb_r = res_k.resolution_factor
+                #
+                # res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
+                # bj_e1 = res_b.corrected_e1
+                # bj_e2 = res_b.corrected_e2
+                # bj_r = res_b.resolution_factor
+                #
+                # res_r = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='REGAUSS', strict=False)
+                # re_e1 = res_r.corrected_e1
+                # re_e2 = res_r.corrected_e2
+                # re_r = res_r.resolution_factor
 
                 noise = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
                 mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, noise, F=True, N=True)
 
-                data_matrix[k, :] = ksb_g1, bj_e1, re_e1, mg1, g1_input, ksb_g2, bj_e2, re_e2, mg2, g2_input, \
-                                    mn, mu, mv, ksb_r, bj_r, re_r, len(obj), flux, peak
+                data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, \
+                                    0, 0, 0, len(obj), flux, peak
 
         info_df = pandas.DataFrame(data=snr_data, columns=info_col)
         info_df.to_excel(info_path)
