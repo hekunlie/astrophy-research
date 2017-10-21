@@ -174,10 +174,10 @@ if not exist or comm == 1:
 
                 g1_h = numpy.sum(G1 * weight1) / numpy.sum(N1 * weight1)
                 sig1 = []
-                for k in range(200):
-                    choice1 = numpy.random.randint(0, num1, num1)
-                    sig1.append(numpy.sum(G1[choice1] * weight1[choice1]) / numpy.sum(N1[choice1] * weight1[choice1] ))
-                g1_h_sig = numpy.std(sig1)
+                # for k in range(1000):
+                #     choice1 = numpy.random.randint(0, num1, num1)
+                #     sig1.append(numpy.sum(G1[choice1] * weight1[choice1]) / numpy.sum(N1[choice1] * weight1[choice1]))
+                g1_h_sig = numpy.sqrt(numpy.sum((G1 * weight1)**2)/(numpy.sum(N1 * weight1))**2)#numpy.std(sig1)
 
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
@@ -226,10 +226,10 @@ if not exist or comm == 1:
                 # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
                 sig2 = []
-                for k in range(200):
-                    choice2 = numpy.random.randint(0, num2, num2)
-                    sig2.append(numpy.sum(G2[choice2] * weight2[choice2]) / numpy.sum(N2[choice2]* weight2[choice2]))
-                g2_h_sig = numpy.std(sig2)
+                # for k in range(1000):
+                #     choice2 = numpy.random.randint(0, num2, num2)
+                #     sig2.append(numpy.sum(G2[choice2] * weight2[choice2]) / numpy.sum(N2[choice2] * weight2[choice2]))
+                g2_h_sig = numpy.sqrt(numpy.sum((G2 * weight2)**2)/(numpy.sum(N2 * weight2))**2)#numpy.std(sig2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
@@ -383,3 +383,4 @@ te = time.time()
 
 print("Complete")
 print(tm-ts, te-tm)
+print(e1mc, e2mc)
