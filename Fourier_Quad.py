@@ -78,8 +78,7 @@ class Fourier_Quad:
                 if x * x + y * y > radius ** 2:
                     x, y = 0, 0
             xy_coord[0, n], xy_coord[1, n] = x, y
-        g = 1 - g1**2 - g2**2
-        sheared = numpy.dot(numpy.array(([(1+g1)/g, g2/g], [g2/g, (1-g1)/g])), xy_coord)
+        sheared = numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), xy_coord)
         return xy_coord, sheared
 
     def rotate(self, pos, theta):
@@ -88,10 +87,10 @@ class Fourier_Quad:
         return rot_pos
 
     def shear(self, pos, g1, g2):
-        return numpy.dot(numpy.array(([(1+g1)/(1-g1**2-g2**2), g2/(1-g1**2-g2**2)],
-                                      [g2/(1-g1**2-g2**2), (1-g1)/(1-g1**2-g2**2)])), pos)
+        g = (1-g1**2-g2**2)
+        return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
 
-    def convolve_psf(self, pos, psf_scale, imagesize, flux, psf="GAUSS"):
+    def convolve_psf(self, pos, psf_scale, imagesize, flux=1, psf="GAUSS"):
         x = pos.shape[1]
         my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
         pos = numpy.array(pos)+imagesize/2.
