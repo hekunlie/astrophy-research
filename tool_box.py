@@ -88,7 +88,7 @@ def stamp_detector(image, thres, y_size, x_size, ra=8):
 
     return numpy.sqrt(len(final_obj) / numpy.pi), final_obj, numpy.sum(final_flux), maxi
 
-def source_detector(image, thres, y_size, x_size, edge=0):
+def source_detector(image, y_size, x_size, edge=0):
     # get the source object
     image_c = copy.copy(image)
     # img_idx = image_c < thres

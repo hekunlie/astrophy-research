@@ -9,14 +9,15 @@ import os
 from multiprocessing import Pool
 import pandas
 import tool_box
-import galsim
+# import galsim
 
 def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switch):
     print('Process %d: simulation begin>>>>') % proc_id
 
-    stamp_size = 52
+    stamp_size = 60
     pixel_scale = 0.2
-
+    psf_r = 5
+    p_num = 60
     # the initial information
     info_col = ['mag', 'r', 'area', 'total_flux', 'peak']
     # the information from measurements
@@ -26,13 +27,13 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
     noise_sig = prop.sigma_sky
 
-    psf_in = Fourier_Quad().cre_psf(4, stamp_size, 'Moffat')
+    psf_in = Fourier_Quad().cre_psf(psf_r, stamp_size, 'Moffat')
 
     chips_num = len(paths_list)
     psf_pow = Fourier_Quad().pow_spec(psf_in)
     # psf_g = galsim.Image(psf_in)
 
-    radius_o = -numpy.sort(-numpy.random.uniform(3, 9, 1000000))
+    radius_o = -numpy.sort(-numpy.random.uniform(4, 10, 1000000))
 
     for path_tag in range(chips_num):
         t1 = time.time()
@@ -53,14 +54,13 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
         gal_pool = []
         for k in range(num_in_chip):
             gal_flux = prop.flux(mags[k])
-            noise = numpy.random.normal(loc=0, scale=prop.sigma_sky, size=stamp_size**2).reshape(stamp_size, stamp_size)
-            points = Fourier_Quad().ran_pos(radius=radius[k], num=70)
-            points_s = Fourier_Quad().shear(pos=points, g1=g1_input, g2=g2_input)
-            gal_final = Fourier_Quad().convolve_psf(pos=points_s, psf_scale=4, imagesize=stamp_size, flux=gal_flux/70,
+            noise = numpy.random.normal(loc=0, scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
+            points = Fourier_Quad().ran_pos(num=p_num, step=30, radius=radius[k], g1=g1_input, g2=g2_input)[1]
+            gal_final = Fourier_Quad().convolve_psf(pos=points, psf_scale=psf_r, imagesize=stamp_size, flux=gal_flux/p_num,
                                                     psf='Moffat')+noise
 
             gal_pool.append(gal_final)
-            obj, flux, peak = tool_box.stamp_detector(gal_final, prop.sigma_sky*1.5, stamp_size, stamp_size)[1:4]
+            obj, flux, peak = tool_box.stamp_detector(gal_final, noise_sig*1.5, stamp_size, stamp_size)[1:4]
             snr_data[k] = mags[k], radius[k], len(obj), flux, peak
 
             # shear estimate

@@ -67,9 +67,6 @@ if not exist or comm == 1:
         tc1 = time.time()
         data_list = tool_box.classify(paths, 16)[0]
         # cache
-        # data_cache = shelve.open(path+'data_cache')
-        # data_cache["data"] = data_list
-        # data_cache.close()
         data = data_list[0]
         for k in range(1, len(data_list)):
             data = numpy.row_stack((data, data_list[k]))
@@ -81,8 +78,8 @@ if not exist or comm == 1:
         print("Loading data cache>>>")
         data = numpy.load(data_cache_path)['arr_0']
 
-    print("Calculate shear")
-    print(data.shape)
+    # print("Calculate shear")
+    # print(data.shape)
     # correction
     KSB_r = data[:, 13]
     BJ_r = data[:, 14]
@@ -167,17 +164,12 @@ if not exist or comm == 1:
                 # U1 = numpy.append(U1[idxs], U1[idxe])
 
                 # weight1 = flux[idx11&idx12&idx0]
-                weight1 = peak[idx11&idx12][idxs&idxe]**wei_pow
+                weight1 = ssnr[idxs&idxe]**wei_pow
 
                 num1 = len(G1)
                 # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
-
                 g1_h = numpy.sum(G1 * weight1) / numpy.sum(N1 * weight1)
-                sig1 = []
-                # for k in range(1000):
-                #     choice1 = numpy.random.randint(0, num1, num1)
-                #     sig1.append(numpy.sum(G1[choice1] * weight1[choice1]) / numpy.sum(N1[choice1] * weight1[choice1]))
-                g1_h_sig = numpy.sqrt(numpy.sum((G1 * weight1)**2)/(numpy.sum(N1 * weight1))**2)#numpy.std(sig1)
+                g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
 
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
@@ -219,21 +211,24 @@ if not exist or comm == 1:
                 # N2 = numpy.append(N2[idxs], N2[idxe])
                 # U2 = numpy.append(U2[idxs], U2[idxe])
 
-                # weight2 = flux[idx21&idx22&idx0][idxs&idxe]
-                weight2 = peak[idx21&idx22][idxs&idxe]**wei_pow
-
+                weight2 = ssnr[idxs&idxe]**wei_pow
                 num2 = len(G2)
                 # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
-                sig2 = []
-                # for k in range(1000):
-                #     choice2 = numpy.random.randint(0, num2, num2)
-                #     sig2.append(numpy.sum(G2[choice2] * weight2[choice2]) / numpy.sum(N2[choice2] * weight2[choice2]))
-                g2_h_sig = numpy.sqrt(numpy.sum((G2 * weight2)**2)/(numpy.sum(N2 * weight2))**2)#numpy.std(sig2)
+                g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight2)**2)/(numpy.mean(N2 * weight2))**2)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
-
+    print('total number   :',res_arr1[11,1])
+    print('the input    g1:',fg1)
+    print('the measured g1:',res_arr1[3])
+    print('the uncertainty:',res_arr1[7])
+    # print('\n')
+    # print('total number   :',res_arr2[11, 1])
+    # print('the input    g2:',fg2)
+    # print('the measured g2:',res_arr2[3])
+    # print('the uncertainty:',res_arr2[7])
+    # print('\n')
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 
@@ -244,7 +239,7 @@ else:
 tm =time.time()
 
 # fit the line
-print('done\nbegin to plot the lines')
+# print('done\nbegin to plot the lines')
 
 name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
@@ -254,7 +249,7 @@ for i in range(3, 4):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
     # A = [[1,1,1,1,...]
-    #         [y1,y2,y3..]].T
+    #         [x1,x2,x3..]].T
     # X = [c,m].T
     # C = diag[sig1^2, sig2^2, sig3^2, .....]
     # the inverse of C is used as weight of data
@@ -278,6 +273,31 @@ for i in range(3, 4):
     sig_c2 = numpy.sqrt(L2[0, 0])
     e1mc = numpy.dot(L1, R1)
     e2mc = numpy.dot(L2, R2)
+    print("m1 = %.6f (%.6f), c1 = %.6f (%.6f) "%(e1mc[1]-1,sig_m1, e1mc[0], sig_c1))
+    print("m2 = %.6f (%.6f), c2 = %.6f (%.6f) "%(e2mc[1]-1,sig_m2, e2mc[0], sig_c2))
+    # print(e1mc, e1mc.shape)
+    # a11 = numpy.sum(fg1**2)
+    # a12 = numpy.sum(fg1)
+    # a13 = len(fg1)
+    # z1 = numpy.array([numpy.sum(res_arr1[i]*fg1), numpy.sum(res_arr1[i])])
+    # a21 = numpy.sum(fg2**2)
+    # a22 = numpy.sum(fg2)
+    # a23 = len(fg2)
+    # z2 = numpy.array([numpy.sum(res_arr2[i] * fg2), numpy.sum(res_arr2[i])])
+    # e1mc = numpy.dot(numpy.linalg.inv(numpy.array([[a12, a11],[a13, a12]])),z1)
+    # e2mc = numpy.dot(numpy.linalg.inv(numpy.array([[a22, a21],[a23, a22]])),z2)
+    # print(e1mc, e1mc.shape)
+
+
+    # def fun(x, a, b):
+    #     return a * x + b
+    #
+    # res1 = optimize.curve_fit(fun, fg1, res_arr1[i])
+    # res2 = optimize.curve_fit(fun, fg2, res_arr2[i])
+    # sig_m1, sig_c1 = res1[1][0, 0], res1[1][0, 0]
+    # sig_m2, sig_c2 = res2[1][0, 0], res2[1][0, 0]
+    # e1mc = res1[0][1], res1[0][0]
+    # e2mc = res2[0][1], res2[0][0]
     # plot g1 line
     fig = plt.figure(figsize=(20, 10))
     ax = fig.add_subplot(121)
@@ -315,7 +335,7 @@ for i in range(3, 4):
     plt.legend(fontsize=15)
     plt.ylim(-0.07, 0.07)
     plt.xlim(-0.07, 0.07)
-    print('plotted g1')
+    # print('plotted g1')
 
     #plot g2 line
     ax = fig.add_subplot(122)
@@ -354,7 +374,7 @@ for i in range(3, 4):
     plt.xlim(-0.07, 0.07)
     nm = pic_path + name[i] + ".png"
     plt.savefig(nm)
-    print('plotted g2')
+    # print('plotted g2')
 
     # m1, m2
     mc_data[i] = e1mc[1]
@@ -381,6 +401,6 @@ if filter_type != 'none':
         mc_df.to_excel(mc_data_path)
 te = time.time()
 
-print("Complete")
-print(tm-ts, te-tm)
-print(e1mc, e2mc)
+# print("Complete")
+# print(tm-ts, te-tm)
+

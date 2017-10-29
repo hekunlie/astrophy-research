@@ -19,16 +19,16 @@ class Fourier_Quad:
 
         if background_noise is not None: # to deduct the noise
             nbg = self.pow_spec(background_noise)
-            if N == False:
+            if N:
                 rim = self.border(1, x)
-                n   = numpy.sum(rim)
+                n = numpy.sum(rim)
                 gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
                 nbg_pnoise = numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
                 gal_ps = gal_ps - nbg + nbg_pnoise - gal_pnoise
             else:
                 gal_ps = gal_ps - nbg
 
-        if F==True:
+        if F:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
@@ -65,13 +65,22 @@ class Fourier_Quad:
         beta = 1./beta
         return w_temp, beta
 
-    def ran_pos(self, radius, num):
-        # [[x],
-        #  [y]]
-        step = numpy.random.uniform(low=0, high=radius, size=num)
-        theta = numpy.random.uniform(low=0, high=2*numpy.pi, size=num)
-        position = numpy.matrix([step*numpy.cos(theta), step*numpy.sin(theta)])
-        return position
+    def ran_pos(self, num, step, radius, g1, g2):
+        xy_coord = numpy.zeros((2, num))
+        for n in range(num):
+            theta = numpy.random.uniform(0, 2 * numpy.pi, step)
+            xn = numpy.cos(theta) * 1.5
+            yn = numpy.sin(theta) * 1.5
+            x, y = 0, 0
+            for j in range(step):
+                x += xn[j]
+                y += yn[j]
+                if x * x + y * y > radius ** 2:
+                    x, y = 0, 0
+            xy_coord[0, n], xy_coord[1, n] = x, y
+        g = 1 - g1**2 - g2**2
+        sheared = numpy.dot(numpy.array(([(1+g1)/g, g2/g], [g2/g, (1-g1)/g])), xy_coord)
+        return xy_coord, sheared
 
     def rotate(self, pos, theta):
         rot_matrix = numpy.matrix([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
@@ -79,10 +88,8 @@ class Fourier_Quad:
         return rot_pos
 
     def shear(self, pos, g1, g2):
-        shear_matrix = numpy.matrix(([(1+g1)/(1-g1**2-g2**2), g2/(1-g1**2-g2**2)],
-                                     [g2/(1-g1**2-g2**2), (1-g1)/(1-g1**2-g2**2)]))
-        shear_pos = shear_matrix * pos
-        return shear_pos
+        return numpy.dot(numpy.array(([(1+g1)/(1-g1**2-g2**2), g2/(1-g1**2-g2**2)],
+                                      [g2/(1-g1**2-g2**2), (1-g1)/(1-g1**2-g2**2)])), pos)
 
     def convolve_psf(self, pos, psf_scale, imagesize, flux, psf="GAUSS"):
         x = pos.shape[1]
