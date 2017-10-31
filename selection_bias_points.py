@@ -26,7 +26,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
                "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak"]
 
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
-    noise_sig = 50
+    noise_sig = prop.sigma_sky
 
     psf_in = Fourier_Quad().cre_psf(psf_r, stamp_size, 'Moffat')
 

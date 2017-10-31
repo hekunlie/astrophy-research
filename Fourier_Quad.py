@@ -16,7 +16,7 @@ class Fourier_Quad:
         my, mx = numpy.mgrid[0:size, 0:size]
         gal_ps = self.pow_spec(gal_image)
 
-        if not noise:                                # to deduct the noise
+        if noise is not None:                                # to deduct the noise
             nbg = self.pow_spec(noise)
             rim = self.border(1, size)
             n = numpy.sum(rim)
@@ -60,7 +60,7 @@ class Fourier_Quad:
         beta = 1./beta
         return w_temp, beta
 
-    def ran_pos(self, num, radius, g=None, step=2):
+    def ran_pos(self, num, radius, g=None, step=1):
         xy_coord = numpy.zeros((2, num))
         theta = numpy.random.uniform(0, 2 * numpy.pi, num)
         xn = numpy.cos(theta) * step

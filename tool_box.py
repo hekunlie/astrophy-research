@@ -88,34 +88,32 @@ def stamp_detector(image, thres, y_size, x_size, ra=8):
 
     return numpy.sqrt(len(final_obj) / numpy.pi), final_obj, numpy.sum(final_flux), maxi
 
-def source_detector(image, y_size, x_size, edge=0):
+def source_detector(mask, ysize, xsize):
     # get the source object
-    image_c = copy.copy(image)
-    # img_idx = image_c < thres
-    # image_c[img_idx] = 0.
-
-    center = image_c#[edge:int(y_size-edge), edge:int(x_size-edge)]
-    y, x = numpy.where(center > 0)
-
-    def detect1(mask, ini_y, ini_x, signal):
-        if mask[ini_y, ini_x] > 0:
-            signal.append((ini_y, ini_x))
-            mask[ini_y, ini_x] = 0
-            for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                yy, xx = ini_y + cor[0], ini_x + cor[1]
-                if 0 <= yy < y_size and 0 <= xx < x_size:
-                    detect1(mask, yy, xx, signal)
-        return signal
-
-    final_obj = []
-    for m in range(len(x)):
-        sour_pool = []
-        yp = int(y[m] + edge)
-        xp = int(x[m] + edge)
-        if image_c[yp, xp] > 0:
-            sour_pool = detect1(image_c, yp, xp, sour_pool)
-            if len(sour_pool) > 5:
-                final_obj.append(sour_pool)
-
-    return final_obj
+    objects = []
+    p = numpy.where(mask > 0)
+    xp, yp = p[0], p[1]
+    for j in range(len(xp)):
+        if mask[xp[j], yp[j]] > 0:
+            cache = [(xp[j], yp[j])]
+            mask[xp[j], yp[j]] = 0
+            num = 2
+            num0 = 1
+            while True:
+                num_new = num0 - num
+                if num == num0:
+                    break
+                num0 = len(cache)
+                p_new = []
+                for k in range(num_new, 0):
+                    xy = cache[k]
+                    for coord in ((xy[0] + 1, xy[1]), (xy[0] - 1, xy[1]), (xy[0], xy[1] - 1), (xy[0], xy[1] + 1)):
+                        if -1 < coord[0] < ysize and -1 < coord[1] < xsize and mask[coord[0], coord[1]] > 0:
+                            p_new.append(coord)
+                            mask[coord[0], coord[1]] = 0
+                cache.extend(p_new)
+                num = len(cache)
+            if num > 5:
+                objects.append(cache)
+    return objects
 
