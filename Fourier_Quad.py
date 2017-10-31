@@ -12,29 +12,24 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, imagesize, background_noise=None, F=False, N=False):
-        x = imagesize
-        my, mx = numpy.mgrid[0:x, 0:x]
+    def shear_est(self, gal_image, psf_image, size, noise=None, F=False):
+        my, mx = numpy.mgrid[0:size, 0:size]
         gal_ps = self.pow_spec(gal_image)
 
-        if background_noise is not None: # to deduct the noise
-            nbg = self.pow_spec(background_noise)
-            if N:
-                rim = self.border(1, x)
-                n = numpy.sum(rim)
-                gal_pnoise = numpy.sum(gal_ps*rim)/n               #the Possion noise of galaxy image
-                nbg_pnoise = numpy.sum(nbg*rim)/n                   #the  Possion noise of background noise image
-                gal_ps = gal_ps - nbg + nbg_pnoise - gal_pnoise
-            else:
-                gal_ps = gal_ps - nbg
+        if not noise:                                # to deduct the noise
+            nbg = self.pow_spec(noise)
+            rim = self.border(1, size)
+            n = numpy.sum(rim)
+            gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
+            nbg_pn = numpy.sum(nbg*rim)/n                   # the  Possion noise of background noise image
+            gal_ps = gal_ps - nbg + nbg_pn - gal_pn
 
         if F:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-
-        hlr = self.get_radius_new(psf_ps, 2., x)[0]
-        wb, beta = self.wbeta(hlr, x)
+        hlr = self.get_radius_new(psf_ps, 2., size)[0]
+        wb, beta = self.wbeta(hlr, size)
         maxi = numpy.max(wb)
         idx = wb < maxi / 100000.
         wb[idx] = 0.
@@ -43,43 +38,46 @@ class Fourier_Quad:
         psf_ps[idx] = 1.
 
         tk = wb/psf_ps * gal_ps
-        alpha = 2.*numpy.pi/x
-        kx = mx-0.5*x
-        ky = my-0.5*x
+        alpha = 2.*numpy.pi/size
+        kx = mx-0.5*size
+        ky = my-0.5*size
         mn1 = (-0.5)*(kx**2 - ky**2)
         mn2 = -kx*ky
         mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
         mn5 = kx**3*ky - kx*ky**3
-        g1 = numpy.sum(mn1 * tk)*(alpha**4)
-        g2 = numpy.sum(mn2 * tk)*(alpha**4)
-        n  = numpy.sum(mn3 * tk)*(alpha**4)
-        u  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*(alpha**4)
-        v  = numpy.sum(mn5 * tk)*(-2.*beta**2)*(alpha**4)
-        return g1, g2, n, u, v
+        mg1 = numpy.sum(mn1 * tk)*(alpha**4)
+        mg2 = numpy.sum(mn2 * tk)*(alpha**4)
+        mn  = numpy.sum(mn3 * tk)*(alpha**4)
+        mu  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*(alpha**4)
+        mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*(alpha**4)
+        return mg1, mg2, mn, mu, mv
 
-    def wbeta(self, beta, imagesize):
-        my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
+    def wbeta(self, beta, size):
+        my, mx = numpy.mgrid[0:size, 0:size]
         sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-((mx-0.5*imagesize)**2+(my-0.5*imagesize)**2)/2./sigma**2)
+        w_temp = numpy.exp(-((mx-0.5*size)**2+(my-0.5*size)**2)/2./sigma**2)
         beta = 1./beta
         return w_temp, beta
 
-    def ran_pos(self, num, step, radius, g1, g2):
+    def ran_pos(self, num, radius, g=None, step=2):
         xy_coord = numpy.zeros((2, num))
+        theta = numpy.random.uniform(0, 2 * numpy.pi, num)
+        xn = numpy.cos(theta) * step
+        yn = numpy.sin(theta) * step
+        x = 0
+        y = 0
         for n in range(num):
-            theta = numpy.random.uniform(0, 2 * numpy.pi, step)
-            xn = numpy.cos(theta) * 1.5
-            yn = numpy.sin(theta) * 1.5
-            x, y = 0, 0
-            for j in range(step):
-                x += xn[j]
-                y += yn[j]
-                if x * x + y * y > radius ** 2:
-                    x, y = 0, 0
+            x += xn[n]
+            y += yn[n]
+            if x * x + y * y > radius ** 2:
+                x, y = 0, 0
             xy_coord[0, n], xy_coord[1, n] = x, y
-        sheared = numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), xy_coord)
-        return xy_coord, sheared
+        if g:
+            sheared = numpy.dot(numpy.array(([(1 + g[0]), g[1]], [g[1], (1 - g[0])])), xy_coord)
+            return xy_coord, sheared
+        else:
+            return xy_coord
 
     def rotate(self, pos, theta):
         rot_matrix = numpy.matrix([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])

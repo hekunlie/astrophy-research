@@ -14,10 +14,11 @@ import tool_box
 def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switch):
     print('Process %d: simulation begin>>>>') % proc_id
 
-    stamp_size = 60
+    stamp_size = 48
     pixel_scale = 0.2
     psf_r = 5
-    p_num = 60
+    p_num = 45
+    # my, mx = numpy.mgrid[0:stamp_size, 0:stamp_size]
     # the initial information
     info_col = ['mag', 'r', 'area', 'total_flux', 'peak']
     # the information from measurements
@@ -25,7 +26,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
                "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak"]
 
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
-    noise_sig = prop.sigma_sky
+    noise_sig = 50
 
     psf_in = Fourier_Quad().cre_psf(psf_r, stamp_size, 'Moffat')
 
@@ -33,7 +34,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     psf_pow = Fourier_Quad().pow_spec(psf_in)
     # psf_g = galsim.Image(psf_in)
 
-    radius_o = -numpy.sort(-numpy.random.uniform(4, 10, 1000000))
+    radius_o = -numpy.sort(-numpy.random.uniform(5, 10, 1000000))
 
     for path_tag in range(chips_num):
         t1 = time.time()
@@ -55,9 +56,9 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
         for k in range(num_in_chip):
             gal_flux = prop.flux(mags[k])
             noise = numpy.random.normal(loc=0, scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
-            points = Fourier_Quad().ran_pos(num=p_num, step=30, radius=radius[k], g1=g1_input, g2=g2_input)[1]
-            gal_final = Fourier_Quad().convolve_psf(pos=points, psf_scale=psf_r, imagesize=stamp_size, flux=gal_flux/p_num,
-                                                    psf='Moffat')+noise
+            points = Fourier_Quad().ran_pos(num=p_num, radius=radius[k], g=(g1_input, g2_input))[1]
+            gal_final = Fourier_Quad().convolve_psf(pos=points, psf_scale=psf_r, imagesize=stamp_size,
+                                                    flux=gal_flux, psf='Moffat')+noise
 
             gal_pool.append(gal_final)
             obj, flux, peak = tool_box.stamp_detector(gal_final, noise_sig*1.5, stamp_size, stamp_size)[1:4]
@@ -82,8 +83,8 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
                 # re_e2 = res_r.corrected_e2
                 # re_r = res_r.resolution_factor
 
-                noise = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
-                mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, noise, F=True, N=True)
+                noise_n = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
+                mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, noise_n, True)
 
                 data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, \
                                     0, 0, 0, len(obj), flux, peak
