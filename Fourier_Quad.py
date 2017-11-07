@@ -31,10 +31,10 @@ class Fourier_Quad:
         hlr = self.get_radius_new(psf_ps, 2., size)[0]
         wb, beta = self.wbeta(hlr, size)
         maxi = numpy.max(wb)
-        idx = wb < maxi / 100000.
+        idx = wb < maxi / 10000.
         wb[idx] = 0.
         maxi = numpy.max(psf_ps)
-        idx = psf_ps < maxi / 100000.
+        idx = psf_ps < maxi / 10000.
         psf_ps[idx] = 1.
 
         tk = wb/psf_ps * gal_ps
@@ -71,7 +71,7 @@ class Fourier_Quad:
             x += xn[n]
             y += yn[n]
             if x * x + y * y > radius ** 2:
-                x, y = 0, 0
+                x, y = xn[n], yn[n]
             xy_coord[0, n], xy_coord[1, n] = x, y
         if g:
             sheared = numpy.dot(numpy.array(([(1 + g[0]), g[1]], [g[1], (1 - g[0])])), xy_coord)
@@ -80,12 +80,10 @@ class Fourier_Quad:
             return xy_coord
 
     def rotate(self, pos, theta):
-        rot_matrix = numpy.matrix([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
-        rot_pos = rot_matrix * pos
-        return rot_pos
+        rot_matrix = numpy.array([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
+        return numpy.dot(rot_matrix, pos)
 
     def shear(self, pos, g1, g2):
-        g = (1-g1**2-g2**2)
         return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
 
     def convolve_psf(self, pos, psf_scale, imagesize, flux=1, psf="GAUSS"):
@@ -96,7 +94,7 @@ class Fourier_Quad:
 
         if psf == 'GAUSS':
             for i in range(x):
-                arr += flux*numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./numpy.pi/psf_scale**2)
+                arr += flux*numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./psf_scale**2)
 
         elif psf == "Moffat":
             for l in range(x):
@@ -112,7 +110,7 @@ class Fourier_Quad:
         xx = numpy.linspace(0, imagesize - 1, imagesize)
         mx, my = numpy.meshgrid(xx, xx)
         if model is 'GAUSS':
-            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./numpy.pi/psf_scale**2)
+            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
             return arr
 
         if model is 'Moffat':
@@ -171,7 +169,7 @@ class Fourier_Quad:
                 signal_val.append(mask[ini_y, ini_x])
                 mask[ini_y, ini_x] = 0
                 for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    if ini_y + cor[0] < size and ini_x + cor[1] < size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+                    if -1 < ini_y + cor[0] < size and -1 < ini_x + cor[1] < size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
             return signal, signal_val
 

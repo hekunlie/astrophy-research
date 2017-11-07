@@ -13,17 +13,17 @@ from sys import argv
 import numpy
 import pandas
 
-snr_s, snr_e, filter_type, power = argv[1:5]
+snr_s, snr_e, filter_type, ratio = argv[1:5]
 
 ts = time.time()
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
-wei_pow = int(power)
+ratio = float(ratio)
 
-shear_input = numpy.load('/lmc/selection_bias/shear.npz')
-fg1 = shear_input['arr_0']
-fg2 = shear_input['arr_1']
+shear_input = numpy.load('/home/hklee/work/selection_bias/parameters/shear.npz')['arr_0']
+fg1 = shear_input[0]
+fg2 = shear_input[1]
 
 # the length of the interval
 dfg1 = fg1[1]-fg1[0]
@@ -32,7 +32,7 @@ dfg2 = fg2[1]-fg2[0]
 # where the result data file are placed
 path = '/lmc/selection_bias/result/data/'
 # where the result figures will be created
-pic_path = '/lmc/selection_bias/result/pic/'
+pic_path = '/home/hklee/work/result/pic/'
 
 # check the final result cache
 exist = os.path.exists(path+'final_cache.npz')
@@ -101,7 +101,7 @@ if not exist or comm == 1:
     flux = data[:, 17]
 
     # peak/sigma_noise
-    peak = data[:, 18]/380.4
+    peak = data[:, 18]/380.4*8
     print(numpy.min(peak), numpy.max(peak))
     plt.hist(peak, 20)
     plt.savefig('/lmc/selection_bias/result/peak_hist.png')
@@ -126,7 +126,8 @@ if not exist or comm == 1:
     # the third 4 rows are the corresponding number of samples.
     res_arr1 = numpy.zeros((12, len(fg1)))
     res_arr2 = numpy.zeros((12, len(fg2)))
-
+    no = numpy.arange(0, 4000000)
+    #choice = numpy.random.choice(no, int(4000000*ratio), False)
     for i in range(len(fg1)):
         idx11 = tag1 > fg1[i] - 0.0001
         idx12 = tag1 < fg1[i] + 0.0001
@@ -151,20 +152,11 @@ if not exist or comm == 1:
                 g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
             else:
-                G1 = FG1[idx11&idx12][idxs&idxe]
-                N1 = FN[idx11&idx12][idxs&idxe]
-                U1 = FU[idx11&idx12][idxs&idxe]
+                G1 = FG1[idx11&idx12][idxs&idxe]#[choice]
+                N1 = FN[idx11&idx12][idxs&idxe]#[choice]
+                U1 = FU[idx11&idx12][idxs&idxe]#[choice]
 
-                # G1 = G1[idxe&idxs]
-                # N1 = N1[idxe&idxs]
-                # U1 = U1[idxe&idxs]
-
-                # G1 = numpy.append(G1[idxs], G1[idxe])
-                # N1 = numpy.append(N1[idxs], N1[idxe])
-                # U1 = numpy.append(U1[idxs], U1[idxe])
-
-                # weight1 = flux[idx11&idx12&idx0]
-                weight1 = ssnr[idxs&idxe]**wei_pow
+                weight1 = 1#ssnr[idxs&idxe]**wei_pow
 
                 num1 = len(G1)
                 # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
@@ -174,6 +166,7 @@ if not exist or comm == 1:
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
+            print(g1_h, g1_h_sig, fg1[i])
 
     for i in range(len(fg2)):
         idx21 = tag2 > fg2[i] - 0.0001
@@ -199,19 +192,11 @@ if not exist or comm == 1:
                 g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
 
             else:
-                G2 = FG2[idx21&idx22][idxs&idxe]
-                N2 = FN[idx21&idx22][idxs&idxe]
-                U2 = FU[idx21&idx22][idxs&idxe]
+                G2 = FG2[idx21&idx22][idxs&idxe]#[choice]
+                N2 = FN[idx21&idx22][idxs&idxe]#[choice]
+                U2 = FU[idx21&idx22][idxs&idxe]#[choice]
 
-                # G2 = G2[idxe&idxs]
-                # N2 = N2[idxe&idxs]
-                # U2 = U2[idxe&idxs]
-
-                # G2 = numpy.append(G2[idxs], G2[idxe])
-                # N2 = numpy.append(N2[idxs], N2[idxe])
-                # U2 = numpy.append(U2[idxs], U2[idxe])
-
-                weight2 = ssnr[idxs&idxe]**wei_pow
+                weight2 = 1#ssnr[idxs&idxe]**wei_pow
                 num2 = len(G2)
                 # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
                 g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
@@ -219,16 +204,17 @@ if not exist or comm == 1:
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
-    print('total number   :',res_arr1[11,1])
-    print('the input    g1:',fg1)
-    print('the measured g1:',res_arr1[3])
-    print('the uncertainty:',res_arr1[7])
-    # print('\n')
-    # print('total number   :',res_arr2[11, 1])
-    # print('the input    g2:',fg2)
-    # print('the measured g2:',res_arr2[3])
-    # print('the uncertainty:',res_arr2[7])
-    # print('\n')
+            print(g2_h, g2_h_sig, fg2[i])
+    print('total number   :', res_arr1[11, 1])
+    print('the input    g1:', fg1)
+    print('the measured g1:', res_arr1[3])
+    print('the uncertainty:', res_arr1[7])
+    print('\n')
+    print('total number   :',res_arr2[11, 1])
+    print('the input    g2:',fg2)
+    print('the measured g2:',res_arr2[3])
+    print('the uncertainty:',res_arr2[7])
+    print('\n')
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 
@@ -254,6 +240,8 @@ for i in range(3, 4):
     # C = diag[sig1^2, sig2^2, sig3^2, .....]
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
+    ########################################################
+
     A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
     Y1 = res_arr1[i].T
     C1 = numpy.diag(res_arr1[i+4]**2)
@@ -273,8 +261,8 @@ for i in range(3, 4):
     sig_c2 = numpy.sqrt(L2[0, 0])
     e1mc = numpy.dot(L1, R1)
     e2mc = numpy.dot(L2, R2)
-    print("m1 = %.6f (%.6f), c1 = %.6f (%.6f) "%(e1mc[1]-1,sig_m1, e1mc[0], sig_c1))
-    print("m2 = %.6f (%.6f), c2 = %.6f (%.6f) "%(e2mc[1]-1,sig_m2, e2mc[0], sig_c2))
+    # print("m1 = %.6f (%.6f), c1 = %.6f (%.6f) "%(e1mc[1]-1,sig_m1, e1mc[0], sig_c1))
+    # print("m2 = %.6f (%.6f), c2 = %.6f (%.6f) "%(e2mc[1]-1,sig_m2, e2mc[0], sig_c2))
     # print(e1mc, e1mc.shape)
     # a11 = numpy.sum(fg1**2)
     # a12 = numpy.sum(fg1)
@@ -326,15 +314,15 @@ for i in range(3, 4):
     for j in range(len(fg1)):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
-    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[1] - 1, 5))+'$\pm$'+str(round(sig_m1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[0], 5))+'$\pm$'+str(round(sig_c1, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(snr_cut_s)+"$\leq$"+"S/N, S/N"+"$\leq$" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[1] - 1, 6))+'$\pm$'+str(round(sig_m1, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[0], 6))+'$\pm$'+str(round(sig_c1, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(ratio*100)+'%', color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07, 0.07)
-    plt.xlim(-0.07, 0.07)
+    plt.ylim(-0.04, 0.04)
+    plt.xlim(-0.04, 0.04)
     # print('plotted g1')
 
     #plot g2 line
@@ -363,19 +351,20 @@ for i in range(3, 4):
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
-    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[1] - 1, 5))+'$\pm$'+str(round(sig_m2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[0], 5))+'$\pm$'+str(round(sig_c2, 5)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(snr_cut_s)+"$\leq$"+"S/N, S/N"+"$\leq$" + str(snr_cut_e), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[1] - 1, 6))+'$\pm$'+str(round(sig_m2, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[0], 6))+'$\pm$'+str(round(sig_c2, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, str(ratio*100)+'%', color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
-    plt.ylim(-0.07, 0.07)
-    plt.xlim(-0.07, 0.07)
+    plt.ylim(-0.04, 0.04)
+    plt.xlim(-0.04, 0.04)
     nm = pic_path + name[i] + ".png"
     plt.savefig(nm)
     # print('plotted g2')
-
+    print(e1mc)
+    print(e2mc)
     # m1, m2
     mc_data[i] = e1mc[1]
     mc_data[i+16] = e2mc[1]

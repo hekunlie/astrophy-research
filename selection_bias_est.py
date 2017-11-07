@@ -14,8 +14,8 @@ import tool_box
 def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id):
     print('Proc_%d: begin>>>')%proc_id
 
-    col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2",
-           "FG_N", "FQ_U", "FQ_V",  'KSB_R', 'BJ_R', 'RG_R', "SNR_ORI"]
+    # col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2",
+    #        "FG_N", "FQ_U", "FQ_V",  'KSB_R', 'BJ_R', 'RG_R', "SNR_ORI"]
 
     psf_pow = Fourier_Quad().pow_spec(psf_in)
     # psf_g = galsim.Image(psf_in)
@@ -58,7 +58,7 @@ def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id)
             # re_r = res_r.resolution_factor
 
             noise = numpy.random.normal(loc=0., scale=noise_sig, size=size**2).reshape(size, size)
-            mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal, psf_pow, size, noise, F=True, N=True)
+            mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal, psf_pow, size, noise, F=True)
 
             # data_matrix[k, :] = ksb_g1, bj_e1, re_e1, mg1, g1_input, ksb_g2, bj_e2, re_e2, mg2, g2_input, mn, mu, mv, ksb_r, bj_r, re_r, snr[k]
             data1[k] = mg1
@@ -75,7 +75,7 @@ if __name__=='__main__':
     chip_num = 200
     total_num = 1000000
     pixel_scale = 0.2
-    stamp_size = 52
+    stamp_size = 58
 
     result_path = '/lmc/selection_bias/result/data/'
     if not os.path.isdir(result_path):
@@ -92,7 +92,7 @@ if __name__=='__main__':
     # psf = fits.open('/lmc/selection_bias/psf.fits')[0].data
     psf = Fourier_Quad().cre_psf(4, stamp_size, 'Moffat')
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
-    noise_sigma = prop.sigma_sky
+    noise_sigma = prop.sigma_sky/8
 
     p = Pool()
     t1 = time.time()

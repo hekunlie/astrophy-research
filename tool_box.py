@@ -117,3 +117,32 @@ def source_detector(mask, ysize, xsize):
                 objects.append(cache)
     return objects
 
+def get_hlr(image, scale, size,):
+    # get the source object, to avoid the overflow of the stack
+    mask = copy.copy(image)
+    maxi = numpy.max(image[int(size/2-6):int(size/2+6), int(size/2-6):int(size/2+6)])
+    y, x = numpy.where(mask == maxi)
+    idx = mask < maxi / scale
+    mask[idx] = 0.
+    flux = maxi
+    cache = [(x, y)]
+    mask[y, x] = 0
+    num = 2
+    num0 = 1
+    while True:
+        num_new = num0 - num
+        if num == num0:
+            break
+        num0 = len(cache)
+        p_new = []
+        for k in range(num_new, 0):
+            xy = cache[k]
+            for coord in ((xy[0] + 1, xy[1]), (xy[0] - 1, xy[1]), (xy[0], xy[1] - 1), (xy[0], xy[1] + 1)):
+                if -1 < coord[0] < size and -1 < coord[1] < size and mask[coord[0], coord[1]] > 0:
+                    p_new.append(coord)
+                    flux += mask[coord[0], coord[1]]
+                    mask[coord[0], coord[1]] = 0
+        cache.extend(p_new)
+        num = len(cache)
+
+    return numpy.sqrt(len(cache)/numpy.pi), flux
