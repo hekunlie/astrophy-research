@@ -14,7 +14,7 @@ import tool_box
 def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switch):
     print('Process %d: simulation begin>>>>') % proc_id
 
-    stamp_size = 56
+    stamp_size = 52
     pixel_scale = 0.2
     psf_r = 4
     p_num = 45
@@ -34,7 +34,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     psf_pow = Fourier_Quad().pow_spec(psf_in)
     # psf_g = galsim.Image(psf_in)
 
-    radius_o = -numpy.sort(-numpy.random.uniform(5, 10, 1000000))
+    radius_o = -numpy.sort(-numpy.random.uniform(5, 9, 4000000))
 
     for path_tag in range(chips_num):
         t1 = time.time()
@@ -116,8 +116,8 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
 
 if __name__ == '__main__':
     CPU_num = 16
-    chip_num = 100
-    total_num = 1000000
+    chip_num = 400
+    total_num = 4000000
     num = total_num/chip_num
 
     data_files = os.listdir('/lmc/selection_bias/result/data/')
