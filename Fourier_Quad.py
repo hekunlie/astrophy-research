@@ -18,11 +18,11 @@ class Fourier_Quad:
 
         if noise is not None:                                # to deduct the noise
             nbg = self.pow_spec(noise)
-            rim = self.border(1, size)
-            n = numpy.sum(rim)
-            gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
-            nbg_pn = numpy.sum(nbg*rim)/n                   # the  Possion noise of background noise image
-            gal_ps = gal_ps - nbg + nbg_pn - gal_pn
+            # rim = self.border(1, size)
+            # n = numpy.sum(rim)
+            # gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
+            # nbg_pn = numpy.sum(nbg*rim)/n                   # the  Possion noise of background noise image
+            gal_ps = gal_ps - nbg #+ nbg_pn - gal_pn
 
         if F:
             psf_ps = psf_image
@@ -31,7 +31,7 @@ class Fourier_Quad:
         hlr = self.get_radius_new(psf_ps, 2., size)[0]
         wb, beta = self.wbeta(hlr, size)
         maxi = numpy.max(wb)
-        idx = wb < maxi / 10000.
+        idx = wb < maxi / 100000.
         wb[idx] = 0.
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.

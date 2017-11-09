@@ -116,7 +116,7 @@ if not exist or comm == 1:
     # snr
     snr = data[:, 16]
     # snr = data[:, 20]
-    idx0 = snr != 0
+    # idx0 = snr != 0
     # ssnr = snr[idx0]
     # idxs = ssnr >= snr_cut_s
     # idxe = ssnr <= snr_cut_e
@@ -126,11 +126,11 @@ if not exist or comm == 1:
     # the third 4 rows are the corresponding number of samples.
     res_arr1 = numpy.zeros((12, len(fg1)))
     res_arr2 = numpy.zeros((12, len(fg2)))
-    no = numpy.arange(0, 4000000)
-    #choice = numpy.random.choice(no, int(4000000*ratio), False)
+    no = numpy.arange(0, 1000000)
+    choice = numpy.random.choice(no, int(1000000*ratio), False)
     for i in range(len(fg1)):
-        idx11 = tag1 > fg1[i] - 0.0001
-        idx12 = tag1 < fg1[i] + 0.0001
+        idx11 = tag1 > fg1[i] - 0.000001
+        idx12 = tag1 < fg1[i] + 0.000001
         # ssnr = snr[idx11 & idx12 & idx0]
         ssnr = peak[idx11 & idx12]
         idxs = ssnr >= snr_cut_s
@@ -152,25 +152,25 @@ if not exist or comm == 1:
                 g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
             else:
-                G1 = FG1[idx11&idx12][idxs&idxe]#[choice]
-                N1 = FN[idx11&idx12][idxs&idxe]#[choice]
-                U1 = FU[idx11&idx12][idxs&idxe]#[choice]
+                G1 = FG1[idx11&idx12][idxs&idxe][choice]
+                N1 = FN[idx11&idx12][idxs&idxe][choice]
+                U1 = FU[idx11&idx12][idxs&idxe][choice]
 
                 weight1 = 1#ssnr[idxs&idxe]**wei_pow
 
                 num1 = len(G1)
                 # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
-                g1_h = numpy.sum(G1 * weight1) / numpy.sum(N1 * weight1)
+                g1_h = numpy.mean(G1 * weight1) / numpy.mean(N1 * weight1)
                 g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
 
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
-            print(g1_h, g1_h_sig, fg1[i])
-
+            print(num1, "g1 deviation: %.4f * e-4, sig: %.6f" %(10000*(g1_h - fg1[i]), g1_h_sig))
+    print('\n')
     for i in range(len(fg2)):
-        idx21 = tag2 > fg2[i] - 0.0001
-        idx22 = tag2 < fg2[i] + 0.0001
+        idx21 = tag2 > fg2[i] - 0.000001
+        idx22 = tag2 < fg2[i] + 0.000001
         # ssnr = snr[idx21 & idx22 & idx0]
         ssnr = peak[idx21 & idx22]
         idxs = ssnr >= snr_cut_s
@@ -192,29 +192,29 @@ if not exist or comm == 1:
                 g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
 
             else:
-                G2 = FG2[idx21&idx22][idxs&idxe]#[choice]
-                N2 = FN[idx21&idx22][idxs&idxe]#[choice]
-                U2 = FU[idx21&idx22][idxs&idxe]#[choice]
+                G2 = FG2[idx21&idx22][idxs&idxe][choice]
+                N2 = FN[idx21&idx22][idxs&idxe][choice]
+                U2 = FU[idx21&idx22][idxs&idxe][choice]
 
                 weight2 = 1#ssnr[idxs&idxe]**wei_pow
                 num2 = len(G2)
                 # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
-                g2_h = numpy.sum(G2 * weight2)/numpy.sum(N2 * weight2)
+                g2_h = numpy.mean(G2 * weight2)/numpy.mean(N2 * weight2)
                 g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight2)**2)/(numpy.mean(N2 * weight2))**2)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
-            print(g2_h, g2_h_sig, fg2[i])
-    print('total number   :', res_arr1[11, 1])
-    print('the input    g1:', fg1)
-    print('the measured g1:', res_arr1[3])
-    print('the uncertainty:', res_arr1[7])
-    print('\n')
-    print('total number   :',res_arr2[11, 1])
-    print('the input    g2:',fg2)
-    print('the measured g2:',res_arr2[3])
-    print('the uncertainty:',res_arr2[7])
-    print('\n')
+            print(num2, "g2 deviation: %.4f * e-4, sig: %.6f" % (10000*(g2_h - fg2[i]), g2_h_sig))
+    # print('total number   :', res_arr1[11, 1])
+    # print('the input    g1:', fg1)
+    # print('the measured g1:', res_arr1[3])
+    # print('the uncertainty:', res_arr1[7])
+    # print('\n')
+    # print('total number   :',res_arr2[11, 1])
+    # print('the input    g2:',fg2)
+    # print('the measured g2:',res_arr2[3])
+    # print('the uncertainty:',res_arr2[7])
+    # print('\n')
     final_cache_path = path+'final_cache'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 

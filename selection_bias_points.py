@@ -25,8 +25,8 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     cat_col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2", "FG_N", "FQ_U",
                "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak"]
 
-    #prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
-    #noise_sig = prop.sigma_sky/8
+    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+    noise_sig = prop.sigma_sky/10
 
     psf_in = Fourier_Quad().cre_psf(psf_r, stamp_size, 'Moffat')
 
@@ -34,7 +34,7 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
     psf_pow = Fourier_Quad().pow_spec(psf_in)
     # psf_g = galsim.Image(psf_in)
 
-    radius_o = -numpy.sort(-numpy.random.uniform(5, 10, 500000))
+    radius_o = -numpy.sort(-numpy.random.uniform(5, 10, 1000000))
 
     for path_tag in range(chips_num):
         t1 = time.time()
@@ -50,49 +50,55 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
         tag = range(num_in_chip*int(chip_tag), num_in_chip*(1 + int(chip_tag)))
         mags = magnitudes[tag]
         radius = radius_o[tag]
-        snr_data = numpy.zeros((4*num_in_chip, len(info_col)))
-        data_matrix = numpy.zeros((4*num_in_chip, len(cat_col)))
+        snr_data = numpy.zeros((num_in_chip, len(info_col)))
+        data_matrix = numpy.zeros((num_in_chip, len(cat_col)))
         gal_pool = []
         number = 0
         for k in range(num_in_chip):
             gal_flux = 500#prop.flux(mags[k])
-            for ro in range(4):
-                #noise = numpy.random.normal(loc=0, scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
-                points = Fourier_Quad().ran_pos(num=p_num, radius=10)#, g=(g1_input, g2_input))
-                points_r = Fourier_Quad().rotate(points, ro*numpy.pi/4)
-                points_s = Fourier_Quad().shear(points_r, g1_input, g2_input)
-                gal_final = Fourier_Quad().convolve_psf(pos=points_s, psf_scale=psf_r, imagesize=stamp_size,
-                                                        flux=gal_flux, psf='Moffat')#+noise
+            points = Fourier_Quad().ran_pos(num=p_num, radius=radius[k])  # , g=(g1_input, g2_input))
+            #noise = numpy.random.normal(loc=0, scale=noise_sig, size=stamp_size ** 2).reshape(stamp_size, stamp_size)
+            # for ro in range(0):
+            #     noise = numpy.random.normal(loc=0, scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
+            #
+            #     if ro != 0:
+            #         points_r = Fourier_Quad().rotate(points, ro*numpy.pi/4)
+            #     else:
+            #         points_r = points
 
-                gal_pool.append(gal_final)
-                # obj, flux, peak = tool_box.stamp_detector(gal_final, noise_sig*1.5, stamp_size, stamp_size)[1:4]
-                # snr_data[number] = mags[k], radius[k], len(obj), flux, peak
+            points_s = Fourier_Quad().shear(points, g1_input, g2_input)
+            gal_final = Fourier_Quad().convolve_psf(pos=points_s, psf_scale=psf_r, imagesize=stamp_size,
+                                                    flux=gal_flux, psf='Moffat')#+noise
 
-                # shear estimate
-                if est_switch == 1:
-                    # gal_g = galsim.Image(gal_final)
-                    #
-                    # res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
-                    # ksb_g1 = res_k.corrected_g1
-                    # ksb_g2 = res_k.corrected_g2
-                    # ksb_r = res_k.resolution_factor
-                    #
-                    # res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
-                    # bj_e1 = res_b.corrected_e1
-                    # bj_e2 = res_b.corrected_e2
-                    # bj_r = res_b.resolution_factor
-                    #
-                    # res_r = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='REGAUSS', strict=False)
-                    # re_e1 = res_r.corrected_e1
-                    # re_e2 = res_r.corrected_e2
-                    # re_r = res_r.resolution_factor
+            gal_pool.append(gal_final)
+            # obj, flux, peak = tool_box.stamp_detector(gal_final, noise_sig*1.5, stamp_size, stamp_size)[1:4]
+            # snr_data[number] = mags[k], radius[k], len(obj), flux, peak
 
-                    #noise_n = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
-                    mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, F=True)
+            # shear estimate
+            if est_switch == 1:
+                # gal_g = galsim.Image(gal_final)
+                #
+                # res_k = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='KSB', strict=False)
+                # ksb_g1 = res_k.corrected_g1
+                # ksb_g2 = res_k.corrected_g2
+                # ksb_r = res_k.resolution_factor
+                #
+                # res_b = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='BJ', strict=False)
+                # bj_e1 = res_b.corrected_e1
+                # bj_e2 = res_b.corrected_e2
+                # bj_r = res_b.resolution_factor
+                #
+                # res_r = galsim.hsm.EstimateShear(gal_g, psf_g, shear_est='REGAUSS', strict=False)
+                # re_e1 = res_r.corrected_e1
+                # re_e2 = res_r.corrected_e2
+                # re_r = res_r.resolution_factor
 
-                    data_matrix[number, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, \
-                                        0, 0, 0, 0, 0, 0
-                    number += 1
+                #noise_n = numpy.random.normal(loc=0., scale=noise_sig, size=stamp_size**2).reshape(stamp_size, stamp_size)
+                mg1, mg2, mn, mu, mv = Fourier_Quad().shear_est(gal_final, psf_pow, stamp_size, F=True)
+
+                data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, \
+                                    0, 0, 0, 0, 0, 0
+                #number += 1
 
         # info_df = pandas.DataFrame(data=snr_data, columns=info_col)
         # info_df.to_excel(info_path)
@@ -110,8 +116,8 @@ def simu(paths_list, shear1, shear2, num_in_chip, magnitudes, proc_id, est_switc
 
 if __name__ == '__main__':
     CPU_num = 16
-    chip_num = 200
-    total_num = 500000
+    chip_num = 100
+    total_num = 1000000
     num = total_num/chip_num
 
     data_files = os.listdir('/lmc/selection_bias/result/data/')
@@ -149,3 +155,4 @@ if __name__ == '__main__':
     # simu(chip_paths_list[0], out_shear1, out_shear2, num, out_mags, 0, 1,)
     te = time.time()
     print('Time consuming: %.2f') % (te - ts)
+    os.system(" sudo python selection_bias_proce_dat.py 0 100 none 1")

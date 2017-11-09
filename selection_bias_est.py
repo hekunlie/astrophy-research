@@ -72,10 +72,10 @@ def shear_est(chip_list, psf_in, shear1_in, shear2_in, noise_sig, size, proc_id)
 
 if __name__=='__main__':
     CPU_num = 16
-    chip_num = 200
+    chip_num = 100
     total_num = 1000000
     pixel_scale = 0.2
-    stamp_size = 58
+    stamp_size = 56
 
     result_path = '/lmc/selection_bias/result/data/'
     if not os.path.isdir(result_path):
@@ -92,7 +92,7 @@ if __name__=='__main__':
     # psf = fits.open('/lmc/selection_bias/psf.fits')[0].data
     psf = Fourier_Quad().cre_psf(4, stamp_size, 'Moffat')
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
-    noise_sigma = prop.sigma_sky/8
+    noise_sigma = prop.sigma_sky/10
 
     p = Pool()
     t1 = time.time()
