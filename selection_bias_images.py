@@ -124,12 +124,11 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
 
 
 if __name__ == '__main__':
-    CPU_num = 20
+    CPU_num = 16
     chip_num = 250
     total_num = 1000000
     num = total_num/chip_num
 
-    os.remove('/lmc/selection_bias/psf.fits')
     data_files = os.listdir('/lmc/selection_bias/result/data/')
     if len(data_files) != 0:
         for name in data_files:
