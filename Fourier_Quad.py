@@ -30,12 +30,10 @@ class Fourier_Quad:
             psf_ps = self.pow_spec(psf_image)
         hlr = self.get_radius_new(psf_ps, 2., size)[0]
         wb, beta = self.wbeta(hlr, size)
-        maxi = numpy.max(wb)
-        idx = wb < maxi / 100000.
-        wb[idx] = 0.
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
         psf_ps[idx] = 1.
+        wb[idx] = 0.
 
         tk = wb/psf_ps * gal_ps
         alpha = 2.*numpy.pi/size
