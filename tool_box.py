@@ -59,7 +59,7 @@ def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size):
                 detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, y_size, x_size)
     return signal, signal_val
 
-def stamp_detector(image, thres, y_size, x_size, ra=8):
+def stamp_detector(image, thres, y_size, x_size, ra=10):
     # get the source object
     image_c = copy.copy(image)
     img_idx = image_c < thres
@@ -86,7 +86,7 @@ def stamp_detector(image, thres, y_size, x_size, ra=8):
             final_obj = sour_pool
             final_flux = sour_flux
 
-    return numpy.sqrt(len(final_obj) / numpy.pi), final_obj, numpy.sum(final_flux), maxi
+    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), maxi
 
 def source_detector(mask, ysize, xsize):
     # get the source object

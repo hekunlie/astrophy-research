@@ -35,7 +35,7 @@ path = '/lmc/selection_bias/result/data/'
 pic_path = '/home/hklee/work/result/pic/'
 
 # check the final result cache
-exist = os.path.exists(path+'final_cache.npz')
+exist = os.path.exists('/home/hklee/work/result/data/final_cache.npz')
 data_cache_path = path + 'data_cache.npz'
 
 if exist:
@@ -101,10 +101,10 @@ if not exist or comm == 1:
     flux = data[:, 17]
 
     # peak/sigma_noise
-    peak = data[:, 18]/380.4*8
-    print(numpy.min(peak), numpy.max(peak))
-    plt.hist(peak, 20)
-    plt.savefig('/lmc/selection_bias/result/peak_hist.png')
+    peak = data[:, 18]/380.4
+    #print(numpy.min(peak), numpy.max(peak))
+    #plt.hist(peak, 20)
+    #plt.savefig('/home/hklee/work/result/peak_hist.png')
     idxp = peak > 4
 
     # input g1
@@ -126,9 +126,11 @@ if not exist or comm == 1:
     # the third 4 rows are the corresponding number of samples.
     res_arr1 = numpy.zeros((12, len(fg1)))
     res_arr2 = numpy.zeros((12, len(fg2)))
-    no = numpy.arange(0, 1000000)
-    choice = numpy.random.choice(no, int(1000000*ratio), False)
+    no = numpy.arange(0, len(peak)/10)
+    print(len(peak))
+    choice = numpy.random.choice(no, int(len(peak)/10*ratio), False)
     for i in range(len(fg1)):
+        print(fg1[i])
         idx11 = tag1 > fg1[i] - 0.000001
         idx12 = tag1 < fg1[i] + 0.000001
         # ssnr = snr[idx11 & idx12 & idx0]
@@ -152,14 +154,14 @@ if not exist or comm == 1:
                 g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
             else:
-                G1 = FG1[idx11&idx12][idxs&idxe][choice]
-                N1 = FN[idx11&idx12][idxs&idxe][choice]
-                U1 = FU[idx11&idx12][idxs&idxe][choice]
+                G1 = FG1[idx11&idx12][idxs&idxe]#[choice]
+                N1 = FN[idx11&idx12][idxs&idxe]#[choice]
+                U1 = FU[idx11&idx12][idxs&idxe]#[choice]
 
                 weight1 = 1#ssnr[idxs&idxe]**wei_pow
 
                 num1 = len(G1)
-                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8, sample=500)
+                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8)
                 g1_h = numpy.mean(G1 * weight1) / numpy.mean(N1 * weight1)
                 g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
 
@@ -169,6 +171,7 @@ if not exist or comm == 1:
             print(num1, "g1 deviation: %.4f * e-4, sig: %.6f" %(10000*(g1_h - fg1[i]), g1_h_sig))
     print('\n')
     for i in range(len(fg2)):
+        print(fg2[i])
         idx21 = tag2 > fg2[i] - 0.000001
         idx22 = tag2 < fg2[i] + 0.000001
         # ssnr = snr[idx21 & idx22 & idx0]
@@ -192,9 +195,9 @@ if not exist or comm == 1:
                 g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
 
             else:
-                G2 = FG2[idx21&idx22][idxs&idxe][choice]
-                N2 = FN[idx21&idx22][idxs&idxe][choice]
-                U2 = FU[idx21&idx22][idxs&idxe][choice]
+                G2 = FG2[idx21&idx22][idxs&idxe]#[choice]
+                N2 = FN[idx21&idx22][idxs&idxe]#[choice]
+                U2 = FU[idx21&idx22][idxs&idxe]#[choice]
 
                 weight2 = 1#ssnr[idxs&idxe]**wei_pow
                 num2 = len(G2)
@@ -205,21 +208,12 @@ if not exist or comm == 1:
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
             print(num2, "g2 deviation: %.4f * e-4, sig: %.6f" % (10000*(g2_h - fg2[i]), g2_h_sig))
-    # print('total number   :', res_arr1[11, 1])
-    # print('the input    g1:', fg1)
-    # print('the measured g1:', res_arr1[3])
-    # print('the uncertainty:', res_arr1[7])
-    # print('\n')
-    # print('total number   :',res_arr2[11, 1])
-    # print('the input    g2:',fg2)
-    # print('the measured g2:',res_arr2[3])
-    # print('the uncertainty:',res_arr2[7])
-    # print('\n')
-    final_cache_path = path+'final_cache'
+
+    final_cache_path = '/home/hklee/work/result/data/final_cache.npz'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 
 else:
-    text = numpy.load(path+'final_cache.npz')
+    text = numpy.load('/home/hklee/work/result/data/final_cache.npz')
     res_arr1 = text['arr_0']
     res_arr2 = text['arr_1']
 tm =time.time()
@@ -229,7 +223,7 @@ tm =time.time()
 
 name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
-mc_data_path = path + 'mc_data.xlsx'
+mc_data_path = '/home/hklee/work/result/data' + 'mc_data.xlsx'
 mc_data = numpy.zeros((32, 1))
 for i in range(3, 4):
     # Y = A*X ,   y = m*x+c
@@ -261,32 +255,7 @@ for i in range(3, 4):
     sig_c2 = numpy.sqrt(L2[0, 0])
     e1mc = numpy.dot(L1, R1)
     e2mc = numpy.dot(L2, R2)
-    # print("m1 = %.6f (%.6f), c1 = %.6f (%.6f) "%(e1mc[1]-1,sig_m1, e1mc[0], sig_c1))
-    # print("m2 = %.6f (%.6f), c2 = %.6f (%.6f) "%(e2mc[1]-1,sig_m2, e2mc[0], sig_c2))
-    # print(e1mc, e1mc.shape)
-    # a11 = numpy.sum(fg1**2)
-    # a12 = numpy.sum(fg1)
-    # a13 = len(fg1)
-    # z1 = numpy.array([numpy.sum(res_arr1[i]*fg1), numpy.sum(res_arr1[i])])
-    # a21 = numpy.sum(fg2**2)
-    # a22 = numpy.sum(fg2)
-    # a23 = len(fg2)
-    # z2 = numpy.array([numpy.sum(res_arr2[i] * fg2), numpy.sum(res_arr2[i])])
-    # e1mc = numpy.dot(numpy.linalg.inv(numpy.array([[a12, a11],[a13, a12]])),z1)
-    # e2mc = numpy.dot(numpy.linalg.inv(numpy.array([[a22, a21],[a23, a22]])),z2)
-    # print(e1mc, e1mc.shape)
 
-
-    # def fun(x, a, b):
-    #     return a * x + b
-    #
-    # res1 = optimize.curve_fit(fun, fg1, res_arr1[i])
-    # res2 = optimize.curve_fit(fun, fg2, res_arr2[i])
-    # sig_m1, sig_c1 = res1[1][0, 0], res1[1][0, 0]
-    # sig_m2, sig_c2 = res2[1][0, 0], res2[1][0, 0]
-    # e1mc = res1[0][1], res1[0][0]
-    # e2mc = res2[0][1], res2[0][0]
-    # plot g1 line
     fig = plt.figure(figsize=(20, 10))
     ax = fig.add_subplot(121)
 
@@ -379,7 +348,7 @@ for i in range(3, 4):
     mc_data[i+28] = sig_c2
 
 if filter_type != 'none':
-    mc_col = [filter_type]# + '_' + snr_s + '_' + snr_e ][0]
+    mc_col = [filter_type]
     if os.path.exists(mc_data_path):
         df = pandas.read_excel(mc_data_path)
         df[mc_col[0]] = mc_data
@@ -390,6 +359,5 @@ if filter_type != 'none':
         mc_df.to_excel(mc_data_path)
 te = time.time()
 
-# print("Complete")
-# print(tm-ts, te-tm)
+print(tm-ts, te-tm)
 

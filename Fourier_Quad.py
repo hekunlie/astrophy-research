@@ -18,11 +18,11 @@ class Fourier_Quad:
 
         if noise is not None:                                # to deduct the noise
             nbg = self.pow_spec(noise)
-            # rim = self.border(1, size)
+            # rim = self.border(2, size)
             # n = numpy.sum(rim)
             # gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
             # nbg_pn = numpy.sum(nbg*rim)/n                   # the  Possion noise of background noise image
-            gal_ps = gal_ps - nbg #+ nbg_pn - gal_pn
+            gal_ps = gal_ps - nbg# + nbg_pn - gal_pn
 
         if F:
             psf_ps = psf_image
@@ -71,6 +71,10 @@ class Fourier_Quad:
             if x * x + y * y > radius ** 2:
                 x, y = xn[n], yn[n]
             xy_coord[0, n], xy_coord[1, n] = x, y
+
+        xy_coord[0] = xy_coord[0] - numpy.mean(xy_coord[0])
+        xy_coord[1] = xy_coord[1] - numpy.mean(xy_coord[1])
+
         if g:
             sheared = numpy.dot(numpy.array(([(1 + g[0]), g[1]], [g[1], (1 - g[0])])), xy_coord)
             return xy_coord, sheared
