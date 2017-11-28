@@ -12,14 +12,18 @@ from Fourier_Quad import *
 from sys import argv
 import numpy
 import pandas
+import lsstetc
 
-snr_s, snr_e, filter_type, ratio = argv[1:5]
+wei, snr_s, snr_e, filter_type, wei_pow, method = argv[1:7]
 
 ts = time.time()
 
+pixel_scale = 0.2
+stamp_size = 56
+
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
-ratio = float(ratio)
+wei_pow = int(wei_pow)
 
 shear_input = numpy.load('/home/hklee/work/selection_bias/parameters/shear.npz')['arr_0']
 fg1 = shear_input[0]
@@ -97,44 +101,62 @@ if not exist or comm == 1:
     FU = data[:, 11]
     FV = data[:, 12]
 
+    prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
+    noise_sig = prop.sigma_sky
+
+    # area
+    area = data[:, 16]
+    print("area: %d ~ %d" %(numpy.min(area), numpy.max(area)))
+    plt.hist(area, 50)
+    plt.savefig('/home/hklee/work/result/pic/area_hist.png')
+    plt.close()
+
     # flux
-    flux = data[:, 17]
+    flux = data[:, 17]/noise_sig
+    print("flux: %.2f ~ %.2f "%(numpy.min(flux), numpy.max(flux)))
+    plt.hist(flux, 100)
+    plt.savefig('/home/hklee/work/result/pic/flux_hist.png')
+    plt.close()
 
-    # peak/sigma_noise
-    peak = data[:, 18]/380.4
-    #print(numpy.min(peak), numpy.max(peak))
-    #plt.hist(peak, 20)
-    #plt.savefig('/home/hklee/work/result/peak_hist.png')
-    idxp = peak > 4
+    # peak
+    peak = data[:, 18]/noise_sig
+    print("peak: %.2f ~ %.2f "%(numpy.min(peak), numpy.max(peak)))
+    plt.hist(peak, 100)
+    plt.savefig('/home/hklee/work/result/pic/peak_hist.png')
+    plt.close()
 
+    # fsnr
+    fsnr = data[:, 19]
+    print("fsnr: %.2f ~ %.2f "%(numpy.min(fsnr), numpy.max(fsnr)))
+    plt.hist(fsnr, 50)
+    plt.savefig('/home/hklee/work/result/pic/fsnr_hist.png')
+    plt.close()
+
+    # snr
+    snr = data[:, 20]
+    print("snr: %.2f ~ %.2f "%(numpy.min(snr), numpy.max(snr)))
+    plt.hist(snr, 50)
+    plt.savefig('/home/hklee/work/result/pic/snr_hist.png')
+    plt.close()
     # input g1
     tag1 = data[:, 4]
 
     # input g2
     tag2 = data[:, 9]
 
-    # snr
-    snr = data[:, 16]
-    # snr = data[:, 20]
-    # idx0 = snr != 0
-    # ssnr = snr[idx0]
-    # idxs = ssnr >= snr_cut_s
-    # idxe = ssnr <= snr_cut_e
-
+    select = {"peak": peak, "area": area, "flux": flux, "fsnr": fsnr, "snr": snr}
+    print(select[wei][0] - fsnr[0])
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
     # the third 4 rows are the corresponding number of samples.
     res_arr1 = numpy.zeros((12, len(fg1)))
     res_arr2 = numpy.zeros((12, len(fg2)))
-    no = numpy.arange(0, len(peak)/10)
-    print(len(peak))
-    choice = numpy.random.choice(no, int(len(peak)/10*ratio), False)
+
     for i in range(len(fg1)):
         print(fg1[i])
         idx11 = tag1 > fg1[i] - 0.000001
         idx12 = tag1 < fg1[i] + 0.000001
-        # ssnr = snr[idx11 & idx12 & idx0]
-        ssnr = peak[idx11 & idx12]
+        ssnr = select[wei][idx11 & idx12]
         idxs = ssnr >= snr_cut_s
         idxe = ssnr <= snr_cut_e
         for na in range(3, 4):
@@ -154,16 +176,20 @@ if not exist or comm == 1:
                 g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
             else:
-                G1 = FG1[idx11&idx12][idxs&idxe]#[choice]
-                N1 = FN[idx11&idx12][idxs&idxe]#[choice]
-                U1 = FU[idx11&idx12][idxs&idxe]#[choice]
+                G1 = FG1[idx11&idx12][idxs&idxe]
+                N1 = FN[idx11&idx12][idxs&idxe]
+                U1 = FU[idx11&idx12][idxs&idxe]
 
-                weight1 = 1#ssnr[idxs&idxe]**wei_pow
+                weight1 = ssnr[idxs&idxe]**wei_pow
+                if wei_pow == 0:
+                    weight1 = 1
 
                 num1 = len(G1)
-                # g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8)
-                g1_h = numpy.mean(G1 * weight1) / numpy.mean(N1 * weight1)
-                g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
+                if method == 'sym':
+                    g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8)
+                else:
+                    g1_h = numpy.mean(G1 * weight1) / numpy.mean(N1 * weight1)
+                    g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
 
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
@@ -174,8 +200,7 @@ if not exist or comm == 1:
         print(fg2[i])
         idx21 = tag2 > fg2[i] - 0.000001
         idx22 = tag2 < fg2[i] + 0.000001
-        # ssnr = snr[idx21 & idx22 & idx0]
-        ssnr = peak[idx21 & idx22]
+        ssnr = select[wei][idx21 & idx22]
         idxs = ssnr >= snr_cut_s
         idxe = ssnr <= snr_cut_e
         for na in range(3, 4):
@@ -195,15 +220,20 @@ if not exist or comm == 1:
                 g2_h_sig = numpy.std(e2)/numpy.sqrt(num2)
 
             else:
-                G2 = FG2[idx21&idx22][idxs&idxe]#[choice]
-                N2 = FN[idx21&idx22][idxs&idxe]#[choice]
-                U2 = FU[idx21&idx22][idxs&idxe]#[choice]
+                G2 = FG2[idx21&idx22][idxs&idxe]
+                N2 = FN[idx21&idx22][idxs&idxe]
+                U2 = FU[idx21&idx22][idxs&idxe]
 
-                weight2 = 1#ssnr[idxs&idxe]**wei_pow
+                weight2 = ssnr[idxs&idxe]**wei_pow
+                if wei_pow == 0:
+                    weight2 = 1
+
                 num2 = len(G2)
-                # g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8, sample=500)
-                g2_h = numpy.mean(G2 * weight2)/numpy.mean(N2 * weight2)
-                g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight2)**2)/(numpy.mean(N2 * weight2))**2)/numpy.sqrt(num2)
+                if method == 'sym':
+                    g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8)
+                else:
+                    g2_h = numpy.mean(G2 * weight2)/numpy.mean(N2 * weight2)
+                    g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight2)**2)/(numpy.mean(N2 * weight2))**2)/numpy.sqrt(num2)
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
@@ -219,11 +249,10 @@ else:
 tm =time.time()
 
 # fit the line
-# print('done\nbegin to plot the lines')
 
 name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
-mc_data_path = '/home/hklee/work/result/data' + 'mc_data.xlsx'
+mc_data_path = '/home/hklee/work/result/data/' + 'mc_data.xlsx'
 mc_data = numpy.zeros((32, 1))
 for i in range(3, 4):
     # Y = A*X ,   y = m*x+c
@@ -235,27 +264,30 @@ for i in range(3, 4):
     # the inverse of C is used as weight of data
     # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
     ########################################################
+    e1mc = tool_box.data_fit(fg1, res_arr1[i], res_arr1[i+4])
+    e2mc = tool_box.data_fit(fg2, res_arr2[i], res_arr2[i+4])
 
-    A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
-    Y1 = res_arr1[i].T
-    C1 = numpy.diag(res_arr1[i+4]**2)
-
-    A2 = numpy.column_stack((numpy.ones_like(fg2.T), fg2.T))
-    Y2 = res_arr2[i].T
-    C2 = numpy.diag(res_arr2[i+4]**2)
-
-    L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
-    R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
-    L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), A2))
-    R2 = numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), Y2)
-
-    sig_m1 = numpy.sqrt(L1[1, 1])
-    sig_c1 = numpy.sqrt(L1[0, 0])
-    sig_m2 = numpy.sqrt(L2[1, 1])
-    sig_c2 = numpy.sqrt(L2[0, 0])
-    e1mc = numpy.dot(L1, R1)
-    e2mc = numpy.dot(L2, R2)
-
+    # A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
+    # Y1 = res_arr1[i].T
+    # C1 = numpy.diag(res_arr1[i+4]**2)
+    #
+    # A2 = numpy.column_stack((numpy.ones_like(fg2.T), fg2.T))
+    # Y2 = res_arr2[i].T
+    # C2 = numpy.diag(res_arr2[i+4]**2)
+    #
+    # L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
+    # R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
+    # L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), A2))
+    # R2 = numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), Y2)
+    #
+    # sig_m1 = numpy.sqrt(L1[1, 1])
+    # sig_c1 = numpy.sqrt(L1[0, 0])
+    # sig_m2 = numpy.sqrt(L2[1, 1])
+    # sig_c2 = numpy.sqrt(L2[0, 0])
+    # e1mc = numpy.dot(L1, R1)
+    # e2mc = numpy.dot(L2, R2)
+    print(e1mc)
+    print(e2mc)
     fig = plt.figure(figsize=(20, 10))
     ax = fig.add_subplot(121)
 
@@ -277,22 +309,22 @@ for i in range(3, 4):
     # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
-    ax.plot(fg1, e1mc[1] * fg1 + e1mc[0], label=name[i], color='red')
+    ax.plot(fg1, e1mc[0] * fg1 + e1mc[2], label=name[i], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
         ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
-    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[1] - 1, 6))+'$\pm$'+str(round(sig_m1, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[0], 6))+'$\pm$'+str(round(sig_c1, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(ratio*100)+'%', color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6))+'$\pm$'+str(round(e1mc[1], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6))+'$\pm$'+str(round(e1mc[3], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, "[ " + snr_s + ", " + snr_e + "]", color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
     plt.legend(fontsize=15)
     plt.ylim(-0.04, 0.04)
     plt.xlim(-0.04, 0.04)
-    # print('plotted g1')
+    print('plotted g1')
 
     #plot g2 line
     ax = fig.add_subplot(122)
@@ -315,14 +347,14 @@ for i in range(3, 4):
     # ax.yaxis.set_minor_locator(yminorLocator)
 
     ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
-    ax.plot(fg2, e2mc[1] * fg2 + e2mc[0], label=name[i], color='red')
+    ax.plot(fg2, e2mc[0] * fg2 + e2mc[2], label=name[i], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
-    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[1] - 1, 6))+'$\pm$'+str(round(sig_m2, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[0], 6))+'$\pm$'+str(round(sig_c2, 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, str(ratio*100)+'%', color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[0] - 1, 6))+'$\pm$'+str(round(e2mc[1], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[2], 6))+'$\pm$'+str(round(e2mc[3], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, "[ " + snr_s + ", " + snr_e + "]", color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
     plt.xlabel('True  g2', fontsize=20)
     plt.ylabel('Est  g2', fontsize=20)
     plt.title(name[i], fontsize=20)
@@ -330,22 +362,22 @@ for i in range(3, 4):
     plt.ylim(-0.04, 0.04)
     plt.xlim(-0.04, 0.04)
     nm = pic_path + name[i] + ".png"
+    print(nm)
+
+    print('plotted g2')
     plt.savefig(nm)
-    # print('plotted g2')
-    print(e1mc)
-    print(e2mc)
     # m1, m2
-    mc_data[i] = e1mc[1]
-    mc_data[i+16] = e2mc[1]
+    mc_data[i] = e1mc[0]
+    mc_data[i+16] = e2mc[0]
     # delta_m1, delta_m2
-    mc_data[i+4] = sig_m1
-    mc_data[i+20] = sig_m2
+    mc_data[i+4] = e1mc[1]
+    mc_data[i+20] = e2mc[1]
     # c1, c2
-    mc_data[i+8] = e1mc[0]
-    mc_data[i+24] = e2mc[0]
+    mc_data[i+8] = e1mc[2]
+    mc_data[i+24] = e2mc[2]
     # delta_c1, delta_c2
-    mc_data[i+12] = sig_c1
-    mc_data[i+28] = sig_c2
+    mc_data[i+12] = e1mc[3]
+    mc_data[i+28] = e2mc[3]
 
 if filter_type != 'none':
     mc_col = [filter_type]

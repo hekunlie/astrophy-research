@@ -1,19 +1,28 @@
+from __future__ import division
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-import random
-from scipy import optimize
+
+
 class Fourier_Quad:
+
+    def __init__(self, size, seed):
+        self.size = size
+        self.rng = numpy.random.RandomState(seed)
+
+    def noise(self, mean, sigma):
+        noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
+        return noise_img
 
     def pow_spec(self, image):
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, size, noise=None, F=False):
-        my, mx = numpy.mgrid[0:size, 0:size]
+    def shear_est(self, gal_image, psf_image, noise=None, F=False):
+        ky, kx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         gal_ps = self.pow_spec(gal_image)
 
         if noise is not None:                                # to deduct the noise
@@ -28,18 +37,16 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-        hlr = self.get_radius_new(psf_ps, 2., size)[0]
-        wb, beta = self.wbeta(hlr, size)
+        hlr = self.get_radius_new(psf_ps, 2.)[0]
+        wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
         psf_ps[idx] = 1.
         wb[idx] = 0.
 
         tk = wb/psf_ps * gal_ps
-        alpha = 2.*numpy.pi/size
-        kx = mx-0.5*size
-        ky = my-0.5*size
-        mn1 = (-0.5)*(kx**2 - ky**2)
+        alpha = 2.*numpy.pi/self.size
+        mn1 = -0.5*(kx**2 - ky**2)
         mn2 = -kx*ky
         mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
@@ -51,20 +58,19 @@ class Fourier_Quad:
         mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*(alpha**4)
         return mg1, mg2, mn, mu, mv
 
-    def wbeta(self, beta, size):
-        my, mx = numpy.mgrid[0:size, 0:size]
+    def wbeta(self, beta):
+        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-((mx-0.5*size)**2+(my-0.5*size)**2)/2./sigma**2)
+        w_temp = numpy.exp(-(mx**2 + my**2)/2./sigma**2)
         beta = 1./beta
         return w_temp, beta
 
     def ran_pos(self, num, radius, g=None, step=1):
         xy_coord = numpy.zeros((2, num))
-        theta = numpy.random.uniform(0, 2 * numpy.pi, num)
+        theta = self.rng.uniform(0, 2 * numpy.pi, num)
         xn = numpy.cos(theta) * step
         yn = numpy.sin(theta) * step
-        x = 0
-        y = 0
+        x, y = 0, 0
         for n in range(num):
             x += xn[n]
             y += yn[n]
@@ -88,11 +94,10 @@ class Fourier_Quad:
     def shear(self, pos, g1, g2):
         return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
 
-    def convolve_psf(self, pos, psf_scale, imagesize, flux=1, psf="GAUSS"):
+    def convolve_psf(self, pos, psf_scale, flux=1, psf="GAUSS"):
         x = pos.shape[1]
-        my, mx = numpy.mgrid[0:imagesize, 0:imagesize]
-        pos = numpy.array(pos)+imagesize/2.
-        arr = numpy.zeros((imagesize, imagesize))
+        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
+        arr = numpy.zeros((self.size, self.size))
 
         if psf == 'GAUSS':
             for i in range(x):
@@ -100,28 +105,25 @@ class Fourier_Quad:
 
         elif psf == "Moffat":
             for l in range(x):
-                hstep = 3.*psf_scale - numpy.sqrt((mx-pos[0, l])**2+(my-pos[1, l])**2)
-                idx = hstep < 0.
-                hstep[idx] = 0.
-                idx = hstep != 0.
-                hstep[idx] = 1.
-                arr += flux*(1+((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2)**(-3.5)*hstep
+                rsq = ((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2
+                idx = rsq > 9.
+                pfunction = flux*(1+rsq)**(-3.5)
+                pfunction[idx] = 0
+                arr += pfunction
         return arr
 
-    def cre_psf(self, psf_scale, imagesize, model="GAUSS", x=0, y=0):
-        xx = numpy.linspace(0, imagesize - 1, imagesize)
-        mx, my = numpy.meshgrid(xx, xx)
+    def cre_psf(self, psf_scale, model="GAUSS"):
+        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         if model is 'GAUSS':
-            arr = numpy.exp(-((mx -imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/2./psf_scale**2)
+            arr = numpy.exp(-(mx**2 + my**2)/2./psf_scale**2)
             return arr
 
         if model is 'Moffat':
-            hstep = 3*psf_scale-numpy.sqrt((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)
-            idx = hstep < 0.
-            hstep[idx] = 0.
-            idx = hstep != 0.
-            hstep[idx] = 1.
-            arr = (1+((mx-imagesize/2.+x)**2+(my-imagesize/2.+y)**2)/psf_scale**2)**(-3.5)*hstep
+            rsq = (mx**2 + my**2) / psf_scale**2
+            idx = rsq > 9.
+            rsq[idx] = 0
+            arr = (1 + rsq)**(-3.5)
+            arr[idx] = 0
             return arr
 
     def get_radius(self, image, scale):
@@ -155,7 +157,7 @@ class Fourier_Quad:
                 break
         return numpy.sqrt(len(half_radi_pool) / numpy.pi)
 
-    def get_radius_new(self, image, scale, size):
+    def get_radius_new(self, image, scale):
         # get the radius of the flux descends to the maximum/scale
         radi_arr = copy.copy(image)
         maxi = numpy.max(radi_arr)
@@ -171,7 +173,8 @@ class Fourier_Quad:
                 signal_val.append(mask[ini_y, ini_x])
                 mask[ini_y, ini_x] = 0
                 for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    if -1 < ini_y + cor[0] < size and -1 < ini_x + cor[1] < size and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
+                    if -1 < ini_y + cor[0] < self.size and -1 < ini_x + cor[1] < self.size \
+                            and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
             return signal, signal_val
 
@@ -242,7 +245,7 @@ class Fourier_Quad:
                 arr = numpy.column_stack((arr, arr_x))
                 return arr
 
-    def get_centroid(self, image,filt=False,radius=2):
+    def get_centroid(self, image, filt=False, radius=2):
         y0,x0 = self.mfpoly(image)
         y, x = numpy.mgrid[0:image.shape[0], 0:image.shape[1]]
         # m0 = numpy.sum(image)
@@ -313,36 +316,36 @@ class Fourier_Quad:
         xc, yc = numpy.dot(numpy.linalg.inv(coeffs), mult)
         return yc, xc
 
-    def divide_stamps(self, image, stampsize):
+    def divide_stamps(self, image):
         shape = image.shape
-        y = int(shape[0] / stampsize)
-        x = int(shape[1] / stampsize)
-        star = [image[iy * stampsize:(iy + 1) * stampsize, ix * stampsize:(ix + 1) * stampsize]
+        y = int(shape[0] / self.size)
+        x = int(shape[1] / self.size)
+        star = [image[iy * self.size:(iy + 1) * self.size, ix * self.size:(ix + 1) * self.size]
                 for iy in range(y) for ix in range(x)]
         for i in range(x):
             if numpy.sum(star[-1]) == 0:
                 star.pop()
         return star  # a list of psfs
 
-    def image_stack(self, image_array, stampsize, columns):
+    def image_stack(self, image_array, columns):
         # the inverse operation of divide_stamps
         # the image_array is a three dimensional array of which the length equals the number of the stamps
         num = len(image_array)
         row_num, c = divmod(num, columns)
         if c != 0:
             row_num += 1
-        arr = numpy.zeros((row_num*stampsize, columns * stampsize))
+        arr = numpy.zeros((row_num*self.size, columns * self.size))
         for j in range(row_num):
             for i in range(columns):
                 tag = i + j * columns
                 if tag > num - 1:
                     break
-                arr[j*stampsize:(j+1)*stampsize, i*stampsize:(i+1)*stampsize] = image_array[tag]
+                arr[j*self.size:(j+1)*self.size, i*self.size:(i+1)*self.size] = image_array[tag]
         return arr
 
-    def fit(self, star_stamp, noise_stamp, star_data, stampsize,mode=1):
-        psf_pool = self.divide_stamps(star_stamp, stampsize)
-        noise_pool = self.divide_stamps(noise_stamp, stampsize)
+    def fit(self, star_stamp, noise_stamp, star_data, mode=1):
+        psf_pool = self.divide_stamps(star_stamp)
+        noise_pool = self.divide_stamps(noise_stamp)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)
@@ -354,7 +357,7 @@ class Fourier_Quad:
         szx = 0.
         szy = 0.
         d=1
-        rim = self.border(d,stampsize)
+        rim = self.border(d, self.size)
         n = numpy.sum(rim)
         for i in range(len(psf_pool)):
             if mode==1:
@@ -379,154 +382,137 @@ class Fourier_Quad:
             sz += psf
             szx += psf * x[i]
             szy += psf * y[i]
-        a = numpy.zeros((stampsize, stampsize))
-        b = numpy.zeros((stampsize, stampsize))
-        c = numpy.zeros((stampsize, stampsize))
+        a = numpy.zeros((self.size, self.size))
+        b = numpy.zeros((self.size, self.size))
+        c = numpy.zeros((self.size, self.size))
         co_matr = numpy.array([[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, len(x)]])
-        for m in range(stampsize):
-            for n in range(stampsize):
+        for m in range(self.size):
+            for n in range(self.size):
                 re = numpy.linalg.solve(co_matr, numpy.array([szx[m, n], szy[m, n], sz[m, n]]))
                 a[m, n] = re[0]
                 b[m, n] = re[1]
                 c[m, n] = re[2]
         return a, b, c
 
-    def border(self,edge,size):
-        if edge>=size/2. :
+    def border(self,edge):
+        if edge >= self.size/2.:
             print("Edge must be smaller than half of  the size!")
         else:
-            arr = numpy.ones((size,size))
-            arr[edge:size-edge,edge:size-edge] = 0.
+            arr = numpy.ones((self.size, self.size))
+            arr[edge: self.size - edge, edge: self.size - edge] = 0.
             return arr
 
-    def set_bins(self,data_array,bin_num,sample=None): # checked 2017-7-9!!!
-        # The input must be one dimensional array.
-        if sample is not None:
-            temp = numpy.sort(data_array)[sample:-sample]
-            #temp = numpy.random.choice(data_array,sample,replace=False)
-        else:
-            temp = data_array
-        dat_ma = numpy.max(numpy.abs(temp))
-        bins = numpy.linspace(-dat_ma, dat_ma, bin_num + 1)
-        bound = numpy.max(numpy.abs(data_array))*1.5
-        bins_r = bins[:-1]
-        bin_size = bins[1] - bins[0]
-        # Because of the bins set up which bases on a sample of the original data,
-        # the bins should be extended to include some data points that are out of the bounds.
-        bins = numpy.append(-bound,numpy.append(bins[1:-1],bound))
-        num_in_bin = numpy.histogram(data_array,bins)[0]
-        return bins_r, num_in_bin, bin_size
-
-    def G_bin(self, g, n, u, g_h, mode, bin_num,sample):#checked 2017-7-9!!!
+    def G_bin(self, g, n, u, g_h, mode, bins):  # checked 2017-7-9!!!
         # mode 1 is for g1
         # mode 2 is for g2
+        bin_num = len(bins) - 1
         inverse = range(int(bin_num / 2 - 1), -1, -1)
-        if mode==1:
-            G_h = g - (n+u)*g_h
+        if mode == 1:
+            G_h = g - (n + u) * g_h
         else:
-            G_h = g - (n-u)*g_h
-        num = self.set_bins(G_h, bin_num,sample=sample )[1]
+            G_h = g - (n - u) * g_h
+        num = numpy.histogram(G_h, bins)[0]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
-        return numpy.sum((n1 - n2)**2 / (n1 + n2))*0.5
+        return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5
 
-
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.3, right=0.3, method=2,sample=100): #checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.2, right=0.2):  # checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
-        if method==1:
-            def func(g_g):
-                return self.G_bin(g, n,u,g_g, mode, bin_num, sample=sample)
-            g_h = optimize.fmin(func, [0.], xtol=1.e-8, ftol=1.e-8,maxfun=800, disp=0)[0]
-        else:
-            same =0
-            iters = 0
-            g_h = 0
-            while True:
-                templ =left
-                tempr =right
-                m1 = (left+right)/2.
-                m2 = (m1+left)/2.
-                m3 = (m1+right)/2.
-                fL = self.G_bin(g, n, u, left, mode, bin_num, sample=sample)
-                fR = self.G_bin(g, n, u, right, mode, bin_num, sample=sample)
-                fm1 = self.G_bin(g, n, u, m1, mode, bin_num, sample=sample)
-                fm2 = self.G_bin(g, n, u, m2, mode, bin_num, sample=sample)
-                fm3 = self.G_bin(g, n, u, m3, mode, bin_num, sample=sample)
-                values = [fL, fR, fm1, fm2, fm3]
-                points = [left, right, m1, m2, m3]
-                if max(values) < 40 or min(values) == 0 :
-                    for i in range(5):
-                        if values[i] == 0:
-                            g_h = points[i]
-                    break
-                # print(values, points)
-                # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
-                # plt.show()
-                if fL>max(fm1,fm2,fm3) and fR>max(fm1,fm2,fm3):
-                    if fm1==fm2:
-                        left = m2
-                        right = m1
-                    elif fm1==fm3:
-                        left = m1
-                        right = m3
-                    elif fm2==fm3:
-                        left = m2
-                        right = m3
-                    elif fm1<fm2 and fm1<fm3:
-                        left = m2
-                        right = m3
-                    elif fm2<fm1 and fm2 <fm3:
-                        right = m1
-                    elif fm3<fm1 and fm3<fm2:
-                        left = m1
-                elif fR>fm3>=fL:
-                    if fL==fm3:
-                        right = m3
-                    elif fL==fm1:
-                        right=m1
-                    elif fL==fm2:
-                        right = m2
-                    elif fm1==fm2:
-                        right = right
-                    elif fm1<fm2 and fm1<fL:
-                        left = m2
-                        right = m3
-                    elif fm2<fL and fm2<fm1:
-                        right = m1
-                    elif fL<fm1 and fL <fm2:
-                        right = m2
-                elif fL>fm2>=fR:
-                    if fR==fm2:
-                        left = m2
-                    elif fR==fm1:
-                        left = m1
-                    elif fR==fm3:
-                        left = m3
-                    elif fm1<fR and fm1 <fm3:
-                        left = m2
-                        right = m3
-                    elif fm3<fm1 and fm3<fR:
-                        left = m1
-                    elif fR < fm1 and fR <fm3:
-                        left = m3
-                    elif fm1 == fm3:
-                        left = m1
-                        right = m3
+        temp_data = numpy.sort(numpy.abs(g))[:-int(len(g)*0.1)]
+        bin_size = len(temp_data)/bin_num*2
+        bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
+        bins = numpy.sort(numpy.append(numpy.append(-bins, [0]), bins))
+        bound = numpy.max(numpy.abs(g)) * 100
+        bins = numpy.append(-bound, numpy.append(bins, bound))
+        same = 0
+        iters = 0
+        g_h = 0
+        while True:
+            templ = left
+            tempr = right
+            m1 = (left + right) / 2.
+            m2 = (m1 + left) / 2.
+            m3 = (m1 + right) / 2.
+            fL = self.G_bin(g, n, u, left, mode, bins)
+            fR = self.G_bin(g, n, u, right, mode, bins)
+            fm1 = self.G_bin(g, n, u, m1, mode, bins)
+            fm2 = self.G_bin(g, n, u, m2, mode, bins)
+            fm3 = self.G_bin(g, n, u, m3, mode, bins)
+            values = [fL, fR, fm1, fm2, fm3]
+            points = [left, right, m1, m2, m3]
+            if max(values) < 30:  # or min(values) == 0 :
+                # for i in range(5):
+                #     if values[i] == 0:
+                #         g_h = points[i]
+                break
+            # print(values, points)
+            # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
+            # plt.show()
+            if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
+                if fm1 == fm2:
+                    left = m2
+                    right = m1
+                elif fm1 == fm3:
+                    left = m1
+                    right = m3
+                elif fm2 == fm3:
+                    left = m2
+                    right = m3
+                elif fm1 < fm2 and fm1 < fm3:
+                    left = m2
+                    right = m3
+                elif fm2 < fm1 and fm2 < fm3:
+                    right = m1
+                elif fm3 < fm1 and fm3 < fm2:
+                    left = m1
+            elif fR > fm3 >= fL:
+                if fL == fm3:
+                    right = m3
+                elif fL == fm1:
+                    right = m1
+                elif fL == fm2:
+                    right = m2
+                elif fm1 == fm2:
+                    right = right
+                elif fm1 < fm2 and fm1 < fL:
+                    left = m2
+                    right = m3
+                elif fm2 < fL and fm2 < fm1:
+                    right = m1
+                elif fL < fm1 and fL < fm2:
+                    right = m2
+            elif fL > fm2 >= fR:
+                if fR == fm2:
+                    left = m2
+                elif fR == fm1:
+                    left = m1
+                elif fR == fm3:
+                    left = m3
+                elif fm1 < fR and fm1 < fm3:
+                    left = m2
+                    right = m3
+                elif fm3 < fm1 and fm3 < fR:
+                    left = m1
+                elif fR < fm1 and fR < fm3:
+                    left = m3
+                elif fm1 == fm3:
+                    left = m1
+                    right = m3
 
-                # if abs(left-right)<1.e-5:
-                #     g_h = (left+right)/2.
-                #     break
-                iters+=1
-                if left==templ and right==tempr:
-                    same+=1
-                if iters>10 and same>3 or iters>13:
-                    break
-                #print(left,right,abs(left-right))
+            # if abs(left-right)<1.e-5:
+            #     g_h = (left+right)/2.
+            #     break
+            iters += 1
+            if left == templ and right == tempr:
+                same += 1
+            if iters > 10 and same > 3 or iters > 13:
+                break
+                # print(left,right,abs(left-right))
 
         # fitting
-        g_range = numpy.linspace(left, right, 5)
-        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bin_num, sample=sample) for g_hat in g_range])
+        g_range = numpy.linspace(left, right, 8)
+        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range])
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)

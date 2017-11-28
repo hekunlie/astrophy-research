@@ -1,4 +1,4 @@
-import Fourier_Quad
+from __future__ import division
 import pandas
 from multiprocessing import Pool, Manager
 import numpy
@@ -6,7 +6,8 @@ import time
 import copy
 
 def task_distri(target_list, cpu_num):
-    # it will divide the target_list into some piece (small lists in a diction) of which the number depends on the specific cpu core number
+    # it will divide the target_list into some piece (small lists in a diction)
+    # of which the number depends on the specific cpu core number
     # target_list must be a python list
     m, n = divmod(len(target_list), cpu_num)
     distri_pool = {}
@@ -146,3 +147,23 @@ def get_hlr(image, scale, size,):
         num = len(cache)
 
     return numpy.sqrt(len(cache)/numpy.pi), flux
+
+def data_fit(x_data, y_data, y_err):
+    # Y = A*X ,   y = m*x+c
+    # Y = [y1,y2,y3,...].T  the measured data
+    # A = [[1,1,1,1,...]
+    #         [x1,x2,x3..]].T
+    # X = [c,m].T
+    # C = diag[sig1^2, sig2^2, sig3^2, .....]
+    # the inverse of C is used as weight of data
+    # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
+
+    A1 = numpy.column_stack((numpy.ones_like(x_data.T), x_data.T))
+    Y1 = y_data.T
+    C1 = numpy.diag(y_err ** 2)
+    L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
+    R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
+    sig_m1 = numpy.sqrt(L1[1, 1])
+    sig_c1 = numpy.sqrt(L1[0, 0])
+    mc = numpy.dot(L1, R1)
+    return mc[1], sig_m1, mc[0], sig_c1
