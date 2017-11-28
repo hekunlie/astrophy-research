@@ -52,9 +52,9 @@ if rank == 0:
                     os.remove(files_path + name)
     logger.info("Initialized.")
 else:
-    time.sleep(rank*0.5)
+    time.sleep(rank*0.1)
 
-fq = Fourier_Quad(stamp_size, (rank+1)*5471842)
+fq = Fourier_Quad(stamp_size, rank*1024+321)
 
 # distribute jobs
 chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%s.fits' % (i, str(j).zfill(3)) for i in range(10)
@@ -109,7 +109,7 @@ for path_tag in range(chips_num):
 
     for k in range(num_in_chip):
         gal_flux = prop.flux(mags[k])/p_num
-        points = fq.ran_pos(num=p_num, radius=8, g=(g1_input, g2_input))[1]
+        points = fq.ran_pos(num=p_num, radius=9, g=(g1_input, g2_input))[1]
         noise = fq.noise(0, noise_sig)
         gal_final = fq.convolve_psf(pos=points, psf_scale=psf_r, flux=gal_flux, psf='Moffat') + noise
 
@@ -128,7 +128,7 @@ for path_tag in range(chips_num):
         # shear estimate
 
         noise_n = fq.noise(0, noise_sig)
-        mg1, mg2, mn, mu, mv = fq.shear_est(gal_final, psf_pow, stamp_size, noise_n, F=True)
+        mg1, mg2, mn, mu, mv = fq.shear_est(gal_final, psf_pow, noise_n, F=True)
 
         data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, 0, 0, 0, \
                             len(obj), flux, peak, fsnr, snr

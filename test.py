@@ -1,4 +1,6 @@
 from mpi4py import MPI
+import matplotlib
+matplotlib.use('Agg')
 from sys import path
 path.append('/home/hklee/work/fourier_quad/')
 import numpy
@@ -18,7 +20,7 @@ scale = 4
 size = 52
 num = 10000
 chip_num = 10
-fq = Fourier_Quad(size, (rank+1)*2441452)
+fq = Fourier_Quad(size, rank*1024+123)
 
 psf = fq.cre_psf(scale, "Moffat")
 psfp = fq.pow_spec(psf)
