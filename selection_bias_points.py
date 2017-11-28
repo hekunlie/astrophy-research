@@ -7,7 +7,6 @@ from Fourier_Quad import Fourier_Quad
 import lsstetc
 import time
 import os
-from multiprocessing import Pool
 import pandas
 import tool_box
 from mpi4py import MPI
@@ -23,7 +22,7 @@ t_s = time.clock()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logfile = '/home/hklee/work/logs/selection_bias/%d_log.txt'
+logfile = '/home/hklee/work/logs/selection_bias/%d_log.txt' %rank
 
 lf = logging.FileHandler(logfile, 'w')
 form = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -66,7 +65,7 @@ prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvi
 noise_sig = prop.sigma_sky
 
 # magnitude
-mags = numpy.load('/home/hklee/work/selection_bias/parameters/lsstmagsims.npz')['arr_0']
+magnitude = numpy.load('/home/hklee/work/selection_bias/parameters/lsstmagsims.npz')['arr_0']
 #numpy.random.shuffle(mags)
 
 # the input shear signal
@@ -101,7 +100,7 @@ for path_tag in range(chips_num):
     g1_input = shear1[int(shear_tag)]
     g2_input = shear2[int(shear_tag)]
     tag = range(num_in_chip*int(chip_tag), num_in_chip*(1 + int(chip_tag)))
-    mags = mags[tag]
+    mags = magnitude[tag]
     data_matrix = numpy.zeros((num_in_chip, len(cat_col)))
     gal_pool = []
 
@@ -118,10 +117,10 @@ for path_tag in range(chips_num):
         snr = numpy.sqrt(signalsq) / noise_sig
 
         gpow = fq.pow_spec(gal_final)
-        if numpy.max(gpow) == gpow[stamp_size/2, stamp_size/2]:
-            signal = gpow[stamp_size/2, stamp_size/2]
+        if numpy.max(gpow) == gpow[int(stamp_size/2), int(stamp_size/2)]:
+            signal = gpow[int(stamp_size/2), int(stamp_size/2)]
         else:
-            signal = numpy.sum(gpow[stamp_size/2-1:stamp_size/2+2, stamp_size/2-1:stamp_size/2+2])/9
+            signal = numpy.sum(gpow[int(stamp_size/2-1):int(stamp_size/2+2), int(stamp_size/2-1):int(stamp_size/2+2)])/9
         noise_level = numpy.sum(rim*gpow)/n
         fsnr = numpy.sqrt(signal/noise_level)
 
