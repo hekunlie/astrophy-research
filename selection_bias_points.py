@@ -25,7 +25,7 @@ logger.setLevel(logging.INFO)
 logfile = '/home/hklee/work/logs/selection_bias/%d_log.txt' %rank
 
 lf = logging.FileHandler(logfile, 'w')
-form = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
@@ -49,6 +49,10 @@ if rank == 0:
             if len(files) != 0:
                 for name in files:
                     os.remove(files_path + name)
+    datafile = os.listdir("/lmc/selection_bias/data/")
+    if len(datafile) != 0:
+        for name in datafile:
+            os.remove("/lmc/selection_bias/data/" + name)
     logger.info("Initialized.")
 else:
     time.sleep(rank*0.1)
@@ -80,15 +84,15 @@ cat_col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2
 psf_in = fq.cre_psf(psf_r, 'Moffat')
 psf_pow = fq.pow_spec(psf_in)
 
-chips_num = len(chip_paths_list)
+chips_num_indiv = len(chip_paths_list)
 rim = fq.border(1)
 n = numpy.sum(rim)
 
-logger.info("%d's process: gets %d chips of %d" % (rank, chips_num, len(chip_paths_pool)))
+logger.info("%d's process: gets %d (%d) chips" % (rank, chips_num_indiv, len(chip_paths_pool)))
 
-for path_tag in range(chips_num):
+for path_tag in range(chips_num_indiv):
 
-    logger.info("%d's process: %d's (%d) chips starts..." % (rank, path_tag+1, chip_num))
+    logger.info("%d's process: %d's (%d) chips starts..." % (rank, path_tag+1, chips_num_indiv))
 
     t1 = time.time()
     chip_path = chip_paths_list[path_tag]
@@ -104,7 +108,7 @@ for path_tag in range(chips_num):
     data_matrix = numpy.zeros((num_in_chip, len(cat_col)))
     gal_pool = []
 
-    logger.info("%d's process: %d's (%d) chips prepared the parameters" % (rank, path_tag + 1, chip_num))
+    logger.info("%d's process: %d's (%d) chips prepared the parameters" % (rank, path_tag + 1, chips_num_indiv))
 
     for k in range(num_in_chip):
         gal_flux = prop.flux(mags[k])/p_num
@@ -132,7 +136,7 @@ for path_tag in range(chips_num):
         data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, 0, 0, 0, \
                             len(obj), flux, peak, fsnr, snr
 
-    logger.info("%d's process: %d's (%d) chips is writing to files." % (rank, path_tag+1, chip_num))
+    logger.info("%d's process: %d's (%d) chips's writing to files." % (rank, path_tag+1, chips_num_indiv))
 
     data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
     data_df.to_excel(data_path)
@@ -142,7 +146,7 @@ for path_tag in range(chips_num):
     hdu.writeto(chip_path, overwrite=True)
     t2 = time.time()
 
-    logger.info("%d's process: %d's (%d) chips finished within %.2f." % (rank, path_tag+1, chip_num, t2-t1))
+    logger.info("%d's process: %d's (%d) chips finished within %.2f." % (rank, path_tag+1, chips_num_indiv, t2-t1))
 
 t_e = time.clock()
 logger.info("%d's process: finished within %.2f." % (rank, t_e-t_s))

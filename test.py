@@ -8,19 +8,27 @@ from Fourier_Quad import Fourier_Quad
 import time
 from astropy.io import fits
 import matplotlib.pyplot as plt
-
+import logging
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logfile = '/home/hklee/work/logs/%d_log.txt' %rank
+
+lf = logging.FileHandler(logfile, 'w')
+form = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s\r\n')
+lf.setFormatter(form)
+logger.addHandler(lf)
 
 fg1 = numpy.linspace(-0.02, 0.02, 8)
 fg2 = -numpy.linspace(-0.02, 0.02, 8)
 scale = 4
 size = 52
-num = 10000
-chip_num = 10
-fq = Fourier_Quad(size, rank*1024+123)
+num = 1000
+chip_num = 3
+fq = Fourier_Quad(size, rank*112994312+123453)
 
 psf = fq.cre_psf(scale, "Moffat")
 psfp = fq.pow_spec(psf)
@@ -29,6 +37,7 @@ estor = numpy.zeros((num*chip_num, 5))
 data_path = "/lmc/test/data/data_%d.txt" %rank
 
 for i in range(chip_num):
+    logger.info("The %d's chip"%i)
     t1 = time.clock()
     chip_path = "/lmc/test/%d_gal_chip_%d.fits" %(rank, i)
     img = []

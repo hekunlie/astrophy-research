@@ -41,7 +41,7 @@ pic_path = '/home/hklee/work/result/pic/'
 # check the final result cache
 exist = os.path.exists('/home/hklee/work/result/data/final_cache.npz')
 data_cache_path = path + 'data_cache.npz'
-
+fq = Fourier_Quad(56, 12243)
 if exist:
     # 0: to use the result cache data existed to plot the line and estimate the bias, 'm' and 'c'
     # 1: run the program to classify the data ( it could be skipped if this result cache exists) and estimate the shear
@@ -121,7 +121,7 @@ if not exist or comm == 1:
     # peak
     peak = data[:, 18]/noise_sig
     print("peak: %.2f ~ %.2f "%(numpy.min(peak), numpy.max(peak)))
-    plt.hist(peak, 100)
+    plt.hist(peak[peak<300], 100)
     plt.savefig('/home/hklee/work/result/pic/peak_hist.png')
     plt.close()
 
@@ -186,7 +186,7 @@ if not exist or comm == 1:
 
                 num1 = len(G1)
                 if method == 'sym':
-                    g1_h, g1_h_sig = Fourier_Quad().fmin_g(G1, N1, U1, mode=1, bin_num=8)
+                    g1_h, g1_h_sig = fq.fmin_g(G1, N1, U1, mode=1, bin_num=8)
                 else:
                     g1_h = numpy.mean(G1 * weight1) / numpy.mean(N1 * weight1)
                     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight1)**2)/(numpy.mean(N1 * weight1))**2)/numpy.sqrt(num1)
@@ -230,7 +230,7 @@ if not exist or comm == 1:
 
                 num2 = len(G2)
                 if method == 'sym':
-                    g2_h, g2_h_sig = Fourier_Quad().fmin_g(G2, N2, U2, mode=2, bin_num=8)
+                    g2_h, g2_h_sig = fq.fmin_g(G2, N2, U2, mode=2, bin_num=8)
                 else:
                     g2_h = numpy.mean(G2 * weight2)/numpy.mean(N2 * weight2)
                     g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight2)**2)/(numpy.mean(N2 * weight2))**2)/numpy.sqrt(num2)
@@ -255,37 +255,11 @@ name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 mc_data_path = '/home/hklee/work/result/data/' + 'mc_data.xlsx'
 mc_data = numpy.zeros((32, 1))
 for i in range(3, 4):
-    # Y = A*X ,   y = m*x+c
-    # Y = [y1,y2,y3,...].T  the measured data
-    # A = [[1,1,1,1,...]
-    #         [x1,x2,x3..]].T
-    # X = [c,m].T
-    # C = diag[sig1^2, sig2^2, sig3^2, .....]
-    # the inverse of C is used as weight of data
-    # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
-    ########################################################
+
     e1mc = tool_box.data_fit(fg1, res_arr1[i], res_arr1[i+4])
     e2mc = tool_box.data_fit(fg2, res_arr2[i], res_arr2[i+4])
 
-    # A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
-    # Y1 = res_arr1[i].T
-    # C1 = numpy.diag(res_arr1[i+4]**2)
-    #
-    # A2 = numpy.column_stack((numpy.ones_like(fg2.T), fg2.T))
-    # Y2 = res_arr2[i].T
-    # C2 = numpy.diag(res_arr2[i+4]**2)
-    #
-    # L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
-    # R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
-    # L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), A2))
-    # R2 = numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), Y2)
-    #
-    # sig_m1 = numpy.sqrt(L1[1, 1])
-    # sig_c1 = numpy.sqrt(L1[0, 0])
-    # sig_m2 = numpy.sqrt(L2[1, 1])
-    # sig_c2 = numpy.sqrt(L2[0, 0])
-    # e1mc = numpy.dot(L1, R1)
-    # e2mc = numpy.dot(L2, R2)
+
     print(e1mc)
     print(e2mc)
     fig = plt.figure(figsize=(20, 10))

@@ -167,18 +167,18 @@ class Fourier_Quad:
         half_radius_pool = []
         flux = []
 
-        def detect(mask, ini_y, ini_x, signal, signal_val):
+        def detect(mask, ini_y, ini_x, signal, signal_val, size):
             if mask[ini_y, ini_x] > 0:
                 signal.append((ini_y, ini_x))
                 signal_val.append(mask[ini_y, ini_x])
                 mask[ini_y, ini_x] = 0
                 for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-                    if -1 < ini_y + cor[0] < self.size and -1 < ini_x + cor[1] < self.size \
+                    if -1 < ini_y + cor[0] < size and -1 < ini_x + cor[1] < size \
                             and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
                         detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
             return signal, signal_val
 
-        half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux)
+        half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux, self.size)
 
         return numpy.sqrt(len(half_radius_pool)/numpy.pi), half_radius_pool, numpy.sum(flux), maxi, (y, x)
 
@@ -394,7 +394,7 @@ class Fourier_Quad:
                 c[m, n] = re[2]
         return a, b, c
 
-    def border(self,edge):
+    def border(self, edge):
         if edge >= self.size/2.:
             print("Edge must be smaller than half of  the size!")
         else:
