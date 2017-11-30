@@ -19,7 +19,7 @@ wei, snr_s, snr_e, filter_type, wei_pow, method = argv[1:7]
 ts = time.time()
 
 pixel_scale = 0.2
-stamp_size = 56
+stamp_size = 54
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
@@ -64,12 +64,12 @@ if not exist or comm == 1:
         files = os.listdir(path)
         paths = []
         for i in files:
-            if ".xlsx" and 'chip' in i:
+            if ".npz" and 'chip' in i:
                 paths.append(path + i)
         # collect the data from the files and put into 'data_list'
         # 'data' is the final array that contains all the data
         tc1 = time.time()
-        data_list = tool_box.classify(paths, 16)[0]
+        data_list = tool_box.classify(paths, 10)[0]
         # cache
         data = data_list[0]
         for k in range(1, len(data_list)):
@@ -258,7 +258,6 @@ for i in range(3, 4):
 
     e1mc = tool_box.data_fit(fg1, res_arr1[i], res_arr1[i+4])
     e2mc = tool_box.data_fit(fg2, res_arr2[i], res_arr2[i+4])
-
 
     print(e1mc)
     print(e2mc)

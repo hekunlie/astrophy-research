@@ -175,7 +175,7 @@ class Fourier_Quad:
                 for cor in ((-1, 0), (1, 0), (0, -1), (0, 1)):
                     if -1 < ini_y + cor[0] < size and -1 < ini_x + cor[1] < size \
                             and mask[ini_y + cor[0], ini_x + cor[1]] > 0:
-                        detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val)
+                        detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, size)
             return signal, signal_val
 
         half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux, self.size)

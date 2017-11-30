@@ -7,7 +7,6 @@ from Fourier_Quad import Fourier_Quad
 import lsstetc
 import time
 import os
-import pandas
 import tool_box
 from mpi4py import MPI
 # import galsim
@@ -49,15 +48,15 @@ if rank == 0:
             if len(files) != 0:
                 for name in files:
                     os.remove(files_path + name)
-    datafile = os.listdir("/lmc/selection_bias/data/")
+    datafile = os.listdir("/lmc/selection_bias/result/data/")
     if len(datafile) != 0:
         for name in datafile:
-            os.remove("/lmc/selection_bias/data/" + name)
+            os.remove("/lmc/selection_bias/result/data/" + name)
     logger.info("Initialized.")
 else:
     time.sleep(rank*0.1)
 
-fq = Fourier_Quad(stamp_size, rank*1024+321)
+fq = Fourier_Quad(stamp_size, rank*12344+321)
 
 # distribute jobs
 chip_paths_pool = ['/lmc/selection_bias/%d/gal_chip_%s.fits' % (i, str(j).zfill(3)) for i in range(10)
@@ -70,7 +69,6 @@ noise_sig = prop.sigma_sky
 
 # magnitude
 magnitude = numpy.load('/home/hklee/work/selection_bias/parameters/lsstmagsims.npz')['arr_0']
-#numpy.random.shuffle(mags)
 
 # the input shear signal
 shear = numpy.load('/home/hklee/work/selection_bias/parameters/shear.npz')['arr_0']
@@ -98,7 +96,7 @@ for path_tag in range(chips_num_indiv):
     chip_path = chip_paths_list[path_tag]
     shear_tag, chip_name = chip_path.split('/')[3:5]
     chip_tag = chip_name.split('_')[2].split('.')[0]
-    data_path = '/lmc/selection_bias/result/data/%s_gal_chip_%s.xlsx' % (shear_tag, chip_tag)
+    data_path = '/lmc/selection_bias/result/data/%s_gal_chip_%s.npz' % (shear_tag, chip_tag)
 
     # parameters
     g1_input = shear1[int(shear_tag)]
@@ -138,8 +136,9 @@ for path_tag in range(chips_num_indiv):
 
     logger.info("%d's process: %d's (%d) chips's writing to files." % (rank, path_tag+1, chips_num_indiv))
 
-    data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
-    data_df.to_excel(data_path)
+    # data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
+    # data_df.to_excel(data_path)
+    numpy.savez(data_path, data_matrix)
 
     big_chip = fq.image_stack(gal_pool, 100)
     hdu = fits.PrimaryHDU(big_chip)

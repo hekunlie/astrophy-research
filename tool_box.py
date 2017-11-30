@@ -1,9 +1,10 @@
 from __future__ import division
-import pandas
+import matplotlib
+matplotlib.use('Agg')
 from multiprocessing import Pool, Manager
 import numpy
-import time
 import copy
+import matplotlib.pyplot as plt
 
 def task_distri(target_list, cpu_num):
     # it will divide the target_list into some piece (small lists in a diction)
@@ -29,8 +30,9 @@ def list_add(target_list, files_paths):
     # target_list is the target list that this function will put data array into
     # files_paths is a list of paths of excel files
     for i in range(len(files_paths)):
-        data = pandas.read_excel(files_paths[i]).values
-        if i==0:
+        data = numpy.load(files_paths[i])["arr_0"]
+        # data = pandas.read_excel(files_paths[i]).values
+        if i == 0:
             temp_data = data
         else:
             temp_data = numpy.row_stack((temp_data, data))
@@ -42,13 +44,11 @@ def classify(files_path_list, cpu_num):
     paths_distri = task_distri(files_path_list, cpu_num)
     final_data_list = Manager().list()
     p = Pool()
-    cl_ts = time.clock()
     for i in range(cpu_num):
         p.apply_async(list_add, args=(final_data_list, paths_distri[i],))
     p.close()
     p.join()
-    cl_te = time.clock()
-    return final_data_list,cl_te-cl_ts
+    return final_data_list
 
 def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size):
     if mask[ini_y, ini_x] > 0:
@@ -81,13 +81,17 @@ def stamp_detector(image, thres, y_size, x_size, ra=10):
         xp = x_sour[m]
 
         if image_c[yp, xp] > 0:
-            sour_pool, flux = detect(image_c, yp, xp, sour_pool, sour_flux, y_size, x_size)
+            sour_pool, sour_flux = detect(image_c, yp, xp, sour_pool, sour_flux, y_size, x_size)
 
         if len(sour_pool) > len(final_obj):
             final_obj = sour_pool
             final_flux = sour_flux
+        elif len(sour_pool) == len(final_obj):
+            if numpy.max(final_flux) < numpy.max(sour_flux):
+                final_obj = sour_pool
+                final_flux = sour_flux
 
-    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), maxi
+    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), numpy.max(final_flux)
 
 def source_detector(mask, ysize, xsize):
     # get the source object
@@ -187,3 +191,47 @@ def data_fit(x_data, y_data, y_err):
     # e1mc = numpy.dot(L1, R1)
     # e2mc = numpy.dot(L2, R2)
     return mc[1], sig_m1, mc[0], sig_c1
+
+def mcplot(x1_data, y1_data, y1_err, num1, x2_data, y2_data, y2_err, num2, e1mc, e2mc, cut_start, cut_end, path=None):
+    fig = plt.figure(figsize=(20, 10))
+    ax = fig.add_subplot(121)
+    ax.errorbar(x1_data, y1_data, y1_err, ecolor='black', elinewidth='1', fmt='none', capsize=2)
+    ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
+    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
+    ax.scatter(x1_data, y1_data, c='black')
+    for j in range(len(x1_data)):
+        ax.text(x1_data[j], y1_data[j], str(round(num1[j] / 1000, 1)) + "K", color="red")
+    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6)) + '$\pm$' + str(round(e1mc[1], 6)), color='green', ha='left',
+            va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6)) + '$\pm$' + str(round(e1mc[3], 6)), color='green', ha='left',
+            va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, "[ " + cut_start + ", " + cut_end + "]", color='green', ha='left', va='center', transform=ax.transAxes,
+            fontsize=20)
+    plt.xlabel('True  g1', fontsize=20)
+    plt.ylabel('Est  g1', fontsize=20)
+    plt.legend(fontsize=15)
+    plt.ylim(-0.04, 0.04)
+    plt.xlim(-0.04, 0.04)
+    print('plotted g1')
+
+    # plot g2 line
+    ax = fig.add_subplot(122)
+    ax.errorbar(x2_data, y2_data, y2_err, ecolor='black', elinewidth='1', fmt='none', capsize=2)
+    ax.plot(x2_data, e2mc[0] * x2_data + e2mc[2], color='red')
+    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
+    ax.scatter(x2_data, y2_data, c='black')
+    for j in range(len(x2_data)):
+        ax.text(x2_data[j], y2_data[j], str(round(num2[j] / 1000, 1)) + "K", color="red")
+    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[0] - 1, 6)) + '$\pm$' + str(round(e2mc[1], 6)), color='green', ha='left',
+            va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[2], 6)) + '$\pm$' + str(round(e2mc[3], 6)), color='green', ha='left',
+            va='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.1, 0.75, "[ " + cut_start + ", " + cut_end + "]", color='green', ha='left', va='center', transform=ax.transAxes,
+            fontsize=20)
+    plt.xlabel('True  g2', fontsize=20)
+    plt.ylabel('Est  g2', fontsize=20)
+    plt.legend(fontsize=15)
+    plt.ylim(-0.04, 0.04)
+    plt.xlim(-0.04, 0.04)
+    if path is not None:
+        plt.savefig(path)
