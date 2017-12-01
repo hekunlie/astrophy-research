@@ -69,7 +69,7 @@ if not exist or comm == 1:
         # collect the data from the files and put into 'data_list'
         # 'data' is the final array that contains all the data
         tc1 = time.time()
-        data_list = tool_box.classify(paths, 10)[0]
+        data_list = tool_box.classify(paths, 10)
         # cache
         data = data_list[0]
         for k in range(1, len(data_list)):
