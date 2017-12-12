@@ -25,7 +25,17 @@ snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
 wei_pow = int(wei_pow)
 
-shear_input = numpy.load('/home/hklee/work/selection_bias/parameters/shear.npz')['arr_0']
+with open("/home/hklee/work/envs/envs.dat", "r") as f:
+    contents = f.readlines()
+    for path in contents:
+        if "total_data" in contents:
+            total_path = path.split("=")[1]
+        elif "result" in contents:
+            result_path = path.split("=")[1]
+        elif "parameters" in contents:
+            para_path = path.split("=")[1]
+
+shear_input = numpy.load(para_path+"shear.npz")['arr_0']
 fg1 = shear_input[0]
 fg2 = shear_input[1]
 
@@ -34,13 +44,15 @@ dfg1 = fg1[1]-fg1[0]
 dfg2 = fg2[1]-fg2[0]
 
 # where the result data file are placed
-path = '/lmc/selection_bias/result/data/'
+path = result_path + "data/"
 # where the result figures will be created
-pic_path = '/home/hklee/work/result/pic/'
+pic_path = result_path + "pic/"
 
 # check the final result cache
-exist = os.path.exists('/home/hklee/work/result/data/final_cache.npz')
+final_cache_path = path + 'final_cache.npz'
 data_cache_path = path + 'data_cache.npz'
+exist = os.path.exists(final_cache_path)
+
 fq = Fourier_Quad(56, 12243)
 if exist:
     # 0: to use the result cache data existed to plot the line and estimate the bias, 'm' and 'c'
@@ -107,37 +119,23 @@ if not exist or comm == 1:
     # area
     area = data[:, 16]
     print("area: %d ~ %d" %(numpy.min(area), numpy.max(area)))
-    plt.hist(area, 50)
-    plt.savefig('/home/hklee/work/result/pic/area_hist.png')
-    plt.close()
 
     # flux
     flux = data[:, 17]/noise_sig
     print("flux: %.2f ~ %.2f "%(numpy.min(flux), numpy.max(flux)))
-    plt.hist(flux, 100)
-    plt.savefig('/home/hklee/work/result/pic/flux_hist.png')
-    plt.close()
 
     # peak
     peak = data[:, 18]/noise_sig
     print("peak: %.2f ~ %.2f "%(numpy.min(peak), numpy.max(peak)))
-    plt.hist(peak[peak<300], 100)
-    plt.savefig('/home/hklee/work/result/pic/peak_hist.png')
-    plt.close()
 
     # fsnr
     fsnr = data[:, 19]
     print("fsnr: %.2f ~ %.2f "%(numpy.min(fsnr), numpy.max(fsnr)))
-    plt.hist(fsnr, 50)
-    plt.savefig('/home/hklee/work/result/pic/fsnr_hist.png')
-    plt.close()
 
     # snr
     snr = data[:, 20]
     print("snr: %.2f ~ %.2f "%(numpy.min(snr), numpy.max(snr)))
-    plt.hist(snr, 50)
-    plt.savefig('/home/hklee/work/result/pic/snr_hist.png')
-    plt.close()
+
     # input g1
     tag1 = data[:, 4]
 
@@ -239,11 +237,10 @@ if not exist or comm == 1:
             res_arr2[na+8, i] = num2
             print(num2, "g2 deviation: %.4f * e-4, sig: %.6f" % (10000*(g2_h - fg2[i]), g2_h_sig))
 
-    final_cache_path = '/home/hklee/work/result/data/final_cache.npz'
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 
 else:
-    text = numpy.load('/home/hklee/work/result/data/final_cache.npz')
+    text = numpy.load(final_cache_path)
     res_arr1 = text['arr_0']
     res_arr2 = text['arr_1']
 tm =time.time()
@@ -252,7 +249,7 @@ tm =time.time()
 
 name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
 
-mc_data_path = '/home/hklee/work/result/data/' + 'mc_data.xlsx'
+mc_data_path = path + 'mc_data.xlsx'
 mc_data = numpy.zeros((32, 1))
 for i in range(3, 4):
 
