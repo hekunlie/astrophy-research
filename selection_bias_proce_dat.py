@@ -27,13 +27,13 @@ wei_pow = int(wei_pow)
 
 with open("/home/hklee/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
-    for path in contents:
-        if "total_data" in contents:
-            total_path = path.split("=")[1]
-        elif "result" in contents:
-            result_path = path.split("=")[1]
-        elif "parameters" in contents:
-            para_path = path.split("=")[1]
+for path in contents:
+    if "total_data" in path:
+        total_path = path.split("=")[1]
+    elif "result" in path:
+        result_path = path.split("=")[1]
+    elif "parameter" in path:
+        para_path = path.split("=")[1]
 
 shear_input = numpy.load(para_path+"shear.npz")['arr_0']
 fg1 = shear_input[0]

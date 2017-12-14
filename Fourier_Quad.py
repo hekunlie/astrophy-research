@@ -41,10 +41,9 @@ class Fourier_Quad:
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
-        psf_ps[idx] = 1.
-        wb[idx] = 0.
 
         tk = wb/psf_ps * gal_ps
+        tk[idx] = 0.
         alpha = 2.*numpy.pi/self.size
         mn1 = -0.5*(kx**2 - ky**2)
         mn2 = -kx*ky
@@ -65,9 +64,10 @@ class Fourier_Quad:
         beta = 1./beta
         return w_temp, beta
 
-    def ran_pos(self, num, radius, g=None, step=1):
+    def ran_pos(self, num, radius, g=None):
         xy_coord = numpy.zeros((2, num))
         theta = self.rng.uniform(0, 2 * numpy.pi, num)
+        step = self.rng.uniform(0.1, 1, num)
         xn = numpy.cos(theta) * step
         yn = numpy.sin(theta) * step
         x, y = 0, 0

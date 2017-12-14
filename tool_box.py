@@ -239,7 +239,7 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, p
     plt.close()
 
 def mags_mock(num, mag_min, mag_max):
-    m = numpy.linspace(mag_min, mag_max, 10000000)
+    m = numpy.linspace(mag_min, mag_max, 1000000)
     pm = 10**(23.04187527*numpy.log10(m) - 32.50618926)
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)

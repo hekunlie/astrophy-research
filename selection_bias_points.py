@@ -34,20 +34,20 @@ for path in contents:
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logfile = logs_path + '%d_log.txt' %rank
+logfile = logs_path + '%d_log.dat' %rank
 
 lf = logging.FileHandler(logfile, 'w')
 form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
-stamp_size = 54
+stamp_size = 56
 pixel_scale = 0.2
 psf_r = 4
 psf_model = "Moffat"
 p_num = 45
-chip_num = 500
-total_num = 5000000
+chip_num = 10
+total_num = 100000
 num_in_chip = int(total_num/chip_num)
 
 fq = Fourier_Quad(stamp_size, rank*12344+31121)
@@ -71,7 +71,8 @@ shear2 = shear[1]
 
 # the information from measurements
 cat_col = ["KSB_g1", "BJ_e1", "RG_e1", "FQ_G1", "fg1", "KSB_g2", "BJ_e2", "RG_e2", "FQ_G2", "fg2", "FG_N", "FQ_U",
-           "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak", "fnsr", "snr", "ori_snr", "flag"]
+           "FQ_V", 'KSB_R', 'BJ_R', 'RG_R', "area", "total_flux", "peak", "fnsr", "snr", "ori_snr", "flag", "file_id"
+           , "chip_id"]
 
 psf_in = fq.cre_psf(psf_r, psf_model)
 psf_pow = fq.pow_spec(psf_in)
@@ -81,9 +82,9 @@ rim = fq.border(1)
 n = numpy.sum(rim)
 
 if rank == 0:
-    seqs = ["stamp size:\t%d\n"%stamp_size, "pixel scale:\t%.1f\n"%pixel_scale, "chips number:\t%d\n"%chip_num,
-            "total galaxy number:\t%d\n"%total_num, "PSF model:\t%s\n"%psf_model, "PSF scale:\t%d\n"%psf_r,
-            "Noise sigma:\t%.2f\n"%noise_sig, "Magnitudes:\t%.2f ~ %.2f\n"%(numpy.min(magnitude), numpy.max(magnitude))]
+    seqs = ["stamp size: \t %d \n"%stamp_size, "pixel scale: \t %.1f \n"%pixel_scale, "chips number: \t %d \n"%chip_num,
+            "total galaxy number: \t %d \n"%total_num, "PSF model: \t %s \n"%psf_model, "PSF scale: \t %d \n"%psf_r,
+            "Noise sigma: \t %.2f \n"%noise_sig, "Magnitudes: \t %.2f ~ %.2f \n"%(numpy.min(magnitude), numpy.max(magnitude))]
 
     with open(result_path + "data/paras.dat", "w") as para:
         para.writelines(seqs)
@@ -135,17 +136,17 @@ for path_tag in range(chips_num_indiv):
         mg1, mg2, mn, mu, mv = fq.shear_est(gal_final, psf_pow, noise_n, F=True)
 
         data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, 0, 0, 0, \
-                            len(obj), flux, peak, fsnr, snr, ori_snr, flag
+                            len(obj), flux, peak, fsnr, snr, ori_snr, flag, int(shear_tag), int(chip_tag)
 
     logger.info("%d's process: %d's (%d) chips's writing to files." % (rank, path_tag+1, chips_num_indiv))
 
     # data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
     # data_df.to_excel(data_path)
     numpy.savez(data_path, data_matrix)
-    if int(chip_tag) < 30:
-        big_chip = fq.image_stack(gal_pool, 100)
-        hdu = fits.PrimaryHDU(big_chip)
-        hdu.writeto(chip_path, overwrite=True)
+    #if int(chip_tag) < 30:
+    big_chip = fq.image_stack(gal_pool, 100)
+    hdu = fits.PrimaryHDU(big_chip)
+    hdu.writeto(chip_path, overwrite=True)
     t2 = time.time()
 
     logger.info("%d's process: %d's (%d) chips finished within %.2f." % (rank, path_tag+1, chips_num_indiv, t2-t1))
