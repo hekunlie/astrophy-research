@@ -18,8 +18,6 @@ cpus = comm.Get_size()
 
 t_s = time.clock()
 
-time.sleep(rank*0.1)
-
 with open("/home/hklee/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
 for path in contents:
@@ -41,16 +39,22 @@ form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
-stamp_size = 56
+stamp_size = 60
 pixel_scale = 0.2
 psf_r = 4
 psf_model = "Moffat"
-p_num = 45
-chip_num = 10
-total_num = 100000
+p_num = 60
+chip_num = 200
+total_num = 2000000
 num_in_chip = int(total_num/chip_num)
+#seeds = numpy.loadtxt("/home/hklee/seed.txt")
+seed1 = int(rank*30 + 14)
+seed2 = int(rank*3 + 100)
 
-fq = Fourier_Quad(stamp_size, rank*12344+31121)
+fq = Fourier_Quad(stamp_size, seed1)
+fqn = Fourier_Quad(stamp_size, seed2)
+
+logger.info("%ds process: seed1: %d, seed2: %d, seed3: %d" %(rank, seed1, seed2, seed3))
 
 # distribute jobs
 chip_paths_pool = [total_path + '%d/gal_chip_%s.fits' % (i, str(j).zfill(3)) for i in range(10)
@@ -114,8 +118,8 @@ for path_tag in range(chips_num_indiv):
     for k in range(num_in_chip):
         gal_flux = prop.flux(mags[k])/p_num
         points = fq.ran_pos(num=p_num, radius=9, g=(g1_input, g2_input))[1]
-        noise = fq.noise(0, noise_sig)
-        gal_final = fq.convolve_psf(pos=points, psf_scale=psf_r, flux=gal_flux, psf=psf_model) + noise
+        noise = fqn.noise(0, noise_sig)
+        gal_final = fq.convolve_psf(pos=points, psf_scale=psf_r, flux=gal_flux, psf=psf_model)# + noise
 
         gal_pool.append(gal_final)
         obj, flux, signalsq, peak, flag = tool_box.stamp_detector(gal_final, noise_sig*2, stamp_size, stamp_size)
@@ -132,10 +136,10 @@ for path_tag in range(chips_num_indiv):
 
         # shear estimate
 
-        noise_n = fq.noise(0, noise_sig)
+        noise_n = fqn.noise(0, noise_sig)
         mg1, mg2, mn, mu, mv = fq.shear_est(gal_final, psf_pow, noise_n, F=True)
 
-        data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, 0, 0, 0, \
+        data_matrix[k, :] = 0, 0, 0, mg1, g1_input, 0, 0, 0, mg2, g2_input, mn, mu, mv, 0, 0, 0,\
                             len(obj), flux, peak, fsnr, snr, ori_snr, flag, int(shear_tag), int(chip_tag)
 
     logger.info("%d's process: %d's (%d) chips's writing to files." % (rank, path_tag+1, chips_num_indiv))
@@ -143,7 +147,6 @@ for path_tag in range(chips_num_indiv):
     # data_df = pandas.DataFrame(data=data_matrix, columns=cat_col)
     # data_df.to_excel(data_path)
     numpy.savez(data_path, data_matrix)
-    #if int(chip_tag) < 30:
     big_chip = fq.image_stack(gal_pool, 100)
     hdu = fits.PrimaryHDU(big_chip)
     hdu.writeto(chip_path, overwrite=True)

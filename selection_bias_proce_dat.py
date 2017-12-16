@@ -36,8 +36,8 @@ for path in contents:
         para_path = path.split("=")[1]
 
 shear_input = numpy.load(para_path+"shear.npz")['arr_0']
-fg1 = shear_input[0]
-fg2 = shear_input[1]
+fg1 = numpy.sort(shear_input[0])
+fg2 = numpy.sort(shear_input[1])
 
 # the length of the interval
 dfg1 = fg1[1]-fg1[0]
@@ -52,7 +52,7 @@ pic_path = result_path + "pic/"
 final_cache_path = path + 'final_cache.npz'
 data_cache_path = path + 'data_cache.npz'
 exist = os.path.exists(final_cache_path)
-
+print(path,"\n",pic_path,"\n",final_cache_path,"\n", data_cache_path)
 fq = Fourier_Quad(56, 12243)
 if exist:
     # 0: to use the result cache data existed to plot the line and estimate the bias, 'm' and 'c'
@@ -143,7 +143,7 @@ if not exist or comm == 1:
     tag2 = data[:, 9]
 
     select = {"peak": peak, "area": area, "flux": flux, "fsnr": fsnr, "snr": snr}
-    print(select[wei][0] - fsnr[0])
+
     # the first 4 rows are the ellipticity,
     # the second 4 rows are the corresponding error bar,
     # the third 4 rows are the corresponding number of samples.
@@ -192,7 +192,7 @@ if not exist or comm == 1:
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
-            print(num1, "g1 deviation: %.4f * e-4, sig: %.6f" %(10000*(g1_h - fg1[i]), g1_h_sig))
+            print(num1, "g1: %.4f, deviation: %.4f * e-4, sig: %.6f" %(g1_h, 10000*(g1_h - fg1[i]), g1_h_sig))
     print('\n')
     for i in range(len(fg2)):
         print(fg2[i])
@@ -235,7 +235,7 @@ if not exist or comm == 1:
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
-            print(num2, "g2 deviation: %.4f * e-4, sig: %.6f" % (10000*(g2_h - fg2[i]), g2_h_sig))
+            print(num2, "g2: %.5f,  deviation: %.4f * e-4, sig: %.6f" % (g2_h, 10000*(g2_h - fg2[i]), g2_h_sig))
 
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 

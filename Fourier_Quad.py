@@ -10,8 +10,11 @@ import matplotlib.pyplot as plt
 class Fourier_Quad:
 
     def __init__(self, size, seed):
-        self.size = size
         self.rng = numpy.random.RandomState(seed)
+        self.size = size
+        self.alpha = (2.*numpy.pi/size)**4
+        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
+        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
 
     def noise(self, mean, sigma):
         noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
@@ -22,7 +25,7 @@ class Fourier_Quad:
         return image_ps
 
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
-        ky, kx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
+        ky, kx = self.my, self.mx
         gal_ps = self.pow_spec(gal_image)
 
         if noise is not None:                                # to deduct the noise
@@ -40,27 +43,25 @@ class Fourier_Quad:
         hlr = self.get_radius_new(psf_ps, 2.)[0]
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
-        idx = psf_ps < maxi / 10000.
-
+        idx = psf_ps < maxi / 1000.
         tk = wb/psf_ps * gal_ps
         tk[idx] = 0.
-        alpha = 2.*numpy.pi/self.size
+
         mn1 = -0.5*(kx**2 - ky**2)
         mn2 = -kx*ky
         mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
         mn5 = kx**3*ky - kx*ky**3
-        mg1 = numpy.sum(mn1 * tk)*(alpha**4)
-        mg2 = numpy.sum(mn2 * tk)*(alpha**4)
-        mn  = numpy.sum(mn3 * tk)*(alpha**4)
-        mu  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*(alpha**4)
-        mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*(alpha**4)
+        mg1 = numpy.sum(mn1 * tk)*self.alpha
+        mg2 = numpy.sum(mn2 * tk)*self.alpha
+        mn  = numpy.sum(mn3 * tk)*self.alpha
+        mu  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*self.alpha
+        mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*self.alpha
         return mg1, mg2, mn, mu, mv
 
     def wbeta(self, beta):
-        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-(mx**2 + my**2)/2./sigma**2)
+        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/2./sigma**2)
         beta = 1./beta
         return w_temp, beta
 
@@ -88,7 +89,7 @@ class Fourier_Quad:
             return xy_coord
 
     def rotate(self, pos, theta):
-        rot_matrix = numpy.array([[numpy.cos(theta), numpy.sin(theta)], [-numpy.sin(theta), numpy.cos(theta)]])
+        rot_matrix = numpy.array([[numpy.cos(theta), -numpy.sin(theta)], [numpy.sin(theta), numpy.cos(theta)]])
         return numpy.dot(rot_matrix, pos)
 
     def shear(self, pos, g1, g2):
@@ -96,16 +97,15 @@ class Fourier_Quad:
 
     def convolve_psf(self, pos, psf_scale, flux=1, psf="GAUSS"):
         x = pos.shape[1]
-        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         arr = numpy.zeros((self.size, self.size))
 
         if psf == 'GAUSS':
             for i in range(x):
-                arr += flux*numpy.exp(-((mx-pos[0, i])**2+(my-pos[1, i])**2)/2./psf_scale**2)
+                arr += flux*numpy.exp(-((self.mx-pos[0, i])**2+(self.my-pos[1, i])**2)/2./psf_scale**2)
 
         elif psf == "Moffat":
             for l in range(x):
-                rsq = ((mx-pos[0, l])**2+(my-pos[1, l])**2)/psf_scale**2
+                rsq = ((self.mx-pos[0, l])**2+(self.my-pos[1, l])**2)/psf_scale**2
                 idx = rsq > 9.
                 pfunction = flux*(1+rsq)**(-3.5)
                 pfunction[idx] = 0
@@ -113,13 +113,12 @@ class Fourier_Quad:
         return arr
 
     def cre_psf(self, psf_scale, model="GAUSS"):
-        my, mx = numpy.mgrid[-self.size/2: self.size/2, -self.size/2: self.size/2]
         if model is 'GAUSS':
-            arr = numpy.exp(-(mx**2 + my**2)/2./psf_scale**2)
+            arr = numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
             return arr
 
         if model is 'Moffat':
-            rsq = (mx**2 + my**2) / psf_scale**2
+            rsq = (self.mx**2 + self.my**2) / psf_scale**2
             idx = rsq > 9.
             rsq[idx] = 0
             arr = (1 + rsq)**(-3.5)
@@ -419,11 +418,11 @@ class Fourier_Quad:
     def fmin_g(self, g, n, u, mode, bin_num, left=-0.2, right=0.2):  # checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
-        temp_data = numpy.sort(numpy.abs(g))[:-int(len(g)*0.1)]
+        temp_data = numpy.sort(numpy.abs(g))[:-int(len(g)*0.01)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0]), bins))
-        bound = numpy.max(numpy.abs(g)) * 100
+        bound = numpy.max(numpy.abs(g)) * 10000
         bins = numpy.append(-bound, numpy.append(bins, bound))
         same = 0
         iters = 0
@@ -439,9 +438,10 @@ class Fourier_Quad:
             fm1 = self.G_bin(g, n, u, m1, mode, bins)
             fm2 = self.G_bin(g, n, u, m2, mode, bins)
             fm3 = self.G_bin(g, n, u, m3, mode, bins)
-            values = [fL, fR, fm1, fm2, fm3]
-            points = [left, right, m1, m2, m3]
-            if max(values) < 30:  # or min(values) == 0 :
+            values = [fL, fm2, fm1, fm3, fR]
+            points = [left, m2, m1, m3, right]
+
+            if max(values) < 20:  # or min(values) == 0 :
                 # for i in range(5):
                 #     if values[i] == 0:
                 #         g_h = points[i]

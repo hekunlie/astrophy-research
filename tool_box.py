@@ -172,26 +172,6 @@ def data_fit(x_data, y_data, y_err):
     sig_m1 = numpy.sqrt(L1[1, 1])
     sig_c1 = numpy.sqrt(L1[0, 0])
     mc = numpy.dot(L1, R1)
-
-    # A1 = numpy.column_stack((numpy.ones_like(fg1.T), fg1.T))
-    # Y1 = res_arr1[i].T
-    # C1 = numpy.diag(res_arr1[i+4]**2)
-    #
-    # A2 = numpy.column_stack((numpy.ones_like(fg2.T), fg2.T))
-    # Y2 = res_arr2[i].T
-    # C2 = numpy.diag(res_arr2[i+4]**2)
-    #
-    # L1 = numpy.linalg.inv(numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), A1))
-    # R1 = numpy.dot(numpy.dot(A1.T, numpy.linalg.inv(C1)), Y1)
-    # L2 = numpy.linalg.inv(numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), A2))
-    # R2 = numpy.dot(numpy.dot(A2.T, numpy.linalg.inv(C2)), Y2)
-    #
-    # sig_m1 = numpy.sqrt(L1[1, 1])
-    # sig_c1 = numpy.sqrt(L1[0, 0])
-    # sig_m2 = numpy.sqrt(L2[1, 1])
-    # sig_c2 = numpy.sqrt(L2[0, 0])
-    # e1mc = numpy.dot(L1, R1)
-    # e2mc = numpy.dot(L2, R2)
     return mc[1], sig_m1, mc[0], sig_c1
 
 def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, path=None):
