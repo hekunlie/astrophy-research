@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
@@ -16,7 +15,7 @@ class Fourier_Quad:
         self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
         self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
 
-    def noise(self, mean, sigma):
+    def draw_noise(self, mean, sigma):
         noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
         return noise_img
 
@@ -67,17 +66,20 @@ class Fourier_Quad:
 
     def ran_pos(self, num, radius, g=None):
         xy_coord = numpy.zeros((2, num))
-        theta = self.rng.uniform(0, 2 * numpy.pi, num)
-        step = self.rng.uniform(0.1, 1, num)
+        theta = self.rng.uniform(0., 2 * numpy.pi, num)
+        step = self.rng.uniform(0., 1., num)
         xn = numpy.cos(theta) * step
         yn = numpy.sin(theta) * step
-        x, y = 0, 0
+        x = 0.
+        y = 0.
         for n in range(num):
             x += xn[n]
             y += yn[n]
             if x * x + y * y > radius ** 2:
-                x, y = xn[n], yn[n]
-            xy_coord[0, n], xy_coord[1, n] = x, y
+                x = xn[n]
+                y = yn[n]
+            xy_coord[0, n] = x
+            xy_coord[1, n] = y
 
         xy_coord[0] = xy_coord[0] - numpy.mean(xy_coord[0])
         xy_coord[1] = xy_coord[1] - numpy.mean(xy_coord[1])
@@ -106,9 +108,9 @@ class Fourier_Quad:
         elif psf == "Moffat":
             for l in range(x):
                 rsq = ((self.mx-pos[0, l])**2+(self.my-pos[1, l])**2)/psf_scale**2
-                idx = rsq > 9.
-                pfunction = flux*(1+rsq)**(-3.5)
-                pfunction[idx] = 0
+                idx = rsq > 9
+                pfunction = flux*(1. + rsq)**(-3.5)
+                pfunction[idx] = 0.
                 arr += pfunction
         return arr
 
@@ -119,10 +121,10 @@ class Fourier_Quad:
 
         if model is 'Moffat':
             rsq = (self.mx**2 + self.my**2) / psf_scale**2
-            idx = rsq > 9.
-            rsq[idx] = 0
-            arr = (1 + rsq)**(-3.5)
-            arr[idx] = 0
+            idx = rsq > 9
+            rsq[idx] = 0.
+            arr = (1. + rsq)**(-3.5)
+            arr[idx] = 0.
             return arr
 
     def get_radius(self, image, scale):
@@ -415,18 +417,19 @@ class Fourier_Quad:
         n2 = num[int(bin_num / 2):][inverse]
         return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.2, right=0.2):  # checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
         temp_data = numpy.sort(numpy.abs(g))[:-int(len(g)*0.01)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
-        bins = numpy.sort(numpy.append(numpy.append(-bins, [0]), bins))
-        bound = numpy.max(numpy.abs(g)) * 10000
+        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        bound = numpy.max(numpy.abs(g)) * 10000.
         bins = numpy.append(-bound, numpy.append(bins, bound))
         same = 0
         iters = 0
-        g_h = 0
+        # m1 chi square & left & left chi square & right & right chi square
+        records = numpy.zeros((13, 5))
         while True:
             templ = left
             tempr = right
@@ -440,15 +443,12 @@ class Fourier_Quad:
             fm3 = self.G_bin(g, n, u, m3, mode, bins)
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
+            records[iters, ] = fm1, left, fL, right, fR
+            if max(values) < 30:  # or min(values) == 0 :
+                temp_left = left
+                temp_right = right
+            #     break
 
-            if max(values) < 20:  # or min(values) == 0 :
-                # for i in range(5):
-                #     if values[i] == 0:
-                #         g_h = points[i]
-                break
-            # print(values, points)
-            # plt.scatter([left,m2,m1,m3,right],[fL,fm2,fm1,fm3,fR])
-            # plt.show()
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
                 if fm1 == fm2:
                     left = m2
@@ -500,19 +500,37 @@ class Fourier_Quad:
                     left = m1
                     right = m3
 
-            # if abs(left-right)<1.e-5:
-            #     g_h = (left+right)/2.
-            #     break
+            if abs(left-right) < 1.e-5:
+                g_h = (left+right)/2.
+                break
             iters += 1
             if left == templ and right == tempr:
                 same += 1
-            if iters > 10 and same > 3 or iters > 13:
+            if iters > 10 and same > 2 or iters > 12:
                 break
                 # print(left,right,abs(left-right))
 
         # fitting
-        g_range = numpy.linspace(left, right, 8)
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 10))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 10))[0]
+        if len(label_l > 1):
+            label_l = label_l[0]
+
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 10))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 10))[0]
+        if len(label_r > 1):
+            label_r = label_r[0]
+
+        if left_x2 > right_x2:
+            right = records[label_l, 3]
+            left = 2*m1 - right
+        else:
+            left = records[label_r, 1]
+            right = 2*m1 - left
+
+        g_range = numpy.linspace(left, right, 100)
         xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range])
+
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
         gg2 = numpy.sum(g_range ** 2)
@@ -524,6 +542,33 @@ class Fourier_Quad:
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1 / 2. / paras[0])
         g_h = -paras[1] / 2 / paras[0]
+
+        # g_range1 = numpy.linspace(temp_left, temp_right, 8)
+        # xi21 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range1])
+        # gg41 = numpy.sum(g_range1 ** 4)
+        # gg31 = numpy.sum(g_range1 ** 3)
+        # gg21 = numpy.sum(g_range1 ** 2)
+        # gg11 = numpy.sum(g_range1)
+        # xigg21 = numpy.sum(xi21 * (g_range1 ** 2))
+        # xigg11 = numpy.sum(xi21 * g_range1)
+        # xigg01 = numpy.sum(xi21)
+        # cov1 = numpy.linalg.inv(numpy.array([[gg41, gg31, gg21], [gg31, gg21, gg11], [gg21, gg11, len(g_range1)]]))
+        # paras1 = numpy.dot(cov1, numpy.array([xigg21, xigg11, xigg01]))
+        # g_sig1 = numpy.sqrt(1 / 2. / paras1[0])
+        # g_h1 = -paras1[1] / 2 / paras1[0]
+        #
+        # plt.subplot(121)
+        # plt.scatter(g_range, xi2, c='r', s=4)
+        # x1 = numpy.linspace(left, right, 50)
+        # plt.plot(x1, paras[0]*x1**2+paras[1]*x1+paras[2])
+        # plt.title('g = '+str(round(signal, 5)) + ' g_h = '+str(round(g_h,5))+", g_sig = "+str(round(g_sig,5)))
+        #
+        # plt.subplot(122)
+        # plt.scatter(g_range1, xi21, c='r', s=4)
+        # x1 = numpy.linspace(temp_left, temp_right, 50)
+        # plt.plot(x1, paras1[0] * x1 ** 2 + paras1[1] * x1 + paras1[2])
+        # plt.title('g = ' + str(round(signal, 5)) + ' g_h = ' + str(round(g_h1, 5)) + ", g_sig = " + str(round(g_sig1, 5)))
+        # plt.show()
         return g_h, g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):

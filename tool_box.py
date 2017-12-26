@@ -1,4 +1,3 @@
-from __future__ import division
 import matplotlib
 matplotlib.use('Agg')
 from multiprocessing import Pool, Manager
@@ -30,7 +29,7 @@ def list_add(target_list, files_paths):
     # target_list is the target list that this function will put data array into
     # files_paths is a list of paths of excel files
     for i in range(len(files_paths)):
-        data = numpy.load(files_paths[i])["arr_0"]
+        data = numpy.loadtxt(files_paths[i])
         # data = pandas.read_excel(files_paths[i]).values
         if i == 0:
             temp_data = data
@@ -93,7 +92,7 @@ def stamp_detector(image, thres, y_size, x_size, ra=10):
                 final_obj = sour_pool
                 final_flux = sour_flux
 
-    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), numpy.max(final_flux), flag
+    return len(final_obj), numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), numpy.max(final_flux), flag
 
 def source_detector(mask, ysize, xsize):
     # get the source object
@@ -214,6 +213,7 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, p
     plt.legend(fontsize=15)
     plt.ylim(-0.04, 0.04)
     plt.xlim(-0.04, 0.04)
+    plt.show()
     if path is not None:
         plt.savefig(path)
     plt.close()

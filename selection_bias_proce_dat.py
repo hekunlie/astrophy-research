@@ -19,7 +19,7 @@ wei, snr_s, snr_e, filter_type, wei_pow, method = argv[1:7]
 ts = time.time()
 
 pixel_scale = 0.2
-stamp_size = 54
+stamp_size = 52
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
@@ -75,18 +75,20 @@ if not exist or comm == 1:
         print('Starting>>>>')
         files = os.listdir(path)
         paths = []
-        for i in files:
-            if ".npz" and 'chip' in i:
-                paths.append(path + i)
-        # collect the data from the files and put into 'data_list'
-        # 'data' is the final array that contains all the data
+        arrs = []
+        counts = 0
         tc1 = time.time()
-        data_list = tool_box.classify(paths, 10)
-        # cache
-        data = data_list[0]
-        for k in range(1, len(data_list)):
-            data = numpy.row_stack((data, data_list[k]))
+        for i in files:
+            if ".dat" in i and 'chip' in i:
+                if counts == 0:
+                    data = numpy.loadtxt(path+i)
+                    counts += 1
+                else:
+                    data = numpy.row_stack((data, numpy.loadtxt(path+i)))
+                    counts += 1
+
         numpy.savez(data_cache_path, data)
+        print(counts, data.shape)
         tc2 = time.time()
         print("Classification finished within %.3f <<<<"%(tc2-tc1))
 
@@ -112,6 +114,10 @@ if not exist or comm == 1:
     FN = data[:, 10]
     FU = data[:, 11]
     FV = data[:, 12]
+
+    chip_tag = data[:,-1]
+    mags = data[:, -3]
+    ranks = data[:, -2]
 
     prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
     noise_sig = prop.sigma_sky
@@ -177,6 +183,9 @@ if not exist or comm == 1:
                 G1 = FG1[idx11&idx12][idxs&idxe]
                 N1 = FN[idx11&idx12][idxs&idxe]
                 U1 = FU[idx11&idx12][idxs&idxe]
+                chip_tag = data[:, -1][idx11&idx12][idxs&idxe]
+                rank = ranks[idx11&idx12][idxs&idxe]
+                mag = mags[idx11&idx12][idxs&idxe]
 
                 weight1 = ssnr[idxs&idxe]**wei_pow
                 if wei_pow == 0:
@@ -221,6 +230,9 @@ if not exist or comm == 1:
                 G2 = FG2[idx21&idx22][idxs&idxe]
                 N2 = FN[idx21&idx22][idxs&idxe]
                 U2 = FU[idx21&idx22][idxs&idxe]
+                chip_tag = data[:, -1][idx21&idx22][idxs&idxe]
+                rank = ranks[idx21&idx22][idxs&idxe]
+                mag = mags[idx21&idx22][idxs&idxe]
 
                 weight2 = ssnr[idxs&idxe]**wei_pow
                 if wei_pow == 0:
@@ -247,7 +259,7 @@ tm =time.time()
 
 # fit the line
 
-name = ['KSB', 'BJ02', 'Re-Gaussianization', 'Fourier_Quad']
+name = ['KSB', 'BJ02', 'Re-Gaussianization', "Fourier_Quad"]
 
 mc_data_path = path + 'mc_data.xlsx'
 mc_data = numpy.zeros((32, 1))
@@ -255,11 +267,27 @@ for i in range(3, 4):
 
     e1mc = tool_box.data_fit(fg1, res_arr1[i], res_arr1[i+4])
     e2mc = tool_box.data_fit(fg2, res_arr2[i], res_arr2[i+4])
+    if e1mc[0]-1 - 2*e1mc[1] < 0 < e1mc[0]-1 + 2*e1mc[1]:
+        m1_b = "no m1 bias"
+    else:
+        m1_b = "m1 bias"
+    if e2mc[0]-1 - 2*e2mc[1] < 0 < e2mc[0]-1 + 2*e2mc[1]:
+        m2_b = "no m2 bias"
+    else:
+        m2_b = "m2 bias"
 
-    print(e1mc)
-    print(e2mc)
+    if e1mc[2] - 2*e1mc[3] < 0 < e1mc[2] + 2*e1mc[3]:
+        c1_b = "no c1 bias"
+    else:
+        c1_b = "c1 bias"
+    if e2mc[2] - 2*e2mc[3] < 0 < e2mc[2] + 2*e2mc[3]:
+        c2_b = "no c2 bias"
+    else:
+        c2_b = "c2 bias"
+    print(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3])
+    print(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3])
     fig = plt.figure(figsize=(20, 10))
-    ax = fig.add_subplot(121)
+    ax1 = fig.add_subplot(121)
 
     # xmajorLocator = MultipleLocator(0.005)
     # xmajorFormatter = FormatStrFormatter('%1.3f')
@@ -278,16 +306,16 @@ for i in range(3, 4):
     # ax.xaxis.set_minor_locator(xminorLocator)
     # ax.yaxis.set_minor_locator(yminorLocator)
 
-    ax.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize=2)
-    ax.plot(fg1, e1mc[0] * fg1 + e1mc[2], label=name[i], color='red')
-    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
-    ax.scatter(fg1, res_arr1[i, :], c='black')
+    ax1.errorbar(fg1, res_arr1[i, :], res_arr1[i + 4, :], ecolor='black', elinewidth=1, fmt='none',capsize=2)
+    ax1.plot(fg1, e1mc[0] * fg1 + e1mc[2], label=name[i], color='red')
+    ax1.plot(numpy.array([-0.1, 0.1]), numpy.array([-0.1, 0.1]), label='y=x', color='blue')
+    ax1.scatter(fg1, res_arr1[i, :], c='black')
     for j in range(len(fg1)):
-        ax.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
+        ax1.text(fg1[j], res_arr1[i, j], str(round(res_arr1[i + 8, j] / 1000, 1)) + "K", color="red")
 
-    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6))+'$\pm$'+str(round(e1mc[1], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6))+'$\pm$'+str(round(e1mc[3], 6)), color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, "[ " + snr_s + ", " + snr_e + "]", color='green', ha='left', va='center', transform=ax.transAxes, fontsize=20)
+    ax1.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6))+'$\pm$'+str(round(e1mc[1], 6)), color='green', ha='left', va='center', transform=ax1.transAxes, fontsize=20)
+    ax1.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6))+'$\pm$'+str(round(e1mc[3], 6)), color='green', ha='left', va='center', transform=ax1.transAxes, fontsize=20)
+    ax1.text(0.1, 0.75, "[ " + snr_s + ", " + snr_e + "]", color='green', ha='left', va='center', transform=ax1.transAxes, fontsize=20)
     plt.xlabel('True  g1', fontsize=20)
     plt.ylabel('Est  g1', fontsize=20)
     plt.title(name[i], fontsize=20)
@@ -316,9 +344,9 @@ for i in range(3, 4):
     # ax.xaxis.set_minor_locator(xminorLocator)
     # ax.yaxis.set_minor_locator(yminorLocator)
 
-    ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth='1', fmt='none',capsize =2)
+    ax.errorbar(fg2, res_arr2[i, :], res_arr2[i + 4, :], ecolor='black', elinewidth=1, fmt='none',capsize =2)
     ax.plot(fg2, e2mc[0] * fg2 + e2mc[2], label=name[i], color='red')
-    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
+    ax.plot(numpy.array([-0.1, 0.1]), numpy.array([-0.1, 0.1]), label='y=x', color='blue')
     ax.scatter(fg2, res_arr2[i, :], c='black')
     for j in range(len(fg2)):
         ax.text(fg2[j], res_arr2[i, j], str(round(res_arr2[i + 8, j] / 1000, 1)) + "K", color="red")
@@ -331,6 +359,7 @@ for i in range(3, 4):
     plt.legend(fontsize=15)
     plt.ylim(-0.04, 0.04)
     plt.xlim(-0.04, 0.04)
+    # cname = "s-"+ str(int(a/10000)) + "-" + str(int(b/10000))+"-nf"
     nm = pic_path + name[i] + ".png"
     print(nm)
 
