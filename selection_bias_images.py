@@ -28,7 +28,7 @@ def simu(paths_list, psf_in, shear1_in, shear2_in, num_in_chip, e1_in, e2_in, ma
     noise_sig = prop.sigma_sky
 
     psf_o = galsim.Gaussian(half_light_radius=0.8, flux=1.0)
-    psf = psf_o.shear(e1=0.081, e2=-0.066)
+    #psf = psf_o.shear(e1=0.081, e2=-0.066)
 
     chips_num = len(paths_list)
     psf_pow = Fourier_Quad().pow_spec(psf_in)

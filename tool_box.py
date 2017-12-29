@@ -174,9 +174,9 @@ def data_fit(x_data, y_data, y_err):
     return mc[1], sig_m1, mc[0], sig_c1
 
 def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, path=None):
-    fig = plt.figure(figsize=(20, 10))
+    fig = plt.figure(figsize=(16, 8))
     ax = fig.add_subplot(121)
-    ax.errorbar(x1_data, y1_data[0], y1_data[1], ecolor='black', elinewidth='1', fmt='none', capsize=2)
+    ax.errorbar(x1_data, y1_data[0], y1_data[1], ecolor='black', elinewidth=1, fmt='none', capsize=2)
     ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(x1_data, y1_data[0], c='black')
@@ -196,7 +196,7 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, p
 
     # plot g2 line
     ax = fig.add_subplot(122)
-    ax.errorbar(x2_data, y2_data[0], y2_data[1], ecolor='black', elinewidth='1', fmt='none', capsize=2)
+    ax.errorbar(x2_data, y2_data[0], y2_data[1], ecolor='black', elinewidth=1, fmt='none', capsize=2)
     ax.plot(x2_data, e2mc[0] * x2_data + e2mc[2], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(x2_data, y2_data[0], c='black')
@@ -224,3 +224,27 @@ def mags_mock(num, mag_min, mag_max):
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf
+
+
+def ellip_mock(num, seed=123400, figout=None):
+    """
+    Generate random ellipticity for a given number
+    following the distribution of the ellipticity
+    of bulge-dominated galaxies
+
+    See Miller et al, 2013, MNRAS
+    """
+    numpy.random.RandomState(seed)
+    b, c = 2.368, 6.691
+    # probability
+    pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
+
+    emin, emax = 0.0, 0.8
+    pmin, pmax = 0.0, 2.64456
+
+    es = numpy.linspace(emin, emax, int((emax - emin) / 0.000001) + 1)
+    pe_base = pe(es)
+    # normalize
+    pe_base = pe_base / numpy.sum(pe_base)
+    rbe = numpy.random.choice(es, num, p=pe_base)
+    return rbe

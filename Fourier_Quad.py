@@ -444,10 +444,10 @@ class Fourier_Quad:
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
             records[iters, ] = fm1, left, fL, right, fR
-            if max(values) < 30:  # or min(values) == 0 :
+            if max(values) < 30:
                 temp_left = left
                 temp_right = right
-            #     break
+
 
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
                 if fm1 == fm2:

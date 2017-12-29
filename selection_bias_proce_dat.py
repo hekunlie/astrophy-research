@@ -134,13 +134,16 @@ if not exist or comm == 1:
     peak = data[:, 18]/noise_sig
     print("peak: %.2f ~ %.2f "%(numpy.min(peak), numpy.max(peak)))
 
+    # snr
+    snr = data[:, 19]
+    print("snr: %.2f ~ %.2f "%(numpy.min(snr), numpy.max(snr)))
+
     # fsnr
-    fsnr = data[:, 19]
+    fsnr = data[:, 20]
     print("fsnr: %.2f ~ %.2f "%(numpy.min(fsnr), numpy.max(fsnr)))
 
-    # snr
-    snr = data[:, 20]
-    print("snr: %.2f ~ %.2f "%(numpy.min(snr), numpy.max(snr)))
+    osnr = data[:, 21]
+    print("osnr: %.2f ~ %.2f "%(numpy.min(osnr), numpy.max(osnr)))
 
     # input g1
     tag1 = data[:, 4]
