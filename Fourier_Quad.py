@@ -46,7 +46,7 @@ class Fourier_Quad:
         tk = wb/psf_ps * gal_ps
         tk[idx] = 0.
 
-        mn1 = -0.5*(kx**2 - ky**2)
+        mn1 = (-0.5)*(kx**2 - ky**2)
         mn2 = -kx*ky
         mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
         mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
@@ -102,28 +102,36 @@ class Fourier_Quad:
         arr = numpy.zeros((self.size, self.size))
 
         if psf == 'GAUSS':
+            factor = flux/2/numpy.pi/psf_scale**2
             for i in range(x):
-                arr += flux*numpy.exp(-((self.mx-pos[0, i])**2+(self.my-pos[1, i])**2)/2./psf_scale**2)
+                arr += factor*numpy.exp(-((self.mx-pos[0, i])**2+(self.my-pos[1, i])**2)/2./psf_scale**2)
 
         elif psf == "Moffat":
+            r_scale_sq = 9
+            m = 3.5
+            factor = flux/(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
             for l in range(x):
                 rsq = ((self.mx-pos[0, l])**2+(self.my-pos[1, l])**2)/psf_scale**2
-                idx = rsq > 9
-                pfunction = flux*(1. + rsq)**(-3.5)
+                idx = rsq > r_scale_sq
+                pfunction = factor*(1. + rsq)**(-m)
                 pfunction[idx] = 0.
                 arr += pfunction
         return arr
 
     def cre_psf(self, psf_scale, model="GAUSS"):
         if model is 'GAUSS':
-            arr = numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
+            factor = 1./2/numpy.pi/psf_scale**2
+            arr = factor*numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
             return arr
 
-        if model is 'Moffat':
+        elif model is 'Moffat':
+            r_scale_sq = 9
+            m = 3.5
+            factor = 1./(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
             rsq = (self.mx**2 + self.my**2) / psf_scale**2
-            idx = rsq > 9
+            idx = rsq > r_scale_sq
             rsq[idx] = 0.
-            arr = (1. + rsq)**(-3.5)
+            arr = factor*(1. + rsq)**(-m)
             arr[idx] = 0.
             return arr
 
@@ -358,7 +366,7 @@ class Fourier_Quad:
         szx = 0.
         szy = 0.
         d=1
-        rim = self.border(d, self.size)
+        rim = self.border(d)
         n = numpy.sum(rim)
         for i in range(len(psf_pool)):
             if mode==1:
@@ -447,8 +455,6 @@ class Fourier_Quad:
             if max(values) < 30:
                 temp_left = left
                 temp_right = right
-
-
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
                 if fm1 == fm2:
                     left = m2
@@ -528,7 +534,7 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        g_range = numpy.linspace(left, right, 100)
+        g_range = numpy.linspace(left, right, 50)
         xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
@@ -543,32 +549,6 @@ class Fourier_Quad:
         g_sig = numpy.sqrt(1 / 2. / paras[0])
         g_h = -paras[1] / 2 / paras[0]
 
-        # g_range1 = numpy.linspace(temp_left, temp_right, 8)
-        # xi21 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range1])
-        # gg41 = numpy.sum(g_range1 ** 4)
-        # gg31 = numpy.sum(g_range1 ** 3)
-        # gg21 = numpy.sum(g_range1 ** 2)
-        # gg11 = numpy.sum(g_range1)
-        # xigg21 = numpy.sum(xi21 * (g_range1 ** 2))
-        # xigg11 = numpy.sum(xi21 * g_range1)
-        # xigg01 = numpy.sum(xi21)
-        # cov1 = numpy.linalg.inv(numpy.array([[gg41, gg31, gg21], [gg31, gg21, gg11], [gg21, gg11, len(g_range1)]]))
-        # paras1 = numpy.dot(cov1, numpy.array([xigg21, xigg11, xigg01]))
-        # g_sig1 = numpy.sqrt(1 / 2. / paras1[0])
-        # g_h1 = -paras1[1] / 2 / paras1[0]
-        #
-        # plt.subplot(121)
-        # plt.scatter(g_range, xi2, c='r', s=4)
-        # x1 = numpy.linspace(left, right, 50)
-        # plt.plot(x1, paras[0]*x1**2+paras[1]*x1+paras[2])
-        # plt.title('g = '+str(round(signal, 5)) + ' g_h = '+str(round(g_h,5))+", g_sig = "+str(round(g_sig,5)))
-        #
-        # plt.subplot(122)
-        # plt.scatter(g_range1, xi21, c='r', s=4)
-        # x1 = numpy.linspace(temp_left, temp_right, 50)
-        # plt.plot(x1, paras1[0] * x1 ** 2 + paras1[1] * x1 + paras1[2])
-        # plt.title('g = ' + str(round(signal, 5)) + ' g_h = ' + str(round(g_h1, 5)) + ", g_sig = " + str(round(g_sig1, 5)))
-        # plt.show()
         return g_h, g_sig
 
     def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):

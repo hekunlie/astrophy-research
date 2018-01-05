@@ -1,5 +1,5 @@
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 from multiprocessing import Pool, Manager
 import numpy
 import copy
@@ -91,8 +91,11 @@ def stamp_detector(image, thres, y_size, x_size, ra=10):
             if numpy.max(final_flux) < numpy.max(sour_flux):
                 final_obj = sour_pool
                 final_flux = sour_flux
-
-    return len(final_obj), numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), numpy.max(final_flux), flag
+    if len(final_flux) == 0:
+        peak = 0
+    else:
+        peak = numpy.max(final_flux)
+    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), peak, flag
 
 def source_detector(mask, ysize, xsize):
     # get the source object

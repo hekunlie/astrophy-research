@@ -117,8 +117,8 @@ else:
 
     plt.subplot(221)
     plt.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=2)
-    # plt.plot([0.1 * (x1 - x2), 1.1 * (x2 - x1)], [0, 0], c='grey')
-    # plt.xlim(0.1 * (x1 - x2), 1.1 * (x2 - x1))
+    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -127,8 +127,8 @@ else:
 
     plt.subplot(222)
     plt.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=2)
-    # plt.plot([0.1 * (x1 - x2), 1.1 * (x2 - x1)], [0, 0], c='grey')
-    # plt.xlim(0.1 * (x1 - x2), 1.1 * (x2 - x1))
+    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -137,8 +137,8 @@ else:
 
     plt.subplot(223)
     plt.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='coral', capsize=2)
-    # plt.plot([0.1 * (x1 - x2), 1.1 * (x2 - x1)], [0, 0], c='grey')
-    # plt.xlim(0.1 * (x1 - x2), 1.1 * (x2 - x1))
+    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -147,8 +147,8 @@ else:
 
     plt.subplot(224)
     plt.errorbar(select[cut][1], mc2[2], mc2[3], c='coral', capsize=2)
-    # plt.plot([0.1 * (x1 - x2), 1.1 * (x2 - x1)], [0, 0], c='grey')
-    # plt.xlim(0.1 * (x1 - x2), 1.1 * (x2 - x1))
+    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
