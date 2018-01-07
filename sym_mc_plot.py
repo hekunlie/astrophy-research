@@ -9,7 +9,7 @@ from Fourier_Quad import Fourier_Quad
 from sys import argv
 from mpi4py import MPI
 import tool_box
-
+import h5py
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -24,10 +24,10 @@ fg1 = shear[0]
 fg2 = shear[1]
 
 num = 10000000
-sp = (10000000, 24)
+sp = (10000000, 27)
 if rank == 0:
-    arr = numpy.load("/lmc/selection_bias/result/data/data_cache.npz")["arr_0"]
-    tag = arr[:, 4]
+    arr = numpy.load("/lmc/selection_bias/result_kw_new/data/data_cache.npz")["arr_0"]
+    #tag = arr[:, 4]
     data = arr[0: num, :]
     for i in range(1, 10):
         data_s = arr[i*num: (i+1)*num, :]
@@ -57,7 +57,11 @@ fscut = [0, 2.8, 3.3, 3.8, 4.1, 4.5, 4.9, 5.3, 7, 10, 15]
 osnr = data[:, 21]
 ocut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
 
-select = {"flux": (flux, fcut), "peak": (peak, pcut),"fsnr": (fsnr, fscut), "snr": (snr, scut), "osnr": (osnr, ocut)}
+N = data[:10000000, 10]
+n = numpy.sort(N)
+ncut = [n[int(0.1*len(n)*i)] for i in range(1, 8)]
+
+select = {"N": (N, ncut), "flux": (flux, fcut), "peak": (peak, pcut),"fsnr": (fsnr, fscut), "snr": (snr, scut), "osnr": (osnr, ocut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
@@ -117,8 +121,8 @@ else:
 
     plt.subplot(221)
     plt.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=2)
-    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -127,8 +131,8 @@ else:
 
     plt.subplot(222)
     plt.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=2)
-    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+   # plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -137,8 +141,8 @@ else:
 
     plt.subplot(223)
     plt.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='coral', capsize=2)
-    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")
@@ -147,8 +151,8 @@ else:
 
     plt.subplot(224)
     plt.errorbar(select[cut][1], mc2[2], mc2[3], c='coral', capsize=2)
-    plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
+    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
     ax = plt.gca()
     ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
     plt.xlabel("Cutoff")

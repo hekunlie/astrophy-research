@@ -39,10 +39,10 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-        hlr = self.get_radius_new(psf_ps, 2.)[0]
+        hlr = self.get_radius_new(psf_ps, 2.72)[0]
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
-        idx = psf_ps < maxi / 1000.
+        idx = psf_ps < maxi / 10000.
         tk = wb/psf_ps * gal_ps
         tk[idx] = 0.
 
@@ -59,10 +59,9 @@ class Fourier_Quad:
         return mg1, mg2, mn, mu, mv
 
     def wbeta(self, beta):
-        sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/2./sigma**2)
-        beta = 1./beta
-        return w_temp, beta
+        sigma = beta/2.
+        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/sigma**2)
+        return w_temp, 2./beta
 
     def ran_pos(self, num, radius, g=None):
         xy_coord = numpy.zeros((2, num))
@@ -534,7 +533,7 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        g_range = numpy.linspace(left, right, 50)
+        g_range = numpy.linspace(left, right, 100)
         xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)

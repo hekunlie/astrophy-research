@@ -6,6 +6,56 @@ using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
 
+void write_h5(char *filename, char *set_name, int row, int column, double *matrix)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+	// 创建数据集的metadata中的dataspace信息项目
+	unsigned rank = 2;
+	hsize_t dims[2];
+	dims[0] = row;
+	dims[1] = column;
+	hid_t dataspace_id;  // 数据集metadata中dataspace的id
+						 // dataspace_id = H5Screate_simple(int rank, 空间维度
+						 //              const hsize_t* current_dims, 每个维度元素个数
+						 //                    - 可以为0，此时无法写入数据
+						 //                  const hsize_t* max_dims, 每个维度元素个数上限
+						 //                    - 若为NULL指针，则和current_dim相同，
+						 //                    - 若为H5S_UNLIMITED，则不舍上限，但dataset一定是分块的(chunked).
+	dataspace_id = H5Screate_simple(rank, dims, NULL);
+
+	// 创建数据集中的数据本身
+	hid_t dataset_id;    // 数据集本身的id
+						 // dataset_id = H5Dcreate(loc_id, 位置id
+						 //              const char *name, 数据集名
+						 //                hid_t dtype_id, 数据类型
+						 //                hid_t space_id, dataspace的id
+						 //             连接(link)创建性质,
+						 //                 数据集创建性质,
+						 //                 数据集访问性质)
+	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
+	// 将数据写入数据集
+	// herr_t 写入状态 = H5Dwrite(写入目标数据集id,
+	//                               内存数据格式,
+	//                       memory_dataspace_id, 定义内存dataspace和其中的选择
+	//                          - H5S_ALL: 文件中dataspace用做内存dataspace，file_dataspace_id中的选择作为内存dataspace的选择
+	//                         file_dataspace_id, 定义文件中dataspace的选择
+	//                          - H5S_ALL: 文件中datasapce的全部，定义为数据集中dataspace定义的全部维度数据
+	//                        本次IO操作的转换性质,
+	//                          const void * buf, 内存中数据的位置
+	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix);
+
+	// 关闭dataset相关对象
+	status = H5Dclose(dataset_id);
+	status = H5Sclose(dataspace_id);
+
+	// 关闭文件对象
+	status = H5Fclose(file_id);
+}
+
 void read_img(double *arr, char *path)
 {
 	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
@@ -107,9 +157,9 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 	double max = 0, flux = 0, flux_sq=0. ;	
 
 	/* find the maximun */
-	for (y = size / 2 - 6; y < size / 2 + 7; y++)
+	for (y = size / 2 - 3; y < size / 2 +4; y++)
 	{
-		for (x = size / 2 - 6; x < size / 2 + 7; x++)
+		for (x = size / 2 - 3; x < size / 2 + 4; x++)
 		{
 			if (in_img[y*size + x] > max)
 			{
@@ -143,8 +193,8 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 		}
 	}
 	
-	int *col = new int[(int)(0.78*size*size)];
-	int *row = new int[(int)(0.78*size*size)];
+	int *col = new int[size*size];
+	int *row = new int[size*size];
 	col[0] = xp;
 	row[0] = yp;
 	flux = max;
@@ -225,7 +275,7 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 	 scale is the scale length of PSF,
 	 psf=1 means the Gaussian PSF, psf=2 means the Moffat PSF	*/
 	int i, j, k, m;
-	double r1, r2, n;
+	double r1, r2, n, flux_g, flux_m;
 	// |rot1, - rot2 |
 	// |rot2,  rot1  |
 	double rot1 = cos(rotate*Pi / 4.), rot2 = sin(rotate*Pi / 4.), val, rs, rd;
@@ -251,6 +301,8 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 	}
 
 	/*  convolve PSF and draw the image */
+	flux_g = flux / (2* Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_m = flux / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4);   /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 	for (k = 0; k < num_p; k++)
 	{
 		for (i = 0; i < size; i++)  /* y coordinate */
@@ -261,11 +313,11 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 				rs = r1 + (j - points_r[k])*(j - points_r[k])*rd;
 				if (psf == 1)  // Gaussian PSF
 				{
-					if (rs <= 9) in_img[i*size + j] += flux*exp(-rs*0.5);
+					if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
 				}
 				else				// Moffat PSF
 				{
-					if (rs <= 9) in_img[i*size + j] += flux*pow(1 + rs, -3.5);
+					if (rs <= 9) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 				}
 			}
 		}
@@ -275,10 +327,11 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 
 void gsl_rng_initialize(int seed) 
 {
-	gsl_rng_env_setup();
-	T = gsl_rng_ranlxs0;	
-	gsl_rng_default_seed = (seed);
+	//gsl_rng_env_setup();
+	//gsl_rng_default_seed = seed;
+	T = gsl_rng_mt19937;
 	rng = gsl_rng_alloc(T);
+	gsl_rng_set(rng, seed);
 }
 
 void gsl_rng_free()
@@ -293,15 +346,15 @@ void create_points(double *point, int num_p, double radius)
 
 	for (i = 0; i < num_p; i++)
 	{	
-		/*theta = 2 * Pi*gsl_rng_uniform(rng);
-		step = radius*gsl_rng_uniform(rng);
-		point[i] = cos(theta)*step;
-		point[i + num_p] = sin(theta)*step;
-		xm += cos(theta)*step;
-		ym += sin(theta)*step;*/
+		//theta = 2.* Pi*gsl_rng_uniform(rng);
+		//step = radius*gsl_rng_uniform(rng);
+		//point[i] = cos(theta)*step;
+		//point[i + num_p] = sin(theta)*step;
+		//xm += cos(theta)*step;
+		//ym += sin(theta)*step;
 		
-		theta = 2 * Pi*gsl_rng_uniform(rng);
-		step = gsl_rng_uniform(rng);
+		theta = 2.*Pi*gsl_rng_uniform(rng);
+		step =  gsl_rng_uniform(rng);
 
 		x += cos(theta)*step;
 		y += sin(theta)*step;
@@ -326,7 +379,11 @@ void create_points(double *point, int num_p, double radius)
 void create_psf(double*in_img, double scale, int size, int psf)
 {
 	int i, j;
-	double rs, r1, val;
+	double rs, r1, val, flux_g, flux_m;
+
+	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+
 	scale = 1. / scale / scale;
 	for (i = 0; i < size; i++)
 	{
@@ -336,11 +393,11 @@ void create_psf(double*in_img, double scale, int size, int psf)
 			rs = r1 + (j - size / 2.)*(j - size / 2)*scale;
 			if (psf == 1)  // Gaussian PSF
 			{
-				if (rs <= 9) in_img[i*size + j] += exp(-rs*0.5);
+				if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
 			}
 			else              // Moffat PSF
 			{
-				if (rs <= 9.) in_img[i*size + j] += pow(1 + rs, -3.5);
+				if (rs <= 9.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 			}
 		}
 	}
@@ -351,11 +408,12 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a list of '0' should be putted in  */
 	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, max = 0, alpha, kx, ky, tk;
+	double mp1=0., mp2=0.;
 	int i, j, k;
 
 	alpha = 16*Pi *Pi*Pi*Pi/ (size*size*size*size);
 
-	beta = 1. / paras->psf_hlr / paras->psf_hlr;
+	beta = 4. / paras->psf_hlr / paras->psf_hlr;
 	
 	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken account
 	for (i = 0; i < size*size; i++)
@@ -374,12 +432,13 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 			if (psf_img[i*size + j] > max)
 			{
 				tk = exp( - ( kx*kx + ky*ky ) * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
-				//cout << gal_img[i*size + j]<<"\t"<<noise_img[i*size + j] << endl;
 				mg1 += -0.5 * ( kx*kx - ky*ky ) * tk;
 				mg2 += -kx*ky*tk;
 				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
 				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5 * beta);
 				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2. * beta);
+				mp1 += ( 4.*beta*( pow(kx, 4) - pow(ky, 4) ) - beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				mp2 += ( 8.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 2*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
 		}
 	}
@@ -389,6 +448,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 	paras->dn = mn;
 	paras->du = mu;
 	paras->dv = mv;
+	paras->dp1 = mp1;
+	paras->dp2 = mp2;
 
 }
 
@@ -428,7 +489,7 @@ void segament(double *chip, double *stamp, int tag, int size, int row, int col)
 	}
 }
 
-void addnoise(double *image, int pixel_num,  para *paras, double sigma)
+void addnoise(double *image, int pixel_num,   double sigma)
 {
 	int i;
 

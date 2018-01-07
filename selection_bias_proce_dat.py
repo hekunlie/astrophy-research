@@ -63,38 +63,8 @@ else:
     print('no result cache exists')
 
 if not exist or comm == 1:
-    # check the classification cache
-    data_cache_exist = os.path.exists(data_cache_path)
-    if data_cache_exist:
-        print('0: use the classification cache data existed\n1: overwrite it')
-        data_comm = int(input('0/1?:'))
-    else:
-        print('no classification cache')
-
-    if not data_cache_exist or data_comm == 1:
-        print('Starting>>>>')
-        files = os.listdir(path)
-        paths = []
-        arrs = []
-        counts = 0
-        tc1 = time.time()
-        for i in files:
-            if ".dat" in i and 'chip' in i:
-                if counts == 0:
-                    data = numpy.loadtxt(path+i)
-                    counts += 1
-                else:
-                    data = numpy.row_stack((data, numpy.loadtxt(path+i)))
-                    counts += 1
-
-        numpy.savez(data_cache_path, data)
-        print(counts, data.shape)
-        tc2 = time.time()
-        print("Classification finished within %.3f <<<<"%(tc2-tc1))
-
-    else:
-        print("Loading data cache>>>")
-        data = numpy.load(data_cache_path)['arr_0']
+    print("Loading data cache>>>")
+    data = numpy.load(data_cache_path)['arr_0']
 
     # print("Calculate shear")
     # print(data.shape)

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "mpi.h"
 #include "FQlib.h"
+#include<hdf5.h>
 
 //#define TRANS_S_STD 0.5
 using namespace std;
@@ -31,10 +32,11 @@ int main(int argc, char*argv[])
 		int chip_num = 1000, stamp_num = 10000, shear_pairs = 10;
 
 		int i, j, seed;
-		int size = 52, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 4., max_radius = 9., st, ed, s1, s2;
+		int size = 56, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		double psf_scale = 4., max_radius = 9., flux_m, ry, rs, rd, st, ed, s1, s2;
 		double g1=0., g2=0.;
-		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
+		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.72;
+		rd = 1. / psf_scale / psf_scale;
 		all_paras.gal_noise_sig = gal_noise_sig;
 		all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -50,7 +52,9 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		//seed = myid * 84324 + 46331;
-		seed = myid * 2255234 + 3455331;
+		//seed = myid * 5234 + 34531;
+		//seed = myid * 345734 + 944531; // m1&m2 bias 1000W, no bias 100W my points generation method
+		seed = myid * 73780 + 155301;
 		gsl_rng_initialize(seed);
 		
 		string s;
@@ -108,10 +112,12 @@ int main(int argc, char*argv[])
 
 			for (j = 0; j < stamp_num; j++)
 			{
-				create_points(point, num_p, max_radius);
-				convolve(gal, point, flux[i*stamp_num+j], size, num_p, 0, psf_scale, g1, g2, psf_type);
 
-				addnoise(gal, size*size, &all_paras, gal_noise_sig);
+				create_points(point, num_p, max_radius);		
+
+				convolve(gal, point, flux[i*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
+
+				addnoise(gal, size*size,  gal_noise_sig);
 
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 
@@ -120,7 +126,7 @@ int main(int argc, char*argv[])
 				pow_spec(gal, gpow, size, size);
 				f_snr(gpow, &all_paras, size, 1);
 
-				addnoise(noise, size*size, &all_paras, gal_noise_sig);
+				addnoise(noise, size*size, gal_noise_sig);
 				pow_spec(noise, pnoise, size, size);
 				
 				shear_est(gpow, ppow, pnoise, &all_paras, size);
@@ -130,8 +136,8 @@ int main(int argc, char*argv[])
 				initialize(point, num_p * 2);
 				initialize(noise, size*size);
 				initialize(pnoise, size*size);
-				sprintf(buffer, "%g %g %g %.6f %.6f %g %g %g %.6f %.6f %.6f %.6f %.6f %g %g %g %d %.3f %.3f %.3f %.3f %.3f %d %d \n", 0., 0., 0., all_paras.n1, g1, 0.,0.,0., all_paras.n2, g2, all_paras.dn, all_paras.du, all_paras.dv,
-				0., 0., 0., all_paras.gal_size, all_paras.gal_flux , all_paras.gal_peak , all_paras.gal_snr, all_paras.gal_fsnr, all_paras.gal_osnr ,myid, i);
+				sprintf(buffer, "%g %g %g %.6f %.6f %g %g %g %.6f %.6f %.6f %.6f %.6f %g %g %g %d %.3f %.3f %.3f %.3f %.3f %.6f %.6f %d %d %d \n", 0., 0., 0., all_paras.n1, g1, 0.,0.,0., all_paras.n2, g2, all_paras.dn, all_paras.du, all_paras.dv,
+				0., 0., 0., all_paras.gal_size, all_paras.gal_flux , all_paras.gal_peak , all_paras.gal_snr, all_paras.gal_fsnr, all_paras.gal_osnr ,all_paras.dp1, all_paras.dp2, myid, i, j);
 				fout << buffer;
 			}
 
@@ -160,8 +166,7 @@ int main(int argc, char*argv[])
 		delete[] ppow;
 		delete[] noise;		
 		delete[] pnoise;
-		gsl_rng_free();		
-		
+		gsl_rng_free();				
 		MPI_Finalize();
 		return 0;
 }
