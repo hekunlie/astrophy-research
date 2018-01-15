@@ -27,7 +27,7 @@ class Fourier_Quad:
         ky, kx = self.my, self.mx
         gal_ps = self.pow_spec(gal_image)
 
-        if noise is not None:                                # to deduct the noise
+        if noise is not None:
             nbg = self.pow_spec(noise)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)
@@ -59,9 +59,9 @@ class Fourier_Quad:
         return mg1, mg2, mn, mu, mv
 
     def wbeta(self, beta):
-        sigma = beta/2.
+        sigma = beta/numpy.sqrt(2)
         w_temp = numpy.exp(-(self.mx**2 + self.my**2)/sigma**2)
-        return w_temp, 2./beta
+        return w_temp, numpy.sqrt(2)/beta
 
     def ran_pos(self, num, radius, g=None):
         xy_coord = numpy.zeros((2, num))
@@ -427,7 +427,7 @@ class Fourier_Quad:
     def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
-        temp_data = numpy.sort(numpy.abs(g))[:-int(len(g)*0.01)]
+        temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))

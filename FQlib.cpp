@@ -10,8 +10,9 @@ void write_h5(char *filename, char *set_name, int row, int column, double *matri
 {
 	hid_t file_id;
 	herr_t status;
+	remove(filename);
 	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
+	
 	// 创建数据集的metadata中的dataspace信息项目
 	unsigned rank = 2;
 	hsize_t dims[2];
@@ -327,9 +328,10 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 
 void gsl_rng_initialize(int seed) 
 {
-	//gsl_rng_env_setup();
+	gsl_rng_env_setup();
 	//gsl_rng_default_seed = seed;
-	T = gsl_rng_mt19937;
+	//T = gsl_rng_mt19937;
+	T = gsl_rng_ranlxs0;
 	rng = gsl_rng_alloc(T);
 	gsl_rng_set(rng, seed);
 }
@@ -342,7 +344,7 @@ void gsl_rng_free()
 void create_points(double *point, int num_p, double radius)
 {	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
 	int i;
-	double x = 0., y = 0., xm=0, ym=0, theta, step;
+	double x = 0., y = 0., xm=0., ym=0., theta, step;
 
 	for (i = 0; i < num_p; i++)
 	{	
@@ -379,18 +381,18 @@ void create_points(double *point, int num_p, double radius)
 void create_psf(double*in_img, double scale, int size, int psf)
 {
 	int i, j;
-	double rs, r1, val, flux_g, flux_m;
+	double rs, r1, val, flux_g, flux_m, rd;
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 
-	scale = 1. / scale / scale;
+	rd = 1. / scale / scale;
 	for (i = 0; i < size; i++)
 	{
-		r1 = (i - size / 2.)*(i - size / 2.)*scale;
+		r1 = (i - size / 2.)*(i - size / 2.)*rd;
 		for (j = 0; j < size; j++)
 		{
-			rs = r1 + (j - size / 2.)*(j - size / 2)*scale;
+			rs = r1 + (j - size / 2.)*(j - size / 2.)*rd;
 			if (psf == 1)  // Gaussian PSF
 			{
 				if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
@@ -407,13 +409,13 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a list of '0' should be putted in  */
-	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, max = 0, alpha, kx, ky, tk;
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, max = 0, thres, alpha, kx, ky, tk;
 	double mp1=0., mp2=0.;
 	int i, j, k;
 
 	alpha = 16*Pi *Pi*Pi*Pi/ (size*size*size*size);
-
-	beta = 4. / paras->psf_hlr / paras->psf_hlr;
+	/* beta is the beta_square in the estimators */
+	beta = 1./ paras->psf_hlr / paras->psf_hlr;
 	
 	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken account
 	for (i = 0; i < size*size; i++)
@@ -421,7 +423,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 		if (psf_img[i] > max)
 			max = psf_img[i];
 	}
-	max = max / 10000.;
+	thres = max / 10000.;
 
 	for (i = 0; i < size; i++)//y coordinates
 	{
@@ -429,16 +431,16 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 		for (j = 0; j < size; j++) // x coordinates
 		{
 			kx = j - size*0.5;
-			if (psf_img[i*size + j] > max)
+			if (psf_img[i*size + j] > thres)
 			{
 				tk = exp( - ( kx*kx + ky*ky ) * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
 				mg1 += -0.5 * ( kx*kx - ky*ky ) * tk;
 				mg2 += -kx*ky*tk;
 				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
-				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5 * beta);
-				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2. * beta);
-				mp1 += ( 4.*beta*( pow(kx, 4) - pow(ky, 4) ) - beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
-				mp2 += ( 8.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 2*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5*beta);
+				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2.* beta);
+				mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
 		}
 	}

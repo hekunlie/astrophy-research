@@ -26,7 +26,7 @@ struct para
 	double noise_sig;
 };
 
-const double Pi = 3.141592653589793;
+const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 

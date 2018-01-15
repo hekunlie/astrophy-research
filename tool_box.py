@@ -101,11 +101,11 @@ def source_detector(mask, ysize, xsize):
     # get the source object
     objects = []
     p = numpy.where(mask > 0)
-    xp, yp = p[0], p[1]
+    yp, xp = p[0], p[1]
     for j in range(len(xp)):
-        if mask[xp[j], yp[j]] > 0:
-            cache = [(xp[j], yp[j])]
-            mask[xp[j], yp[j]] = 0
+        if mask[yp[j], xp[j]] > 0:
+            cache = [(yp[j], xp[j])]
+            mask[yp[j], xp[j]] = 0
             num = 2
             num0 = 1
             while True:

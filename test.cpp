@@ -82,7 +82,7 @@ int main(int argc, char*argv[])
 	sprintf(chip_path, "/home/hklee/h5.hdf5");
 	sprintf(data_path, "/data");
 	cout << chip_path << endl;
-	write_h5(chip_path, data_path, rows, columns, matrix[0]);
+	//write_h5(chip_path, data_path, rows, columns, matrix[0]);
 	for (i = 0; i < 3; i++)
 	{
 		sprintf(chip_path, "/home/hklee/gal_chip_%04d.fits", myid, i);

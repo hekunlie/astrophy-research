@@ -25,19 +25,18 @@ int main(int argc, char*argv[])
 		MPI_Get_processor_name(processor_name, &namelen);
 		
 		para all_paras;
-		ofstream fout;
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
 		int chip_num = 1000, stamp_num = 10000, shear_pairs = 10;
 		/* remember to change the data_cols when you change the number of estimators recorded */
 		int i, j, seed, data_rows, data_cols=27;
-		int size = 56, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 4., max_radius = 9., flux_m, ry, rs, rd, st, ed, s1, s2;
+		int size =60, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		double psf_scale = 5., max_radius = 9., st, ed, s1, s2;
 		double g1=0., g2=0.;
-		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.72;
+		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
 		data_rows = chip_num*stamp_num;
-		rd = 1. / psf_scale / psf_scale;
+
 		all_paras.gal_noise_sig = gal_noise_sig;
 		all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -61,9 +60,7 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		//seed = myid * 84324 + 46331;
-		//seed = myid * 5234 + 34531;
-		//seed = myid * 345734 + 944531; // m1&m2 bias 1000W, no bias 100W my points generation method
-		seed = myid * 73780 + 155301;
+		seed = myid * 9780 + 23401;
 		gsl_rng_initialize(seed);
 		
 		string s;
@@ -102,13 +99,11 @@ int main(int argc, char*argv[])
 		create_psf(psf, psf_scale, size, psf_type);
 		pow_spec(psf, ppow, size, size);		
 		get_radius(ppow, &all_paras, thres, size, 1, psf_noise_sig);
-	
+
 		st = clock();
 
 		g1 = shear[myid];
 		g2 = shear[myid + shear_pairs];
-		sprintf(buffer1, "myid %d  g1: %4f  g2: %4f \n", myid, g1, g2);
-		cout << buffer1;
 
 		sprintf(h5_path, "/lmc/selection_bias/result/data/data_%d.hdf5", myid);
 		sprintf(set_name, "/data");
@@ -118,13 +113,9 @@ int main(int argc, char*argv[])
 			s1 = clock();
 
 			sprintf(chip_path, "/lmc/selection_bias/%d/gal_chip_%04d.fits", myid, i);
-			sprintf(data_path, "/lmc/selection_bias/result/data/%d_gal_chip_%04d.dat", myid, i);
-
-			fout.open(data_path);
 
 			for (j = 0; j < stamp_num; j++)
 			{
-
 				create_points(point, num_p, max_radius);		
 
 				convolve(gal, point, flux[i*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
@@ -138,7 +129,8 @@ int main(int argc, char*argv[])
 				pow_spec(gal, gpow, size, size);
 				f_snr(gpow, &all_paras, size, 1);
 
-				addnoise(noise, size*size, gal_noise_sig);
+				addnoise(noise, size*size, gal_noise_sig);				
+				
 				pow_spec(noise, pnoise, size, size);
 				
 				shear_est(gpow, ppow, pnoise, &all_paras, size);
@@ -172,7 +164,7 @@ int main(int argc, char*argv[])
 			write_img(big_img, stamp_nx*size, stamp_nx*size, chip_path);		
 			
 			initialize(big_img, stamp_nx*stamp_nx*size*size);	
-			fout.close();
+
 			s2 = clock();
 
 			sprintf(buffer1, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);

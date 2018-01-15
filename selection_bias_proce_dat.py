@@ -13,6 +13,7 @@ from sys import argv
 import numpy
 import pandas
 import lsstetc
+import h5py
 
 wei, snr_s, snr_e, filter_type, wei_pow, method = argv[1:7]
 
@@ -50,7 +51,7 @@ pic_path = result_path + "pic/"
 
 # check the final result cache
 final_cache_path = path + 'final_cache.npz'
-data_cache_path = path + 'data_cache.npz'
+data_cache_path = path + 'data_cache_ng.hdf5'
 exist = os.path.exists(final_cache_path)
 print(path,"\n",pic_path,"\n",final_cache_path,"\n", data_cache_path)
 fq = Fourier_Quad(56, 12243)
@@ -64,7 +65,7 @@ else:
 
 if not exist or comm == 1:
     print("Loading data cache>>>")
-    data = numpy.load(data_cache_path)['arr_0']
+    data = h5py.File(data_cache_path,'r+')["/data1"].value
 
     # print("Calculate shear")
     # print(data.shape)
@@ -174,7 +175,8 @@ if not exist or comm == 1:
             res_arr1[na, i] = g1_h
             res_arr1[na+4, i] = g1_h_sig
             res_arr1[na+8, i] = num1
-            print(num1, "g1: %.4f, deviation: %.4f * e-4, sig: %.6f" %(g1_h, 10000*(g1_h - fg1[i]), g1_h_sig))
+            print(num1, "g1: %.4f, deviation: %.4f * e-4, sig: %.6f, shape noise: %.6f"
+                  %(g1_h, 10000*(g1_h - fg1[i]), g1_h_sig, g1_h_sig*numpy.sqrt(num1)))
     print('\n')
     for i in range(len(fg2)):
         print(fg2[i])
@@ -220,7 +222,8 @@ if not exist or comm == 1:
             res_arr2[na, i] = g2_h
             res_arr2[na+4, i] = g2_h_sig
             res_arr2[na+8, i] = num2
-            print(num2, "g2: %.5f,  deviation: %.4f * e-4, sig: %.6f" % (g2_h, 10000*(g2_h - fg2[i]), g2_h_sig))
+            print(num2, "g2: %.5f,  deviation: %.4f * e-4, sig: %.6f, shape noise:%.6f"
+                  % (g2_h, 10000*(g2_h - fg2[i]), g2_h_sig, g2_h_sig*numpy.sqrt(num2)))
 
     numpy.savez(final_cache_path, res_arr1, res_arr2)
 
@@ -362,6 +365,6 @@ if filter_type != 'none':
         mc_df = pandas.DataFrame(data=mc_data, index=dex, columns=mc_col)
         mc_df.to_excel(mc_data_path)
 te = time.time()
-
+data.close()
 print(tm-ts, te-tm)
 
