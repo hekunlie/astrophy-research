@@ -25,8 +25,8 @@ int main(int argc, char*argv[])
 	int chip_num = 1, stamp_num = 10000, shear_pairs = 10;
 	int myid = 0;
 	int i, j, seed;
-	int size = 56, num_p = 60, stamp_nx = 100, psf_type = 2;
-	double psf_scale = 6., max_radius = 9., st, ed;
+	int size = 64, num_p = 100, stamp_nx = 100, psf_type = 2;
+	double psf_scale = 5., max_radius = 11., st, ed;
 	double g1 = 0., g2 = 0.;
 	double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
 	all_paras.gal_noise_sig = gal_noise_sig;
@@ -59,45 +59,37 @@ int main(int argc, char*argv[])
 
 	g1 = 0.03;
 	g2 = 0.04;
-	sprintf(buffer1, "myid %d  g1: %4f  g2: %4f \n", myid, g1, g2);
-	cout << buffer1;
+
 	double s1, s2, s3, s4, s5, s6, s7, s8, flux_m = 200.;
 	double d1 = 0., d2 = 0., d3 = 0., d4 = 0, d5 = 0, r1, rd, rs;
 	int k, ii, jj;
 	int rows = 1000;
 	int columns = 27;
 
-	double* data_mem = new double[rows*columns]();
-	double** matrix = new double*[rows];
 
-	for (int i = 0; i < rows; i++)matrix[i] = data_mem + i*columns;
-
-	for (int r = 0; r < rows; r++)
-	{
-		for (int c = 0; c < columns; c++)
-		{
-			matrix[r][c] = r;
-		}
-	}
-	sprintf(chip_path, "/home/hklee/h5.hdf5");
-	sprintf(data_path, "/data");
-	cout << chip_path << endl;
-	//write_h5(chip_path, data_path, rows, columns, matrix[0]);
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < 5; i++)
 	{
 		sprintf(chip_path, "/home/hklee/gal_chip_%04d.fits", myid, i);
 		sprintf(data_path, "/lmc/selection_bias/result/data/%d_gal_chip_%04d.dat", myid, i);
 
-		create_points(point, num_p, max_radius);
+		create_epoints(point, num_p, max_radius , Pi / 6,  0.8);
 		for (j = 0; j < 4; j++)
 		{
-
-			k = 1;
+			convolve(gal, point, 100, size, num_p, j, psf_scale, g1, g2, psf_type);
+			pow_spec(gal, gpow, size, size);
+			shear_est(gpow, ppow, noise, &all_paras, size);
+			sprintf(chip_path, "/home/hklee/gal_chip_%04d.fits", j);
+			write_img(gal, size, size, chip_path);
+			d1 += all_paras.n1;
+			d2 += all_paras.n2;
+			d3 += all_paras.dn;
+			initialize(gal, size*size);
+			initialize(gpow, size*size);
 
 		}
 
-		//sprintf(buffer1, "myid %d:  %g %g %g \n", myid, d1/d3, d2/d3);
-		//cout << buffer1;
+		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, d2/d3);
+		cout << buffer1;
 	}
 
 	ed = clock();
@@ -105,8 +97,6 @@ int main(int argc, char*argv[])
 	sprintf(buffer1, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
 	cout << buffer1;
 
-	delete[] matrix;
-	delete[] data_mem;
 	delete[] big_img;
 	delete[] point;
 	delete[] gal;

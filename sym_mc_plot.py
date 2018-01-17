@@ -79,6 +79,7 @@ for tag, cut_s in enumerate(select[cut][1]):
     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
 
 if rank > 0:
+    # pass
     comm.Send(res_arr, dest=0, tag=rank)
 
 else:
@@ -111,59 +112,36 @@ else:
     mc2 = numpy.array(mc2).T
     mc_path = "/home/hklee/work/result/cuts/sym/" + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
+    # mc1 = numpy.load(mc_path)['arr_0']
+    # mc2 = numpy.load(mc_path)['arr_1']
 
     x1 = select[cut][1][0]
     x2 = select[cut][1][-1]
 
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(10, 5))
 
-    plt.subplot(221)
-    plt.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=2)
-    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
-    plt.plot([0,0],[x1, x2], c='grey')
-    ax = plt.gca()
-    ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
-    plt.xlabel("Cutoff")
-    plt.semilogx()
-    plt.ylabel("m1")
+    ax1 = fig.add_subplot(121)
+    ax1.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=2, label='m1')
+    ax1.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='royalblue', capsize=2, label='m2')
+    ax1.plot([x1 - 0.05 * (x2 - x1), x2+ 0.05 * (x2 - x1)], [0, 0], c='grey')
+    ax1.set_xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
+    ax1.set_xlabel("Cutoff")
+    # ax1.set_xscale('log')
+    ax1.set_ylabel("m")
 
-    plt.subplot(222)
-    plt.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=2)
-   # plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
-    plt.plot([0, 0], [x1, x2], c='grey')
-    ax = plt.gca()
-    ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
-    plt.xlabel("Cutoff")
-    plt.semilogx()
-    plt.ylabel("c1")
-
-    plt.subplot(223)
-    plt.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='coral', capsize=2)
-    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
-    plt.plot([0, 0], [x1, x2], c='grey')
-    ax = plt.gca()
-    ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
-    plt.xlabel("Cutoff")
-    plt.semilogx()
-    plt.ylabel("m2")
-
-    plt.subplot(224)
-    plt.errorbar(select[cut][1], mc2[2], mc2[3], c='coral', capsize=2)
-    #plt.plot([0.05 * (x1 - x2), 1.05 * (x2 - x1)], [0, 0], c='grey')
-    #plt.xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
-    plt.plot([0, 0], [x1, x2], c='grey')
-    ax = plt.gca()
-    ax.yaxis.get_major_formatter().set_powerlimits((1, 2))
-    plt.xlabel("Cutoff")
-    plt.semilogx()
-    plt.ylabel("c2")
+    ax2 = fig.add_subplot(122)
+    ax2.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=2, label='c1')
+    ax2.errorbar(select[cut][1], mc2[2], mc2[3], c='royalblue', capsize=2, label='c2')
+    ax2.plot([x1 - 0.05 * (x2 - x1), x2+ 0.05 * (x2 - x1)], [0, 0], c='grey')
+    ax2.set_xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
+    ax2.set_xlabel("Cutoff")
+    # ax1.set_xscale('log')
+    ax2.set_ylabel("c")
 
     namep = "/home/hklee/work/result/cuts/sym/" + cut + "/total.eps"
     plt.savefig(namep)
-    plt.show()
     plt.close()
 
 t2 = time.clock()

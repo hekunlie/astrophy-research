@@ -38,10 +38,11 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
 void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras, int size);
 void create_points(double *point, int num_p, double radius);
+void create_epoints(double *point, int num_p, double radius, double theta, double ellip);
 void create_psf(double*in_img, double scale, int size, int psf);
 void initialize(double *array, int size );
 void stack(double *container, double *stamp, int tag, int size, int row, int col);
-void segament(double *chip, double *stamp, int tag, int size, int row, int col);
+void segment(double *chip, double *stamp, int tag, int size, int row, int col);
 void addnoise(double *image, int pixel_num,  double sigma);
 void f_snr(double *image, para *, int size, int edge);
 void gsl_rng_initialize(int seed);

@@ -324,7 +324,7 @@ class Fourier_Quad:
         xc, yc = numpy.dot(numpy.linalg.inv(coeffs), mult)
         return yc, xc
 
-    def divide_stamps(self, image):
+    def segment(self, image):
         shape = image.shape
         y = int(shape[0] / self.size)
         x = int(shape[1] / self.size)
@@ -335,7 +335,7 @@ class Fourier_Quad:
                 star.pop()
         return star  # a list of psfs
 
-    def image_stack(self, image_array, columns):
+    def stack(self, image_array, columns):
         # the inverse operation of divide_stamps
         # the image_array is a three dimensional array of which the length equals the number of the stamps
         num = len(image_array)
@@ -352,8 +352,8 @@ class Fourier_Quad:
         return arr
 
     def fit(self, star_stamp, noise_stamp, star_data, mode=1):
-        psf_pool = self.divide_stamps(star_stamp)
-        noise_pool = self.divide_stamps(noise_stamp)
+        psf_pool = self.segment(star_stamp)
+        noise_pool = self.segment(noise_stamp)
         x = star_data[:, 0]
         y = star_data[:, 1]
         sxx = numpy.sum(x * x)

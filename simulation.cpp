@@ -28,11 +28,11 @@ int main(int argc, char*argv[])
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 1000, stamp_num = 10000, shear_pairs = 10;
+		int chip_num = 200, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
-		int i, j, seed, data_rows, data_cols=27;
-		int size =60, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 5., max_radius = 9., st, ed, s1, s2;
+		int i, j, seed, data_rows, data_cols=25;
+		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		double psf_scale = 5., max_radius = 8., st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
 		data_rows = chip_num*stamp_num;
@@ -60,7 +60,7 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		//seed = myid * 84324 + 46331;
-		seed = myid * 9780 + 23401;
+		seed = myid *380 + 1401;
 		gsl_rng_initialize(seed);
 		
 		string s;
@@ -154,11 +154,9 @@ int main(int argc, char*argv[])
 				data[i*stamp_num + j][19] = all_paras.gal_snr;
 				data[i*stamp_num + j][20] = all_paras.gal_fsnr;
 				data[i*stamp_num + j][21] = all_paras.gal_osnr;
-				data[i*stamp_num + j][22] = all_paras.dp1;
-				data[i*stamp_num + j][23] = all_paras.dp2;
-				data[i*stamp_num + j][24] = (double)(myid);
-				data[i*stamp_num + j][25] = (double)(i);
-				data[i*stamp_num + j][26] = (double)(j);
+				data[i*stamp_num + j][22] = (double)(myid);
+				data[i*stamp_num + j][23] = (double)(i);
+				data[i*stamp_num + j][24] = (double)(j);
 			}
 
 			write_img(big_img, stamp_nx*size, stamp_nx*size, chip_path);		

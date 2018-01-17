@@ -158,9 +158,9 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 	double max = 0, flux = 0, flux_sq=0. ;	
 
 	/* find the maximun */
-	for (y = size / 2 - 3; y < size / 2 +4; y++)
+	for (y = size / 2 - 5; y < size / 2 +5; y++)
 	{
-		for (x = size / 2 - 3; x < size / 2 + 4; x++)
+		for (x = size / 2 - 5; x < size / 2 + 5; x++)
 		{
 			if (in_img[y*size + x] > max)
 			{
@@ -170,25 +170,11 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 			}
 		}
 	}
-	
-	if (type == 1)
-	{
-		paras->psf_peak = max;
-		paras->psf_py = yp;
-		paras->psf_px = xp;
-	}
-	else
-	{
-		paras->gal_peak = max;
-		paras->gal_py = yp;
-		paras->gal_px = xp;
-	}
-
 	/* copy the image and wrap out the value smaller than the specific one */
 	double *cp_img = new double[size*size]();
 	for (x = 0; x < size*size; x++)
 	{	
-		if (in_img[x] > max / scale && in_img[x] > 2 * sig_level)
+		if (in_img[x] > max / scale && in_img[x] > 1.5 * sig_level)
 		{
 			cp_img[x] = in_img[x];
 		}
@@ -249,18 +235,41 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 		num = p;
 	}
 	if (type == 1)
-	{
+	{	
+		paras->psf_peak = max;
+		paras->psf_py = yp;
+		paras->psf_px = xp;
 		paras->psf_hlr = sqrt(p / Pi);
 		paras->psf_flux = flux;
 	}
 	else
 	{
-		paras->gal_hlr = sqrt(p / Pi);
-		paras->gal_flux = flux;
-		paras->gal_size = p;
-		paras->gal_fluxsq = flux_sq;
-		paras->gal_snr = sqrt(flux_sq) / paras->gal_noise_sig;
-		paras->gal_osnr = flux / sqrt(p) / paras->gal_noise_sig;
+		if (max > 1.5 * sig_level) 
+		{
+			paras->gal_peak = max;
+			paras->gal_py = yp;
+			paras->gal_px = xp;
+
+			paras->gal_hlr = sqrt(p / Pi);
+			paras->gal_flux = flux;
+			paras->gal_size = p;
+			paras->gal_fluxsq = flux_sq;
+			paras->gal_snr = sqrt(flux_sq) / paras->gal_noise_sig;
+			paras->gal_osnr = flux / sqrt(p) / paras->gal_noise_sig;
+		}
+		else
+		{	
+			paras->gal_peak = 0;
+			paras->gal_py = 0;
+			paras->gal_px = 0;
+
+			paras->gal_hlr =0;
+			paras->gal_flux = 0;
+			paras->gal_size = 0;
+			paras->gal_fluxsq = 0;
+			paras->gal_snr = 0;
+			paras->gal_osnr = 0;
+		}
 
 	}
 	delete[] col;
@@ -347,23 +356,14 @@ void create_points(double *point, int num_p, double radius)
 	double x = 0., y = 0., xm=0., ym=0., theta, step;
 
 	for (i = 0; i < num_p; i++)
-	{	
-		//theta = 2.* Pi*gsl_rng_uniform(rng);
-		//step = radius*gsl_rng_uniform(rng);
-		//point[i] = cos(theta)*step;
-		//point[i + num_p] = sin(theta)*step;
-		//xm += cos(theta)*step;
-		//ym += sin(theta)*step;
-		
+	{		
 		theta = 2.*Pi*gsl_rng_uniform(rng);
-		step =  gsl_rng_uniform(rng);
-
-		x += cos(theta)*step;
-		y += sin(theta)*step;
+		x += cos(theta);
+		y += sin(theta);
 		if (x*x + y*y > radius*radius)
 		{
-			x = cos(theta)*step;
-			y = sin(theta)*step;
+			x = cos(theta);
+			y = sin(theta);
 		}
 		point[i] = x;
 		point[i + num_p] = y;
@@ -378,6 +378,24 @@ void create_points(double *point, int num_p, double radius)
 	}
 }
 
+void create_epoints(double *point, int num_p, double radius, double beta, double ellip)
+{
+	int i=0, j;
+	double theta, r, b;
+	b = sqrt((1 - ellip) / (1 + ellip))*radius;
+
+	while (i < num_p)
+	{
+		r =radius* gsl_rng_uniform(rng);
+		theta = 2 * Pi*gsl_rng_uniform(rng);
+		if (1. / sqrt(cos(theta + beta)*cos(theta + beta) / radius / radius + sin(theta + beta)*sin(theta + beta) / b / b) > r)
+		{
+			point[i] = r*cos(theta);
+			point[i + num_p] = r*sin(theta);
+			i++;
+		}
+	}
+}
 void create_psf(double*in_img, double scale, int size, int psf)
 {
 	int i, j;
@@ -439,8 +457,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
 				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5*beta);
 				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2.* beta);
-				mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
-				mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
 		}
 	}
@@ -450,8 +468,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 	paras->dn = mn;
 	paras->du = mu;
 	paras->dv = mv;
-	paras->dp1 = mp1;
-	paras->dp2 = mp2;
+	//paras->dp1 = 0;//mp1;
+	//paras->dp2 = 0;// mp2;
 
 }
 
@@ -478,7 +496,7 @@ void stack(double *container, double *stamp, int tag, int size, int row, int col
 	}
 }
 
-void segament(double *chip, double *stamp, int tag, int size, int row, int col)
+void segment(double *chip, double *stamp, int tag, int size, int row, int col)
 {
 	int i, j, m;	
 	m = (tag - tag%col)*size*size + tag%col*size;
