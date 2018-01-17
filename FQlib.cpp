@@ -378,12 +378,13 @@ void create_points(double *point, int num_p, double radius)
 	}
 }
 
-void create_epoints(double *point, int num_p, double radius, double beta, double ellip)
+void create_epoints(double *point, int num_p, double ellip)
 {
-	int i=0, j;
-	double theta, r, b;
+	int i=0;
+	double theta, beta, radius, r, b;
+	radius = 5 + 4*gsl_rng_uniform(rng);
 	b = sqrt((1 - ellip) / (1 + ellip))*radius;
-
+	beta = 2*Pi*gsl_rng_uniform(rng);
 	while (i < num_p)
 	{
 		r =radius* gsl_rng_uniform(rng);

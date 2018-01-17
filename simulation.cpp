@@ -31,7 +31,7 @@ int main(int argc, char*argv[])
 		int chip_num = 200, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
 		int i, j, seed, data_rows, data_cols=25;
-		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		int size =64, num_p = 55, stamp_nx = 100,  psf_type = 2;
 		double psf_scale = 5., max_radius = 8., st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
@@ -60,7 +60,7 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		//seed = myid * 84324 + 46331;
-		seed = myid *380 + 1401;
+		seed = myid *80 + 41;
 		gsl_rng_initialize(seed);
 		
 		string s;
@@ -95,6 +95,24 @@ int main(int argc, char*argv[])
 		}
 		fin.close();
 
+		// read ellipticity of galaxies
+		double *ellip = new double[chip_num*stamp_num];
+		sprintf(buffer1, "/lmc/selection_bias/parasmeters/ellip_%d.dat", myid);
+		fin.open(buffer1);
+		i = 0;
+		while (!fin.eof())
+		{
+			getline(fin, s);
+			str = s.c_str();
+			ellip[i] = atof(str);
+			i++;
+			if (i == chip_num*stamp_num) // in case of the length of files is longger than the array
+			{
+				break;
+			}
+		}
+		fin.close();
+
 		 //PSF
 		create_psf(psf, psf_scale, size, psf_type);
 		pow_spec(psf, ppow, size, size);		
@@ -116,7 +134,8 @@ int main(int argc, char*argv[])
 
 			for (j = 0; j < stamp_num; j++)
 			{
-				create_points(point, num_p, max_radius);		
+				create_points(point, num_p, max_radius);
+				//create_epoints(point, num_p, ellip[i*stamp_num + j]);
 
 				convolve(gal, point, flux[i*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
 
@@ -186,6 +205,7 @@ int main(int argc, char*argv[])
 		delete[] pnoise;
 		delete[] data_m;
 		delete[] data;
+		delete[] ellip;
 		gsl_rng_free();				
 		MPI_Finalize();
 		return 0;

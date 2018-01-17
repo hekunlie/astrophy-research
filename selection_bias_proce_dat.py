@@ -173,11 +173,12 @@ for na in range(3, 4):
             e2mc = tool_box.data_fit(fg2, arr2[0], arr2[1])
             numpy.savez(path+"final_cache.npz",arr1, arr2, e1mc, e2mc)
             for p in range(cpus):
-                print("num: %4.1f K, g1: %8.6f, m_g1: %8.6f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
-                      %(arr1[2,p]/1000, fg1[p], arr1[0,p], arr1[1,p], 10000*(arr1[0,p]-fg1[p]), numpy.sqrt(arr1[2,p])*arr1[1,p]))
+                print("num: %4.1f W, g1: %8.5f, m_g1: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
+                      %(arr1[2,p]/10000, fg1[p], arr1[0,p], arr1[1,p], 10000*(arr1[0,p]-fg1[p]), numpy.sqrt(arr1[2,p])*arr1[1,p]))
+            print("\n")
             for p in range(cpus):
-                print("num: %4.1f K, g2: %8.6f, m_g2: %8.6f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f "
-                      %(arr2[2,p]/1000, fg2[p], arr2[0,p], arr2[1,p], 10000*(arr2[0,p]-fg2[p]), numpy.sqrt(arr2[2,p])*arr2[1,p]))
+                print("num: %4.1f W, g2: %8.5f, m_g2: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f "
+                      %(arr2[2,p]/10000, fg2[p], arr2[0,p], arr2[1,p], 10000*(arr2[0,p]-fg2[p]), numpy.sqrt(arr2[2,p])*arr2[1,p]))
 
             if e1mc[0]-1 - 2*e1mc[1] < 0 < e1mc[0]-1 + 2*e1mc[1]:
                 m1_b = "no m1 bias"
@@ -196,8 +197,8 @@ for na in range(3, 4):
                 c2_b = "no c2 bias"
             else:
                 c2_b = "c2 bias"
-            print("%10s: %10.6f (%6f), %s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
-            print("%10s: %10.6f (%6f), %s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
+            print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
+            print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
             nm = pic_path + name[i] + ".png"
             tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max', nm)
 

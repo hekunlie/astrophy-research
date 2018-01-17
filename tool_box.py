@@ -177,7 +177,7 @@ def data_fit(x_data, y_data, y_err):
     return mc[1], sig_m1, mc[0], sig_c1
 
 def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, path=None):
-    fig = plt.figure(figsize=(16, 8))
+    fig = plt.figure(figsize=(20, 10))
     ax = fig.add_subplot(121)
     ax.errorbar(x1_data, y1_data[0], y1_data[1], ecolor='black', elinewidth=1, fmt='none', capsize=2)
     ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
