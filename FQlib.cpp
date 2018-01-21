@@ -1,59 +1,38 @@
-
-//#include "stdafx.h"
+ï»¿
 #include "FQlib.h"
 
 using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
 
-void write_h5(char *filename, char *set_name, int row, int column, double *matrix)
+void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix , int *i_matrix )
 {
 	hid_t file_id;
 	herr_t status;
 	remove(filename);
 	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	
-	// ´´½¨Êı¾İ¼¯µÄmetadataÖĞµÄdataspaceĞÅÏ¢ÏîÄ¿
 	unsigned rank = 2;
 	hsize_t dims[2];
 	dims[0] = row;
 	dims[1] = column;
-	hid_t dataspace_id;  // Êı¾İ¼¯metadataÖĞdataspaceµÄid
-						 // dataspace_id = H5Screate_simple(int rank, ¿Õ¼äÎ¬¶È
-						 //              const hsize_t* current_dims, Ã¿¸öÎ¬¶ÈÔªËØ¸öÊı
-						 //                    - ¿ÉÒÔÎª0£¬´ËÊ±ÎŞ·¨Ğ´ÈëÊı¾İ
-						 //                  const hsize_t* max_dims, Ã¿¸öÎ¬¶ÈÔªËØ¸öÊıÉÏÏŞ
-						 //                    - ÈôÎªNULLÖ¸Õë£¬ÔòºÍcurrent_dimÏàÍ¬£¬
-						 //                    - ÈôÎªH5S_UNLIMITED£¬Ôò²»ÉáÉÏÏŞ£¬µ«datasetÒ»¶¨ÊÇ·Ö¿éµÄ(chunked).
+	hid_t dataspace_id;  
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
+	hid_t dataset_id;    
 
-	// ´´½¨Êı¾İ¼¯ÖĞµÄÊı¾İ±¾Éí
-	hid_t dataset_id;    // Êı¾İ¼¯±¾ÉíµÄid
-						 // dataset_id = H5Dcreate(loc_id, Î»ÖÃid
-						 //              const char *name, Êı¾İ¼¯Ãû
-						 //                hid_t dtype_id, Êı¾İÀàĞÍ
-						 //                hid_t space_id, dataspaceµÄid
-						 //             Á¬½Ó(link)´´½¨ĞÔÖÊ,
-						 //                 Êı¾İ¼¯´´½¨ĞÔÖÊ,
-						 //                 Êı¾İ¼¯·ÃÎÊĞÔÖÊ)
-	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	if (i_matrix)
+	{
+		dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, i_matrix);
+	}
+	if (d_matrix)
+	{
+		dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d_matrix);
+	}
 
-	// ½«Êı¾İĞ´ÈëÊı¾İ¼¯
-	// herr_t Ğ´Èë×´Ì¬ = H5Dwrite(Ğ´ÈëÄ¿±êÊı¾İ¼¯id,
-	//                               ÄÚ´æÊı¾İ¸ñÊ½,
-	//                       memory_dataspace_id, ¶¨ÒåÄÚ´ædataspaceºÍÆäÖĞµÄÑ¡Ôñ
-	//                          - H5S_ALL: ÎÄ¼şÖĞdataspaceÓÃ×öÄÚ´ædataspace£¬file_dataspace_idÖĞµÄÑ¡Ôñ×÷ÎªÄÚ´ædataspaceµÄÑ¡Ôñ
-	//                         file_dataspace_id, ¶¨ÒåÎÄ¼şÖĞdataspaceµÄÑ¡Ôñ
-	//                          - H5S_ALL: ÎÄ¼şÖĞdatasapceµÄÈ«²¿£¬¶¨ÒåÎªÊı¾İ¼¯ÖĞdataspace¶¨ÒåµÄÈ«²¿Î¬¶ÈÊı¾İ
-	//                        ±¾´ÎIO²Ù×÷µÄ×ª»»ĞÔÖÊ,
-	//                          const void * buf, ÄÚ´æÖĞÊı¾İµÄÎ»ÖÃ
-	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix);
-
-	// ¹Ø±ÕdatasetÏà¹Ø¶ÔÏó
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
-
-	// ¹Ø±ÕÎÄ¼ş¶ÔÏó
 	status = H5Fclose(file_id);
 }
 
@@ -277,6 +256,108 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 	delete[] cp_img;
 }
 
+void detector(double *source_img, int *source_chain, double thres, int y_size, int x_size)
+{	
+	/* will not change the inputted array */
+	/* the xy_chain is a (2*y_szie*x_size + 1) array stores the xy coordinates and the length of each source and total number of sources detected (stored in the last elements of source_chain */
+	int i, j, k=0, y, x;
+	/* cp_ contains the image and cp_xy  the detected source coordinates[ [y], [x] ,[(temp_y,temp_x).....] */
+	double *cp_ = new double[y_size*x_size]();
+	int *cp_xy = new int[3*y_size*x_size]();
+	/* mask and record the source coordinate */
+	for (i = 0; i < y_size; i++)
+	{
+		for (j = 0; j < x_size; j++)
+		{
+			if (source_img[i*x_size + j] > thres)
+			{
+				cp_[i*x_size+j] = source_img[i*x_size + j];
+				cp_xy[k] = i;
+				cp_xy[y_size*x_size + k] = j;
+				k++;
+			}
+		}
+	}
+	/* FoF */
+	int  len0=0, len, s_num=0, num0, num, num_new, ix, iy;
+	double flux=0;
+	for (i = 0; i < k; i++)
+	{	
+		len = 0;
+		num0 = 0;
+		num = 1;
+
+		y = cp_xy[i];
+		x = cp_xy[y_size*x_size + i];
+		
+		flux += cp_[y*x_size + x];
+		cp_[y*x_size + x] = 0;
+		cp_xy[2 * y_size*x_size ] = y;
+		cp_xy[2 * y_size*x_size +1] = x;
+		len = 1;
+
+		while (num0 != num)
+		{
+			num_new = num - num0;
+			num0 = len;
+			for ( j = num0 - num_new; j < num0; j++)
+			{	
+				iy = cp_xy[2 * y_size*x_size + 2 * j];
+				ix = cp_xy[2 * y_size*x_size + 2*j + 1];
+				if ( (iy - 1) > -1 && cp_[(iy-1)*x_size+ix] > 0)
+				{
+					flux += cp_[(iy - 1)*x_size + ix];
+					cp_[(iy - 1)*x_size + ix] = 0;
+					cp_xy[2*y_size*x_size + 2*len] = iy-1;
+					cp_xy[2 * y_size*x_size + 2 * len +1 ] = ix;
+					len++;
+				}
+				if ((iy + 1) < y_size && cp_[(iy + 1)*x_size + ix] > 0)
+				{
+					flux += cp_[(iy + 1)*x_size + ix];
+					cp_[(iy +1)*x_size + ix] = 0;
+					cp_xy[2 * y_size*x_size + 2 * len] = iy +1;
+					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix;
+					len++;
+				}
+				if ((ix - 1) > -1 && cp_[iy *x_size + ix - 1] > 0)
+				{
+					flux += cp_[ iy*x_size + ix -1];
+					cp_[iy*x_size + ix -1 ] = 0;
+					cp_xy[2 * y_size*x_size + 2 * len] = iy;
+					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix -1;
+					len++;
+				}
+				if ((ix + 1) < x_size && cp_[iy*x_size + ix + 1 ] > 0)
+				{
+					flux += cp_[iy*x_size + ix  + 1 ];
+					cp_[iy*x_size + ix + 1] = 0;
+					cp_xy[2 * y_size*x_size + 2 * len] = iy;
+					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix + 1;
+					len++;
+				}
+			}
+			num = len;
+		}
+
+		if (len >= 5)
+		{	
+			for (i=0; i<len; i++)
+			{	
+				source_chain[2*len0+2 * i] = cp_xy[2 * y_size*x_size + 2 * i];
+				source_chain[2*len0+2 * i + 1 ] = cp_xy[2 * y_size*x_size + 2 * i + 1];
+				source_chain[y_size*x_size + s_num] = len;
+			}
+			len0 += len;
+			s_num++;
+		}
+		
+	}
+	source_chain[2 * y_size*x_size] = s_num;
+
+	delete[] cp_;
+	delete[] cp_xy;
+}
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
@@ -358,12 +439,12 @@ void create_points(double *point, int num_p, double radius)
 	for (i = 0; i < num_p; i++)
 	{		
 		theta = 2.*Pi*gsl_rng_uniform(rng);
-		x += cos(theta);
-		y += sin(theta);
+		x += cos(theta)*2;
+		y += sin(theta)*2;
 		if (x*x + y*y > radius*radius)
 		{
-			x = cos(theta);
-			y = sin(theta);
+			x = cos(theta)*2;
+			y = sin(theta)*2;
 		}
 		point[i] = x;
 		point[i + num_p] = y;
@@ -382,7 +463,7 @@ void create_epoints(double *point, int num_p, double ellip)
 {
 	int i=0;
 	double theta, beta, radius, r, b;
-	radius = 5 + 4*gsl_rng_uniform(rng);
+	radius = 5 +4 * gsl_rng_uniform(rng);
 	b = sqrt((1 - ellip) / (1 + ellip))*radius;
 	beta = 2*Pi*gsl_rng_uniform(rng);
 	while (i < num_p)

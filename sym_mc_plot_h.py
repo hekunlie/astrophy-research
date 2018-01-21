@@ -19,7 +19,7 @@ cut = argv[1]
 
 t1 = time.clock()
 
-shear = numpy.load("/home/hklee/work/selection_bias/parameters/shear.npz")
+shear = numpy.load("/home/hkli/work/selection_bias/parameters/shear.npz")
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 
@@ -41,7 +41,7 @@ snr = data[:, 19]
 scut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
 
 fsnr = data[:, 20]
-fscut = [0, 1.5, 2.5, 4, 7, 8.5, 10, 13, 16, 20, 25]
+fscut = [0, 2.5, 4, 5.5, 7, 8.5, 10, 13, 16, 20, 25]
 
 osnr = data[:, 21]
 ocut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]

@@ -10,13 +10,13 @@
 #include "FQlib.h"
 #include<hdf5.h>
 #include<stdio.h>
-#include<cstddef>
+
 
 //#define TRANS_S_STD 0.5
 using namespace std;
 
 int main(int argc, char*argv[])
-{
+{	
 		int myid, numprocs, namelen;
 		char processor_name[MPI_MAX_PROCESSOR_NAME];
 	
@@ -29,14 +29,17 @@ int main(int argc, char*argv[])
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 200, stamp_num = 10000, shear_pairs = 14;
+		int chip_num = 100, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
-		int i, j, seed, data_rows, data_cols=25;
+		int i, j, seed, data_rows, data_cols=25, chip_id, shear_id;
 		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 5., max_radius = 10, st, ed, s1, s2;
+		double psf_scale = 5., max_radius = 9., st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
 		data_rows = chip_num*stamp_num;
+
+		shear_id = myid - myid / shear_pairs*shear_pairs;
+		chip_id = myid / shear_pairs*chip_num;
 
 		all_paras.gal_noise_sig = gal_noise_sig;
 		all_paras.psf_noise_sig = psf_noise_sig;
@@ -63,12 +66,12 @@ int main(int argc, char*argv[])
 		//seed = myid * 84324 + 46331;
 		seed = myid *380 + 1401;
 		gsl_rng_initialize(seed);
-		
+
 		string s;
 		const char *str;
 		// read shear, the input signal
 		double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-		fin.open("/home/hklee/work/selection_bias/parameters/shear.dat");
+		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias/parameters/shear.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -80,8 +83,8 @@ int main(int argc, char*argv[])
 		fin.close();
 
 		// read flux of galaxies
-		double *flux = new double[chip_num*stamp_num];
-		fin.open("/home/hklee/work/selection_bias/parameters/lsstmagsims.dat");
+		double *flux = new double[numprocs / shear_pairs*chip_num*stamp_num];
+		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias/parameters/lsstmagsims.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -89,7 +92,7 @@ int main(int argc, char*argv[])
 			str = s.c_str();
 			flux[i] = atof(str)/num_p;	
 			i++;
-			if (i == chip_num*stamp_num) // in case of the length of files is longger than the array
+			if (i == numprocs / shear_pairs*chip_num*stamp_num) // in case of the length of files is longger than the array
 			{
 				break;
 			}
@@ -97,8 +100,8 @@ int main(int argc, char*argv[])
 		fin.close();
 
 		// read ellipticity of galaxies
-		double *ellip = new double[chip_num*stamp_num];
-		sprintf(buffer1, "/home/hklee/work/selection_bias/parameters/ellip_%d.dat", myid);
+		double *ellip = new double[numprocs / shear_pairs*chip_num*stamp_num];
+		sprintf(buffer1, "/mnt/ddnfs/data_users/hkli/selection_bias/parameters/ellip_%d.dat", shear_id);
 		fin.open(buffer1);
 		i = 0;
 		while (!fin.eof())
@@ -107,7 +110,7 @@ int main(int argc, char*argv[])
 			str = s.c_str();
 			ellip[i] = atof(str);
 			i++;
-			if (i == chip_num*stamp_num) // in case of the length of files is longger than the array
+			if (i == numprocs / shear_pairs*chip_num*stamp_num) // in case of the length of files is longger than the array
 			{
 				break;
 			}
@@ -121,17 +124,17 @@ int main(int argc, char*argv[])
 
 		st = clock();
 
-		g1 = shear[myid];
-		g2 = shear[myid + shear_pairs];
+		g1 = shear[shear_id];
+		g2 = shear[shear_id + shear_pairs];
 
-		sprintf(h5_path, "/lmc/selection_bias/result/data/data_%d.hdf5", myid);
+		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias/result/data/data_%d.hdf5", myid);
 		sprintf(set_name, "/data");
 
 		for (i = 0; i < chip_num;  i++)
 		{	
 			s1 = clock();
 
-			sprintf(chip_path, "/lmc/selection_bias/%d/gal_chip_%04d.fits", myid, i);
+			sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
 
 			for (j = 0; j < stamp_num; j++)
 			{
@@ -139,7 +142,7 @@ int main(int argc, char*argv[])
 
 				//create_epoints(point, num_p, ellip[i*stamp_num + j]);
 
-				convolve(gal, point, flux[i*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
+				convolve(gal, point, flux[(chip_id+i)*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
 
 				addnoise(gal, size*size,  gal_noise_sig);
 
@@ -175,8 +178,8 @@ int main(int argc, char*argv[])
 				data[i*stamp_num + j][19] = all_paras.gal_snr;
 				data[i*stamp_num + j][20] = all_paras.gal_fsnr;
 				data[i*stamp_num + j][21] = all_paras.gal_osnr;
-				data[i*stamp_num + j][22] = (double)(myid);
-				data[i*stamp_num + j][23] = (double)(i);
+				data[i*stamp_num + j][22] = (double)(shear_id);
+				data[i*stamp_num + j][23] = (double)(chip_id + i);
 				data[i*stamp_num + j][24] = (double)(j);
 			}
 

@@ -2,11 +2,11 @@
 #define FQLIB_H
 
 #pragma once
-//#include "stdafx.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include "fitsio.h"
+#include<stdio.h>
 #include <fftw3.h>
 #include <ctime>
 #include <gsl/gsl_randist.h>
@@ -30,11 +30,12 @@ const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 
-void write_h5(char *filename, char *set_name, int row, int column, double *matrix);
+void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
 void read_img(double *arr, char *path);
 void write_img(double *img, int ysize, int xsize, char *filename);
 void pow_spec(double *in_img, double *out_img, int column, int row);
 void get_radius(double *in_img, para *paras, double scale, int size, int type, double sig_level);
+void detector(double *source_img, int *soucrce_chain, double thres, int y_size, int x_size);
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
 void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras, int size);
 void create_points(double *point, int num_p, double radius);
