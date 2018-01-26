@@ -165,9 +165,9 @@ for na in range(3, 4):
         name = ['KSB', 'BJ02', 'Re-Gaussianization', "Fourier_Quad"]
 
         for i in range(3, 4):
-            idx = [i for i in range(0, 27, 2)]
+            idx = [k for k in range(0, 27, 2)]
             arr1 = res_arr[:, idx]
-            idx = [i for i in range(1, 28, 2)]
+            idx = [k for k in range(1, 28, 2)]
             arr2 = res_arr[:, idx]
             e1mc = tool_box.data_fit(fg1, arr1[0], arr1[1])
             e2mc = tool_box.data_fit(fg2, arr2[0], arr2[1])

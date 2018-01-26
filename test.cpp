@@ -25,32 +25,32 @@ int main(int argc, char*argv[])
 	int chip_num = 1, stamp_num = 10000, shear_pairs = 10;
 	int myid = 0;
 	int i, j, seed;
-	int size = 100, num_p = 100, stamp_nx = 100, psf_type = 2;
+	int size = 2043, y_size=4606, num_p = 100, stamp_nx = 100, psf_type = 2;
 	double psf_scale = 5., max_radius = 11., st, ed;
 	double g1 = 0., g2 = 0.;
 	double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 
-	double *big_img = new double[stamp_nx*stamp_nx*size*size]();
+	//double *big_img = new double[stamp_nx*stamp_nx*size*size]();
 	double *point = new double[2 * num_p]();
 	double *points_r = new double[2 * num_p]();
-	double *gal = new double[size*size]();
+	double *gal = new double[y_size*size]();
 	double *gpow = new double[size*size]();
 	double *psf = new double[size*size]();
 	double *ppow = new double[size*size]();
 	double *noise = new double[size*size]();
 	double *pnoise = new double[size*size]();
 	char chip_path[200], data_path[200], buffer[300], buffer1[200];
-	int *chain = new int[2*size * size + 1]();
+	int *chain = new int[2*size * y_size + 1]();
 
 	seed = 155301;
 	gsl_rng_initialize(seed);
 
 	//PSF
-	create_psf(psf, psf_scale, size, psf_type);
-	pow_spec(psf, ppow, size, size);
-	get_radius(ppow, &all_paras, thres, size, 1, psf_noise_sig);
+	//create_psf(psf, psf_scale, size, psf_type);
+	//pow_spec(psf, ppow, size, size);
+	//get_radius(ppow, &all_paras, thres, size, 1, psf_noise_sig);
 
 	st = clock();
 
@@ -69,17 +69,20 @@ int main(int argc, char*argv[])
 
 	for (i = 0; i < 1; i++)
 	{
-		sprintf(chip_path, "/home/hklee/gal.fits");
+		s1 = clock();
+		sprintf(chip_path, "/home/hklee/831549p_1OFCBC.fits");
+		cout << chip_path << endl;
 		sprintf(data_path, "/home/hklee/data.hdf5");
+		cout << chip_path << endl;
 		read_img(gal,chip_path);
 		cout << "read img" << endl;
-		detector(gal, chain, 0.1, size, size);
+		detector(gal, chain, 100, y_size, size);
 		cout << "detecting img" << endl;
 		sprintf(chip_path, "/data");
+		s2 = clock();
+		write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
 
-		write_h5(data_path, chip_path, 1, 2 * size*size + 1, NULL,chain);
-
-		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, d2/d3);
+		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
 		cout << buffer1;
 	}
 
@@ -88,7 +91,7 @@ int main(int argc, char*argv[])
 	sprintf(buffer1, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
 	cout << buffer1;
 
-	delete[] big_img;
+	//delete[] big_img;
 	delete[] point;
 	delete[] gal;
 	delete[] gpow;

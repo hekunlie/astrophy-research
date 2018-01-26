@@ -3,6 +3,7 @@
 
 #pragma once
 #include <iostream>
+#include<fstream>
 #include <iomanip>
 #include <cmath>
 #include "fitsio.h"
@@ -19,7 +20,7 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig;
 
 	int gal_size, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr, gal_snr, gal_osnr, gal_noise_sig;
+	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr, gal_fsnr4, gal_fsnr9, gal_fsnr1, gal_snr, gal_osnr, gal_noise_sig;
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2;
@@ -30,6 +31,7 @@ const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 
+void write_log(char *filename, char *inform);
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
 void read_img(double *arr, char *path);
 void write_img(double *img, int ysize, int xsize, char *filename);

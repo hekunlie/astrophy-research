@@ -4,6 +4,14 @@
 using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
+ofstream loggers;
+
+void write_log(char*filename,  char *inform)
+{
+	loggers.open(filename,ios::out|ios::app);
+	loggers << inform<< endl;
+	loggers.close();
+}
 
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix , int *i_matrix )
 {
@@ -260,24 +268,27 @@ void detector(double *source_img, int *source_chain, double thres, int y_size, i
 {	
 	/* will not change the inputted array */
 	/* the xy_chain is a (2*y_szie*x_size + 1) array stores the xy coordinates and the length of each source and total number of sources detected (stored in the last elements of source_chain */
-	int i, j, k=0, y, x;
+	int i, j, k = 0, y, x, s = y_size*x_size;
 	/* cp_ contains the image and cp_xy  the detected source coordinates[ [y], [x] ,[(temp_y,temp_x).....] */
-	double *cp_ = new double[y_size*x_size]();
-	int *cp_xy = new int[3*y_size*x_size]();
+	double *cp_ = new double[s]();
+	int *cp_xy = new int[3*s]();
 	/* mask and record the source coordinate */
-	for (i = 0; i < y_size; i++)
+	double t1, t2,tt=0;
+
+	for (j = 0; j < y_size; j++)
 	{
-		for (j = 0; j < x_size; j++)
+		for (i = 0; i < x_size; i++)
 		{
-			if (source_img[i*x_size + j] > thres)
+			if (source_img[j*x_size + i] > thres)
 			{
-				cp_[i*x_size+j] = source_img[i*x_size + j];
-				cp_xy[k] = i;
-				cp_xy[y_size*x_size + k] = j;
+				cp_[j*x_size + i] = source_img[j*x_size + i];
+				cp_xy[2*k] = j;
+				cp_xy[s + 2*k+1] = i;
 				k++;
 			}
 		}
 	}
+	
 	/* FoF */
 	int  len0=0, len, s_num=0, num0, num, num_new, ix, iy;
 	double flux=0;
@@ -287,13 +298,13 @@ void detector(double *source_img, int *source_chain, double thres, int y_size, i
 		num0 = 0;
 		num = 1;
 
-		y = cp_xy[i];
-		x = cp_xy[y_size*x_size + i];
+		y = cp_xy[2*i];
+		x = cp_xy[s + 2*i+1];
 		
 		flux += cp_[y*x_size + x];
 		cp_[y*x_size + x] = 0;
-		cp_xy[2 * y_size*x_size ] = y;
-		cp_xy[2 * y_size*x_size +1] = x;
+		cp_xy[2 * s ] = y;
+		cp_xy[2 *s +1] = x;
 		len = 1;
 
 		while (num0 != num)
@@ -302,38 +313,38 @@ void detector(double *source_img, int *source_chain, double thres, int y_size, i
 			num0 = len;
 			for ( j = num0 - num_new; j < num0; j++)
 			{	
-				iy = cp_xy[2 * y_size*x_size + 2 * j];
-				ix = cp_xy[2 * y_size*x_size + 2*j + 1];
+				iy = cp_xy[2 * s + 2 * j];
+				ix = cp_xy[2 * s + 2*j + 1];
 				if ( (iy - 1) > -1 && cp_[(iy-1)*x_size+ix] > 0)
 				{
 					flux += cp_[(iy - 1)*x_size + ix];
 					cp_[(iy - 1)*x_size + ix] = 0;
-					cp_xy[2*y_size*x_size + 2*len] = iy-1;
-					cp_xy[2 * y_size*x_size + 2 * len +1 ] = ix;
+					cp_xy[2*(s + len)] = iy-1;
+					cp_xy[2*(s + len) +1 ] = ix;
 					len++;
 				}
 				if ((iy + 1) < y_size && cp_[(iy + 1)*x_size + ix] > 0)
 				{
 					flux += cp_[(iy + 1)*x_size + ix];
 					cp_[(iy +1)*x_size + ix] = 0;
-					cp_xy[2 * y_size*x_size + 2 * len] = iy +1;
-					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix;
+					cp_xy[2 *(s + len)] = iy +1;
+					cp_xy[2 *(s + len) + 1] = ix;
 					len++;
 				}
 				if ((ix - 1) > -1 && cp_[iy *x_size + ix - 1] > 0)
 				{
 					flux += cp_[ iy*x_size + ix -1];
 					cp_[iy*x_size + ix -1 ] = 0;
-					cp_xy[2 * y_size*x_size + 2 * len] = iy;
-					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix -1;
+					cp_xy[2 *(s + len)] = iy;
+					cp_xy[2 *(s + len) + 1] = ix -1;
 					len++;
 				}
 				if ((ix + 1) < x_size && cp_[iy*x_size + ix + 1 ] > 0)
 				{
 					flux += cp_[iy*x_size + ix  + 1 ];
 					cp_[iy*x_size + ix + 1] = 0;
-					cp_xy[2 * y_size*x_size + 2 * len] = iy;
-					cp_xy[2 * y_size*x_size + 2 * len + 1] = ix + 1;
+					cp_xy[2 *(s + len)] = iy;
+					cp_xy[2 *(s + len) + 1] = ix + 1;
 					len++;
 				}
 			}
@@ -344,16 +355,18 @@ void detector(double *source_img, int *source_chain, double thres, int y_size, i
 		{	
 			for (i=0; i<len; i++)
 			{	
-				source_chain[2*len0+2 * i] = cp_xy[2 * y_size*x_size + 2 * i];
-				source_chain[2*len0+2 * i + 1 ] = cp_xy[2 * y_size*x_size + 2 * i + 1];
-				source_chain[y_size*x_size + s_num] = len;
+				source_chain[2*len0+2 * i] = cp_xy[2 * s + 2 * i];
+				source_chain[2*len0+2 * i + 1 ] = cp_xy[2 * s + 2 * i + 1];
+				source_chain[s + s_num] = len;
 			}
 			len0 += len;
 			s_num++;
 		}
 		
 	}
-	source_chain[2 * y_size*x_size] = s_num;
+	
+	//cout << "time: " << tt / CLOCKS_PER_SEC;
+	source_chain[2 * s] = s_num;
 
 	delete[] cp_;
 	delete[] cp_xy;
@@ -439,12 +452,12 @@ void create_points(double *point, int num_p, double radius)
 	for (i = 0; i < num_p; i++)
 	{		
 		theta = 2.*Pi*gsl_rng_uniform(rng);
-		x += cos(theta)*2;
-		y += sin(theta)*2;
+		x += cos(theta);
+		y += sin(theta);
 		if (x*x + y*y > radius*radius)
 		{
-			x = cos(theta)*2;
-			y = sin(theta)*2;
+			x = cos(theta);
+			y = sin(theta);
 		}
 		point[i] = x;
 		point[i + num_p] = y;
@@ -605,7 +618,7 @@ void f_snr(double *image, para *paras, int size, int edge)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
 	double noise=0, signal;
-	int i,k=0;
+	int i,k=0,xc=size/2;
 	for (i = 0; i < size; i++) //y coordinates
 	{
 		for (k = 0; k < size; k++) // x coordinates
@@ -620,15 +633,32 @@ void f_snr(double *image, para *paras, int size, int edge)
 			}
 		}
 	}
-	if (image[size / 2 * size + size / 2] > image[(size / 2 - 1)* size + size / 2] && image[(size / 2 * size) + size / 2] > image[(size / 2 + 1) * size + size / 2]
-		&& image[size / 2 * size + size / 2] > image[size / 2 * size + size / 2 - 1] && image[size / 2 * size + size / 2] > image[size / 2 * size + size / 2 + 1])
+	noise = noise*0.25 / ((size - edge)*edge);
+
+	if (image[xc * size + xc] > image[(xc - 1)* size + xc] && image[(xc * size) + xc] > image[(xc + 1) * size + xc]
+		&& image[xc * size + xc] > image[xc * size + xc - 1] && image[xc * size + xc] > image[xc * size + xc + 1])
 	{
-		signal = image[size / 2 * size + size / 2];
+		signal = image[xc * size +xc];
 	}
 	else
 	{
-		signal = (image[(size / 2 - 1)* size + size / 2] + image[(size / 2 + 1) * size + size / 2] + image[size / 2 * size + size / 2 + 1] + image[size / 2 * size + size / 2 - 1]) *0.25;
+		signal = (image[(xc - 1)* size + xc] + image[(xc + 1) * size + xc] + image[xc * size + xc + 1] + image[xc * size +xc - 1]) *0.25;
 	}
-	noise = noise*0.25 / ((size - edge)*edge);
+	
 	paras->gal_fsnr = sqrt(signal/noise);
+
+	paras->gal_fsnr1 = sqrt(image[xc*size+xc] / noise);
+
+	signal = (image[(xc - 1)*size + xc] + image[(xc + 1)*size + xc] + image[xc*size + xc - 1] + image[xc*size + xc + 1])*0.25;
+	paras->gal_fsnr4 = sqrt(signal / noise);
+
+	signal = 0;
+	for (i = -1; i < 2; i++)
+	{
+		for (k = -1; k < 2; k++)
+		{
+			signal += image[(xc + i)*size + xc + k];
+		}
+	}
+	paras->gal_fsnr9 = sqrt(signal / noise)/3.;
 }

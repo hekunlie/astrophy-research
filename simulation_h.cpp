@@ -29,7 +29,7 @@ int main(int argc, char*argv[])
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 100, stamp_num = 10000, shear_pairs = 14;
+		int chip_num = 200, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
 		int i, j, seed, data_rows, data_cols=25, chip_id, shear_id;
 		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
@@ -52,7 +52,7 @@ int main(int argc, char*argv[])
 		double *ppow = new double[size*size]();
 		double *noise = new double[size*size]();
 		double *pnoise = new double[size*size]();
-		char chip_path[200], data_path[200], buffer[300], buffer1[200], h5_path[100], set_name[20];
+		char log_inform[100], log_path[100], chip_path[200], data_path[200], buffer[200], h5_path[100], set_name[20];
 
 		/* the data matrix data[i][j] */
 		double *data_m = new double[data_rows*data_cols]();
@@ -64,7 +64,7 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		//seed = myid * 84324 + 46331;
-		seed = myid *380 + 1401;
+		seed = myid *380 + 1401;// no bias
 		gsl_rng_initialize(seed);
 
 		string s;
@@ -101,8 +101,8 @@ int main(int argc, char*argv[])
 
 		// read ellipticity of galaxies
 		double *ellip = new double[numprocs / shear_pairs*chip_num*stamp_num];
-		sprintf(buffer1, "/mnt/ddnfs/data_users/hkli/selection_bias/parameters/ellip_%d.dat", shear_id);
-		fin.open(buffer1);
+		sprintf(buffer, "/mnt/ddnfs/data_users/hkli/selection_bias/parameters/ellip_%d.dat", shear_id);
+		fin.open(buffer);
 		i = 0;
 		while (!fin.eof())
 		{
@@ -129,13 +129,15 @@ int main(int argc, char*argv[])
 
 		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias/result/data/data_%d.hdf5", myid);
 		sprintf(set_name, "/data");
+		sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias/logs/log_%d.dat", myid);
 
 		for (i = 0; i < chip_num;  i++)
 		{	
 			s1 = clock();
 
 			sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
-
+			sprintf(log_inform, "Thread: %d, chip: %d, start.", myid, i);
+			write_log(log_path, log_inform);
 			for (j = 0; j < stamp_num; j++)
 			{
 				create_points(point, num_p, max_radius);
@@ -172,12 +174,12 @@ int main(int argc, char*argv[])
 				data[i*stamp_num + j][10] = all_paras.dn;
 				data[i*stamp_num + j][11] = all_paras.du;
 				data[i*stamp_num + j][12] = all_paras.dv;
-				data[i*stamp_num + j][16] = (double)(all_paras.gal_size);
+				data[i*stamp_num + j][16] = all_paras.gal_peak;
 				data[i*stamp_num + j][17] = all_paras.gal_flux;
-				data[i*stamp_num + j][18] = all_paras.gal_peak;
-				data[i*stamp_num + j][19] = all_paras.gal_snr;
-				data[i*stamp_num + j][20] = all_paras.gal_fsnr;
-				data[i*stamp_num + j][21] = all_paras.gal_osnr;
+				data[i*stamp_num + j][18] = all_paras.gal_fsnr;
+				data[i*stamp_num + j][19] = all_paras.gal_fsnr1;
+				data[i*stamp_num + j][20] = all_paras.gal_fsnr4;
+				data[i*stamp_num + j][21] = all_paras.gal_fsnr9;
 				data[i*stamp_num + j][22] = (double)(shear_id);
 				data[i*stamp_num + j][23] = (double)(chip_id + i);
 				data[i*stamp_num + j][24] = (double)(j);
@@ -188,15 +190,17 @@ int main(int argc, char*argv[])
 			initialize(big_img, stamp_nx*stamp_nx*size*size);	
 
 			s2 = clock();
+			sprintf(log_inform, "Thread: %d, chip: %d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
+			write_log(log_path, log_inform);
 
-			sprintf(buffer1, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
-			cout << buffer1;
+			sprintf(buffer, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
+			cout << buffer;
 		}
 		write_h5(h5_path, set_name, data_rows, data_cols, data[0],NULL);
 		ed = clock();
 
-		sprintf(buffer1, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
-		cout << buffer1;
+		sprintf(buffer, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
+		cout << buffer;
 
 		delete[] shear;
 		delete[] flux;

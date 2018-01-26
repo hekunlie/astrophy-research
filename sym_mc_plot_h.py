@@ -3,7 +3,7 @@ matplotlib.use("Agg")
 import numpy
 import matplotlib.pyplot as plt
 from sys import path
-path.append('/home/hklee/work/fourier_quad/')
+path.append('/home/hkli/work/fourier_quad/')
 import time
 from Fourier_Quad import Fourier_Quad
 from sys import argv
@@ -19,37 +19,41 @@ cut = argv[1]
 
 t1 = time.clock()
 
-shear = numpy.load("/home/hkli/work/selection_bias/parameters/shear.npz")
+shear = numpy.load("/mnt/ddnfs/data_users/hkli/selection_bias/parameters/shear.npz")
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
-
-h5path = "/lmc/selection_bias/result/data/sex_data_%d.hdf5"%rank
-f = h5py.File(h5path, "r")
-data = f["/data"].value
-f.close()
+for i in range(5):
+    h5path = "/mnt/ddnfs/data_users/hkli/selection_bias/result/data/data_%d.hdf5"%(rank+i*14)
+    f = h5py.File(h5path, "r")
+    if i == 0:
+        data = f["/data"].value
+    else:
+        data = numpy.row_stack((data, f["/data"].value))
+    f.close()
 
 fq = Fourier_Quad(64, 152356)
 nsig = 380.64
 
 flux = data[:, 17]/nsig
-fcut = [0, 14, 30, 65, 85, 120, 160, 200, 250, 300, 450]
+fcut = [0, 14, 30, 50, 85, 120, 160, 200, 250, 300, 450]
 
-peak = data[:, 18]/nsig
+peak = data[:, 16]/nsig
 pcut = [0, 3, 4, 5, 6, 8, 10, 12, 17, 22, 25]
 
-snr = data[:, 19]
-scut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
+fsnr = data[:, 18]
+fsnrcut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
+# fsnrcut = [0, 1.2, 2.5, 3.5, 5.5, 8.5, 15, 30, 45, 60, 80]
+fsnr1 = data[:, 19]
+fsnr1cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
 
-fsnr = data[:, 20]
-fscut = [0, 2.5, 4, 5.5, 7, 8.5, 10, 13, 16, 20, 25]
+fsnr4 = data[:, 20]
+fsnr4cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
 
-osnr = data[:, 21]
-ocut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
+fsnr9 = data[:, 21]
+fsnr9cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
 
-sesnr = data[:, 25]
-sescut = [0, 12, 18, 26, 34, 42, 60, 80, 100, 120, 140]
-
-select = {"sesnr": (sesnr, sescut), "flux": (flux, fcut), "peak": (peak, pcut),"fsnr": (fsnr, fscut), "snr": (snr, scut), "osnr": (osnr, ocut)}
+select = {"fsnr1": (fsnr1, fsnr1cut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr": (fsnr, fsnrcut),
+          "fsnr4": (fsnr4, fsnr4cut), "fsnr9": (fsnr9, fsnr9cut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
@@ -91,16 +95,16 @@ else:
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
+        data_path = "/mnt/ddnfs/data_users/hkli/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
         numpy.savez(data_path, arr, mc)
-        pic_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s)+".eps"
+        pic_path = "/mnt/ddnfs/data_users/hkli/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".eps"
         tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(cut_s), 'max', pic_path)
-        pic_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s) + ".png"
+        pic_path = "/mnt/ddnfs/data_users/hkli/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + ".png"
         tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(cut_s), 'max', pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
-    mc_path = "/home/hklee/work/result/cuts/sym/" + cut + "/total.npz"
+    mc_path = "/mnt/ddnfs/data_users/hkli/selection_bias/result/cuts/sym/" + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
@@ -132,7 +136,7 @@ else:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
-    namep = "/home/hklee/work/result/cuts/sym/" + cut + "/total.eps"
+    namep = "/mnt/ddnfs/data_users/hkli/selection_bias/result/cuts/sym/" + cut + "/total.eps"
     plt.savefig(namep)
     plt.close()
 

@@ -23,7 +23,7 @@ shear = numpy.load("/home/hklee/work/selection_bias/parameters/shear.npz")
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 
-h5path = "/lmc/selection_bias/result/data/sex_data_%d.hdf5"%rank
+h5path = "/lmc/selection_bias/result/data/data_%d.hdf5"%rank
 f = h5py.File(h5path, "r")
 data = f["/data"].value
 f.close()
