@@ -422,7 +422,8 @@ class Fourier_Quad:
         num = numpy.histogram(G_h, bins)[0]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
-        return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5
+        xi = (n1 - n2) ** 2 / (n1 + n2)
+        return numpy.sum(xi) * 0.5
 
     def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # model 1 for g1
@@ -436,7 +437,7 @@ class Fourier_Quad:
         same = 0
         iters = 0
         # m1 chi square & left & left chi square & right & right chi square
-        records = numpy.zeros((13, 5))
+        records = numpy.zeros((15, 5))
         while True:
             templ = left
             tempr = right
@@ -511,18 +512,19 @@ class Fourier_Quad:
             iters += 1
             if left == templ and right == tempr:
                 same += 1
-            if iters > 10 and same > 2 or iters > 12:
+            if iters > 12 and same > 2 or iters > 14:
+                g_h = (left+right)/2.
                 break
                 # print(left,right,abs(left-right))
 
         # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 10))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 10))[0]
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
         if len(label_l > 1):
             label_l = label_l[0]
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 10))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 10))[0]
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
         if len(label_r > 1):
             label_r = label_r[0]
 
@@ -546,7 +548,7 @@ class Fourier_Quad:
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
         g_sig = numpy.sqrt(1 / 2. / paras[0])
-        g_h = -paras[1] / 2 / paras[0]
+        # g_h = -paras[1] / 2 / paras[0]
 
         return g_h, g_sig
 

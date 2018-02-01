@@ -26,15 +26,16 @@ struct para
 	double t1, t2;
 	double noise_sig;
 };
-
+using namespace std;
 const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
+extern ofstream loggers;
 
 void write_log(char *filename, char *inform);
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
 void read_img(double *arr, char *path);
-void write_img(double *img, int ysize, int xsize, char *filename);
+void write_img(double *img, int ysize, int xsize, char *filename,int procs_id, int chip_id);
 void pow_spec(double *in_img, double *out_img, int column, int row);
 void get_radius(double *in_img, para *paras, double scale, int size, int type, double sig_level);
 void detector(double *source_img, int *soucrce_chain, double thres, int y_size, int x_size);

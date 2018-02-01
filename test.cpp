@@ -67,23 +67,23 @@ int main(int argc, char*argv[])
 	//	cout <<"I: "<<i<<"\t"<<i/14<< endl;
 	//}
 
-	for (i = 0; i < 1; i++)
+	for (i = 0; i < 10; i++)
 	{
 		s1 = clock();
 		sprintf(chip_path, "/home/hklee/831549p_1OFCBC.fits");
 		cout << chip_path << endl;
 		sprintf(data_path, "/home/hklee/data.hdf5");
 		cout << chip_path << endl;
-		read_img(gal,chip_path);
+		//read_img(gal,chip_path);
 		cout << "read img" << endl;
-		detector(gal, chain, 100, y_size, size);
+		//detector(gal, chain, 100, y_size, size);
 		cout << "detecting img" << endl;
 		sprintf(chip_path, "/data");
 		s2 = clock();
-		write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
+		//write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
 
-		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
-		cout << buffer1;
+		//sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
+		//cout << buffer1;
 	}
 
 	ed = clock();

@@ -10,6 +10,8 @@ from sys import argv
 from mpi4py import MPI
 import tool_box
 import h5py
+import logging
+
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -17,9 +19,18 @@ cpus = comm.Get_size()
 
 cut = argv[1]
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logfile = '/lmc/selection_bias/logs/sym_%d_log.dat' %rank
+
+lf = logging.FileHandler(logfile, 'w')
+form = logging.Formatter('%(asctime)s - %(message)s')
+lf.setFormatter(form)
+logger.addHandler(lf)
+
 t1 = time.clock()
 
-shear = numpy.load("/home/hklee/work/selection_bias/parameters/shear.npz")
+shear = numpy.load("/lmc/selection_bias/parameters/shear.npz")
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 
@@ -27,57 +38,69 @@ h5path = "/lmc/selection_bias/result/data/data_%d.hdf5"%rank
 f = h5py.File(h5path, "r")
 data = f["/data"].value
 f.close()
-
+logger.info('open data file data_%d.hdf5'%rank)
 fq = Fourier_Quad(64, 152356)
 nsig = 380.64
 
-flux = data[:, 17]/nsig
-fcut = [0, 14, 30, 65, 85, 120, 160, 200, 250, 300, 450]
+osnr = data[:, 7]
+osnrcut = [0, 2.5, 4, 6, 11, 16, 20, 25, 35, 45, 70]
 
-peak = data[:, 18]/nsig
+flux = data[:, 8]/nsig
+fcut = [0, 8, 14, 30, 80, 130, 180, 230, 280, 330, 380]
+
+peak = data[:, 9]/nsig
 pcut = [0, 3, 4, 5, 6, 8, 10, 12, 17, 22, 25]
 
-snr = data[:, 19]
-scut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
+fsnr = data[:, 10]
+fsnrcut = [0, 0.8, 1.4, 2.2, 3.2, 4.5, 6.5,  9.5, 13, 16, 20]
 
-fsnr = data[:, 20]
-fscut = [0, 1.5, 2.5, 4, 7, 8.5, 10, 13, 16, 20, 25]
+fsnr1 = data[:, 11]
+fsnr1cut = [0, 0.8, 1.4, 2.2, 3.2, 4.5, 6.5,  9.5, 13, 16, 20]
 
-osnr = data[:, 21]
-ocut = [0, 18, 21, 23, 25, 27, 29, 35, 40, 50, 65]
+fsnr4 = data[:, 12]
+fsnr4cut = [0, 0.8, 1.4, 2.2, 3.2, 4.5, 6.5,  9.5, 13, 16, 20]
 
-sesnr = data[:, 25]
-sescut = [0, 12, 18, 26, 34, 42, 60, 80, 100, 120, 140]
+fsnr9 = data[:, 13]
+fsnr9cut = [0, 0.8, 1.4, 2.2, 3.2, 4.5, 6.5,  9.5, 13, 16, 20]
 
-select = {"sesnr": (sesnr, sescut), "flux": (flux, fcut), "peak": (peak, pcut),"fsnr": (fsnr, fscut), "snr": (snr, scut), "osnr": (osnr, ocut)}
+snr = data[:,14]
+snrcut = [0, 2.5, 4, 6, 11, 16, 20, 25, 35, 45, 80]
+
+select = {'osnr':(osnr, osnrcut),"fsnr1": (fsnr1, fsnr1cut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr": (fsnr, fsnrcut),
+          "fsnr4": (fsnr4, fsnr4cut), "fsnr9": (fsnr9, fsnr9cut), 'snr':(snr, snrcut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
-mg1 = data[:, 3]
-mg2 = data[:, 8]
-mn = data[:, 10]
-mu = data[:, 11]
-mv = data[:, 12]
-
+mg1 = data[:, 2]
+mg2 = data[:, 3]
+mn = data[:, 4]
+mu = data[:, 5]
+mv = data[:, 6]
+logger.info('begin to do cutoff')
 for tag, cut_s in enumerate(select[cut][1]):
+    t_c1 = time.clock()
     idx = select[cut][0] > cut_s
     num = len(mg1[idx])
-
+    logger.info("num: %d, %.2f"%(num, cut_s))
     g1_h, g1_sig = fq.fmin_g(mg1[idx], mn[idx], mu[idx], mode=1, bin_num=8)
+    logger.info('g1')
     g2_h, g2_sig = fq.fmin_g(mg2[idx], mn[idx], mu[idx], mode=2, bin_num=8)
-
+    logger.info('g2')
     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
+    t_c2 = time.clock()
+    logger.info("Procs: %d, %d, cuts: %.2f, time: %.2f"%(rank, tag, cut_s, t_c2-t_c1))
 
 if rank > 0:
     # pass
     comm.Send(res_arr, dest=0, tag=rank)
-
+    logger.info('%d sent information'%rank)
 else:
     for procs in range(1, cpus):
+        logger.info('begin receive from %d'%procs)
         recvs = numpy.empty((6, len(select[cut][1])), dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
         res_arr = numpy.column_stack((res_arr, recvs))
-
+        logger.info('received from %d' % procs)
     mc1 = []
     mc2 = []
     for tag, cut_s in enumerate(select[cut][1]):
@@ -91,16 +114,16 @@ else:
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
+        data_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
         numpy.savez(data_path, arr, mc)
-        pic_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s)+".eps"
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".eps"
         tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(cut_s), 'max', pic_path)
-        pic_path = "/home/hklee/work/result/cuts/sym/" + cut + "/" + str(cut_s) + ".png"
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + ".png"
         tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(cut_s), 'max', pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
-    mc_path = "/home/hklee/work/result/cuts/sym/" + cut + "/total.npz"
+    mc_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
@@ -132,7 +155,7 @@ else:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
-    namep = "/home/hklee/work/result/cuts/sym/" + cut + "/total.eps"
+    namep = "/lmc/selection_bias/result/cuts/sym/" + cut + "/total.eps"
     plt.savefig(namep)
     plt.close()
 

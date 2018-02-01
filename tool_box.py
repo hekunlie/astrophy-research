@@ -237,7 +237,7 @@ def ellip_mock(num, seed=123400, figout=None):
 
     See Miller et al, 2013, MNRAS
     """
-    numpy.random.RandomState(seed)
+    rng = numpy.random.RandomState(seed)
     b, c = 2.368, 6.691
     # probability
     pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
@@ -249,5 +249,5 @@ def ellip_mock(num, seed=123400, figout=None):
     pe_base = pe(es)
     # normalize
     pe_base = pe_base / numpy.sum(pe_base)
-    rbe = numpy.random.choice(es, num, p=pe_base)
+    rbe = rng.choice(es, num, p=pe_base)
     return rbe

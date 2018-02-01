@@ -1,10 +1,12 @@
 ﻿
 #include "FQlib.h"
 
-using namespace std;
+//using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
 ofstream loggers;
+
+char buffer[1000], exception_name[50];
 
 void write_log(char*filename,  char *inform)
 {
@@ -64,7 +66,7 @@ void read_img(double *arr, char *path)
 	fits_close_file(fptr, &status);
 }
 
-void write_img(double *img, int ysize, int xsize, char *filename)
+void write_img(double *img, int ysize, int xsize, char *filename,int procs_id,int chip_id)
 {
 	fitsfile *fptr;															 /* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -72,18 +74,31 @@ void write_img(double *img, int ysize, int xsize, char *filename)
 	long naxes[2] ;								/* x, y */
 	naxes[0] = xsize;
 	naxes[1] = ysize;
-																//float *array = new float[xsize*ysize];					/* the same as numpy array */
-																	//char path[50] = "E:\\testfile.fits";
-	remove(filename);                                                /* overwrite the old file */
+				/* the same as numpy array */
+	
 	status = 0;																						/* initialize status before calling fitsio routines */
 	fits_create_file(&fptr, filename, &status);												/* create new file */
+
 	fits_create_img(fptr, DOUBLE_IMG, naxis, naxes, &status);				 /* Create the primary array image (16-bit short integer pixels */
-	exposure = 1500.;
-	fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */
+	//exposure = 1500.;
+	//fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */
+
 	nelements = xsize*ysize;         /* number of pixels to write */
 	fits_write_img(fptr, TDOUBLE, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
 	fits_close_file(fptr, &status);              /* close the file */
 	fits_report_error(stderr, status);      /* print out any error messages */
+	if (status != 0)
+	{
+		sprintf(exception_name, "%d_exception.dat", procs_id);
+		sprintf(buffer, "status: %d, chip: %d", status, chip_id);
+		write_log(exception_name, buffer);
+		sprintf(buffer, "%g", img[0]);
+		for (ii = 1; ii < 50; ii++)
+		{
+			sprintf(buffer, "%s, %g", buffer, img[ii]);
+		}
+		write_log(exception_name, buffer);
+	}
 }
 
 void pow_spec(double *in_img, double *out_img, int column, int row)
@@ -475,18 +490,23 @@ void create_points(double *point, int num_p, double radius)
 void create_epoints(double *point, int num_p, double ellip)
 {
 	int i=0;
-	double theta, beta, radius, r, b;
+	double theta, beta, radius, r1, r2, b, y,x;
 	radius = 5 +4 * gsl_rng_uniform(rng);
 	b = sqrt((1 - ellip) / (1 + ellip))*radius;
 	beta = 2*Pi*gsl_rng_uniform(rng);
+	r1 = cos(beta);
+	r2 = sin(beta);
 	while (i < num_p)
-	{
-		r =radius* gsl_rng_uniform(rng);
-		theta = 2 * Pi*gsl_rng_uniform(rng);
-		if (1. / sqrt(cos(theta + beta)*cos(theta + beta) / radius / radius + sin(theta + beta)*sin(theta + beta) / b / b) > r)
+	{	
+		x = gsl_ran_gaussian(rng, radius);
+		y = gsl_ran_gaussian(rng, b);
+		//r =radius* gsl_rng_uniform(rng);
+		//theta = 2 * Pi*gsl_rng_uniform(rng);
+		//if (1. / sqrt(cos(theta + beta)*cos(theta + beta) / radius / radius + sin(theta + beta)*sin(theta + beta) / b / b) > r)
+		if(x*x/(radius*radius) + y*y/(b*b) <=1)
 		{
-			point[i] = r*cos(theta);
-			point[i + num_p] = r*sin(theta);
+			point[i] = x*r1 - y*r2;
+			point[i + num_p] =x*r2 + r1*y;
 			i++;
 		}
 	}

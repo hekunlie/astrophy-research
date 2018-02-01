@@ -4,8 +4,6 @@ matplotlib.use('Agg')
 from sys import path
 path.append('/home/hkli/work/fourier_quad/')
 import time
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import tool_box
 from Fourier_Quad import *
 from sys import argv
@@ -60,38 +58,32 @@ for s in range(int(scale)):
     f.close()
 
 fq = Fourier_Quad(stamp_size, 52232345)
-# correction
-KSB_r = data[:, 13]
-BJ_r = data[:, 14]
-RG_r = data[:, 15]
-r_factor = [KSB_r, BJ_r, RG_r]
-k_me = data[:, 0]**2 + data[:, 5]**2
-b_me = data[:, 1]**2 + data[:, 6]**2
-r_me = data[:, 2]**2 + data[:, 7]**2
-measured_es = [k_me, b_me, r_me]
 
 # F_Q data
+# FG1 = data[:, 2]
+# FG2 = data[:, 3]
+# FN = data[:, 4]
+# FU = data[:, 5]
+# FV = data[:, 6]
 FG1 = data[:, 3]
 FG2 = data[:, 8]
 FN = data[:, 10]
 FU = data[:, 11]
-FV = data[:, 12]
-
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 noise_sig = prop.sigma_sky
 
 # area
 area = data[:, 16]
 # flux
-flux = data[:, 17]/noise_sig
+flux = data[:, 8]/noise_sig
 # peak
-peak = data[:, 18]/noise_sig
+peak = data[:, 16]/noise_sig
 # snr
 snr = data[:, 19]
 # fsnr
-fsnr = data[:, 20]
+fsnr = data[:, 18]
 # osnr
-osnr = data[:, 21]
+osnr = data[:, 7]
 
 if rank == 0:
     print("area: %d ~ %d\n" %(numpy.min(area), numpy.max(area)))
@@ -101,11 +93,6 @@ if rank == 0:
     print("fsnr: %.2f ~ %.2f\n"%(numpy.min(fsnr), numpy.max(fsnr)))
     print("osnr: %.2f ~ %.2f\n"%(numpy.min(osnr), numpy.max(osnr)))
 
-# input g1
-tag1 = data[:, 4]
-
-# input g2
-tag2 = data[:, 9]
 
 select = {"peak": peak, "area": area, "flux": flux, "fsnr": fsnr, "snr": snr}
 
@@ -119,18 +106,18 @@ idxe = ssnr <= snr_cut_e
 for na in range(3, 4):
     if na != 3:
         ellip1 = data[:, na]
-        idx13 = ellip1 != -10
-        r_thresh = r_factor[na]
-        idx_r1 = r_thresh > 0.333
-        # the measured e1
-        e1 = ellip1[idx13&idxs&idxe&idx_r1]
-        response1 = 2 - measured_es[na][idx13&idxs&idxe&idx_r1]
-        num1 = len(e1)
-        if na!=0:
-            g1_h = numpy.mean(e1)/2#/numpy.mean(measured_esq1)
-        else:
-            g1_h = numpy.mean(e1)
-        g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
+        # idx13 = ellip1 != -10
+        # r_thresh = r_factor[na]
+        # idx_r1 = r_thresh > 0.333
+        # # the measured e1
+        # e1 = ellip1[idx13&idxs&idxe&idx_r1]
+        # response1 = 2 - measured_es[na][idx13&idxs&idxe&idx_r1]
+        # num1 = len(e1)
+        # if na!=0:
+        #     g1_h = numpy.mean(e1)/2#/numpy.mean(measured_esq1)
+        # else:
+        #     g1_h = numpy.mean(e1)
+        # g1_h_sig = numpy.std(e1)/numpy.sqrt(num1)
 
     else:
         G1 = FG1[idxs&idxe]
@@ -143,8 +130,8 @@ for na in range(3, 4):
 
         num = len(G1)
         if method == 'sym':
-            g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8)
-            g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8)
+            g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=20)
+            g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=20)
         else:
             g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
             g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)

@@ -32,36 +32,42 @@ for i in range(5):
     f.close()
 
 fq = Fourier_Quad(64, 152356)
-nsig = 380.64
+nsig = 100
 
-flux = data[:, 17]/nsig
-fcut = [0, 14, 30, 50, 85, 120, 160, 200, 250, 300, 450]
+osnr = data[:, 7]
+osnrcut = [0, 24, 27, 30, 34, 40, 60, 85, 110, 135, 160]
 
-peak = data[:, 16]/nsig
-pcut = [0, 3, 4, 5, 6, 8, 10, 12, 17, 22, 25]
+flux = data[:, 8]/nsig
+fcut = [0, 200, 220, 250, 280, 320, 400, 500, 600, 700, 800]
 
-fsnr = data[:, 18]
-fsnrcut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
-# fsnrcut = [0, 1.2, 2.5, 3.5, 5.5, 8.5, 15, 30, 45, 60, 80]
-fsnr1 = data[:, 19]
-fsnr1cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
+peak = data[:, 9]/nsig
+pcut = [0, 5, 6.5, 8, 9.5, 11, 15, 19, 25, 35, 45]
 
-fsnr4 = data[:, 20]
-fsnr4cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
+fsnr = data[:, 10]
+fsnrcut = [0, 4, 5.5, 7, 9, 11, 13, 18, 25, 25, 45]
 
-fsnr9 = data[:, 21]
-fsnr9cut = [0, 1.2, 2, 3, 4.5, 6.5, 8.5, 10.5, 13, 16, 20]
+fsnr1 = data[:, 11]
+fsnr1cut = [0, 4, 5.5, 7, 9, 11, 13, 18, 25, 25, 45]
 
-select = {"fsnr1": (fsnr1, fsnr1cut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr": (fsnr, fsnrcut),
-          "fsnr4": (fsnr4, fsnr4cut), "fsnr9": (fsnr9, fsnr9cut)}
+fsnr4 = data[:, 12]
+fsnr4cut = [0, 4, 5.5, 7, 9, 11, 13, 18, 25, 25, 45]
+
+fsnr9 = data[:, 13]
+fsnr9cut = [0, 4, 5.5, 7, 9, 11, 13, 18, 25, 25, 45]
+
+snr = data[:,14]
+snrcut = [0, 25, 29, 33, 38, 45, 55, 70, 100, 130, 150]
+
+select = {'osnr':(osnr, osnrcut),"fsnr1": (fsnr1, fsnr1cut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr": (fsnr, fsnrcut),
+          "fsnr4": (fsnr4, fsnr4cut), "fsnr9": (fsnr9, fsnr9cut), 'snr':(snr, snrcut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
-mg1 = data[:, 3]
-mg2 = data[:, 8]
-mn = data[:, 10]
-mu = data[:, 11]
-mv = data[:, 12]
+mg1 = data[:, 2]
+mg2 = data[:, 3]
+mn = data[:, 4]
+mu = data[:, 5]
+mv = data[:, 6]
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] > cut_s

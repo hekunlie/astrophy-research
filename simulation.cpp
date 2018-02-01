@@ -1,6 +1,3 @@
-
-//#include <iostream>
-//#include <fstream>
 #include <cmath>
 #include <cstring>
 #include<sstream>
@@ -10,7 +7,6 @@
 #include "FQlib.h"
 #include<hdf5.h>
 #include<stdio.h>
-#include<cstddef>
 
 //#define TRANS_S_STD 0.5
 using namespace std;
@@ -29,10 +25,10 @@ int main(int argc, char*argv[])
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 1000, stamp_num = 10000, shear_pairs = 14;
+		int chip_num = 600, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
-		int i, j, seed, data_rows, data_cols=28;
-		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		int i, j, seed, data_rows, data_cols=20;
+		int size =60, num_p = 45, stamp_nx = 100,  psf_type = 2;
 		double psf_scale = 5., max_radius = 8, st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
@@ -68,7 +64,7 @@ int main(int argc, char*argv[])
 		const char *str;
 		// read shear, the input signal
 		double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-		fin.open("/home/hklee/work/selection_bias/parameters/shear.dat");
+		fin.open("/lmc/selection_bias/parameters/shear.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -81,7 +77,7 @@ int main(int argc, char*argv[])
 
 		// read flux of galaxies
 		double *flux = new double[chip_num*stamp_num];
-		fin.open("/home/hklee/work/selection_bias/parameters/lsstmagsims.dat");
+		fin.open("/lmc/selection_bias/parameters/lsstmagsims.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -98,7 +94,7 @@ int main(int argc, char*argv[])
 
 		// read ellipticity of galaxies
 		double *ellip = new double[chip_num*stamp_num];
-		sprintf(buffer, "/home/hklee/work/selection_bias/parameters/ellip_%d.dat", myid);
+		sprintf(buffer, "/lmc/selection_bias/parameters/ellip_%d.dat", myid);
 		fin.open(buffer);
 		i = 0;
 		while (!fin.eof())
@@ -113,8 +109,7 @@ int main(int argc, char*argv[])
 			}
 		}
 		fin.close();
-		sprintf(buffer, "%d: opened ellip_%d.dat and got %d ellips ", myid, myid, i);
-		cout << buffer << endl;
+
 		 //PSF
 		create_psf(psf, psf_scale, size, psf_type);
 		pow_spec(psf, ppow, size, size);		
@@ -133,7 +128,6 @@ int main(int argc, char*argv[])
 		{	
 			s1 = clock();
 
-			sprintf(chip_path, "/lmc/selection_bias/%d/gal_chip_%04d.fits", myid, i);
 			sprintf(log_inform, "Thread: %d, chip: %d, start.", myid, i);
 			write_log(log_path, log_inform);
 
@@ -166,41 +160,48 @@ int main(int argc, char*argv[])
 				initialize(noise, size*size);
 				initialize(pnoise, size*size);
 
-				data[i*stamp_num + j][3] = all_paras.n1;
-				data[i*stamp_num + j][4] = g1;
-				data[i*stamp_num + j][8] = all_paras.n2;
-				data[i*stamp_num + j][9] = g2;
-				data[i*stamp_num + j][10] = all_paras.dn;
-				data[i*stamp_num + j][11] = all_paras.du;
-				data[i*stamp_num + j][12] = all_paras.dv;
-				data[i*stamp_num + j][16] = all_paras.gal_flux;
-				data[i*stamp_num + j][17] = all_paras.gal_peak;
-				data[i*stamp_num + j][18] = all_paras.gal_fsnr;
-				data[i*stamp_num + j][19] = all_paras.gal_fsnr1;
-				data[i*stamp_num + j][20] = all_paras.gal_fsnr4;
-				data[i*stamp_num + j][21] = all_paras.gal_fsnr9;
-				data[i*stamp_num + j][22] = all_paras.gal_snr;
-				data[i*stamp_num + j][23] = (double)(myid);
-				data[i*stamp_num + j][24] = (double)(i);
-				data[i*stamp_num + j][25] = (double)(j);
+				data[i*stamp_num + j][0] = g1;
+				data[i*stamp_num + j][1] = g2;
+				data[i*stamp_num + j][2] = all_paras.n1;
+				data[i*stamp_num + j][3] = all_paras.n2;
+				data[i*stamp_num + j][4] = all_paras.dn;
+				data[i*stamp_num + j][5] = all_paras.du;
+				data[i*stamp_num + j][6] = all_paras.dv;
+				data[i*stamp_num + j][7] = all_paras.gal_osnr;
+				data[i*stamp_num + j][8] = all_paras.gal_flux;
+				data[i*stamp_num + j][9] = all_paras.gal_peak;
+				data[i*stamp_num + j][10] = all_paras.gal_fsnr;
+				data[i*stamp_num + j][11] = all_paras.gal_fsnr1;
+				data[i*stamp_num + j][12] = all_paras.gal_fsnr4;
+				data[i*stamp_num + j][13] = all_paras.gal_fsnr9;
+				data[i*stamp_num + j][14] = all_paras.gal_snr;
+				data[i*stamp_num + j][15] = flux[i*stamp_num + j];
+				data[i*stamp_num + j][16] = 0.;
+				data[i*stamp_num + j][17] = (double)(myid);
+				data[i*stamp_num + j][18] = (double)(i);
+				data[i*stamp_num + j][19] = (double)(j);
 			}
-
-			write_img(big_img, stamp_nx*size, stamp_nx*size, chip_path);		
+			sprintf(chip_path, "!/lmc/selection_bias/%d/gal_chip_%04d.fits", myid, i);
+			write_img(big_img, stamp_nx*size, stamp_nx*size, chip_path, myid,i);		
 			
 			initialize(big_img, stamp_nx*stamp_nx*size*size);	
 
 			s2 = clock();
 			sprintf(log_inform, "Thread: %d, chip: %d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
-
-			sprintf(buffer, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
-			cout << buffer;
+			if (myid == 0)
+			{
+				sprintf(buffer, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
+				cout << buffer;
+			}
 		}
 		write_h5(h5_path, set_name, data_rows, data_cols, data[0],NULL);
 		ed = clock();
-
-		sprintf(buffer, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
-		cout << buffer;
+		if (myid == 0)
+		{
+			sprintf(buffer, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
+			cout << buffer;
+		}
 
 		delete[] shear;
 		delete[] flux;
