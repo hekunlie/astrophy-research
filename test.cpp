@@ -62,29 +62,45 @@ int main(int argc, char*argv[])
 	int k, ii, jj;
 	int rows = 1000;
 	int columns = 27;
-	//for (i = 0; i < 42; i++)
-	//{
-	//	cout <<"I: "<<i<<"\t"<<i/14<< endl;
-	//}
-
-	for (i = 0; i < 10; i++)
+	sprintf(chip_path, "/home/hkli/temp/test.hdf5");
+	sprintf(data_path, "/data");
+	double shear[10000]{};
+	double stamp[100]{};
+	read_h5(chip_path, data_path, shear);
+	for (i = 0; i < 10000; i++)
+	{
+		d1 += shear[i];
+	}
+	cout << "the sum: " << d1 << endl;
+	for (i = 0; i < 100; i++)
+	{	
+		d1 = 0;
+		segment(shear, stamp, i, 10, 10, 10);
+		cout <<"i: "<<i<< " 10'th "<<stamp[10];
+		for (j = 0; j < 100; j++)
+		{
+			d1 += stamp[j];
+		}
+		cout <<" "<<d1<<" "<<100.*i << endl;
+	}
+	/*for (i = 0; i < 10; i++)
 	{
 		s1 = clock();
 		sprintf(chip_path, "/home/hklee/831549p_1OFCBC.fits");
 		cout << chip_path << endl;
 		sprintf(data_path, "/home/hklee/data.hdf5");
 		cout << chip_path << endl;
-		//read_img(gal,chip_path);
+		read_img(gal,chip_path);
 		cout << "read img" << endl;
-		//detector(gal, chain, 100, y_size, size);
+		detector(gal, chain, 100, y_size, size);
 		cout << "detecting img" << endl;
 		sprintf(chip_path, "/data");
 		s2 = clock();
-		//write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
+		write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
 
-		//sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
-		//cout << buffer1;
-	}
+		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
+		cout << buffer1;
+	}*/
 
 	ed = clock();
 

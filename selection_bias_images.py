@@ -20,7 +20,7 @@ ts = time.clock()
 with open("/home/hklee/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "total_data" in path:
+    if "total_path" in path:
         total_path = path.split("=")[1]
     elif "result" in path:
         result_path = path.split("=")[1]
@@ -38,15 +38,15 @@ form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
-stamp_size = 96
+stamp_size = 84
 pixel_scale = 0.2
-chips_num = 100
+chips_num = 300
 seed = rank*3424 + 53412
 chip_s_id, shear_id = divmod(rank, 14)
 
 fq = Fourier_Quad(stamp_size, seed)
 
-shear_cata = para_path + "shear.dat"
+shear_cata = para_path + "shear.npz"
 shear = numpy.load(shear_cata)
 g1 = shear["arr_0"][shear_id]
 g2 = shear["arr_1"][shear_id]
@@ -63,8 +63,8 @@ prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvi
 noise_sig = prop.sigma_sky
 
 psf = galsim.Moffat(beta=3.5, scale_radius=1, flux=1.0)
-psf_img = galsim.ImageD(stamp_size, stamp_size, pixel_scale)
-psf.drawImage(image=psf_img)
+psf_img = galsim.ImageD(stamp_size, stamp_size)
+psf.drawImage(image=psf_img,scale=pixel_scale)
 
 #psf = psf_o.shear(e1=0.081, e2=-0.066)
 
@@ -77,7 +77,7 @@ logger.info("seed: %d"%seed)
 
 t = 0
 for i in range(chips_num):
-    t1 = time.time()
+    t1 = time.clock()
     chip_path = total_path + str(shear_id) + "/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
     gal_pool = []
     logger.info("Start the %4d's chip..."%i)
@@ -89,16 +89,17 @@ for i in range(chips_num):
         ra = radius[t+chip_s_id*chips_num]
         t += 1
 
-        bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
-        disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
-        gal = bulge * 0.3 + disk * 0.7
+        # bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
+        # disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
+        # gal = bulge * 0.3 + disk * 0.7
+        gal = galsim.Sersic(half_light_radius=ra, n=2)
         gal = gal.withFlux(gal_flux)
 
         gal_s = gal.shear(e1=e1, e2=e2)
         gal_g = gal_s.shear(g1=g1, g2=g2)
         gal_c = galsim.Convolve([psf, gal_g])
-        img = galsim.ImageD(stamp_size, stamp_size, pixel_scale)
-        gal_c.drawImage(image=img)
+        img = galsim.ImageD(stamp_size, stamp_size)
+        gal_c.drawImage(image=img, scale=pixel_scale)
         gal_img = img.array + fq.draw_noise(0, noise_sig)
         gal_pool.append(gal_img)
 

@@ -15,6 +15,21 @@ void write_log(char*filename,  char *inform)
 	loggers.close();
 }
 
+void read_h5(char *filename, char *set_name, double *matrix)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+
+	hid_t dataset_id;  
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+
+	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix);
+
+	status = H5Dclose(dataset_id);
+	//status = H5Sclose(dataspace_id);
+	status = H5Fclose(file_id);
+}
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix , int *i_matrix )
 {
 	hid_t file_id;
@@ -55,7 +70,8 @@ void read_img(double *arr, char *path)
 
 	fits_open_file(&fptr, path, READONLY, &status);
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
-	npixels = naxes[0] * naxes[1];											/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
+	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
+
 	double *buffer = new double[npixels];										/* create a new array */
 
 	fits_read_img(fptr, TDOUBLE, fpixel, npixels, &nullval, buffer, &anynull, &status);

@@ -33,6 +33,7 @@ extern gsl_rng *rng;
 extern ofstream loggers;
 
 void write_log(char *filename, char *inform);
+void read_h5(char *filename, char *set_name, double *matrix);
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
 void read_img(double *arr, char *path);
 void write_img(double *img, int ysize, int xsize, char *filename,int procs_id, int chip_id);
@@ -48,7 +49,7 @@ void initialize(double *array, int size );
 void stack(double *container, double *stamp, int tag, int size, int row, int col);
 void segment(double *chip, double *stamp, int tag, int size, int row, int col);
 void addnoise(double *image, int pixel_num,  double sigma);
-void f_snr(double *image, para *, int size, int edge);
+void f_snr(double *image, para *paras, int size, int edge);
 void gsl_rng_initialize(int seed);
 void gsl_rng_free();
 
