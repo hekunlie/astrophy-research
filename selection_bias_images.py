@@ -104,6 +104,7 @@ for i in range(chips_num):
         gal_pool.append(gal_img)
 
     big_chip = fq.stack(gal_pool, 100)
+    big_chip = numpy.float32(big_chip)
     hdu = fits.PrimaryHDU(big_chip)
     hdu.writeto(chip_path, overwrite=True)
     t2 = time.clock()

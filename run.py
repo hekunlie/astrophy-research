@@ -7,8 +7,8 @@ if int(argv[1]) == 1:
 else:
     comm = ['mpirun -np 14 python sym_mc_plot.py peak', 'mpirun -np 14 python sym_mc_plot.py flux',
             'mpirun -np 14 python sym_mc_plot.py fsnr', 'mpirun -np 14 python sym_mc_plot.py fsnr1',
-            'mpirun -np 14 python sym_mc_plot.py fsnr4', 'mpirun -np 14 python sym_mc_plot.py fsnr9',
-            'mpirun -np 14 python sym_mc_plot.py osnr', 'mpirun -np 14 python sym_mc_plot.py snr']
+            'mpirun -np 14 python sym_mc_plot.py fsnr4', 'mpirun -np 14 python sym_mc_plot.py fsnr9']#,
+           # 'mpirun -np 14 python sym_mc_plot.py osnr', 'mpirun -np 14 python sym_mc_plot.py snr']
 for cmd in comm:
     a = Popen(cmd, shell=True)
     a.wait()

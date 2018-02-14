@@ -29,6 +29,8 @@ int main(int argc, char*argv[])
 	int data_rows = chip_num*stamp_num, data_cols = 19;
 	int i, j, k, seed;
 	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 380.64, ts, te, t1, t2;
+	all_paras.gal_noise_sig = gal_noise_sig;
+	all_paras.psf_noise_sig = psf_noise_sig;
 
 	ts = clock();
 	seed = myid * 15322 + 43132;
@@ -80,7 +82,7 @@ int main(int argc, char*argv[])
 			get_radius(gal, &all_paras, 99999999 * thres, size, 2, gal_noise_sig);
 			pow_spec(gal, pgal, size, size);
 
-			f_snr(pgal, &all_paras, size, 4);
+			f_snr(pgal, &all_paras, size);
 
 			shear_est(pgal, ppsf, pnoise, &all_paras, size);
 
@@ -95,9 +97,9 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][8] = all_paras.gal_flux;
 			data[i*stamp_num + j][9] = all_paras.gal_peak;
 			data[i*stamp_num + j][10] = all_paras.gal_fsnr;
-			data[i*stamp_num + j][11] = all_paras.gal_fsnr1;
-			data[i*stamp_num + j][12] = all_paras.gal_fsnr4;
-			data[i*stamp_num + j][13] = all_paras.gal_fsnr9;
+			data[i*stamp_num + j][11] = all_paras.gal_fsnr4;
+			data[i*stamp_num + j][12] = all_paras.gal_fsnr_c;
+			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c4;
 			data[i*stamp_num + j][14] = all_paras.gal_snr;
 			data[i*stamp_num + j][15] = 0.;
 			data[i*stamp_num + j][16] = (double)(myid);

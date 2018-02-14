@@ -25,7 +25,7 @@ int main(int argc, char*argv[])
 	int chip_num = 1, stamp_num = 10000, shear_pairs = 10;
 	int myid = 0;
 	int i, j, seed;
-	int size = 2043, y_size=4606, num_p = 100, stamp_nx = 100, psf_type = 2;
+	int size = 84, y_size=4606, num_p = 100, stamp_nx = 100, psf_type = 2;
 	double psf_scale = 5., max_radius = 11., st, ed;
 	double g1 = 0., g2 = 0.;
 	double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
@@ -35,7 +35,7 @@ int main(int argc, char*argv[])
 	//double *big_img = new double[stamp_nx*stamp_nx*size*size]();
 	double *point = new double[2 * num_p]();
 	double *points_r = new double[2 * num_p]();
-	double *gal = new double[y_size*size]();
+	double *gal = new double[10000*size*size]();
 	double *gpow = new double[size*size]();
 	double *psf = new double[size*size]();
 	double *ppow = new double[size*size]();
@@ -62,26 +62,14 @@ int main(int argc, char*argv[])
 	int k, ii, jj;
 	int rows = 1000;
 	int columns = 27;
-	sprintf(chip_path, "/home/hkli/temp/test.hdf5");
+	sprintf(chip_path, "/lmc/selection_bias/0/gal_chip_0000.fits");
 	sprintf(data_path, "/data");
 	double shear[10000]{};
 	double stamp[100]{};
-	read_h5(chip_path, data_path, shear);
-	for (i = 0; i < 10000; i++)
+	read_img(gal, chip_path);
+	for (i = 0; i < 10; i++)
 	{
-		d1 += shear[i];
-	}
-	cout << "the sum: " << d1 << endl;
-	for (i = 0; i < 100; i++)
-	{	
-		d1 = 0;
-		segment(shear, stamp, i, 10, 10, 10);
-		cout <<"i: "<<i<< " 10'th "<<stamp[10];
-		for (j = 0; j < 100; j++)
-		{
-			d1 += stamp[j];
-		}
-		cout <<" "<<d1<<" "<<100.*i << endl;
+		cout<<gal[i]<<endl;
 	}
 	/*for (i = 0; i < 10; i++)
 	{

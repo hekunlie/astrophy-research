@@ -20,7 +20,7 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig;
 
 	int gal_size, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr, gal_fsnr4, gal_fsnr9, gal_fsnr1, gal_snr, gal_osnr, gal_noise_sig;
+	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr, gal_fsnr4, gal_fsnr_c4, gal_fsnr_c, gal_snr, gal_osnr, gal_noise_sig;
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2;
@@ -49,7 +49,7 @@ void initialize(double *array, int size );
 void stack(double *container, double *stamp, int tag, int size, int row, int col);
 void segment(double *chip, double *stamp, int tag, int size, int row, int col);
 void addnoise(double *image, int pixel_num,  double sigma);
-void f_snr(double *image, para *paras, int size, int edge);
+void f_snr(double *image, para *paras, int size);
 void gsl_rng_initialize(int seed);
 void gsl_rng_free();
 
