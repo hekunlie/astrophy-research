@@ -242,7 +242,7 @@ def ellip_mock(num, seed=123400, figout=None):
     # probability
     pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
 
-    emin, emax = 0.0, 0.8
+    emin, emax = 0.0, 0.6
     pmin, pmax = 0.0, 2.64456
 
     es = numpy.linspace(emin, emax, int((emax - emin) / 0.000001) + 1)

@@ -1,5 +1,5 @@
 from sys import path
-path.append('/home/hklee/work/fourier_quad/')
+path.append('/home/hkli/work/fourier_quad')
 import numpy
 import galsim
 from astropy.io import fits
@@ -17,10 +17,10 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-with open("/home/hklee/work/envs/envs.dat", "r") as f:
+with open("/home/hkli/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "total_path" in path:
+    if "total" in path:
         total_path = path.split("=")[1]
     elif "result" in path:
         result_path = path.split("=")[1]
@@ -40,8 +40,8 @@ logger.addHandler(lf)
 
 stamp_size = 84
 pixel_scale = 0.2
-chips_num = 700
-seed = rank*3424 + 53412
+chips_num = 200
+seed = rank*3424 + 412
 chip_s_id, shear_id = divmod(rank, 14)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -92,7 +92,7 @@ for i in range(chips_num):
         # bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
         # disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
         # gal = bulge * 0.3 + disk * 0.7
-        gal = galsim.Sersic(half_light_radius=ra, n=2)
+        gal = galsim.Sersic(half_light_radius=ra, n=4)
         gal = gal.withFlux(gal_flux)
 
         gal_s = gal.shear(e1=e1, e2=e2)

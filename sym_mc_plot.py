@@ -44,30 +44,30 @@ nsig = 380.64
 
 osnr = data[:, 7]
 osnrcut = [0, 5, 10, 15, 20, 25, 35, 55, 75, 95, 110]
-
+#
 flux = data[:, 8]/nsig
 fcut = [0, 20, 60, 100, 150, 200, 250, 300, 350, 400, 450]
 
 peak = data[:, 9]/nsig
-pcut = [0, 3, 3.5, 4, 4.5, 5.5, 6.5, 7.5, 8.5, 10, 12]
+pcut = [0, 3, 4, 4.5, 5.5, 6.5, 7.5, 8.5, 10, 12, 15]
 #
 fsnr = data[:, 10]
-fsnrcut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 12, 14, 18]
+fsnrcut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
 
-fsnr1 = data[:, 11]
-fsnr1cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 12, 14, 18]
+fsnr4 = data[:, 11]
+fsnr4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
 
-fsnr4 = data[:, 12]
-fsnr4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 12, 14, 18]
+fsnr_c = data[:, 12]
+fsnrccut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
 #
-fsnr9 = data[:, 13]
-fsnr9cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 12, 14, 18]
+fsnr_c4 = data[:, 13]
+fsnrc4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
 
-snr = data[:,14]
+snr = data[:, 14]
 snrcut = [0, 5, 10, 15, 20, 25, 35, 55, 75, 95, 110]
 
-select = {'osnr':(osnr, osnrcut),"fsnr1": (fsnr1, fsnr1cut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr": (fsnr, fsnrcut),
-          "fsnr4": (fsnr4, fsnr4cut), "fsnr9": (fsnr9, fsnr9cut), 'snr':(snr, snrcut)}
+select = {'osnr':(osnr, osnrcut),"fsnr": (fsnr, fsnrcut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr4": (fsnr4, fsnr4cut),
+          "fsnr_c": (fsnr_c, fsnrccut), "fsnr_c4": (fsnr_c4, fsnrc4cut), 'snr':(snr, snrcut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 

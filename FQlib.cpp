@@ -653,32 +653,32 @@ void addnoise(double *image, int pixel_num,   double sigma)
 void f_snr(double *image, para *paras, int size)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
-	double noise=0, noise4, signal;
-	int i,edge, k=0,edge,xc=size/2;
+	double n, noise1, noise4, signal;
+	int i,edge, k=0, xc=size/2;
 	for (edge = 1; edge < 5; edge += 3)
 	{	
-		noise = 0;
+		n = 0;
 		for (i = 0; i < size; i++) //y coordinates
 		{
 			for (k = 0; k < size; k++) // x coordinates
 			{
 				if (i< edge || i> size - edge - 1)
 				{
-					noise += image[i*size + k];
+					n += image[i*size + k];
 				}
 				else if (k < edge || k>size - edge - 1)
 				{
-					noise += image[i*size + k];
+					n += image[i*size + k];
 				}
 			}
 		}
 		if (edge == 1)
 		{
-			noise = noise*0.25 / ((size - edge)*edge);
+			noise1 = n*0.25 / ((size - edge)*edge);
 		}
 		else
 		{
-			noise4 = noise*0.25 / ((size - edge)*edge);
+			noise4 = n*0.25 / ((size - edge)*edge);
 		}
 	}
 	if (image[xc * size + xc] > image[(xc - 1)* size + xc] && image[(xc * size) + xc] > image[(xc + 1) * size + xc]
@@ -691,10 +691,10 @@ void f_snr(double *image, para *paras, int size)
 		signal = (image[(xc - 1)* size + xc] + image[(xc + 1) * size + xc] + image[xc * size + xc + 1] + image[xc * size +xc - 1]) *0.25;
 	}
 	
-	paras->gal_fsnr = sqrt(signal/noise);
+	paras->gal_fsnr = sqrt(signal/noise1);
 	paras->gal_fsnr4 = sqrt(signal / noise4);
 
-	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
+	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise1);	
 	paras->gal_fsnr_c4 = sqrt(image[xc*size + xc] / noise4);
 	/*signal = (image[(xc - 1)*size + xc] + image[(xc + 1)*size + xc] + image[xc*size + xc - 1] + image[xc*size + xc + 1])*0.25;
 	paras->gal_fsnr4 = sqrt(signal / noise);
