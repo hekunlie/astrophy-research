@@ -66,7 +66,10 @@ fsnrc4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
 snr = data[:, 14]
 snrcut = [0, 5, 10, 15, 20, 25, 35, 55, 75, 95, 110]
 
-select = {'osnr':(osnr, osnrcut),"fsnr": (fsnr, fsnrcut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr4": (fsnr4, fsnr4cut),
+sesnr = data[:, 15]
+secut = [0, 13, 15, 18, 21, 25, 30, 40, 60, 90, 120]
+
+select = {"sesnr": (sesnr, secut), 'osnr':(osnr, osnrcut),"fsnr": (fsnr, fsnrcut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr4": (fsnr4, fsnr4cut),
           "fsnr_c": (fsnr_c, fsnrccut), "fsnr_c4": (fsnr_c4, fsnrc4cut), 'snr':(snr, snrcut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
@@ -116,9 +119,24 @@ else:
         mc = numpy.array([e1mc, e2mc])
         data_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
         numpy.savez(data_path, arr, mc)
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".eps"
+
+        mc_title = ['0', '0', '0', '0']
+        m_r = [[e1mc[0]-1 - 2 * e1mc[1], e1mc[0]-1 + 2 * e1mc[1]], [e2mc[0]-1 - 2 * e2mc[1], e2mc[0]-1 + 2 * e2mc[1]]]
+        c_r = [[e1mc[2] - 2 * e1mc[3], e1mc[2] + 2 * e1mc[3]], [e2mc[2] - 2 * e2mc[3], e2mc[2] + 2 * e2mc[3]]]
+        for ii in range(2):
+            if tool_box.check_in(m_r[ii]):
+                mc_title[ii] = ''
+            else:
+                mc_title[ii] = "_m" + str(ii+1)
+            if tool_box.check_in(c_r[ii]):
+                mc_title[ii + 2] = ''
+            else:
+                mc_title[ii + 2] = "_c" + str(ii+1)
+        pic_mc = "".join(mc_title)
+
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + pic_mc + ".eps"
         tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(cut_s), 'max', pic_path)
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + ".png"
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + pic_mc + ".png"
         tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(cut_s), 'max', pic_path)
 
     mc1 = numpy.array(mc1).T
@@ -136,8 +154,8 @@ else:
     ax1 = fig.add_subplot(121)
     ax1.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
     ax1.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
-    ax1.plot([x1 - 0.05 * (x2 - x1), x2+ 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
-    ax1.set_xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
+    ax1.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax1.set_xlabel("Cutoff")
     ax1.legend()
@@ -147,8 +165,8 @@ else:
     ax2 = fig.add_subplot(122)
     ax2.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=3, label='c1')
     ax2.errorbar(select[cut][1], mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
-    ax2.plot([x1 - 0.05 * (x2 - x1), x2+ 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
-    ax2.set_xlim(0.05 * (x1 - x2), 1.05 * (x2 - x1))
+    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
+    ax2.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax2.set_xlabel("Cutoff")
     ax2.legend()

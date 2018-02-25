@@ -26,10 +26,10 @@ int main(int argc, char*argv[])
 	string s;
 
 	int size = 84, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
-	chip_num = 1000 /(numprocs / 14);
+	chip_num = 100 /(numprocs / 14);
 	int data_rows = chip_num*stamp_num, data_cols = 19;
 	int i, j, k, seed, chip_id, shear_id;
-	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 380.64, ts, te, t1, t2;
+	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 0, ts, te, t1, t2;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -55,9 +55,9 @@ int main(int argc, char*argv[])
 	}
 	char chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
 
-	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_new/logs/m_%d_log.dat", myid);
+	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias/logs/m_%d_log.dat", myid);
 
-	sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_new/psf.fits");
+	sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias/psf.fits");
 	read_img(psf, chip_path);
 
 	pow_spec(psf, ppsf, size, size);
@@ -67,20 +67,20 @@ int main(int argc, char*argv[])
 	{	
 		if (0 == myid)
 		{
-			sprintf(buffer, "%03d starts the %d's chip", myid, i);
+			sprintf(buffer, "%03d starts the %03d's chip", myid, i);
 			cout << buffer << endl;
 		}
 		t1 = clock();
 		sprintf(log_inform, "%03d 's chip start...", i);
 		write_log(log_path, log_inform);
 
-		sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_new/%d/gal_chip_%04d.fits", shear_id, i+chip_id);
+		sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias/%d/gal_chip_%04d.fits", shear_id, i+chip_id);
 		read_img(big_img, chip_path);
 
 		for (j = 0; j < stamp_num; j++)
 		{
 			addnoise(noise, size*size, gal_noise_sig);
-			pow_spec(noise, pnoise, size, size);
+			//pow_spec(noise, pnoise, size, size);
 
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 			get_radius(gal, &all_paras, 99999999 * thres, size, 2, gal_noise_sig);
@@ -127,7 +127,7 @@ int main(int argc, char*argv[])
 		}
 	}
 
-	sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias_new/result/data/data_%d_%d.hdf5", shear_id, myid / shear_pairs);
+	sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias/result/data/data_%d_%d.hdf5", shear_id, myid / shear_pairs);
 	sprintf(set_name, "/data");
 	write_h5(h5_path, set_name, data_rows, data_cols, data[0], NULL);
 

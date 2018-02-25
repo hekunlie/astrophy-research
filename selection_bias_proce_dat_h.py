@@ -49,7 +49,10 @@ pic_path = result_path + "pic/"
 
 final_cache_path = path + 'final_cache.npz'
 for s in range(int(scale)):
-    data_cache_path = path + 'data_%d.hdf5'%(rank + s*cpus)
+    if scale == 1:
+        data_cache_path = path + "data_%d.hdf5"%rank
+    else:
+        data_cache_path = path + 'data_%d_%d.hdf5'%(rank,s)
     f = h5py.File(data_cache_path,'r')
     if s == 0:
         data = f["/data"].value

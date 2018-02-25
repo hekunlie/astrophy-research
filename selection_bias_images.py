@@ -62,7 +62,7 @@ f.close()
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 noise_sig = prop.sigma_sky
 
-psf = galsim.Moffat(beta=3.5, scale_radius=1, flux=1.0)
+psf = galsim.Moffat(beta=3.5, scale_radius=0.8, flux=1.0)
 psf_img = galsim.ImageD(stamp_size, stamp_size)
 psf.drawImage(image=psf_img,scale=pixel_scale)
 
@@ -83,19 +83,17 @@ for i in range(chips_num):
     logger.info("Start the %04d's chip..."%i)
 
     for k in range(10000):
-        e1 = e1s[t+chip_s_id*chips_num]
-        e2 = e2s[t+chip_s_id*chips_num]
-        gal_flux = flux[t+chip_s_id*chips_num]
-        ra = radius[t+chip_s_id*chips_num]
+        e1 = e1s[t+chip_s_id*chips_num*10000]
+        e2 = e2s[t+chip_s_id*chips_num*10000]
+        gal_flux = flux[t+chip_s_id*chips_num*10000]
+        ra = radius[t+chip_s_id*chips_num*10000]
         t += 1
 
         # bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
         # disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
         # gal = bulge * 0.3 + disk * 0.7
-        gal = galsim.Sersic(half_light_radius=ra, n=2)
-        gal = gal.withFlux(gal_flux)
-
-        gal_s = gal.shear(e1=e1, e2=e2)
+        gal = galsim.Sersic(half_light_radius=ra, n=3)
+        gal_s = gal.shear(e1=e1, e2=e2).withFlux(gal_flux)
         gal_g = gal_s.shear(g1=g1, g2=g2)
         gal_c = galsim.Convolve([psf, gal_g])
         img = galsim.ImageD(stamp_size, stamp_size)

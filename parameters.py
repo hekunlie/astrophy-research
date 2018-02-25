@@ -54,7 +54,7 @@ f = h5py.File(path,"w")
 # ellipticity
 
 e = tool_box.ellip_mock(num, seed)
-theta = numpy.random.uniform(0, numpy.pi, num)
+theta = rng.uniform(0, numpy.pi, num)
 q = (1-e)/(1+e)
 es = (1-q**2)/(1+q**2)
 e1 = es*numpy.cos(2*theta)
@@ -67,16 +67,56 @@ f["/e2"] = e2
 # # magnitude & flux
 
 flux = numpy.zeros((num, 1))
-arr = tool_box.mags_mock(num, 18.5, 25)
+arr = tool_box.mags_mock(num, 18.5, 24.3)
 for i in range(num):
     flux[i] = prop.flux(arr[i])
 f["/flux"] = flux[:,0]
-
-
+f["/mag"] = arr
 
 # galactic radius
 
-rad = numpy.random.uniform(0.8, 1.8, num)
+rad = rng.uniform(1, 1.6, num)
 f["/radius"] = rad
 
+# B/T ratio
+bt = rng.normal(0, 0.1, 2*num)
+bt.shape = (len(bt), 1)
+idx1 = bt >= 0
+idx2 = bt < 1
+c = bt[idx1&idx2]
+c.shape = (len(c), 1)
+if len(c) > num:
+    f_bt = c[:num]
+elif len(c) < num:
+    gap = num - len(c)
+    plus = rng.normal(0, 0.1, 10*gap)
+    plus = plus[plus>=0][:gap]
+    plus.shape = (len(plus), 1)
+    f_bt = numpy.row_stack((c, plus))
+else:
+    f_bt = c
+f["/btr"] = f_bt
+
 f.close()
+pic = para_path + "/pic/e1e2ees_%d.png"%rank
+plt.subplot(221)
+plt.hist(e1, 100)
+plt.subplot(222)
+plt.hist(e2, 100)
+plt.subplot(223)
+plt.hist(e, 100)
+plt.subplot(224)
+plt.hist(es, 100)
+plt.savefig(pic)
+plt.close()
+
+pic = para_path + "/pic/fmrb_%d.png"%rank
+plt.subplot(221)
+plt.hist(arr, 100)
+plt.subplot(222)
+plt.hist(flux[:,0], 100)
+plt.subplot(223)
+plt.hist(rad, 100)
+plt.subplot(224)
+plt.hist(f_bt, 100)
+plt.savefig(pic)

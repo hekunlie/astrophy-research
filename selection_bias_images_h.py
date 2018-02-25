@@ -40,8 +40,8 @@ logger.addHandler(lf)
 
 stamp_size = 84
 pixel_scale = 0.2
-chips_num = 200
-seed = rank*3424 + 412
+chips_num = int(1000/int(cpus/14))
+seed = rank*34424 + 41112
 chip_s_id, shear_id = divmod(rank, 14)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -57,14 +57,15 @@ e1s = f["/e1"].value
 e2s = f["/e2"].value
 radius = f["/radius"].value
 flux = f["/flux"].value
+fbt = f['/btr'].value
 f.close()
 
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 noise_sig = prop.sigma_sky
 
-psf = galsim.Moffat(beta=3.5, scale_radius=1, flux=1.0)
+psf = galsim.Moffat(beta=3.5, scale_radius=0.8, flux=1.0, trunc=3)
 psf_img = galsim.ImageD(stamp_size, stamp_size)
-psf.drawImage(image=psf_img,scale=pixel_scale)
+psf.drawImage(image=psf_img, scale=pixel_scale)
 
 #psf = psf_o.shear(e1=0.081, e2=-0.066)
 
@@ -76,6 +77,7 @@ if rank == 0:
 logger.info("seed: %d"%seed)
 
 t = 0
+
 for i in range(chips_num):
     t1 = time.clock()
     chip_path = total_path + str(shear_id) + "/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
@@ -83,28 +85,33 @@ for i in range(chips_num):
     logger.info("Start the %04d's chip..."%i)
 
     for k in range(10000):
-        e1 = e1s[t+chip_s_id*chips_num]
-        e2 = e2s[t+chip_s_id*chips_num]
-        gal_flux = flux[t+chip_s_id*chips_num]
-        ra = radius[t+chip_s_id*chips_num]
+        para_n = t+chip_s_id*chips_num*10000
+        e1 = e1s[para_n]
+        e2 = e2s[para_n]
+        gal_flux = flux[para_n]
+        ra = radius[para_n]
+        btr = fbt[para_n][0]
+
+        c_profile = numpy.random.randint(0, 10, 1)[0]
+        if c_profile == 0:
+            gal = galsim.DeVaucouleurs(half_light_radius=ra).shear(e1=e1, e2=e2)
+        else:
+            bulge = galsim.Sersic(half_light_radius=0.6*ra, n=4)# be careful
+            disk = galsim.Sersic(half_light_radius=ra, n=2)# be careful
+            gal = bulge * btr + disk * (1-btr)
+            gal = gal.shear(e1=e1, e2=e2)
         t += 1
 
-        # bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
-        # disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
-        # gal = bulge * 0.3 + disk * 0.7
-        gal = galsim.Sersic(half_light_radius=ra, n=4)
-        gal = gal.withFlux(gal_flux)
-
-        gal_s = gal.shear(e1=e1, e2=e2)
+        gal_s = gal.withFlux(gal_flux)
         gal_g = gal_s.shear(g1=g1, g2=g2)
-        gal_c = galsim.Convolve([psf, gal_g])
+        gal_c = galsim.Convolve([gal_g, psf])
         img = galsim.ImageD(stamp_size, stamp_size)
         gal_c.drawImage(image=img, scale=pixel_scale)
         gal_img = img.array + fq.draw_noise(0, noise_sig)
         gal_pool.append(gal_img)
 
     big_chip = fq.stack(gal_pool, 100)
-    big_chip = numpy.float32(big_chip)
+    # big_chip = numpy.float32(big_chip)
     hdu = fits.PrimaryHDU(big_chip)
     hdu.writeto(chip_path, overwrite=True)
     t2 = time.clock()

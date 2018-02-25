@@ -4,6 +4,8 @@ from multiprocessing import Pool, Manager
 import numpy
 import copy
 import matplotlib.pyplot as plt
+import re
+
 
 def task_distri(target_list, cpu_num):
     # it will divide the target_list into some piece (small lists in a diction)
@@ -237,7 +239,7 @@ def ellip_mock(num, seed=123400, figout=None):
 
     See Miller et al, 2013, MNRAS
     """
-    rng = numpy.random.RandomState(seed)
+    numpy.random.RandomState(seed)
     b, c = 2.368, 6.691
     # probability
     pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
@@ -249,5 +251,11 @@ def ellip_mock(num, seed=123400, figout=None):
     pe_base = pe(es)
     # normalize
     pe_base = pe_base / numpy.sum(pe_base)
-    rbe = rng.choice(es, num, p=pe_base)
+    rbe = numpy.random.choice(es, num, p=pe_base)
     return rbe
+
+def check_in(interval):
+    if interval[0] <= 0 <= interval[1]:
+        return True
+    else:
+        return False
