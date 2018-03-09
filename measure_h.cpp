@@ -25,11 +25,11 @@ int main(int argc, char*argv[])
 	ifstream fin;
 	string s;
 
-	int size = 84, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
-	chip_num = 100 /(numprocs / 14);
-	int data_rows = chip_num*stamp_num, data_cols = 19;
+	int size = 90, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
+	chip_num = 500 /(numprocs / 14);
+	int data_rows = chip_num*stamp_num, data_cols = 17;
 	int i, j, k, seed, chip_id, shear_id;
-	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 0, ts, te, t1, t2;
+	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -65,14 +65,13 @@ int main(int argc, char*argv[])
 	
 	for (i = 0; i < chip_num; i++)
 	{	
-		if (0 == myid)
-		{
-			sprintf(buffer, "%03d starts the %03d's chip", myid, i);
-			cout << buffer << endl;
-		}
 		t1 = clock();
 		sprintf(log_inform, "%03d 's chip start...", i);
 		write_log(log_path, log_inform);
+		if (0 == myid)
+		{
+			cout << log_inform << endl;
+		}
 
 		sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias/%d/gal_chip_%04d.fits", shear_id, i+chip_id);
 		read_img(big_img, chip_path);
@@ -80,7 +79,7 @@ int main(int argc, char*argv[])
 		for (j = 0; j < stamp_num; j++)
 		{
 			addnoise(noise, size*size, gal_noise_sig);
-			//pow_spec(noise, pnoise, size, size);
+			pow_spec(noise, pnoise, size, size);
 
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 			get_radius(gal, &all_paras, 99999999 * thres, size, 2, gal_noise_sig);
@@ -100,15 +99,13 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][7] = all_paras.gal_osnr;
 			data[i*stamp_num + j][8] = all_paras.gal_flux;
 			data[i*stamp_num + j][9] = all_paras.gal_peak;
-			data[i*stamp_num + j][10] = all_paras.gal_fsnr;
-			data[i*stamp_num + j][11] = all_paras.gal_fsnr4;
-			data[i*stamp_num + j][12] = all_paras.gal_fsnr_c;
-			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c4;
-			data[i*stamp_num + j][14] = all_paras.gal_snr;
-			data[i*stamp_num + j][15] = 0.;
-			data[i*stamp_num + j][16] = (double)(shear_id);
-			data[i*stamp_num + j][17] = (double)(chip_id+i);
-			data[i*stamp_num + j][18] = (double)(j);
+			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;
+			data[i*stamp_num + j][11] = all_paras.gal_snr;
+			data[i*stamp_num + j][12] = all_paras.gal_size;
+			data[i*stamp_num + j][13] = 0;
+			data[i*stamp_num + j][14] = 0;
+			data[i*stamp_num + j][15] = 0;
+			data[i*stamp_num + j][16] = 0;
 
 			initialize(noise, size*size);
 			initialize(pnoise, size*size);
@@ -122,8 +119,7 @@ int main(int argc, char*argv[])
 		write_log(log_path, log_inform);
 		if (0 == myid)
 		{
-			sprintf(buffer, "%03d finish the %d's chip in %.2f sec", myid, i, (t2 - t1) / CLOCKS_PER_SEC);
-			cout << buffer << endl;
+			cout << log_inform << endl;
 		}
 	}
 
@@ -136,8 +132,7 @@ int main(int argc, char*argv[])
 	write_log(log_path, log_inform);
 	if (0 == myid)
 	{
-		sprintf(buffer, "finish the jobs in %.2f sec", (te - ts) / CLOCKS_PER_SEC);
-		cout << buffer << endl;
+		cout << log_inform << endl;
 	}
 	delete[] psf;
 	delete[] ppsf;

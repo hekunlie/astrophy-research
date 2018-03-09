@@ -43,34 +43,53 @@ fq = Fourier_Quad(84, 152356)
 nsig = 380.64
 
 osnr = data[:, 7]
-osnrcut = [0, 5, 10, 15, 20, 25, 35, 55, 75, 95, 110]
-#
+d_sort = numpy.sort(osnr[osnr>0])
+step = int(len(d_sort)/10)
+osnrcut = [d_sort[i*step] for i in range(10)]
+
 flux = data[:, 8]/nsig
-fcut = [0, 20, 60, 100, 150, 200, 250, 300, 350, 400, 450]
+d_sort = numpy.sort(flux[flux>0])
+step = int(len(d_sort)/10)
+fcut = [d_sort[i*step] for i in range(10)]
 
 peak = data[:, 9]/nsig
-pcut = [0, 3, 4, 4.5, 5.5, 6.5, 7.5, 8.5, 10, 12, 15]
-#
-fsnr = data[:, 10]
-fsnrcut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
+d_sort = numpy.sort(peak[peak>0])
+step = int(len(d_sort)/10)
+pcut = [d_sort[i*step] for i in range(10)]
 
-fsnr4 = data[:, 11]
-fsnr4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
+fsnr_c = data[:, 10]
+d_sort = numpy.sort(fsnr_c[fsnr_c>0])
+step = int(len(d_sort)/10)
+fsnrccut = [d_sort[i*step] for i in range(10)]
 
-fsnr_c = data[:, 12]
-fsnrccut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
-#
-fsnr_c4 = data[:, 13]
-fsnrc4cut = [0, 2.5, 3.5, 4.8, 6, 7, 8, 10, 15, 20, 25]
+snr = data[:, 11]
+d_sort = numpy.sort(snr[snr>0])
+step = int(len(d_sort)/10)
+snrcut = [d_sort[i*step] for i in range(10)]
 
-snr = data[:, 14]
-snrcut = [0, 5, 10, 15, 20, 25, 35, 55, 75, 95, 110]
+fpath = "/lmc/selection_bias/result/data/fsnr_%d.npz"%rank
+f = numpy.load(fpath)["arr_0"]
+fsnr = f[:, 0]
+d_sort = numpy.sort(fsnr[fsnr>0])
+step = int(len(d_sort)/10)
+fsnrcut = [d_sort[i*step] for i in range(10)]
 
-sesnr = data[:, 15]
-secut = [0, 13, 15, 18, 21, 25, 30, 40, 60, 90, 120]
+fsnr_f = f[:, 1]
+d_sort = numpy.sort(fsnr_f[fsnr_f>0])
+step = int(len(d_sort)/10)
+fsnrfcut = [d_sort[i*step] for i in range(10)]
 
-select = {"sesnr": (sesnr, secut), 'osnr':(osnr, osnrcut),"fsnr": (fsnr, fsnrcut), "flux": (flux, fcut), "peak": (peak, pcut), "fsnr4": (fsnr4, fsnr4cut),
-          "fsnr_c": (fsnr_c, fsnrccut), "fsnr_c4": (fsnr_c4, fsnrc4cut), 'snr':(snr, snrcut)}
+spath = "/lmc/selection_bias/result/data/sex_%d.npz"%rank
+sesnr = numpy.load(spath)["arr_0"][:,0]
+d_sort = numpy.sort(sesnr[sesnr>0])
+step = int(len(d_sort)/10)
+secut = [d_sort[i*step] for i in range(10)]
+
+
+select = {"sesnr": (sesnr, secut), 'osnr':(osnr, osnrcut),
+          "fsnr": (fsnr, fsnrcut), "flux": (flux, fcut),
+          "peak": (peak, pcut), "fsnr_c": (fsnr_c, fsnrccut),
+          "fsnr_f": (fsnr_f, fsnrfcut), 'snr':(snr, snrcut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
@@ -117,7 +136,7 @@ else:
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s)+".npz"
+        data_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4))+".npz"
         numpy.savez(data_path, arr, mc)
 
         mc_title = ['0', '0', '0', '0']
@@ -134,10 +153,10 @@ else:
                 mc_title[ii + 2] = "_c" + str(ii+1)
         pic_mc = "".join(mc_title)
 
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + pic_mc + ".eps"
-        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(cut_s), 'max', pic_path)
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(cut_s) + pic_mc + ".png"
-        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(cut_s), 'max', pic_path)
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
+        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
+        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
+        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
@@ -146,15 +165,15 @@ else:
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
 
-    x1 = select[cut][1][0]
-    x2 = select[cut][1][-1]
-
+    x1 = 0
+    x2 = 1
+    x_coord = [i*0.1 for i in range(10)]
     fig = plt.figure(figsize=(10, 5))
 
     ax1 = fig.add_subplot(121)
-    ax1.errorbar(select[cut][1], mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
-    ax1.errorbar(select[cut][1], mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
-    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
+    ax1.errorbar(x_coord, mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
+    ax1.errorbar(x_coord, mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
+    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
     ax1.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax1.set_xlabel("Cutoff")
@@ -163,9 +182,9 @@ else:
     ax1.set_ylabel("m")
 
     ax2 = fig.add_subplot(122)
-    ax2.errorbar(select[cut][1], mc1[2], mc1[3], c='coral', capsize=3, label='c1')
-    ax2.errorbar(select[cut][1], mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
-    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='lawngreen')
+    ax2.errorbar(x_coord, mc1[2], mc1[3], c='coral', capsize=3, label='c1')
+    ax2.errorbar(x_coord, mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
+    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
     ax2.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax2.set_xlabel("Cutoff")

@@ -1,29 +1,31 @@
+import matplotlib
+matplotlib.use("Agg")
 from sys import path
 path.append("/home/hkli/work/fourier_quad")
 import numpy
 import matplotlib.pyplot as plt
-from astropy.io import fits
 from Fourier_Quad import Fourier_Quad
-import time
 import tool_box
 import lsstetc
 from mpi4py import MPI
 import h5py
+from sys import argv
 
+num = int(argv[1])*10000
+size = int(argv[2])
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
+
+mag_s, mag_e = 19, 24.2
+radius_s, radius_e = 0.8, 1.4
 
 with open("/home/hkli/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
 for path in contents:
     if "parameter" in path:
         para_path = path.split("=")[1]
-
-
-num = 10000000
-size = 84
 
 seed = rank*4321554 + int(numpy.random.randint(1, 1256542344, 1)[0])
 rng = numpy.random.RandomState(seed)
@@ -67,7 +69,7 @@ f["/e2"] = e2
 # magnitude & flux
 
 flux = numpy.zeros((num, 1))
-arr = tool_box.mags_mock(num, 18.5, 24.6)
+arr = tool_box.mags_mock(num, mag_s, mag_e)
 for i in range(num):
     flux[i] = prop.flux(arr[i])
 f["/flux"] = flux[:,0]
@@ -75,7 +77,7 @@ f["/mag"] = arr
 
 # galactic radius
 
-rad = rng.uniform(1.0, 1.6, num)
+rad = rng.uniform(radius_s, radius_e, num)
 f["/radius"] = rad
 
 # B/T ratio
@@ -109,7 +111,7 @@ plt.subplot(224)
 plt.hist(es, 100)
 plt.savefig(pic)
 plt.close()
-
+#
 pic = para_path + "/pic/fmrb_%d.png"%rank
 plt.subplot(221)
 plt.hist(arr, 100)

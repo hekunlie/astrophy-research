@@ -7,33 +7,33 @@
 #include "FQlib.h"
 #include<hdf5.h>
 #include<stdio.h>
+#include<string>
 
 
-//#define TRANS_S_STD 0.5
 using namespace std;
 
 int main(int argc, char*argv[])
-{	
+{
 		int myid, numprocs, namelen;
 		char processor_name[MPI_MAX_PROCESSOR_NAME];
-	
+
 		MPI_Init(&argc, &argv);
 		MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 		MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 		MPI_Get_processor_name(processor_name, &namelen);
-		
+
 		para all_paras;
 		ifstream fin;
 
 		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 200, stamp_num = 10000, shear_pairs = 14;
+		int chip_num = 100, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
-		int i, j, seed, data_rows, data_cols=20, chip_id, shear_id;
+		int i, j, seed, data_rows, data_cols=17, chip_id, shear_id;
 		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 5., max_radius = 9., st, ed, s1, s2;
+		double psf_scale = 4., max_radius = 9., st, ed, s1, s2;
 		double g1=0., g2=0.;
-		double gal_noise_sig = 100, psf_noise_sig = 0., thres = 2.;
-		int total_num = 1000 * stamp_num;
+		double gal_noise_sig = 380.86, psf_noise_sig = 0., thres = 2.;
+		int total_num = chip_num * stamp_num*(numprocs/shear_pairs);
 		data_rows = chip_num*stamp_num;
 
 		shear_id = myid - myid / shear_pairs*shear_pairs;
@@ -50,7 +50,12 @@ int main(int argc, char*argv[])
 		double *ppow = new double[size*size]();
 		double *noise = new double[size*size]();
 		double *pnoise = new double[size*size]();
-		char log_inform[100], log_path[100], chip_path[200], data_path[200], buffer[200], h5_path[100], set_name[20];
+		char para_inform[500], log_inform[100], log_path[100], chip_path[200], para_path[200], buffer[200], h5_path[100];
+		char set_name1[20], set_name2[20];
+
+		#ifndef PRECISION
+		DATA_TYPE *cp = new DATA_TYPE[stamp_nx*stamp_nx*size*size]();
+		#endif
 
 		/* the data matrix data[i][j] */
 		double *data_m = new double[data_rows*data_cols]();
@@ -61,7 +66,10 @@ int main(int argc, char*argv[])
 		}
 
 		// initialize gsl
-		seed = myid * 843 + 463;
+		int sss1, sss2;
+		sss1 = 581143;
+		sss2 = 716113;
+		seed = myid *sss1 +sss2;
 		//seed = myid *380 + 1401;// no bias
 		gsl_rng_initialize(seed);
 
@@ -69,8 +77,7 @@ int main(int argc, char*argv[])
 		const char *str;
 		// read shear, the input signal
 		double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-
-		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias/parameters/shear.dat");
+		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias_64/parameters/shear.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -81,36 +88,18 @@ int main(int argc, char*argv[])
 		}
 		fin.close();
 
-		// read flux of galaxies
+		// read parameters
 		double *flux = new double[total_num];
-		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias/parameters/lsstmagsims.dat");
-		i = 0;
-		while (!fin.eof())
-		{
-			getline(fin, s);
-			str = s.c_str();
-			flux[i] = atof(str)/num_p;	
-			i++;
-		}
-		fin.close();
+		double *mag = new double[total_num];
 
-		// read ellipticity of galaxies
-		double *ellip = new double[total_num];
-		sprintf(buffer, "/mnt/ddnfs/data_users/hkli/selection_bias/parameters/ellip_%d.dat", shear_id);
-		fin.open(buffer);
-		i = 0;
-		while (!fin.eof())
-		{
-			getline(fin, s);
-			str = s.c_str();
-			ellip[i] = atof(str);
-			i++;
-		}
-		fin.close();
+		sprintf(para_path,"/mnt/ddnfs/data_users/hkli/selection_bias_64/parameters/para_%d.hdf5", shear_id);
+		sprintf(set_name1, "/flux");
+		sprintf(set_name2, "/mag");
+		read_h5(para_path, set_name1, flux, set_name2, mag, NULL, NULL);
 
 		 //PSF
 		create_psf(psf, psf_scale, size, psf_type);
-		pow_spec(psf, ppow, size, size);		
+		pow_spec(psf, ppow, size, size);
 		get_radius(ppow, &all_paras, thres, size, 1, psf_noise_sig);
 
 		st = clock();
@@ -118,23 +107,26 @@ int main(int argc, char*argv[])
 		g1 = shear[shear_id];
 		g2 = shear[shear_id + shear_pairs];
 
-		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias/result/data/data_%d.hdf5", myid);
-		sprintf(set_name, "/data");
-		sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias/logs/log_%d.dat", myid);
+		sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/logs/log_%d_%d.dat", shear_id, myid / shear_pairs);
+
+		sprintf(para_inform, "myid: %03d, chip_id: %d, shear_id: %d, size: %d, chip_num: %d * %d\n \
+seed: myid*%d + %d, noise sigma: %.2f, point num: %d \n \
+PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (numprocs / shear_pairs), sss1, sss2, gal_noise_sig, num_p, psf_scale, max_radius);
+		write_log(log_path, para_inform);
 
 		for (i = 0; i < chip_num;  i++)
-		{	
+		{
 			s1 = clock();
 
 			sprintf(log_inform, "Thread: %d, chip: %d, start.", myid, i);
 			write_log(log_path, log_inform);
 			for (j = 0; j < stamp_num; j++)
 			{
-				//create_points(point, num_p, max_radius);
+				create_points(point, num_p, max_radius);
 
-				create_epoints(point, num_p, ellip[i*stamp_num + j]);
+				//create_epoints(point, num_p, ellip[i*stamp_num + j]);
 
-				convolve(gal, point, flux[(chip_id+i)*stamp_num + j], size, num_p, 0, psf_scale, g1, g2, psf_type);
+				convolve(gal, point, flux[(chip_id+i)*stamp_num + j]/num_p, size, num_p, 0, psf_scale, g1, g2, psf_type);
 
 				addnoise(gal, size*size,  gal_noise_sig);
 
@@ -143,14 +135,14 @@ int main(int argc, char*argv[])
 				get_radius(gal, &all_paras, 9999999999.*thres, size, 2, gal_noise_sig);
 
 				pow_spec(gal, gpow, size, size);
-				f_snr(gpow, &all_paras, size, 4);
+				f_snr(gpow, &all_paras, size);
 
-				addnoise(noise, size*size, gal_noise_sig);				
-				
+				addnoise(noise, size*size, gal_noise_sig);
+
 				pow_spec(noise, pnoise, size, size);
-				
+
 				shear_est(gpow, ppow, pnoise, &all_paras, size);
-				
+
 				initialize(gal, size*size);
 				initialize(gpow, size*size);
 				initialize(point, num_p * 2);
@@ -167,39 +159,42 @@ int main(int argc, char*argv[])
 				data[i*stamp_num + j][7] = all_paras.gal_osnr;
 				data[i*stamp_num + j][8] = all_paras.gal_flux;
 				data[i*stamp_num + j][9] = all_paras.gal_peak;
-				data[i*stamp_num + j][10] = all_paras.gal_fsnr;
-				data[i*stamp_num + j][11] = all_paras.gal_fsnr1;
-				data[i*stamp_num + j][12] = all_paras.gal_fsnr4;
-				data[i*stamp_num + j][13] = all_paras.gal_fsnr9;
-				data[i*stamp_num + j][14] = all_paras.gal_snr;
-				data[i*stamp_num + j][15] = flux[i*stamp_num + j];
-				data[i*stamp_num + j][16] = 0.;
-				data[i*stamp_num + j][17] = (double)(myid);
-				data[i*stamp_num + j][18] = (double)(i);
-				data[i*stamp_num + j][19] = (double)(j);
+				data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;
+				data[i*stamp_num + j][11] = all_paras.gal_snr;
+				data[i*stamp_num + j][12] = all_paras.gal_size;
+				data[i*stamp_num + j][13] = mag[i*stamp_num + j];
+				data[i*stamp_num + j][14] = 0;
+				data[i*stamp_num + j][15] = 0;
+				data[i*stamp_num + j][16] = 0;
+
 			}
-			sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
-			if(i==40||i==60||i==130||i==181)
-			{
-				write_img(big_img, stamp_nx*size, stamp_nx*size, chip_path, myid, i);
-			}			
-			
-			initialize(big_img, stamp_nx*stamp_nx*size*size);	
+			sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias_64/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
+
+			#ifdef PRECISION
+			write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);			
+			#else
+			copy(big_img, big_img + stamp_nx*stamp_nx*size*size, cp);
+			write_img(cp, size*stamp_nx, size*stamp_nx, chip_path);
+			#endif
+
+			initialize(big_img, stamp_nx*stamp_nx*size*size);		
 
 			s2 = clock();
 			sprintf(log_inform, "Thread: %d, chip: %d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
 			if (myid == 0)
 			{
-				sprintf(buffer, "myid %d: chip %d done in %g \n", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
-				cout << buffer;
+				cout << log_inform<<endl;
 			}
 		}
-		write_h5(h5_path, set_name, data_rows, data_cols, data[0],NULL);
+
+		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/result/data/data_%d_%d.hdf5", shear_id, myid / shear_pairs);
+		sprintf(set_name1, "/data");
+		write_h5(h5_path, set_name1, data_rows, data_cols, data[0],NULL);
 		ed = clock();
 		if (myid == 0)
 		{
-			sprintf(buffer, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
+			sprintf(buffer, "myid %d:  done in %g \n", myid,  (ed - st) / CLOCKS_PER_SEC);
 			cout << buffer;
 		}
 		delete[] shear;
@@ -210,12 +205,12 @@ int main(int argc, char*argv[])
 		delete[] gpow;
 		delete[] psf;
 		delete[] ppow;
-		delete[] noise;		
+		delete[] noise;
 		delete[] pnoise;
 		delete[] data_m;
 		delete[] data;
-		delete[] ellip;
-		gsl_rng_free();				
+		delete[] mag;
+		gsl_rng_free();
 		MPI_Finalize();
 		return 0;
 }

@@ -9,10 +9,8 @@
 #include "FQlib.h"
 #include<stdio.h>
 
-//#define TRANS_S_STD 0.5
 using namespace std;
 para all_paras;
-
 
 int main(int argc, char*argv[])
 {
@@ -47,10 +45,6 @@ int main(int argc, char*argv[])
 	seed = 155301;
 	gsl_rng_initialize(seed);
 
-	//PSF
-	//create_psf(psf, psf_scale, size, psf_type);
-	//pow_spec(psf, ppow, size, size);
-	//get_radius(ppow, &all_paras, thres, size, 1, psf_noise_sig);
 
 	st = clock();
 
@@ -62,40 +56,17 @@ int main(int argc, char*argv[])
 	int k, ii, jj;
 	int rows = 1000;
 	int columns = 27;
-	sprintf(chip_path, "/lmc/selection_bias/0/gal_chip_0000.fits");
-	sprintf(data_path, "/data");
-	double shear[10000]{};
-	double stamp[100]{};
-	read_img(gal, chip_path);
-	for (i = 0; i < 10; i++)
+	sprintf(chip_path, "/m31/selection_bias/parameters/para_0.hdf5");
+	sprintf(data_path, "/e1");
+	float shear[50000]{};
+	read_h5(chip_path, data_path,shear,NULL,NULL,NULL,NULL);
+	for (i = 0; i < 50; i++)
 	{
-		cout<<gal[i]<<endl;
+		cout<<shear[i]
 	}
-	/*for (i = 0; i < 10; i++)
-	{
-		s1 = clock();
-		sprintf(chip_path, "/home/hklee/831549p_1OFCBC.fits");
-		cout << chip_path << endl;
-		sprintf(data_path, "/home/hklee/data.hdf5");
-		cout << chip_path << endl;
-		read_img(gal,chip_path);
-		cout << "read img" << endl;
-		detector(gal, chain, 100, y_size, size);
-		cout << "detecting img" << endl;
-		sprintf(chip_path, "/data");
-		s2 = clock();
-		write_h5(data_path, chip_path, 1, 2 * y_size*size + 1, NULL,chain);
-
-		sprintf(buffer1, "myid %d:  %g %g %g %g \n", myid, g1, d1/d3, g2, (s2-s1) / CLOCKS_PER_SEC);
-		cout << buffer1;
-	}*/
-
-	ed = clock();
-
-	sprintf(buffer1, "myid %d:  done in %g \n", myid, i, (ed - st) / CLOCKS_PER_SEC);
-	cout << buffer1;
-
-	//delete[] big_img;
+	
+	
+	
 	delete[] point;
 	delete[] gal;
 	delete[] gpow;

@@ -38,9 +38,9 @@ form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
-stamp_size = 84
+stamp_size = 90
 pixel_scale = 0.2
-chips_num = int(1000/int(cpus/14))
+chips_num = int(500/int(cpus/14))
 seed = rank*34424 + 41112
 chip_s_id, shear_id = divmod(rank, 14)
 
@@ -94,10 +94,10 @@ for i in range(chips_num):
 
         c_profile = numpy.random.randint(0, 10, 1)[0]
         if c_profile == 0:
-            gal = galsim.DeVaucouleurs(half_light_radius=ra).shear(e1=e1, e2=e2)
+            gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=5*ra).shear(e1=e1, e2=e2)
         else:
-            bulge = galsim.Sersic(half_light_radius=0.6*ra, n=4)# be careful
-            disk = galsim.Sersic(half_light_radius=ra, n=2)# be careful
+            bulge = galsim.Sersic(half_light_radius=0.6*ra, n=4, trunc=5*ra)# be careful
+            disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=5*ra)# be careful
             gal = bulge * btr + disk * (1-btr)
             gal = gal.shear(e1=e1, e2=e2)
         t += 1

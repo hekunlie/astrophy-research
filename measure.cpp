@@ -25,10 +25,10 @@ int main(int argc, char*argv[])
 	ifstream fin;
 	string s;
 
-	int size = 84, shear_pairs = 14, chip_num=700, stamp_num=10000, stamp_nx =100;
-	int data_rows = chip_num*stamp_num, data_cols = 19;
+	int size = 90, shear_pairs = 14, chip_num=5, stamp_num=10000, stamp_nx =100;
+	int data_rows = chip_num*stamp_num, data_cols = 17;
 	int i, j, k, seed;
-	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 380.64, ts, te, t1, t2;
+	double thres = 2.,  psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -86,8 +86,8 @@ int main(int argc, char*argv[])
 
 			shear_est(pgal, ppsf, pnoise, &all_paras, size);
 
-			data[i*stamp_num + j][0] = 0;
-			data[i*stamp_num + j][1] = 0;
+			data[i*stamp_num + j][0] = g1;
+			data[i*stamp_num + j][1] = g2;
 			data[i*stamp_num + j][2] = all_paras.n1;
 			data[i*stamp_num + j][3] = all_paras.n2;
 			data[i*stamp_num + j][4] = all_paras.dn;
@@ -96,15 +96,13 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][7] = all_paras.gal_osnr;
 			data[i*stamp_num + j][8] = all_paras.gal_flux;
 			data[i*stamp_num + j][9] = all_paras.gal_peak;
-			data[i*stamp_num + j][10] = all_paras.gal_fsnr;
-			data[i*stamp_num + j][11] = all_paras.gal_fsnr4;
-			data[i*stamp_num + j][12] = all_paras.gal_fsnr_c;
-			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c4;
-			data[i*stamp_num + j][14] = all_paras.gal_snr;
-			data[i*stamp_num + j][15] = 0.;
-			data[i*stamp_num + j][16] = (double)(myid);
-			data[i*stamp_num + j][17] = (double)(i);
-			data[i*stamp_num + j][18] = (double)(j);
+			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;
+			data[i*stamp_num + j][11] = all_paras.gal_snr;
+			data[i*stamp_num + j][12] = all_paras.gal_size;
+			data[i*stamp_num + j][13] = mag[i*stamp_num + j];
+			data[i*stamp_num + j][14] = 0;
+			data[i*stamp_num + j][15] = 0;
+			data[i*stamp_num + j][16] = 0;
 
 			initialize(noise, size*size);
 			initialize(pnoise, size*size);

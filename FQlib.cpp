@@ -15,18 +15,32 @@ void write_log(char*filename,  char *inform)
 	loggers.close();
 }
 
-void read_h5(char *filename, char *set_name, double *matrix)
+void read_h5(char *filename, char *set_name1, double *matrix1,char*set_name2, double *matrix2, char*set_name3, double*matrix3)
 {
 	hid_t file_id;
 	herr_t status;
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-
-	hid_t dataset_id;  
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
-
-	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix);
-
-	status = H5Dclose(dataset_id);
+	if (set_name1 && matrix1)
+	{
+		hid_t dataset_id;
+		dataset_id = H5Dopen(file_id, set_name1, H5P_DEFAULT);
+		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix1);
+		status = H5Dclose(dataset_id);
+	}
+	if (set_name2 && matrix2)
+	{
+		hid_t dataset_id;
+		dataset_id = H5Dopen(file_id, set_name2, H5P_DEFAULT);
+		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix2);
+		status = H5Dclose(dataset_id);
+	}
+	if (set_name3 && matrix3)
+	{
+		hid_t dataset_id;
+		dataset_id = H5Dopen(file_id, set_name3, H5P_DEFAULT);
+		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix3);
+		status = H5Dclose(dataset_id);
+	}
 	//status = H5Sclose(dataspace_id);
 	status = H5Fclose(file_id);
 }
@@ -61,20 +75,20 @@ void write_h5(char *filename, char *set_name, int row, int column, double*d_matr
 	status = H5Fclose(file_id);
 }
 
-void read_img(double *arr, char *path)
+void read_img(DATA_TYPE *arr, char *path)
 {
 	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
 	int status = 0, nfound, anynull;
 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
-	double datamin, datamax, nullval = 0;
+	DATA_TYPE datamin, datamax, nullval = 0;
 
 	fits_open_file(&fptr, path, READONLY, &status);
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
 
-	double *buffer = new double[npixels];										/* create a new array */
+	DATA_TYPE *buffer = new DATA_TYPE[npixels];										/* create a new array */
 
-	fits_read_img(fptr, TDOUBLE, fpixel, npixels, &nullval, buffer, &anynull, &status);
+	fits_read_img(fptr, T_IMG, fpixel, npixels, &nullval, buffer, &anynull, &status);
 
 	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
 	delete[] buffer;														/* (have to) delete the array */
@@ -82,7 +96,7 @@ void read_img(double *arr, char *path)
 	fits_close_file(fptr, &status);
 }
 
-void write_img(double *img, int ysize, int xsize, char *filename,int procs_id,int chip_id)
+void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename)
 {
 	fitsfile *fptr;															 /* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -95,26 +109,15 @@ void write_img(double *img, int ysize, int xsize, char *filename,int procs_id,in
 	status = 0;																						/* initialize status before calling fitsio routines */
 	fits_create_file(&fptr, filename, &status);												/* create new file */
 
-	fits_create_img(fptr, DOUBLE_IMG, naxis, naxes, &status);				 /* Create the primary array image (16-bit short integer pixels */
+	fits_create_img(fptr, IMG_PRE, naxis, naxes, &status);				 /* Create the primary array image (16-bit short integer pixels */
 	//exposure = 1500.;
 	//fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */
 
 	nelements = xsize*ysize;         /* number of pixels to write */
-	fits_write_img(fptr, TDOUBLE, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+	fits_write_img(fptr, T_IMG, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
 	fits_close_file(fptr, &status);              /* close the file */
 	fits_report_error(stderr, status);      /* print out any error messages */
-	if (status != 0)
-	{
-		sprintf(exception_name, "%d_exception.dat", procs_id);
-		sprintf(buffer, "status: %d, chip: %d", status, chip_id);
-		write_log(exception_name, buffer);
-		sprintf(buffer, "%g", img[0]);
-		for (ii = 1; ii < 50; ii++)
-		{
-			sprintf(buffer, "%s, %g", buffer, img[ii]);
-		}
-		write_log(exception_name, buffer);
-	}
+	
 }
 
 void pow_spec(double *in_img, double *out_img, int column, int row)
@@ -192,7 +195,7 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 	double *cp_img = new double[size*size]();
 	for (x = 0; x < size*size; x++)
 	{	
-		if (in_img[x] > max / scale && in_img[x] > 1.5 * sig_level)
+		if (in_img[x] > max / scale && in_img[x] > 2 * sig_level)
 		{
 			cp_img[x] = in_img[x];
 		}
@@ -436,7 +439,7 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 	}
 
 	/*  convolve PSF and draw the image */
-	flux_g = flux / (2* Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_g = flux/ (2* Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	flux_m = flux / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4);   /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 	for (k = 0; k < num_p; k++)
 	{
@@ -653,59 +656,22 @@ void addnoise(double *image, int pixel_num,   double sigma)
 void f_snr(double *image, para *paras, int size)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
-	double n, noise1, noise4, signal;
-	int i,edge, k=0, xc=size/2;
-	for (edge = 1; edge < 5; edge += 3)
-	{	
-		n = 0;
-		for (i = 0; i < size; i++) //y coordinates
+	double n=0, noise;
+	int i,k,edge=1, xc=size/2;
+	for (i = 0; i < size; i++) //y coordinates
+	{
+		for (k = 0; k < size; k++) // x coordinates
 		{
-			for (k = 0; k < size; k++) // x coordinates
+			if (i< edge || i> size - edge - 1)
 			{
-				if (i< edge || i> size - edge - 1)
-				{
-					n += image[i*size + k];
-				}
-				else if (k < edge || k>size - edge - 1)
-				{
-					n += image[i*size + k];
-				}
+				n += image[i*size + k];
+			}
+			else if (k < edge || k>size - edge - 1)
+			{
+				n += image[i*size + k];
 			}
 		}
-		if (edge == 1)
-		{
-			noise1 = n*0.25 / ((size - edge)*edge);
-		}
-		else
-		{
-			noise4 = n*0.25 / ((size - edge)*edge);
-		}
 	}
-	if (image[xc * size + xc] > image[(xc - 1)* size + xc] && image[(xc * size) + xc] > image[(xc + 1) * size + xc]
-		&& image[xc * size + xc] > image[xc * size + xc - 1] && image[xc * size + xc] > image[xc * size + xc + 1])
-	{
-		signal = image[xc * size +xc];
-	}
-	else
-	{
-		signal = (image[(xc - 1)* size + xc] + image[(xc + 1) * size + xc] + image[xc * size + xc + 1] + image[xc * size +xc - 1]) *0.25;
-	}
-	
-	paras->gal_fsnr = sqrt(signal/noise1);
-	paras->gal_fsnr4 = sqrt(signal / noise4);
-
-	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise1);	
-	paras->gal_fsnr_c4 = sqrt(image[xc*size + xc] / noise4);
-	/*signal = (image[(xc - 1)*size + xc] + image[(xc + 1)*size + xc] + image[xc*size + xc - 1] + image[xc*size + xc + 1])*0.25;
-	paras->gal_fsnr4 = sqrt(signal / noise);
-
-	signal = 0;
-	for (i = -1; i < 2; i++)
-	{
-		for (k = -1; k < 2; k++)
-		{
-			signal += image[(xc + i)*size + xc + k];
-		}
-	}
-	paras->gal_fsnr9 = sqrt(signal / noise)/3.;*/
+	noise = n*0.25 / ((size - edge)*edge);
+	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
 }

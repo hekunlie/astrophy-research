@@ -77,7 +77,7 @@ flux = data[:, 8]/noise_sig
 # peak
 peak = data[:, 9]/noise_sig
 # snr
-snr = data[:, 14]
+snr = data[:, 11]
 # fsnr
 fsnr = data[:, 10]
 # osnr
@@ -111,8 +111,10 @@ if wei_pow == 0:
 
 num = len(G1)
 if method == 'sym':
-    g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8)
-    g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8)
+    g1_xi2_pic = pic_path + "%d_g1_xi2.png"%rank
+    g2_xi2_pic = pic_path + "%d_g2_xi2.png"%rank
+    g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8, pic_path=g1_xi2_pic)
+    g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8, pic_path=g2_xi2_pic)
 else:
     g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)

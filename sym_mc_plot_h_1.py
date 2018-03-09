@@ -18,8 +18,8 @@ cpus = comm.Get_size()
 cut = argv[1]
 
 t1 = time.clock()
-total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_pts_2_28_2/"
-shear = numpy.load("/mnt/ddnfs/data_users/hkli/selection_bias_pts_2_28_2/parameters/shear.npz")
+total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/"
+shear = numpy.load("/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/parameters/shear.npz")
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 for i in range(5):
@@ -31,13 +31,12 @@ for i in range(5):
         data = numpy.row_stack((data, f["/data"].value))
     f.close()
 
-fq = Fourier_Quad(64, 152356)
+fq = Fourier_Quad(90, 152356)
 nsig = 380.64
-
 method = 'mean'
 cuts_num = 20
 osnr = data[:, 7]
-detect_idx = osnr > 0
+detect_idx = osnr >0
 d_sort = numpy.sort(osnr[detect_idx])
 step = int(len(d_sort)/cuts_num)
 osnrcut = [d_sort[i*step] for i in range(cuts_num)]
@@ -101,12 +100,14 @@ for tag, cut_s in enumerate(select[cut][1]):
     # g1_h, g1_sig = fq.fmin_g(mg1[idx], mn[idx], mu[idx], mode=1, bin_num=8)
     # g2_h, g2_sig = fq.fmin_g(mg2[idx], mn[idx], mu[idx], mode=2, bin_num=8)
 
-    weight = select[cut][0][idx]
+    weight = 1#select[cut][0][idx]
     g1_h = numpy.mean(mg1[idx] / weight) / numpy.mean(mn[idx] / weight)
     g1_sig = numpy.sqrt(numpy.mean((mg1[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
 
     g2_h = numpy.mean(mg2[idx] / weight) / numpy.mean(mn[idx] / weight)
     g2_sig = numpy.sqrt(numpy.mean((mg2[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
+
+    res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
 
 if rank > 0:

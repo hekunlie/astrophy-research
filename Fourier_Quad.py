@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
@@ -425,7 +427,7 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi) * 0.5
 
-    def fmin_g(self, g, n, u, mode, bin_num, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # model 1 for g1
         # model 2 for g2
         temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]
@@ -547,6 +549,15 @@ class Fourier_Quad:
         xigg0 = numpy.sum(xi2)
         cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
         paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+
+        if pic_path:
+            plt.scatter(g_range, xi2)
+            plt.plot(g_range, paras[0]*g_range**2+paras[1]*g_range+paras[2])
+            s = str(round(paras[0],3)) + " " + str(round(paras[1],3)) + " " + str(round(paras[2],3))
+            plt.title(s)
+            plt.savefig(pic_path)
+            plt.close()
+
         g_sig = numpy.sqrt(1 / 2. / paras[0])
         # g_h = -paras[1] / 2 / paras[0]
 

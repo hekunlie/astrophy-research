@@ -14,13 +14,23 @@
 #include <gsl/gsl_rng.h>
 #include<hdf5.h>
 
+#define PRECISION
+#ifdef  PRECISION
+typedef double DATA_TYPE;
+#define  IMG_PRE DOUBLE_IMG
+#define  T_IMG TDOUBLE
+#else
+typedef float DATA_TYPE;
+#define IMG_PRE FLOAT_IMG
+#define T_IMG TFLOAT
+#endif 
 struct para
 {
 	int psf_szie, psf_px, psf_py;
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig;
 
 	int gal_size, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr, gal_fsnr4, gal_fsnr_c4, gal_fsnr_c, gal_snr, gal_osnr, gal_noise_sig;
+	double gal_peak, gal_hlr, gal_flux, gal_fluxsq, gal_fsnr_c, gal_snr, gal_osnr, gal_noise_sig;
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2;
@@ -33,10 +43,10 @@ extern gsl_rng *rng;
 extern ofstream loggers;
 
 void write_log(char *filename, char *inform);
-void read_h5(char *filename, char *set_name, double *matrix);
+void read_h5(char *filename, char *set_name1, double *matrix1, char*set_name2, double *matrix2, char*set_name3, double*matrix3);
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
-void read_img(double *arr, char *path);
-void write_img(double *img, int ysize, int xsize, char *filename,int procs_id, int chip_id);
+void read_img(DATA_TYPE *arr, char *path);
+void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename);
 void pow_spec(double *in_img, double *out_img, int column, int row);
 void get_radius(double *in_img, para *paras, double scale, int size, int type, double sig_level);
 void detector(double *source_img, int *soucrce_chain, double thres, int y_size, int x_size);

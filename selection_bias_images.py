@@ -38,9 +38,9 @@ form = logging.Formatter('%(asctime)s - %(message)s')
 lf.setFormatter(form)
 logger.addHandler(lf)
 
-stamp_size = 84
+stamp_size = 96
 pixel_scale = 0.2
-chips_num = 700
+chips_num = 5
 seed = rank*3424 + 53412
 chip_s_id, shear_id = divmod(rank, 14)
 
@@ -57,6 +57,7 @@ e1s = f["/e1"].value
 e2s = f["/e2"].value
 radius = f["/radius"].value
 flux = f["/flux"].value
+fbt = f['/btr'].value
 f.close()
 
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
@@ -83,17 +84,24 @@ for i in range(chips_num):
     logger.info("Start the %04d's chip..."%i)
 
     for k in range(10000):
-        e1 = e1s[t+chip_s_id*chips_num*10000]
-        e2 = e2s[t+chip_s_id*chips_num*10000]
-        gal_flux = flux[t+chip_s_id*chips_num*10000]
-        ra = radius[t+chip_s_id*chips_num*10000]
-        t += 1
+        para_n = t + chip_s_id * chips_num * 10000
+        e1 = e1s[para_n]
+        e2 = e2s[para_n]
+        gal_flux = flux[para_n]
+        ra = radius[para_n]
+        btr = fbt[para_n][0]
 
-        # bulge = galsim.Sersic(half_light_radius=ra-0.5, n=3.5)# be careful
-        # disk = galsim.Sersic(half_light_radius=ra, n=1.5)# be careful
-        # gal = bulge * 0.3 + disk * 0.7
-        gal = galsim.Sersic(half_light_radius=ra, n=3)
-        gal_s = gal.shear(e1=e1, e2=e2).withFlux(gal_flux)
+        c_profile = numpy.random.randint(0, 10, 1)[0]
+        if c_profile == 0:
+            gal = galsim.DeVaucouleurs(half_light_radius=ra).shear(e1=e1, e2=e2)
+        else:
+            bulge = galsim.Sersic(half_light_radius=0.6 * ra, n=4)  # be careful
+            disk = galsim.Sersic(half_light_radius=ra, n=1)  # be careful
+            gal = bulge * btr + disk * (1 - btr)
+            gal = gal.shear(e1=e1, e2=e2)
+        t += 1
+        # gal = galsim.Sersic(half_light_radius=ra, n=3)
+        gal_s = gal.withFlux(gal_flux)
         gal_g = gal_s.shear(g1=g1, g2=g2)
         gal_c = galsim.Convolve([psf, gal_g])
         img = galsim.ImageD(stamp_size, stamp_size)
