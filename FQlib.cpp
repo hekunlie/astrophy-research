@@ -195,7 +195,7 @@ void get_radius(double *in_img, para *paras, double scale, int size, int type, d
 	double *cp_img = new double[size*size]();
 	for (x = 0; x < size*size; x++)
 	{	
-		if (in_img[x] > max / scale && in_img[x] > 2 * sig_level)
+		if (in_img[x] > max / scale && in_img[x] > 1.5 * sig_level)
 		{
 			cp_img[x] = in_img[x];
 		}
@@ -519,9 +519,6 @@ void create_epoints(double *point, int num_p, double ellip)
 	{	
 		x = gsl_ran_gaussian(rng, radius);
 		y = gsl_ran_gaussian(rng, b);
-		//r =radius* gsl_rng_uniform(rng);
-		//theta = 2 * Pi*gsl_rng_uniform(rng);
-		//if (1. / sqrt(cos(theta + beta)*cos(theta + beta) / radius / radius + sin(theta + beta)*sin(theta + beta) / b / b) > r)
 		if(x*x/(radius*radius) + y*y/(b*b) <=1)
 		{
 			point[i] = x*r1 - y*r2;
@@ -674,4 +671,76 @@ void f_snr(double *image, para *paras, int size)
 	}
 	noise = n*0.25 / ((size - edge)*edge);
 	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
+}
+void smooth(double *image, double*fit_image, para *paras, int size)
+{
+	int i, j,m,n,q,p,pk=0,tag,cen;
+	double fz[6]{}, z[25]{}, fit_para_6 = 0., st1, st2, st3, st4;
+	double*temp = new double[size*size];
+
+	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
+
+	//st = clock();
+	/*  to fit the curve: a*x^2 + b*x*y+ c*y^2 + d*x + e*y + f  */
+	for (i = 0; i < size*size; i++)
+	{
+		temp[i] = log10(image[i]);
+	}
+
+	for (i = 0; i < size; i++)
+	{	
+		for (j = 0; j < size; j++)
+		{	
+			//st1 = clock();
+			tag = 0;
+			pk = 0;
+			for (m = -2; m < 3; m++)
+			{	
+				p = (i + m + size) % size*size; // the periodic boundry condition
+				for (n = -2; n < 3; n++)
+				{	
+					q = (j + n + size) % size; // the periodic boundry condition
+
+					if (tag != 0 && tag != 4 && tag != 20 && tag != 24) 
+					// exclude the corner and center of each 5*5 block and the k0 of the power spectrum
+					{
+						if (p + q != cen)
+						{
+							z[tag] = temp[p + q];
+						}
+						else
+						{
+							pk = tag; // tag dicides the row of invers coefficients matrix to be used
+						}
+					}					
+					tag++;
+				}
+			}	
+			//st2 = clock();
+			//for (p = 0; p < 6; p++)
+			//{
+			//	for (q = 0; q < 25; q++)
+			//	{
+			//		fz[p] = +paras->zxy[p][q] * z[q];
+			//	}
+			//}
+			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 25, 1, paras->zxy[0], 25, z, 1, 0, fz, 1);
+			//st3 = clock();
+			/* actually, only the final element is needed */
+			fit_para_6 = 0.;
+			for (p = 0; p < 6; p++)
+			{	
+				fit_para_6 += fz[p] * paras->fit_cov_inv[pk][p];
+			}
+			fit_image[i*size + j] = pow(10., fit_para_6);
+			memset(fz, 0, sizeof(fz));
+			memset(z, 0, sizeof(z));
+			//
+			//st4 = clock();
+			//paras->t1 += st2 - st1;
+			//paras->t2 += st3 - st2;
+			//paras->t3 += st4 - st3;
+		}
+	}
+	delete temp;
 }

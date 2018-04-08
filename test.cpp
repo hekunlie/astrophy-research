@@ -5,77 +5,203 @@
 #include<sstream>
 #include <ctime>
 #include <stdlib.h>
-#include "mpi.h"
-#include "FQlib.h"
-#include<stdio.h>
+#include<Eigen/Core>
+#include<Eigen/Dense>
+#include<FQlib.h>
 
 using namespace std;
-para all_paras;
-
-int main(int argc, char*argv[])
+//para all_paras;
+using namespace Eigen;
+struct MyStruct
 {
-	ofstream fout;
-	ifstream fin;
+	double t1, t2, t3, t4;
+};
+int main()
+{
+	MyStruct myst;
+	MatrixXd mat(5, 5),mat1(5,5),mat2;
 
-	all_paras.t1 = 0;
-	all_paras.t2 = 0;
-	/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-	int chip_num = 1, stamp_num = 10000, shear_pairs = 10;
-	int myid = 0;
-	int i, j, seed;
-	int size = 84, y_size=4606, num_p = 100, stamp_nx = 100, psf_type = 2;
-	double psf_scale = 5., max_radius = 11., st, ed;
-	double g1 = 0., g2 = 0.;
-	double gal_noise_sig = 380.64, psf_noise_sig = 0., thres = 2.;
-	all_paras.gal_noise_sig = gal_noise_sig;
-	all_paras.psf_noise_sig = psf_noise_sig;
+	para all_paras;
+	mat.setZero();
+	mat1.setZero();
+	mat2.setZero();
+	void poly_fit(int *x, int*y, double *f_vals,int order, int num);
+	all_paras.t1 = 0.;
+	all_paras.t2 = 0.;
+	all_paras.t3 = 0.;
+	double st, ed;
+	int i;
+	double img[90 * 90], pimg[90 * 90], fimg[90 * 90];
+	char buffer[100];
+	sprintf(buffer, "/home/hklee/gal.fits");
+	read_img(img,buffer);
+	pow_spec(img, pimg, 90, 90);
 
-	//double *big_img = new double[stamp_nx*stamp_nx*size*size]();
-	double *point = new double[2 * num_p]();
-	double *points_r = new double[2 * num_p]();
-	double *gal = new double[10000*size*size]();
-	double *gpow = new double[size*size]();
-	double *psf = new double[size*size]();
-	double *ppow = new double[size*size]();
-	double *noise = new double[size*size]();
-	double *pnoise = new double[size*size]();
-	char chip_path[200], data_path[200], buffer[300], buffer1[200];
-	int *chain = new int[2*size * y_size + 1]();
-
-	seed = 155301;
-	gsl_rng_initialize(seed);
-
+	sprintf(buffer, "!/home/hklee/galp.fits");
+	write_img(pimg, 90, 90, buffer);
 
 	st = clock();
-
-	g1 = 0.03;
-	g2 = 0.04;
-
-	double s1, s2, s3, s4, s5, s6, s7, s8, flux_m = 200.;
-	double d1 = 0., d2 = 0., d3 = 0., d4 = 0, d5 = 0, r1, rd, rs;
-	int k, ii, jj;
-	int rows = 1000;
-	int columns = 27;
-	sprintf(chip_path, "/m31/selection_bias/parameters/para_0.hdf5");
-	sprintf(data_path, "/e1");
-	float shear[50000]{};
-	read_h5(chip_path, data_path,shear,NULL,NULL,NULL,NULL);
-	for (i = 0; i < 50; i++)
+	for (i = 0; i < 10000; i++)
 	{
-		cout<<shear[i]
+		smooth(pimg, fimg, &all_paras, 90);
 	}
-	
-	
-	
-	delete[] point;
-	delete[] gal;
-	delete[] gpow;
-	delete[] psf;
-	delete[] ppow;
-	delete[] noise;
-	delete[] pnoise;
-	delete[] points_r;
-	gsl_rng_free();
-	delete[] chain;
+
+	//sprintf(buffer, "!/home/hklee/galpf.fits");
+	//write_img(fimg, 90, 90, buffer);
+	ed = clock();
+	cout << (ed - st) / CLOCKS_PER_SEC;
+	cin >> i;
+	cout << all_paras.t1 / CLOCKS_PER_SEC << " " << all_paras.t2 / CLOCKS_PER_SEC << " " << all_paras.t3 / CLOCKS_PER_SEC << endl;
 	return 0;
 }
+void poly_fit(int *x, int *y, double*f_vals, int order, int num)
+{
+	/* the expression to m-th-order polynomials: SUM_{n: 0~m} SUM_{i: 0~n} x^{n-i}*y^i */
+	/* then it's easy to write down the matrix of the equations come from the least square method*/
+	//double a1, a2, a3, a4, a5, a6;
+	int i, j, k, turns, px, py, z;
+	turns = (order + 1)*(order + 2)*0.5;
+	Array<double,Dynamic, Dynamic> xy_pow(2,turns),fx(1,num),fy(1,num),fxy(1,num), fx2(1, num), fy2(1, num);
+	Array<double,Dynamic, Dynamic> coeffs(turns, turns),chi_xy(turns,num);
+	Array<double, Dynamic, Dynamic> fvals(1, num), fz(1,turns);
+
+	for (i = 0; i < num; i++)
+	{
+		fx(0, i) = x[i];
+		fy(0, i) = y[i];
+		fvals(0, i) = f_vals[i];
+	}
+	
+	/* the power of x and y of each row of the matrix */
+	k = 0;
+	for (i = 0; i <= order; i++)
+	{
+		for (j = 0; j <= i; j++)
+		{
+			xy_pow(0, k) = i - j; //power of x
+			xy_pow(1, k) = j;    // power of y
+			if (i == j)
+			{
+				if (j == 0)
+				{
+					chi_xy.block(k, 0, 1, num).setOnes();
+				}
+				else if (j == 1)
+				{
+					chi_xy.block(k, 0, 1, num) = fy;
+				}
+				else
+				{
+					chi_xy.block(k, 0, 1, num) = fy.pow(j);
+				}
+			}
+			else if (i ==j+1)
+			{
+				if (j == 0)
+				{
+					chi_xy.block(k, 0, 1, num) = fx;
+				}
+				else if (j == 1)
+				{
+					chi_xy.block(k, 0, 1, num) = fx*fy;
+				}
+				else
+				{
+					chi_xy.block(k, 0, 1, num) = fx*fy.pow(j);
+				}
+			}
+
+			else
+			{
+				chi_xy.block(k, 0, 1, num) = fx.pow(i - j)*fy.pow(j);
+			}
+
+			k++;
+		}
+	}
+	//cout << "X: "<<fx1 << endl;
+	//cout << "Chi_x: " << endl<< chi_x << endl;
+	//cout << "Y: "<<fy1 << endl;
+	//cout << "Chi_y: "<<endl<<chi_y << endl;
+	//cout << "Chi_xy: " << chi_ << endl;
+	//cout << xy_pow << endl;
+	for (i = 0; i < turns; i++)
+	{	
+		px = xy_pow(0, i);
+		py = xy_pow(1, i);
+
+		if (px == 0)
+		{
+			fx2.setOnes();
+		}
+		else if (px == 1)
+		{
+			fx2 = fx;
+		}
+		else
+		{
+			fx2 = fx.pow(px);
+		}
+
+		if (py == 0)
+		{
+			fy2.setOnes();
+		}
+		else if (py == 1)
+		{
+			fy2 = fy;
+		}
+		else
+		{
+			fy2 = fy.pow(py);
+		}
+		fxy = fx2*fy2;
+		fz(0, i) = (fvals*fxy).sum();
+
+		for (j = i; j < turns; j++)
+		{	
+			if (i == 0 && j == 0)
+			{
+				coeffs(i, j) = num;
+			}
+			else
+			{
+				coeffs(i, j) = (chi_xy.block(j, 0, 1, num)*fxy).sum();
+				coeffs(j, i) = coeffs(i, j);
+			}
+		}
+	}
+	//cout << coeffs << endl;
+}
+
+/*sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/0/gal_chip_000%d.fits", myid);
+read_img(gals,chip_path);
+sprintf(buffer, "Rank: %d, open gal_chip_000%d.fits", myid, myid);
+cout << buffer << endl;
+for (i = 0; i < stamp_num; i++)
+{
+segment(gals, gal, i, size, stamp_nx, stamp_nx);
+
+pow_spec(gal, ppow, size, size);
+stack(n_fit_pow, ppow, i, size, stamp_nx, stamp_nx);
+
+paraboloid_fit(ppow, noise, &all_paras, size);
+stack(fit_pow, noise, i, size, stamp_nx, stamp_nx);
+
+initialize(gal, size*size);
+initialize(ppow, size*size);
+initialize(noise, size*size);
+}
+sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/gal_chip_000%d_pow.fits", myid);
+for (i = 0; i < stamp_num*size*size; i++)
+{
+n_fit_pow[i] = log10(n_fit_pow[i]);
+}
+write_img(n_fit_pow, 100 * size, 100 * size, chip_path);
+sprintf(buffer, "Rank: %d, write gal_chip_000%d_pow.fits", myid, myid);
+cout << buffer << endl;
+sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/gal_chip_000%d_fit_pow.fits", myid);
+write_img(fit_pow, 100 * size, 100 * size, chip_path);
+sprintf(buffer, "Rank: %d, write gal_chip_000%d_fit_pow.fits", myid, myid);
+cout << buffer << endl;
+ed = clock();*/

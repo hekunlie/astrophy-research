@@ -1,12 +1,12 @@
-import matplotlib
-matplotlib.use("Agg")
+# import matplotlib
+# matplotlib.use("Agg")
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-
+import tool_box
 
 class Fourier_Quad:
 
@@ -28,7 +28,7 @@ class Fourier_Quad:
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
         ky, kx = self.my, self.mx
         gal_ps = self.pow_spec(gal_image)
-
+        gal_ps = tool_box.ps_fit(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
             # rim = self.border(2, size)
@@ -41,7 +41,7 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-        hlr = self.get_radius_new(psf_ps, 2.72)[0]
+        hlr = self.get_radius_new(psf_ps, 2)[0]
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
@@ -60,17 +60,15 @@ class Fourier_Quad:
         mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*self.alpha
         return mg1, mg2, mn, mu, mv
 
-    def wbeta(self, beta):
-        sigma = beta/numpy.sqrt(2)
-        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/sigma**2)
-        return w_temp, numpy.sqrt(2)/beta
+    def wbeta(self, radius):
+        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/radius**2)
+        return w_temp, 1./radius
 
     def ran_pos(self, num, radius, g=None):
         xy_coord = numpy.zeros((2, num))
         theta = self.rng.uniform(0., 2 * numpy.pi, num)
-        step = self.rng.uniform(0., 1., num)
-        xn = numpy.cos(theta) * step
-        yn = numpy.sin(theta) * step
+        xn = numpy.cos(theta)
+        yn = numpy.sin(theta)
         x = 0.
         y = 0.
         for n in range(num):
@@ -98,7 +96,7 @@ class Fourier_Quad:
     def shear(self, pos, g1, g2):
         return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
 
-    def convolve_psf(self, pos, psf_scale, flux=1, psf="GAUSS"):
+    def convolve_psf(self, pos, psf_scale, flux=1., psf="GAUSS"):
         x = pos.shape[1]
         arr = numpy.zeros((self.size, self.size))
 
@@ -119,16 +117,16 @@ class Fourier_Quad:
                 arr += pfunction
         return arr
 
-    def cre_psf(self, psf_scale, model="GAUSS"):
+    def cre_psf(self, psf_scale, flux=1., model="GAUSS"):
         if model is 'GAUSS':
-            factor = 1./2/numpy.pi/psf_scale**2
+            factor = flux*1./2/numpy.pi/psf_scale**2
             arr = factor*numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
             return arr
 
         elif model is 'Moffat':
             r_scale_sq = 9
             m = 3.5
-            factor = 1./(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
+            factor = flux*1./(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
             rsq = (self.mx**2 + self.my**2) / psf_scale**2
             idx = rsq > r_scale_sq
             rsq[idx] = 0.
@@ -428,8 +426,8 @@ class Fourier_Quad:
         return numpy.sum(xi) * 0.5
 
     def fmin_g(self, g, n, u, mode, bin_num, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
-        # model 1 for g1
-        # model 2 for g2
+        # mode 1 for g1
+        # mode 2 for g2
         temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])

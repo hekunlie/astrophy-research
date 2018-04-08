@@ -4,7 +4,7 @@ from multiprocessing import Pool, Manager
 import numpy
 import copy
 import matplotlib.pyplot as plt
-import re
+from scipy.optimize import curve_fit
 
 
 def task_distri(target_list, cpu_num):
@@ -158,6 +158,58 @@ def get_hlr(image, scale, size,):
 
     return numpy.sqrt(len(cache)/numpy.pi), flux
 
+
+def gauss_fit(data, bin_num):
+    # fit the Gaussian distribution (amplitude, sigma, mu)
+    def fun(x, ampli, sig, mu):
+        return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
+
+    num, bins = numpy.histogram(data, bin_num)
+    num = num/numpy.sum(num)
+    mp = numpy.where(num == numpy.max(num))[0][0]
+    # if mp+1 < bin_num/3:
+    #     bins = bins[:mp*2]
+    #     num = num[:mp*2]
+    # elif bin_num/3 <= mp+1 < bin_num*2./3:
+    #     bins = bins[int(mp+1-bin_num/3):int(mp+1-bin_num/3)]
+    #     num = num[int(mp+1-bin_num/3):int(mp+1-bin_num/3)]
+    # else:
+    #     tag = bin_num - mp - 1
+    #     bins = bins[mp-tag:mp+tag]
+    #     num = num[mp-tag:mp+tag]
+    # print(len(num))
+
+    coeff, coerr = curve_fit(f=fun, xdata=bins[1:], ydata=num)
+    # the fitted sigma can be negative
+    return coeff, coerr, bins, num
+
+def ps_fit(image,size):
+    # fit a paraboloid surface using the 5x5 area with the center and corner removed
+    fit_img = numpy.zeros_like(image)
+    # flat_img = image.reshape((size*size))
+
+    def f_fun(x, a1, a2, a3, a4, a5, a6):
+        return a1 * x[0] ** 2 + a2 * x[0] * x[1] + a3 * x[1] ** 2 + a4 * x[0] + a5 * x[1] + a6
+
+    my, mx = numpy.mgrid[-2:3, -2:3]
+    x, y = mx.reshape((1, 25)), my.reshape((1, 25))
+    x = numpy.delete(x, [0, 4, 12, 20, 24])
+    y = numpy.delete(y, [0, 4, 12, 20, 24])
+    xy = numpy.row_stack((x, y))
+
+    for i in range(size):
+        for j in range(size):
+            z = []
+            for m in range(-2, 3):
+                a = (i + m + size) % size
+                for n in range(-2, 3):
+                    b = (j + n + size) % size
+                    if abs(m) == 1 or abs(m) != abs(n):
+                        z.append(image[a, b])
+            a1, a2 = curve_fit(f_fun, xy, z)
+            fit_img[i, j] = a1[5]
+    return fit_img
+
 def data_fit(x_data, y_data, y_err):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -259,3 +311,4 @@ def check_in(interval):
         return True
     else:
         return False
+

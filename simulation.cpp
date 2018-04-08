@@ -24,12 +24,12 @@ int main(int argc, char*argv[])
 		para all_paras;
 		ifstream fin;
 
-		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
-		int chip_num = 500, stamp_num = 10000, shear_pairs = 14;
+		/* 14 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
+		int chip_num = 50, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
 		int i, j, seed, data_rows, data_cols=17;
-		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
-		double psf_scale = 5., max_radius = 9, st, ed, s1, s2;
+		int size =56, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		double psf_scale = 5., max_radius = 8, st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.86, psf_noise_sig = 0., thres = 2.;
 		data_rows = chip_num*stamp_num;
@@ -47,6 +47,8 @@ int main(int argc, char*argv[])
 		double *pnoise = new double[size*size]();
 		char para_path[100], para_inform[400], log_inform[100], log_path[100], chip_path[200], data_path[200];
 		char buffer[200], h5_path[100], set_name1[20], set_name2[20];
+		double *gal_s = new double[size*size]();
+		double *noise_s = new double[size*size]();
 
 		#ifndef PRECISION
 		DATA_TYPE *cp = new DATA_TYPE[stamp_nx*stamp_nx*size*size]();
@@ -135,7 +137,25 @@ PSF scale: %.2f, max radius: %.2f", myid, size, chip_num, sss1, sss2, gal_noise_
 				pow_spec(noise, pnoise, size, size);
 				
 				shear_est(gpow, ppow, pnoise, &all_paras, size);
-				
+
+				data[i*stamp_num + j][2] = all_paras.n1;
+				data[i*stamp_num + j][3] = all_paras.n2;
+				data[i*stamp_num + j][4] = all_paras.dn;
+				data[i*stamp_num + j][5] = all_paras.du;
+				data[i*stamp_num + j][6] = all_paras.dv;
+
+				paraboloid_fit(gpow, gal_s, &all_paras, size);
+				paraboloid_fit(pnoise, noise_s, &all_paras, size);
+				shear_est(gal_s, ppow, noise_s, &all_paras, size);
+
+				data[i*stamp_num + j][13] = all_paras.n1;
+				data[i*stamp_num + j][14] = all_paras.n2;
+				data[i*stamp_num + j][15] = all_paras.dn;
+				data[i*stamp_num + j][16] = all_paras.du;
+
+				initialize(gal_s, size*size);
+				initialize(noise_s, size*size);
+
 				initialize(gal, size*size);
 				initialize(gpow, size*size);
 				initialize(point, num_p * 2);
@@ -144,25 +164,21 @@ PSF scale: %.2f, max radius: %.2f", myid, size, chip_num, sss1, sss2, gal_noise_
 
 				data[i*stamp_num + j][0] = g1;
 				data[i*stamp_num + j][1] = g2;
-				data[i*stamp_num + j][2] = all_paras.n1;
-				data[i*stamp_num + j][3] = all_paras.n2;
-				data[i*stamp_num + j][4] = all_paras.dn;
-				data[i*stamp_num + j][5] = all_paras.du;
-				data[i*stamp_num + j][6] = all_paras.dv;
+
 				data[i*stamp_num + j][7] = all_paras.gal_osnr;
 				data[i*stamp_num + j][8] = all_paras.gal_flux;
 				data[i*stamp_num + j][9] = all_paras.gal_peak;
 				data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;
 				data[i*stamp_num + j][11] = all_paras.gal_snr;
 				data[i*stamp_num + j][12] = all_paras.gal_size;
-				data[i*stamp_num + j][13] = mag[i*stamp_num + j];
-				data[i*stamp_num + j][14] = 0;
-				data[i*stamp_num + j][15] = 0;
-				data[i*stamp_num + j][16] = 0;
+
 			}
 			sprintf(chip_path, "!/lmc/selection_bias/%d/gal_chip_%04d.fits", myid, i);
 			#ifdef PRECISION
-			write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);
+			if (i < 10)
+			{
+				write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);
+			}
 			#else
 			copy(big_img, big_img + stamp_nx*stamp_nx*size*size, cp);
 			write_img(cp, size*stamp_nx, size*stamp_nx, chip_path);
@@ -173,6 +189,7 @@ PSF scale: %.2f, max radius: %.2f", myid, size, chip_num, sss1, sss2, gal_noise_
 			s2 = clock();
 			sprintf(log_inform, "Thread: %02d, chip: %03d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
+
 			if (myid == 0)
 			{
 				cout << log_inform<<endl;
@@ -201,6 +218,8 @@ PSF scale: %.2f, max radius: %.2f", myid, size, chip_num, sss1, sss2, gal_noise_
 		delete[] data_m;
 		delete[] data;
 		delete[] mag;
+		delete[] gal_s;
+		delete[] noise_s;
 		gsl_rng_free();				
 		MPI_Finalize();
 		return 0;

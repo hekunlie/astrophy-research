@@ -7,34 +7,104 @@ from sys import argv
 import h5py
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from astropy.io import fits
+from scipy.optimize import curve_fit
+import tool_box
+from mpi4py import MPI
 
-def ellip(e,radius, theta):
-    b = numpy.sqrt((1-e)/(1+e))*radius
-    num = 0
-    xy = numpy.zeros((2,100))
-    while True:
-        if num == 100:
-            break
-        y = numpy.random.normal(0, b,1)
-        x = numpy.random.normal(0, radius,1)
-        if x*x/radius/radius + y*y/b/b <=1:
-            xy[0,num] = x
-            xy[1, num] = y
-            num += 1
-    rotate = numpy.array([[numpy.cos(theta), -numpy.sin(theta)], [numpy.sin(theta), numpy.cos(theta)]])
-    return numpy.dot(rotate, xy)
 
-my,mx = numpy.mgrid[0:100,0:100]
-arr = numpy.exp(-(my-50)**2/200-(mx-50)**2/400)
-fig = plt.figure()
-ax1 = Axes3D(fig)
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+cpus = comm.Get_size()
+# rank = 1
+size = 56
+num_p = 45
+gal_num = 10000
+fq = Fourier_Quad(size,numpy.random.randint(0,100,1)[0]*rank)
 
-ax1.plot_surface(mx, my, arr)
-plt.show()
-for i in range(10):
-    xy = ellip(0.3, 10, numpy.pi/2)
-    plt.scatter(xy[0], xy[1])
-    plt.xlim(-12,12)
-    plt.ylim(-12,12)
+g1 = [0.012, 0.02, -0.01, -0.021, 0]
+g2 = [-0.01, -0.015, 0, -0.01, -0.032]
+
+psf_r = numpy.linspace(3, 4.5, 5)
+
+psf = fq.cre_psf(psf_r[rank], 1000)
+res = numpy.zeros((4,gal_num))
+
+for j in range(gal_num):
+    p = fq.ran_pos(num_p, 8, (g1[rank], g2[rank]))[1]
+    gal = fq.convolve_psf(p, psf_r[rank], 100)
+    res[0,j], res[1,j], res[2,j], res[3,j] = fq.shear_est(gal, psf)[0:4]
+
+est_g1, g1_sig = fq.fmin_g(res[0], res[2], res[3], 1, 2)
+est_g2, g2_sig = fq.fmin_g(res[1], res[2], res[3], 2, 2)
+
+if est_g1-2*g1_sig <= g1[rank] <= est_g1+2*g1_sig:
+    t1 = "Consistent with input"
+else:
+    t1 = "out of 2-sigma bound"
+print("rank:%2d, g1: %.5f, est_g1: %.5f (%.5f), %.3f, %s"%(rank,g1[rank], est_g1, g1_sig, numpy.sqrt(gal_num)*g1_sig, t1))
+
+if est_g2-2*g2_sig <= g2[rank] <= est_g2+2*g2_sig:
+    t1 = "Consistent with input"
+else:
+    t1 = "out of 2-sigma bound"
+print("rank:%2d, g2: %.5f, est_g2: %.5f (%.5f), %.3f, %s"%(rank, g2[rank], est_g2, g2_sig, numpy.sqrt(gal_num)*g2_sig, t1))
+
+
+
+#
+# f = numpy.zeros((1000,1))
+# for i in range(1000):
+#     n1 = fq.draw_noise(0,380)
+#     n = fq.draw_noise(0,380)
+#     pos = fq.ran_pos(num_p, 8)
+#     gal = fq.convolve_psf(pos, 4, 2000) + n
+#     p1 = fq.pow_spec(gal)
+#     p2 = fq.pow_spec(n1)
+#     p = p1 - p2
+#     # plt.subplot(221)
+#     # plt.imshow(p1)
+#     # plt.subplot(222)
+#     # plt.imshow(p2)
+#     # plt.subplot(223)
+#     plt.imshow(gal)
+#     # plt.subplot(224)
+#     plt.show()
+#     rim = fq.border(1)
+#     noise = numpy.sum(rim*(p2-p1))/numpy.sum(rim)
+#     if noise<=0 or p[32,32]<=0:
+#         print(noise,p[32,32])
+#         plt.subplot(131)
+#         plt.imshow(gal)
+#         plt.subplot(132)
+#         plt.imshow(p1)
+#         plt.subplot(133)
+#         plt.imshow(p)
+#         plt.show()
+#         plt.close()
+#     f[i] = numpy.sqrt(p[32,32]/noise)
+# print(f.shape)
+# plt.hist(f[:,0],40)
+# plt.show()
+
+# check the fitting of c++ code
+
+path1 = "F:/fit_checking/gal_chip_0000_fit_pow.fits"
+path2 = "F:/fit_checking/gal_chip_0000_pow.fits"
+
+fit_pow = fq.segment(fits.open(path1)[0].data)
+ori_pow = fq.segment(fits.open(path2)[0].data)
+
+for k in range(10000):
+    p10 = ori_pow[k]
+    fit_img = tool_box.ps_fit(p10,size)
+    dif = (fit_pow[k]-fit_img)#*rim
+    plt.subplot(221)
+    plt.imshow(ori_pow[k])
+    plt.subplot(222)
+    plt.imshow(fit_img)
+    plt.subplot(223)
+    plt.imshow(fit_pow[k])
+    plt.subplot(224)
+    plt.imshow(dif)
     plt.show()
-    plt.close()

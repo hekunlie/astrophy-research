@@ -41,7 +41,7 @@ logger.addHandler(lf)
 stamp_size = 90
 pixel_scale = 0.2
 chips_num = int(500/int(cpus/14))
-seed = rank*34424 + 41112
+seed = rank*344 + 112
 chip_s_id, shear_id = divmod(rank, 14)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -78,6 +78,7 @@ logger.info("seed: %d"%seed)
 
 t = 0
 
+ori_snr = numpy.zeros((chips_num*10000, 1))
 for i in range(chips_num):
     t1 = time.clock()
     chip_path = total_path + str(shear_id) + "/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
@@ -100,15 +101,16 @@ for i in range(chips_num):
             disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=5*ra)# be careful
             gal = bulge * btr + disk * (1-btr)
             gal = gal.shear(e1=e1, e2=e2)
-        t += 1
 
         gal_s = gal.withFlux(gal_flux)
         gal_g = gal_s.shear(g1=g1, g2=g2)
         gal_c = galsim.Convolve([gal_g, psf])
         img = galsim.ImageD(stamp_size, stamp_size)
         gal_c.drawImage(image=img, scale=pixel_scale)
+        ori_snr[t] = numpy.sqrt(numpy.sum(img.array**2))/prop.sigma_sky
         gal_img = img.array + fq.draw_noise(0, noise_sig)
         gal_pool.append(gal_img)
+        t += 1
 
     big_chip = fq.stack(gal_pool, 100)
     # big_chip = numpy.float32(big_chip)
@@ -117,5 +119,7 @@ for i in range(chips_num):
     t2 = time.clock()
     logger.info("Finish the %04d's chip in %.2f sec"%(i, t2-t1))
 
+ori_snr_path = result_path + "data/input_snr_%d.npz"%rank
+numpy.savez(ori_snr_path, ori_snr)
 te = time.clock()
 logger.info("Used %.2f sec"%(te-ts))

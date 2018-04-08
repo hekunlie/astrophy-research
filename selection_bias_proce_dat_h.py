@@ -22,7 +22,7 @@ ts = time.clock()
 wei, snr_s, snr_e, wei_pow, method, scale = argv[1:7]
 
 pixel_scale = 0.2
-stamp_size = 84
+stamp_size = 90
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
@@ -83,12 +83,12 @@ fsnr = data[:, 10]
 # osnr
 osnr = data[:, 7]
 
-if rank == 0:
-    print("flux: %.2f ~ %.2f\n"%(numpy.min(flux), numpy.max(flux)))
-    print("peak: %.2f ~ %.2f\n"%(numpy.min(peak), numpy.max(peak)))
-    print("snr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
-    print("fsnr: %.2f ~ %.2f\n"%(numpy.min(fsnr), numpy.max(fsnr)))
-    print("osnr: %.2f ~ %.2f\n"%(numpy.min(osnr), numpy.max(osnr)))
+# if rank == 0:
+#     print("flux: %.2f ~ %.2f\n"%(numpy.min(flux), numpy.max(flux)))
+#     print("peak: %.2f ~ %.2f\n"%(numpy.min(peak), numpy.max(peak)))
+#     print("snr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
+#     print("fsnr: %.2f ~ %.2f\n"%(numpy.min(fsnr), numpy.max(fsnr)))
+#     print("osnr: %.2f ~ %.2f\n"%(numpy.min(osnr), numpy.max(osnr)))
 
 
 select = {"peak": peak, "flux": flux, "fsnr": fsnr, "snr": snr}
@@ -125,7 +125,7 @@ else:
 res_arr[0] = g1_h, g2_h
 res_arr[1] = g1_h_sig, g2_h_sig
 res_arr[2] = num, num
-
+print(rank,g1_h,g1_h_sig,g2_h,g2_h_sig)
 if rank > 0:
     comm.Send(res_arr, dest=0, tag=rank)
 else:
