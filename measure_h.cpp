@@ -30,8 +30,10 @@ int main(int argc, char*argv[])
 	int data_rows = chip_num*stamp_num, data_cols = 17;
 	int i, j, k, seed, chip_id, shear_id;
 	double thres = 2.,  psf_scale = 4., psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
+
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
+	all_paras.img_size = size;
 
 	shear_id = myid - myid / shear_pairs*shear_pairs;
 	chip_id = myid / shear_pairs*chip_num;
@@ -50,22 +52,33 @@ int main(int argc, char*argv[])
 	double *matrix = new double[data_rows*data_cols]();
 	double **data = new double*[data_rows];
 	double*temp_g = new double[size*size]();
-	double*fit_img = new double[size*size]();
+	double*gal_fit_img = new double[size*size]();
+	double *noise_fit_img = new double[size*size]();
+
+	double coeffs[150 * 25];
 
 	for (i = 0; i < data_rows; i++)
 	{
 		data[i] = matrix + i*data_cols;
 	}
+
 	char chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
+	sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
+	sprintf(set_name, "/data");
+	read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
 
 	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/logs/m_%d_log.dat", myid);
 
 	sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/psf.fits");
-	//read_img(psf, chip_path);
-	create_psf(psf, psf_scale, size, 2);
+	read_img(psf, chip_path);
+	//create_psf(psf, psf_scale, size, 2);
 	pow_spec(psf, ppsf, size, size);
-	get_radius(ppsf, &all_paras, thres, size, 1, psf_noise_sig);
-	
+	get_radius(ppsf, &all_paras, thres, 1, psf_noise_sig);
+	get_psf_thres(ppsf, &all_paras);
+	if (0 == myid)
+	{
+		cout << "PSF THRES: " << all_paras.psf_pow_thres << endl;
+	}
 	for (i = 0; i < chip_num; i++)
 	{	
 		t1 = clock();
@@ -83,19 +96,20 @@ int main(int argc, char*argv[])
 		{
 			addnoise(noise, size*size, gal_noise_sig);
 			pow_spec(noise, pnoise, size, size);
+			smooth(pnoise, noise_fit_img, ppsf, coeffs, &all_paras);
 
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
-			get_radius(gal, &all_paras, 99999999 * thres, size, 2, gal_noise_sig);
+			get_radius(gal, &all_paras, 99999999 * thres, 2, gal_noise_sig);
 			pow_spec(gal, pgal, size, size);
 
-			f_snr(pgal, &all_paras, size);
+			f_snr(pgal, &all_paras);
 			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;// original fsnr
 
-			paraboloid_fit(pgal, fit_img, &all_paras, size);
-			f_snr(fit_img, &all_paras, size);
+			smooth(pgal, gal_fit_img, ppsf, coeffs, &all_paras);
+			f_snr(gal_fit_img, &all_paras);
 			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c;//the fsnr on the fitting image
 
-			shear_est(fit_img, ppsf, pnoise, &all_paras, size);
+			shear_est(gal_fit_img, ppsf, noise_fit_img, &all_paras);
 
 			/* subtact the noise background */
 			//for (k = 0; k < size*size; k++)
@@ -129,14 +143,15 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][15] = 0.;
 			data[i*stamp_num + j][16] = 0.;
 
-			initialize(noise, size*size);
-			initialize(pnoise, size*size);
-			initialize(gal, size*size);
-			initialize(pgal, size*size);
-			initialize(temp_g, size*size);
-			initialize(fit_img, size*size);
+			initialize(noise);
+			initialize(pnoise);
+			initialize(gal);
+			initialize(pgal);
+			initialize(temp_g);
+			initialize(gal_fit_img);
+			initialize(noise_fit_img);
 		}
-		initialize(big_img, stamp_num*size*size);
+		initialize(big_img);
 
 		t2 = clock();
 		sprintf(log_inform, "%03d 's chip finish in %.2f sec", i, (t2-t1)/CLOCKS_PER_SEC);
@@ -167,7 +182,8 @@ int main(int argc, char*argv[])
 	delete[] pnoise;
 	delete[] data;
 	delete[] matrix;
-	delete[] fit_img;
+	delete[] gal_fit_img;
+	delete[] noise_fit_img;
 	delete[] temp_g;
 	gsl_rng_free();
 	MPI_Finalize();

@@ -170,13 +170,13 @@ void pow_spec(double *in_img, double *out_img, int column, int row)
 	fftwl_free(out);
 }
 
-void get_radius(double *in_img, para *paras, double scale, int size, int type, double sig_level)
+void get_radius(double *in_img, para *paras, double scale, int type, double sig_level)
 {	 /* will not change the inputted array */
 	/* the image should be larger than 12*12 */
 	/* setting scale = infinity ,  one can obtain the area of the signal */
 
-	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p = 1;
-	double max = 0, flux = 0, flux_sq=0. ;	
+	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p = 1, size = paras->img_size;
+	double max = 0, flux = 0, flux_sq=0.;	
 
 	/* find the maximun */
 	for (y = size / 2 - 5; y < size / 2 +5; y++)
@@ -554,13 +554,27 @@ void create_psf(double*in_img, double scale, int size, int psf)
 	}
 }
 
-void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras, int size)
+void get_psf_thres(double *psf_pow, para* paras)
+{
+	double pow_max = 0;
+	int num = paras->img_size*paras->img_size;
+	for (int i = 0; i < num; i++)
+	{
+		if (psf_pow[i] > pow_max)
+		{
+			pow_max = psf_pow[i];
+		}
+	}
+	paras->psf_pow_thres = pow_max/10000.;
+}
+
+void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a list of '0' should be putted in  */
 	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, max = 0, thres, alpha, kx, ky, tk;
 	double mp1=0., mp2=0.;
-	int i, j, k;
+	int i, j, k, size = paras->img_size;
 
 	alpha = 16*Pi *Pi*Pi*Pi/ (size*size*size*size);
 	/* beta is the beta_square in the estimators */
@@ -572,7 +586,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 		if (psf_img[i] > max)
 			max = psf_img[i];
 	}
-	thres = max / 10000.;
+	thres = paras->psf_pow_thres;
 
 	for (i = 0; i < size; i++)//y coordinates
 	{
@@ -604,11 +618,9 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras,
 
 }
 
-void initialize(double *in_img, int length)
+void initialize(double *in_img)
 {/* will set all the elements to zero */
-	int i;
-	for (i = 0; i < length; i++)
-		in_img[i] = 0.;
+	memset(in_img, 0, sizeof(in_img));
 }
 
 void stack(double *container, double *stamp, int tag, int size, int row, int col)
@@ -650,10 +662,11 @@ void addnoise(double *image, int pixel_num,   double sigma)
 	}
 }
 
-void f_snr(double *image, para *paras, int size)
+void f_snr(double *image, para *paras)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
 	double n=0, noise;
+	int size = paras->img_size;
 	int i,k,edge=1, xc=size/2;
 	for (i = 0; i < size; i++) //y coordinates
 	{
@@ -672,73 +685,82 @@ void f_snr(double *image, para *paras, int size)
 	noise = n*0.25 / ((size - edge)*edge);
 	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
 }
-void smooth(double *image, double*fit_image, double *coeffs, int size,para*paras)
+void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, para*paras)
 {
-	int i, j,m,n,q,p,pk=0,tag,cen,coe;
-	double fz[6]{}, z[25]{}, fit_para_6 = 0., st1, st2, st3, st4;
+	int i, j,m,n,q,p,pk=0,tag,cen,coe,jx,iy, size=paras->img_size;
+	double fz[6]{}, z[25]{}, fit_para_6, max=0.,thres;
 	double*temp = new double[size*size];
 	double fit_temp[6 * 25]{};
+	double ones[6]{ 1.,1.,1.,1.,1.,1. };
+
 	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
 
-	//st = clock();
 	/*  to fit the curve: a*x^2 + b*x*y+ c*y^2 + d*x + e*y + f  */
 	for (i = 0; i < size*size; i++)
 	{
 		temp[i] = log10(image[i]);
 	}
+	thres = paras->psf_pow_thres;
+	//st2 = clock();
 
 	for (i = 0; i < size; i++)
 	{	
 		for (j = 0; j < size; j++)
 		{	
-			st1 = clock();
-			tag = 0;
-			pk = 0;
-			for (m = -2; m < 3; m++)
-			{	
-				p = (i + m + size) % size*size; // the periodic boundry condition
-				for (n = -2; n < 3; n++)
-				{	
-					q = (j + n + size) % size; // the periodic boundry condition
-
-					if (tag != 0 && tag != 4 && tag != 20 && tag != 24) 
-					// exclude the corner and center of each 5*5 block and the k0 of the power spectrum
+			if (psf_pow[i*size + j] >= thres)
+			{
+				tag = 0;
+				pk = 0;
+				for (m = -2; m < 3; m++)
+				{
+					if (2 < i && i < size - 2)
 					{
-						if (p + q != cen)
+						p = (i + m)*size;
+					}
+					else
+					{
+						p = (i + m + size) % size*size;// the periodic boundry condition
+					}
+					for (n = -2; n < 3; n++)
+					{
+						if (2 < j && j < size - 2)
 						{
-							z[tag] = temp[p + q];
+							q = j + n;
 						}
 						else
 						{
-							pk = tag; // tag dicides the row of invers coefficients matrix to be used
+							q = (j + n + size) % size; // the periodic boundry condition
 						}
-					}					
-					tag++;
-				}
-			}
-			coe = pk * 150;
-			for (q = 0; q < 150; q++)
-			{
-				fit_temp[q] = coeffs[coe + q];
-			}
-			st2 = clock();
 
-			cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
-			st3 = clock();
-			/* actually, only the final element is needed */
-			fit_para_6 = 0.;
-			for (p = coe; p < +6; p++)
-			{	
-				fit_para_6 += fz[p];
+						if (tag != 0 && tag != 4 && tag != 20 && tag != 24)
+							// exclude the corner and center of each 5*5 block and the k0 of the power spectrum
+						{
+							if (p + q != cen)
+							{
+								z[tag] = temp[p + q];
+							}
+							else
+							{
+								pk = tag; // tag dicides the row of invers coefficients matrix to be used
+							}
+						}
+						tag++;
+					}
+				}
+				coe = pk * 150;
+				for (q = 0; q < 150; q++)
+				{
+					fit_temp[q] = coeffs[coe + q];
+				}
+				cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
+				fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
+				fit_image[i*size + j] = pow(10., fit_para_6);
+
+				memset(fz, 0, sizeof(fz));
+				memset(z, 0, sizeof(z));
 			}
-			fit_image[i*size + j] = pow(10., fit_para_6);
-			memset(fz, 0, sizeof(fz));
-			memset(z, 0, sizeof(z));
-			st4 = clock();
-			paras->t1 += st2 - st1;
-			paras->t2 += st3 - st2;
-			paras->t3 += st4 - st3;
 		}
 	}
+	//paras->t1 += st2 - st1;
 	delete temp;
 }
