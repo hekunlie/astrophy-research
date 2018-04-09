@@ -672,12 +672,12 @@ void f_snr(double *image, para *paras, int size)
 	noise = n*0.25 / ((size - edge)*edge);
 	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
 }
-void smooth(double *image, double*fit_image, para *paras, int size)
+void smooth(double *image, double*fit_image, double *coeffs, int size,para*paras)
 {
-	int i, j,m,n,q,p,pk=0,tag,cen;
+	int i, j,m,n,q,p,pk=0,tag,cen,coe;
 	double fz[6]{}, z[25]{}, fit_para_6 = 0., st1, st2, st3, st4;
 	double*temp = new double[size*size];
-
+	double fit_temp[6 * 25]{};
 	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
 
 	//st = clock();
@@ -691,7 +691,7 @@ void smooth(double *image, double*fit_image, para *paras, int size)
 	{	
 		for (j = 0; j < size; j++)
 		{	
-			//st1 = clock();
+			st1 = clock();
 			tag = 0;
 			pk = 0;
 			for (m = -2; m < 3; m++)
@@ -715,31 +715,29 @@ void smooth(double *image, double*fit_image, para *paras, int size)
 					}					
 					tag++;
 				}
-			}	
-			//st2 = clock();
-			//for (p = 0; p < 6; p++)
-			//{
-			//	for (q = 0; q < 25; q++)
-			//	{
-			//		fz[p] = +paras->zxy[p][q] * z[q];
-			//	}
-			//}
-			cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 6, 1, 25, 1, paras->zxy[0], 25, z, 1, 0, fz, 1);
-			//st3 = clock();
+			}
+			coe = pk * 150;
+			for (q = 0; q < 150; q++)
+			{
+				fit_temp[q] = coeffs[coe + q];
+			}
+			st2 = clock();
+
+			cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
+			st3 = clock();
 			/* actually, only the final element is needed */
 			fit_para_6 = 0.;
-			for (p = 0; p < 6; p++)
+			for (p = coe; p < +6; p++)
 			{	
-				fit_para_6 += fz[p] * paras->fit_cov_inv[pk][p];
+				fit_para_6 += fz[p];
 			}
 			fit_image[i*size + j] = pow(10., fit_para_6);
 			memset(fz, 0, sizeof(fz));
 			memset(z, 0, sizeof(z));
-			//
-			//st4 = clock();
-			//paras->t1 += st2 - st1;
-			//paras->t2 += st3 - st2;
-			//paras->t3 += st4 - st3;
+			st4 = clock();
+			paras->t1 += st2 - st1;
+			paras->t2 += st3 - st2;
+			paras->t3 += st4 - st3;
 		}
 	}
 	delete temp;

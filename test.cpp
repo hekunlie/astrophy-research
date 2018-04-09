@@ -29,10 +29,14 @@ int main()
 	all_paras.t1 = 0.;
 	all_paras.t2 = 0.;
 	all_paras.t3 = 0.;
+	double coeffs[150 * 25]{};
 	double st, ed;
 	int i;
 	double img[90 * 90], pimg[90 * 90], fimg[90 * 90];
-	char buffer[100];
+	char buffer[100],setname[30];
+	sprintf(buffer, "coeffs.hdf5");
+	sprintf(setname, "/data");
+	read_h5(buffer, setname, coeffs, NULL, NULL, NULL, NULL);
 	sprintf(buffer, "/home/hklee/gal.fits");
 	read_img(img,buffer);
 	pow_spec(img, pimg, 90, 90);
@@ -41,13 +45,17 @@ int main()
 	write_img(pimg, 90, 90, buffer);
 
 	st = clock();
-	for (i = 0; i < 10000; i++)
+	for (i = 0; i < 2000; i++)
 	{
-		smooth(pimg, fimg, &all_paras, 90);
+		smooth(pimg, fimg, coeffs, 90, &all_paras);
+		if (i == 0)
+		{
+			sprintf(buffer, "!/home/hklee/galpf.fits");
+			write_img(fimg, 90, 90, buffer);
+		}
 	}
 
-	//sprintf(buffer, "!/home/hklee/galpf.fits");
-	//write_img(fimg, 90, 90, buffer);
+
 	ed = clock();
 	cout << (ed - st) / CLOCKS_PER_SEC;
 	cin >> i;

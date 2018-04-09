@@ -4,6 +4,8 @@ from astropy.io import fits
 import copy
 import tool_box
 import time
+import h5py
+
 
 order = 2
 turns = int((order+1)*(order+2)/2)
@@ -14,7 +16,7 @@ for i in range(order+1):
         power[0,k] = i-j
         power[1,k] = j
         k += 1
-# print("xy power: \n", power)
+print("xy power: \n", power)
 my, mx = numpy.mgrid[-2:3, -2:3]
 x, y = mx.reshape((1, 25)), my.reshape((1, 25))
 
@@ -32,24 +34,34 @@ for m in range(turns):
     for n in range(turns):
         powx[m, n] = power[0, m] + power[0, n]
         powy[m, n] = power[1, m] + power[1, n]
-# print(powx)
-# print(powy)
+print("\n")
+print("Power of X:")
+print(powx)
+print("Power of Y:")
+print(powy)
+
+print("\n")
 print("x: \n", x)
 print("y: \n", y)
+
 fxy = numpy.zeros((turns, 25))
 for i in range(turns):
     fxy[i] = x**power[0, i]*y**power[1, i]
+print("\n")
 print("fxy: \n",fxy)
+
 for i in range(turns):
     s = ""
     for j in range(25):
         s += "%.1f, "%fxy[i,j]
     print("{ %s },"%s)
 print("\n")
+
 pts_list = []  # for checking
 
 coeff_inv = numpy.zeros((25,turns))
-for i in range(25):
+
+for i in range(25): # the 25 possible position of the k0 in the the 5*5 block
     nx = copy.copy(x)
     ny = copy.copy(y)
     if i in [0, 4, 20, 24]:
@@ -70,11 +82,27 @@ for i in range(25):
     coeff_inv[i] = inv_arr[0]
     # print(coeff_inv)
 t2 = time.clock()
+print(" The inverse coefficients matrix (only the first row of each possible case):")
 for i in range(25):
     s = ""
     for j in range(turns):
         s += "%.8f, "%coeff_inv[i,j]
     print("{ %s }," % s)
+
+
+arr_list = []
+for i in range(25):
+    fxy_c = numpy.ones_like(fxy)
+    for j in range(6):
+        fxy_c[j] = fxy[j]*coeff_inv[i,j]
+    if i == 0:
+        final_arr = fxy_c
+    else:
+        final_arr = numpy.row_stack((final_arr,fxy_c))
+print(final_arr.shape)
+f = h5py.File("E:/coeffs.hdf5","w")
+f["/data"] = final_arr
+f.close()
 
 # x4 = numpy.sum(x ** 4)
 # x3y = numpy.sum(x ** 3 * y)
@@ -96,29 +124,29 @@ for i in range(25):
 #                    [x3, x2y, xy2, x2, xy, x1], [x2y, xy2, y3, xy, y2, y1], [x2, xy, y2, x1, y1, n]])
 # print(arr)
 
-size = 20
-cen = int((size*size + size)/2)
-for i in range(int(size/2)-3, int(size/2)+3):
-    for j in range(int(size/2)-3, int(size/2)+3):
-        arr = numpy.zeros((size, size))
-        arr[int(size/2),int(size/2)] = 0.5
-        pos = []
-        tag = 0
-        pk = 0
-        for m in range(-2,3):
-            p = (i + m + size) % size
-            for n in range(-2,3):
-                q = (j + n + size) % size
-
-                if tag not in [0,4,20,24]:#abs(m) != 2 or abs(n) != 2:
-                    if p*size+q != cen:
-                        pos.append((p,q))
-                    else:
-                        pk = tag
-                tag+=1
-        print(pk,len(pos))
-        for xy in pos:
-            arr[xy[0], xy[1]] = 1
-        plt.imshow(arr)
-        plt.grid(which='minor')
-        plt.show()
+# size = 20
+# cen = int((size*size + size)/2)
+# for i in range(int(size/2)-3, int(size/2)+3):
+#     for j in range(int(size/2)-3, int(size/2)+3):
+#         arr = numpy.zeros((size, size))
+#         arr[int(size/2),int(size/2)] = 0.5
+#         pos = []
+#         tag = 0
+#         pk = 0
+#         for m in range(-2,3):
+#             p = (i + m + size) % size
+#             for n in range(-2,3):
+#                 q = (j + n + size) % size
+#
+#                 if tag not in [0,4,20,24]:#abs(m) != 2 or abs(n) != 2:
+#                     if p*size+q != cen:
+#                         pos.append((p,q))
+#                     else:
+#                         pk = tag
+#                 tag+=1
+#         print(pk,len(pos))
+#         for xy in pos:
+#             arr[xy[0], xy[1]] = 1
+#         plt.imshow(arr)
+#         plt.grid(which='minor')
+#         plt.show()
