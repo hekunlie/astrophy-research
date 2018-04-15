@@ -30,9 +30,10 @@ int main(int argc, char*argv[])
 	chip_num = 500 / (numprocs / 14);
 	int data_rows = chip_num*stamp_num, data_cols = 17;
 	int i, j, k, seed, chip_id, shear_id;
-	double thres = 2., psf_scale = 4., psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
+	double thres = 2., psf_scale = 5., psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
+	all_paras.img_size = size;
 
 	shear_id = myid - myid / shear_pairs*shear_pairs;
 	chip_id = myid / shear_pairs*chip_num;
@@ -50,7 +51,6 @@ int main(int argc, char*argv[])
 	double *pnoise = new double[size*size]();
 	double *matrix = new double[data_rows*data_cols]();
 	double **data = new double*[data_rows];
-	double*temp_g = new double[size*size]();
 	double*fit_img = new double[size*size]();
 
 	for (i = 0; i < data_rows; i++)
@@ -59,15 +59,21 @@ int main(int argc, char*argv[])
 	}
 	char chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
 
-	sprintf(log_path, "/lmc/selection_bias/logs/m_%d_log.dat", myid);
+	sprintf(log_path, "/lmc/selection_bias_0/logs/m_%d_log.dat", myid);
 
-	sprintf(chip_path, "/lmc/selection_bias/psf.fits");
+	sprintf(chip_path, "/lmc/selection_bias_0/psf.fits");
 	//read_img(psf, chip_path);
 	create_psf(psf, psf_scale, size, 2);
 	pow_spec(psf, ppsf, size, size);
-	get_radius(ppsf, &all_paras, thres, size, 1, psf_noise_sig);
+	get_radius(ppsf, &all_paras, thres, 1,psf_noise_sig);
+	get_psf_thres(ppsf, &all_paras);
 
-	for (i = 0; i < 2; i++)
+	if (myid == 0)
+	{
+		cout << all_paras.psf_pow_thres << endl;
+	}
+
+	for (i = 0; i < chip_num; i++)
 	{
 		t1 = clock();
 		sprintf(log_inform, "%03d 's chip start...", i);
@@ -77,7 +83,7 @@ int main(int argc, char*argv[])
 			cout << log_inform << endl;
 		}
 
-		sprintf(chip_path, "/lmc/selection_bias/%d/gal_chip_%04d.fits", shear_id, i + chip_id);
+		sprintf(chip_path, "/lmc/selection_bias_0/%d/gal_chip_%04d.fits", shear_id, i + chip_id);
 		read_img(big_img, chip_path);
 
 		for (j = 0; j < stamp_num; j++)
@@ -86,30 +92,18 @@ int main(int argc, char*argv[])
 			pow_spec(noise, pnoise, size, size);
 
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
-			get_radius(gal, &all_paras, 99999999 * thres, size, 2, gal_noise_sig);
+			get_radius(gal, &all_paras, 2., 2, gal_noise_sig);
 			pow_spec(gal, pgal, size, size);
 
-			f_snr(pgal, &all_paras, size);
+			f_snr(pgal, &all_paras);
 			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;// original fsnr
 
-			paraboloid_fit(pgal, fit_img, &all_paras, size);
-			f_snr(fit_img, &all_paras, size);
-			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c;//the fsnr on the fitting image
+			//paraboloid_fit(pgal, fit_img, &all_paras, size);
+//			f_snr(fit_img, &all_paras);
+	//		data[i*stamp_num + j][13] = all_paras.gal_fsnr_c;//the fsnr on the fitting image
 
-			shear_est(fit_img, ppsf, pnoise, &all_paras, size);
+			shear_est(pgal, ppsf, pnoise, &all_paras);
 
-			/* subtact the noise background */
-			//for (k = 0; k < size*size; k++)
-			//{
-			//	temp_g[k] = pgal[k] - pnoise[k];
-			//}
-			//f_snr(temp_g, &all_paras, size);
-			//data[i*stamp_num + j][14] = all_paras.gal_fsnr_c;// fsnr on the image of which the background is subtracted
-
-			//initialize(fit_img, size*size);
-			//paraboloid_fit(temp_g, fit_img, &all_paras, size);
-			//f_snr(fit_img, &all_paras, size);
-			//data[i*stamp_num + j][15] = all_paras.gal_fsnr_c;
 
 
 			data[i*stamp_num + j][0] = 0;
@@ -126,18 +120,16 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][11] = all_paras.gal_snr;
 			data[i*stamp_num + j][12] = all_paras.gal_size;
 
-
-
-			data[i*stamp_num + j][16] = 0;
-
-			initialize(noise, size*size);
-			initialize(pnoise, size*size);
-			initialize(gal, size*size);
-			initialize(pgal, size*size);
-			initialize(temp_g, size*size);
-			initialize(fit_img, size*size);
+			data[i*stamp_num + j][14] = 0.;
+			data[i*stamp_num + j][15] = 0.;
+			data[i*stamp_num + j][16] = 0.;
+			initialize(noise);
+			initialize(pnoise);
+			initialize(gal);
+			initialize(pgal);
+			//initialize(fit_img);
 		}
-		initialize(big_img, stamp_num*size*size);
+		initialize(big_img);
 
 		t2 = clock();
 		sprintf(log_inform, "%03d 's chip finish in %.2f sec", i, (t2 - t1) / CLOCKS_PER_SEC);
@@ -148,8 +140,9 @@ int main(int argc, char*argv[])
 		}
 	}
 
-	sprintf(h5_path, "/lmc/selection_bias/result/data/data_f_%d_%d.hdf5", shear_id, myid / shear_pairs);
+	sprintf(h5_path, "/lmc/selection_bias_0/result/data/data_f_%d_%d.hdf5", shear_id, myid / shear_pairs);
 	sprintf(set_name, "/data");
+	cout << myid << " " << h5_path << endl;
 	write_h5(h5_path, set_name, data_rows, data_cols, data[0], NULL);
 
 	te = clock();
@@ -159,6 +152,8 @@ int main(int argc, char*argv[])
 	{
 		cout << log_inform << endl;
 	}
+
+	gsl_rng_free();
 	delete[] psf;
 	delete[] ppsf;
 	delete[] big_img;
@@ -169,8 +164,7 @@ int main(int argc, char*argv[])
 	delete[] data;
 	delete[] matrix;
 	delete[] fit_img;
-	delete[] temp_g;
-	gsl_rng_free();
+	
 	MPI_Finalize();
 	return 0;
 }

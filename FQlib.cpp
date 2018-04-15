@@ -572,7 +572,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a list of '0' should be putted in  */
-	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, max = 0, thres, alpha, kx, ky, tk;
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thres, alpha, kx, ky, tk;
 	double mp1=0., mp2=0.;
 	int i, j, k, size = paras->img_size;
 
@@ -581,11 +581,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 	beta = 1./ paras->psf_hlr / paras->psf_hlr;
 	
 	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken account
-	for (i = 0; i < size*size; i++)
-	{
-		if (psf_img[i] > max)
-			max = psf_img[i];
-	}
+
 	thres = paras->psf_pow_thres;
 
 	for (i = 0; i < size; i++)//y coordinates
@@ -594,7 +590,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 		for (j = 0; j < size; j++) // x coordinates
 		{
 			kx = j - size*0.5;
-			if (psf_img[i*size + j] > thres)
+			if (psf_img[i*size + j] >= thres)
 			{
 				tk = exp( - ( kx*kx + ky*ky ) * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
 				mg1 += -0.5 * ( kx*kx - ky*ky ) * tk;
@@ -602,8 +598,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
 				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5*beta);
 				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2.* beta);
-				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
-				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+				mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
 		}
 	}
@@ -613,8 +609,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 	paras->dn = mn;
 	paras->du = mu;
 	paras->dv = mv;
-	//paras->dp1 = 0;//mp1;
-	//paras->dp2 = 0;// mp2;
+	paras->dp1 = mp1;
+	paras->dp2 = mp2;
 
 }
 
@@ -698,7 +694,7 @@ void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, pa
 	/*  to fit the curve: a*x^2 + b*x*y+ c*y^2 + d*x + e*y + f  */
 	for (i = 0; i < size*size; i++)
 	{
-		temp[i] = log10(image[i]);
+		temp[i] =  log10(image[i]);
 	}
 	thres = paras->psf_pow_thres;
 	//st2 = clock();
@@ -752,9 +748,10 @@ void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, pa
 				{
 					fit_temp[q] = coeffs[coe + q];
 				}
+
 				cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
 				fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
-				fit_image[i*size + j] = pow(10., fit_para_6);
+				fit_image[i*size + j] =  pow(10., fit_para_6);
 
 				memset(fz, 0, sizeof(fz));
 				memset(z, 0, sizeof(z));

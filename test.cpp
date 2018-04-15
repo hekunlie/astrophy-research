@@ -51,34 +51,34 @@ int main()
 	sprintf(setname, "/data");
 	read_h5(buffer, setname, coeffs, NULL, NULL, NULL, NULL);
 
-	sprintf(buffer, "/home/hkli/gal.fits");
+	sprintf(buffer, "/home/hkli/gal_pow.fits");
 	read_img(img,buffer);
 	pow_spec(img, pimg, 90, 90);
 
-	sprintf(buffer, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/psf.fits");
-	read_img(psf, buffer);
-	pow_spec(psf, ppsf, 90, 90);
-	get_psf_thres(ppsf, &all_paras);
-	int max = 0;
-	for (i = 0; i < 90 * 90; i++)
-	{
-		if(ppsf[i] > all_paras.psf_pow_thres)
-		{
-			max++;
-		}
-	}
-	cout << max << endl;
-	cout <<"PSF THRES: "<< all_paras.psf_pow_thres << endl;
+	//sprintf(buffer, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/psf.fits");
+	//read_img(psf, buffer);
+	//pow_spec(psf, ppsf, 90, 90);
+	//get_psf_thres(ppsf, &all_paras);
+	//int max = 0;
+	//for (i = 0; i < 90 * 90; i++)
+	//{
+	//	if(ppsf[i] > all_paras.psf_pow_thres)
+	//	{
+	//		max++;
+	//	}
+	//}
+	//cout << max << endl;
+	//cout <<"PSF THRES: "<< all_paras.psf_pow_thres << endl;
 
-	sprintf(buffer, "!/home/hkli/galp.fits");
-	write_img(pimg, 90, 90, buffer);
+	//sprintf(buffer, "!/home/hkli/galp.fits");
+	//write_img(pimg, 90, 90, buffer);
 
-	sprintf(buffer, "!/home/hkli/psfp.fits");
-	write_img(ppsf, 90, 90, buffer);
+	//sprintf(buffer, "!/home/hkli/psfp.fits");
+	//write_img(ppsf, 90, 90, buffer);
 	st = clock();
-	for (i = 0; i < 20000; i++)
+	for (i = 0; i < 1; i++)
 	{
-		smooth(pimg, fimg, ppsf, coeffs, &all_paras);
+		smooth(img, fimg, pimg, coeffs, &all_paras);
 		if (i == 0)
 		{
 			sprintf(buffer, "!/home/hkli/galpf.fits");
@@ -88,9 +88,9 @@ int main()
 
 
 	ed = clock();
-	cout << (ed - st) / CLOCKS_PER_SEC << endl;
+	//cout << (ed - st) / CLOCKS_PER_SEC << endl;
 	//cin >> i;
-	cout << all_paras.t1 / CLOCKS_PER_SEC << " " << all_paras.t2 / CLOCKS_PER_SEC << " " << all_paras.t3 / CLOCKS_PER_SEC << endl;
+	//cout << all_paras.t1 / CLOCKS_PER_SEC << " " << all_paras.t2 / CLOCKS_PER_SEC << " " << all_paras.t3 / CLOCKS_PER_SEC << endl;
 	return 0;
 }
 //void poly_fit(int *x, int *y, double*f_vals, int order, int num)

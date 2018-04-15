@@ -19,7 +19,7 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-wei, snr_s, snr_e, wei_pow, method = argv[1:7]
+wei, snr_s, snr_e, wei_pow, method, del_bin = argv[1:7]
 
 pixel_scale = 0.2
 stamp_size = 64
@@ -27,6 +27,7 @@ stamp_size = 64
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
 wei_pow = int(wei_pow)
+del_bin = int(del_bin)
 
 with open("/home/hklee/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
@@ -112,8 +113,8 @@ num = len(G1)
 if method == 'sym':
     g1_xi2_pic = pic_path + "%d_g1_xi2.png"%rank
     g2_xi2_pic = pic_path + "%d_g2_xi2.png"%rank
-    g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8, pic_path=g1_xi2_pic)
-    g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8, pic_path=g2_xi2_pic)
+    g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8, pic_path=g1_xi2_pic,ig_num=del_bin)
+    g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8, pic_path=g2_xi2_pic,ig_num=del_bin)
 else:
     g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)

@@ -128,14 +128,20 @@ def source_detector(mask, ysize, xsize):
                 objects.append(cache)
     return objects
 
-def get_hlr(image, scale, size,):
+def get_hlr(image, scale, size, thres=None):
     # get the source object, to avoid the overflow of the stack
     mask = copy.copy(image)
     maxi = numpy.max(image[int(size/2-6):int(size/2+6), int(size/2-6):int(size/2+6)])
     y, x = numpy.where(mask == maxi)
-    idx = mask < maxi / scale
-    mask[idx] = 0.
+    if thres:
+        idx = mask < thres
+        mask[idx] = 0.
+    else:
+        idx = mask < maxi / scale
+        mask[idx] = 0.
     flux = maxi
+    flux_sq = maxi**2
+
     cache = [(x, y)]
     mask[y, x] = 0
     num = 2
@@ -152,11 +158,13 @@ def get_hlr(image, scale, size,):
                 if -1 < coord[0] < size and -1 < coord[1] < size and mask[coord[0], coord[1]] > 0:
                     p_new.append(coord)
                     flux += mask[coord[0], coord[1]]
+                    flux_sq += mask[coord[0], coord[1]] ** 2
+
                     mask[coord[0], coord[1]] = 0
         cache.extend(p_new)
         num = len(cache)
 
-    return numpy.sqrt(len(cache)/numpy.pi), flux
+    return numpy.sqrt(len(cache)/numpy.pi), flux, flux_sq, num, maxi
 
 
 def gauss_fit(data, bin_num):
@@ -183,32 +191,6 @@ def gauss_fit(data, bin_num):
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
-def ps_fit(image,size):
-    # fit a paraboloid surface using the 5x5 area with the center and corner removed
-    fit_img = numpy.zeros_like(image)
-    # flat_img = image.reshape((size*size))
-
-    def f_fun(x, a1, a2, a3, a4, a5, a6):
-        return a1 * x[0] ** 2 + a2 * x[0] * x[1] + a3 * x[1] ** 2 + a4 * x[0] + a5 * x[1] + a6
-
-    my, mx = numpy.mgrid[-2:3, -2:3]
-    x, y = mx.reshape((1, 25)), my.reshape((1, 25))
-    x = numpy.delete(x, [0, 4, 12, 20, 24])
-    y = numpy.delete(y, [0, 4, 12, 20, 24])
-    xy = numpy.row_stack((x, y))
-
-    for i in range(size):
-        for j in range(size):
-            z = []
-            for m in range(-2, 3):
-                a = (i + m + size) % size
-                for n in range(-2, 3):
-                    b = (j + n + size) % size
-                    if abs(m) == 1 or abs(m) != abs(n):
-                        z.append(image[a, b])
-            a1, a2 = curve_fit(f_fun, xy, z)
-            fit_img[i, j] = a1[5]
-    return fit_img
 
 def data_fit(x_data, y_data, y_err):
     # Y = A*X ,   y = m*x+c
@@ -312,3 +294,38 @@ def check_in(interval):
     else:
         return False
 
+def f(x, a, b, c, d, e, f):
+    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
+
+def smooth(image,size):
+    my, mx = numpy.mgrid[-2:3, -2:3]
+    x, y = mx.reshape((1, 25)), my.reshape((1, 25))
+    cen = int((size * size + size) / 2)
+    fit_img = numpy.zeros_like(image)
+    for i in range(size):
+        for j in range(size):
+            arr = numpy.zeros((size, size))
+            arr[int(size / 2), int(size / 2)] = 0.5
+            pos = []
+            tag = 0
+            pk = 0
+            z = []
+            x_d = []
+            for m in range(-2, 3):
+                p = (i + m + size) % size
+                for n in range(-2, 3):
+                    q = (j + n + size) % size
+
+                    if tag not in [0, 4, 20, 24]:  # abs(m) != 2 or abs(n) != 2:
+                        if p * size + q != cen:
+                            pos.append((p, q))
+                            z.append(image[p, q])
+                            x_d.append((x[0, tag], y[0, tag]))
+                        else:
+                            pk = tag
+                    tag += 1
+
+            x_d = numpy.array(x_d).T
+            a1, a2 = curve_fit(f, x_d, z)
+            fit_img[i, j] = a1[5]
+    return fit_img

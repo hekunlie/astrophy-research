@@ -28,9 +28,10 @@ class Fourier_Quad:
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
         ky, kx = self.my, self.mx
         gal_ps = self.pow_spec(gal_image)
-        gal_ps = tool_box.ps_fit(gal_ps,self.size)
+        gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
+            nbg = tool_box.smooth(nbg,self.size)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)
             # gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
@@ -41,6 +42,7 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
+
         hlr = self.get_radius_new(psf_ps, 2)[0]
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
@@ -410,7 +412,7 @@ class Fourier_Quad:
             arr[edge: self.size - edge, edge: self.size - edge] = 0.
             return arr
 
-    def G_bin(self, g, n, u, g_h, mode, bins):  # checked 2017-7-9!!!
+    def G_bin(self, g, n, u, g_h, mode, bins, ig_num):  # checked 2017-7-9!!!
         # mode 1 is for g1
         # mode 2 is for g2
         bin_num = len(bins) - 1
@@ -423,9 +425,9 @@ class Fourier_Quad:
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         xi = (n1 - n2) ** 2 / (n1 + n2)
-        return numpy.sum(xi) * 0.5
+        return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
 
-    def fmin_g(self, g, n, u, mode, bin_num, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, ig_num, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # mode 1 for g1
         # mode 2 for g2
         temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]
@@ -444,11 +446,11 @@ class Fourier_Quad:
             m1 = (left + right) / 2.
             m2 = (m1 + left) / 2.
             m3 = (m1 + right) / 2.
-            fL = self.G_bin(g, n, u, left, mode, bins)
-            fR = self.G_bin(g, n, u, right, mode, bins)
-            fm1 = self.G_bin(g, n, u, m1, mode, bins)
-            fm2 = self.G_bin(g, n, u, m2, mode, bins)
-            fm3 = self.G_bin(g, n, u, m3, mode, bins)
+            fL = self.G_bin(g, n, u, left, mode, bins, ig_num)
+            fR = self.G_bin(g, n, u, right, mode, bins, ig_num)
+            fm1 = self.G_bin(g, n, u, m1, mode, bins, ig_num)
+            fm2 = self.G_bin(g, n, u, m2, mode, bins, ig_num)
+            fm3 = self.G_bin(g, n, u, m3, mode, bins, ig_num)
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
             records[iters, ] = fm1, left, fL, right, fR
@@ -535,8 +537,8 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        g_range = numpy.linspace(left, right, 100)
-        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins) for g_hat in g_range])
+        g_range = numpy.linspace(left, right, 80)
+        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)

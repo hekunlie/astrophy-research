@@ -29,7 +29,7 @@ typedef float DATA_TYPE;
 #endif 
 struct para
 {
-	int psf_szie, psf_px, psf_py;
+	int psf_size, psf_px, psf_py;
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig,psf_pow_thres=0.0001;
 
 	int gal_size, gal_px, gal_py;

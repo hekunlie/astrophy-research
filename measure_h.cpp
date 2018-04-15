@@ -51,7 +51,7 @@ int main(int argc, char*argv[])
 	double *pnoise = new double[size*size]();
 	double *matrix = new double[data_rows*data_cols]();
 	double **data = new double*[data_rows];
-	double*temp_g = new double[size*size]();
+	double*psf_fit_img = new double[size*size]();
 	double*gal_fit_img = new double[size*size]();
 	double *noise_fit_img = new double[size*size]();
 
@@ -74,7 +74,11 @@ int main(int argc, char*argv[])
 	//create_psf(psf, psf_scale, size, 2);
 	pow_spec(psf, ppsf, size, size);
 	get_radius(ppsf, &all_paras, thres, 1, psf_noise_sig);
+	
+	//all_paras.psf_pow_thres = 0;
+	//smooth(ppsf, psf_fit_img, ppsf, coeffs, &all_paras);
 	get_psf_thres(ppsf, &all_paras);
+
 	if (0 == myid)
 	{
 		cout << "PSF THRES: " << all_paras.psf_pow_thres << endl;
@@ -96,37 +100,24 @@ int main(int argc, char*argv[])
 		{
 			addnoise(noise, size*size, gal_noise_sig);
 			pow_spec(noise, pnoise, size, size);
-			smooth(pnoise, noise_fit_img, ppsf, coeffs, &all_paras);
+			//smooth(pnoise, noise_fit_img, psf_fit_img, coeffs, &all_paras);
 
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
-			get_radius(gal, &all_paras, 99999999 * thres, 2, gal_noise_sig);
+			get_radius(gal, &all_paras, 2., 2, gal_noise_sig);
 			pow_spec(gal, pgal, size, size);
+			smooth(pgal, gal_fit_img, ppsf, coeffs, &all_paras);
 
 			f_snr(pgal, &all_paras);
 			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;// original fsnr
-
-			smooth(pgal, gal_fit_img, ppsf, coeffs, &all_paras);
+						
 			f_snr(gal_fit_img, &all_paras);
 			data[i*stamp_num + j][13] = all_paras.gal_fsnr_c;//the fsnr on the fitting image
 
-			shear_est(gal_fit_img, ppsf, noise_fit_img, &all_paras);
+			shear_est(pgal, ppsf, pnoise, &all_paras);
+	
 
-			/* subtact the noise background */
-			//for (k = 0; k < size*size; k++)
-			//{
-			//	temp_g[k] = pgal[k] - pnoise[k];
-			//}
-			//f_snr(temp_g, &all_paras, size);
-			//data[i*stamp_num + j][14] = all_paras.gal_fsnr_c;// fsnr on the image of which the background is subtracted
-
-			//initialize(fit_img, size*size);
-			//paraboloid_fit(temp_g, fit_img, &all_paras, size);
-			//f_snr(fit_img, &all_paras, size);
-			//data[i*stamp_num + j][15] = all_paras.gal_fsnr_c;
-			
-
-			data[i*stamp_num + j][0] = 0;
-			data[i*stamp_num + j][1] = 0;
+			data[i*stamp_num + j][0] = all_paras.dp1;
+			data[i*stamp_num + j][1] = all_paras.dp2;
 			data[i*stamp_num + j][2] = all_paras.n1;
 			data[i*stamp_num + j][3] = all_paras.n2;
 			data[i*stamp_num + j][4] = all_paras.dn;
@@ -147,9 +138,8 @@ int main(int argc, char*argv[])
 			initialize(pnoise);
 			initialize(gal);
 			initialize(pgal);
-			initialize(temp_g);
 			initialize(gal_fit_img);
-			initialize(noise_fit_img);
+			//initialize(noise_fit_img);
 		}
 		initialize(big_img);
 
@@ -184,7 +174,7 @@ int main(int argc, char*argv[])
 	delete[] matrix;
 	delete[] gal_fit_img;
 	delete[] noise_fit_img;
-	delete[] temp_g;
+	delete[] psf_fit_img;
 	gsl_rng_free();
 	MPI_Finalize();
 	return 0;
