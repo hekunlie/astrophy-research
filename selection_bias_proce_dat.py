@@ -19,14 +19,14 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-wei, snr_s, snr_e, wei_pow, method, del_bin = argv[1:7]
+wei, snr_s, snr_e, method, del_bin = argv[1:6]
 
 pixel_scale = 0.2
 stamp_size = 64
 
 snr_cut_s = int(snr_s)
 snr_cut_e = int(snr_e)
-wei_pow = int(wei_pow)
+
 del_bin = int(del_bin)
 
 with open("/home/hklee/work/envs/envs.dat", "r") as f:
@@ -50,7 +50,7 @@ pic_path = result_path + "pic/"
 
 # check the final result cache
 final_cache_path = path + 'final_cache.npz'
-data_cache_path = path + 'data_%d.hdf5'%rank
+data_cache_path = path + 'data_f_%d_0.hdf5'%rank
 
 f = h5py.File(data_cache_path,'r')
 data = f["/data"].value
@@ -105,9 +105,9 @@ G1 = FG1[idxs&idxe]
 G2 = FG2[idxs & idxe]
 N = FN[idxs&idxe]
 U = FU[idxs&idxe]
-weight = ssnr[idxs&idxe]**wei_pow
-if wei_pow == 0:
-    weight = 1
+# weight = ssnr[idxs&idxe]**wei_pow
+# if wei_pow == 0:
+#     weight = 1
 
 num = len(G1)
 if method == 'sym':
@@ -115,12 +115,12 @@ if method == 'sym':
     g2_xi2_pic = pic_path + "%d_g2_xi2.png"%rank
     g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=8, pic_path=g1_xi2_pic,ig_num=del_bin)
     g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=8, pic_path=g2_xi2_pic,ig_num=del_bin)
-else:
-    g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
-    g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)
-
-    g2_h = numpy.mean(G2 * weight) / numpy.mean(N * weight)
-    g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight) ** 2) / (numpy.mean(N * weight)) ** 2) / numpy.sqrt(num)
+# else:
+#     g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
+#     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)
+#
+#     g2_h = numpy.mean(G2 * weight) / numpy.mean(N * weight)
+#     g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight) ** 2) / (numpy.mean(N * weight)) ** 2) / numpy.sqrt(num)
 
 res_arr[0] = g1_h, g2_h
 res_arr[1] = g1_h_sig, g2_h_sig

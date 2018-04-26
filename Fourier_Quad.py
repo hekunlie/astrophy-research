@@ -427,7 +427,7 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
 
-    def fmin_g(self, g, n, u, mode, bin_num, ig_num, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # mode 1 for g1
         # mode 2 for g2
         temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]

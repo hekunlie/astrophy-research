@@ -574,7 +574,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 	/* if there's no backgroud noise, a list of '0' should be putted in  */
 	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thres, alpha, kx, ky, tk;
 	double mp1=0., mp2=0.;
-	int i, j, k, size = paras->img_size;
+	int i, j, k, size;
+	size = paras->img_size;
 
 	alpha = 16*Pi *Pi*Pi*Pi/ (size*size*size*size);
 	/* beta is the beta_square in the estimators */
@@ -590,7 +591,7 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 		for (j = 0; j < size; j++) // x coordinates
 		{
 			kx = j - size*0.5;
-			if (psf_img[i*size + j] >= thres)
+			if (psf_img[i*size + j] > thres)
 			{
 				tk = exp( - ( kx*kx + ky*ky ) * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
 				mg1 += -0.5 * ( kx*kx - ky*ky ) * tk;
@@ -614,9 +615,11 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 
 }
 
-void initialize(double *in_img)
+void initialize(double *in_img, int length)
 {/* will set all the elements to zero */
-	memset(in_img, 0, sizeof(in_img));
+	for (int i = 0; i < length; i++)
+		in_img[i] = 0.;
+ //memset(in_img, 0., sizeof(in_img));
 }
 
 void stack(double *container, double *stamp, int tag, int size, int row, int col)

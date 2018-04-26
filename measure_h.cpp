@@ -81,7 +81,7 @@ int main(int argc, char*argv[])
 
 	if (0 == myid)
 	{
-		cout << "PSF THRES: " << all_paras.psf_pow_thres << endl;
+		cout << "PSF THRES: " << all_paras.psf_pow_thres << endl<< all_paras.psf_hlr << endl;
 	}
 	for (i = 0; i < chip_num; i++)
 	{	
@@ -105,7 +105,7 @@ int main(int argc, char*argv[])
 			segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 			get_radius(gal, &all_paras, 2., 2, gal_noise_sig);
 			pow_spec(gal, pgal, size, size);
-			smooth(pgal, gal_fit_img, ppsf, coeffs, &all_paras);
+			//smooth(pgal, gal_fit_img, ppsf, coeffs, &all_paras);
 
 			f_snr(pgal, &all_paras);
 			data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;// original fsnr
@@ -134,14 +134,14 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][15] = 0.;
 			data[i*stamp_num + j][16] = 0.;
 
-			initialize(noise);
-			initialize(pnoise);
-			initialize(gal);
-			initialize(pgal);
-			initialize(gal_fit_img);
+			initialize(noise,size*size);
+			initialize(pnoise, size*size);
+			initialize(gal, size*size);
+			initialize(pgal, size*size);
+			initialize(gal_fit_img, size*size);
 			//initialize(noise_fit_img);
 		}
-		initialize(big_img);
+		initialize(big_img, stamp_nx*stamp_nx*size*size);
 
 		t2 = clock();
 		sprintf(log_inform, "%03d 's chip finish in %.2f sec", i, (t2-t1)/CLOCKS_PER_SEC);

@@ -61,7 +61,7 @@ void create_points(double *point, int num_p, double radius);
 void create_epoints(double *point, int num_p, double ellip);
 void create_psf(double*in_img, double scale, int size, int psf);
 void get_psf_thres(double *ppsf, para*paras);
-void initialize(double *array);
+void initialize(double *array, int size);
 void stack(double *container, double *stamp, int tag, int size, int row, int col);
 void segment(double *chip, double *stamp, int tag, int size, int row, int col);
 void addnoise(double *image, int pixel_num,  double sigma);
