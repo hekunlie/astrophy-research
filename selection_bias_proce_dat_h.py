@@ -19,14 +19,13 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-wei, snr_s, snr_e, wei_pow, method, scale, del_bin = argv[1:8]
+ch, snr_s, snr_e, method, scale, del_bin = argv[1:8]
 
 pixel_scale = 0.2
 stamp_size = 90
 
 snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
-wei_pow = int(wei_pow)
 del_bin = int(del_bin)
 
 with open("/home/hkli/work/envs/envs.dat", "r") as f:
@@ -46,14 +45,14 @@ fg2 = shear_input['arr_1']
 # where the result data file are placed
 path = result_path + "data/"
 # where the result figures will be created
-pic_path = result_path + "pic/%d_%s_"%(del_bin,wei)
+pic_path = result_path + "pic/%d_%s_"%(del_bin,ch)
 
-final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, wei,snr_s)
+final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, ch, snr_s)
 for s in range(int(scale)):
     if scale == 1:
         data_cache_path = path + "data_%d.hdf5"%rank
     else:
-        data_cache_path = path + 'data_f_%d_%d.hdf5'%(rank,s)
+        data_cache_path = path + 'data_%d_%d.hdf5'%(rank,s)
     f = h5py.File(data_cache_path,'r')
     if s == 0:
         data = f["/data"].value
@@ -101,7 +100,7 @@ select = {"peak": peak, "flux": flux, "fsnr": fsnr, "snr": snr, "area": area, "s
 res_arr = numpy.zeros((3, 2))
 sp = res_arr.shape
 
-ssnr = select[wei]
+ssnr = select[ch]
 idxs = ssnr >= snr_cut_s
 idxe = ssnr <= snr_cut_e
 
@@ -110,14 +109,14 @@ G1 = FG1[idxs&idxe]
 G2 = FG2[idxs & idxe]
 N = FN[idxs&idxe]
 U = FU[idxs&idxe]
-weight = ssnr[idxs&idxe]**wei_pow
-if wei_pow == 0:
-    weight = 1
+# weight = ssnr[idxs&idxe]**wei_pow
+# if wei_pow == 0:
+weight = 1
 
 num = len(G1)
 if method == 'sym':
-    g1_xi2_pic = pic_path + "%d_g1_xi2.png"%rank
-    g2_xi2_pic = pic_path + "%d_g2_xi2.png"%rank
+    g1_xi2_pic = pic_path + "%d_%s_%d_g1_xi2.png"%(rank, ch, del_bin)
+    g2_xi2_pic = pic_path + "%d_%s_%d_g2_xi2.png"%(rank, ch, del_bin)
     g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=18, ig_num=del_bin, pic_path=g1_xi2_pic)
     g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=18, ig_num=del_bin, pic_path=g2_xi2_pic)
 else:
@@ -178,7 +177,7 @@ else:
             c2_b = "c2 bias"
         print(int(del_bin),"%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
         print(int(del_bin),"%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
-        nm = pic_path + name[i] + ".png"
+        nm = pic_path + name[i] + "_%d_%s.png"%(del_bin, ch)
         tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max', nm)
 
 te = time.clock()

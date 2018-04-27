@@ -54,7 +54,7 @@ void read_img(DATA_TYPE *arr, char *path);
 void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename);
 void pow_spec(double *in_img, double *out_img, int column, int row);
 void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
-void detector(double *source_img, int *soucrce_chain, double thres, int y_size, int x_size);
+void detector(double *source_img, int *soucrce_x, int*source_y, int *source_cout, double thres, int y_size, int x_size);
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
 void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras);
 void create_points(double *point, int num_p, double radius);
