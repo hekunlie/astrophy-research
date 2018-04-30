@@ -4,40 +4,44 @@ import os
 import shutil
 
 
-code_path = "/home/hkli/work/fresh/src_new/"
-para = code_path + "para.inc"
+# specify the number of cores used
+ncpus = 64
 
+# specify it to where the para.inc is stored
+para = "/home/hkli/work/fresh/src_new/para.inc"
+
+# specify it to where the data are stored (don't forget the last "/")
 data_path = "/mnt/ddnfs/data_users/hkli/CFHT/w1234/original/"
 source_list = data_path + "source.list"
 
+# run the three processes
+# one can specify the PROCESS_stage like [1,3]...
+PROCESS_stage = [1, 2, 3]
+
+# read the para.inc
 f = open(para, "r")
 contents = f.readlines()
 f.close()
 
-# initializing the directories "../astrometry, ../result, ../stamps"
-# it will take a while...
 dirs = os.listdir(data_path)
-for dir in dirs:
-    if "w" in dir:
-        astro = data_path + dir + "/astrometry"
-        shutil.rmtree(astro, ignore_errors=True)
-        os.mkdir(astro)
+initial_target = ["/astrometry", "/stamps", "/result"]
 
-        result = data_path + dir + "/result"
-        shutil.rmtree(result, ignore_errors=True)
-        os.mkdir(result)
+t = [0, 0, 0]
 
-        stamps = data_path + dir + "/stamps"
-        shutil.rmtree(stamps, ignore_errors=True)
-        os.mkdir(stamps)
-
-# run the three processes
-PROCESS_stage = [1, 2, 3]
-t = []
 for i in PROCESS_stage:
-    t1 = time.clock()
+    t1 = time.time()
 
-    # change the PROCESS_stage
+    # initialize the directories, "../astrometry" or " ../result" or "../stamps" (depending on the PROCESS_stage)
+    # it will take a while...
+    for dir in dirs:
+        if "w" in dir:
+            initial_path = data_path + dir + initial_target[i-1]
+            print("Deleting the %s"%initial_path)
+            shutil.rmtree(initial_path, ignore_errors=True)
+            os.mkdir(initial_path)
+
+    # change the parameter "PROCESS_stage" in the "para.inc"
+    # the blank space before "parameter" is required by fortran77
     contents[10] = "	parameter (PROCESS_stage=%d)\n"%i
     f = open(para, "w")
     f.writelines(contents)
@@ -47,12 +51,12 @@ for i in PROCESS_stage:
     cmd = "mpif77 *.f -o main -mcmodel=medium -lcfitsio"
     a = Popen(cmd, shell=True)
     a.wait()
-    # run code with 64 threads
-    cmd = "mpiexec -n 64 ./main " + source_list
+    # run code
+    cmd = "mpiexec -n %d ./main "%ncpus + source_list
     a = Popen(cmd, shell=True)
     a.wait()
 
-    t2 = time.clock()
-    t.append(t2-t1)
+    t2 = time.time()
+    t[i-1] = (t2-t1)/3600
 
-print(t)
+print("PROCESS 1: %.2f H, PROCESS 2: %.2f H, PROCESS 3: %.2f H"%(t[0], t[1], t[2]))

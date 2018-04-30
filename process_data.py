@@ -19,17 +19,9 @@ del_bin, cho, cho_thre = argv[1:4]
 
 ts = time.clock()
 
-g1num = 17
-g2num = cpus
 del_bin = int(del_bin)
 cho_thre = float(cho_thre)
 bin_num = 8
-g1 = numpy.linspace(-0.005, 0.005, g1num)
-g2 = numpy.linspace(-0.0065, 0.0065, g2num)
-
-# the length of the interval
-dg1 = g1[1] - g1[0]
-dg2 = g2[1] - g2[0]
 
 with open("/home/hkli/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
@@ -40,7 +32,7 @@ for path in contents:
         result_path = path.split("=")[1]
 
 
-data_cache = result_path + "data_cache.npz"
+data_cache = result_path + "0_data_cache.npz"
 
 data = numpy.load(data_cache)['arr_0']
 
@@ -48,40 +40,51 @@ if rank == 0:
     print("Totally, %d galaxies are detected"%len(data))
 
 
-fg1 = data[:, 14]
-t_1 = numpy.isnan(fg1)
-idx_t1 = t_1 == False
-
-fg2 = data[:, 15]
-t_2 = numpy.isnan(fg2)
-idx_t2 = t_2 == False
+# fg1 = data[:, 14]
+# t_1 = numpy.isnan(fg1)
+# idx_t1 = t_1 == False
+#
+# fg2 = data[:, 15]
+# t_2 = numpy.isnan(fg2)
+# idx_t2 = t_2 == False
 #[idx_t1&idx_t2]
+fg1_max, fg1_min = numpy.max(data[:, 14]),numpy.min(data[:, 14])
+fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
+
 n_star = data[:, 3]
-idx = n_star >= 12
-fsnr = data[:, 10]
-idx_f = fsnr >= 3
-peak = data[:, 4][idx&idx_t1&idx_t2&idx_f]
-flux = data[:, 5][idx&idx_t1&idx_t2&idx_f]
-hflux = data[:, 6][idx&idx_t1&idx_t2&idx_f]
-area = data[:, 7][idx&idx_t1&idx_t2&idx_f]
-harea = data[:, 8][idx&idx_t1&idx_t2&idx_f]
-fsnr = data[:, 10][idx&idx_t1&idx_t2&idx_f]
-fsnr_f = data[:, 11][idx&idx_t1&idx_t2&idx_f]
-fg1 = data[:, 14][idx&idx_t1&idx_t2&idx_f]
-fg2 = data[:, 15][idx&idx_t1&idx_t2&idx_f]
-FG1 = data[:, 16][idx&idx_t1&idx_t2&idx_f]
-FG2 = data[:, 17][idx&idx_t1&idx_t2&idx_f]
-FN = data[:, 18][idx&idx_t1&idx_t2&idx_f]
-FU = data[:, 19][idx&idx_t1&idx_t2&idx_f]
-FV = data[:, 20][idx&idx_t1&idx_t2&idx_f]
+idx = n_star >= 16
+
+peak = data[:, 4][idx]
+flux = data[:, 5][idx]
+hflux = data[:, 6][idx]
+area = data[:, 7][idx]
+harea = data[:, 8][idx]
+fsnr = data[:, 10][idx]
+fsnr_f = data[:, 11][idx]
+fg1 = data[:, 14][idx]
+fg2 = data[:, 15][idx]
+FG1 = data[:, 16][idx]
+FG2 = data[:, 17][idx]
+FN = data[:, 18][idx]
+FU = data[:, 19][idx]
+FV = data[:, 20][idx]
 
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
+g1num = 21
+g2num = cpus
+g1 = numpy.linspace(-0.005, 0.005, g1num)
+g2 = numpy.linspace(-0.0055, 0.0055, g2num)
+
+# the length of the interval
+dg1 = g1[1] - g1[0]
+dg2 = g2[1] - g2[0]
+
 if rank == 0:
     print("nstar: %d ~ %d\n"%(numpy.min(n_star), numpy.max(n_star)))
-    print("fg1: %.4f ~ %.4f\n"%(numpy.min(fg1), numpy.max(fg1)))
-    print("fg2: %.4f ~ %.4f\n" % (numpy.min(fg2), numpy.max(fg2)))
+    print("fg1: %.4f ~ %.4f (%.4f ~ %.4f)\n"%(fg1_min, fg1_max, numpy.min(fg1), numpy.max(fg1)))
+    print("fg2: %.4f ~ %.4f (%.4f ~ %.4f)\n" % (fg2_min, fg2_max, numpy.min(fg2), numpy.max(fg2)))
     print("peak: %.2f ~ %.2f\n" % (numpy.min(peak), numpy.max(peak)))
     print("flux: %.2f ~ %.2f\n" % (numpy.min(flux), numpy.max(flux)))
     print("area: %.2f ~ %.2f\n" % (numpy.min(area), numpy.max(area)))
