@@ -16,16 +16,25 @@ data_path = "/mnt/ddnfs/data_users/hkli/CFHT/w1234/original/"
 source_list = data_path + "source.list"
 
 # run the three processes
-# one can specify the PROCESS_stage like [1,3], which comes from the commands from command inputs
+# one can specify the PROCESS_stage like [1,3], which comes from the commands inputs
+# something likes "python fresh_run.py 1 2 3"
 PROCESS_stage = []
-for i in range(len(argv)):
-    if 0 < i < 4:
-        c = int(float(argv[i]))
-        if c in [1, 2, 3]:
-            PROCESS_stage.append(c)
-        else:
-            print("Wrong PROCESS_stage input: %s which should be one of [1, 2, 3]"%argv[i])
-            exit()
+nargv = len(argv)
+if nargv == 1:
+    print("No PROCESS_stage has been inputted.")
+    exit()
+else:
+    for i in range(nargv):
+        if 0 < i < 4:
+            c = int(float(argv[i]))
+            if c in [1, 2, 3]:
+                PROCESS_stage.append(c)
+            else:
+                print("Wrong PROCESS_stage input: %s which should be one of [1, 2, 3]"%argv[i])
+                exit()
+    PROCESS_stage = sorted(PROCESS_stage)
+print("The program will run the PROCESS_stage: ", PROCESS_stage)
+time.sleep(3)
 
 # read the para.inc
 f = open(para, "r")
@@ -43,7 +52,7 @@ for i in PROCESS_stage:
     # initialize the directories, "../astrometry" or " ../result" or "../stamps" (depending on the PROCESS_stage)
     # it will take a while...
     for file in files:
-        if "w" in dir:
+        if "w" in file:
             initial_path = data_path + file + initial_target[i-1]
             print("Deleting the %s"%initial_path)
             shutil.rmtree(initial_path, ignore_errors=True)

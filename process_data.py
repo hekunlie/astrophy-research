@@ -15,13 +15,13 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-del_bin, cho, cho_thre = argv[1:4]
+del_bin, bin_num, cho, cho_thre = argv[1],argv[2],argv[3],argv[4]
 
 ts = time.clock()
 
 del_bin = int(del_bin)
 cho_thre = float(cho_thre)
-bin_num = 8
+bin_num = int(bin_num)
 
 with open("/home/hkli/work/envs/envs.dat", "r") as f:
     contents = f.readlines()
@@ -32,7 +32,7 @@ for path in contents:
         result_path = path.split("=")[1]
 
 
-data_cache = result_path + "0_data_cache.npz"
+data_cache = result_path + "5_data_cache.npz"
 
 data = numpy.load(data_cache)['arr_0']
 
@@ -72,7 +72,7 @@ FV = data[:, 20][idx]
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
-g1num = 21
+g1num = 25
 g2num = cpus
 g1 = numpy.linspace(-0.005, 0.005, g1num)
 g2 = numpy.linspace(-0.0055, 0.0055, g2num)

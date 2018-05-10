@@ -18,10 +18,10 @@ cpus = comm.Get_size()
 
 cut = argv[1]
 
-g1num = 11
+g1num = 25
 g2num = cpus
-g1 = numpy.linspace(-0.0045, 0.0045, g1num)
-g2 = numpy.linspace(-0.0095, 0.0095, g2num)
+g1 = numpy.linspace(-0.005, 0.005, g1num)
+g2 = numpy.linspace(-0.0055, 0.0055, g2num)
 dg1 = g1[1]-g1[0]
 dg2 = g2[1]-g2[0]
 
@@ -34,7 +34,7 @@ for path in contents:
     elif "cfht_res" in path:
         result_path = path.split("=")[1]
 
-data_cache = result_path + "data_cache.npz"
+data_cache = result_path + "2_data_cache.npz"
 
 data = numpy.load(data_cache)['arr_0']
 
@@ -47,22 +47,24 @@ fq = Fourier_Quad(48, 123)
 # fg2 = data[:, 15]
 # t_2 = numpy.isnan(fg2)
 # idx_t2 = t_2 == False
+n_star = data[:, 3]
+idx = n_star >= 16
 
-peak = data[:, 4]
-flux = data[:, 5]
-hflux = data[:, 6]
-area = data[:, 7]
-harea = data[:, 8]
-fsnr = data[:, 10]
-fsnr_f = data[:, 11]
-fg1 = data[:, 14]
-fg2 = data[:, 15]
+peak = data[:, 4][idx]
+flux = data[:, 5][idx]
+hflux = data[:, 6][idx]
+area = data[:, 7][idx]
+harea = data[:, 8][idx]
+fsnr = data[:, 10][idx]
+fsnr_f = data[:, 11][idx]
+fg1 = data[:, 14][idx]
+fg2 = data[:, 15][idx]
 
-mg1 = data[:, 16]
-mg2 = data[:, 17]
-mn = data[:, 18]
-mu = data[:, 19]
-mv = data[:, 20]
+mg1 = data[:, 16][idx]
+mg2 = data[:, 17][idx]
+mn = data[:, 18][idx]
+mu = data[:, 19][idx]
+mv = data[:, 20][idx]
 
 cuts_num = 20
 
@@ -147,7 +149,7 @@ if rank == 0:
             else:
                 mc_title[ii + 2] = "_c" + str(ii + 1)
         pic_mc = "".join(mc_title)
-        xylim = (-0.008, 0.008, -0.012, 0.012)
+        xylim = (-0.0065, 0.0065, -0.0075, 0.0075)
         pic_path = result_path + "cuts/" + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".eps"
         tool_box.mcplot(g1, arr[0:3, 0:g1num], g2, arr[3:6, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
         pic_path = result_path + "cuts/" + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".png"
@@ -169,7 +171,7 @@ if rank == 0:
     ax1 = fig.add_subplot(121)
     ax1.errorbar(x_coord, mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
     ax1.errorbar(x_coord, mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
-    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
+    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='grey')
     ax1.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax1.set_xlabel("Cutoff")
@@ -180,7 +182,7 @@ if rank == 0:
     ax2 = fig.add_subplot(122)
     ax2.errorbar(x_coord, mc1[2], mc1[3], c='coral', capsize=3, label='c1')
     ax2.errorbar(x_coord, mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
-    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
+    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='grey')
     ax2.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax2.set_xlabel("Cutoff")

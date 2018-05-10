@@ -50,7 +50,7 @@ pic_path = result_path + "pic/"
 
 # check the final result cache
 final_cache_path = path + 'final_cache.npz'
-data_cache_path = path + 'data_f_%d_0.hdf5'%rank
+data_cache_path = path + 'data_%d_0.hdf5'%rank
 
 f = h5py.File(data_cache_path,'r')
 data = f["/data"].value
