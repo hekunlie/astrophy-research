@@ -3,7 +3,7 @@ import time
 import os
 import shutil
 from sys import argv
-
+import logging
 
 # specify the number of cores used
 ncpus = 64
@@ -14,6 +14,16 @@ para = "/home/hkli/work/fresh/src_new/para.inc"
 # specify it to where the data are stored (don't forget the last "/")
 data_path = "/mnt/ddnfs/data_users/hkli/CFHT/w1234/original/"
 source_list = data_path + "source.list"
+
+# log
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+logfile = "/home/hkli/work/logs/cfht_log.dat"
+lf = logging.FileHandler(logfile, 'w')
+form = logging.Formatter('%(asctime)s - %(message)s')
+lf.setFormatter(form)
+logger.addHandler(lf)
 
 # run the three processes
 # one can specify the PROCESS_stage like [1,3], which comes from the commands inputs
@@ -35,6 +45,7 @@ else:
     PROCESS_stage = sorted(PROCESS_stage)
 print("The program will run the PROCESS_stage: ", PROCESS_stage)
 time.sleep(3)
+logger.info("PROCESS_stage: %d %d %d"%(PROCESS_stage[0],PROCESS_stage[1],PROCESS_stage[2]))
 
 # read the para.inc
 f = open(para, "r")
@@ -48,7 +59,7 @@ t = [0, 0, 0]
 
 for i in PROCESS_stage:
     t1 = time.time()
-
+    logger.info("PROCESS_stage %d start"%i)
     # initialize the directories, "../astrometry" or " ../result" or "../stamps" (depending on the PROCESS_stage)
     # it will take a while...
     for file in files:
@@ -57,6 +68,7 @@ for i in PROCESS_stage:
             print("Deleting the %s"%initial_path)
             shutil.rmtree(initial_path, ignore_errors=True)
             os.mkdir(initial_path)
+    logger.info("Deleted the %s's"%initial_target[i-1])
 
     # change the parameter "PROCESS_stage" in the "para.inc"
     # the blank space before "parameter" is required by fortran77
@@ -76,5 +88,6 @@ for i in PROCESS_stage:
 
     t2 = time.time()
     t[i-1] = (t2-t1)/3600
+    logger.info("PROCESS_stage %d finish." %i)
 
 print("PROCESS 1: %.2f H, PROCESS 2: %.2f H, PROCESS 3: %.2f H"%(t[0], t[1], t[2]))
