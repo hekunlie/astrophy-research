@@ -329,3 +329,12 @@ def smooth(image,size):
             a1, a2 = curve_fit(f, x_d, z)
             fit_img[i, j] = a1[5]
     return fit_img
+
+def set_bin(data, bin_num):
+    temp_data = numpy.sort(data[data>0])[:int(len(data[data>0])*0.99)]
+    bin_size = len(temp_data)/bin_num*2
+    bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
+    bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+    bound = numpy.max(numpy.abs(data)) * 10000.
+    bins = numpy.append(-bound, numpy.append(bins, bound))
+    return bins

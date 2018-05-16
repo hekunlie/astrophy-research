@@ -45,7 +45,7 @@ else:
     PROCESS_stage = sorted(PROCESS_stage)
 print("The program will run the PROCESS_stage: ", PROCESS_stage)
 time.sleep(3)
-logger.info("PROCESS_stage: %d %d %d"%(PROCESS_stage[0],PROCESS_stage[1],PROCESS_stage[2]))
+logger.info("PROCESS_stage: %s"%PROCESS_stage)
 
 # read the para.inc
 f = open(para, "r")

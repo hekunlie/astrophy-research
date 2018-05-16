@@ -32,7 +32,7 @@ for path in contents:
         result_path = path.split("=")[1]
 
 
-data_cache = result_path + "5_data_cache.npz"
+data_cache = result_path + "data_cache.npz"
 
 data = numpy.load(data_cache)['arr_0']
 
@@ -40,14 +40,6 @@ if rank == 0:
     print("Totally, %d galaxies are detected"%len(data))
 
 
-# fg1 = data[:, 14]
-# t_1 = numpy.isnan(fg1)
-# idx_t1 = t_1 == False
-#
-# fg2 = data[:, 15]
-# t_2 = numpy.isnan(fg2)
-# idx_t2 = t_2 == False
-#[idx_t1&idx_t2]
 fg1_max, fg1_min = numpy.max(data[:, 14]),numpy.min(data[:, 14])
 fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
 
@@ -72,7 +64,7 @@ FV = data[:, 20][idx]
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
-g1num = 25
+g1num = cpus-4
 g2num = cpus
 g1 = numpy.linspace(-0.005, 0.005, g1num)
 g2 = numpy.linspace(-0.0055, 0.0055, g2num)
@@ -99,9 +91,10 @@ if rank < g1num:
 
     pic_1 = result_path + "%d_%s_%.2f_g1_%d.png"%(del_bin, cho, cho_thre, rank)
     esg1, sig1 = Fourier_Quad(48,123).fmin_g(g=mg1, n=mn1, u=mu1, mode=1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
+    field_g1 = g1[rank]
     num1 = len(mg1)
 else:
-    esg1, sig1, num1 = -1,-1,-1
+    esg1, sig1, num1, field_g1 = -1,-1,-1,-1
 
 idx21 = fg2 >= g2[rank] - dg2/2
 idx22 = fg2 <= g2[rank] + dg2/2
@@ -112,9 +105,10 @@ mu2 = FU[idx21&idx22&sel_idx]
 
 pic_2 = result_path + "%d_%s_%.2f_g2_%d.png"%(del_bin, cho, cho_thre, rank)
 esg2, sig2 = Fourier_Quad(48,123).fmin_g(g=mg2,n=mn2,u=mu2, mode=2,bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
+field_g2 = g2[rank]
 num2 = len(mg2)
 
-send_data = [esg1, sig1, num1, esg2, sig2, num2]
+send_data = [esg1, sig1, num1, esg2, sig2, num2, field_g1, field_g2]
 gather_data = comm.gather(send_data, root=0)
 
 if rank == 0:
@@ -162,4 +156,5 @@ if rank == 0:
 te = time.clock()
 if rank == 0:
     print(te-ts)
+
 
