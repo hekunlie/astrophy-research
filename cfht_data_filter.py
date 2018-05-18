@@ -42,7 +42,7 @@ if filter_exist:
         contents = f.readlines()
 
     for c in contents:
-        name = c.split("\n")[0]+ "_shear.dat.npz"
+        name = c.split("\n")[0] + "_shear.dat.npz"
         files.append(name)
     print("Filtered data: %d" % len(files))
 else:
@@ -100,7 +100,8 @@ for name in files:
         field_name.append(name)
 
 
-thresh = 3
+thresh1 = 3
+thresh2 = 2.5
 over_sig_per = [0.3, 0.3]
 fg_bin_num = [g1num, g2num]
 total_chis = [numpy.array(total_chi_1), numpy.array(total_chi_2)]
@@ -113,11 +114,11 @@ for i in range(2):
     lb = numpy.arange(0, len(field_name))
     # to exclude the outlier of the total chi square
     total_chi_c = total_chis[i].copy()
-    mask1 = numpy.ones_like(total_chi_c)
+    mask = numpy.ones_like(total_chi_c)
     sig = numpy.std(total_chi_c)
-    idx = total_chi_c < thresh*sig
-    mask1[idx] = 0
-    overflow = numpy.sum(mask1, axis=1)
+    idx = total_chi_c < thresh1*sig
+    mask[idx] = 0
+    overflow = numpy.sum(mask, axis=1)
     idx = overflow > over_sig_per[0]*fg_bin_num[i]
     # label the excluded fields
     field_tag[lb[idx]] = 0
@@ -128,23 +129,28 @@ for i in range(2):
     field_chi = numpy.sum(total_chi_c[lb[idx]], axis=1)[:,numpy.newaxis]
     field_sig = numpy.std(field_chi)
     scale = (field_chi - numpy.mean(field_chi))/field_sig
-    ones = numpy.zeros((len(field_name), 1))
-    idxs = scale > thresh
+    idxs = scale > thresh2
     lb_c = lb[idx][:,numpy.newaxis]
     field_tag[lb_c[idxs]] = 0
     masks[i][lb_c[idxs]] = -15
 
 filtered = []
+excluded = []
 for i in range(len(field_name)):
+    name = field_name[i].split("_")[0] + "\n"
     if field_tag[i, 0] != 0:
-        name = field_name[i].split("_")[0]+"\n"
         filtered.append(name)
     else:
+        excluded.append(name)
         print(i, field_name[i])
+
 filtered_path = field_path + "filtered.dat"
 with open(filtered_path, "w") as f:
     f.writelines(filtered)
 
+excluded_path = field_path + "excluded.dat"
+with open(excluded_path, "w") as f:
+    f.writelines(excluded)
 
 plt.figure(figsize=(6,10))
 plt.subplot(121)

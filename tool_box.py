@@ -338,3 +338,40 @@ def set_bin(data, bin_num):
     bound = numpy.max(numpy.abs(data)) * 10000.
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
+
+def field_dict(expo_file):
+    # to build a dictionary that contains the exposures as {"field": {"exposure":[expo1, expo2..]}....}
+    with open(expo_file, "r") as f:
+        contents = f.readlines()
+    file_dict = {}
+    fields = [] # to avoid the disorder of the field sequence
+    for c in contents:
+        c = c.split("\n")[0]
+        if "w" in c:
+            field = c
+            file_dict.setdefault(field, {})
+            fields.append(field)
+        else:
+            chip = c.split(".fits")[0]
+            expo = c.split("_")[0]
+            if expo in file_dict[field].keys():
+                file_dict[field][expo].append(chip)
+            else:
+                file_dict[field].setdefault(expo, [chip])
+    return file_dict, fields
+
+
+def allot(allot_list, fractions):
+    num = len(allot_list)
+    m, n = divmod(num, fractions)
+    pool = []
+    for i in range(fractions):
+        temp = []
+        if i == fractions-1:
+            more = n
+        else:
+            more = 0
+        for j in range(m*i, m*(i+1)+more):
+            temp.append(allot_list[j])
+        pool.append(temp)
+    return pool
