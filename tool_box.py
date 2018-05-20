@@ -339,6 +339,7 @@ def set_bin(data, bin_num):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
+
 def field_dict(expo_file):
     # to build a dictionary that contains the exposures as {"field": {"exposure":[expo1, expo2..]}....}
     with open(expo_file, "r") as f:

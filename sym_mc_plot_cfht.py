@@ -18,9 +18,9 @@ cpus = comm.Get_size()
 
 cut = argv[1]
 
-g1num = 25
+g1num = cpus-6
 g2num = cpus
-g1 = numpy.linspace(-0.005, 0.005, g1num)
+g1 = numpy.linspace(-0.004, 0.004, g1num)
 g2 = numpy.linspace(-0.0055, 0.0055, g2num)
 dg1 = g1[1]-g1[0]
 dg2 = g2[1]-g2[0]
@@ -34,7 +34,7 @@ for path in contents:
     elif "cfht_res" in path:
         result_path = path.split("=")[1]
 
-data_cache = result_path + "2_data_cache.npz"
+data_cache = result_path + "data_cache.npz"
 
 data = numpy.load(data_cache)['arr_0']
 
@@ -50,7 +50,7 @@ fq = Fourier_Quad(48, 123)
 n_star = data[:, 3]
 idx = n_star >= 16
 
-peak = data[:, 4][idx]
+nsig = data[:, 4][idx]
 flux = data[:, 5][idx]
 hflux = data[:, 6][idx]
 area = data[:, 7][idx]
@@ -66,15 +66,17 @@ mn = data[:, 18][idx]
 mu = data[:, 19][idx]
 mv = data[:, 20][idx]
 
+snr08 = numpy.sqrt(flux)/nsig
+
 cuts_num = 20
 
 d_sort = numpy.sort(flux)
 step = int(len(d_sort)/cuts_num)
 fcut = [d_sort[i*step] for i in range(cuts_num)]
 
-d_sort = numpy.sort(peak)
+d_sort = numpy.sort(snr08)
 step = int(len(d_sort)/cuts_num)
-pcut = [d_sort[i*step] for i in range(cuts_num)]
+scut = [d_sort[i*step] for i in range(cuts_num)]
 
 d_sort = numpy.sort(fsnr)
 step = int(len(d_sort)/cuts_num)
@@ -84,8 +86,8 @@ d_sort = numpy.sort(fsnr_f)
 step = int(len(d_sort)/cuts_num)
 fsnrfcut = [d_sort[i*step] for i in range(cuts_num)]
 
-select = {"flux":   (flux, fcut),     "peak":      (peak, pcut),
-          "fsnr":   (fsnr, fsnrcut),  "fsnr_f":   (fsnr_f, fsnrfcut)}
+select = {"flux":   (flux, fcut),     "snr":      (snr08, scut),
+          "fsnr":   (fsnr, fsnrcut)}
 
 if rank < g1num:
     idxg11 = fg1 >= g1[rank] - dg1/2
@@ -196,4 +198,4 @@ if rank == 0:
 
 t2 = time.clock()
 if rank == 0:
-    print(t2 - t1)
+    print(t2 - t1, data_cache)
