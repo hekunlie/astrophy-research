@@ -1,11 +1,11 @@
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 from multiprocessing import Pool, Manager
 import numpy
 import copy
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-
+import os
 
 def task_distri(target_list, cpu_num):
     # it will divide the target_list into some piece (small lists in a diction)
@@ -376,3 +376,22 @@ def allot(allot_list, fractions):
             temp.append(allot_list[j])
         pool.append(temp)
     return pool
+
+def file_name(path):
+    ex = os.path.exists(path)
+    ori_name = os.path.basename(path)
+    ab_path = path.split(ori_name)[0]
+    i = 1
+    name = ori_name.split(".")
+    n = len(name)
+    if n == 1:
+        a = name[0]
+        b = ""
+    else:
+        a = ".".join(name[:n-1])
+        b = ".".join(("",name[-1]))
+    while ex:
+        path = "".join((ab_path, "".join((a, "_%s"%str(i), b))))
+        ex = os.path.exists(path)
+        i += 1
+    return path
