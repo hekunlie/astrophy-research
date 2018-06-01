@@ -6,6 +6,7 @@ import copy
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import os
+import scipy
 
 def task_distri(target_list, cpu_num):
     # it will divide the target_list into some piece (small lists in a diction)
@@ -98,6 +99,49 @@ def stamp_detector(image, thres, y_size, x_size, ra=10):
     else:
         peak = numpy.max(final_flux)
     return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), peak, flag
+
+def find_binary(image, ysize, xsize, sig):
+    my, mx = numpy.mgrid[0:5,0:5]
+    w = 3
+    gauss = 1./2/numpy.pi/w/w*numpy.exp(-((my-2.5)**2+(mx-2.5)**2)/2/w**2)
+    # the padding is to avoid the boundary crossing in the locak peak searching
+    image_c = numpy.lib.pad(scipy.signal.convolve(image,gauss,mode="same"),2,mode="constant",constant_values=0)
+    mask = copy.deepcopy(image_c)
+    idx = mask < 1.5*sig
+    mask[idx] = 0
+    mask_0 = copy.deepcopy(mask)
+    p = numpy.where(mask > 0)
+    yp, xp = p[0], p[1]
+    objects = []
+    peaks = []
+    for j in range(len(xp)):
+        if mask[yp[j], xp[j]] > 0:
+            cache = [(yp[j], xp[j])]
+            peak = []
+            mask[yp[j], xp[j]] = 0
+            num = 2
+            num0 = 1
+            while True:
+                num_new = num0 - num
+                if num == num0:
+                    break
+                num0 = len(cache)
+                p_new = []
+                for k in range(num_new, 0):
+                    xy = cache[k]
+                    for coord in ((xy[0] + 1, xy[1]), (xy[0] - 1, xy[1]), (xy[0], xy[1] - 1), (xy[0], xy[1] + 1),
+                          (xy[0] -1, xy[1] -1), (xy[0] - 1, xy[1]+1), (xy[0]+1, xy[1] - 1), (xy[0]+1, xy[1] + 1)):
+                        if -1 < coord[0] < ysize and -1 < coord[1] < xsize and mask[coord[0], coord[1]] > 0:
+                            p_new.append(coord)
+                            mask[coord[0], coord[1]] = 0
+                            if image_c[coord[0], coord[1]] >= numpy.max(image_c[coord[0] - 2:coord[0] + 3, coord[1] - 2:coord[1] + 3]):
+                                peak.append(coord)
+                cache.extend(p_new)
+                num = len(cache)
+            if num > 5:
+                objects.append(cache)
+                peaks.append(peak)
+    return objects, peaks, image_c, mask_0
 
 def source_detector(mask, ysize, xsize):
     # get the source object

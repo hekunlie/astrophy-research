@@ -108,7 +108,9 @@ fg_bin_num = [g1num, g2num]
 total_chis = [numpy.array(total_chi_1), numpy.array(total_chi_2)]
 field_tag = numpy.ones((len(field_name), 1))
 masks = copy.deepcopy(total_chis)
-numpy.savez("/mnt/ddnfs/data_users/hkli/CFHT/result/field/chi.npz",total_chis[0],total_chis[1])
+
+chi_npz_file = tool_box.file_name("/mnt/ddnfs/data_users/hkli/CFHT/result/field/chi.npz")
+numpy.savez(chi_npz_file,total_chis[0],total_chis[1])
 
 
 for i in range(2):
@@ -160,7 +162,7 @@ plt.colorbar()
 plt.subplot(122)
 plt.imshow(total_chis[1])
 plt.colorbar()
-png = field_path + "chi.png"
+png = tool_box.file_name(field_path + "chi.png")
 plt.savefig(png)
 plt.close()
 
@@ -171,7 +173,7 @@ plt.colorbar()
 plt.subplot(122)
 plt.imshow(masks[1])
 plt.colorbar()
-png = field_path + "chi_mask.png"
+png = tool_box.file_name(field_path + "chi_mask.png")
 plt.savefig(png)
 plt.close()
 

@@ -427,14 +427,68 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
 
-    def fmin_g(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g_new(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
         # mode 1 for g1
         # mode 2 for g2
-        temp_data = numpy.sort(g[g>0])[:int(len(g[g>0])*0.99)]
+        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(g)) * 10000.
+        bound = numpy.max(numpy.abs(g)) * 100000.
+        bins = numpy.append(-bound, numpy.append(bins, bound))
+        iters = 0
+        change = 1
+        while change == 1:
+            change = 0
+            mc = (left + right) / 2.
+            mcl = (mc + left) / 2.
+            mcr = (mc + right) / 2.
+            fmc = self.G_bin(g, n, u, mc, mode, bins, ig_num)
+            fmcl = self.G_bin(g, n, u, mcl, mode, bins, ig_num)
+            fmcr = self.G_bin(g, n, u, mcr, mode, bins, ig_num)
+            temp = fmc + 20
+            if fmcl > temp:
+                left = (mc + mcl)/2.
+                change = 1
+            if fmcr > temp:
+                right = (mc + mcr)/2.
+                change = 1
+            iters += 1
+            if iters > 14:
+                break
+        g_range = numpy.linspace(left, right, 80)
+        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins, ig_num) for g_hat in g_range])
+
+        gg4 = numpy.sum(g_range ** 4)
+        gg3 = numpy.sum(g_range ** 3)
+        gg2 = numpy.sum(g_range ** 2)
+        gg1 = numpy.sum(g_range)
+        xigg2 = numpy.sum(xi2 * (g_range ** 2))
+        xigg1 = numpy.sum(xi2 * g_range)
+        xigg0 = numpy.sum(xi2)
+        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
+        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+
+        if pic_path:
+            plt.scatter(g_range, xi2)
+            plt.plot(g_range, paras[0] * g_range ** 2 + paras[1] * g_range + paras[2])
+            s = str(round(paras[0], 3)) + " " + str(round(paras[1], 3)) + " " + str(round(paras[2], 3))
+            plt.title(s)
+            plt.savefig(pic_path)
+            plt.close()
+
+        g_sig = numpy.sqrt(1 / 2. / paras[0])
+        g_h = -paras[1] / 2 / paras[0]
+        return g_h, g_sig
+
+    def fmin_g(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+        # mode 1 for g1
+        # mode 2 for g2
+        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
+        bin_size = len(temp_data)/bin_num*2
+        bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
+        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        bound = numpy.max(numpy.abs(g)) * 100000.
         bins = numpy.append(-bound, numpy.append(bins, bound))
         same = 0
         iters = 0
@@ -520,13 +574,13 @@ class Fourier_Quad:
                 # print(left,right,abs(left-right))
 
         # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 20))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 20))[0]
         if len(label_l > 1):
             label_l = label_l[0]
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 20))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 20))[0]
         if len(label_r > 1):
             label_r = label_r[0]
 
@@ -559,7 +613,7 @@ class Fourier_Quad:
             plt.close()
 
         g_sig = numpy.sqrt(1 / 2. / paras[0])
-        # g_h = -paras[1] / 2 / paras[0]
+        g_h = -paras[1] / 2 / paras[0]
 
         return g_h, g_sig
 

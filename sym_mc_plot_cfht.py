@@ -2,14 +2,15 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy
 import matplotlib.pyplot as plt
+import os
 from sys import path
-path.append('/home/hkli/work/fourier_quad/')
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+path.append('%s/work/fourier_quad/'%my_home)
 import time
 from Fourier_Quad import Fourier_Quad
 from sys import argv
 from mpi4py import MPI
 import tool_box
-import shelve
 
 
 comm = MPI.COMM_WORLD
@@ -26,13 +27,15 @@ dg1 = g1[1]-g1[0]
 dg2 = g2[1]-g2[0]
 
 t1 = time.clock()
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%d/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "cfht_data" in path:
+    if "cfht_data_path" in path:
         total_path = path.split("=")[1]
-    elif "cfht_res" in path:
+    elif "cfht_res_path" in path:
         result_path = path.split("=")[1]
+    elif "cfht_field_path" in path:
+        field_path = path.split("=")[1]
 
 data_cache = result_path + "data_cache.npz"
 
@@ -40,6 +43,10 @@ data = numpy.load(data_cache)['arr_0']
 
 fq = Fourier_Quad(48, 123)
 
+sex_path = field_path + "sex_snr.npz"
+ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
+s_idx1 = ori_sex_snr <= 5000
+s_idx2 = ori_sex_snr > 0
 # fg1 = data[:, 14]
 # t_1 = numpy.isnan(fg1)
 # idx_t1 = t_1 == False
@@ -55,8 +62,8 @@ flux = data[:, 5][idx]
 hflux = data[:, 6][idx]
 area = data[:, 7][idx]
 harea = data[:, 8][idx]
-fsnr = data[:, 10][idx]
-fsnr_f = data[:, 11][idx]
+fsnr = numpy.sqrt(data[:, 10][idx])
+fsnr_f = numpy.sqrt(data[:, 11][idx])
 fg1 = data[:, 14][idx]
 fg2 = data[:, 15][idx]
 
@@ -66,9 +73,15 @@ mn = data[:, 18][idx]
 mu = data[:, 19][idx]
 mv = data[:, 20][idx]
 
+# sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
+
 snr08 = numpy.sqrt(flux)/nsig
 
 cuts_num = 20
+
+# d_sort = numpy.sort(sex_snr)
+# step = int(len(d_sort)/cuts_num)
+# sexcut = [d_sort[i*step] for i in range(cuts_num)]
 
 d_sort = numpy.sort(flux)
 step = int(len(d_sort)/cuts_num)
@@ -84,10 +97,15 @@ fsnrcut = [d_sort[i*step] for i in range(cuts_num)]
 
 d_sort = numpy.sort(fsnr_f)
 step = int(len(d_sort)/cuts_num)
-fsnrfcut = [d_sort[i*step] for i in range(cuts_num)]
+ffsnrcut = [d_sort[i*step] for i in range(cuts_num)]
 
-select = {"flux":   (flux, fcut),     "snr":      (snr08, scut),
-          "fsnr":   (fsnr, fsnrcut)}
+
+select = {"flux":  (flux, fcut),     "snr":  (snr08, scut),
+          "fsnr":  (fsnr, fsnrcut),  "fsnr_f": (fsnr_f, ffsnrcut)}
+
+# select = {"flux":  (flux, fcut),     "snr":  (snr08, scut),
+#           "fsnr":  (fsnr, fsnrcut),  "sex":  (sex_snr, sexcut),
+#           "fsnr_f": (fsnr_f, ffsnrcut), "peak":()}
 
 if rank < g1num:
     idxg11 = fg1 >= g1[rank] - dg1/2

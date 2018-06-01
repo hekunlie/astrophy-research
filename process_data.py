@@ -3,7 +3,8 @@ import matplotlib
 matplotlib.use('Agg')
 import os
 from sys import path
-path.append('/home/hkli/work/fourier_quad')
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+path.append('%s/work/fourier_quad/'%my_home)
 import tool_box
 from Fourier_Quad import Fourier_Quad
 from sys import argv
@@ -23,14 +24,15 @@ del_bin = int(del_bin)
 cho_thre = float(cho_thre)
 bin_num = int(bin_num)
 
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "cfht_data" in path:
-        total_path = path.split("=")[1]
-    elif "cfht_res" in path:
+    if "cfht_data_path" in path:
+        data_path = path.split("=")[1]
+    elif "cfht_res_path" in path:
         result_path = path.split("=")[1]
-
+    elif "cfht_pic_path" in path:
+        pic_path = path.split("=")[1]
 
 data_cache = result_path + "data_cache.npz"
 
@@ -44,15 +46,15 @@ fg1_max, fg1_min = numpy.max(data[:, 14]),numpy.min(data[:, 14])
 fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
 
 n_star = data[:, 3]
-idx = n_star >= 16
+idx = n_star >= 20
 
 peak = data[:, 4][idx]
 flux = data[:, 5][idx]
 hflux = data[:, 6][idx]
 area = data[:, 7][idx]
 harea = data[:, 8][idx]
-fsnr = data[:, 10][idx]
-fsnr_f = data[:, 11][idx]
+fsnr = numpy.sqrt(data[:, 10][idx])
+fsnr_f = numpy.sqrt(data[:, 11][idx])
 fg1 = data[:, 14][idx]
 fg2 = data[:, 15][idx]
 FG1 = data[:, 16][idx]
@@ -64,10 +66,10 @@ FV = data[:, 20][idx]
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
-g1num = cpus-4
+g1num = cpus-10
 g2num = cpus
 g1 = numpy.linspace(-0.005, 0.005, g1num)
-g2 = numpy.linspace(-0.0055, 0.0055, g2num)
+g2 = numpy.linspace(-0.0065, 0.0065, g2num)
 
 # the length of the interval
 dg1 = g1[1] - g1[0]
@@ -89,8 +91,8 @@ if rank < g1num:
     mn1 = FN[idx11&idx12&sel_idx]
     mu1 = FU[idx11&idx12&sel_idx]
 
-    pic_1 = result_path + "%d_%s_%.2f_g1_%d.png"%(del_bin, cho, cho_thre, rank)
-    esg1, sig1 = Fourier_Quad(48,123).fmin_g(g=mg1, n=mn1, u=mu1, mode=1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
+    pic_1 = pic_path + "%d_%s_%.2f_g1_%d.png"%(del_bin, cho, cho_thre, rank)
+    esg1, sig1 = Fourier_Quad(48,123).fmin_g_new(g=mg1, n=mn1, u=mu1, mode=1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
     field_g1 = g1[rank]
     num1 = len(mg1)
 else:
@@ -103,8 +105,8 @@ mg2 = FG2[idx21&idx22&sel_idx]
 mn2 = FN[idx21&idx22&sel_idx]
 mu2 = FU[idx21&idx22&sel_idx]
 
-pic_2 = result_path + "%d_%s_%.2f_g2_%d.png"%(del_bin, cho, cho_thre, rank)
-esg2, sig2 = Fourier_Quad(48,123).fmin_g(g=mg2,n=mn2,u=mu2, mode=2,bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
+pic_2 = pic_path + "%d_%s_%.2f_g2_%d.png"%(del_bin, cho, cho_thre, rank)
+esg2, sig2 = Fourier_Quad(48,123).fmin_g_new(g=mg2,n=mn2,u=mu2, mode=2,bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
 field_g2 = g2[rank]
 num2 = len(mg2)
 
@@ -127,6 +129,7 @@ if rank == 0:
                   %(num[p]/10000, g[i][p], mg[p], sig[p], 10000*(mg[p]-g[i][p]), numpy.sqrt(num[p])*sig[p]))
         print("\n")
     final_cache = result_path + "%d_%s_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
+    final_cache = tool_box.file_name(final_cache)
     numpy.savez(final_cache, numpy.array(mcs), g_data)
     e1mc = mcs[0]
     e2mc = mcs[1]
@@ -150,7 +153,8 @@ if rank == 0:
     print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)" % (m1_b, e1mc[0] - 1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
     print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)" % (m2_b, e2mc[0] - 1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
 
-    nm = result_path + "%d_%s_%.2f_mc.png"%(del_bin,cho, cho_thre)
+    nm = pic_path + "%d_%s_%.2f_mc.png"%(del_bin,cho, cho_thre)
+    nm = tool_box.file_name(nm)
     xy_lim = [-0.008, 0.008, -0.010, 0.010]
     tool_box.mcplot(g1, g_data.T[0:3,0:g1num], g2, g_data.T[3:6, 0:g2num], e1mc, e2mc, str(cho_thre), 'max', xy_lim, nm)
 te = time.clock()

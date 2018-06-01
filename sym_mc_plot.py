@@ -2,15 +2,14 @@ import matplotlib
 matplotlib.use("Agg")
 import numpy
 import matplotlib.pyplot as plt
-from sys import path
-path.append('/home/hklee/work/fourier_quad/')
+import os
+from sys import path,argv
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+path.append('%s/work/fourier_quad/'%my_home)
 import time
 from Fourier_Quad import Fourier_Quad
-from sys import argv
 from mpi4py import MPI
 import tool_box
-import h5py
-import logging
 
 
 comm = MPI.COMM_WORLD
@@ -19,161 +18,144 @@ cpus = comm.Get_size()
 
 cut = argv[1]
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logfile = '/lmc/selection_bias/logs/sym_%d_log.dat' %rank
-
-lf = logging.FileHandler(logfile, 'w')
-form = logging.Formatter('%(asctime)s - %(message)s')
-lf.setFormatter(form)
-logger.addHandler(lf)
+g1num = cpus-6
+g2num = cpus
+g1 = numpy.linspace(-0.004, 0.004, g1num)
+g2 = numpy.linspace(-0.0055, 0.0055, g2num)
+dg1 = g1[1]-g1[0]
+dg2 = g2[1]-g2[0]
 
 t1 = time.clock()
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
+    contents = f.readlines()
+for path in contents:
+    if "cfht_data_path" in path:
+        data_path = path.split("=")[1]
+    elif "cfht_res_path" in path:
+        result_path = path.split("=")[1]
+    elif "cfht_pic_path" in path:
+        pic_path = path.split("=")[1]
+    elif "cfht_cut_path" in path:
+        cut_path = path.split("=")[1]
 
-shear = numpy.load("/lmc/selection_bias/parameters/shear.npz")
-fg1 = shear["arr_0"]
-fg2 = shear["arr_1"]
+fq = Fourier_Quad(48, 123)
 
-h5path = "/lmc/selection_bias/result/data/data_%d.hdf5"%rank
-f = h5py.File(h5path, "r")
-data = f["/data"].value
-f.close()
-logger.info('open data file data_%d.hdf5'%rank)
-fq = Fourier_Quad(84, 152356)
-nsig = 380.64
+g1_data_path = result_path + "g1_%d.npz"%rank
+g2_data_path = result_path + "g2_%d.npz"%rank
 
-osnr = data[:, 7]
-d_sort = numpy.sort(osnr[osnr>0])
-step = int(len(d_sort)/10)
-osnrcut = [d_sort[i*step] for i in range(10)]
+g1num = cpus-6
+g2num = cpus
+g1 = numpy.linspace(-0.004, 0.004, g1num)
+g2 = numpy.linspace(-0.0055, 0.0055, g2num)
 
-flux = data[:, 8]/nsig
-d_sort = numpy.sort(flux[flux>0])
-step = int(len(d_sort)/10)
-fcut = [d_sort[i*step] for i in range(10)]
+cuts_num = 20
+star_thre = 16
 
-peak = data[:, 9]/nsig
-d_sort = numpy.sort(peak[peak>0])
-step = int(len(d_sort)/10)
-pcut = [d_sort[i*step] for i in range(10)]
+cut_off_scale = numpy.load(result_path+cut+'.npz')["arr_0"]
 
-fsnr_c = data[:, 10]
-d_sort = numpy.sort(fsnr_c[fsnr_c>0])
-step = int(len(d_sort)/10)
-fsnrccut = [d_sort[i*step] for i in range(10)]
+if rank < g1num:
+    g1_data = numpy.load(g1_data_path)['arr_0']
+    n_star_1 = g1_data[:, 3]
+    idx_1 = n_star_1 >= star_thre
+    nsig_1 = g1_data[:, 4][idx_1]
+    flux_1 = g1_data[:, 5][idx_1]
+    fsnr_1 = numpy.sqrt(g1_data[:, 10][idx_1])
+    FG1_1 = g1_data[:, 16][idx_1]
+    FN_1 = g1_data[:, 18][idx_1]
+    FU_1 = g1_data[:, 19][idx_1]
+    snr08_1 = numpy.sqrt(flux_1)/nsig_1
 
-snr = data[:, 11]
-d_sort = numpy.sort(snr[snr>0])
-step = int(len(d_sort)/10)
-snrcut = [d_sort[i*step] for i in range(10)]
+    select_1 = {"flux": flux_1, "snr": snr08_1, "fsnr": fsnr_1}
 
-fpath = "/lmc/selection_bias/result/data/fsnr_%d.npz"%rank
-f = numpy.load(fpath)["arr_0"]
-fsnr = f[:, 0]
-d_sort = numpy.sort(fsnr[fsnr>0])
-step = int(len(d_sort)/10)
-fsnrcut = [d_sort[i*step] for i in range(10)]
+g2_data = numpy.load(g2_data_path)['arr_0']
+n_star_2 = g2_data[:, 3]
+idx_2 = n_star_2 >= star_thre
 
-fsnr_f = f[:, 1]
-d_sort = numpy.sort(fsnr_f[fsnr_f>0])
-step = int(len(d_sort)/10)
-fsnrfcut = [d_sort[i*step] for i in range(10)]
+nsig_2 = g2_data[:, 4][idx_2]
+flux_2 = g2_data[:, 5][idx_2]
+fsnr_2 = numpy.sqrt(g2_data[:, 10][idx_2])
+FG2_2 = g2_data[:, 17][idx_2]
+FN_2 = g2_data[:, 18][idx_2]
+FU_2 = g2_data[:, 19][idx_2]
+snr08_2 = numpy.sqrt(flux_2)/nsig_2
+select_2 = {"flux": flux_2, "snr": snr08_2, "fsnr": fsnr_2}
 
-spath = "/lmc/selection_bias/result/data/sex_%d.npz"%rank
-sesnr = numpy.load(spath)["arr_0"][:,0]
-d_sort = numpy.sort(sesnr[sesnr>0])
-step = int(len(d_sort)/10)
-secut = [d_sort[i*step] for i in range(10)]
+res_list = []
+for i in range(cuts_num):
+    if rank < g1num:
+        idx = select_1[cut] >= cut_off_scale[i]
+        num1 = len(FG1_1[idx])
+        g1_h, g1_sig = fq.fmin_g(FG1_1[idx], FN_1[idx], FU_1[idx], mode=1, bin_num=8)
+    else:
+        g1_h, g1_sig, num1 = -1, -1, -1
 
+    idx = select_2[cut] >= cut_off_scale[i]
+    num2 = len(FG2_2[idx])
+    g2_h, g2_sig = fq.fmin_g(FG2_2[idx], FN_2[idx], FU_2[idx], mode=2, bin_num=8)
+    res_list.append([g1_h, g1_sig, num1, g2_h, g2_sig, num2])
 
-select = {"sesnr": (sesnr, secut), 'osnr':(osnr, osnrcut),
-          "fsnr": (fsnr, fsnrcut), "flux": (flux, fcut),
-          "peak": (peak, pcut), "fsnr_c": (fsnr_c, fsnrccut),
-          "fsnr_f": (fsnr_f, fsnrfcut), 'snr':(snr, snrcut)}
+coll_res = comm.gather(res_list, root=0)
 
-res_arr = numpy.zeros((6, len(select[cut][1])))
-
-mg1 = data[:, 2]
-mg2 = data[:, 3]
-mn = data[:, 4]
-mu = data[:, 5]
-mv = data[:, 6]
-logger.info('begin to do cutoff')
-for tag, cut_s in enumerate(select[cut][1]):
-    t_c1 = time.clock()
-    idx = select[cut][0] > cut_s
-    num = len(mg1[idx])
-    logger.info("num: %d, %.2f"%(num, cut_s))
-    g1_h, g1_sig = fq.fmin_g(mg1[idx], mn[idx], mu[idx], mode=1, bin_num=8)
-    logger.info('g1')
-    g2_h, g2_sig = fq.fmin_g(mg2[idx], mn[idx], mu[idx], mode=2, bin_num=8)
-    logger.info('g2')
-    res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
-    t_c2 = time.clock()
-    logger.info("Procs: %d, %d, cuts: %.2f, time: %.2f"%(rank, tag, cut_s, t_c2-t_c1))
-
-if rank > 0:
-    # pass
-    comm.Send(res_arr, dest=0, tag=rank)
-    logger.info('%d sent information'%rank)
-else:
-    for procs in range(1, cpus):
-        logger.info('begin receive from %d'%procs)
-        recvs = numpy.empty((6, len(select[cut][1])), dtype=numpy.float64)
-        comm.Recv(recvs, source=procs, tag=procs)
-        res_arr = numpy.column_stack((res_arr, recvs))
-        logger.info('received from %d' % procs)
+if rank == 0:
     mc1 = []
     mc2 = []
-    for tag, cut_s in enumerate(select[cut][1]):
-        arr = res_arr[:, tag]
-        for i in range(1, cpus):
-            arr = numpy.column_stack((arr, res_arr[:, i*len(select[cut][1])+tag]))
+    for tag, cut_s in enumerate(cut_off_scale):
+        arr = []
+        for i in range(cpus):
+            arr.append(coll_res[i][tag])
+        arr = numpy.array(arr).T
+        y1_data = arr[0, 0:g1num]
+        y1_err = arr[1, 0:g1num]
+        y2_data = arr[3, 0:g2num]
+        y2_err = arr[4, 0:g2num]
 
-        e1mc = tool_box.data_fit(fg1, arr[0], arr[1])
+        e1mc = tool_box.data_fit(g1, y1_data, y1_err)
         mc1.append(e1mc)
-        e2mc = tool_box.data_fit(fg2, arr[3], arr[4])
+        e2mc = tool_box.data_fit(g2, y2_data, y2_err)
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4))+".npz"
+        data_path = cut_path + "%s/%.4f.npz"%(cut,cut_s)
+
         numpy.savez(data_path, arr, mc)
 
         mc_title = ['0', '0', '0', '0']
-        m_r = [[e1mc[0]-1 - 2 * e1mc[1], e1mc[0]-1 + 2 * e1mc[1]], [e2mc[0]-1 - 2 * e2mc[1], e2mc[0]-1 + 2 * e2mc[1]]]
+        m_r = [[e1mc[0] - 1 - 2 * e1mc[1], e1mc[0] - 1 + 2 * e1mc[1]],
+               [e2mc[0] - 1 - 2 * e2mc[1], e2mc[0] - 1 + 2 * e2mc[1]]]
         c_r = [[e1mc[2] - 2 * e1mc[3], e1mc[2] + 2 * e1mc[3]], [e2mc[2] - 2 * e2mc[3], e2mc[2] + 2 * e2mc[3]]]
         for ii in range(2):
             if tool_box.check_in(m_r[ii]):
                 mc_title[ii] = ''
             else:
-                mc_title[ii] = "_m" + str(ii+1)
+                mc_title[ii] = "_m" + str(ii + 1)
             if tool_box.check_in(c_r[ii]):
                 mc_title[ii + 2] = ''
             else:
-                mc_title[ii + 2] = "_c" + str(ii+1)
+                mc_title[ii + 2] = "_c" + str(ii + 1)
         pic_mc = "".join(mc_title)
-
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
-        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
-        pic_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
-        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
+        xylim = (-0.0065, 0.0065, -0.0075, 0.0075)
+        pic_path = cut_path + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".eps"
+        tool_box.mcplot(g1, arr[0:3, 0:g1num], g2, arr[3:6, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
+        pic_path = cut_path + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".png"
+        tool_box.mcplot(g1, arr[0:3, 0:g1num], g2, arr[3:6, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
-    mc_path = "/lmc/selection_bias/result/cuts/sym/" + cut + "/total.npz"
+    mc_path = cut_path + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
 
     x1 = 0
     x2 = 1
-    x_coord = [i*0.1 for i in range(10)]
+    x_coord = [i * 1. / cuts_num for i in range(cuts_num)]
+
     fig = plt.figure(figsize=(10, 5))
 
     ax1 = fig.add_subplot(121)
     ax1.errorbar(x_coord, mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
     ax1.errorbar(x_coord, mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
-    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
+    ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='grey')
     ax1.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax1.set_xlabel("Cutoff")
@@ -184,7 +166,7 @@ else:
     ax2 = fig.add_subplot(122)
     ax2.errorbar(x_coord, mc1[2], mc1[3], c='coral', capsize=3, label='c1')
     ax2.errorbar(x_coord, mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
-    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
+    ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='grey')
     ax2.set_xlim(x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1))
     ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax2.set_xlabel("Cutoff")
@@ -192,11 +174,10 @@ else:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
-    namep = "/lmc/selection_bias/result/cuts/sym/" + cut + "/total.eps"
+    namep = cut_path + cut + "/total.eps"
     plt.savefig(namep)
     plt.close()
 
 t2 = time.clock()
 if rank == 0:
-    print(t2-t1)
-
+    print(t2 - t1)
