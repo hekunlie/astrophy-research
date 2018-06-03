@@ -235,6 +235,19 @@ def gauss_fit(data, bin_num):
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
+def fit_2d(y,x,f):
+    fx = numpy.sum(x * f)
+    fy = numpy.sum(y * f)
+    x2 = numpy.sum(x * x)
+    y2 = numpy.sum(y * y)
+    xy = numpy.sum(x * y)
+    x1 = numpy.sum(x)
+    y1 = numpy.sum(y)
+    inv_cov = numpy.linalg.inv(numpy.matrix([[x2,xy,x1],[xy,y2,y1],[x1,y1,len(x)]]))
+    f_m = numpy.matrix([[fx],[fy],[numpy.sum(f)]])
+    res = numpy.dot(inv_cov,f_m)
+    return res[0,0], res[1,0], res[2,0]
+
 
 def data_fit(x_data, y_data, y_err):
     # Y = A*X ,   y = m*x+c
@@ -439,3 +452,17 @@ def file_name(path):
         ex = os.path.exists(path)
         i += 1
     return path
+
+def cfht_label(field_name):
+    # the location of each galaxy is labeled by the field_label and exposure_label
+    # counting from the left, the first, third and fifth figure denotes "w_m(p)_(m)p_"
+    # the second and the fourth denotes "m" or "p" (1=m,0=p)
+    # the last two figure is zero and will denote the chip NO.
+    # the exposure label will be stored in the other place
+    mp1, mp2 = 0, 0
+    if field_name[2] == "m":
+        mp1 = 10 ** 5
+    if field_name[4] == "m":
+        mp2 = 10 ** 3
+
+    return int(field_name[1])*10**6 + int(field_name[3])*10**4 + int(field_name[5])*10**2 + mp1 + mp2

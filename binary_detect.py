@@ -46,16 +46,25 @@ field_dict, fields = tool_box.field_dict(nname_path)
 r_fields = tool_box.allot(fields,cpus)[rank]
 
 # for the stacking process
-count_0 = 1
-f = []
+count_0 = 0
+
+# the location of each galaxy is labeled by the field_label and exposure_label
+# counting from the left, the first, third and fifth figure denotes "w_m(p)_(m)p_"
+# the second and the fourth denotes "m" or "p" (1=m,0=p)
+# the last two figure denote the chip NO.
 for field in r_fields:
     expos = list(field_dict[field].keys())
+    field_label = tool_box.cfht_label(field)
     for expo in expos:
+        expo_label = int(expo.split("p")[0])
 
         if argv[1] == "find":
             count = 0
             chips = field_dict[field][expo]
+
             for chip in chips:
+                chip_label = int(chip.split("_")[1].split(".")[0])
+
                 chip_path = data_path + "%s/stamps/%s_source.fits"%(field,chip)
                 chip_info_path = data_path + "%s/stamps/%s_source_info.dat"%(field,chip)
                 shear_info_path = data_path + "%s/result/%s_shear.dat"%(field,chip)
@@ -65,12 +74,16 @@ for field in r_fields:
                     f = fits.open(chip_path)
                     img = f[0].data
                     pool = fq.segment(img)
-                    binary_tag = numpy.zeros((len(pool),1))
+                    binary_tag = numpy.zeros((len(pool), 4))
                     binary_pool = []
                     binary_source_pool = []
                     f.close()
 
                     for i in range(len(pool)):
+                        binary_tag[i, 1] = field_label
+                        binary_tag[i, 2] = expo_label
+                        binary_tag[i, 3] = chip_label
+
                         objs, peaks = tool_box.find_binary(pool[i], size, size, sigs[i])[0:2]
                         num = len(objs)
                         if num > 1 or (num == 1 and len(peaks[0]) > 1):
@@ -109,44 +122,40 @@ for field in r_fields:
         elif argv[1] == 'stack':
             bi_path = field_path + "%s/bi_%s.npz"%(field, expo)
             shear_info_path = field_path + "%s/%s.npz"%(field, expo)
+            try:
+                data = numpy.load(bi_path)["arr_0"]
+                shear_cat = numpy.load(shear_info_path)["arr_0"]
 
-            data = numpy.load(bi_path)["arr_0"]
-            shear_cat = numpy.load(shear_info_path)["arr_0"]
-            if data.shape[0] != shear_cat.shape[0]:
-                print(field, expo,data.shape,shear_cat.shape)
-                if field not in f:
-                    f.append(field)
-
-            # try:
-            #     data = numpy.load(bi_path)["arr_0"]
-            #     shear_cat = numpy.load(shear_info_path)["arr_0"]
-            #     if data.shape[0] == shear_cat.shape[0]:
-            #         if count_0 == 0:
-            #             stack_data = data
-            #         else:
-            #             stack_data = numpy.row_stack((stack_data, data))
-            #         count_0 += 1
-            #     else:
-            #         print(field,"The binary catalog doesn't match the shear catalog!")
-            #         exit()
-            # except:
-            #     print(field,expo,"file doesn't exist!")
+                if data.shape[0] == shear_cat.shape[0]:
+                    if count_0 == 0:
+                        stack_data = data.copy()
+                    else:
+                        stack_data = numpy.row_stack((stack_data, data))
+                    count_0 += 1
+                else:
+                    print(field,"The binary catalog doesn't match the shear catalog!")
+                    exit()
+            except:
+                print(field,expo,"file doesn't exist!")
         else:
             print("Wrong input!")
             exit()
-print(len(field))
-# if argv[1] == "stack":
-#     sp = stack_data.shape
-#     recv_sp = comm.gather(sp, root=0)
-#     if rank > 0:
-#         comm.Send(stack_data, dest=0, tag=rank)
-#     else:
-#         for procs in range(1, cpus):
-#             recvs = numpy.empty(recv_sp[procs], dtype=numpy.float64)
-#             comm.Recv(recvs, source=procs, tag=procs)
-#             stack_data = numpy.row_stack((stack_data, recvs))
-#         final_path = result_path + "binary_label.npz"
-#         numpy.savez(final_path, stack_data)
+
+if argv[1] == "stack":
+    sp = stack_data.shape
+    recv_sp = comm.gather(sp, root=0)
+    if rank > 0:
+        comm.Send(stack_data, dest=0, tag=rank)
+    else:
+        for procs in range(1, cpus):
+            recvs = numpy.empty(recv_sp[procs], dtype=numpy.float64)
+            comm.Recv(recvs, source=procs, tag=procs)
+            stack_data = numpy.row_stack((stack_data, recvs))
+        final_path = result_path + "binary_label.npz"
+
+        numpy.savez(final_path, stack_data)
+        print("Totally, %d galaxies"%(len(stack_data)))
+
 
 
 
