@@ -27,7 +27,7 @@ dg1 = g1[1]-g1[0]
 dg2 = g2[1]-g2[0]
 
 t1 = time.clock()
-with open("%d/work/envs/envs.dat"%my_home, "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
     if "cfht_data_path" in path:
@@ -38,8 +38,10 @@ for path in contents:
         field_path = path.split("=")[1]
 
 data_cache = result_path + "data_cache.npz"
-
 data = numpy.load(data_cache)['arr_0']
+
+binary_path = result_path + "binary_label.npz"
+binary_data = numpy.load(binary_path)["arr_0"]
 
 fq = Fourier_Quad(48, 123)
 
@@ -47,31 +49,39 @@ sex_path = field_path + "sex_snr.npz"
 ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
 s_idx1 = ori_sex_snr <= 5000
 s_idx2 = ori_sex_snr > 0
-# fg1 = data[:, 14]
-# t_1 = numpy.isnan(fg1)
-# idx_t1 = t_1 == False
-#
-# fg2 = data[:, 15]
-# t_2 = numpy.isnan(fg2)
-# idx_t2 = t_2 == False
+
+binary_tag = binary_data[:, 0]
+field_lab = binary_data[:, 1]
+expo_lab = binary_data[:, 2]
+chip_lab = binary_data[:, 3]
+# '1' means binary or triple
+bi_idx = binary_tag != 1
+# exclude some fields
+field_idx = field_lab != 41100
+if rank == 0:
+    print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
+    print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
+
 n_star = data[:, 3]
-idx = n_star >= 16
+idx = n_star >= 20
+area = data[:, 7]
+a_idx = area >= 6
 
-nsig = data[:, 4][idx]
-flux = data[:, 5][idx]
-hflux = data[:, 6][idx]
-area = data[:, 7][idx]
-harea = data[:, 8][idx]
-fsnr = numpy.sqrt(data[:, 10][idx])
-fsnr_f = numpy.sqrt(data[:, 11][idx])
-fg1 = data[:, 14][idx]
-fg2 = data[:, 15][idx]
+nsig = data[:, 4][idx&bi_idx&field_idx&a_idx]
+flux = data[:, 5][idx&bi_idx&field_idx&a_idx]
+hflux = data[:, 6][idx&bi_idx&field_idx&a_idx]
+# area = data[:, 7][idx&bi_idx&field_idx]
+harea = data[:, 8][idx&bi_idx&field_idx&a_idx]
+fsnr = numpy.sqrt(data[:, 10][idx&bi_idx&field_idx&a_idx])
+fsnr_f = numpy.sqrt(data[:, 11][idx&bi_idx&field_idx&a_idx])
+fg1 = data[:, 14][idx&bi_idx&field_idx&a_idx]
+fg2 = data[:, 15][idx&bi_idx&field_idx&a_idx]
 
-mg1 = data[:, 16][idx]
-mg2 = data[:, 17][idx]
-mn = data[:, 18][idx]
-mu = data[:, 19][idx]
-mv = data[:, 20][idx]
+mg1 = data[:, 16][idx&bi_idx&field_idx&a_idx]
+mg2 = data[:, 17][idx&bi_idx&field_idx&a_idx]
+mn = data[:, 18][idx&bi_idx&field_idx&a_idx]
+mu = data[:, 19][idx&bi_idx&field_idx&a_idx]
+mv = data[:, 20][idx&bi_idx&field_idx&a_idx]
 
 # sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
 

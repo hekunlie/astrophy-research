@@ -35,8 +35,10 @@ for path in contents:
         pic_path = path.split("=")[1]
 
 data_cache = result_path + "data_cache.npz"
-
 data = numpy.load(data_cache)['arr_0']
+
+binary_path = result_path + "binary_label.npz"
+binary_data = numpy.load(binary_path)["arr_0"]
 
 if rank == 0:
     print("Totally, %d galaxies are detected"%len(data))
@@ -45,31 +47,43 @@ if rank == 0:
 fg1_max, fg1_min = numpy.max(data[:, 14]),numpy.min(data[:, 14])
 fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
 
+binary_tag = binary_data[:, 0]
+field_lab = binary_data[:, 1]
+expo_lab = binary_data[:, 2]
+chip_lab = binary_data[:, 3]
+# '1' means binary or triple
+bi_idx = binary_tag != 1
+# exclude some fields
+field_idx = field_lab != 41100
+if rank == 0:
+    print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
+    print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
+
 n_star = data[:, 3]
 idx = n_star >= 20
 
-peak = data[:, 4][idx]
-flux = data[:, 5][idx]
-hflux = data[:, 6][idx]
-area = data[:, 7][idx]
-harea = data[:, 8][idx]
-fsnr = numpy.sqrt(data[:, 10][idx])
-fsnr_f = numpy.sqrt(data[:, 11][idx])
-fg1 = data[:, 14][idx]
-fg2 = data[:, 15][idx]
-FG1 = data[:, 16][idx]
-FG2 = data[:, 17][idx]
-FN = data[:, 18][idx]
-FU = data[:, 19][idx]
-FV = data[:, 20][idx]
+peak = data[:, 4][idx&bi_idx&field_idx]
+flux = data[:, 5][idx&bi_idx&field_idx]
+hflux = data[:, 6][idx&bi_idx&field_idx]
+area = data[:, 7][idx&bi_idx&field_idx]
+harea = data[:, 8][idx&bi_idx&field_idx]
+fsnr = numpy.sqrt(data[:, 10][idx&bi_idx&field_idx])
+fsnr_f = numpy.sqrt(data[:, 11][idx&bi_idx&field_idx])
+fg1 = data[:, 14][idx&bi_idx&field_idx]
+fg2 = data[:, 15][idx&bi_idx&field_idx]
+FG1 = data[:, 16][idx&bi_idx&field_idx]
+FG2 = data[:, 17][idx&bi_idx&field_idx]
+FN = data[:, 18][idx&bi_idx&field_idx]
+FU = data[:, 19][idx&bi_idx&field_idx]
+FV = data[:, 20][idx&bi_idx&field_idx]
 
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
 g1num = cpus-10
 g2num = cpus
-g1 = numpy.linspace(-0.005, 0.005, g1num)
-g2 = numpy.linspace(-0.0065, 0.0065, g2num)
+g1 = numpy.linspace(-0.004, 0.004, g1num)
+g2 = numpy.linspace(-0.0055, 0.0055, g2num)
 
 # the length of the interval
 dg1 = g1[1] - g1[0]

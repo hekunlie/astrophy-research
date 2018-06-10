@@ -1,8 +1,9 @@
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path,argv
-path.append('/home/hkli/work/fourier_quad')
+path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 from subprocess import Popen
-import os
 from mpi4py import MPI
 from astropy.io import fits
 import time
@@ -23,7 +24,7 @@ cpus = comm.Get_size()
 t1 = time.time()
 size = 48
 
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
     if "cfht_data_path" in path:
@@ -52,7 +53,7 @@ if jobs == "stack":
     else:
         if rank == 0:
             print("Filtered list does not exist!")
-        exit()
+        total_field_pool = fields
 
     field_pool = tool_box.allot(total_field_pool, cpus)[rank]
 

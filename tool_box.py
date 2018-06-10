@@ -1,5 +1,7 @@
-import matplotlib
-matplotlib.use('Agg')
+import platform
+if platform.system() == 'Linux':
+    import matplotlib
+    matplotlib.use('Agg')
 from multiprocessing import Pool, Manager
 import numpy
 import copy
@@ -235,19 +237,61 @@ def gauss_fit(data, bin_num):
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
-def fit_2d(y,x,f):
-    fx = numpy.sum(x * f)
-    fy = numpy.sum(y * f)
-    x2 = numpy.sum(x * x)
-    y2 = numpy.sum(y * y)
-    xy = numpy.sum(x * y)
-    x1 = numpy.sum(x)
-    y1 = numpy.sum(y)
-    inv_cov = numpy.linalg.inv(numpy.matrix([[x2,xy,x1],[xy,y2,y1],[x1,y1,len(x)]]))
-    f_m = numpy.matrix([[fx],[fy],[numpy.sum(f)]])
-    res = numpy.dot(inv_cov,f_m)
-    return res[0,0], res[1,0], res[2,0]
+def fit_2d(x, y, fun_val, order):
+    # fit a polynomial to 'order'
+    # a1 + a2*x + a2*y + a3*x^2 + a4*x*y + a5*y^2 .....
+    # the powers of the polynomial can be written as \SUM_{i~N}\SUM_{j~i} X^{i-j}*y^{j}
+    x, y = x * 1.0, y * 1.0
+    turns = int((order + 1) * (order + 2) / 2)
+    pows = [(i-j, j) for i in range(order+1) for j in range(i+1)]
+    fxy = [[numpy.sum(fun_val * (x ** pows[i][0]) * (y ** pows[i][1]))] for i in range(turns)]
+    cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(turns)] for j in range(turns)]
+    res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
+    return res
 
+def fit_backgroud(image, yblocks, xblocks, num, order=1, sort=False):
+    y, x = image.shape
+    ystep, xstep = int(y/yblocks), int(x/xblocks)
+    fit_paras = []
+    # rng = numpy.random.RandomState(num)
+    for i in range(yblocks):
+        for j in range(xblocks):
+            my, mx = numpy.mgrid[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep]
+            my = my.flatten()
+            mx = mx.flatten()
+            tags = numpy.arange(0,len(my))
+            # ch_tag = rng.choice(tags, num, replace=False)
+            ch_tag = numpy.random.choice(tags, num, replace=False)
+            ys = my[ch_tag]
+            xs = mx[ch_tag]
+            fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
+            if sort:
+                fz_s = numpy.sort(fz)
+                bottom, upper = fz_s[int(num*0.3)], fz_s[int(num*0.7)]
+                idx_1 = fz >= bottom
+                idx_2 = fz <= upper
+                para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
+            else:
+                para = fit_2d(xs,ys,fz,order)
+            fit_paras.append(para)
+    return fit_paras
+
+
+def find_step(image, thres):
+    # to find the abnormal image of which the background likes steps not continuous
+    y, x = image.shape
+    left = numpy.sort(image[:, :int(x / 2)].flatten())
+    right = numpy.sort(image[:, int(x / 2):].flatten())
+    up = numpy.sort(image[:int(y / 2), :].flatten())
+    down = numpy.sort(image[int(y / 2):, :].flatten())
+    mid = [left[int(len(left)/2)], right[int(len(right)/2)],
+           up[int(len(up)/2)], down[int(len(down)/2)]]
+    ab = 0
+    if abs(mid[0]-mid[1]) >= thres:
+        ab = 1 # the backgrounds of left and right parts are different
+    if abs(mid[2] - mid[3]) >= thres:
+        ab = 2 # the backgrounds of upper and bottom parts are different
+    return mid, ab
 
 def data_fit(x_data, y_data, y_err):
     # Y = A*X ,   y = m*x+c
@@ -461,8 +505,8 @@ def cfht_label(field_name):
     # the exposure label will be stored in the other place
     mp1, mp2 = 0, 0
     if field_name[2] == "m":
-        mp1 = 10 ** 5
+        mp1 = 10 ** 3
     if field_name[4] == "m":
-        mp2 = 10 ** 3
+        mp2 = 10
 
-    return int(field_name[1])*10**6 + int(field_name[3])*10**4 + int(field_name[5])*10**2 + mp1 + mp2
+    return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2

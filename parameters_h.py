@@ -1,7 +1,11 @@
-import matplotlib
-matplotlib.use("Agg")
-from sys import path
-path.append("/home/hkli/work/fourier_quad")
+import platform
+if platform.system() == 'Linux':
+    import matplotlib
+    matplotlib.use('Agg')
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+from sys import path, argv
+path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 import matplotlib.pyplot as plt
 from Fourier_Quad import Fourier_Quad
@@ -9,7 +13,7 @@ import tool_box
 import lsstetc
 from mpi4py import MPI
 import h5py
-from sys import argv
+
 
 num = int(argv[1])*10000
 size = int(argv[2])
@@ -21,7 +25,7 @@ cpus = comm.Get_size()
 mag_s, mag_e = 19, 24.2
 radius_s, radius_e = 0.8, 1.4
 
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
     if "parameter" in path:

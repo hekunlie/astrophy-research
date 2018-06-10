@@ -1,5 +1,7 @@
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
-path.append('/home/hkli/work/fourier_quad')
+path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 import galsim
 from astropy.io import fits
@@ -17,12 +19,12 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "total" in path:
+    if "select_total" in path:
         total_path = path.split("=")[1]
-    elif "result" in path:
+    elif "select_result" in path:
         result_path = path.split("=")[1]
     elif "parameter" in path:
         para_path = path.split("=")[1]
@@ -53,8 +55,8 @@ g2 = shear["arr_1"][shear_id]
 
 paras = para_path + "para_%d.hdf5"%shear_id
 f = h5py.File(paras,'r')
-e1s = f["/e1"].value
-e2s = f["/e2"].value
+e1s = f["/me1"].value
+e2s = f["/me2"].value
 radius = f["/radius"].value
 flux = f["/flux"].value
 fbt = f['/btr'].value
@@ -78,7 +80,7 @@ logger.info("seed: %d"%seed)
 
 t = 0
 
-ori_snr = numpy.zeros((chips_num*10000, 1))
+
 for i in range(chips_num):
     t1 = time.clock()
     chip_path = total_path + str(shear_id) + "/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
@@ -107,7 +109,6 @@ for i in range(chips_num):
         gal_c = galsim.Convolve([gal_g, psf])
         img = galsim.ImageD(stamp_size, stamp_size)
         gal_c.drawImage(image=img, scale=pixel_scale)
-        ori_snr[t] = numpy.sqrt(numpy.sum(img.array**2))/prop.sigma_sky
         gal_img = img.array + fq.draw_noise(0, noise_sig)
         gal_pool.append(gal_img)
         t += 1
@@ -120,6 +121,6 @@ for i in range(chips_num):
     logger.info("Finish the %04d's chip in %.2f sec"%(i, t2-t1))
 
 ori_snr_path = result_path + "data/input_snr_%d.npz"%rank
-numpy.savez(ori_snr_path, ori_snr)
+
 te = time.clock()
 logger.info("Used %.2f sec"%(te-ts))
