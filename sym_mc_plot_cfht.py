@@ -82,6 +82,8 @@ mg2 = data[:, 17][idx&bi_idx&field_idx&a_idx]
 mn = data[:, 18][idx&bi_idx&field_idx&a_idx]
 mu = data[:, 19][idx&bi_idx&field_idx&a_idx]
 mv = data[:, 20][idx&bi_idx&field_idx&a_idx]
+de1 = mn - mu
+de2 = mn + mu
 
 # sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
 
@@ -129,12 +131,12 @@ for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] >= cut_s
     if rank < g1num:
         num1 = len(mg1[idx&idxg11&idxg12])
-        g1_h, g1_sig = fq.fmin_g(mg1[idx&idxg11&idxg12], mn[idx&idxg11&idxg12], mu[idx&idxg11&idxg12], mode=1, bin_num=8)
+        g1_h, g1_sig = fq.fmin_g(mg1[idx&idxg11&idxg12], de1[idx&idxg11&idxg12], mode=1, bin_num=8)
     else:
         g1_h, g1_sig, num1 = -1, -1, -1
 
     num2 = len(mg2[idx&idxg21&idxg22])
-    g2_h, g2_sig = fq.fmin_g(mg2[idx&idxg21&idxg22], mn[idx&idxg21&idxg22], mu[idx&idxg21&idxg22], mode=2, bin_num=8)
+    g2_h, g2_sig = fq.fmin_g(mg2[idx&idxg21&idxg22], de2[idx&idxg21&idxg22], mode=2, bin_num=8)
     res_list.append([g1_h, g1_sig, num1, g2_h, g2_sig, num2])
 
 coll_res = comm.gather(res_list, root=0)

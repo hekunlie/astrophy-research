@@ -414,25 +414,27 @@ class Fourier_Quad:
             arr[edge: self.size - edge, edge: self.size - edge] = 0.
             return arr
 
-    def G_bin(self, g, n, u, g_h, mode, bins, ig_num):  # checked 2017-7-9!!!
+    def G_bin(self, g, nu, g_h, mode, bins, ig_num):  # checked 2017-7-9!!!
         # mode 1 is for g1
         # mode 2 is for g2
         bin_num = len(bins) - 1
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         if mode == 1:
-            G_h = g - (n + u) * g_h
+            G_h = g - nu * g_h
         else:
-            G_h = g - (n - u) * g_h
+            G_h = g - nu * g_h
         num = numpy.histogram(G_h, bins)[0]
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
 
-    def fmin_g_new(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
+    def fmin_g_new(self, g, nu, mode, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
         # mode 1 for g1
         # mode 2 for g2
-        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
+        g_c = numpy.random.choice(g, 5000,replace=False)
+        temp_data = numpy.sort(numpy.abs(g_c))
+        # temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
@@ -445,9 +447,9 @@ class Fourier_Quad:
             mc = (left + right) / 2.
             mcl = (mc + left) / 2.
             mcr = (mc + right) / 2.
-            fmc = self.G_bin(g, n, u, mc, mode, bins, ig_num)
-            fmcl = self.G_bin(g, n, u, mcl, mode, bins, ig_num)
-            fmcr = self.G_bin(g, n, u, mcr, mode, bins, ig_num)
+            fmc = self.G_bin(g, nu, mc, mode, bins, ig_num)
+            fmcl = self.G_bin(g, nu, mcl, mode, bins, ig_num)
+            fmcr = self.G_bin(g, nu, mcr, mode, bins, ig_num)
             temp = fmc + 20
             if fmcl > temp:
                 left = (mc + mcl)/2.
@@ -459,7 +461,7 @@ class Fourier_Quad:
             if iters > 14:
                 break
         g_range = numpy.linspace(left, right, 80)
-        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins, ig_num) for g_hat in g_range])
+        xi2 = numpy.array([self.G_bin(g, nu, g_hat, mode, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)
@@ -483,10 +485,12 @@ class Fourier_Quad:
         g_h = -paras[1] / 2 / paras[0]
         return g_h, g_sig
 
-    def fmin_g(self, g, n, u, mode, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, mode, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # mode 1 for g1
         # mode 2 for g2
-        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
+        g_c = numpy.random.choice(g, 5000,replace=False)
+        temp_data = numpy.sort(numpy.abs(g_c))
+        # temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
@@ -502,11 +506,11 @@ class Fourier_Quad:
             m1 = (left + right) / 2.
             m2 = (m1 + left) / 2.
             m3 = (m1 + right) / 2.
-            fL = self.G_bin(g, n, u, left, mode, bins, ig_num)
-            fR = self.G_bin(g, n, u, right, mode, bins, ig_num)
-            fm1 = self.G_bin(g, n, u, m1, mode, bins, ig_num)
-            fm2 = self.G_bin(g, n, u, m2, mode, bins, ig_num)
-            fm3 = self.G_bin(g, n, u, m3, mode, bins, ig_num)
+            fL = self.G_bin(g, nu, left, mode, bins, ig_num)
+            fR = self.G_bin(g, nu, right, mode, bins, ig_num)
+            fm1 = self.G_bin(g, nu, m1, mode, bins, ig_num)
+            fm2 = self.G_bin(g, nu, m2, mode, bins, ig_num)
+            fm3 = self.G_bin(g, nu, m3, mode, bins, ig_num)
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
             records[iters, ] = fm1, left, fL, right, fR
@@ -594,7 +598,7 @@ class Fourier_Quad:
             right = 2*m1 - left
 
         g_range = numpy.linspace(left, right, 80)
-        xi2 = numpy.array([self.G_bin(g, n, u, g_hat, mode, bins, ig_num) for g_hat in g_range])
+        xi2 = numpy.array([self.G_bin(g, nu, g_hat, mode, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
         gg3 = numpy.sum(g_range ** 3)

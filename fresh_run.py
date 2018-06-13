@@ -77,6 +77,8 @@ for i in PROCESS_stage:
     f.writelines(contents)
     f.close()
 
+    os.remove("main")
+
     # compiling
     cmd = "mpif77 *.f -o main -mcmodel=medium -lcfitsio"
     a = Popen(cmd, shell=True)

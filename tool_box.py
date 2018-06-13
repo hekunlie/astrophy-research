@@ -358,6 +358,60 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
         plt.savefig(path)
     plt.close()
 
+
+def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=0.1,
+               pic_path=None, multi_fig=True, size=(10,10),show=False):
+    # it is designed to show the variation of m's and c's with respect to the cutoff
+    # it can show the figures one by one or just a big one contains four
+    # 'pic_path' must be a list contains the directories that each figure will be stored
+    # 'x' must be a 1-D numpy array
+    # 'mc1/2_list' must be a list of (n,4) numpy array "m,dm,c,dc"
+    # 'labels' is the label of each mc array
+    num = len(mc1_list)
+    if num > 5:
+        print("Two many lines")
+        exit()
+    colors = ["red", 'limegreen', "blue", "darkorange", "purple",'dodgerblue']
+    mc_label = ["_$m_1$", "_$c_1$", "_$m_2$", "_$c_2$"]
+    ylabels = ["multiplicative bias $m_1$", "additive bias $c_1$",
+               "multiplicative bias $m_2$", "additive bias $c_2$"]
+    x1 = x.min() - (x.max() - x.min())*margin
+    x2 = x.max() + (x.max() - x.min())*margin
+    if multi_fig:
+        fig = plt.figure(figsize=size)
+    for i in range(4):
+        if multi_fig:
+            ax = fig.add_subplot(221 + i)
+        else:
+            fig = plt.figure(figsize=size)
+            ax = fig.add_subplot(111)
+        a, b = divmod(i, 2)
+        if i < 2:
+            mc = mc1_list
+        else:
+            mc = mc2_list
+        for j in range(num):
+            lb = labels[j] + mc_label[i]
+            ax.errorbar(x+j*0.05, mc[j][:, 2*b]-1, mc[j][:, 2*b+1], ecolor=colors[j],
+                        linewidth=linewidth,color=colors[j], capsize=cap, label=lb)
+            ax.scatter(x+j*0.05, mc[j][:, 2*b]-1, c=colors[j], s=ms)
+            if j == 0:
+                ax.plot([x1, x2], [0, 0], c='k')
+            ax.set_xlim(x1, x2)
+            ax.set_xlabel("cutoff")
+            ax.set_ylabel(ylabels[i], fontsize=12)
+            plt.legend(ncol=2)
+        if not multi_fig and pic_path:
+            plt.savefig(pic_path[i])
+        if not multi_fig and show:
+            plt.show()
+    if multi_fig:
+        if pic_path:
+            plt.savefig(pic_path[0])
+        if show:
+            plt.show()
+
+
 def mags_mock(num, mag_min, mag_max):
     m = numpy.linspace(mag_min, mag_max, 1000000)
     pm = 10**(23.04187527*numpy.log10(m) - 32.50618926)
