@@ -298,30 +298,39 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 	delete[] cp_img;
 }
 
-void detector(double *source_img, int *source_x, int*source_y, int*source_cout, double thres, int y_size, int x_size)
-{	
+void detector(double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
+{	/* remember to add the peak detection! to locate the source */
+
 	/* will not change the inputted array */
-	int i, j, k, m, x, y, s = y_size*x_size;
-	int  len0 = 0, len=0, s_num = 0, num0, num, num_new, ix, iy;
+	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
+	int s = y_size*x_size;
+	int peak = 0, yp, xp, area = 0, half_light_area = 0;
+	double flux = 0, half_light_flux = 0;
+	int  len0 = 0, len=0, s_num = 0, num0, num, num_new;
 	/* cp_img contains the image and cp_x/y  the detected source coordinates [x], [y] */
+	double detect_thres = paras->detect_thres;
 	double *cp_img = new double[s] {};
 	int *cp_x = new int[s] {};
 	int *cp_y = new int[s] {};
 	int *temp_x = new int[s] {};
 	int *temp_y = new int[s] {};
+	int cross_x[4]{ -1,1,0,0 };
+	int cross_y[4]{ 0,0,-1,1 };
+	
 	/* mask */
 
 	for (i = 0; i < y_size; i++)
 	{
 		for (j = 0; j < x_size; j++)
 		{
-			if (source_img[i*x_size + j] >= thres)
+			if (source_img[i*x_size + j] >= detect_thres)
 			{
 				cp_img[i*x_size + j] = source_img[i*x_size + j];
+
 			}
 		}
 	}
-	
+
 	/* search the source by FoF */	
 	
 	for (i = 0; i < y_size; i++)
@@ -329,7 +338,12 @@ void detector(double *source_img, int *source_x, int*source_y, int*source_cout, 
 		for (j = 0; j < x_size; j++)
 		{
 			if (cp_img[i*x_size + j] > 0)
-			{
+			{	
+				peak = 0;
+				half_light_area = 0;
+				half_light_flux = 0;
+				flux = 0;
+
 				len = 0;
 				num0 = 0;
 				num = 1;
@@ -342,47 +356,87 @@ void detector(double *source_img, int *source_x, int*source_y, int*source_cout, 
 					num_new = num - num0;
 					num0 = len;
 					for (k = num0 - num_new; k < num0; k++)
-					{
-						if ((temp_y[k] - 1) > -1 && cp_img[(temp_y[k] - 1)*x_size + temp_x[k]] > 0)
-						{
-							temp_x[len] = temp_x[k];
-							temp_y[len] = temp_y[k]-1;
-							cp_img[(temp_y[k] - 1)*x_size + temp_x[k]] = 0;
-							len++;
+					{	
+						if (cross)
+						{	
+							for (c = 0; c < 4; c++)
+							{
+								tx = temp_x[k] + cross_x[c];
+								ty = temp_y[k] + cross_y[c];
+								if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+								{
+									temp_x[len] = tx;
+									temp_y[len] = ty;
+									if (cp_img[ty*x_size + tx] > peak)
+									{
+										peak = cp_img[ty*x_size + tx];
+										yp = ty;
+										xp = tx;
+									}
+									flux = flux + cp_img[ty*x_size + tx];
+									cp_img[ty*x_size + tx] = 0;
+									
+									len++;
+								}
+							}							
 						}
-						if ((temp_y[k] + 1) < y_size && cp_img[(temp_y[k] + 1)*x_size + temp_x[k]] > 0)
+
+						else
 						{
-							temp_x[len] = temp_x[k];
-							temp_y[len] = temp_y[k] + 1;
-							cp_img[(temp_y[k] + 1)*x_size + temp_x[k]] = 0;
-							len++;
+							for (iy = -1; iy < 2; iy++)
+							{
+								for (ix = -1; ix < 2; ix++)
+								{
+									tx = temp_x[k] + ix;
+									ty = temp_y[k] + iy;
+									if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+									{
+										temp_x[len] = tx;
+										temp_y[len] = ty;
+										if (cp_img[ty*x_size + tx] > peak)
+										{
+											peak = cp_img[ty*x_size + tx];
+											yp = ty;
+											xp = tx;
+										}
+										flux = flux + cp_img[ty*x_size + tx];
+										cp_img[ty*x_size + tx] = 0;
+										len++;
+									}
+								}
+							}
 						}
-						if ((temp_x[k] - 1) > -1 && cp_img[temp_y[k] *x_size + temp_x[k] - 1] > 0)
-						{
-							temp_x[len] = temp_x[k] - 1;
-							temp_y[len] = temp_y[k];
-							cp_img[temp_y[k] *x_size + temp_x[k] - 1] = 0;
-							len++;
-						}
-						if ((temp_x[k] + 1) < x_size && cp_img[temp_y[k] *x_size + temp_x[k] + 1] > 0)
-						{
-							temp_x[len] = temp_x[k] + 1;
-							temp_y[len] = temp_y[k];
-							cp_img[temp_y[k] *x_size + temp_x[k] + 1] = 0;
-							len++;
-						}
+
 					}
 					num = len;
 				}
 
-				if (len >= 5)
-				{
+				if (len >= paras->area_thres)
+				{	
+					if (s_num >= paras->max_source)
+					{
+						cout << "Too many source!" << endl;
+						break;
+					}
 					for (m = 0; m < len; m++)
 					{
+
+						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak*0.5)
+						{
+							half_light_area++;
+							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
+						}
 						source_x[len0 + m] = temp_x[m];
-						source_y[len0 + m] = temp_y[m];
-						source_cout[s_num] = len;
+						source_y[len0 + m] = temp_y[m];						
 					}
+
+					source_paras[7 * s_num] = len; /* length of source */
+					source_paras[7 * s_num + 1] = yp; /* 'y' of peak of source */
+					source_paras[7 * s_num + 2] = xp;/* 'x' of peak of source */
+					source_paras[7 * s_num + 3] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
+					source_paras[7 * s_num + 4] = peak; /* peak value of source */
+					source_paras[7 * s_num + 5] = flux; /* total flux of source */
+					source_paras[7 * s_num + 6] = half_light_flux; /* half light flux */
 					len0 += len;
 					s_num++;
 				}
@@ -656,6 +710,10 @@ void f_snr(double *image, para *paras)
 	double n=0, noise;
 	int size = paras->img_size;
 	int i,k,edge=1, xc=size/2;
+	int x[20]{ -1,  0,  1, -2, -1,  0,  1,  2, -2, -1,  1,  2, -2, -1,  0,  1,  2, -1,  0,  1 };
+	int y[20]{ -2, -2, -2, -1, -1, -1, -1, -1,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2, 2, 2 };
+	double fz[20],fit_paras[6];
+
 	for (i = 0; i < size; i++) //y coordinates
 	{
 		for (k = 0; k < size; k++) // x coordinates
@@ -671,7 +729,15 @@ void f_snr(double *image, para *paras)
 		}
 	}
 	noise = n*0.25 / ((size - edge)*edge);
-	paras->gal_fsnr_c = sqrt(image[xc*size+xc] / noise);	
+	paras->gal_flux2 = sqrt(image[xc*size+xc] / noise);
+
+	for (i = 0; i < 20; i++)
+	{
+		fz[i] = image[(xc + y[i])*size + xc + x[i]];
+	}
+	hyperfit_5(fz, fit_paras,paras);
+	paras->gal_flux_alt = sqrt(pow(10,fit_paras[0]) / noise);
+
 }
 
 void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, para*paras)
@@ -753,4 +819,19 @@ void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, pa
 	}
 	//paras->t1 += st2 - st1;
 	delete temp;
+}
+
+void hyperfit_5(double *data, double *fit_paras, para *paras)
+{	
+	double temp = 0;
+
+	for (int i = 0; i < 6; i++)
+	{
+		temp = 0;
+		for (int j = 0; j < 20; j++)
+		{
+			temp += paras->fit_matrix[i][j] * log10(data[j]);
+		}
+		fit_paras[i] = temp;
+	}
 }
