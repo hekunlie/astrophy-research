@@ -82,8 +82,8 @@ mg2 = data[:, 17][idx&bi_idx&field_idx&a_idx]
 mn = data[:, 18][idx&bi_idx&field_idx&a_idx]
 mu = data[:, 19][idx&bi_idx&field_idx&a_idx]
 mv = data[:, 20][idx&bi_idx&field_idx&a_idx]
-de1 = mn - mu
-de2 = mn + mu
+de1 = mn + mu
+de2 = mn - mu
 
 # sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
 

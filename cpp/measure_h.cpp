@@ -1,5 +1,4 @@
-﻿#include <cmath>
-#include <cstring>
+﻿#include <cstring>
 #include<sstream>
 #include <ctime>
 #include <stdlib.h>
@@ -7,6 +6,7 @@
 #include "FQlib.h"
 #include<hdf5.h>
 #include<stdio.h>
+#include<string>
 
 //#define TRANS_S_STD 0.5
 using namespace std;
@@ -46,7 +46,7 @@ int main(int argc, char*argv[])
 	chip_id = myid / shear_pairs*chip_num;
 
 	ts = clock();
-	seed = myid * 15322 + 43132;
+	seed = myid * 15322 + 4332;
 	gsl_rng_initialize(seed);
 
 	double *psf = new double[size*size]();
@@ -63,7 +63,7 @@ int main(int argc, char*argv[])
 	double *noise_fit_img = new double[size*size]();
 	int *source_x = new int[size*size]{};
 	int *source_y = new int[size*size]{};
-	double *source_paras = new double[4 * all_paras.max_source]{};
+	double *source_paras = new double[7* all_paras.max_source]{};
 	
 	double coeffs[150 * 25];
 
@@ -72,14 +72,16 @@ int main(int argc, char*argv[])
 		data[i] = matrix + i*data_cols;
 	}
 
-	char chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
+	char data_path[100],chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m2/");
+
 	sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
 	sprintf(set_name, "/data");
 	read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
 
-	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/logs/m_%d_log.dat", myid);
+	sprintf(log_path, "%slogs/m_%d_log.dat", data_path, myid);
 
-	sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/psf.fits");
+	sprintf(chip_path, "%spsf.fits", data_path);
 	read_img(psf, chip_path);
 
 	pow_spec(psf, ppsf, size, size);
@@ -103,7 +105,7 @@ int main(int argc, char*argv[])
 			cout << log_inform << endl;
 		}
 
-		sprintf(chip_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/%d/gal_chip_%04d.fits", shear_id, i+chip_id);
+		sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path,shear_id, i+chip_id);
 		read_img(big_img, chip_path);
 
 		for (j = 0; j < stamp_num; j++)
@@ -151,8 +153,8 @@ int main(int argc, char*argv[])
 						
 			shear_est(pgal, ppsf, pnoise, &all_paras);	
 
-			data[i*stamp_num + j][0] = all_paras.dp1;
-			data[i*stamp_num + j][1] = all_paras.dp2;
+			data[i*stamp_num + j][0] = 0;
+			data[i*stamp_num + j][1] = 0;
 			data[i*stamp_num + j][2] = all_paras.n1;
 			data[i*stamp_num + j][3] = all_paras.n2;
 			data[i*stamp_num + j][4] = all_paras.dn;
@@ -188,7 +190,7 @@ int main(int argc, char*argv[])
 		}
 	}
 
-	sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/result/data/data_f_%d_%d.hdf5", shear_id, myid / shear_pairs);
+	sprintf(h5_path, "%sresult/data/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
 	sprintf(set_name, "/data");
 	write_h5(h5_path, set_name, data_rows, data_cols, data[0], NULL);
 

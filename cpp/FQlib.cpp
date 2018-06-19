@@ -645,8 +645,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
 				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5*beta);
 				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2.* beta);
-				mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
-				mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
 		}
 	}
@@ -656,8 +656,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 	paras->dn = mn;
 	paras->du = mu;
 	paras->dv = mv;
-	paras->dp1 = mp1;
-	paras->dp2 = mp2;
+	//paras->dp1 = mp1;
+	//paras->dp2 = mp2;
 
 }
 
@@ -740,7 +740,7 @@ void f_snr(double *image, para *paras)
 
 }
 
-void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, para*paras)
+void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, para*paras)//be careful of the memset()
 {
 	int i, j,m,n,q,p,pk=0,tag,cen,coe,jx,iy, size=paras->img_size;
 	double fz[6]{}, z[25]{}, fit_para_6, max=0.,thres;

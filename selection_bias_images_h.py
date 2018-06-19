@@ -19,7 +19,7 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
+with open("%s/work/envs/envs1.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
     if "select_total" in path:
@@ -43,7 +43,7 @@ logger.addHandler(lf)
 stamp_size = 90
 pixel_scale = 0.2
 chips_num = int(500/int(cpus/14))
-seed = rank*344 + 112
+seed = rank*344 + 1121
 chip_s_id, shear_id = divmod(rank, 14)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -55,8 +55,8 @@ g2 = shear["arr_1"][shear_id]
 
 paras = para_path + "para_%d.hdf5"%shear_id
 f = h5py.File(paras,'r')
-e1s = f["/me1"].value
-e2s = f["/me2"].value
+e1s = f["/e1"].value
+e2s = f["/e2"].value
 radius = f["/radius"].value
 flux = f["/flux"].value
 fbt = f['/btr'].value
@@ -97,10 +97,10 @@ for i in range(chips_num):
 
         c_profile = numpy.random.randint(0, 10, 1)[0]
         if c_profile == 0:
-            gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=5*ra).shear(e1=e1, e2=e2)
+            gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5*ra).shear(e1=e1, e2=e2)
         else:
-            bulge = galsim.Sersic(half_light_radius=0.6*ra, n=4, trunc=5*ra)# be careful
-            disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=5*ra)# be careful
+            bulge = galsim.Sersic(half_light_radius=0.6*ra, n=4, trunc=4.5*ra)# be careful
+            disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=4.5*ra)# be careful
             gal = bulge * btr + disk * (1-btr)
             gal = gal.shear(e1=e1, e2=e2)
 
@@ -114,7 +114,7 @@ for i in range(chips_num):
         t += 1
 
     big_chip = fq.stack(gal_pool, 100)
-    # big_chip = numpy.float32(big_chip)
+    big_chip = numpy.float32(big_chip)
     hdu = fits.PrimaryHDU(big_chip)
     hdu.writeto(chip_path, overwrite=True)
     t2 = time.clock()

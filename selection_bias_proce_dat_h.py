@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import matplotlib
 matplotlib.use('Agg')
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
-path.append('/home/hkli/work/fourier_quad')
+path.append('%s/work/fourier_quad/'%my_home)
 import time
 import tool_box
 from Fourier_Quad import *
@@ -28,15 +30,17 @@ snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
 
-with open("/home/hkli/work/envs/envs.dat", "r") as f:
+with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "total_data" in path:
+    if "select_total_data" in path:
         total_path = path.split("=")[1]
-    elif "result" in path:
+    elif "select_result" in path:
         result_path = path.split("=")[1]
-    elif "parameter" in path:
+    elif "select_parameter" in path:
         para_path = path.split("=")[1]
+    elif "select_pic_path" in path:
+        pic_path = path.split("=")[1]
 
 shear_input = numpy.load(para_path+"shear.npz")
 fg1 = shear_input['arr_0']
@@ -44,8 +48,6 @@ fg2 = shear_input['arr_1']
 
 # where the result data file are placed
 path = result_path + "data/"
-# where the result figures will be created
-pic_path = result_path + "pic/%d_%s_"%(del_bin,ch)
 
 final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, ch, snr_s)
 for s in range(int(scale)):
@@ -59,11 +61,15 @@ for s in range(int(scale)):
     else:
         data = numpy.row_stack((data, f["/data"].value))
     f.close()
-sex_path = path + "sex25_%d_1.5.npz"%rank
-sex_snr = numpy.load(sex_path)['arr_0'][:, 0]
+# sex_path = path + "sex25_%d_1.5.npz"%rank
+# sex_snr = numpy.load(sex_path)['arr_0'][:, 0]
 
 fq = Fourier_Quad(stamp_size, 123)
 
+
+flux = data[:, 7]
+detect = flux > 0
+print(rank,len(flux[detect]))
 # F_Q data
 FG1 = data[:, 2]
 FG2 = data[:, 3]
@@ -74,28 +80,33 @@ FV = data[:, 6]
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 noise_sig = prop.sigma_sky
 
-# osnr
-osnr = data[:, 7]
 # flux
-flux = data[:, 8]/noise_sig
+flux = data[:, 7]/noise_sig
+# half_light_flux
+hflux = data[:, 8]/noise_sig
 # peak
 peak = data[:, 9]/noise_sig
-# fsnr
-fsnr = data[:, 10]
-# snr
-snr = data[:, 11]
 # area
-area = data[:, 12]
+area = data[:, 10]
+# half_light_area
+harea = data[:, 11]
+# snr
+snr = data[:, 12]
+# flux2
+flux2 = data[:, 13]
+# flux_alt
+flux_alt = data[:, 14]
+
 
 if rank == 0:
     print("flux: %.2f ~ %.2f\n"%(numpy.min(flux), numpy.max(flux)))
     print("peak: %.2f ~ %.2f\n"%(numpy.min(peak), numpy.max(peak)))
-    print("snr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
-    print("fsnr: %.2f ~ %.2f\n"%(numpy.min(fsnr), numpy.max(fsnr)))
-    print("osnr: %.2f ~ %.2f\n"%(numpy.min(osnr), numpy.max(osnr)))
+    print("flux2: %.2f ~ %.2f\n"%(numpy.min(flux2), numpy.max(flux2)))
+    print("osnr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
     print("area: %d ~ %d\n" % (numpy.min(area), numpy.max(area)))
 
-select = {"peak": peak, "flux": flux, "fsnr": fsnr, "snr": snr, "area": area, "sex": sex_snr}
+select = {"peak": peak, "flux": flux, "flux2": flux2, "area": area, "snr": snr,
+          "hflux": hflux, "harea": harea, "flux_alt": flux_alt}#, "sex": sex_snr}
 
 res_arr = numpy.zeros((3, 2))
 sp = res_arr.shape
@@ -109,6 +120,8 @@ G1 = FG1[idxs&idxe]
 G2 = FG2[idxs & idxe]
 N = FN[idxs&idxe]
 U = FU[idxs&idxe]
+DE1 = N + U
+DE2 = N - U
 # weight = ssnr[idxs&idxe]**wei_pow
 # if wei_pow == 0:
 weight = 1
@@ -117,8 +130,9 @@ num = len(G1)
 if method == 'sym':
     g1_xi2_pic = pic_path + "%d_%s_%d_g1_xi2.png"%(rank, ch, del_bin)
     g2_xi2_pic = pic_path + "%d_%s_%d_g2_xi2.png"%(rank, ch, del_bin)
-    g1_h, g1_h_sig = fq.fmin_g(G1, N, U, mode=1, bin_num=18, ig_num=del_bin, pic_path=g1_xi2_pic)
-    g2_h, g2_h_sig = fq.fmin_g(G2, N, U, mode=2, bin_num=18, ig_num=del_bin, pic_path=g2_xi2_pic)
+    g1_h, g1_h_sig = fq.fmin_g_new(G1, DE1, bin_num=12, ig_num=del_bin, pic_path=g1_xi2_pic)
+    g2_h, g2_h_sig = fq.fmin_g_new(G2, DE2, bin_num=12, ig_num=del_bin, pic_path=g2_xi2_pic)
+
 else:
     g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)
@@ -175,10 +189,10 @@ else:
             c2_b = "no c2 bias"
         else:
             c2_b = "c2 bias"
-        print(int(del_bin),"%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
-        print(int(del_bin),"%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
-        nm = pic_path + name[i] + "_%d_%s.png"%(del_bin, ch)
-        tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max', nm)
+        print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
+        print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
+        nm = pic_path + "mc_%s.png"%ch
+        tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max',[-0.03,0.03,-0.03,0.03], nm)
 
 te = time.clock()
 if rank == 0:

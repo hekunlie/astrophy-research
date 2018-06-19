@@ -22,13 +22,13 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-mag_s, mag_e = 19, 24.2
-radius_s, radius_e = 0.8, 1.4
+mag_s, mag_e = 20, 26.5
+radius_s, radius_e = 0.7, 1.1
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
+with open("%s/work/envs/envs1.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "parameter" in path:
+    if "select_parameter" in path:
         para_path = path.split("=")[1]
 
 seed = rank*4321554 + int(numpy.random.randint(1, 1256542344, 1)[0])

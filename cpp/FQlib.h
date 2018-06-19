@@ -3,7 +3,6 @@
 
 #pragma once
 #include <iostream>
-#include<string.h>
 #include<fstream>
 #include <iomanip>
 #include <cmath>
@@ -15,6 +14,7 @@
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
+#include<string.h>
 //#include<mkl.h>
 
 #define PRECISION

@@ -75,8 +75,8 @@ FG2 = data[:, 17][idx&idxa]
 FN = data[:, 18][idx&idxa]
 FU = data[:, 19][idx&idxa]
 FV = data[:, 20][idx&idxa]
-DE1 = FN - FU
-DE2 = FN + FU
+DE1 = FN + FU
+DE2 = FN - FU
 selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
 sel_idx = selects[cho] >= cho_thre
 
@@ -105,7 +105,7 @@ if rank < g1num:
     de1 = DE1[idx11&idx12&sel_idx]
 
     pic_1 = pic_path + "%d_%s_%.2f_g1_%d.png"%(del_bin, cho, cho_thre, rank)
-    esg1, sig1 = Fourier_Quad(48,123).fmin_g_new(g=mg1, nu=de1, mode=1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
+    esg1, sig1 = Fourier_Quad(48,123).fmin_g_new(g=mg1, nu=de1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
     field_g1 = g1[rank]
     num1 = len(mg1)
 else:
@@ -118,7 +118,7 @@ mg2 = FG2[idx21&idx22&sel_idx]
 de2 = DE2[idx21&idx22&sel_idx]
 
 pic_2 = pic_path + "%d_%s_%.2f_g2_%d.png"%(del_bin, cho, cho_thre, rank)
-esg2, sig2 = Fourier_Quad(48,123).fmin_g_new(g=mg2,nu=de2, mode=2,bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
+esg2, sig2 = Fourier_Quad(48,123).fmin_g_new(g=mg2,nu=de2, bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
 field_g2 = g2[rank]
 num2 = len(mg2)
 
