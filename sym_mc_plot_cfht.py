@@ -11,6 +11,7 @@ from Fourier_Quad import Fourier_Quad
 from sys import argv
 from mpi4py import MPI
 import tool_box
+import shelve
 
 
 comm = MPI.COMM_WORLD
@@ -29,7 +30,8 @@ for path in contents:
         result_path = path.split("=")[1]
     elif "cfht_field_path" in path:
         field_path = path.split("=")[1]
-
+    elif "cfht_cut_path" in path:
+        cut_path = path.split("=")[1]
 g_bin_path = result_path + "g_bin.npz"
 g_data = numpy.load(g_bin_path)
 g1 = g_data['arr_0']
@@ -40,81 +42,61 @@ g2num = len(g2)
 dg1 = g1[1] - g1[0]
 dg2 = g2[1] - g2[0]
 
-data_cache = result_path + "data_cache.npz"
-data = numpy.load(data_cache)['arr_0']
+g_trues = [g1, g2]
+dgs = [dg1, dg2]
+gnums = [g1num, g2num]
 
+if cpus < max(gnums):
+    if rank == 0:
+        print("Number of threads (%d) is smaller than the field bin number (%d)!"%(cpus, max(gnums)))
+    exit()
+
+select_save = shelve.open(cut_path+"cut_dict")
+select = select_save['dict']
+select_save.close()
+if cut not in select.keys():
+    if rank == 0:
+        print("%s is not in the cutoff dict!"%cut)
+    exit()
+else:
+    cuts_num = len(select[cut][1])
 
 fq = Fourier_Quad(48, 123)
+for i in range(2):
+    g_true = g_trues[i]
+    dg = dgs[i]
+    data_cache = result_path + "g%d_%d.npz" % (i + 1, rank)
+    if os.path.exists(data_cache):
+        data = numpy.load(data_cache)['arr_0']
 
-# sex_path = field_path + "sex_snr.npz"
-# ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
-# s_idx1 = ori_sex_snr <= 5000
-# s_idx2 = ori_sex_snr > 0
+        n_star = data[:, 3]
+        idx = n_star >= 20
+        area = data[:, 7]
+        idxa = area >= 6
 
-# binary_tag = binary_data[:, 0]
-# field_lab = binary_data[:, 1]
-# expo_lab = binary_data[:, 2]
-# chip_lab = binary_data[:, 3]
-# # '1' means binary or triple
-# bi_idx = binary_tag != 1
-# # exclude some fields
-# field_idx = field_lab != 41100
-# if rank == 0:
-#     print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
-#     print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
+        peak = data[:, 4][idx & idxa]  # &bi_idx&field_idx]
+        flux = data[:, 5][idx & idxa]
+        hflux = data[:, 6][idx & idxa]
+        area = data[:, 7][idx & idxa]
+        harea = data[:, 8][idx & idxa]
+        flux2 = data[:, 10][idx & idxa]
+        flux_alt = data[:, 11][idx & idxa]
+        field_g1 = data[:, 14][idx & idxa]
+        field_g2 = data[:, 15][idx & idxa]
+        MG1 = data[:, 16][idx & idxa]
+        MG2 = data[:, 17][idx & idxa]
+        MN = data[:, 18][idx & idxa]
+        MU = data[:, 19][idx & idxa]
+        MV = data[:, 20][idx & idxa]
+        DE1 = MN + MU
+        DE2 = MN - MU
 
-n_star = data[:, 3]
-idx = n_star >= 20
-area = data[:, 7]
-a_idx = area >= 6
+        for j in range(cuts_num):
 
-nsig = data[:, 4][idx&a_idx]
-flux = data[:, 5][idx&a_idx]
-hflux = data[:, 6][idx&a_idx]
-area = data[:, 7][idx&a_idx]
-harea = data[:, 8][idx&a_idx]
-flux2 = numpy.sqrt(data[:, 10][idx&a_idx])
-flux_alt = numpy.sqrt(data[:, 11][idx&a_idx])
-fg1 = data[:, 14][idx&a_idx]
-fg2 = data[:, 15][idx&a_idx]
-
-mg1 = data[:, 16][idx&a_idx]
-mg2 = data[:, 17][idx&a_idx]
-mn = data[:, 18][idx&a_idx]
-mu = data[:, 19][idx&a_idx]
-mv = data[:, 20][idx&a_idx]
-de1 = mn + mu
-de2 = mn - mu
-
-# sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
+    else:
 
 
 
-cuts_num = 20
-
-# d_sort = numpy.sort(sex_snr)
-# step = int(len(d_sort)/cuts_num)
-# sexcut = [d_sort[i*step] for i in range(cuts_num)]
-
-d_sort = numpy.sort(flux)
-step = int(len(d_sort)/cuts_num)
-flux_cut = [d_sort[i*step] for i in range(cuts_num)]
-
-d_sort = numpy.sort(flux2)
-step = int(len(d_sort)/cuts_num)
-flux2_cut = [d_sort[i*step] for i in range(cuts_num)]
-
-d_sort = numpy.sort(flux_alt)
-step = int(len(d_sort)/cuts_num)
-flux_alt_cut = [d_sort[i*step] for i in range(cuts_num)]
-
-
-select = {"flux":  (flux, flux_cut),
-          "flux2":  (flux2, flux2_cut),  "flux_alt": (flux_alt, flux_alt_cut)}
-
-# select = {"flux":  (flux, fcut),     "snr":  (snr08, scut),
-#           "fsnr":  (fsnr, fsnrcut),  "sex":  (sex_snr, sexcut),
-#           "fsnr_f": (fsnr_f, ffsnrcut), "peak":()}
 
 if rank < g1num:
     idxg11 = fg1 >= g1[rank] - dg1/2
