@@ -67,41 +67,47 @@ for area in contents:
 path_list = tool_box.allot(area_paths, cpus)[rank]
 npz_cat = []
 
+fcount = 0
 for i in range(len(path_list)):
     data_path = path_list[i]
-    if filter_exist:
-        temp = numpy.load(data_path)["arr_0"]
+    if os.path.exists(data_path):
+        if filter_exist:
+            temp = numpy.load(data_path)["arr_0"]
+        else:
+            area = os.path.basename(data_path)
+            temp = numpy.loadtxt(data_path)
+            field_name = area.split("_")[0]
+            w_path = result_path + "field/%s/"%field_name
+            if not os.path.exists(w_path):
+                os.mkdir(w_path)
+            area_npz = w_path + "%s.npz"%area
+            npz_name = field_name + "\n"
+            npz_cat.append(npz_name)
+            numpy.savez(area_npz, temp)
+            # for expo in list(field_dict[field_name].keys()):
+            #     chip_count = 0
+            #     for chip in field_dict[field_name][expo]:
+            #         chip_shear_path = total_path + "%s/result/%s_shear.dat"%(field_name, chip)
+            #         try:
+            #             chip_data_temp = numpy.loadtxt(chip_shear_path,skiprows=1)
+            #             if chip_count == 0:
+            #                 expo_data = chip_data_temp.copy()
+            #             else:
+            #                 expo_data = numpy.row_stack((expo_data, chip_data_temp))
+            #             chip_count += 1
+            #         except:
+            #             print("Empty %s/%s.shear.dat"%(field_name,chip))
+            #     expo_data_path = field_path + "%s/%s.npz"%(field_name,expo)
+            #     numpy.savez(expo_data_path, expo_data)
+        if fcount == 0:
+            data = temp.copy()
+        else:
+            data = numpy.row_stack((data, temp))
+        fcount += 1
     else:
-        area = os.path.basename(data_path)
-        temp = numpy.loadtxt(data_path)
-        field_name = area.split("_")[0]
-        w_path = result_path + "field/%s/"%field_name
-        if not os.path.exists(w_path):
-            os.mkdir(w_path)
-        area_npz = w_path + "%s.npz"%area
-        npz_name = field_name + "\n"
-        npz_cat.append(npz_name)
-        numpy.savez(area_npz, temp)
-        for expo in list(field_dict[field_name].keys()):
-            chip_count = 0
-            for chip in field_dict[field_name][expo]:
-                chip_shear_path = total_path + "%s/result/%s_shear.dat"%(field_name, chip)
-                try:
-                    chip_data_temp = numpy.loadtxt(chip_shear_path,skiprows=1)
-                    if chip_count == 0:
-                        expo_data = chip_data_temp.copy()
-                    else:
-                        expo_data = numpy.row_stack((expo_data, chip_data_temp))
-                    chip_count += 1
-                except:
-                    print("Empty %s/%s.shear.dat"%(field_name,chip))
-            expo_data_path = field_path + "%s/%s.npz"%(field_name,expo)
-            numpy.savez(expo_data_path, expo_data)
-    if i == 0:
-        data = temp.copy()
-    else:
-        data = numpy.row_stack((data, temp))
+        print(rank, os.path.basename(data_path))
 
+recv_fcount = comm.gather(fcount,root=0)
 sp = data.shape
 recv_sp = comm.gather(sp, root=0)
 recv_npz_cat = comm.gather(npz_cat, root=0)
@@ -114,14 +120,14 @@ else:
         comm.Recv(recvs, source=procs, tag=procs)
         data = numpy.row_stack((data, recvs))
     numpy.savez(data_cache, data)
-    print("Totally, %d galaxies are detected in %d fields"%(len(data), field_count))
+    print("Totally, %d galaxies are detected in %d (%d) fields"%(len(data), sum(recv_fcount), field_count))
 
 te = time.clock()
 if rank == 0:
-    if not filter_exist:
-        npzs = []
-        for sub_ in recv_npz_cat:
-            npzs.extend(sub_)
-        with open(filter_path, "w") as f:
-            f.writelines(npzs)
+    # if not filter_exist:
+    #     npzs = []
+    #     for sub_ in recv_npz_cat:
+    #         npzs.extend(sub_)
+    #     with open(filter_path, "w") as f:
+    #         f.writelines(npzs)
     print(te-ts)

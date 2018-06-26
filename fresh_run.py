@@ -77,16 +77,18 @@ for i in PROCESS_stage:
     f.writelines(contents)
     f.close()
 
-    os.remove("main")
+    if os.path.exists("main"):
+        os.remove("main")
 
     # compiling
     cmd = "mpif77 *.f -o main -mcmodel=medium -lcfitsio"
     a = Popen(cmd, shell=True)
     a.wait()
+    print("Compiling")
     # run code
-    cmd = "mpiexec -n %d ./main "%ncpus + source_list
-    a = Popen(cmd, shell=True)
-    a.wait()
+    # cmd = "mpiexec -n %d ./main "%ncpus + source_list
+    # a = Popen(cmd, shell=True)
+    # a.wait()
 
     t2 = time.time()
     t[i-1] = (t2-t1)/3600

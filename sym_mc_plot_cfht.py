@@ -19,13 +19,6 @@ cpus = comm.Get_size()
 
 cut = argv[1]
 
-g1num = cpus-6
-g2num = cpus
-g1 = numpy.linspace(-0.004, 0.004, g1num)
-g2 = numpy.linspace(-0.0055, 0.0055, g2num)
-dg1 = g1[1]-g1[0]
-dg2 = g2[1]-g2[0]
-
 t1 = time.clock()
 with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
@@ -37,11 +30,19 @@ for path in contents:
     elif "cfht_field_path" in path:
         field_path = path.split("=")[1]
 
+g_bin_path = result_path + "g_bin.npz"
+g_data = numpy.load(g_bin_path)
+g1 = g_data['arr_0']
+g2 = g_data['arr_1']
+g1num = len(g1)
+g2num = len(g2)
+# the length of the interval
+dg1 = g1[1] - g1[0]
+dg2 = g2[1] - g2[0]
+
 data_cache = result_path + "data_cache.npz"
 data = numpy.load(data_cache)['arr_0']
 
-binary_path = result_path + "binary_label.npz"
-binary_data = numpy.load(binary_path)["arr_0"]
 
 fq = Fourier_Quad(48, 123)
 
@@ -50,70 +51,66 @@ ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
 s_idx1 = ori_sex_snr <= 5000
 s_idx2 = ori_sex_snr > 0
 
-binary_tag = binary_data[:, 0]
-field_lab = binary_data[:, 1]
-expo_lab = binary_data[:, 2]
-chip_lab = binary_data[:, 3]
-# '1' means binary or triple
-bi_idx = binary_tag != 1
-# exclude some fields
-field_idx = field_lab != 41100
-if rank == 0:
-    print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
-    print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
+# binary_tag = binary_data[:, 0]
+# field_lab = binary_data[:, 1]
+# expo_lab = binary_data[:, 2]
+# chip_lab = binary_data[:, 3]
+# # '1' means binary or triple
+# bi_idx = binary_tag != 1
+# # exclude some fields
+# field_idx = field_lab != 41100
+# if rank == 0:
+#     print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
+#     print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
 
 n_star = data[:, 3]
 idx = n_star >= 20
 area = data[:, 7]
 a_idx = area >= 6
 
-nsig = data[:, 4][idx&bi_idx&field_idx&a_idx]
-flux = data[:, 5][idx&bi_idx&field_idx&a_idx]
-hflux = data[:, 6][idx&bi_idx&field_idx&a_idx]
-# area = data[:, 7][idx&bi_idx&field_idx]
-harea = data[:, 8][idx&bi_idx&field_idx&a_idx]
-fsnr = numpy.sqrt(data[:, 10][idx&bi_idx&field_idx&a_idx])
-fsnr_f = numpy.sqrt(data[:, 11][idx&bi_idx&field_idx&a_idx])
-fg1 = data[:, 14][idx&bi_idx&field_idx&a_idx]
-fg2 = data[:, 15][idx&bi_idx&field_idx&a_idx]
+nsig = data[:, 4][idx&a_idx]
+flux = data[:, 5][idx&a_idx]
+hflux = data[:, 6][idx&a_idx]
+area = data[:, 7][idx&a_idx]
+harea = data[:, 8][idx&a_idx]
+flux2 = numpy.sqrt(data[:, 10][idx&a_idx])
+flux_alt = numpy.sqrt(data[:, 11][idx&a_idx])
+fg1 = data[:, 14][idx&a_idx]
+fg2 = data[:, 15][idx&a_idx]
 
-mg1 = data[:, 16][idx&bi_idx&field_idx&a_idx]
-mg2 = data[:, 17][idx&bi_idx&field_idx&a_idx]
-mn = data[:, 18][idx&bi_idx&field_idx&a_idx]
-mu = data[:, 19][idx&bi_idx&field_idx&a_idx]
-mv = data[:, 20][idx&bi_idx&field_idx&a_idx]
+mg1 = data[:, 16][idx&a_idx]
+mg2 = data[:, 17][idx&a_idx]
+mn = data[:, 18][idx&a_idx]
+mu = data[:, 19][idx&a_idx]
+mv = data[:, 20][idx&a_idx]
 de1 = mn + mu
 de2 = mn - mu
 
 # sex_snr = ori_sex_snr[idx&s_idx1&s_idx2]
 
-snr08 = numpy.sqrt(flux)/nsig
+
 
 cuts_num = 20
 
-# d_sort = numpy.sort(sex_snr)
-# step = int(len(d_sort)/cuts_num)
-# sexcut = [d_sort[i*step] for i in range(cuts_num)]
+d_sort = numpy.sort(sex_snr)
+step = int(len(d_sort)/cuts_num)
+sexcut = [d_sort[i*step] for i in range(cuts_num)]
 
 d_sort = numpy.sort(flux)
 step = int(len(d_sort)/cuts_num)
-fcut = [d_sort[i*step] for i in range(cuts_num)]
+flux_cut = [d_sort[i*step] for i in range(cuts_num)]
 
-d_sort = numpy.sort(snr08)
+d_sort = numpy.sort(flux2)
 step = int(len(d_sort)/cuts_num)
-scut = [d_sort[i*step] for i in range(cuts_num)]
+flux2_cut = [d_sort[i*step] for i in range(cuts_num)]
 
-d_sort = numpy.sort(fsnr)
+d_sort = numpy.sort(flux_alt)
 step = int(len(d_sort)/cuts_num)
-fsnrcut = [d_sort[i*step] for i in range(cuts_num)]
-
-d_sort = numpy.sort(fsnr_f)
-step = int(len(d_sort)/cuts_num)
-ffsnrcut = [d_sort[i*step] for i in range(cuts_num)]
+flux_alt_cut = [d_sort[i*step] for i in range(cuts_num)]
 
 
-select = {"flux":  (flux, fcut),     "snr":  (snr08, scut),
-          "fsnr":  (fsnr, fsnrcut),  "fsnr_f": (fsnr_f, ffsnrcut)}
+select = {"flux":  (flux, flux_cut),
+          "flux2":  (flux2, flux2_cut),  "flux_alt": (flux_alt, flux_alt_cut)}
 
 # select = {"flux":  (flux, fcut),     "snr":  (snr08, scut),
 #           "fsnr":  (fsnr, fsnrcut),  "sex":  (sex_snr, sexcut),

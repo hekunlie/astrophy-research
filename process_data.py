@@ -34,15 +34,28 @@ for path in contents:
     elif "cfht_pic_path" in path:
         pic_path = path.split("=")[1]
 
-data_cache = result_path + "data_cache.npz"
-data = numpy.load(data_cache)['arr_0']
+g_bin_path = result_path + "g_bin.npz"
+g_data = numpy.load(g_bin_path)
+g1 = g_data['arr_0']
+g2 = g_data['arr_1']
+g1num = len(g1)
+g2num = len(g2)
+# the length of the interval
+dg1 = g1[1] - g1[0]
+dg2 = g2[1] - g2[0]
 
-if rank == 0:
-    print("Totally, %d galaxies are detected"%len(data))
+g_trues = [g1, g2]
+dgs = [dg1, dg2]
+gnums = [g1num, g2num]
 
+measure_res = []
+for i in range(2):
+    g_true = g_trues[i]
+    dg = dgs[i]
 
-fg1_max, fg1_min = numpy.max(data[:, 14]),numpy.min(data[:, 14])
-fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
+    data_cache = result_path + "g%d_%d.npz"%(i+1,rank)
+    if os.path.exists(data_cache):
+        data = numpy.load(data_cache)['arr_0']
 
 # binary_tag = binary_data[:, 0]
 # field_lab = binary_data[:, 1]
@@ -56,93 +69,71 @@ fg2_max, fg2_min = numpy.max(data[:, 15]),numpy.min(data[:, 15])
 #     print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
 #     print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
 
-n_star = data[:, 3]
-idx = n_star >= 20
-area = data[:, 7]
-idxa = area >= 5
+        n_star = data[:, 3]
+        idx = n_star >= 20
+        area = data[:, 7]
+        idxa = area >= 5
 
-peak = data[:, 4][idx&idxa]#&bi_idx&field_idx]
-flux = data[:, 5][idx&idxa]
-hflux = data[:, 6][idx&idxa]
-area = data[:, 7][idx&idxa]
-harea = data[:, 8][idx&idxa]
-fsnr = data[:, 10][idx&idxa]
-fsnr_f = data[:, 11][idx&idxa]
-fg1 = data[:, 14][idx&idxa]
-fg2 = data[:, 15][idx&idxa]
-FG1 = data[:, 16][idx&idxa]
-FG2 = data[:, 17][idx&idxa]
-FN = data[:, 18][idx&idxa]
-FU = data[:, 19][idx&idxa]
-FV = data[:, 20][idx&idxa]
-DE1 = FN + FU
-DE2 = FN - FU
-selects = {"peak": peak, "fsnr": fsnr, "fsnr_f": fsnr_f, "flux": flux}
-sel_idx = selects[cho] >= cho_thre
+        peak = data[:, 4][idx&idxa]#&bi_idx&field_idx]
+        flux = data[:, 5][idx&idxa]
+        hflux = data[:, 6][idx&idxa]
+        area = data[:, 7][idx&idxa]
+        harea = data[:, 8][idx&idxa]
+        flux2 = data[:, 10][idx&idxa]
+        flux_alt = data[:, 11][idx&idxa]
+        field_g1 = data[:, 14][idx&idxa]
+        field_g2 = data[:, 15][idx&idxa]
+        MG1 = data[:, 16][idx&idxa]
+        MG2 = data[:, 17][idx&idxa]
+        MN = data[:, 18][idx&idxa]
+        MU = data[:, 19][idx&idxa]
+        MV = data[:, 20][idx&idxa]
+        DE1 = MN + MU
+        DE2 = MN - MU
 
-g1num = cpus
-g2num = cpus
-g1 = numpy.linspace(-0.005, 0.005, g1num)
-g2 = numpy.linspace(-0.005, 0.005, g2num)
+        selects = {"peak": peak, "fsnr": flux2, "fsnr_f": flux_alt, "flux": flux}
+        sel_idx = selects[cho] >= cho_thre
 
-# the length of the interval
-dg1 = g1[1] - g1[0]
-dg2 = g2[1] - g2[0]
+        MGs = [MG1, MG2]
+        DEs = [DE1, DE2]
+        fgs = [field_g1, field_g2]
 
-if rank == 0:
-    print("nstar: %d ~ %d\n"%(numpy.min(n_star), numpy.max(n_star)))
-    print("fg1: %.4f ~ %.4f (%.4f ~ %.4f)\n"%(fg1_min, fg1_max, numpy.min(fg1), numpy.max(fg1)))
-    print("fg2: %.4f ~ %.4f (%.4f ~ %.4f)\n" % (fg2_min, fg2_max, numpy.min(fg2), numpy.max(fg2)))
-    print("peak: %.2f ~ %.2f\n" % (numpy.min(peak), numpy.max(peak)))
-    print("flux: %.2f ~ %.2f\n" % (numpy.min(flux), numpy.max(flux)))
-    print("area: %.2f ~ %.2f\n" % (numpy.min(area), numpy.max(area)))
+        # fg = fgs[i]
+        # mg = MGs[i]
+        # de = DEs[i]
 
-if rank < g1num:
-    idx11 = fg1 >= g1[rank] - dg1/2
-    idx12 = fg1 <= g1[rank] + dg1/2
+        idx1 = fgs[i] >= g_true[rank] - dg/2
+        idx2 = fgs[i] <= g_true[rank] + dg/2
 
-    mg1 = FG1[idx11&idx12&sel_idx]
-    de1 = DE1[idx11&idx12&sel_idx]
+        mg = MGs[i][idx1&idx2&sel_idx]
+        de = DEs[i][idx1&idx2&sel_idx]
 
-    pic_1 = pic_path + "%d_%s_%.2f_g1_%d.png"%(del_bin, cho, cho_thre, rank)
-    esg1, sig1 = Fourier_Quad(48,123).fmin_g_new(g=mg1, nu=de1, bin_num=bin_num, ig_num=del_bin, pic_path=pic_1)
-    field_g1 = g1[rank]
-    num1 = len(mg1)
-else:
-    esg1, sig1, num1, field_g1 = -1,-1,-1,-1
+        pic = pic_path + "%s_%d_%.2f_g%d_%d.png"%(cho,del_bin, cho_thre, i+1,rank)
+        estg, sig = Fourier_Quad(48,123).fmin_g_new(g=mg, nu=de, bin_num=bin_num, ig_num=del_bin, pic_path=pic)
+        gal_num = len(mg)
 
-idx21 = fg2 >= g2[rank] - dg2/2
-idx22 = fg2 <= g2[rank] + dg2/2
+    else:
+        estg, sig, gal_num = -1,-1,-1
+    measure_res.extend([estg, sig, gal_num])
 
-mg2 = FG2[idx21&idx22&sel_idx]
-de2 = DE2[idx21&idx22&sel_idx]
-
-pic_2 = pic_path + "%d_%s_%.2f_g2_%d.png"%(del_bin, cho, cho_thre, rank)
-esg2, sig2 = Fourier_Quad(48,123).fmin_g_new(g=mg2,nu=de2, bin_num=bin_num,ig_num=del_bin,pic_path=pic_2)
-field_g2 = g2[rank]
-num2 = len(mg2)
-
-send_data = [esg1, sig1, num1, esg2, sig2, num2, field_g1, field_g2]
-gather_data = comm.gather(send_data, root=0)
+gather_data = comm.gather(measure_res, root=0)
 
 if rank == 0:
-    g_data = numpy.array(gather_data)
-    g = [g1,g2]
+    res_data = numpy.array(gather_data)
     mcs = []
-    gnum = [g1num, g2num]
     for i in range(2):
-        mg = g_data[0:gnum[i], i*3+0]
-        sig = g_data[0:gnum[i], i*3+1]
-        num = g_data[0:gnum[i], i*3+2]
-        mc = tool_box.data_fit(g[i], mg, sig)
+        mg = res_data[0:gnums[i], i*3+0]
+        sig = res_data[0:gnums[i], i*3+1]
+        num = res_data[0:gnums[i], i*3+2]
+        mc = tool_box.data_fit(g_trues[i], mg, sig)
         mcs.append(mc)
-        for p in range(gnum[i]):
-            print("num: %4.1f W, g1: %8.5f, m_g: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
-                  %(num[p]/10000, g[i][p], mg[p], sig[p], 10000*(mg[p]-g[i][p]), numpy.sqrt(num[p])*sig[p]))
+        for p in range(gnums[i]):
+            print("num: %4.1f W, g%d: %8.5f, m_g: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
+                  %(num[p]/10000, i, g[i][p], mg[p], sig[p], 10000*(mg[p]-g[i][p]), numpy.sqrt(num[p])*sig[p]))
         print("\n")
-    final_cache = result_path + "%d_%s_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
+    final_cache = result_path + "%s_%d_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
     final_cache = tool_box.file_name(final_cache)
-    numpy.savez(final_cache, numpy.array(mcs), g_data)
+    numpy.savez(final_cache, numpy.array(mcs), res_data)
     e1mc = mcs[0]
     e2mc = mcs[1]
     if e1mc[0] - 1 - 2 * e1mc[1] < 0 < e1mc[0] - 1 + 2 * e1mc[1]:
@@ -167,8 +158,10 @@ if rank == 0:
 
     nm = pic_path + "%d_%s_%.2f_mc.png"%(del_bin,cho, cho_thre)
     nm = tool_box.file_name(nm)
-    xy_lim = [-0.008, 0.008, -0.010, 0.010]
-    tool_box.mcplot(g1, g_data.T[0:3,0:g1num], g2, g_data.T[3:6, 0:g2num], e1mc, e2mc, str(cho_thre), 'max', xy_lim, nm)
+    g1_bound = 1.2*numpy.abs(g1).max()
+    g2_bound = 1.2*numpy.abs(g2).max()
+    xy_lim = [-g1_bound, g1_bound, -g2_bound, g2_bound]
+    tool_box.mcplot(g1, res_data.T[0:3,0:g1num], g2, res_data.T[3:6, 0:g2num], e1mc, e2mc, str(cho_thre), 'max', xy_lim, nm)
 te = time.clock()
 if rank == 0:
     print(te-ts)

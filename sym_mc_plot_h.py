@@ -34,8 +34,8 @@ shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
-for i in range(2):
-    h5path = result_path + "data/data_f_%d_%d.hdf5"%(rank,i)
+for i in range(5):
+    h5path = result_path + "data/data_%d_%d.hdf5"%(rank,i)
     f = h5py.File(h5path, "r")
     if i == 0:
         data = f["/data"].value
@@ -52,66 +52,67 @@ detected = detect_ > 0
 cuts_num = 20
 
 # flux
-flux = data[:, 7][detected]/noise_sig
-flux_sort = numpy.sort(flux)
+flux = data[:, 7]/noise_sig
+flux_sort = numpy.sort(flux[detected])
 flux_step = int(len(flux_sort)/cuts_num)
 flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
 
 # half_light_flux
-hflux = data[:, 8][detected]/noise_sig
-hflux_sort = numpy.sort(hflux)
+hflux = data[:, 8]/noise_sig
+hflux_sort = numpy.sort(hflux[detected])
 hflux_step = int(len(hflux_sort)/cuts_num)
-hflux_cut = [flux_sort[i*hflux_step] for i in range(cuts_num)]
+hflux_cut = [hflux_sort[i*hflux_step] for i in range(cuts_num)]
 
 # peak
-peak = data[:, 9][detected]/noise_sig
-peak_sort = numpy.sort(peak)
+peak = data[:, 9]/noise_sig
+peak_sort = numpy.sort(peak[detected])
 peak_step = int(len(peak_sort)/cuts_num)
-peak_cut = [flux_sort[i*peak_step] for i in range(cuts_num)]
+peak_cut = [peak_sort[i*peak_step] for i in range(cuts_num)]
 
 # area
-area = data[:, 10][detected]
-area_sort = numpy.sort(area)
+area = data[:, 10]
+area_sort = numpy.sort(area[detected])
 area_step = int(len(area_sort)/cuts_num)
-area_cut = [flux_sort[i*area_step] for i in range(cuts_num)]
+area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
 
 # half_light_area
-harea = data[:, 11][detected]
-harea_sort = numpy.sort(harea)
+harea = data[:, 11]
+harea_sort = numpy.sort(harea[detected])
 harea_step = int(len(harea_sort)/cuts_num)
-harea_cut = [flux_sort[i*harea_step] for i in range(cuts_num)]
+harea_cut = [harea_sort[i*harea_step] for i in range(cuts_num)]
 
 # snr
-snr = data[:, 12][detected]
-snr_sort = numpy.sort(snr)
+snr = data[:, 12]
+snr_sort = numpy.sort(snr[detected])
 snr_step = int(len(snr_sort)/cuts_num)
-snr_cut = [flux_sort[i*snr_step] for i in range(cuts_num)]
+snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
 
 # flux2
-flux2 = data[:, 13][detected]
-flux2_sort = numpy.sort(flux2)
+flux2 = data[:, 13]
+flux2_sort = numpy.sort(flux2[detected])
 flux2_step = int(len(flux2_sort)/cuts_num)
-flux2_cut = [flux_sort[i*flux2_step] for i in range(cuts_num)]
+flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
 
 # flux_alt
-flux_alt = data[:, 14][detected]
-flux_alt_sort = numpy.sort(flux_alt)
+flux_alt = data[:, 14]
+flux_alt_sort = numpy.sort(flux_alt[detected])
 flux_alt_step = int(len(flux_alt_sort)/cuts_num)
-flux_alt_cut = [flux_sort[i*flux_alt_step] for i in range(cuts_num)]
+flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
 
 
 sex_path = total_path + "result/data/sex25_%d_1.5.npz"%rank
-sex = numpy.load(sex_path)["arr_0"][:,0][detected]
-sex_sort = numpy.sort(sex)
+sex = numpy.load(sex_path)["arr_0"][:,0]
+sex_idx = sex > 0
+sex_sort = numpy.sort(sex[sex_idx])
 sex_step = int(len(sex_sort)/cuts_num)
 sex_cut = [sex_sort[i*sex_step] for i in range(cuts_num)]
 
 
-select = {"sex":    (sex, sex_cut),           "snr":     (snr, snr_cut),
-          "flux":     (flux, flux_cut),       "hflux":   (hflux, hflux_cut),
-          "peak":     (peak, peak_cut),       "area":    (area, area_cut),
-          "harea":    (harea, harea_cut),     "flux2":   (flux2, flux2_cut),
-          "flux_alt": (flux_alt, flux_alt_cut)}
+select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
+          "hflux":   (hflux, hflux_cut),      "peak":     (peak, peak_cut),
+          "area":    (area, area_cut),        "harea":    (harea, harea_cut),
+          "flux2":   (flux2, flux2_cut),      "flux_alt": (flux_alt, flux_alt_cut),
+          "sex": (sex, sex_cut),}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
@@ -123,18 +124,18 @@ MV = data[:, 6]
 DE1 = MN + MU
 DE2 = MN - MU
 
-sex_idx = sex > 0
-detected_label = {"sex": sex_idx, "flux": detected, "hflux": detected, "peak": detected,
-                  "area": detected, "harea": detected, "snr": detected, "flux2": detected, "flux_alt": detected}
+
+detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area": detected, "harea": detected,
+                  "snr": detected, "flux2": detected, "flux_alt": detected, "sex": sex_idx, }
 
 for tag, cut_s in enumerate(select[cut][1]):
-    idx = select[cut][0] >= cut_s
-    num = len(MG1[detected_label[cut] & idx])
+    idx = select[cut][0] > cut_s
+    num = len(MG1[detected_label[cut]&idx])
 
-    nm1 = MG1[detected_label[cut] & idx]
-    de1 = DE1[detected_label[cut] & idx]
-    nm2 = MG2[detected_label[cut] & idx]
-    de2 = DE2[detected_label[cut] & idx]
+    nm1 = MG1[detected_label[cut]&idx]
+    de1 = DE1[detected_label[cut]&idx]
+    nm2 = MG2[detected_label[cut]&idx]
+    de2 = DE2[detected_label[cut]&idx]
 
     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
@@ -189,9 +190,9 @@ else:
         pic_mc = "".join(mc_title)
 
         pic_path = total_path + "result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
-        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
+        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', [-0.03,0.03,-0.03,0.03],pic_path)
         pic_path = total_path + "result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
-        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max', pic_path)
+        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max',[-0.03,0.03,-0.03,0.03],pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
