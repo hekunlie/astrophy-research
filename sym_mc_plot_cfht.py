@@ -46,10 +46,10 @@ data = numpy.load(data_cache)['arr_0']
 
 fq = Fourier_Quad(48, 123)
 
-sex_path = field_path + "sex_snr.npz"
-ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
-s_idx1 = ori_sex_snr <= 5000
-s_idx2 = ori_sex_snr > 0
+# sex_path = field_path + "sex_snr.npz"
+# ori_sex_snr = numpy.load(sex_path)["arr_0"][:, 0]
+# s_idx1 = ori_sex_snr <= 5000
+# s_idx2 = ori_sex_snr > 0
 
 # binary_tag = binary_data[:, 0]
 # field_lab = binary_data[:, 1]
@@ -92,9 +92,9 @@ de2 = mn - mu
 
 cuts_num = 20
 
-d_sort = numpy.sort(sex_snr)
-step = int(len(d_sort)/cuts_num)
-sexcut = [d_sort[i*step] for i in range(cuts_num)]
+# d_sort = numpy.sort(sex_snr)
+# step = int(len(d_sort)/cuts_num)
+# sexcut = [d_sort[i*step] for i in range(cuts_num)]
 
 d_sort = numpy.sort(flux)
 step = int(len(d_sort)/cuts_num)

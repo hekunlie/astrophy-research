@@ -48,11 +48,15 @@ g_trues = [g1, g2]
 dgs = [dg1, dg2]
 gnums = [g1num, g2num]
 
+if cpus < max(gnums):
+    if rank == 0:
+        print("Number of threads (%d) is smaller than the field bin number (%d)!"%(cpus, max(gnums)))
+    exit()
+
 measure_res = []
 for i in range(2):
     g_true = g_trues[i]
     dg = dgs[i]
-
     data_cache = result_path + "g%d_%d.npz"%(i+1,rank)
     if os.path.exists(data_cache):
         data = numpy.load(data_cache)['arr_0']
@@ -72,7 +76,7 @@ for i in range(2):
         n_star = data[:, 3]
         idx = n_star >= 20
         area = data[:, 7]
-        idxa = area >= 5
+        idxa = area >= 6
 
         peak = data[:, 4][idx&idxa]#&bi_idx&field_idx]
         flux = data[:, 5][idx&idxa]
@@ -111,10 +115,11 @@ for i in range(2):
         pic = pic_path + "%s_%d_%.2f_g%d_%d.png"%(cho,del_bin, cho_thre, i+1,rank)
         estg, sig = Fourier_Quad(48,123).fmin_g_new(g=mg, nu=de, bin_num=bin_num, ig_num=del_bin, pic_path=pic)
         gal_num = len(mg)
+        field_g = g_true[rank]
 
     else:
-        estg, sig, gal_num = -1,-1,-1
-    measure_res.extend([estg, sig, gal_num])
+        estg, sig, gal_num, field_g = -1,-1,-1, -1
+    measure_res.extend([estg, sig, gal_num, field_g])
 
 gather_data = comm.gather(measure_res, root=0)
 
@@ -122,14 +127,14 @@ if rank == 0:
     res_data = numpy.array(gather_data)
     mcs = []
     for i in range(2):
-        mg = res_data[0:gnums[i], i*3+0]
-        sig = res_data[0:gnums[i], i*3+1]
-        num = res_data[0:gnums[i], i*3+2]
+        mg = res_data[0:gnums[i], i*3+0+i]
+        sig = res_data[0:gnums[i], i*3+1+i]
+        num = res_data[0:gnums[i], i*3+2+i]
         mc = tool_box.data_fit(g_trues[i], mg, sig)
         mcs.append(mc)
         for p in range(gnums[i]):
             print("num: %4.1f W, g%d: %8.5f, m_g: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
-                  %(num[p]/10000, i, g[i][p], mg[p], sig[p], 10000*(mg[p]-g[i][p]), numpy.sqrt(num[p])*sig[p]))
+                  %(num[p]/10000, i, g_trues[i][p], mg[p], sig[p], 10000*(mg[p]-g_trues[i][p]), numpy.sqrt(num[p])*sig[p]))
         print("\n")
     final_cache = result_path + "%s_%d_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
     final_cache = tool_box.file_name(final_cache)
@@ -158,10 +163,10 @@ if rank == 0:
 
     nm = pic_path + "%d_%s_%.2f_mc.png"%(del_bin,cho, cho_thre)
     nm = tool_box.file_name(nm)
-    g1_bound = 1.2*numpy.abs(g1).max()
-    g2_bound = 1.2*numpy.abs(g2).max()
+    g1_bound = 1.4*numpy.abs(g1).max()
+    g2_bound = 1.4*numpy.abs(g2).max()
     xy_lim = [-g1_bound, g1_bound, -g2_bound, g2_bound]
-    tool_box.mcplot(g1, res_data.T[0:3,0:g1num], g2, res_data.T[3:6, 0:g2num], e1mc, e2mc, str(cho_thre), 'max', xy_lim, nm)
+    tool_box.mcplot(g1, res_data.T[0:3,0:g1num], g2, res_data.T[4:7, 0:g2num], e1mc, e2mc, str(cho_thre), 'max', xy_lim, nm)
 te = time.clock()
 if rank == 0:
     print(te-ts)
