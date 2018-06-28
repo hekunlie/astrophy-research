@@ -86,12 +86,13 @@ for i in PROCESS_stage:
     a.wait()
     print("Compiling")
     # run code
-    # cmd = "mpiexec -n %d ./main "%ncpus + source_list
-    # a = Popen(cmd, shell=True)
-    # a.wait()
+    cmd = "mpiexec -n %d ./main %s"%(ncpus, source_list)
+    a = Popen(cmd, shell=True)
+    a.wait()
 
     t2 = time.time()
     t[i-1] = (t2-t1)/3600
     logger.info("PROCESS_stage %d finish." %i)
-
+logger.info("PROCESS 1: %.2f H, PROCESS 2: %.2f H, PROCESS 3: %.2f H"%(t[0], t[1], t[2]))
 print("PROCESS 1: %.2f H, PROCESS 2: %.2f H, PROCESS 3: %.2f H"%(t[0], t[1], t[2]))
+

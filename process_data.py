@@ -57,10 +57,9 @@ measure_res = []
 for i in range(2):
     g_true = g_trues[i]
     dg = dgs[i]
-    data_cache = result_path + "g%d_%d.npz"%(i+1,rank)
+    data_cache = result_path + "data/g%d_%d.npz"%(i+1,rank)
     if os.path.exists(data_cache):
         data = numpy.load(data_cache)['arr_0']
-
 # binary_tag = binary_data[:, 0]
 # field_lab = binary_data[:, 1]
 # expo_lab = binary_data[:, 2]
@@ -72,30 +71,24 @@ for i in range(2):
 # if rank == 0:
 #     print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
 #     print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
-
-        n_star = data[:, 3]
-        idx = n_star >= 20
+        peak = data[:, 4]#&bi_idx&field_idx]
+        flux = data[:, 5]
+        hflux = data[:, 6]
         area = data[:, 7]
-        idxa = area >= 6
-
-        peak = data[:, 4][idx&idxa]#&bi_idx&field_idx]
-        flux = data[:, 5][idx&idxa]
-        hflux = data[:, 6][idx&idxa]
-        area = data[:, 7][idx&idxa]
-        harea = data[:, 8][idx&idxa]
-        flux2 = data[:, 10][idx&idxa]
-        flux_alt = data[:, 11][idx&idxa]
-        field_g1 = data[:, 14][idx&idxa]
-        field_g2 = data[:, 15][idx&idxa]
-        MG1 = data[:, 16][idx&idxa]
-        MG2 = data[:, 17][idx&idxa]
-        MN = data[:, 18][idx&idxa]
-        MU = data[:, 19][idx&idxa]
-        MV = data[:, 20][idx&idxa]
+        harea = data[:, 8]
+        flux2 = data[:, 10]
+        flux_alt = data[:, 11]
+        field_g1 = data[:, 14]
+        field_g2 = data[:, 15]
+        MG1 = data[:, 16]
+        MG2 = data[:, 17]
+        MN = data[:, 18]
+        MU = data[:, 19]
+        MV = data[:, 20]
         DE1 = MN + MU
         DE2 = MN - MU
 
-        selects = {"peak": peak, "fsnr": flux2, "fsnr_f": flux_alt, "flux": flux}
+        selects = {"peak": peak, "flux2": flux2, "flux_alt": flux_alt, "flux": flux}
         sel_idx = selects[cho] >= cho_thre
 
         MGs = [MG1, MG2]
@@ -134,9 +127,9 @@ if rank == 0:
         mcs.append(mc)
         for p in range(gnums[i]):
             print("num: %4.1f W, g%d: %8.5f, m_g: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"
-                  %(num[p]/10000, i, g_trues[i][p], mg[p], sig[p], 10000*(mg[p]-g_trues[i][p]), numpy.sqrt(num[p])*sig[p]))
+                  %(num[p]/10000, i+1, g_trues[i][p], mg[p], sig[p], 10000*(mg[p]-g_trues[i][p]), numpy.sqrt(num[p])*sig[p]))
         print("\n")
-    final_cache = result_path + "%s_%d_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
+    final_cache = result_path + "%d_%s_%.2f_final_cache.npz"%(del_bin, cho, cho_thre)
     final_cache = tool_box.file_name(final_cache)
     numpy.savez(final_cache, numpy.array(mcs), res_data)
     e1mc = mcs[0]
