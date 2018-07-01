@@ -22,7 +22,7 @@ for path in contents:
 data = numpy.load(result_path+"ori_data_cache.npz")['arr_0']
 cuts_num = 20
 n_star = data[:, 3]
-idx = n_star >= 20
+idx = n_star >= 0
 area = data[:, 7]
 a_idx = area >= 0
 s_data_path = result_path+"data_cache.npz"
@@ -34,8 +34,8 @@ flux = s_data[:, 5]
 hflux = s_data[:, 6]
 area = s_data[:, 7]
 harea = s_data[:, 8]
-flux2 = numpy.sqrt(s_data[:, 10])
-flux_alt = numpy.sqrt(s_data[:, 11])
+flux2 = s_data[:, 10]
+flux_alt = s_data[:, 11]
 
 d_sort = numpy.sort(peak)
 step = int(len(d_sort)/cuts_num)
