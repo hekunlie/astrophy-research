@@ -60,33 +60,27 @@ for i in range(2):
     data_cache = result_path + "data/g%d_%d.npz"%(i+1,rank)
     if os.path.exists(data_cache):
         data = numpy.load(data_cache)['arr_0']
-# binary_tag = binary_data[:, 0]
-# field_lab = binary_data[:, 1]
-# expo_lab = binary_data[:, 2]
-# chip_lab = binary_data[:, 3]
-# '1' means binary or triple
-# bi_idx = binary_tag != 1
-# exclude some fields
-# field_idx = field_lab != 41100
-# if rank == 0:
-#     print("Binary_detect", len(binary_tag) - len(binary_tag[bi_idx]))
-#     print("Field excluded contains:", len(field_lab) - len(field_lab[field_idx]))
-        peak = data[:, 4]#&bi_idx&field_idx]
-        flux = data[:, 5]
-        hflux = data[:, 6]
-        area = data[:, 7]
-        harea = data[:, 8]
-        flux2 = data[:, 10]
-        flux_alt = data[:, 11]
-        field_g1 = data[:, 14]
-        field_g2 = data[:, 15]
-        MG1 = data[:, 16]
-        MG2 = data[:, 17]
-        MN = data[:, 18]
-        MU = data[:, 19]
-        MV = data[:, 20]
-        DE1 = MN + MU
-        DE2 = MN - MU
+        stars = data[:, 3]
+        idx = stars >= 12
+
+        peak = data[:, 4][idx]
+        flux = data[:, 5][idx]
+        hflux = data[:, 6][idx]
+        area = data[:, 7][idx]
+        harea = data[:, 8][idx]
+        flux2 = data[:, 10][idx]
+        flux_alt = data[:, 11][idx]
+        field_g1 = data[:, 14][idx]
+        field_g2 = data[:, 15][idx]
+        MG1 = data[:, 16][idx]
+        MG2 = data[:, 17][idx]
+        MN = data[:, 18][idx]
+        MU = data[:, 19][idx]
+        MV = data[:, 20][idx]
+        # be careful that the "MU" defined in FRESH is the different from that in ours
+        # MN + MU for our definition of MU and MV which is the same as those in the paper Zhang et al. 2017 ApJ, 834:8
+        DE1 = MN - MU
+        DE2 = MN + MU
 
         selects = {"peak": peak, "flux2": flux2, "flux_alt": flux_alt, "flux": flux}
         sel_idx = selects[cho] >= cho_thre
@@ -99,11 +93,11 @@ for i in range(2):
         # mg = MGs[i]
         # de = DEs[i]
 
-        idx1 = fgs[i] >= g_true[rank] - dg/2
-        idx2 = fgs[i] <= g_true[rank] + dg/2
+        # idx1 = fgs[i] >= g_true[rank] - dg/2
+        # idx2 = fgs[i] <= g_true[rank] + dg/2
 
-        mg = MGs[i][idx1&idx2&sel_idx]
-        de = DEs[i][idx1&idx2&sel_idx]
+        mg = MGs[i][sel_idx]
+        de = DEs[i][sel_idx]
 
         pic = pic_path + "%s_%d_%.2f_g%d_%d.png"%(cho,del_bin, cho_thre, i+1,rank)
         estg, sig = Fourier_Quad(48,123).fmin_g_new(g=mg, nu=de, bin_num=bin_num, ig_num=del_bin, pic_path=pic)

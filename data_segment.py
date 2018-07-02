@@ -26,8 +26,8 @@ idx = n_star >= 0
 area = data[:, 7]
 a_idx = area >= 0
 s_data_path = result_path+"data_cache.npz"
-s_data = data[idx&a_idx]
-numpy.savez(s_data_path, s_data)
+s_data = data#[idx&a_idx]
+numpy.savez(s_data_path, data)
 
 peak = s_data[:, 4]
 flux = s_data[:, 5]
@@ -71,13 +71,22 @@ f = shelve.open(cut_path+"cut_dict")
 f["dict"] = select
 f.close()
 
-g1num = int(fg_num)-10
+g1num = int(fg_num)-20
 g2num = int(fg_num)
-g1 = numpy.linspace(-0.004, 0.004, g1num)
-g2 = numpy.linspace(-0.005, 0.005, g2num)
+
+fg1_min, fg1_max = -0.005, 0.005
+dg1 = (fg1_max - fg1_min)/g1num
+g1 = numpy.array([fg1_min + (i-0.5)*dg1 for i in range(1,g1num+1)])
+
+
+fg2_min, fg2_max = -0.0075, 0.0075
+dg2 = (fg2_max - fg2_min)/g2num
+g2 = numpy.array([fg2_min + (i-0.5)*dg2 for i in range(1,g2num+1)])
+# g1 = numpy.linspace(-0.005, 0.005, g1num)
+# g2 = numpy.linspace(-0.0075, 0.0075, g2num)
 numpy.savez(result_path+"g_bin.npz", g1, g2)
-dg1 = g1[1]-g1[0]
-dg2 = g2[1]-g2[0]
+# dg1 = g1[1]-g1[0]
+# dg2 = g2[1]-g2[0]
 
 fg1 = data[:, 14]
 fg2 = data[:, 15]
@@ -108,3 +117,7 @@ for cut_f in cut_fs:
     cmd = "mpirun -np %s python sym_mc_plot_cfht.py %s"%(fg_num, cut_f)
     a = Popen(cmd, shell=True)
     a.wait()
+
+# cmd = "mpirun -np %s python process_data.py 0 12 flux_alt 4"%fg_num
+# a = Popen(cmd, shell=True)
+# a.wait()

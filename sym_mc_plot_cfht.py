@@ -71,23 +71,27 @@ for i in range(2):
     data_cache = result_path + "data/g%d_%d.npz" % (i + 1, rank)
     if os.path.exists(data_cache):
         data = numpy.load(data_cache)['arr_0']
-
-        peak = data[:, 4]  # &bi_idx&field_idx]
-        flux = data[:, 5]
-        hflux = data[:, 6]
-        area = data[:, 7]
-        harea = data[:, 8]
-        flux2 = data[:, 10]
-        flux_alt = data[:, 11]
-        field_g1 = data[:, 14]
-        field_g2 = data[:, 15]
-        MG1 = data[:, 16]
-        MG2 = data[:, 17]
-        MN = data[:, 18]
-        MU = data[:, 19]
+        # idx =
+        n_star = data[:, 3]
+        idx = n_star >= 12
+        peak = data[:, 4][idx]  # &bi_idx&field_idx]
+        flux = data[:, 5][idx]
+        hflux = data[:, 6][idx]
+        area = data[:, 7][idx]
+        harea = data[:, 8][idx]
+        flux2 = data[:, 10][idx]
+        flux_alt = data[:, 11][idx]
+        field_g1 = data[:, 14][idx]
+        field_g2 = data[:, 15][idx]
+        MG1 = data[:, 16][idx]
+        MG2 = data[:, 17][idx]
+        MN = data[:, 18][idx]
+        MU = data[:, 19][idx]
         # MV = data[:, 20][idx & idxa]
-        DE1 = MN + MU
-        DE2 = MN - MU
+        # be careful that the "MU" defined in FRESH is the different from that in ours
+        # MN + MU for our definition (g1) of MU and MV which is the same as those in the paper Zhang et al. 2017 ApJ, 834:8
+        DE1 = MN - MU
+        DE2 = MN + MU
 
         MGs = [MG1, MG2]
         DEs = [DE1, DE2]
@@ -98,7 +102,7 @@ for i in range(2):
             mg = MGs[i][idx_c]
             de = DEs[i][idx_c]
             gal_num = len(mg)
-            g_h, g_sig = fq.fmin_g(mg, de, bin_num=12)
+            g_h, g_sig = fq.fmin_g_new(mg, de, bin_num=12)
             cut_result[tag, i*3:i*3+3] = g_h, g_sig, gal_num
 
 if rank > 0:

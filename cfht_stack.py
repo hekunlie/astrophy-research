@@ -36,7 +36,7 @@ for path in contents:
         field_path = path.split("=")[1]
 
 
-data_cache = result_path + "data_cache.npz"
+data_cache = result_path + "ori_data_cache.npz"
 
 nname_path = total_path + "nname.dat"
 field_dict, contents = tool_box.field_dict(nname_path)

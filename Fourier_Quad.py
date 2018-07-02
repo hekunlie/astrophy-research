@@ -431,7 +431,7 @@ class Fourier_Quad:
         # mode 2 for g2
         # g_c = numpy.random.choice(g, 5000,replace=False)
         # temp_data = numpy.sort(numpy.abs(g_c))
-        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
+        temp_data = numpy.sort(numpy.abs(g))#[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
@@ -455,9 +455,9 @@ class Fourier_Quad:
                 right = (mc + mcr)/2.
                 change = 1
             iters += 1
-            if iters > 14:
+            if iters > 16:
                 break
-        g_range = numpy.linspace(left, right, 80)
+        g_range = numpy.linspace(left, right, 200)
         xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
