@@ -73,23 +73,27 @@ for i in range(2):
         data = numpy.load(data_cache)['arr_0']
         # idx =
         n_star = data[:, 3]
-        idx = n_star >= 12
-        peak = data[:, 4][idx]  # &bi_idx&field_idx]
-        flux = data[:, 5][idx]
-        hflux = data[:, 6][idx]
-        area = data[:, 7][idx]
-        harea = data[:, 8][idx]
-        flux2 = data[:, 10][idx]
-        flux_alt = data[:, 11][idx]
-        field_g1 = data[:, 14][idx]
-        field_g2 = data[:, 15][idx]
-        MG1 = data[:, 16][idx]
-        MG2 = data[:, 17][idx]
-        MN = data[:, 18][idx]
-        MU = data[:, 19][idx]
+        idx = n_star >= 0
+        detect_area = data[:, 7]
+        idx_a = detect_area > 0
+
+        peak = data[:, 4][idx&idx_a]
+        flux = data[:, 5][idx&idx_a]
+        hflux = data[:, 6][idx&idx_a]
+        area = data[:, 7][idx&idx_a]
+        harea = data[:, 8][idx&idx_a]
+        flux2 = data[:, 10][idx&idx_a]
+        flux_alt = data[:, 11][idx&idx_a]
+        field_g1 = data[:, 14][idx&idx_a]
+        field_g2 = data[:, 15][idx&idx_a]
+        MG1 = data[:, 16][idx&idx_a]
+        MG2 = data[:, 17][idx&idx_a]
+        MN = data[:, 18][idx&idx_a]
+        MU = data[:, 19][idx&idx_a]
         # MV = data[:, 20][idx & idxa]
         # be careful that the "MU" defined in FRESH is the different from that in ours
-        # MN + MU for our definition (g1) of MU and MV which is the same as those in the paper Zhang et al. 2017 ApJ, 834:8
+        # MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
+        # those in the paper Zhang et al. 2017 ApJ, 834:8
         DE1 = MN - MU
         DE2 = MN + MU
 

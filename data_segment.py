@@ -22,11 +22,11 @@ for path in contents:
 data = numpy.load(result_path+"ori_data_cache.npz")['arr_0']
 cuts_num = 20
 n_star = data[:, 3]
-idx = n_star >= 0
+idx = n_star >= 12
 area = data[:, 7]
-a_idx = area >= 0
+a_idx = area >= 6
 s_data_path = result_path+"data_cache.npz"
-s_data = data#[idx&a_idx]
+s_data = data[idx&a_idx]
 numpy.savez(s_data_path, data)
 
 peak = s_data[:, 4]
@@ -88,8 +88,8 @@ numpy.savez(result_path+"g_bin.npz", g1, g2)
 # dg1 = g1[1]-g1[0]
 # dg2 = g2[1]-g2[0]
 
-fg1 = data[:, 14]
-fg2 = data[:, 15]
+fg1 = s_data[:, 14]
+fg2 = s_data[:, 15]
 
 gs = [g1, g2]
 dgs = [dg1, dg2]
@@ -109,14 +109,14 @@ for i in range(2):
         data_seg_name = result_path + "data/g%d_%d.npz"%(i+1,j)
         idx1 = fg >= g[j] - dg/2.
         idx2 = fg <= g[j] + dg/2.
-        data_seg = data[idx1&idx2]
+        data_seg = s_data[idx1&idx2]
         numpy.savez(data_seg_name, data_seg)
 
-cut_fs = ["flux2", "flux_alt"]#, "peak", "flux", "area"]
-for cut_f in cut_fs:
-    cmd = "mpirun -np %s python sym_mc_plot_cfht.py %s"%(fg_num, cut_f)
-    a = Popen(cmd, shell=True)
-    a.wait()
+# cut_fs = ["flux2", "flux_alt"]#, "peak", "flux", "area"]
+# for cut_f in cut_fs:
+#     cmd = "mpirun -np %s python sym_mc_plot_cfht.py %s"%(fg_num, cut_f)
+#     a = Popen(cmd, shell=True)
+#     a.wait()
 
 # cmd = "mpirun -np %s python process_data.py 0 12 flux_alt 4"%fg_num
 # a = Popen(cmd, shell=True)

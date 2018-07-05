@@ -78,7 +78,8 @@ for i in range(2):
         MU = data[:, 19][idx]
         MV = data[:, 20][idx]
         # be careful that the "MU" defined in FRESH is the different from that in ours
-        # MN + MU for our definition of MU and MV which is the same as those in the paper Zhang et al. 2017 ApJ, 834:8
+        # MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
+        # those in the paper Zhang et al. 2017 ApJ, 834:8
         DE1 = MN - MU
         DE2 = MN + MU
 
