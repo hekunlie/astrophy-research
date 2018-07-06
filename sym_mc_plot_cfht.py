@@ -47,10 +47,6 @@ g_trues = [g1, g2]
 dgs = [dg1, dg2]
 gnums = [g1num, g2num]
 
-if cpus < max(gnums):
-    if rank == 0:
-        print("Number of threads (%d) is smaller than the field bin number (%d)!"%(cpus, max(gnums)))
-    exit()
 
 select_save = shelve.open(cut_path+"cut_dict")
 select = select_save['dict']
@@ -63,60 +59,74 @@ else:
     cuts_num = len(select[cut])
 
 fq = Fourier_Quad(48, 123)
-sp = (cuts_num, 6)
+
+
+# task distribution
+num_distri, num_resi = divmod(g2num, cpus)
+
+file_start = num_distri*rank
+
+if rank == cpus - 1:
+    file_end = num_distri*(rank + 1) + num_resi
+else:
+    file_end = num_distri*(rank + 1)
+file_num = file_end - file_start
+
+sp = (2*cuts_num, 3*file_num)
 cut_result = numpy.zeros(sp)
-for i in range(2):
-    g_true = g_trues[i]
-    dg = dgs[i]
-    data_cache = result_path + "data/g%d_%d.npz" % (i + 1, rank)
-    if os.path.exists(data_cache):
-        data = numpy.load(data_cache)['arr_0']
-        # idx =
-        n_star = data[:, 3]
-        idx = n_star >= 0
-        detect_area = data[:, 7]
-        idx_a = detect_area > 0
 
-        peak = data[:, 4][idx&idx_a]
-        flux = data[:, 5][idx&idx_a]
-        hflux = data[:, 6][idx&idx_a]
-        area = data[:, 7][idx&idx_a]
-        harea = data[:, 8][idx&idx_a]
-        flux2 = data[:, 10][idx&idx_a]
-        flux_alt = data[:, 11][idx&idx_a]
-        field_g1 = data[:, 14][idx&idx_a]
-        field_g2 = data[:, 15][idx&idx_a]
-        MG1 = data[:, 16][idx&idx_a]
-        MG2 = data[:, 17][idx&idx_a]
-        MN = data[:, 18][idx&idx_a]
-        MU = data[:, 19][idx&idx_a]
-        # MV = data[:, 20][idx & idxa]
-        # be careful that the "MU" defined in FRESH is the different from that in ours
-        # MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
-        # those in the paper Zhang et al. 2017 ApJ, 834:8
-        DE1 = MN - MU
-        DE2 = MN + MU
+for j in range(file_start, file_end):
+    for i in range(2):
+        g_true = g_trues[i]
+        dg = dgs[i]
+        data_cache = result_path + "data/g%d_%d.npz" % (i + 1, j)
+        if os.path.exists(data_cache):
+            data = numpy.load(data_cache)['arr_0']
+            n_star = data[:, 3]
+            idx = n_star >= 0
+            detect_area = data[:, 7]
+            idx_a = detect_area > 0
 
-        MGs = [MG1, MG2]
-        DEs = [DE1, DE2]
-        select_cri = {"flux": flux, "hflux": hflux, "area": area, "harea": harea, "peak": peak,
-                      "flux2": flux2, "flux_alt": flux_alt}
-        for tag, cut_s in enumerate(select[cut]):
-            idx_c = select_cri[cut] >= cut_s
-            mg = MGs[i][idx_c]
-            de = DEs[i][idx_c]
-            gal_num = len(mg)
-            g_h, g_sig = fq.fmin_g_new(mg, de, bin_num=12)
-            cut_result[tag, i*3:i*3+3] = g_h, g_sig, gal_num
+            peak = data[:, 4][idx&idx_a]
+            flux = data[:, 5][idx&idx_a]
+            hflux = data[:, 6][idx&idx_a]
+            area = data[:, 7][idx&idx_a]
+            harea = data[:, 8][idx&idx_a]
+            flux2 = data[:, 10][idx&idx_a]
+            flux_alt = data[:, 11][idx&idx_a]
+            field_g1 = data[:, 14][idx&idx_a]
+            field_g2 = data[:, 15][idx&idx_a]
+            MG1 = data[:, 16][idx&idx_a]
+            MG2 = data[:, 17][idx&idx_a]
+            MN = data[:, 18][idx&idx_a]
+            MU = data[:, 19][idx&idx_a]
+            # MV = data[:, 20][idx & idxa]
+            # be careful that the "MU" defined in FRESH is the different from that in ours
+            # MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
+            # those in the paper Zhang et al. 2017 ApJ, 834:8
+            DE1 = MN - MU
+            DE2 = MN + MU
 
+            MGs = [MG1, MG2]
+            DEs = [DE1, DE2]
+            select_cri = {"flux": flux, "hflux": hflux, "area": area, "harea": harea, "peak": peak,
+                          "flux2": flux2, "flux_alt": flux_alt}
+            for tag, cut_s in enumerate(select[cut]):
+                idx_c = select_cri[cut] >= cut_s
+                mg = MGs[i][idx_c]
+                de = DEs[i][idx_c]
+                gal_num = len(mg)
+                g_h, g_sig = fq.fmin_g_new(mg, de, bin_num=12)
+                cut_result[tag+i*cuts_num, (j-file_start)*3: (j-file_start)*3+3] = g_h, g_sig, gal_num
+sps = comm.gather(sp,root=0)
 if rank > 0:
     comm.Send(cut_result, dest=0, tag=rank)
 else:
-    res_list = [cut_result]
     for procs in range(1, cpus):
-        recvs = numpy.empty(sp, dtype=numpy.float64)
+        recvs = numpy.empty(sps[procs], dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
-        res_list.append(recvs)
+        cut_result = numpy.column_stack((cut_result, recvs))
+
     # cache = shelve.open("/mnt/ddnfs/data_users/hkli/CFHT/result/cuts/peak/cache")
     # # cache['cache'] = coll_res
     # coll_res = cache['cache']
@@ -124,16 +134,20 @@ else:
     mc1 = []
     mc2 = []
     mcs = [[], []]
+    g_tag = [3*i for i in range(g2num)]
+    g_err_tag = [3*i + 1 for i in range(g2num)]
+    g_num_tag = [3*i + 2 for i in range(g2num)]
+    g_vals = cut_result[:, g_tag]
+    g_sig = cut_result[:, g_err_tag]
+    g_num = cut_result[:, g_num_tag]
     for tag, cut_s in enumerate(select[cut]):
-        arr = []
-        for i in range(max(gnums)):
-            arr.append(res_list[i][tag])
-        arr = numpy.array(arr).T
-        y1_data = arr[0, 0:g1num]
-        y1_err = arr[1, 0:g1num]
-        y2_data = arr[3, 0:g2num]
-        y2_err = arr[4, 0:g2num]
+        y1_data = g_vals[tag, 0:g1num]
+        y1_err = g_sig[tag, 0:g1num]
+        y2_data = g_vals[tag + cuts_num, 0:g2num]
+        y2_err = g_sig[tag + cuts_num, 0:g2num]
 
+        arr1 = numpy.row_stack((g_vals[tag],numpy.row_stack((g_sig[tag],g_num[tag]))))
+        arr2 = numpy.row_stack((g_vals[tag+cuts_num], numpy.row_stack((g_sig[tag+cuts_num], g_num[tag+ cuts_num]))))
         e1mc = tool_box.data_fit(g1, y1_data, y1_err)
         mc1.append(e1mc)
         e2mc = tool_box.data_fit(g2, y2_data, y2_err)
@@ -141,7 +155,8 @@ else:
 
         mc = numpy.array([e1mc, e2mc])
         data_path = result_path + "cuts/" + cut + "/" + str(round(cut_s, 4)) + ".npz"
-        numpy.savez(data_path, arr, mc)
+
+        numpy.savez(data_path, arr1,arr2, mc)
 
         mc_title = ['0', '0', '0', '0']
         m_r = [[e1mc[0] - 1 - 2 * e1mc[1], e1mc[0] - 1 + 2 * e1mc[1]],
@@ -159,9 +174,9 @@ else:
         pic_mc = "".join(mc_title)
         xylim = (-0.008, 0.008, -0.009, 0.009)
         pic_path = result_path + "cuts/" + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".eps"
-        tool_box.mcplot(g1, arr[0:3, 0:g1num], g2, arr[3:6, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
+        tool_box.mcplot(g1, arr1[0:3, 0:g1num], g2, arr2[0:3, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
         pic_path = result_path + "cuts/" + cut + "/" + str(round(cut_s, 4)) + pic_mc + ".png"
-        tool_box.mcplot(g1, arr[0:3, 0:g1num], g2, arr[3:6, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
+        tool_box.mcplot(g1, arr1[0:3, 0:g1num], g2, arr2[0:3, 0:g2num], e1mc, e2mc, str(round(cut_s, 4)), 'max', xylim,pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
