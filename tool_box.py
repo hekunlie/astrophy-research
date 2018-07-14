@@ -313,7 +313,7 @@ def data_fit(x_data, y_data, y_err):
     mc = numpy.dot(L1, R1)
     return mc[1], sig_m1, mc[0], sig_c1
 
-def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, xylim, path=None):
+def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
     # "x_data' is the 'x'
     # 'y_data' is an (3,n) array "[[y's],[dy's],[num's]]
     fig = plt.figure(figsize=(20, 10))
@@ -355,9 +355,11 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
     plt.legend(fontsize=15)
     plt.ylim(xylim[2], xylim[3])
     plt.xlim(xylim[2], xylim[3])
-    plt.show()
+
     if path is not None:
         plt.savefig(path)
+    if show:
+        plt.show()
     plt.close()
 
 

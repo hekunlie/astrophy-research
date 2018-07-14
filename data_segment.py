@@ -10,7 +10,7 @@ import shelve
 import shutil
 
 fg_num = argv[1]
-thresholds = [6,7,8,9,10]
+thresholds = [6]
 
 with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
@@ -73,14 +73,14 @@ for area_thre in thresholds:
     f["dict"] = select
     f.close()
 
-    g1num = int(fg_num)-10
+    g1num = int(fg_num) - 10
     g2num = int(fg_num)
 
-    fg1_min, fg1_max = -0.004, 0.004
+    fg1_min, fg1_max = -0.0055, 0.0055
     dg1 = (fg1_max - fg1_min)/g1num
     g1 = numpy.array([fg1_min + (i-0.5)*dg1 for i in range(1,g1num+1)])
 
-    fg2_min, fg2_max = -0.005, 0.005
+    fg2_min, fg2_max = -0.0065, 0.0065
     dg2 = (fg2_max - fg2_min)/g2num
     g2 = numpy.array([fg2_min + (i-0.5)*dg2 for i in range(1,g2num+1)])
     # g1 = numpy.linspace(-0.005, 0.005, g1num)
@@ -113,17 +113,17 @@ for area_thre in thresholds:
             data_seg = s_data[idx1&idx2]
             numpy.savez(data_seg_name, data_seg)
 
-    cut_fs = ["flux2", "flux_alt", "peak", "flux", "area", 'hflux']
+    cut_fs = ["flux2", "flux_alt"]#, "peak", "flux", "area", 'hflux','harea']
     for cut_f in cut_fs:
-        ts = time.clock()
-        cmd = "mpirun -np %d python sym_mc_plot_cfht.py %s"%(25, cut_f)
+        ts = time.time()
+        cmd = "mpirun -np %d python sym_mc_plot_cfht.py %s"%(20, cut_f)
         a = Popen(cmd, shell=True)
         a.wait()
         crit_path = cut_path + cut_f
         rename_path = cut_path + cut_f + "_%d"%area_thre
         os.rename(crit_path, rename_path)
         os.mkdir(crit_path)
-        te = time.clock()
+        te = time.time()
         print(area_thre, cut_f, te-ts)
 # cmd = "mpirun -np %s python process_data.py 0 12 flux_alt 4"%fg_num
 # a = Popen(cmd, shell=True)
