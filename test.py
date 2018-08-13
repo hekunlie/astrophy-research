@@ -10,25 +10,25 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from astropy.io import fits
 from scipy.optimize import curve_fit
-# import tool_box
+import tool_box
 # from mpi4py import MPI
 #
 #
 
-num = 500000
-fq = Fourier_Quad(123,123)
-a = numpy.random.normal(0.02,0.3,int(num*0.5))
-a.shape = (int(num*0.5),1)
-b = numpy.random.normal(-0.02,0.3,num)
-b.shape = (num,1)
-c = numpy.row_stack((a,b))
-print(c.shape)
-gs1 = fq.fmin_g(a,1,8)
-gs2 = fq.fmin_g(b,1,8)
-gs3 = fq.fmin_g(c,1,8)
-print(gs1[0],gs1[1]*numpy.sqrt(int(num*0.5)))
-print(gs2[0],gs2[1]*numpy.sqrt(num))
-print(gs3[0],gs3[1]*numpy.sqrt(num))
+# num = 500000
+# fq = Fourier_Quad(123,123)
+# a = numpy.random.normal(0.02,0.3,int(num*0.5))
+# a.shape = (int(num*0.5),1)
+# b = numpy.random.normal(-0.02,0.3,num)
+# b.shape = (num,1)
+# c = numpy.row_stack((a,b))
+# print(c.shape)
+# gs1 = fq.fmin_g(a,1,8)
+# gs2 = fq.fmin_g(b,1,8)
+# gs3 = fq.fmin_g(c,1,8)
+# print(gs1[0],gs1[1]*numpy.sqrt(int(num*0.5)))
+# print(gs2[0],gs2[1]*numpy.sqrt(num))
+# print(gs3[0],gs3[1]*numpy.sqrt(num))
 
 # # show the defects of sextractor
 # a = numpy.loadtxt("F:/860599p_34.cat")
@@ -70,3 +70,9 @@ print(gs3[0],gs3[1]*numpy.sqrt(num))
 # hdu = fits.PrimaryHDU(arr)
 # hdu.writeto("E:/a_big.fits",overwrite=True)
 
+a = numpy.array([1,2])
+b = numpy.array([3,2])
+c = numpy.cov(a,b)
+d = numpy.cov(a)
+print(c)
+print(d)

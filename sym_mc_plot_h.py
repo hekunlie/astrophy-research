@@ -24,12 +24,14 @@ t1 = time.clock()
 with open("%s/work/envs/envs.dat"%my_home, "r") as f:
     contents = f.readlines()
 for path in contents:
-    if "select_total" in path:
-        total_path = path.split("=")[1]
-    elif "select_result" in path:
-        result_path = path.split("=")[1]
-    elif "select_parameter" in path:
-        para_path = path.split("=")[1]
+    if "=" in path:
+        env_location, env_path = path.split("=")[0:2]
+        if "selection_total_path_pts" == env_location:
+            total_path = env_path
+        elif "select_result_path_pts" == env_location:
+            result_path = env_path
+        elif "select_parameter_path_pts" == env_location:
+            para_path = env_path
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
@@ -101,18 +103,47 @@ flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
 
 
 sex_path = total_path + "result/data/sex25_%d_1.5.npz"%rank
-sex = numpy.load(sex_path)["arr_0"][:,0]
-sex_idx = sex > 0
-sex_sort = numpy.sort(sex[sex_idx])
-sex_step = int(len(sex_sort)/cuts_num)
-sex_cut = [sex_sort[i*sex_step] for i in range(cuts_num)]
+sex_data = numpy.load(sex_path)["arr_0"]
+
+sex_snr = sex_data[:, 0]
+sex_idx = sex_snr > 0
+sex_snr_sort = numpy.sort(sex_snr[sex_idx])
+sex_snr_step = int(len(sex_snr_sort)/cuts_num)
+sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
+
+sex_area = sex_data[:, 1]
+sex_area_sort = numpy.sort(sex_area[sex_idx])
+sex_area_step = int(len(sex_area_sort)/cuts_num)
+sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
+
+mag_iso = sex_data[:, 2]
+mag_iso_sort = numpy.sort(mag_iso[sex_idx])
+mag_iso_step = int(len(mag_iso_sort)/cuts_num)
+mag_iso_cut = [mag_iso_sort[i*mag_iso_step] for i in range(cuts_num)]
+
+mag_auto = sex_data[:, 3]
+mag_auto_sort = numpy.sort(mag_auto[sex_idx])
+mag_auto_step = int(len(mag_auto_sort)/cuts_num)
+mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
+
+mag_petro = sex_data[:, 4]
+mag_petro_sort = numpy.sort(mag_petro[sex_idx])
+mag_petro_step = int(len(mag_petro_sort)/cuts_num)
+mag_petro_cut = [mag_petro_sort[i*mag_petro_step] for i in range(cuts_num)]
+
+mag_win = sex_data[:, 5]
+mag_win_sort = numpy.sort(mag_win[sex_idx])
+mag_win_step = int(len(mag_win_sort)/cuts_num)
+mag_win_cut = [mag_win_sort[i*mag_win_step] for i in range(cuts_num)]
 
 
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "hflux":   (hflux, hflux_cut),      "peak":     (peak, peak_cut),
           "area":    (area, area_cut),        "harea":    (harea, harea_cut),
           "flux2":   (flux2, flux2_cut),      "flux_alt": (flux_alt, flux_alt_cut),
-          "sex": (sex, sex_cut),}
+          "sex_snr": (sex_snr, sex_snr_cut),  "sex_area": (sex_area, sex_area_cut),
+          "mag_iso": (mag_iso, mag_iso_cut),  "mag_auto": (mag_auto, mag_auto_cut),
+          "mag_petro": (mag_petro, mag_petro_cut), "mag_win": (mag_win, mag_win_cut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
