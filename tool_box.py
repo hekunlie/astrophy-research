@@ -442,7 +442,8 @@ def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=
 
 def mags_mock(num, mag_min, mag_max):
     m = numpy.linspace(mag_min, mag_max, 1000000)
-    pm = 10**(23.04187527*numpy.log10(m) - 32.50618926)
+    # the parameters come from the fitting to the cfht i-band catalog
+    pm = 10**(0.294895*m -1.082894)
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf

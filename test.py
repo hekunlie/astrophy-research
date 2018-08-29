@@ -29,9 +29,9 @@ ig1 = numpy.load("./g.npz")['arr_0'][:,0]
 ig2 = numpy.load("./g.npz")['arr_0'][:,1]
 
 num = 300000
-stamp_size = 64
+stamp_size = 58
 pixel_scale = 0.2
-fq = Fourier_Quad(stamp_size, rank*10+10)
+fq = Fourier_Quad(stamp_size, rank*10+111)
 psf_img = fq.cre_psf(4,1,"Moffat")
 
 # psf = galsim.Moffat(beta=3.5, scale_radius=1.0, flux=1.0, trunc=3)
@@ -41,12 +41,13 @@ psf_img = fq.cre_psf(4,1,"Moffat")
 
 data = numpy.zeros((num,4))
 gal_pool = []
-noise_sig = 3
+noise_sig = 1
 ra = numpy.random.uniform(0.6, 1.2, num)
 g1,g2 = ig1[rank], ig2[rank]
+t1 = time.time()
 for i in range(num):
     pts = fq.ran_pos(45,8,(ig1[rank],ig2[rank]))[1]
-    gal_img = fq.convolve_psf(pts,4,15,"Moffat") + fq.draw_noise(0,noise_sig)
+    gal_img = fq.convolve_psf(pts,4,30,"Moffat") + fq.draw_noise(0,noise_sig)
     noise = fq.draw_noise(0,noise_sig)
     #
     # gal = galsim.Sersic(half_light_radius=ra[i], n=3, trunc=4.5*ra[i])
@@ -64,8 +65,9 @@ for i in range(num):
     if rank == 0 and i < 100:
         gal_pool.append(gal_img)
     data[i] = res[0],res[1],res[2],res[3]
-
+t2 = time.time()
 if rank == 0:
+    print(t2-t1)
     img = fq.stack(gal_pool,10)
     img_w = fits.PrimaryHDU(img)
     img_w.writeto("./gals.fits",overwrite=True)
@@ -120,7 +122,7 @@ if rank == 0:
 
     plt.subplot(121)
     x = numpy.linspace(-0.03,0.03,5)
-    plt.errorbar(ig1,g1,dg1,capsize=3)
+    plt.errorbar(ig1,g1,dg1,capsize=3,fmt="none")
     plt.plot(x, emc1[0]*x+emc1[2])
     plt.subplot(122)
     plt.errorbar(ig2,g2,dg2)
