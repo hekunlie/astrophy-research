@@ -8,7 +8,7 @@ from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-import tool_box
+
 
 class Fourier_Quad:
 
@@ -28,12 +28,11 @@ class Fourier_Quad:
         return image_ps
 
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
-        ky, kx = self.my, self.mx
         gal_ps = self.pow_spec(gal_image)
-        gal_ps = tool_box.smooth(gal_ps,self.size)
+        # gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
-            nbg = tool_box.smooth(nbg,self.size)
+            # nbg = tool_box.smooth(nbg,self.size)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)
             # gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
@@ -49,14 +48,23 @@ class Fourier_Quad:
         wb, beta = self.wbeta(hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
+        wb[idx] = 0
+        psf_ps[idx] = 1.
         tk = wb/psf_ps * gal_ps
-        tk[idx] = 0.
 
-        mn1 = (-0.5)*(kx**2 - ky**2)
-        mn2 = -kx*ky
-        mn3 = kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
-        mn4 = kx**4 - 6*kx**2*ky**2 + ky**4
-        mn5 = kx**3*ky - kx*ky**3
+        ky, kx = self.my, self.mx
+        # ky = numpy.mgrid[0: self.size, 0: self.size][0] - self.size/2.
+        # kx = numpy.mgrid[0: self.size, 0: self.size][1] - self.size/2.
+        kx2 = kx*kx
+        ky2 = ky*ky
+        kxy = kx*ky
+        k2 = kx2 + ky2
+        k4 = k2*k2
+        mn1 = (-0.5)*(kx2 - ky2)    # (-0.5)*(kx**2 - ky**2)
+        mn2 = -kxy                  # -kx*ky
+        mn3 = k2 - 0.5*beta**2*k4   # kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
+        mn4 = k4 - 8*kx2*ky2        # kx**4 - 6*kx**2*ky**2 + ky**4
+        mn5 = kxy*(kx2 - ky2)       # kx**3*ky - kx*ky**3
         mg1 = numpy.sum(mn1 * tk)*self.alpha
         mg2 = numpy.sum(mn2 * tk)*self.alpha
         mn  = numpy.sum(mn3 * tk)*self.alpha
@@ -416,7 +424,7 @@ class Fourier_Quad:
 
     def G_bin(self, g, nu, g_h, bins, ig_num):  # checked 2017-7-9!!!
         # nu = N + U for g1
-        # nu = N - U for g1
+        # nu = N - U for g2
         bin_num = len(bins) - 1
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         G_h = g - nu * g_h
@@ -426,16 +434,16 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
-        # mode 1 for g1
-        # mode 2 for g2
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
+        # nu = N + U for g1
+        # nu = N - U for g2
         # g_c = numpy.random.choice(g, 5000,replace=False)
         # temp_data = numpy.sort(numpy.abs(g_c))
         temp_data = numpy.sort(numpy.abs(g))#[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(g)) * 100000.
+        bound = numpy.max(numpy.abs(g)) * 100.
         bins = numpy.append(-bound, numpy.append(bins, bound))
         iters = 0
         change = 1
@@ -483,16 +491,17 @@ class Fourier_Quad:
         return g_h, g_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
-        # mode 1 for g1
-        # mode 2 for g2
+        # nu = N + U for g1
+        # nu = N - U for g2
         # g_c = numpy.random.choice(g, 5000,replace=False)
         # temp_data = numpy.sort(numpy.abs(g_c))
         temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
         bin_size = len(temp_data)/bin_num*2
         bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
         bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(g)) * 100000.
+        bound = numpy.max(numpy.abs(g)) * 100.
         bins = numpy.append(-bound, numpy.append(bins, bound))
+
         same = 0
         iters = 0
         # m1 chi square & left & left chi square & right & right chi square

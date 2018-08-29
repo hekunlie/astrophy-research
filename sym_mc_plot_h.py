@@ -26,11 +26,11 @@ with open("%s/work/envs/envs.dat"%my_home, "r") as f:
 for path in contents:
     if "=" in path:
         env_location, env_path = path.split("=")[0:2]
-        if "selection_total_path_pts" == env_location:
+        if "select_total_path_dimmer2" == env_location:
             total_path = env_path
-        elif "select_result_path_pts" == env_location:
+        elif "select_result_path_dimmer2" == env_location:
             result_path = env_path
-        elif "select_parameter_path_pts" == env_location:
+        elif "select_parameter_path_dimmer2" == env_location:
             para_path = env_path
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
@@ -117,33 +117,32 @@ sex_area_step = int(len(sex_area_sort)/cuts_num)
 sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
 
 mag_iso = sex_data[:, 2]
-mag_iso_sort = numpy.sort(mag_iso[sex_idx])
+mag_iso_sort = numpy.sort(-mag_iso[sex_idx])
 mag_iso_step = int(len(mag_iso_sort)/cuts_num)
 mag_iso_cut = [mag_iso_sort[i*mag_iso_step] for i in range(cuts_num)]
 
 mag_auto = sex_data[:, 3]
-mag_auto_sort = numpy.sort(mag_auto[sex_idx])
+mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
 mag_auto_step = int(len(mag_auto_sort)/cuts_num)
 mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
 
 mag_petro = sex_data[:, 4]
-mag_petro_sort = numpy.sort(mag_petro[sex_idx])
+mag_petro_sort = numpy.sort(-mag_petro[sex_idx])
 mag_petro_step = int(len(mag_petro_sort)/cuts_num)
 mag_petro_cut = [mag_petro_sort[i*mag_petro_step] for i in range(cuts_num)]
 
 mag_win = sex_data[:, 5]
-mag_win_sort = numpy.sort(mag_win[sex_idx])
+mag_win_sort = numpy.sort(-mag_win[sex_idx])
 mag_win_step = int(len(mag_win_sort)/cuts_num)
 mag_win_cut = [mag_win_sort[i*mag_win_step] for i in range(cuts_num)]
-
 
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "hflux":   (hflux, hflux_cut),      "peak":     (peak, peak_cut),
           "area":    (area, area_cut),        "harea":    (harea, harea_cut),
           "flux2":   (flux2, flux2_cut),      "flux_alt": (flux_alt, flux_alt_cut),
           "sex_snr": (sex_snr, sex_snr_cut),  "sex_area": (sex_area, sex_area_cut),
-          "mag_iso": (mag_iso, mag_iso_cut),  "mag_auto": (mag_auto, mag_auto_cut),
-          "mag_petro": (mag_petro, mag_petro_cut), "mag_win": (mag_win, mag_win_cut)}
+          "mag_iso": (-mag_iso, mag_iso_cut),  "mag_auto": (-mag_auto, mag_auto_cut),
+          "mag_petro": (-mag_petro, mag_petro_cut), "mag_win": (-mag_win, mag_win_cut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
@@ -152,12 +151,16 @@ MG2 = data[:, 3]
 MN = data[:, 4]
 MU = data[:, 5]
 MV = data[:, 6]
+# be careful that the "MU" defined in FRESH is the different from that in ours
+# MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
+# those in the paper Zhang et al. 2017 ApJ, 834:8
 DE1 = MN + MU
 DE2 = MN - MU
 
 
 detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area": detected, "harea": detected,
-                  "snr": detected, "flux2": detected, "flux_alt": detected, "sex": sex_idx, }
+                  "snr": detected, "flux2": detected, "flux_alt": detected, "sex_snr": sex_idx, "sex_area": sex_idx,
+                  "mag_iso": sex_idx, "mag_auto": sex_idx, "mag_petro": sex_idx, "mag_win": sex_idx}
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] > cut_s

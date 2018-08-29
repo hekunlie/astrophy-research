@@ -249,6 +249,30 @@ def fit_2d(x, y, fun_val, order):
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res
 
+def rand_gauss2(x_range, y_range, num, sigx, sigy, cxy=0.):
+    # return a 2-variables gaussian distribution
+    # cxy is the correlation between the two variables and must be smaller than the sigma!
+    xs = []
+    ys = []
+    A = (sigx * sigy) ** 2 - cxy ** 2
+    coeff = 0.5/numpy.pi/sigx/sigy
+    while len(xs) < num:
+        num_gap = (num - len(xs))
+        x = numpy.random.uniform(x_range[0], x_range[1], num_gap)
+        y = numpy.random.uniform(y_range[0], y_range[1], num_gap)
+        z = numpy.random.uniform(0, coeff, num_gap)
+        resi = z - coeff*numpy.exp(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2)/A)
+        idx = resi <= 0
+        if len(x[idx]) > num_gap:
+            xs.extend(x[idx][:num_gap].tolist())
+            ys.extend(y[idx][:num_gap].tolist())
+        else:
+            xs.extend(x[idx].tolist())
+            ys.extend(y[idx].tolist())
+        if len(xs) == num:
+            break
+    return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
+
 def fit_backgroud(image, yblocks, xblocks, num, order=1, sort=False):
     y, x = image.shape
     ystep, xstep = int(y/yblocks), int(x/xblocks)
