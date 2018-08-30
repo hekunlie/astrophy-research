@@ -47,7 +47,7 @@ g1,g2 = ig1[rank], ig2[rank]
 t1 = time.time()
 for i in range(num):
     pts = fq.ran_pos(45,8,(ig1[rank],ig2[rank]))[1]
-    gal_img = fq.convolve_psf(pts,4,30,"Moffat") + fq.draw_noise(0,noise_sig)
+    gal_img = fq.convolve_psf(pts,4,300,"Moffat") + fq.draw_noise(0,noise_sig)
     noise = fq.draw_noise(0,noise_sig)
     #
     # gal = galsim.Sersic(half_light_radius=ra[i], n=3, trunc=4.5*ra[i])
@@ -125,7 +125,7 @@ if rank == 0:
     plt.errorbar(ig1,g1,dg1,capsize=3,fmt="none")
     plt.plot(x, emc1[0]*x+emc1[2])
     plt.subplot(122)
-    plt.errorbar(ig2,g2,dg2)
+    plt.errorbar(ig2,g2,dg2,capsize=3,fmt="none")
     plt.plot(x, emc2[0]*x+emc2[2])
     plt.savefig("./test.png")
     # plt.show()
