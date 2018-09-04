@@ -57,6 +57,17 @@ f = h5py.File(para_path,'w')
 g1_pairs = tool_box.rand_gauss2([g1_s, g1_e], [g1_s, g1_e], num, g1_sig, g1_sig, gg_cor1)
 g2_pairs = tool_box.rand_gauss2([g2_s, g2_e], [g2_s, g2_e], num, g2_sig, g2_sig, gg_cor2)
 
+plt.figure(figsize=(10,5))
+plt.subplot(121)
+plt.hist2d(g1_pairs[:,0],g1_pairs[:,1], 50)
+plt.colorbar()
+plt.subplot(122)
+plt.hist2d(g2_pairs[:,0],g2_pairs[:,1], 50)
+plt.colorbar()
+gg_cor_fig = cf_data_path + "gg_cor.png"
+plt.savefig(gg_cor_fig)
+plt.close()
+
 g = numpy.row_stack((g1_pairs, g2_pairs))
 f["/shear"] = g
 

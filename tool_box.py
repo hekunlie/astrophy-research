@@ -545,19 +545,17 @@ def field_dict(expo_file):
                 file_dict[field].setdefault(expo, [chip])
     return file_dict, fields
 
-
 def allot(allot_list, fractions):
     num = len(allot_list)
     m, n = divmod(num, fractions)
     pool = []
     for i in range(fractions):
         temp = []
-        if i == fractions-1:
-            more = n
-        else:
-            more = 0
-        for j in range(m*i, m*(i+1)+more):
+        for j in range(m*i, m*(i+1)):
             temp.append(allot_list[j])
+        if n > 0:
+            temp.append(allot_list[m*fractions+n-1])
+            n -= 1
         pool.append(temp)
     return pool
 
