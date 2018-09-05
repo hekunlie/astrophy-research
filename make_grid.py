@@ -27,6 +27,8 @@ for path in contents:
         env_location, env_path = path.split("=")[0:2]
         if "cfht_data_path" == env_location:
             data_path = env_path
+        if "cfht_res_path" == env_location:
+            res_path = env_path
 
 # cpus_0 read the fields catalog and distribute them to related cpus
 # cpu_0 & block_0, cpu_1 & block_1 ...
@@ -49,14 +51,15 @@ for i in range(area_num):
 
     field_count = 0
     for field_name in field_pool:
-        field_cat_path = data_path + "%s/%s.dat"%(field_name, field_name)
+        field_cat_path = data_path + "%s/result/%s_shear.dat"%(field_name, field_name)
+        print(field_cat_path)
         if os.path.exists(field_cat_path):
             try:
                 cat_arr = numpy.loadtxt(field_cat_path)
                 if field_count == 0:
                     cat_data = cat_arr
                 else:
-                    cat_data = numpy.row_stack((cat_data, ))
+                    cat_data = numpy.row_stack((cat_data, cat_arr))
                 field_count += 1
             except:
                 print(rank, "%s.dat doesn't exist"%field_name)
@@ -64,9 +67,24 @@ for i in range(area_num):
     data_sps = comm.gather(data_sp, root=0)
 
     if rank == 0:
-        rows = numpy.array(data_sps)[:,0].sum()
-        recv_buffer = numpy.empty(())
-#
+        data_sps = numpy.array(data_sps)
+        rows, cols = data_sps[:, 0], data_sps[:, 1]
+        displ = []
+        count = rows*cols
+        for j in range(cpus):
+            displ.append(count[0:j].sum())
+        count = count.tolist()
+        recv_buffer = numpy.empty((rows.sum(), cols[0]))
+    else:
+        count = None
+        displ = None
+        recv_buffer = None
+    count = comm.bcast(count, root=0)
+    displ = comm.bcast(displ, root=0)
+    comm.Gatherv(cat_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
+    if rank == 0:
+        final_data_path = res_path + "w%d.npz"%i
+        numpy.savez(final_data_path, recv_buffer)
 
 
 
