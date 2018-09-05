@@ -61,8 +61,10 @@ for i in range(area_num):
             except:
                 print(rank, "%s.dat doesn't exist"%field_name)
     data_sp = cat_data.shape
+    data_sps = comm.gather(data_sp, root=0)
 
     if rank == 0:
+        rows = numpy.array(data_sps)[:,0].sum()
         recv_buffer = numpy.empty(())
 #
 
