@@ -24,7 +24,9 @@ if cmd not in cmds:
     exit()
 
 area_num = 4
-grid_scale = [5, 12, 17, 27, 41, 60] # arcmin
+
+grid_scale = numpy.array([5, 10, 25, 60]) # arcmin
+corre_scale = [10**(0.2*i) for i in range(11)]
 
 cpu_block_size = int(cpus/area_num)
 
@@ -95,7 +97,22 @@ if cmd == "collect":
 
 if cmd == "grid":
     if rank < area_num:
-        pass
+        # test
+        cat_path = res_path + "w%d.npz"%rank + 1
+        cat_data = numpy.load(cat_path)["arr_0"]
+        ra, dec = cat_data[:,12]*60, cat_data[:,13]*60
+        ra_min, ra_max, dec_min, dec_max = ra.min(), ra.max(), dec.min(), dec.max()
+        grid_h5_path = res_path + "w%d_grid.hdf5"%rank + 1
+        f = h5py.File(grid_h5_path, "w")
+        for i, scale in enumerate(grid_scale):
+            rows, cols = int((ra_max - ra_min)/scale+1), int((dec_max - dec_min)/scale+1)
+            for row in range(rows):
+                for col in range(cols):
+                    group_name = "/%d/%d/%d"%(scale, row, col)
+                    f.create_group(group_name)
+                    idx1 = ra > ra_min + i*scale
+                    f[group_name].attrs[]
+
 
 
 
