@@ -10,6 +10,8 @@ import tool_box
 import h5py
 from mpi4py import MPI
 from sys import argv
+import configparser
+import time
 
 
 comm = MPI.COMM_WORLD
@@ -25,20 +27,19 @@ if cmd not in cmds:
 
 area_num = 4
 
-grid_scale = numpy.array([5, 10, 25, 60]) # arcmin
+grid_scale = numpy.array([5., 10., 25., 60.]) # arcmin
 corre_scale = [10**(0.2*i) for i in range(11)]
 
 cpu_block_size = int(cpus/area_num)
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
-    contents = f.readlines()
-for path in contents:
-    if "=" in path:
-        env_location, env_path = path.split("=")[0:2]
-        if "cfht_data_path" == env_location:
-            data_path = env_path
-        if "cfht_res_path" == env_location:
-            res_path = env_path
+config = configparser.ConfigParser()
+config.read("%s/work/envs/envs.dat"%my_home)
+data_path = config.get("cfht", "data_path_in")
+res_path = config.get("cfht", "result_path")
+flux_alt = int(config.get("fresh_para_idx", "flux_alt"))
+nstar = int(config.get("fresh_para_idx", "nstar"))
+flux_alt_thresh = 3.
+nstar_thresh = 12
 
 # cpus_0 read the fields catalog and distribute them to related cpus
 # cpu_0 & block_0, cpu_1 & block_1 ...
@@ -95,23 +96,67 @@ if cmd == "collect":
             final_data_path = res_path + "w%d.npz"%i
             numpy.savez(final_data_path, recv_buffer)
 
+# make grid
 if cmd == "grid":
     if rank < area_num:
+        t1 = time.time()
         # test
-        cat_path = res_path + "w%d.npz"%rank + 1
-        cat_data = numpy.load(cat_path)["arr_0"]
-        ra, dec = cat_data[:,12]*60, cat_data[:,13]*60
+        grid_h5_path = data_path + "w%d_grid.hdf5" % rank
+        cat_path = data_path + "w%d.npz"%rank
+        ori_cat_data = numpy.load(cat_path)["arr_0"]
+
+        # cut off
+        flux_alt_idx = ori_cat_data[:,flux_alt] >= flux_alt_thresh
+        nstar_idx = ori_cat_data[:,nstar] >= nstar_thresh
+        cat_data = ori_cat_data[flux_alt_idx&nstar_idx][:,12:21]
+
+        # convert to arcmin
+        ra, dec = cat_data[:,0]*60, cat_data[:,1]*60
         ra_min, ra_max, dec_min, dec_max = ra.min(), ra.max(), dec.min(), dec.max()
-        grid_h5_path = res_path + "w%d_grid.hdf5"%rank + 1
+
+        plt.scatter(dec, ra)
+        pic_nm = data_path + "w%d_ra_dec.png" %rank
+        plt.savefig(pic_nm)
+        plt.close()
+
+        # the grid indices are labeled by the group name under the specific grid scale,
+        # e.g. /0.5/1/2 (/scale/col/row), the attribute of the grid shows the shape of the data array in the grid
         f = h5py.File(grid_h5_path, "w")
+
         for i, scale in enumerate(grid_scale):
+            # the grid: x-axis--ra, y-axis--dec
             rows, cols = int((ra_max - ra_min)/scale+1), int((dec_max - dec_min)/scale+1)
-            for row in range(rows):
-                for col in range(cols):
-                    group_name = "/%d/%d/%d"%(scale, row, col)
+            test_arr = numpy.zeros((5 * rows, 5 * cols))
+            for col in range(cols):
+                for row in range(rows):
+
+                    ir1 = ra >= ra_min + row*scale
+                    ir2 = ra < ra_min + (row+1)*scale
+                    ic1 = dec >= dec_min + col*scale
+                    ic2 = dec < dec_min + (col+1)*scale
+                    block = cat_data[ir1&ir2&ic1&ic2]
+                    block_sp = block.shape
+
+                    if block_sp[0] > 0:
+                        test_arr[row*5:(row+1)*5, col*5:(col+1)*5] = block_sp[0]
+
+                    group_name = "/%d/%d/%d"%(scale, col, row)
                     f.create_group(group_name)
-                    idx1 = ra > ra_min + i*scale
-                    f[group_name].attrs[]
+                    data_set_name = group_name+"/block"
+                    f.create_dataset(name=data_set_name, data=block)
+                    f[data_set_name].attrs["info"] = [block_sp[0], block_sp[1],
+                                                      ra_min + row*scale, ra_min + (row+1)*scale,
+                                                      dec_min + col*scale, dec_min + (col+1)*scale]
+
+            plt.imshow(test_arr)
+            plt.colorbar()
+            pic_nm = data_path + "w%d_grid_%.f.png" %(rank,scale)
+            plt.savefig(pic_nm)
+            plt.close()
+        f.close()
+        t2 = time.time()
+        if rank == 0:
+            print(t2-t1)
 
 
 
