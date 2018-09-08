@@ -237,6 +237,18 @@ def gauss_fit(data, bin_num):
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
+def fit_1d(x, fun_val, order):
+    # fit a polynomial to 'order'
+    # a1 + a2*x + a3*x^2  .....
+    # the powers of the polynomial can be written as \SUM_{i~N} X^{i}
+    x = x * 1.0
+    turns = order+1
+    pows = [i for i in range(order+1)]
+    fxy = [numpy.sum(fun_val * (x ** pows[i])) for i in range(turns)]
+    cov = [numpy.sum(x**pows[i]) for i in range(turns)]
+    res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
+    return res
+
 def fit_2d(x, y, fun_val, order):
     # fit a polynomial to 'order'
     # a1 + a2*x + a2*y + a3*x^2 + a4*x*y + a5*y^2 .....
@@ -249,19 +261,22 @@ def fit_2d(x, y, fun_val, order):
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res
 
-def rand_gauss2(x_range, y_range, num, sigx, sigy, cxy=0.):
+def rand_gauss2(x_range, y_range, num, cov):
     # return a 2-variables gaussian distribution
     # cxy is the correlation between the two variables and must be smaller than the sigma!
     xs = []
     ys = []
+    sigx, sigy, cxy = cov
     A = (sigx * sigy) ** 2 - cxy ** 2
     coeff = 0.5/numpy.pi/sigx/sigy
+
     while len(xs) < num:
         num_gap = (num - len(xs))
         x = numpy.random.uniform(x_range[0], x_range[1], num_gap)
         y = numpy.random.uniform(y_range[0], y_range[1], num_gap)
         z = numpy.random.uniform(0, coeff, num_gap)
         resi = z - coeff*numpy.exp(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2)/A)
+        print(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2))
         idx = resi <= 0
         if len(x[idx]) > num_gap:
             xs.extend(x[idx][:num_gap].tolist())
@@ -591,3 +606,38 @@ def cfht_label(field_name):
         mp2 = 10
 
     return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2
+
+
+    def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
+        e1 = ellip[:, 0]
+        e2 = ellip[:, 1]
+        e = numpy.sqrt(e1 ** 2 + e2 ** 2)
+        scale = numpy.mean(1 / e)
+        x = coordi[:, 0]
+        y = coordi[:, 1]
+        if mode== 1:
+            dx = lent * e1 / e / 2
+            dy = lent * e2 / e / 2
+        else:
+            dx = scale * lent * e1 / e / 2
+            dy = scale * lent * e2 / e / 2
+        x1 = x + dx
+        x2 = x - dx
+        y1 = y + dy
+        y2 = y - dy
+
+        norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
+        cmap = plt.get_cmap('YlOrRd')
+        fig = plt.figure(figsize=(20,10))
+        plt.axes().set_aspect('equal', 'datalim')
+        for i in range(len(x)):
+            cl = cmap(norm(e[i]))
+            plt.plot([y1[i], y2[i]], [x1[i], x2[i]], color=cl, linewidth=width)
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm._A = []
+        plt.colorbar(sm)
+        plt.title(title,fontsize = 18)
+        if path is not None:
+            plt.savefig(path)
+        if show is True:
+            plt.show()

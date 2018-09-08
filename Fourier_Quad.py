@@ -8,7 +8,7 @@ from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-
+import tool_box
 
 class Fourier_Quad:
 
@@ -422,9 +422,28 @@ class Fourier_Quad:
             arr[edge: self.size - edge, edge: self.size - edge] = 0.
             return arr
 
+    def set_bin(self, data, bin_num, abs_sort=True):
+        if abs_sort:
+            temp_data = numpy.sort(numpy.abs(data))
+        else:
+            temp_data = numpy.sort(data[data>0])
+        bin_size = len(temp_data) / bin_num * 2
+        bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
+        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        bound = numpy.max(numpy.abs(data)) * 100.
+        bins = numpy.append(-bound, numpy.append(bins, bound))
+        return bins
+
     def G_bin(self, g, nu, g_h, bins, ig_num):  # checked 2017-7-9!!!
-        # nu = N + U for g1
-        # nu = N - U for g2
+        r"""
+        to calculate the symmetry the shear estimators
+        :param g: estimators from Fourier quad, 1-D numpy array
+        :param nu: N + U for g1, N - U for g2, 1-D numpy array
+        :param g_h: pseudo shear (guess)
+        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
+        :param ig_num: the number of inner grid of bin to be neglected
+        :return: chi square
+        """
         bin_num = len(bins) - 1
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         G_h = g - nu * g_h
@@ -432,76 +451,180 @@ class Fourier_Quad:
         n1 = num[0:int(bin_num / 2)]
         n2 = num[int(bin_num / 2):][inverse]
         xi = (n1 - n2) ** 2 / (n1 + n2)
-        return numpy.sum(xi[:len(xi)-ig_num]) * 0.5 #
+        return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
-        # nu = N + U for g1
-        # nu = N - U for g2
-        # g_c = numpy.random.choice(g, 5000,replace=False)
-        # temp_data = numpy.sort(numpy.abs(g_c))
-        temp_data = numpy.sort(numpy.abs(g))#[:int(len(g)*0.99)]
-        bin_size = len(temp_data)/bin_num*2
-        bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
-        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(g)) * 100.
-        bins = numpy.append(-bound, numpy.append(bins, bound))
+    def G_bin2d(self, mgs, mnus, gs, bins, ig_nums=None):
+        r"""
+        to calculate the symmetry of two sets of shear estimators
+        all the input should be a list contains two sets of data from two sets of galaxies
+        :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
+                    first shear estimators of Fourier quad ,
+        :param mnus: a two components list, two 1-D numpy arrays, contains two sets of
+                    shear estimators of Fourier quad (N,U), N + U for g1, N - U for g2
+        :param gs: a two components list, two 1-D numpy arrays, contains two sets of
+                    pseudo shear values obey specific PDF
+        :param bins: a two components list, two 1-D numpy arrays, contains two bins for
+                    the shear estimator
+        :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
+                        of each bin to be neglected
+        :return: chi square
+        """
+        # half of the bin number
+        ny, nx = int((len(bins[0]) - 1)/2), int((len(bins[1]) - 1)/2)
+
+        mg1 = mgs[0] - mnus[0]*gs[0]
+        mg2 = mgs[1] - mnus[1]*gs[1]
+        num_arr = numpy.histogram2d(mg1, mg2, bins)[0]
+        # | arr_1 | arr_2 |
+        # | arr_3 | arr_4 |
+        # chi square = 0.2*SUM[(arr_2 + arr_3 - arr_1 - arr_4)**2/(arr_1 + arr_2 + arr_3 + arr_4)]
+        arr_1 = num_arr[0:ny, 0:nx][:,range(nx-1,-1,-1)]
+        arr_2 = num_arr[0:ny, nx:2*nx]
+        arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1),range(nx-1,-1,-1)]
+        arr_4 = num_arr[ny:2*ny, nx:2*nx][range(ny-1,-1,-1)]
+        return 0.5*numpy.sum(((arr_2+arr_3-arr_1-arr_4)**2)/(arr_1+arr_2+arr_3+arr_4))
+
+    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=None, left=-0.002, right=0.002,pic_path=False):
+        r"""
+        to find the true correlation between two sets of galaxies
+        :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
+                    first shear estimators of Fourier quad ,
+        :param mnus: a two components list, two 1-D numpy arrays, contains two sets of
+                    shear estimators of Fourier quad (N,U), N + U for g1, N - U for g2
+        :param bin_num: [num1, num2] for [mg1, mg2]
+        :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
+                        of each bin to be neglected
+        :param pic_path: the path for saving the chi square picture
+        :param left: initial guess of the correlation
+        :param right: initial guess of the correlation
+        :return: the correlation between mg1 and mg2
+        """
+        bins = (self.set_bin(mgs[0], bin_num), self.set_bin(mgs[1], bin_num))
+        same = 0
         iters = 0
-        change = 1
-        while change == 1:
-            change = 0
-            mc = (left + right) / 2.
-            mcl = (mc + left) / 2.
-            mcr = (mc + right) / 2.
-            fmc = self.G_bin(g, nu, mc, bins, ig_num)
-            fmcl = self.G_bin(g, nu, mcl, bins, ig_num)
-            fmcr = self.G_bin(g, nu, mcr, bins, ig_num)
-            temp = fmc + 20
-            if fmcl > temp:
-                left = (mc + mcl)/2.
-                change = 1
-            if fmcr > temp:
-                right = (mc + mcr)/2.
-                change = 1
-            iters += 1
-            if iters > 16:
+        resample = 5
+        # m1 chi square & left & left chi square & right & right chi square
+        records = numpy.zeros((15, 5))
+        data_len = len(mgs[0])
+        pseu_sig = 0.06
+        g_bound = [-0.1, 0.1]
+        while True:
+            templ = left
+            tempr = right
+            m1 = (left + right) / 2.
+            m2 = (m1 + left) / 2.
+            m3 = (m1 + right) / 2.
+            pts = [left, m2, m1, m3, right]
+            temp_val = numpy.zeros((5,resample))
+            for ii in range(5):
+                for ir in range(resample):
+                    gs = tool_box.rand_gauss2(g_bound,g_bound,data_len,[pseu_sig, pseu_sig, pts[ii]])
+                    temp_val[ii, ir] = self.G_bin2d(mgs, mnus, gs, bins, ig_nums)
+
+            fL = temp_val[0].mean()
+            fm2 = temp_val[1].mean()
+            fm1 = temp_val[2].mean()
+            fm3 = temp_val[3].mean()
+            fR = temp_val[4].mean()
+            values = [fL, fm2, fm1, fm3, fR]
+
+            records[iters, ] = fm1, left, fL, right, fR
+            if max(values) < 30:
+                temp_left = left
+                temp_right = right
+            if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
+                if fm1 == fm2:
+                    left = m2
+                    right = m1
+                elif fm1 == fm3:
+                    left = m1
+                    right = m3
+                elif fm2 == fm3:
+                    left = m2
+                    right = m3
+                elif fm1 < fm2 and fm1 < fm3:
+                    left = m2
+                    right = m3
+                elif fm2 < fm1 and fm2 < fm3:
+                    right = m1
+                elif fm3 < fm1 and fm3 < fm2:
+                    left = m1
+            elif fR > fm3 >= fL:
+                if fL == fm3:
+                    right = m3
+                elif fL == fm1:
+                    right = m1
+                elif fL == fm2:
+                    right = m2
+                elif fm1 == fm2:
+                    right = right
+                elif fm1 < fm2 and fm1 < fL:
+                    left = m2
+                    right = m3
+                elif fm2 < fL and fm2 < fm1:
+                    right = m1
+                elif fL < fm1 and fL < fm2:
+                    right = m2
+            elif fL > fm2 >= fR:
+                if fR == fm2:
+                    left = m2
+                elif fR == fm1:
+                    left = m1
+                elif fR == fm3:
+                    left = m3
+                elif fm1 < fR and fm1 < fm3:
+                    left = m2
+                    right = m3
+                elif fm3 < fm1 and fm3 < fR:
+                    left = m1
+                elif fR < fm1 and fR < fm3:
+                    left = m3
+                elif fm1 == fm3:
+                    left = m1
+                    right = m3
+
+            if abs(left-right) < 1.e-5:
+                g_h = (left+right)/2.
                 break
-        g_range = numpy.linspace(left, right, 200)
-        xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
+            iters += 1
+            if left == templ and right == tempr:
+                same += 1
+            if iters > 12 and same > 2 or iters > 14:
+                g_h = (left+right)/2.
+                break
+                # print(left,right,abs(left-right))
 
-        gg4 = numpy.sum(g_range ** 4)
-        gg3 = numpy.sum(g_range ** 3)
-        gg2 = numpy.sum(g_range ** 2)
-        gg1 = numpy.sum(g_range)
-        xigg2 = numpy.sum(xi2 * (g_range ** 2))
-        xigg1 = numpy.sum(xi2 * g_range)
-        xigg0 = numpy.sum(xi2)
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+        # fitting
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 20))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 20))[0]
+        if len(label_l > 1):
+            label_l = label_l[0]
 
-        if pic_path:
-            plt.scatter(g_range, xi2)
-            plt.plot(g_range, paras[0] * g_range ** 2 + paras[1] * g_range + paras[2])
-            s = str(round(paras[0], 3)) + " " + str(round(paras[1], 3)) + " " + str(round(paras[2], 3))
-            plt.title(s)
-            plt.savefig(pic_path)
-            plt.close()
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 20))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 20))[0]
+        if len(label_r > 1):
+            label_r = label_r[0]
 
-        g_sig = numpy.sqrt(1 / 2. / paras[0])
-        g_h = -paras[1] / 2 / paras[0]
-        return g_h, g_sig
+        if left_x2 > right_x2:
+            right = records[label_l, 3]
+            left = 2 * m1 - right
+        else:
+            left = records[label_r, 1]
+            right = 2 * m1 - left
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+
+        pass
+
+    def fmin_g(self, g, nu, bin_num, ig_num=None, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # nu = N + U for g1
         # nu = N - U for g2
-        # g_c = numpy.random.choice(g, 5000,replace=False)
-        # temp_data = numpy.sort(numpy.abs(g_c))
-        temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
-        bin_size = len(temp_data)/bin_num*2
-        bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
-        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(g)) * 100.
-        bins = numpy.append(-bound, numpy.append(bins, bound))
-
+        # temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
+        # bin_size = len(temp_data)/bin_num*2
+        # bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
+        # bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        # bound = numpy.max(numpy.abs(g)) * 100.
+        # bins = numpy.append(-bound, numpy.append(bins, bound))
+        bins = self.set_bin(g, bin_num)
         same = 0
         iters = 0
         # m1 chi square & left & left chi square & right & right chi square
@@ -629,36 +752,59 @@ class Fourier_Quad:
 
         return g_h, g_sig
 
-    def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
-        e1 = ellip[:, 0]
-        e2 = ellip[:, 1]
-        e = numpy.sqrt(e1 ** 2 + e2 ** 2)
-        scale = numpy.mean(1 / e)
-        x = coordi[:, 0]
-        y = coordi[:, 1]
-        if mode== 1:
-            dx = lent * e1 / e / 2
-            dy = lent * e2 / e / 2
-        else:
-            dx = scale * lent * e1 / e / 2
-            dy = scale * lent * e2 / e / 2
-        x1 = x + dx
-        x2 = x - dx
-        y1 = y + dy
-        y2 = y - dy
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
+        # nu = N + U for g1
+        # nu = N - U for g2
+        # temp_data = numpy.sort(numpy.abs(g))#[:int(len(g)*0.99)]
+        # bin_size = len(temp_data)/bin_num*2
+        # bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
+        # bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        # bound = numpy.max(numpy.abs(g)) * 100.
+        # bins = numpy.append(-bound, numpy.append(bins, bound))
+        bins = self.set_bin(g,bin_num)
+        iters = 0
+        change = 1
+        while change == 1:
+            change = 0
+            mc = (left + right) / 2.
+            mcl = (mc + left) / 2.
+            mcr = (mc + right) / 2.
+            fmc = self.G_bin(g, nu, mc, bins, ig_num)
+            fmcl = self.G_bin(g, nu, mcl, bins, ig_num)
+            fmcr = self.G_bin(g, nu, mcr, bins, ig_num)
+            temp = fmc + 20
+            if fmcl > temp:
+                left = (mc + mcl)/2.
+                change = 1
+            if fmcr > temp:
+                right = (mc + mcr)/2.
+                change = 1
+            iters += 1
+            if iters > 16:
+                break
+        g_range = numpy.linspace(left, right, 200)
+        xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
-        norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
-        cmap = plt.get_cmap('YlOrRd')
-        fig = plt.figure(figsize=(20,10))
-        plt.axes().set_aspect('equal', 'datalim')
-        for i in range(len(x)):
-            cl = cmap(norm(e[i]))
-            plt.plot([y1[i], y2[i]], [x1[i], x2[i]], color=cl, linewidth=width)
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []
-        plt.colorbar(sm)
-        plt.title(title,fontsize = 18)
-        if path is not None:
-            plt.savefig(path)
-        if show is True:
-            plt.show()
+        gg4 = numpy.sum(g_range ** 4)
+        gg3 = numpy.sum(g_range ** 3)
+        gg2 = numpy.sum(g_range ** 2)
+        gg1 = numpy.sum(g_range)
+        xigg2 = numpy.sum(xi2 * (g_range ** 2))
+        xigg1 = numpy.sum(xi2 * g_range)
+        xigg0 = numpy.sum(xi2)
+        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
+        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
+
+        if pic_path:
+            plt.scatter(g_range, xi2)
+            plt.plot(g_range, paras[0] * g_range ** 2 + paras[1] * g_range + paras[2])
+            s = str(round(paras[0], 3)) + " " + str(round(paras[1], 3)) + " " + str(round(paras[2], 3))
+            plt.title(s)
+            plt.savefig(pic_path)
+            plt.close()
+
+        g_sig = numpy.sqrt(1 / 2. / paras[0])
+        g_h = -paras[1] / 2 / paras[0]
+        return g_h, g_sig
+
+

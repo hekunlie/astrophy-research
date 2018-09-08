@@ -120,7 +120,8 @@ if cmd == "grid":
         plt.close()
 
         # the grid indices are labeled by the group name under the specific grid scale,
-        # e.g. /0.5/1/2 (/scale/col/row), the attribute of the grid shows the shape of the data array in the grid
+        # e.g. /0.5/1/2/block (/scale/col/row/block),
+        # the attribute of block shows the shape of the data array in the grid
         f = h5py.File(grid_h5_path, "w")
 
         for i, scale in enumerate(grid_scale):
