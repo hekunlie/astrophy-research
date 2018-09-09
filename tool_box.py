@@ -10,50 +10,10 @@ from scipy.optimize import curve_fit
 import os
 import scipy
 
-def task_distri(target_list, cpu_num):
-    # it will divide the target_list into some piece (small lists in a diction)
-    # of which the number depends on the specific cpu core number
-    # target_list must be a python list
-    m, n = divmod(len(target_list), cpu_num)
-    distri_pool = {}
-    if m == 0 and n != 0:
-        for i in range(n):
-            distri_pool[i] = map(int, str(target_list[i]))
-    elif m != 0:
-        for i in range(cpu_num):
-            distri_pool[i] = target_list[i * m:(i + 1) * m]
-        if n != 0:
-            for i in range(n):
-                distri_pool[i].append(target_list[-i - 1])
-    else:
-        print("Caution! Something goes wrong!!!")
-    return distri_pool
 
-def list_add(target_list, files_paths):
-    # this function is designed for 'function 'classify'
-    # target_list is the target list that this function will put data array into
-    # files_paths is a list of paths of excel files
-    for i in range(len(files_paths)):
-        data = numpy.loadtxt(files_paths[i])
-        # data = pandas.read_excel(files_paths[i]).values
-        if i == 0:
-            temp_data = data
-        else:
-            temp_data = numpy.row_stack((temp_data, data))
-    target_list.append(temp_data)
-    target_list.reverse()
-
-def classify(files_path_list, cpu_num):
-    # the data will be assembled into same big arrays of which the number equals to cpu_num
-    paths_distri = task_distri(files_path_list, cpu_num)
-    final_data_list = Manager().list()
-    p = Pool()
-    for i in range(cpu_num):
-        p.apply_async(list_add, args=(final_data_list, paths_distri[i],))
-    p.close()
-    p.join()
-    return final_data_list
-
+################################################################
+# the detection methods
+################################################################
 def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
     if mask[ini_y, ini_x] > 0:
         signal.append((ini_y, ini_x))
@@ -212,47 +172,110 @@ def get_hlr(image, scale, size, thres=None):
 
     return numpy.sqrt(len(cache)/numpy.pi), flux, flux_sq, num, maxi
 
+def f(x, a, b, c, d, e, f):
+    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
 
-def gauss_fit(data, bin_num):
+def smooth(image,size):
+    my, mx = numpy.mgrid[-2:3, -2:3]
+    x, y = mx.reshape((1, 25)), my.reshape((1, 25))
+    cen = int((size * size + size) / 2)
+    fit_img = numpy.zeros_like(image)
+    for i in range(size):
+        for j in range(size):
+            arr = numpy.zeros((size, size))
+            arr[int(size / 2), int(size / 2)] = 0.5
+            pos = []
+            tag = 0
+            pk = 0
+            z = []
+            x_d = []
+            for m in range(-2, 3):
+                p = (i + m + size) % size
+                for n in range(-2, 3):
+                    q = (j + n + size) % size
+
+                    if tag not in [0, 4, 20, 24]:  # abs(m) != 2 or abs(n) != 2:
+                        if p * size + q != cen:
+                            pos.append((p, q))
+                            z.append(image[p, q])
+                            x_d.append((x[0, tag], y[0, tag]))
+                        else:
+                            pk = tag
+                    tag += 1
+
+            x_d = numpy.array(x_d).T
+            a1, a2 = curve_fit(f, x_d, z)
+            fit_img[i, j] = a1[5]
+    return fit_img
+
+################################################################
+# the fitting methods
+################################################################
+def exp_fun(x, ampli, sig, mu):
+    # for fitting
+    return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
+
+def gaussnosie_fit(data, bin_num):
     # fit the Gaussian distribution (amplitude, sigma, mu)
-    def fun(x, ampli, sig, mu):
-        return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
-
     num, bins = numpy.histogram(data, bin_num)
     num = num/numpy.sum(num)
     mp = numpy.where(num == numpy.max(num))[0][0]
-    # if mp+1 < bin_num/3:
-    #     bins = bins[:mp*2]
-    #     num = num[:mp*2]
-    # elif bin_num/3 <= mp+1 < bin_num*2./3:
-    #     bins = bins[int(mp+1-bin_num/3):int(mp+1-bin_num/3)]
-    #     num = num[int(mp+1-bin_num/3):int(mp+1-bin_num/3)]
-    # else:
-    #     tag = bin_num - mp - 1
-    #     bins = bins[mp-tag:mp+tag]
-    #     num = num[mp-tag:mp+tag]
-    # print(len(num))
-
-    coeff, coerr = curve_fit(f=fun, xdata=bins[1:], ydata=num)
+    coeff, coerr = curve_fit(f=exp_fun, xdata=bins[1:], ydata=num)
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
-def fit_1d(x, fun_val, order):
-    # fit a polynomial to 'order'
-    # a1 + a2*x + a3*x^2  .....
-    # the powers of the polynomial can be written as \SUM_{i~N} X^{i}
-    x = x * 1.0
-    turns = order+1
-    pows = [i for i in range(order+1)]
-    fxy = [numpy.sum(fun_val * (x ** pows[i])) for i in range(turns)]
-    cov = [numpy.sum(x**pows[i]) for i in range(turns)]
-    res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
+def gauss_fit(x, f, method):
+    r"""
+    to fit the Gaussian function
+    :param x: a list of coordinates, (n,) numpy array, 1 ~ 3 components ,
+    :param f: the measured function value, (n,) numpy array
+    :param method: scipy curve fitting or the least square method
+    :return: target coefficients, 1-D (n,) numpy array
+    """
+    nd = len(x)
+    if method == "scipy":
+        pass
+    else:
+        X = [numpy.log(x[i]) for i in range(nd)]
+        
+
+def fit_1d(x, y, order, method):
+    r"""
+    fit a polynomial to n-order
+    a1 + a2*x + a3*x^2  .....
+    the powers of the polynomial can be written as \SUM_{i~N} X^{i}
+
+    :param x: 1-D numpy array, x
+    :param y: 1-D numpy array, the measured values
+    :param order: the highest order of target polynomial
+    :param method: leastsq or scipy, all the subroutines do fitting basing on least square method
+    :return: (n,1) numpy array, the target coefficients
+    """
+    turns = order + 1
+    x = x*1.0
+    if method == "leastsq":
+        pows = [[i + j for i in range(turns)] for j in range(turns)]
+        fxy = [numpy.sum(y * (x ** pows[0][i])) for i in range(turns)]
+        cov = [[numpy.sum(x**pows[i][j]) for i in range(turns)] for j in range(turns)]
+        res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
+    elif method == "scipy":
+        x = numpy.array([x**i for i in range(turns)]).T
+        res = scipy.linalg.lstsq(x,y)[0]
+    else:
+        print("method must be one of \"leastsq, scipy\" ")
+        res = []
     return res
 
 def fit_2d(x, y, fun_val, order):
-    # fit a polynomial to 'order'
-    # a1 + a2*x + a2*y + a3*x^2 + a4*x*y + a5*y^2 .....
-    # the powers of the polynomial can be written as \SUM_{i~N}\SUM_{j~i} X^{i-j}*y^{j}
+    r"""
+    fit a polynomial to n-order, a1 + a2*x + a2*y + a3*x^2 + a4*x*y + a5*y^2 .....
+    the powers of the polynomial can be written as \SUM_{i~N}\SUM_{j~i} X^{i-j}*y^{j}
+    :param x: 1-D numpy array, x
+    :param y: 1-D numpy array, y
+    :param fun_val: 1-D numpy array, the measured values
+    :param order: the highest order of the target polynominal
+    :return: (n,1) numpy array, coefficients of the target polynomial
+    """
     x, y = x * 1.0, y * 1.0
     turns = int((order + 1) * (order + 2) / 2)
     pows = [(i-j, j) for i in range(order+1) for j in range(i+1)]
@@ -260,33 +283,6 @@ def fit_2d(x, y, fun_val, order):
     cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(turns)] for j in range(turns)]
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res
-
-def rand_gauss2(x_range, y_range, num, cov):
-    # return a 2-variables gaussian distribution
-    # cxy is the correlation between the two variables and must be smaller than the sigma!
-    xs = []
-    ys = []
-    sigx, sigy, cxy = cov
-    A = (sigx * sigy) ** 2 - cxy ** 2
-    coeff = 0.5/numpy.pi/sigx/sigy
-
-    while len(xs) < num:
-        num_gap = (num - len(xs))
-        x = numpy.random.uniform(x_range[0], x_range[1], num_gap)
-        y = numpy.random.uniform(y_range[0], y_range[1], num_gap)
-        z = numpy.random.uniform(0, coeff, num_gap)
-        resi = z - coeff*numpy.exp(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2)/A)
-        print(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2))
-        idx = resi <= 0
-        if len(x[idx]) > num_gap:
-            xs.extend(x[idx][:num_gap].tolist())
-            ys.extend(y[idx][:num_gap].tolist())
-        else:
-            xs.extend(x[idx].tolist())
-            ys.extend(y[idx].tolist())
-        if len(xs) == num:
-            break
-    return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
 
 def fit_backgroud(image, yblocks, xblocks, num, order=1, sort=False):
     y, x = image.shape
@@ -315,23 +311,6 @@ def fit_backgroud(image, yblocks, xblocks, num, order=1, sort=False):
             fit_paras.append(para)
     return fit_paras
 
-
-def find_step(image, thres):
-    # to find the abnormal image of which the background likes steps not continuous
-    y, x = image.shape
-    left = numpy.sort(image[:, :int(x / 2)].flatten())
-    right = numpy.sort(image[:, int(x / 2):].flatten())
-    up = numpy.sort(image[:int(y / 2), :].flatten())
-    down = numpy.sort(image[int(y / 2):, :].flatten())
-    mid = [left[int(len(left)/2)], right[int(len(right)/2)],
-           up[int(len(up)/2)], down[int(len(down)/2)]]
-    ab = 0
-    if abs(mid[0]-mid[1]) >= thres:
-        ab = 1 # the backgrounds of left and right parts are different
-    if abs(mid[2] - mid[3]) >= thres:
-        ab = 2 # the backgrounds of upper and bottom parts are different
-    return mid, ab
-
 def data_fit(x_data, y_data, y_err):
     # Y = A*X ,   y = m*x+c
     # Y = [y1,y2,y3,...].T  the measured data
@@ -352,6 +331,80 @@ def data_fit(x_data, y_data, y_err):
     mc = numpy.dot(L1, R1)
     return mc[1], sig_m1, mc[0], sig_c1
 
+
+################################################################
+# the methods relate to distribution of data
+################################################################
+def rand_gauss2(x_range, y_range, num, cov):
+    # return a 2-variables gaussian distribution
+    # cxy is the correlation between the two variables and must be smaller than the sigma!
+    xs = []
+    ys = []
+    sigx, sigy, cxy = cov
+    A = (sigx * sigy) ** 2 - cxy ** 2
+    coeff = 0.5/numpy.pi/sigx/sigy
+
+    while len(xs) < num:
+        num_gap = (num - len(xs))
+        x = numpy.random.uniform(x_range[0], x_range[1], num_gap)
+        y = numpy.random.uniform(y_range[0], y_range[1], num_gap)
+        z = numpy.random.uniform(0, coeff, num_gap)
+        resi = z - coeff*numpy.exp(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2)/A)
+        print(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2))
+        idx = resi <= 0
+        if len(x[idx]) > num_gap:
+            xs.extend(x[idx][:num_gap].tolist())
+            ys.extend(y[idx][:num_gap].tolist())
+        else:
+            xs.extend(x[idx].tolist())
+            ys.extend(y[idx].tolist())
+        if len(xs) == num:
+            break
+    return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
+
+
+def mags_mock(num, mag_min, mag_max):
+    r"""
+    to generate the magnitudes by fitting the CFHTLenS i-band catalog
+    :param num: total number
+    :param mag_min:
+    :param mag_max:
+    :return: 1-D numpy array
+    """
+    m = numpy.linspace(mag_min, mag_max, 1000000)
+    # the parameters come from the fitting to the cfht i-band catalog
+    pm = 10**(0.294895*m -1.082894)
+    pm = pm/numpy.sum(pm)
+    new_pdf = numpy.random.choice(m, num, p=pm)
+    return new_pdf
+
+
+def ellip_mock(num, seed=123400, figout=None):
+    """
+    Generate random ellipticity for a given number
+    following the distribution of the ellipticity
+    of bulge-dominated galaxies
+
+    See Miller et al, 2013, MNRAS
+    """
+    numpy.random.RandomState(seed)
+    b, c = 2.368, 6.691
+    # probability
+    pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
+
+    emin, emax = 0.0, 0.6
+    pmin, pmax = 0.0, 2.64456
+
+    es = numpy.linspace(emin, emax, int((emax - emin) / 0.000001) + 1)
+    pe_base = pe(es)
+    # normalize
+    pe_base = pe_base / numpy.sum(pe_base)
+    rbe = numpy.random.choice(es, num, p=pe_base)
+    return rbe
+
+################################################################
+# the methods for data analysis
+################################################################
 def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
     # "x_data' is the 'x'
     # 'y_data' is an (3,n) array "[[y's],[dy's],[num's]]
@@ -400,7 +453,6 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
     if show:
         plt.show()
     plt.close()
-
 
 def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=0.1,
                pic_path=None, multi_fig=True, size=(10,10),show=False):
@@ -454,80 +506,11 @@ def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=
         if show:
             plt.show()
 
-
-def mags_mock(num, mag_min, mag_max):
-    m = numpy.linspace(mag_min, mag_max, 1000000)
-    # the parameters come from the fitting to the cfht i-band catalog
-    pm = 10**(0.294895*m -1.082894)
-    pm = pm/numpy.sum(pm)
-    new_pdf = numpy.random.choice(m, num, p=pm)
-    return new_pdf
-
-
-def ellip_mock(num, seed=123400, figout=None):
-    """
-    Generate random ellipticity for a given number
-    following the distribution of the ellipticity
-    of bulge-dominated galaxies
-
-    See Miller et al, 2013, MNRAS
-    """
-    numpy.random.RandomState(seed)
-    b, c = 2.368, 6.691
-    # probability
-    pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
-
-    emin, emax = 0.0, 0.6
-    pmin, pmax = 0.0, 2.64456
-
-    es = numpy.linspace(emin, emax, int((emax - emin) / 0.000001) + 1)
-    pe_base = pe(es)
-    # normalize
-    pe_base = pe_base / numpy.sum(pe_base)
-    rbe = numpy.random.choice(es, num, p=pe_base)
-    return rbe
-
 def check_in(interval):
     if interval[0] <= 0 <= interval[1]:
         return True
     else:
         return False
-
-def f(x, a, b, c, d, e, f):
-    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
-
-def smooth(image,size):
-    my, mx = numpy.mgrid[-2:3, -2:3]
-    x, y = mx.reshape((1, 25)), my.reshape((1, 25))
-    cen = int((size * size + size) / 2)
-    fit_img = numpy.zeros_like(image)
-    for i in range(size):
-        for j in range(size):
-            arr = numpy.zeros((size, size))
-            arr[int(size / 2), int(size / 2)] = 0.5
-            pos = []
-            tag = 0
-            pk = 0
-            z = []
-            x_d = []
-            for m in range(-2, 3):
-                p = (i + m + size) % size
-                for n in range(-2, 3):
-                    q = (j + n + size) % size
-
-                    if tag not in [0, 4, 20, 24]:  # abs(m) != 2 or abs(n) != 2:
-                        if p * size + q != cen:
-                            pos.append((p, q))
-                            z.append(image[p, q])
-                            x_d.append((x[0, tag], y[0, tag]))
-                        else:
-                            pk = tag
-                    tag += 1
-
-            x_d = numpy.array(x_d).T
-            a1, a2 = curve_fit(f, x_d, z)
-            fit_img[i, j] = a1[5]
-    return fit_img
 
 def set_bin(data, bin_num):
     temp_data = numpy.sort(data[data>0])[:int(len(data[data>0])*0.99)]
@@ -560,6 +543,58 @@ def field_dict(expo_file):
                 file_dict[field].setdefault(expo, [chip])
     return file_dict, fields
 
+def cfht_label(field_name):
+    # the location of each galaxy is labeled by the field_label and exposure_label
+    # counting from the left, the first, third and fifth figure denotes "w_m(p)_(m)p_"
+    # the second and the fourth denotes "m" or "p" (1=m,0=p)
+    # the last two figure is zero and will denote the chip NO.
+    # the exposure label will be stored in the other place
+    mp1, mp2 = 0, 0
+    if field_name[2] == "m":
+        mp1 = 10 ** 3
+    if field_name[4] == "m":
+        mp2 = 10
+
+    return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2
+
+
+def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
+    e1 = ellip[:, 0]
+    e2 = ellip[:, 1]
+    e = numpy.sqrt(e1 ** 2 + e2 ** 2)
+    scale = numpy.mean(1 / e)
+    x = coordi[:, 0]
+    y = coordi[:, 1]
+    if mode== 1:
+        dx = lent * e1 / e / 2
+        dy = lent * e2 / e / 2
+    else:
+        dx = scale * lent * e1 / e / 2
+        dy = scale * lent * e2 / e / 2
+    x1 = x + dx
+    x2 = x - dx
+    y1 = y + dy
+    y2 = y - dy
+
+    norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
+    cmap = plt.get_cmap('YlOrRd')
+    fig = plt.figure(figsize=(20,10))
+    plt.axes().set_aspect('equal', 'datalim')
+    for i in range(len(x)):
+        cl = cmap(norm(e[i]))
+        plt.plot([y1[i], y2[i]], [x1[i], x2[i]], color=cl, linewidth=width)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    plt.colorbar(sm)
+    plt.title(title,fontsize = 18)
+    if path is not None:
+        plt.savefig(path)
+    if show is True:
+        plt.show()
+
+################################################################
+# the general methods
+################################################################
 def allot(allot_list, fractions):
     num = len(allot_list)
     m, n = divmod(num, fractions)
@@ -592,52 +627,3 @@ def file_name(path):
         ex = os.path.exists(path)
         i += 1
     return path
-
-def cfht_label(field_name):
-    # the location of each galaxy is labeled by the field_label and exposure_label
-    # counting from the left, the first, third and fifth figure denotes "w_m(p)_(m)p_"
-    # the second and the fourth denotes "m" or "p" (1=m,0=p)
-    # the last two figure is zero and will denote the chip NO.
-    # the exposure label will be stored in the other place
-    mp1, mp2 = 0, 0
-    if field_name[2] == "m":
-        mp1 = 10 ** 3
-    if field_name[4] == "m":
-        mp2 = 10
-
-    return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2
-
-
-    def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
-        e1 = ellip[:, 0]
-        e2 = ellip[:, 1]
-        e = numpy.sqrt(e1 ** 2 + e2 ** 2)
-        scale = numpy.mean(1 / e)
-        x = coordi[:, 0]
-        y = coordi[:, 1]
-        if mode== 1:
-            dx = lent * e1 / e / 2
-            dy = lent * e2 / e / 2
-        else:
-            dx = scale * lent * e1 / e / 2
-            dy = scale * lent * e2 / e / 2
-        x1 = x + dx
-        x2 = x - dx
-        y1 = y + dy
-        y2 = y - dy
-
-        norm = plt.Normalize(vmin=numpy.min(e), vmax=numpy.max(e))
-        cmap = plt.get_cmap('YlOrRd')
-        fig = plt.figure(figsize=(20,10))
-        plt.axes().set_aspect('equal', 'datalim')
-        for i in range(len(x)):
-            cl = cmap(norm(e[i]))
-            plt.plot([y1[i], y2[i]], [x1[i], x2[i]], color=cl, linewidth=width)
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm._A = []
-        plt.colorbar(sm)
-        plt.title(title,fontsize = 18)
-        if path is not None:
-            plt.savefig(path)
-        if show is True:
-            plt.show()

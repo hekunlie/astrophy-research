@@ -16,11 +16,22 @@ import tool_box
 #
 #
 # for i in range(35,38):
-i = 37
-t1 =time.time()
-gg = tool_box.rand_gauss2([-0.1,0.1],[-0.1,0.1],500000,[0.06,0.06, 0.0001*i])
-t2 =time.time()
-print(i,t2-t1,gg.shape,0.0001*i)
+n = 10000
+x0 = numpy.linspace(-2,2,50)
+x = numpy.random.uniform(-2,2,n)
+x = numpy.sort(x)
+def y(x):
+    return 1+0.5*x**2+0.2*x**4
+yy = y(x) + numpy.random.normal(0,0.1,n)
+para1 = tool_box.fit_1d(x,yy,4,"lestsq")
+para2 = tool_box.fit_1d(x,yy,4,"scipy")
+print(para1)
+print(para2)
+plt.plot(x,para1[0]+para1[1]*x+para1[2]*x**2+para1[3]*x**3+para1[4]*x**4,c='r')
+plt.plot(x,para2[0]+para2[1]*x+para2[2]*x**2+para2[3]*x**3+para2[4]*x**4,c='g')
+plt.scatter(x,yy)
+plt.plot(x0,y(x0))
+plt.show()
     # plt.figure(figsize=(5,5))
     # plt.hist2d(gg[:,0],gg[:,1],100)
     # plt.show()
