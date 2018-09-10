@@ -7,7 +7,7 @@ import os
 # path.append('%s/work/fourier_quad/'%my_home)
 # path.append("E:/Github/astrophy-research/")
 import time
-from Fourier_Quad import Fourier_Quad
+# from Fourier_Quad import Fourier_Quad
 # import galsim
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -15,22 +15,29 @@ import tool_box
 # from mpi4py import MPI
 #
 #
+
+
 # for i in range(35,38):
 n = 10000
-x0 = numpy.linspace(-2,2,50)
-x = numpy.random.uniform(-2,2,n)
-x = numpy.sort(x)
+end1, end2 = -30, 30
+x = numpy.linspace(end1, end2, n)
+# x = numpy.random.uniform(end1, end2, n)
+# x = numpy.sort(x)
 def y(x):
-    return 1+0.5*x**2+0.2*x**4
-yy = y(x) + numpy.random.normal(0,0.1,n)
-para1 = tool_box.fit_1d(x,yy,4,"lestsq")
-para2 = tool_box.fit_1d(x,yy,4,"scipy")
+    A, mu, sig = 2.5, 1.2, 5
+    return A*numpy.exp(-(x-mu)**2/2/sig**2)
+yy = y(x) + numpy.random.normal(0,0.01,n)
+idx = yy > 0
+
+para1 = tool_box.gauss_fit([x[idx]],yy[idx],"scipy")
+# para2 = tool_box.fit_1d(x,yy,4,"scipy")
 print(para1)
-print(para2)
-plt.plot(x,para1[0]+para1[1]*x+para1[2]*x**2+para1[3]*x**3+para1[4]*x**4,c='r')
-plt.plot(x,para2[0]+para2[1]*x+para2[2]*x**2+para2[3]*x**3+para2[4]*x**4,c='g')
+# print(para2)
+# plt.plot(x,para1[0]+para1[1]*x+para1[2]*x**2+para1[3]*x**3+para1[4]*x**4,c='r')
+# plt.plot(x,para2[0]+para2[1]*x+para2[2]*x**2+para2[3]*x**3+para2[4]*x**4,c='g')
+plt.plot(x, para1[1][0]*numpy.exp(-(x-para1[0][0])**2/2/para1[0][1]),c="r")
 plt.scatter(x,yy)
-plt.plot(x0,y(x0))
+plt.plot(x,y(x))
 plt.show()
     # plt.figure(figsize=(5,5))
     # plt.hist2d(gg[:,0],gg[:,1],100)

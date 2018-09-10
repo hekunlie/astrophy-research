@@ -227,17 +227,34 @@ def gaussnosie_fit(data, bin_num):
 def gauss_fit(x, f, method):
     r"""
     to fit the Gaussian function
-    :param x: a list of coordinates, (n,) numpy array, 1 ~ 3 components ,
+    f(x,y,...) = A*EXP(-SUM (x_i - mu_i)**2/2/sig_i**2)
+
+    :param x: a list of coordinates, (n,) numpy array,
     :param f: the measured function value, (n,) numpy array
     :param method: scipy curve fitting or the least square method
     :return: target coefficients, 1-D (n,) numpy array
     """
+    # dimension
+    idx = f >= f.max()*0.05
     nd = len(x)
+    ln_f = numpy.log(f[idx])
     if method == "scipy":
-        pass
+        X = numpy.array([x[i][idx]**j for i in range(nd) for j in range(2,-1,-1)]).T
+        print(X.shape)
+        ones = numpy.ones((X.shape[0], 1))
+        X = numpy.column_stack((X, ones))
+        res = scipy.linalg.lstsq(X,ln_f)[0]
+        print(res)
+        coeff = []
+        for i in range(nd):
+            ai,bi,ci = res[i*3], res[i*3+1], res[i*3+2]
+            mu_i = -0.5*bi/ai
+            sig_i2 = mu_i/bi
+            coeff.append([mu_i, sig_i2])
+        coeff.append([numpy.exp(2*res[-1])])
+        return coeff
     else:
-        X = [numpy.log(x[i]) for i in range(nd)]
-        
+        pass
 
 def fit_1d(x, y, order, method):
     r"""
