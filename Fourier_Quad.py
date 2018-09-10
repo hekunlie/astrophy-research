@@ -453,7 +453,7 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
 
-    def G_bin2d(self, mgs, mnus, gs, bins, ig_nums=None):
+    def G_bin2d(self, mgs, mnus, g_corr, bins, resample=5, ig_nums=None):
         r"""
         to calculate the symmetry of two sets of shear estimators
         all the input should be a list contains two sets of data from two sets of galaxies
@@ -461,8 +461,7 @@ class Fourier_Quad:
                     first shear estimators of Fourier quad ,
         :param mnus: a two components list, two 1-D numpy arrays, contains two sets of
                     shear estimators of Fourier quad (N,U), N + U for g1, N - U for g2
-        :param gs: a two components list, two 1-D numpy arrays, contains two sets of
-                    pseudo shear values obey specific PDF
+        :param g_corr: float, the correlation between the two sets of shear
         :param bins: a two components list, two 1-D numpy arrays, contains two bins for
                     the shear estimator
         :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
@@ -471,20 +470,26 @@ class Fourier_Quad:
         """
         # half of the bin number
         ny, nx = int((len(bins[0]) - 1)/2), int((len(bins[1]) - 1)/2)
+        chi_sq = 0
+        pseu_sig = 0.07
+        g_bound = [-0.1, 0.1]
+        data_len = len(mgs[0])
+        for i in range(resample):
+            g_ditri = tool_box.rand_gauss2(g_bound,g_bound,data_len,[pseu_sig, pseu_sig, g_corr])
+            mg1 = mgs[0] - mnus[0]*g_ditri[0]
+            mg2 = mgs[1] - mnus[1]*g_ditri[1]
+            num_arr = numpy.histogram2d(mg1, mg2, bins)[0]
+            # | arr_1 | arr_2 |
+            # | arr_3 | arr_4 |
+            # chi square = 0.2*SUM[(arr_2 + arr_3 - arr_1 - arr_4)**2/(arr_1 + arr_2 + arr_3 + arr_4)]
+            arr_1 = num_arr[0:ny, 0:nx][:,range(nx-1,-1,-1)]
+            arr_2 = num_arr[0:ny, nx:2*nx]
+            arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1),range(nx-1,-1,-1)]
+            arr_4 = num_arr[ny:2*ny, nx:2*nx][range(ny-1,-1,-1)]
+            chi_sq += 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
+        return chi_sq/resample
 
-        mg1 = mgs[0] - mnus[0]*gs[0]
-        mg2 = mgs[1] - mnus[1]*gs[1]
-        num_arr = numpy.histogram2d(mg1, mg2, bins)[0]
-        # | arr_1 | arr_2 |
-        # | arr_3 | arr_4 |
-        # chi square = 0.2*SUM[(arr_2 + arr_3 - arr_1 - arr_4)**2/(arr_1 + arr_2 + arr_3 + arr_4)]
-        arr_1 = num_arr[0:ny, 0:nx][:,range(nx-1,-1,-1)]
-        arr_2 = num_arr[0:ny, nx:2*nx]
-        arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1),range(nx-1,-1,-1)]
-        arr_4 = num_arr[ny:2*ny, nx:2*nx][range(ny-1,-1,-1)]
-        return 0.5*numpy.sum(((arr_2+arr_3-arr_1-arr_4)**2)/(arr_1+arr_2+arr_3+arr_4))
-
-    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=None, left=-0.002, right=0.002,pic_path=False):
+    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=None, left=-0.0015, right=0.0015,pic_path=False):
         r"""
         to find the true correlation between two sets of galaxies
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
@@ -499,33 +504,22 @@ class Fourier_Quad:
         :param right: initial guess of the correlation
         :return: the correlation between mg1 and mg2
         """
-        bins = (self.set_bin(mgs[0], bin_num), self.set_bin(mgs[1], bin_num))
+        bins = [self.set_bin(mgs[0], bin_num), self.set_bin(mgs[1], bin_num)]
         same = 0
         iters = 0
-        resample = 5
         # m1 chi square & left & left chi square & right & right chi square
         records = numpy.zeros((15, 5))
-        data_len = len(mgs[0])
-        pseu_sig = 0.06
-        g_bound = [-0.1, 0.1]
         while True:
             templ = left
             tempr = right
             m1 = (left + right) / 2.
             m2 = (m1 + left) / 2.
             m3 = (m1 + right) / 2.
-            pts = [left, m2, m1, m3, right]
-            temp_val = numpy.zeros((5,resample))
-            for ii in range(5):
-                for ir in range(resample):
-                    gs = tool_box.rand_gauss2(g_bound,g_bound,data_len,[pseu_sig, pseu_sig, pts[ii]])
-                    temp_val[ii, ir] = self.G_bin2d(mgs, mnus, gs, bins, ig_nums)
-
-            fL = temp_val[0].mean()
-            fm2 = temp_val[1].mean()
-            fm1 = temp_val[2].mean()
-            fm3 = temp_val[3].mean()
-            fR = temp_val[4].mean()
+            fL = self.G_bin2d(mgs, mnus, left, bins, ig_nums=ig_nums)
+            fm2 = self.G_bin2d(mgs, mnus, m2, bins, ig_nums=ig_nums)
+            fm1 = self.G_bin2d(mgs, mnus, m1, bins, ig_nums=ig_nums)
+            fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
+            fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
             values = [fL, fm2, fm1, fm3, fR]
 
             records[iters, ] = fm1, left, fL, right, fR
@@ -595,13 +589,13 @@ class Fourier_Quad:
                 # print(left,right,abs(left-right))
 
         # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 20))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 20))[0]
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
         if len(label_l > 1):
             label_l = label_l[0]
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 20))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 20))[0]
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
         if len(label_r > 1):
             label_r = label_r[0]
 
@@ -612,8 +606,12 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2 * m1 - left
 
-
-        pass
+        fit_range = numpy.linspace(left, right, 50)
+        chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
+        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        corr_sig = numpy.sqrt(1 / 2. / coeff[2])
+        g_corr = -coeff[1] / 2. / coeff[2]
+        return g_corr, corr_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=None, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # nu = N + U for g1
