@@ -240,11 +240,9 @@ def gauss_fit(x, f, method):
     ln_f = numpy.log(f[idx])
     if method == "scipy":
         X = numpy.array([x[i][idx]**j for i in range(nd) for j in range(2,-1,-1)]).T
-        print(X.shape)
         ones = numpy.ones((X.shape[0], 1))
         X = numpy.column_stack((X, ones))
         res = scipy.linalg.lstsq(X,ln_f)[0]
-        print(res)
         coeff = []
         for i in range(nd):
             ai,bi,ci = res[i*3], res[i*3+1], res[i*3+2]
@@ -367,7 +365,6 @@ def rand_gauss2(x_range, y_range, num, cov):
         y = numpy.random.uniform(y_range[0], y_range[1], num_gap)
         z = numpy.random.uniform(0, coeff, num_gap)
         resi = z - coeff*numpy.exp(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2)/A)
-        print(-0.5*((x*sigy)**2 + 2*cxy*x*y + (sigx*y)**2))
         idx = resi <= 0
         if len(x[idx]) > num_gap:
             xs.extend(x[idx][:num_gap].tolist())

@@ -9,6 +9,9 @@ from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
 import tool_box
+import time
+import datetime
+
 
 class Fourier_Quad:
 
@@ -18,6 +21,7 @@ class Fourier_Quad:
         self.alpha = (2.*numpy.pi/size)**4
         self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
         self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
+        self.counter = 0
 
     def draw_noise(self, mean, sigma):
         noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
@@ -456,7 +460,6 @@ class Fourier_Quad:
     def G_bin2d(self, mgs, mnus, g_corr, bins, resample=5, ig_nums=None):
         r"""
         to calculate the symmetry of two sets of shear estimators
-        all the input should be a list contains two sets of data from two sets of galaxies
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
                     first shear estimators of Fourier quad ,
         :param mnus: a two components list, two 1-D numpy arrays, contains two sets of
@@ -470,26 +473,33 @@ class Fourier_Quad:
         """
         # half of the bin number
         ny, nx = int((len(bins[0]) - 1)/2), int((len(bins[1]) - 1)/2)
+        # print("ny, nx:", ny,nx)
         chi_sq = 0
-        pseu_sig = 0.07
-        g_bound = [-0.1, 0.1]
+        mu = [0,0]
+        cov = [[0.07,g_corr],[g_corr,0.07]]
         data_len = len(mgs[0])
         for i in range(resample):
-            g_ditri = tool_box.rand_gauss2(g_bound,g_bound,data_len,[pseu_sig, pseu_sig, g_corr])
-            mg1 = mgs[0] - mnus[0]*g_ditri[0]
-            mg2 = mgs[1] - mnus[1]*g_ditri[1]
+            if i == 0:
+                self.counter += 1
+            t1 = time.time()
+            g_distri = numpy.random.multivariate_normal(mu,cov,data_len)
+            t2 = time.time()
+            mg1 = mgs[0] - mnus[0]*g_distri[:,0]
+            mg2 = mgs[1] - mnus[1]*g_distri[:,1]
             num_arr = numpy.histogram2d(mg1, mg2, bins)[0]
             # | arr_1 | arr_2 |
             # | arr_3 | arr_4 |
             # chi square = 0.2*SUM[(arr_2 + arr_3 - arr_1 - arr_4)**2/(arr_1 + arr_2 + arr_3 + arr_4)]
-            arr_1 = num_arr[0:ny, 0:nx][:,range(nx-1,-1,-1)]
+            arr_1 = num_arr[0:ny, 0:nx][:,range(ny-1,-1,-1)]
             arr_2 = num_arr[0:ny, nx:2*nx]
-            arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1),range(nx-1,-1,-1)]
+            arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1)][:,range(nx-1,-1,-1)]
             arr_4 = num_arr[ny:2*ny, nx:2*nx][range(ny-1,-1,-1)]
             chi_sq += 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
+            t3 = time.time()
+            # print("%d resample %d %.2f %.2f" %(self.counter,i, t2-t1, t3-t2))
         return chi_sq/resample
 
-    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=None, left=-0.0015, right=0.0015,pic_path=False):
+    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=0, left=-0.001, right=0.001,pic_path=False):
         r"""
         to find the true correlation between two sets of galaxies
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
@@ -521,11 +531,11 @@ class Fourier_Quad:
             fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
             fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
             values = [fL, fm2, fm1, fm3, fR]
-
+            print("iteration \n",iters,values,"\n", left, m2, m1, m3, right)
             records[iters, ] = fm1, left, fL, right, fR
-            if max(values) < 30:
-                temp_left = left
-                temp_right = right
+            if max(values) - min(values) < 20:
+                print("BREAK ", iters, left, right, abs(left - right))
+                break
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
                 if fm1 == fm2:
                     left = m2
@@ -579,41 +589,45 @@ class Fourier_Quad:
 
             if abs(left-right) < 1.e-5:
                 g_h = (left+right)/2.
+                print("BREAK ",iters, left, right, abs(left - right))
                 break
             iters += 1
             if left == templ and right == tempr:
                 same += 1
             if iters > 12 and same > 2 or iters > 14:
                 g_h = (left+right)/2.
+                print("BREAK ",iters,left, right, abs(left - right))
                 break
-                # print(left,right,abs(left-right))
-
         # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
-        if len(label_l > 1):
-            label_l = label_l[0]
+        # left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
+        # label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
+        # if len(label_l > 1):
+        #     label_l = label_l[0]
+        #
+        # right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
+        # label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
+        # if len(label_r > 1):
+        #     label_r = label_r[0]
+        #
+        # if left_x2 > right_x2:
+        #     right = records[label_l, 3]
+        #     left = 2 * m1 - right
+        # else:
+        #     left = records[label_r, 1]
+        #     right = 2 * m1 - left
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
-        if len(label_r > 1):
-            label_r = label_r[0]
-
-        if left_x2 > right_x2:
-            right = records[label_l, 3]
-            left = 2 * m1 - right
-        else:
-            left = records[label_r, 1]
-            right = 2 * m1 - left
-
-        fit_range = numpy.linspace(left, right, 50)
+        fit_range = numpy.linspace(left, right, 20)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
+        print("Fitting finish", left, right,g_corr, corr_sig)
+        plt.scatter(fit_range,chi_sq)
+        plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+        plt.show()
         return g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=None, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # nu = N + U for g1
         # nu = N - U for g2
         # temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
@@ -705,7 +719,6 @@ class Fourier_Quad:
                 g_h = (left+right)/2.
                 break
                 # print(left,right,abs(left-right))
-
         # fitting
         left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 20))
         label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 20))[0]

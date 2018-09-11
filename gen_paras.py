@@ -9,15 +9,13 @@ path.append('%s/work/fourier_quad/'%my_home)
 from Fourier_Quad import Fourier_Quad
 import tool_box
 import h5py
+import configparser
 
+config = configparser.ConfigParser()
+config.read("%s/work/envs/envs.dat"%my_home)
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
-    contents = f.readlines()
-for path in contents:
-    if "=" in path:
-        env_location, env_path = path.split("=")[0:2]
-        if "cf_data_path" == env_location:
-            cf_data_path = env_path
+cf_data_path = config.get("cfht", "data_path_simu")
+
 
 with open("./paras.dat","r") as f:
     contents = f.readlines()
@@ -54,16 +52,17 @@ f = h5py.File(para_path,'w')
 
 # generate the correlated (g1, g2) pairs
 
-g1_pairs = tool_box.rand_gauss2([g1_s, g1_e], [g1_s, g1_e], num, g1_sig, g1_sig, gg_cor1)
-g2_pairs = tool_box.rand_gauss2([g2_s, g2_e], [g2_s, g2_e], num, g2_sig, g2_sig, gg_cor2)
+g1_pairs = numpy.random.multivariate_normal([0,0],[[g1_sig,gg_cor1],[gg_cor1,g1_sig]], num)
+# tool_box.rand_gauss2([g1_s, g1_e], [g1_s, g1_e], num, g1_sig, g1_sig, gg_cor1)
+g2_pairs = numpy.random.multivariate_normal([0,0],[[g2_sig,gg_cor2],[gg_cor2,g2_sig]], num)
 
 plt.figure(figsize=(10,5))
 plt.subplot(121)
-plt.hist2d(g1_pairs[:,0],g1_pairs[:,1], 50)
-plt.colorbar()
+plt.hist2d(g1_pairs[:,0],g1_pairs[:,1], 100)
+# plt.colorbar()
 plt.subplot(122)
-plt.hist2d(g2_pairs[:,0],g2_pairs[:,1], 50)
-plt.colorbar()
+plt.hist2d(g2_pairs[:,0],g2_pairs[:,1], 100)
+# plt.colorbar()
 gg_cor_fig = cf_data_path + "gg_cor.png"
 plt.savefig(gg_cor_fig)
 plt.close()

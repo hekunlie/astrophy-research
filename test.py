@@ -3,11 +3,11 @@
 import numpy
 import os
 # my_home = os.popen("echo $HOME").readlines()[0][:-1]
-# from sys import path
+from sys import path
 # path.append('%s/work/fourier_quad/'%my_home)
 # path.append("E:/Github/astrophy-research/")
 import time
-# from Fourier_Quad import Fourier_Quad
+from Fourier_Quad import Fourier_Quad
 # import galsim
 import matplotlib.pyplot as plt
 from astropy.io import fits
@@ -17,28 +17,40 @@ import tool_box
 #
 
 
-# for i in range(35,38):
-n = 10000
-end1, end2 = -30, 30
-x = numpy.linspace(end1, end2, n)
-# x = numpy.random.uniform(end1, end2, n)
-# x = numpy.sort(x)
-def y(x):
-    A, mu, sig = 2.5, 1.2, 5
-    return A*numpy.exp(-(x-mu)**2/2/sig**2)
-yy = y(x) + numpy.random.normal(0,0.01,n)
-idx = yy > 0
+arr = numpy.load("F:/pts.npz")["arr_0"]
+n = int(arr.shape[0]/2)
+arr1 = arr[:n]
+arr2 = arr[n:2*n]
+mg1s, mg2s, mnu1s, mnu2s = [arr1[:,0],arr2[:,0]], [arr1[:,1],arr2[:,1]], [arr1[:,2]+arr1[:,3],arr2[:,2]+arr2[:,3]],\
+                           [arr1[:,2]-arr1[:,3], arr2[:,2]-arr2[:,3]]
+fq = Fourier_Quad(64,123)
+print(n)
+res = fq.fmin_g2d(mg2s,mnu2s, 8)
+print(res)
 
-para1 = tool_box.gauss_fit([x[idx]],yy[idx],"scipy")
-# para2 = tool_box.fit_1d(x,yy,4,"scipy")
-print(para1)
-# print(para2)
-# plt.plot(x,para1[0]+para1[1]*x+para1[2]*x**2+para1[3]*x**3+para1[4]*x**4,c='r')
-# plt.plot(x,para2[0]+para2[1]*x+para2[2]*x**2+para2[3]*x**3+para2[4]*x**4,c='g')
-plt.plot(x, para1[1][0]*numpy.exp(-(x-para1[0][0])**2/2/para1[0][1]),c="r")
-plt.scatter(x,yy)
-plt.plot(x,y(x))
-plt.show()
+
+# for i in range(35,38):
+# n = 10000
+# end1, end2 = -30, 30
+# x = numpy.linspace(end1, end2, n)
+# # x = numpy.random.uniform(end1, end2, n)
+# # x = numpy.sort(x)
+# def y(x):
+#     A, mu, sig = 2.5, 1.2, 5
+#     return A*numpy.exp(-(x-mu)**2/2/sig**2)
+# yy = y(x) + numpy.random.normal(0,0.01,n)
+# idx = yy > 0
+#
+# para1 = tool_box.gauss_fit([x[idx]],yy[idx],"scipy")
+# # para2 = tool_box.fit_1d(x,yy,4,"scipy")
+# print(para1)
+# # print(para2)
+# # plt.plot(x,para1[0]+para1[1]*x+para1[2]*x**2+para1[3]*x**3+para1[4]*x**4,c='r')
+# # plt.plot(x,para2[0]+para2[1]*x+para2[2]*x**2+para2[3]*x**3+para2[4]*x**4,c='g')
+# plt.plot(x, para1[1][0]*numpy.exp(-(x-para1[0][0])**2/2/para1[0][1]),c="r")
+# plt.scatter(x,yy)
+# plt.plot(x,y(x))
+# plt.show()
     # plt.figure(figsize=(5,5))
     # plt.hist2d(gg[:,0],gg[:,1],100)
     # plt.show()
