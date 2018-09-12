@@ -16,17 +16,19 @@ import tool_box
 #
 #
 
-
-arr = numpy.load("F:/pts.npz")["arr_0"]
-n = int(arr.shape[0]/2)
-arr1 = arr[:n]
-arr2 = arr[n:2*n]
-mg1s, mg2s, mnu1s, mnu2s = [arr1[:,0],arr2[:,0]], [arr1[:,1],arr2[:,1]], [arr1[:,2]+arr1[:,3],arr2[:,2]+arr2[:,3]],\
-                           [arr1[:,2]-arr1[:,3], arr2[:,2]-arr2[:,3]]
-fq = Fourier_Quad(64,123)
-print(n)
-res = fq.fmin_g2d(mg2s,mnu2s, 8)
-print(res)
+g = tool_box.rand_gauss2n([-1,1,-1,1],1000000,[0,0],[[0.01,-0.002],[-0.002,0.01]])
+plt.hist2d(g[0],g[1], 100)
+plt.show()
+# arr = numpy.load("F:/pts.npz")["arr_0"]
+# n = int(arr.shape[0]/2)
+# arr1 = arr[:n]
+# arr2 = arr[n:2*n]
+# mg1s, mg2s, mnu1s, mnu2s = [arr1[:,0],arr2[:,0]], [arr1[:,1],arr2[:,1]], [arr1[:,2]+arr1[:,3],arr2[:,2]+arr2[:,3]],\
+#                            [arr1[:,2]-arr1[:,3], arr2[:,2]-arr2[:,3]]
+# fq = Fourier_Quad(64,123)
+# print(n)
+# res = fq.fmin_g2d(mg2s,mnu2s, 8)
+# print(res)
 
 
 # for i in range(35,38):

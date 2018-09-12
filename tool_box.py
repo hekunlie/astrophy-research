@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import os
 import scipy
+import configparser
 
 
 ################################################################
@@ -249,7 +250,7 @@ def gauss_fit(x, f, method):
             mu_i = -0.5*bi/ai
             sig_i2 = mu_i/bi
             coeff.append([mu_i, sig_i2])
-        coeff.append([numpy.exp(2*res[-1])])
+        coeff.append([numpy.exp(2*res[-1])]) # 2!!
         return coeff
     else:
         pass
@@ -357,7 +358,7 @@ def rand_gauss2(x_range, y_range, num, cov):
     ys = []
     sigx, sigy, cxy = cov
     A = (sigx * sigy) ** 2 - cxy ** 2
-    coeff = 0.5/numpy.pi/sigx/sigy
+    coeff = 0.5/numpy.pi/numpy.sqrt(A)
 
     while len(xs) < num:
         num_gap = (num - len(xs))
@@ -378,7 +379,7 @@ def rand_gauss2(x_range, y_range, num, cov):
 
 def rand_gauss2n(xy_range,num,means, cov):
     r"""
-    generate two sets of correlated data in (2,n) numpy array
+    basing on numpy, to generate two sets of correlated data in (2,n) numpy array
     :param xy_range: list of the bound of the two sets [x_start, x_end, y_start, y_end]
     :param num: number
     :param means: list of means [mean1,mean2]
@@ -407,7 +408,6 @@ def rand_gauss2n(xy_range,num,means, cov):
     data = numpy.array(finals)
     return data
 
-
 def mags_mock(num, mag_min, mag_max):
     r"""
     to generate the magnitudes by fitting the CFHTLenS i-band catalog
@@ -422,7 +422,6 @@ def mags_mock(num, mag_min, mag_max):
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf
-
 
 def ellip_mock(num, seed=123400, figout=None):
     """
@@ -672,3 +671,81 @@ def file_name(path):
         ex = os.path.exists(path)
         i += 1
     return path
+
+def congif(path, cmd, contents):
+    r"""
+    operation to the configuration file
+    :param path: string, directory to file
+    :param cmd: a list of operations , "add, get, sect_del, opt_del"
+                can be a mixture of "add, get, sect_del, opt_del"
+                if the config file doesn't exist, it will be ignored
+                "add" : add a section or an option in a section if the
+                        option exists, it will be raplaced by new value
+                "get" : get the value of a option in a section
+                "sect_del" : delete the section in the configure file
+                "opt_del" : delete the option in a section
+    :param contents: [["section","para","value"],[...],...]
+    :return: list of the values of the target options if "get" is in cmd, else a empty list
+    """
+    cobj = configparser.ConfigParser()
+
+    # if the config file doesn't exist
+    if not os.path.exists(path):
+        for ii, subcon in enumerate(contents):
+            if len(subcon) == 3:
+                sect, para, value = subcon
+                if not cobj.has_section(sect):
+                    cobj.add_section(sect)
+                cobj.set(sect, para, value)
+            else:
+                raise ValueError("Each sublist in contents must have 3 components!")
+
+        with open(path,"w") as confile:
+            cobj.write(confile)
+        return None
+    else:
+        cobj.read(path)
+        opt_vals = []
+        if len(cmd) != len(contents):
+            raise ValueError("The lengths of cmd and contents don't match!")
+        else:
+            for ii in range(len(contents)):
+                subcon = contents[ii]
+                if len(subcon) == 3:
+                    sect, para, value = subcon
+                    op = cmd[ii]
+                    if op == "add":
+                        if not cobj.has_section(sect):
+                            cobj.add_section(sect)
+                        # if the option exists, the value will be replaced by new one!
+                        cobj.set(sect, para, value)
+
+                    elif op == "get":
+                        if cobj.has_section(sect):
+                            if cobj.has_option(sect,para):
+                                opt_vals.append(cobj.get(sect,para))
+                            else:
+                                raise ValueError("The %s doesn't exist!" % sect)
+                        else:
+                            raise ValueError("The section doesn't exist!")
+
+                    elif op == "sect_del":
+                        if cobj.has_section(sect):
+                            cobj.remove_section(sect)
+                        else:
+                            raise ValueError("The section doesn't exist!")
+
+                    elif op == "opt_del":
+                        if cobj.has_option(sect, para):
+                            cobj.remove_option(sect,para)
+                        else:
+                            raise ValueError("The %s in %s doesn't exist!"%(para,sect))
+
+                    else:
+                        raise ValueError("The 'cmd' must be one of [add, get, sect_del, opt_del] in %s doesn't exist!")
+
+                else:
+                    raise ValueError("Each sublist in contents must have 3 components!")
+            with open(path, "w") as confile:
+                cobj.write(confile)
+            return opt_vals

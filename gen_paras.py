@@ -51,10 +51,11 @@ para_path = cf_data_path + "para.hdf5"
 f = h5py.File(para_path,'w')
 
 # generate the correlated (g1, g2) pairs
-
-g1_pairs = numpy.random.multivariate_normal([0,0],[[g1_sig,gg_cor1],[gg_cor1,g1_sig]], num)
+cov1 = [[g1_sig,gg_cor1],[gg_cor1,g1_sig]]
+cov2 = [[g2_sig,gg_cor2],[gg_cor2,g2_sig]]
+g1_pairs = tool_box.rand_gauss2n([-0.05,0.05, -0.05, 0.05],num, [0,0],cov1)
 # tool_box.rand_gauss2([g1_s, g1_e], [g1_s, g1_e], num, g1_sig, g1_sig, gg_cor1)
-g2_pairs = numpy.random.multivariate_normal([0,0],[[g2_sig,gg_cor2],[gg_cor2,g2_sig]], num)
+g2_pairs = tool_box.rand_gauss2n([-0.05,0.05, -0.05, 0.05],num, [0,0],cov2)
 
 plt.figure(figsize=(10,5))
 plt.subplot(121)
@@ -98,11 +99,11 @@ for i in range(2):
 f["/ellips"] = ellips
 
 # magnitude
-magnitude = numpy.zeros((2*num, 1))
-for i in range(2):
-    mags = tool_box.mags_mock(num, mag_s, mag_e)
-    magnitude[i*num: (i+1)*num, 0] = mags
-
-f["/magnitudes"] = magnitude
+# magnitude = numpy.zeros((2*num, 1))
+# for i in range(2):
+#     mags = tool_box.mags_mock(num, mag_s, mag_e)
+#     magnitude[i*num: (i+1)*num, 0] = mags
+#
+# f["/magnitudes"] = magnitude
 
 f.close()
