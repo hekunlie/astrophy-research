@@ -376,6 +376,37 @@ def rand_gauss2(x_range, y_range, num, cov):
             break
     return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
 
+def rand_gauss2n(xy_range,num,means, cov):
+    r"""
+    generate two sets of correlated data in (2,n) numpy array
+    :param xy_range: list of the bound of the two sets [x_start, x_end, y_start, y_end]
+    :param num: number
+    :param means: list of means [mean1,mean2]
+    :param cov: list, covariance matrix [[c11, c12],[c12,c11]]
+    :return: (2,n) numpy array
+    """
+    xs, xe, ys, ye = xy_range
+    finals = [[],[]]
+    while True:
+        nl = len(finals[0])
+        gap = num - nl
+        if gap == 0:
+            break
+        xy = numpy.random.multivariate_normal(means,cov,gap)
+        if len(xy_range) > 0 :
+            idx1 = xy[:,0] <= xe
+            idx2 = xy[:,0] >= xs
+            idy1 = xy[:,1] <= ye
+            idy2 = xy[:,1] >= ys
+            target = xy[idx1&idx2&idy1&idy2]
+        else:
+            target = xy
+        if target.shape[0] > 0:
+            finals[0].extend(target[:,0].tolist())
+            finals[1].extend(target[:,1].tolist())
+    data = numpy.array(finals)
+    return data
+
 
 def mags_mock(num, mag_min, mag_max):
     r"""
