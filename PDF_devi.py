@@ -28,17 +28,6 @@ para_path = path_items[0]
 pic_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/pic/"
 log_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/log/"
 
-# with open("%s/work/envs/envs1.dat"%my_home, "r") as f:
-#     contents = f.readlines()
-# for path in contents:
-#     if "select_total" in path:
-#         total_path = path.split("=")[1]
-#     elif "select_result" in path:
-#         result_path = path.split("=")[1]
-#     elif "parameter" in path:
-#         para_path = path.split("=")[1]
-#     elif "log" in path:
-#         log_path = path.split("=")[1]
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -51,7 +40,7 @@ logger.addHandler(lf)
 
 stamp_size = 90
 pixel_scale = 0.2
-shear_num = 14
+shear_num = 1
 chips_num = int(500/int(cpus/shear_num))
 seed = rank*344 + 1121
 chip_s_id, shear_id = divmod(rank, shear_num)
@@ -60,8 +49,8 @@ fq = Fourier_Quad(stamp_size, seed)
 
 shear_cata = para_path + "shear.npz"
 shear = numpy.load(shear_cata)
-g1 = shear["arr_0"][shear_id]
-g2 = shear["arr_1"][shear_id]
+g1 = 0.06
+g2 = -0.06
 
 paras = para_path + "para_%d.hdf5"%shear_id
 f = h5py.File(paras,'r')
@@ -78,20 +67,22 @@ noise_sig = prop.sigma_sky
 psf = galsim.Moffat(beta=3.5, scale_radius=0.8, flux=1.0, trunc=3)
 psf_img = galsim.ImageD(stamp_size, stamp_size)
 psf.drawImage(image=psf_img, scale=pixel_scale)
-
-#psf = psf_o.shear(e1=0.081, e2=-0.066)
+psf_ps = fq.pow_spec(psf_img.array)
 
 if rank == 0:
     hdu = fits.PrimaryHDU(psf_img.array)
     psf_path = total_path + 'psf.fits'
     hdu.writeto(psf_path, overwrite=True)
-    logger.info("size: %d, pixel_scale: %.2f, noise_sig: %.2f, total galaxy number: %d"%(stamp_size, pixel_scale, noise_sig, chips_num*divmod(cpus,14)[0]))
+    logger.info("size: %d, pixel_scale: %.2f, noise_sig: %.2f, total galaxy number: %d"%(stamp_size,
+                                                                                         pixel_scale, noise_sig,
+                                                                                         chips_num*divmod(cpus,shear_num)[0]))
 logger.info("seed: %d"%seed)
-
+fq = Fourier_Quad(stamp_size, 123)
 t = 0
+data_mea = numpy.zeros((chips_num*10000, 5))
 for i in range(chips_num):
     t1 = time.clock()
-    chip_path = total_path + str(shear_id) + "/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
+    chip_path = total_path + "/chip/gal_chip_%s.fits"%(str(i+chip_s_id*chips_num).zfill(4))
     gal_pool = []
     logger.info("Start the %04d's chip..."%i)
 
@@ -119,6 +110,11 @@ for i in range(chips_num):
         gal_c.drawImage(image=img, scale=pixel_scale)
         gal_img = img.array + fq.draw_noise(0, noise_sig)
         gal_pool.append(gal_img)
+
+        noise_img = fq.draw_noise(0,noise_sig)
+        res = fq.shear_est(gal_img,psf_ps,noise_img,True)
+        data_mea[t] = res[0], res[1], res[2], res[3], fq.flux2
+
         t += 1
 
     big_chip = fq.stack(gal_pool, 100)
@@ -128,7 +124,24 @@ for i in range(chips_num):
     t2 = time.clock()
     logger.info("Finish the %04d's chip in %.2f sec"%(i, t2-t1))
 
-ori_snr_path = result_path + "data/input_snr_%d.npz"%rank
+if rank == 0:
+    recv_buffer = numpy.empty((chips_num*10000*cpus, 5))
+else:
+    recv_buffer = None
+comm.Gather(data_mea,recv_buffer, root=0)
+
+if rank == 0:
+    numpy.savez(result_path+"/data/data.npz",recv_buffer)
+    FG1 = recv_buffer[:, 0]
+    FG2 = recv_buffer[:, 1]
+    FN = recv_buffer[:, 2]
+    FU = recv_buffer[:, 3]
+    DE1 = FN + FU
+    DE2 = FN - FU
+    g1_h, g1_h_sig = fq.fmin_g_new(FG1, DE1, bin_num=8)
+    g2_h, g2_h_sig = fq.fmin_g_new(FG2, DE2, bin_num=8)
+    print("g1: %.6f, mg1: %.6f, sig: %.6f, g2: %.6f, mg2: %.6f, sig: %.6f"%(g1, g1_h, g1_h_sig, g2, g2_h, g2_h_sig))
+# ori_snr_path = result_path + "data/input_snr_%d.npz"%rank
 
 te = time.clock()
 logger.info("Used %.2f sec"%(te-ts))

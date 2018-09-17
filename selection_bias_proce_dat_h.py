@@ -21,7 +21,7 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-ch, snr_s, snr_e, method, scale, del_bin = argv[1:8]
+ch, snr_s, snr_e, scale, del_bin = argv[1:8]
 
 pixel_scale = 0.2
 stamp_size = 90
@@ -30,17 +30,16 @@ snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
-    contents = f.readlines()
-for path in contents:
-    if "select_total_data" in path:
-        total_path = path.split("=")[1]
-    elif "select_result" in path:
-        result_path = path.split("=")[1]
-    elif "select_parameter" in path:
-        para_path = path.split("=")[1]
-    elif "select_pic_path" in path:
-        pic_path = path.split("=")[1]
+ini_path = "%s/work/envs/envs.dat"%my_home
+path_items = tool_box.congif(ini_path,['get','get','get','get'], [['selection_bias', "dimmerm_path", '1'],
+                                                                  ['selection_bias', "dimmerm_path_result", '1'],
+                                                                  ['selection_bias', "dimmerm_path_para", '1'],
+                                                                  ['selection_bias', "dimmerm_path_pic", '1']])
+
+total_path = path_items[0]
+result_path = path_items[1]
+para_path = path_items[2]
+pic_path = path_items[3]
 
 shear_input = numpy.load(para_path+"shear.npz")
 fg1 = shear_input['arr_0']
@@ -54,13 +53,16 @@ for s in range(int(scale)):
     if scale == 1:
         data_cache_path = path + "data_%d.hdf5"%rank
     else:
-        data_cache_path = path + 'data_%d_%d.hdf5'%(rank,s)
-    f = h5py.File(data_cache_path,'r')
+        data_cache_path = path + 'data_%d_%d.hdf5'%(rank, s)
+    f = h5py.File(data_cache_path, 'r')
     if s == 0:
         data = f["/data"].value
     else:
         data = numpy.row_stack((data, f["/data"].value))
     f.close()
+sex_path = total_path + "result/data/sex25_%d_1.5.npz"%rank
+sex_data = numpy.load(sex_path)["arr_0"]
+sex_snr = sex_data[:, 0]
 # sex_path = path + "sex25_%d_1.5.npz"%rank
 # sex_snr = numpy.load(sex_path)['arr_0'][:, 0]
 
@@ -69,7 +71,7 @@ fq = Fourier_Quad(stamp_size, 123)
 
 flux = data[:, 7]
 detect = flux > 0
-print(rank,len(flux[detect]))
+
 # F_Q data
 FG1 = data[:, 2]
 FG2 = data[:, 3]
@@ -106,13 +108,13 @@ if rank == 0:
     print("area: %d ~ %d\n" % (numpy.min(area), numpy.max(area)))
 
 select = {"peak": peak, "flux": flux, "flux2": flux2, "area": area, "snr": snr,
-          "hflux": hflux, "harea": harea, "flux_alt": flux_alt}#, "sex": sex_snr}
+          "hflux": hflux, "harea": harea, "flux_alt": flux_alt, "sex_snr": sex_snr}
 
 res_arr = numpy.zeros((3, 2))
 sp = res_arr.shape
 
 ssnr = select[ch]
-idxs = ssnr >= snr_cut_s
+idxs = ssnr > snr_cut_s
 idxe = ssnr <= snr_cut_e
 
 
@@ -127,18 +129,19 @@ DE2 = N - U
 weight = 1
 
 num = len(G1)
-if method == 'sym':
-    g1_xi2_pic = pic_path + "%d_%s_%d_g1_xi2.png"%(rank, ch, del_bin)
-    g2_xi2_pic = pic_path + "%d_%s_%d_g2_xi2.png"%(rank, ch, del_bin)
-    g1_h, g1_h_sig = fq.fmin_g_new(G1, DE1, bin_num=12, ig_num=del_bin, pic_path=g1_xi2_pic)
-    g2_h, g2_h_sig = fq.fmin_g_new(G2, DE2, bin_num=12, ig_num=del_bin, pic_path=g2_xi2_pic)
+print(rank, num)
+# if method == 'sym':
+g1_xi2_pic = pic_path + "%d_%s_%d_g1_xi2.png"%(rank, ch, del_bin)
+g2_xi2_pic = pic_path + "%d_%s_%d_g2_xi2.png"%(rank, ch, del_bin)
+g1_h, g1_h_sig = fq.fmin_g_new(G1, DE1, bin_num=8, ig_num=del_bin, pic_path=g1_xi2_pic)
+g2_h, g2_h_sig = fq.fmin_g_new(G2, DE2, bin_num=8, ig_num=del_bin, pic_path=g2_xi2_pic)
 
-else:
-    g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
-    g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)
-
-    g2_h = numpy.mean(G2 * weight) / numpy.mean(N * weight)
-    g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight) ** 2) / (numpy.mean(N * weight)) ** 2) / numpy.sqrt(num)
+# else:
+#     g1_h = numpy.mean(G1 * weight) / numpy.mean(N * weight)
+#     g1_h_sig = numpy.sqrt(numpy.mean((G1 * weight)**2)/(numpy.mean(N * weight))**2)/numpy.sqrt(num)
+#
+#     g2_h = numpy.mean(G2 * weight) / numpy.mean(N * weight)
+#     g2_h_sig = numpy.sqrt(numpy.mean((G2 * weight) ** 2) / (numpy.mean(N * weight)) ** 2) / numpy.sqrt(num)
 
 res_arr[0] = g1_h, g2_h
 res_arr[1] = g1_h_sig, g2_h_sig
@@ -162,7 +165,8 @@ else:
         arr2 = res_arr[:, idx]
         e1mc = tool_box.data_fit(fg1, arr1[0], arr1[1])
         e2mc = tool_box.data_fit(fg2, arr2[0], arr2[1])
-
+        print(arr1)
+        print(arr2)
         numpy.savez(final_cache_path,arr1, arr2, e1mc, e2mc)
         for p in range(cpus):
             print("num: %4.1f W, g1: %8.5f, m_g1: %8.5f, sig: %8.5f, devi: %4.2f * e^-4, shape noise: %6.4f"

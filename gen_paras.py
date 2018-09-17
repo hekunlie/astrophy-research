@@ -56,7 +56,7 @@ cov2 = [[g2_sig,gg_cor2],[gg_cor2,g2_sig]]
 g1_pairs = tool_box.rand_gauss2n([-0.05,0.05, -0.05, 0.05],num, [0,0],cov1)
 # tool_box.rand_gauss2([g1_s, g1_e], [g1_s, g1_e], num, g1_sig, g1_sig, gg_cor1)
 g2_pairs = tool_box.rand_gauss2n([-0.05,0.05, -0.05, 0.05],num, [0,0],cov2)
-
+print(g1_pairs.shape)
 plt.figure(figsize=(10,5))
 plt.subplot(121)
 plt.hist2d(g1_pairs[:,0],g1_pairs[:,1], 100)

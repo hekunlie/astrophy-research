@@ -405,7 +405,7 @@ def rand_gauss2n(xy_range,num,means, cov):
         if target.shape[0] > 0:
             finals[0].extend(target[:,0].tolist())
             finals[1].extend(target[:,1].tolist())
-    data = numpy.array(finals)
+    data = numpy.array(finals).T
     return data
 
 def mags_mock(num, mag_min, mag_max):
@@ -458,6 +458,7 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
     ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
     ax.scatter(x1_data, y1_data[0], c='black')
+
     for j in range(len(x1_data)):
         ax.text(x1_data[j], y1_data[0,j], str(round(y1_data[2,j] / 1000, 1)) + "K", color="red")
     ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6)) + '$\pm$' + str(round(e1mc[1], 6)), color='green', ha='left',
@@ -724,6 +725,7 @@ def congif(path, cmd, contents):
                         if cobj.has_section(sect):
                             if cobj.has_option(sect,para):
                                 opt_vals.append(cobj.get(sect,para))
+                                # print(cobj.get(sect,para))
                             else:
                                 raise ValueError("The %s doesn't exist!" % sect)
                         else:
@@ -746,6 +748,6 @@ def congif(path, cmd, contents):
 
                 else:
                     raise ValueError("Each sublist in contents must have 3 components!")
-            with open(path, "w") as confile:
-                cobj.write(confile)
+            # with open(path, "w") as confile:
+            #     cobj.write(confile)
             return opt_vals

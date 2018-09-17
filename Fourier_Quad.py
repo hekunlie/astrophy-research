@@ -21,7 +21,18 @@ class Fourier_Quad:
         self.alpha = (2.*numpy.pi/size)**4
         self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
         self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
-        self.counter = 0
+        self.kx2 = self.mx*self.mx
+        self.ky2 = self.my*self.my
+        self.kxy = self.mx*self.my
+        self.k2 = self.kx2+self.ky2
+        self.k4 = self.k2*self.k2
+        self.mn1 = (-0.5)*(self.kx2 - self.ky2)
+        self.mn2 = -self.mx*self.my
+        self.mn4 = self.k4 - 8*self.kx2*self.ky2
+        self.mn5 = self.kxy*(self.kx2 - self.ky2)
+        self.rim = self.border(1)
+        self.flux2 = -1.
+        self.hlr = 0
 
     def draw_noise(self, mean, sigma):
         noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
@@ -36,6 +47,7 @@ class Fourier_Quad:
         # gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
+            self.flux2 = numpy.sqrt(gal_ps[int(self.size/2), int(self.size/2)]/numpy.sum(self.rim*gal_ps))
             # nbg = tool_box.smooth(nbg,self.size)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)
@@ -47,33 +59,39 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-
-        hlr = self.get_radius_new(psf_ps, 2)[0]
-        wb, beta = self.wbeta(hlr)
+        # hlr = self.get_radius_new(psf_ps, 2)[0]
+        wb, beta = self.wbeta(self.hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 10000.
         wb[idx] = 0
         psf_ps[idx] = 1.
         tk = wb/psf_ps * gal_ps
 
-        ky, kx = self.my, self.mx
-        # ky = numpy.mgrid[0: self.size, 0: self.size][0] - self.size/2.
-        # kx = numpy.mgrid[0: self.size, 0: self.size][1] - self.size/2.
-        kx2 = kx*kx
-        ky2 = ky*ky
-        kxy = kx*ky
-        k2 = kx2 + ky2
-        k4 = k2*k2
-        mn1 = (-0.5)*(kx2 - ky2)    # (-0.5)*(kx**2 - ky**2)
-        mn2 = -kxy                  # -kx*ky
-        mn3 = k2 - 0.5*beta**2*k4   # kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
-        mn4 = k4 - 8*kx2*ky2        # kx**4 - 6*kx**2*ky**2 + ky**4
-        mn5 = kxy*(kx2 - ky2)       # kx**3*ky - kx*ky**3
-        mg1 = numpy.sum(mn1 * tk)*self.alpha
-        mg2 = numpy.sum(mn2 * tk)*self.alpha
+        # ky, kx = self.my, self.mx
+        # #
+        # kx2 = kx*kx
+        # ky2 = ky*ky
+        # kxy = kx*ky
+        # k2 = kx2 + ky2
+        # k4 = k2*k2
+        # mn1 = (-0.5)*(kx2 - ky2)    # (-0.5)*(kx**2 - ky**2)
+        # mn2 = -kxy                  # -kx*ky
+        # mn3 = k2 - 0.5*beta**2*k4   # kx**2 + ky**2 - 0.5*beta**2*(kx**2 + ky**2)**2
+        # mn4 = k4 - 8*kx2*ky2        # kx**4 - 6*kx**2*ky**2 + ky**4
+        # mn5 = kxy*(kx2 - ky2)       # kx**3*ky - kx*ky**3
+
+        # mn1 = self.mn1
+        # mn2 = self.mn2
+        mn3 = self.k2 - 0.5*beta**2*self.k4
+        # mn4 = self.mn4
+        # mn5 = self.mn5
+
+        mg1 = numpy.sum(self.mn1 * tk)*self.alpha
+        mg2 = numpy.sum(self.mn2 * tk)*self.alpha
         mn  = numpy.sum(mn3 * tk)*self.alpha
-        mu  = numpy.sum(mn4 * tk)*(-0.5*beta**2)*self.alpha
-        mv  = numpy.sum(mn5 * tk)*(-2.*beta**2)*self.alpha
+        mu  = numpy.sum(self.mn4 * tk)*(-0.5*beta**2)*self.alpha
+        mv  = numpy.sum(self.mn5 * tk)*(-2.*beta**2)*self.alpha
+
         return mg1, mg2, mn, mu, mv
 
     def wbeta(self, radius):
@@ -179,6 +197,7 @@ class Fourier_Quad:
                 num1 = check(cor)
             if num0 == num1:
                 break
+        self.hlr = numpy.sqrt(len(half_radi_pool) / numpy.pi)
         return numpy.sqrt(len(half_radi_pool) / numpy.pi)
 
     def get_radius_new(self, image, scale):
@@ -203,7 +222,7 @@ class Fourier_Quad:
             return signal, signal_val
 
         half_radius_pool, flux = detect(radi_arr, y[0], x[0], half_radius_pool, flux, self.size)
-
+        self.hlr = numpy.sqrt(len(half_radius_pool)/numpy.pi)
         return numpy.sqrt(len(half_radius_pool)/numpy.pi), half_radius_pool, numpy.sum(flux), maxi, (y, x)
 
     def move(self, image, x, y):
@@ -457,7 +476,7 @@ class Fourier_Quad:
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
 
-    def G_bin2d(self, mgs, mnus, g_corr, bins, resample=5, ig_nums=None):
+    def G_bin2d(self, mgs, mnus, g_corr, bins, resample=1, ig_nums=0):
         r"""
         to calculate the symmetry of two sets of shear estimators
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
@@ -467,8 +486,9 @@ class Fourier_Quad:
         :param g_corr: float, the correlation between the two sets of shear
         :param bins: a two components list, two 1-D numpy arrays, contains two bins for
                     the shear estimator
+        :param resample: repeat the calculation for one shear PDF to reduct the noise
         :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
-                        of each bin to be neglected
+                        of each bin to be neglected (developing)
         :return: chi square
         """
         # half of the bin number
@@ -479,8 +499,6 @@ class Fourier_Quad:
         cov = [[0.07,g_corr],[g_corr,0.07]]
         data_len = len(mgs[0])
         for i in range(resample):
-            if i == 0:
-                self.counter += 1
             t1 = time.time()
             g_distri = numpy.random.multivariate_normal(mu,cov,data_len)
             t2 = time.time()
@@ -497,7 +515,7 @@ class Fourier_Quad:
             chi_sq += 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
             t3 = time.time()
             # print("%d resample %d %.2f %.2f" %(self.counter,i, t2-t1, t3-t2))
-        return chi_sq/resample
+        return chi_sq/resample, arr_1, arr_2, arr_3, arr_4
 
     def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=0, left=-0.001, right=0.001,pic_path=False):
         r"""
