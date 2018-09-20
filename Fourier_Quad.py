@@ -43,11 +43,20 @@ class Fourier_Quad:
         return image_ps
 
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
+        r"""
+        Before the shear_est(), the get_hlr() should be called to get the half light radius of the PSF, and it will
+        assigned to the self.hlr for shear_est() automatically. The get_hlr() should be called when the PSF changes.
+        :param gal_image: galaxy image
+        :param psf_image: PSF image or Power Spectrum of PSF image
+        :param noise: noise image
+        :param F: boolean, False for PSF image, True for PSF Power spectrum
+        :return: estimators of shear
+        """
         gal_ps = self.pow_spec(gal_image)
         # gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
-            self.flux2 = numpy.sqrt(gal_ps[int(self.size/2), int(self.size/2)]/numpy.sum(self.rim*gal_ps))
+            self.flux2 = numpy.sqrt(gal_ps[int(self.size/2), int(self.size/2)]/numpy.sum(self.rim*gal_ps)*numpy.sum(self.rim))
             # nbg = tool_box.smooth(nbg,self.size)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)

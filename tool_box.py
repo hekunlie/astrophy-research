@@ -217,7 +217,12 @@ def exp_fun(x, ampli, sig, mu):
     return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
 
 def gaussnosie_fit(data, bin_num):
-    # fit the Gaussian distribution (amplitude, sigma, mu)
+    r"""
+    fit the Gaussian distribution (amplitude, sigma, mu)
+    :param data: the
+    :param bin_num:
+    :return:
+    """
     num, bins = numpy.histogram(data, bin_num)
     num = num/numpy.sum(num)
     mp = numpy.where(num == numpy.max(num))[0][0]
@@ -225,15 +230,18 @@ def gaussnosie_fit(data, bin_num):
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
 
-def gauss_fit(x, f, method):
+def gauss_fit(x, f, method='scipy'):
     r"""
     to fit the Gaussian function
     f(x,y,...) = A*EXP(-SUM (x_i - mu_i)**2/2/sig_i**2)
 
+    it is designed for the case that the scipy's curve_fit() fails
+
     :param x: a list of coordinates, (n,) numpy array,
-    :param f: the measured function value, (n,) numpy array
+    :param f: the measured value, (n,) numpy array
     :param method: scipy curve fitting or the least square method
-    :return: target coefficients, 1-D (n,) numpy array
+    :return: list of coefficients, [...[mean_i, sigma_i],...,[A]]
+            the last component is the coefficient A.
     """
     # dimension
     idx = f >= f.max()*0.05
@@ -253,7 +261,8 @@ def gauss_fit(x, f, method):
         coeff.append([numpy.exp(2*res[-1])]) # 2!!
         return coeff
     else:
-        pass
+        # developing
+        return None
 
 def fit_1d(x, y, order, method):
     r"""
@@ -269,7 +278,7 @@ def fit_1d(x, y, order, method):
     """
     turns = order + 1
     x = x*1.0
-    if method == "leastsq":
+    if method == "lsq":
         pows = [[i + j for i in range(turns)] for j in range(turns)]
         fxy = [numpy.sum(y * (x ** pows[0][i])) for i in range(turns)]
         cov = [[numpy.sum(x**pows[i][j]) for i in range(turns)] for j in range(turns)]
@@ -278,7 +287,7 @@ def fit_1d(x, y, order, method):
         x = numpy.array([x**i for i in range(turns)]).T
         res = scipy.linalg.lstsq(x,y)[0]
     else:
-        print("method must be one of \"leastsq, scipy\" ")
+        print("method must be one of \"lsq, scipy\" ")
         res = []
     return res
 
@@ -298,32 +307,62 @@ def fit_2d(x, y, fun_val, order):
     fxy = [[numpy.sum(fun_val * (x ** pows[i][0]) * (y ** pows[i][1]))] for i in range(turns)]
     cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(turns)] for j in range(turns)]
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
-    return res
+    return res, pows
 
-def fit_backgroud(image, yblocks, xblocks, num, order=1, sort=False):
+def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=False):
+    r"""
+    fit the background noise with n-order polynomial
+    :param image: the image
+    :param pix_num: the number of pixel for fitting
+    :param function: "flat" for fitting background noise value in the plane,
+                    "gauss" for fitting the sigma of the noise,
+                    "sort=True" is suggested,
+                    and the sigma fitting should be called after the background removing
+    :param yblock: number of the block in y-axis
+    :param xblock: number of the block in x-axis
+    :param order: the highest order of polynomial
+    :param sort: Boolean, True: fitting with the mid-part (0.3~0.7) of the PDF of pixel values
+                        False: fitting with all the pixels chosen
+    :return: list of coefficients in each block,
+            the sub-lists of the coefficients of each block are arranged like the 1-D numpy array which is reshape from
+            the 2-D numpy array.
+            if function=="gauss", the list looks like [.., [[mean,sigma],[amplitude]], [[],[]], ...]
+    """
     y, x = image.shape
-    ystep, xstep = int(y/yblocks), int(x/xblocks)
+    ystep, xstep = int(y/yblock), int(x/xblock)
     fit_paras = []
     # rng = numpy.random.RandomState(num)
-    for i in range(yblocks):
-        for j in range(xblocks):
+    for i in range(yblock):
+        for j in range(xblock):
             my, mx = numpy.mgrid[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep]
             my = my.flatten()
             mx = mx.flatten()
             tags = numpy.arange(0,len(my))
             # ch_tag = rng.choice(tags, num, replace=False)
-            ch_tag = numpy.random.choice(tags, num, replace=False)
+            ch_tag = numpy.random.choice(tags, pix_num, replace=False)
             ys = my[ch_tag]
             xs = mx[ch_tag]
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(num*0.3)], fz_s[int(num*0.7)]
+                bottom, upper = fz_s[int(pix_num*0.3)], fz_s[int(pix_num*0.7)]
                 idx_1 = fz >= bottom
                 idx_2 = fz <= upper
-                para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
+                if function == "flat":
+                    para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
+                elif function == "gauss":
+                    nums, bins = numpy.histogram(fz[idx_1&idx_2], 40)
+                    para = gauss_fit([bins[:-1]],nums)
+                else:
+                    raise ValueError("function must be one of \"flat, gauss\"")
             else:
-                para = fit_2d(xs,ys,fz,order)
+                if function == "flat":
+                    para = fit_2d(xs,ys,fz,order)
+                elif function == "gauss":
+                    nums, bins = numpy.histogram(fz, 40)
+                    para = gauss_fit([bins[:-1]],nums)
+                else:
+                    raise ValueError("function must be one of \"flat, gauss\"")
             fit_paras.append(para)
     return fit_paras
 
