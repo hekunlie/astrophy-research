@@ -67,7 +67,7 @@ def find_binary(image, ysize, xsize, sig):
     my, mx = numpy.mgrid[0:5,0:5]
     w = 3
     gauss = 1./2/numpy.pi/w/w*numpy.exp(-((my-2.5)**2+(mx-2.5)**2)/2/w**2)
-    # the padding is to avoid the boundary crossing in the locak peak searching
+    # the padding is to avoid the boundary crossing in the local peak searching
     image_c = numpy.lib.pad(scipy.signal.convolve(image,gauss,mode="same"),2,mode="constant",constant_values=0)
     mask = copy.deepcopy(image_c)
     idx = mask < 1.5*sig
@@ -173,9 +173,6 @@ def get_hlr(image, scale, size, thres=None):
 
     return numpy.sqrt(len(cache)/numpy.pi), flux, flux_sq, num, maxi
 
-def f(x, a, b, c, d, e, f):
-    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
-
 def smooth(image,size):
     my, mx = numpy.mgrid[-2:3, -2:3]
     x, y = mx.reshape((1, 25)), my.reshape((1, 25))
@@ -216,6 +213,9 @@ def exp_fun(x, ampli, sig, mu):
     # for fitting
     return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
 
+def f(x, a, b, c, d, e, f):
+    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
+
 def gaussnosie_fit(data, bin_num):
     r"""
     fit the Gaussian distribution (amplitude, sigma, mu)
@@ -240,7 +240,7 @@ def gauss_fit(x, f, method='scipy'):
     :param x: a list of coordinates, (n,) numpy array,
     :param f: the measured value, (n,) numpy array
     :param method: scipy curve fitting or the least square method
-    :return: list of coefficients, [...[mean_i, sigma_i],...,[A]]
+    :return: list of coefficients, [...[mean_i, sigma_i^2],...,[A]]
             the last component is the coefficient A.
     """
     # dimension
@@ -283,13 +283,14 @@ def fit_1d(x, y, order, method):
         fxy = [numpy.sum(y * (x ** pows[0][i])) for i in range(turns)]
         cov = [[numpy.sum(x**pows[i][j]) for i in range(turns)] for j in range(turns)]
         res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
+        return res
     elif method == "scipy":
         x = numpy.array([x**i for i in range(turns)]).T
         res = scipy.linalg.lstsq(x,y)[0]
+        return res
     else:
-        print("method must be one of \"lsq, scipy\" ")
-        res = []
-    return res
+        raise ValueError("method must be one of \"lsq, scipy\"")
+
 
 def fit_2d(x, y, fun_val, order):
     r"""
@@ -345,21 +346,31 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Fa
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(pix_num*0.3)], fz_s[int(pix_num*0.7)]
+                bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
                 idx_1 = fz >= bottom
                 idx_2 = fz <= upper
                 if function == "flat":
                     para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
                 elif function == "gauss":
-                    nums, bins = numpy.histogram(fz[idx_1&idx_2], 40)
-                    para = gauss_fit([bins[:-1]],nums)
+                    nums, bins = numpy.histogram(fz[idx_1&idx_2], 100)
+                    para = gauss_fit([bins[:-1]], nums)
+                    #
+                    # a,b,c = para[1][0], para[0][0], para[0][1]
+                    # print(para,a,b,c,numpy.sqrt(c))
+                    # plt.hist(fz[idx_1&idx_2], 100)
+                    # px = bins[:-1]#numpy.arange(0,len(nums))
+                    # plt.plot(px, a*numpy.exp(-(px-b)**2/2/c))
+                    # # plt.plot(range(len(nums)), nums)
+                    # plt.show()
+
+                    # para = gaussnosie_fit(fz[idx_1&idx_2], 100)
                 else:
                     raise ValueError("function must be one of \"flat, gauss\"")
             else:
                 if function == "flat":
                     para = fit_2d(xs,ys,fz,order)
                 elif function == "gauss":
-                    nums, bins = numpy.histogram(fz, 40)
+                    nums, bins = numpy.histogram(fz, 100)
                     para = gauss_fit([bins[:-1]],nums)
                 else:
                     raise ValueError("function must be one of \"flat, gauss\"")
@@ -367,15 +378,20 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Fa
     return fit_paras
 
 def data_fit(x_data, y_data, y_err):
-    # Y = A*X ,   y = m*x+c
-    # Y = [y1,y2,y3,...].T  the measured data
-    # A = [[1,1,1,1,...]
-    #         [x1,x2,x3..]].T
-    # X = [c,m].T
-    # C = diag[sig1^2, sig2^2, sig3^2, .....]
-    # the inverse of C is used as weight of data
-    # X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
-
+    r"""
+    Y = A*X ,   y = m*x+c
+    Y = [y1,y2,y3,...].T  the measured data
+    A = [[1,1,1,1,...]
+         [x1,x2,x3..]].T
+    X = [c,m].T
+    C = diag[sig1^2, sig2^2, sig3^2, .....]
+    the inverse of C is used as weight of data
+    X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
+    :param x_data:
+    :param y_data:
+    :param y_err:
+    :return:
+    """
     A1 = numpy.column_stack((numpy.ones_like(x_data.T), x_data.T))
     Y1 = y_data.T
     C1 = numpy.diag(y_err ** 2)
@@ -425,7 +441,6 @@ def rand_gauss2n(xy_range,num,means, cov):
     :param cov: list, covariance matrix [[c11, c12],[c12,c11]]
     :return: (2,n) numpy array
     """
-    xs, xe, ys, ye = xy_range
     finals = [[],[]]
     while True:
         nl = len(finals[0])
@@ -433,11 +448,11 @@ def rand_gauss2n(xy_range,num,means, cov):
         if gap == 0:
             break
         xy = numpy.random.multivariate_normal(means,cov,gap)
-        if len(xy_range) > 0 :
-            idx1 = xy[:,0] <= xe
-            idx2 = xy[:,0] >= xs
-            idy1 = xy[:,1] <= ye
-            idy2 = xy[:,1] >= ys
+        if len(xy_range) > 0:
+            idx1 = xy[:,0] <= xy_range[0]
+            idx2 = xy[:,0] >= xy_range[1]
+            idy1 = xy[:,1] <= xy_range[2]
+            idy2 = xy[:,1] >= xy_range[3]
             target = xy[idx1&idx2&idy1&idy2]
         else:
             target = xy
@@ -446,6 +461,31 @@ def rand_gauss2n(xy_range,num,means, cov):
             finals[1].extend(target[:,1].tolist())
     data = numpy.array(finals).T
     return data
+
+def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3):
+    """
+    the result seems to be wrong, the noise variance from fitting is about 60.
+    the default values come from the CFHT MegaPrime/MegaCam telescope
+    and the formula comes from the ETC of lsst
+    :param zpt: zero point
+    :param exp_time: exposure time, default = 300 sec
+    :param pix_scale: arcsec/pixel
+    :param sky_bright:
+    :return: the sky background noise variance
+    """
+    return numpy.sqrt(zpt * 10**(-0.4*(sky_bright-24))*exp_time)*pix_scale
+
+
+def CFHT_flux(mag, zpt=26.22, exp_time=600):
+    """
+    calculate the flux relates to the magnitude,
+    flux = 10**(-0.4*(mag - zeropoint))*exposure time
+    :param mag: numpy array or float
+    :param zpt: zero point, default for CFHTLenS
+    :param exp_time: exposure time, second, default for CFHTLenS
+    :return: numpy array or float, depends on the type of the input
+    """
+    return zpt*10**(-0.4*(mag - zpt))*exp_time
 
 def mags_mock(num, mag_min, mag_max):
     r"""
@@ -457,7 +497,7 @@ def mags_mock(num, mag_min, mag_max):
     """
     m = numpy.linspace(mag_min, mag_max, 1000000)
     # the parameters come from the fitting to the cfht i-band catalog
-    pm = 10**(0.294895*m -1.082894)
+    pm = 10**(0.294895*m - 1.082894)
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf
@@ -540,12 +580,27 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
 
 def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=0.1,
                pic_path=None, multi_fig=True, size=(10,10),show=False):
-    # it is designed to show the variation of m's and c's with respect to the cutoff
-    # it can show the figures one by one or just a big one contains four
-    # 'pic_path' must be a list contains the directories that each figure will be stored
-    # 'x' must be a 1-D numpy array
-    # 'mc1/2_list' must be a list of (n,4) numpy array "m,dm,c,dc"
-    # 'labels' is the label of each mc array
+    r"""
+    it is designed to show the variation of m's and c's with respect to the cutoff
+    it can show the figures one by one or just a big one contains four
+    'pic_path' must be a list contains the directories that each figure will be stored
+    'x' must be a 1-D numpy array
+    'mc1/2_list' must be a list of (n,4) numpy array "m,dm,c,dc"
+    'labels' is the label of each mc array
+    :param x:
+    :param mc1_list:
+    :param mc2_list:
+    :param labels:
+    :param cap:
+    :param ms:
+    :param linewidth:
+    :param margin:
+    :param pic_path:
+    :param multi_fig:
+    :param size:
+    :param show:
+    :return:
+    """
     num = len(mc1_list)
     if num > 5:
         print("Two many lines")

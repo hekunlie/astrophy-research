@@ -625,23 +625,6 @@ class Fourier_Quad:
                 g_h = (left+right)/2.
                 print("BREAK ",iters,left, right, abs(left - right))
                 break
-        # fitting
-        # left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 30))
-        # label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 30))[0]
-        # if len(label_l > 1):
-        #     label_l = label_l[0]
-        #
-        # right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 30))
-        # label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 30))[0]
-        # if len(label_r > 1):
-        #     label_r = label_r[0]
-        #
-        # if left_x2 > right_x2:
-        #     right = records[label_l, 3]
-        #     left = 2 * m1 - right
-        # else:
-        #     left = records[label_r, 1]
-        #     right = 2 * m1 - left
 
         fit_range = numpy.linspace(left, right, 20)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
@@ -818,7 +801,7 @@ class Fourier_Quad:
                 right = (mc + mcr)/2.
                 change = 1
             iters += 1
-            if iters > 16:
+            if iters > 12:
                 break
         g_range = numpy.linspace(left, right, 200)
         xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
