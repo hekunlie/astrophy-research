@@ -15,6 +15,7 @@ import configparser
 ################################################################
 # the detection methods
 ################################################################
+
 def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
     if mask[ini_y, ini_x] > 0:
         signal.append((ini_y, ini_x))
@@ -26,6 +27,7 @@ def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
                     sflag = 1
                 detect(mask, ini_y + cor[0], ini_x + cor[1], signal, signal_val, y_size, x_size, sflag)
     return signal, signal_val, sflag
+
 
 def stamp_detector(image, thres, y_size, x_size, ra=10):
     # get the source object
@@ -62,6 +64,7 @@ def stamp_detector(image, thres, y_size, x_size, ra=10):
     else:
         peak = numpy.max(final_flux)
     return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), peak, flag
+
 
 def find_binary(image, ysize, xsize, sig):
     my, mx = numpy.mgrid[0:5,0:5]
@@ -106,6 +109,7 @@ def find_binary(image, ysize, xsize, sig):
                 peaks.append(peak)
     return objects, peaks, image_c, mask_0
 
+
 def source_detector(mask, ysize, xsize):
     # get the source object
     objects = []
@@ -134,6 +138,7 @@ def source_detector(mask, ysize, xsize):
             if num > 5:
                 objects.append(cache)
     return objects
+
 
 def get_hlr(image, scale, size, thres=None):
     # get the source object, to avoid the overflow of the stack
@@ -173,6 +178,7 @@ def get_hlr(image, scale, size, thres=None):
 
     return numpy.sqrt(len(cache)/numpy.pi), flux, flux_sq, num, maxi
 
+
 def smooth(image,size):
     my, mx = numpy.mgrid[-2:3, -2:3]
     x, y = mx.reshape((1, 25)), my.reshape((1, 25))
@@ -209,12 +215,16 @@ def smooth(image,size):
 ################################################################
 # the fitting methods
 ################################################################
+
+
 def exp_fun(x, ampli, sig, mu):
     # for fitting
     return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
 
+
 def f(x, a, b, c, d, e, f):
     return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
+
 
 def gaussnosie_fit(data, bin_num):
     r"""
@@ -229,6 +239,7 @@ def gaussnosie_fit(data, bin_num):
     coeff, coerr = curve_fit(f=exp_fun, xdata=bins[1:], ydata=num)
     # the fitted sigma can be negative
     return coeff, coerr, bins, num
+
 
 def gauss_fit(x, f, method='scipy'):
     r"""
@@ -263,6 +274,7 @@ def gauss_fit(x, f, method='scipy'):
     else:
         # developing
         return None
+
 
 def fit_1d(x, y, order, method):
     r"""
@@ -309,6 +321,7 @@ def fit_2d(x, y, fun_val, order):
     cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(turns)] for j in range(turns)]
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res, pows
+
 
 def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=False):
     r"""
@@ -377,6 +390,7 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Fa
             fit_paras.append(para)
     return fit_paras
 
+
 def data_fit(x_data, y_data, y_err):
     r"""
     Y = A*X ,   y = m*x+c
@@ -432,6 +446,7 @@ def rand_gauss2(x_range, y_range, num, cov):
             break
     return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
 
+
 def rand_gauss2n(xy_range,num,means, cov):
     r"""
     basing on numpy, to generate two sets of correlated data in (2,n) numpy array
@@ -462,6 +477,7 @@ def rand_gauss2n(xy_range,num,means, cov):
     data = numpy.array(finals).T
     return data
 
+
 def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3):
     """
     the result seems to be wrong, the noise variance from fitting is about 60.
@@ -487,6 +503,7 @@ def CFHT_flux(mag, zpt=26.22, exp_time=600):
     """
     return zpt*10**(-0.4*(mag - zpt))*exp_time
 
+
 def mags_mock(num, mag_min, mag_max):
     r"""
     to generate the magnitudes by fitting the CFHTLenS i-band catalog
@@ -501,6 +518,7 @@ def mags_mock(num, mag_min, mag_max):
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf
+
 
 def ellip_mock(num, seed=123400, figout=None):
     """
