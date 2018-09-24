@@ -454,6 +454,16 @@ class Fourier_Quad:
             arr[edge: self.size - edge, edge: self.size - edge] = 0.
             return arr
 
+    def snr_f(self, image):
+        """
+        estimate the SNR in Fourier space
+        :param image:
+        :return:
+        """
+        image_ps = self.pow_spec(image)
+        noise_level = numpy.sum(self.rim*image_ps)/numpy.sum(self.rim)
+        return numpy.sqrt(image_ps[int(self.size/2), int(self.size/2)]/noise_level)
+
     def set_bin(self, data, bin_num, abs_sort=True):
         if abs_sort:
             temp_data = numpy.sort(numpy.abs(data))
