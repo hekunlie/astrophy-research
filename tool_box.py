@@ -2,7 +2,6 @@ import platform
 if platform.system() == 'Linux':
     import matplotlib
     matplotlib.use('Agg')
-from multiprocessing import Pool, Manager
 import numpy
 import copy
 import matplotlib.pyplot as plt
@@ -10,6 +9,7 @@ from scipy.optimize import curve_fit
 import os
 import scipy
 import configparser
+import logging
 
 
 ################################################################
@@ -715,7 +715,7 @@ def cfht_label(field_name):
     return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2
 
 
-def ellip_plot(self, ellip, coordi, lent, width, title, mode=1,path=None,show=True):
+def ellip_plot(ellip, coordi, lent, width, title, mode=1,path=None,show=True):
     e1 = ellip[:, 0]
     e2 = ellip[:, 1]
     e = numpy.sqrt(e1 ** 2 + e2 ** 2)
@@ -767,6 +767,11 @@ def allot(allot_list, fractions):
     return pool
 
 def file_name(path):
+    """
+    check the file, if it exists, the new file will be rename with a number suffix
+    :param path: absolute path to the file, include the filename
+    :return: absolute path of file
+    """
     ex = os.path.exists(path)
     ori_name = os.path.basename(path)
     ab_path = path.split(ori_name)[0]
@@ -784,6 +789,23 @@ def file_name(path):
         ex = os.path.exists(path)
         i += 1
     return path
+
+def write_log(log_path, content, mode="a"):
+    """
+    write log
+    :param log_path: absolute path to log file
+    :param content: to write into the log file
+    :param mode: "w": truncate the file and write, "a": append new messages
+    :return: no return
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    lf = logging.FileHandler(log_path, mode)
+    form = logging.Formatter('%(asctime)s - %(message)s')
+    lf.setFormatter(form)
+    logger.addHandler(lf)
+    logging.info(content)
+
 
 def congif(path, cmd, contents):
     r"""

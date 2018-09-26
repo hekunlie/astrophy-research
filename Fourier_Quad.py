@@ -464,16 +464,41 @@ class Fourier_Quad:
         noise_level = numpy.sum(self.rim*image_ps)/numpy.sum(self.rim)
         return numpy.sqrt(image_ps[int(self.size/2), int(self.size/2)]/noise_level)
 
-    def set_bin(self, data, bin_num, abs_sort=True):
-        if abs_sort:
+    def set_bin(self, data, bin_num, sort_method="abs", sym=True):
+        """
+        set up bins for 1-D data
+        :param data:
+        :param bin_num: total number of bins
+        :param sort_method: "abs": set the scale of bins according to the absolute value of data
+                            "posi": set the scale of bins according to the positive value
+                            else: just set scale of bins from the small end to the large end
+        :param sym: True: set up bins symmetrically, False: the bins for the positive values
+        :return: bins, (N, ) numpy array
+        """
+        if sort_method == "abs":
             temp_data = numpy.sort(numpy.abs(data))
-        else:
+        elif sort_method == "posi":
             temp_data = numpy.sort(data[data>0])
-        bin_size = len(temp_data) / bin_num * 2
-        bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
-        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        bound = numpy.max(numpy.abs(data)) * 100.
-        bins = numpy.append(-bound, numpy.append(bins, bound))
+        else:
+            temp_data = numpy.sort(data)
+
+        if sym:
+            bin_size = len(temp_data) / bin_num * 2
+            bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
+            bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+            bound = numpy.max(numpy.abs(data)) * 100.
+            bins = numpy.append(-bound, numpy.append(bins, bound))
+        else:
+            bin_size = len(temp_data) / bin_num
+            bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, bin_num)])
+            if sort_method == "abs" or sort_method == "posi":
+                bins = numpy.sort(numpy.append([0], bins))
+                bound = numpy.max(numpy.abs(data)) * 100.
+                bins = numpy.append(bins, bound)
+            else:
+                # for the sort of negative data
+                bound = numpy.min(data)*100
+                bins = numpy.append(bound, numpy.append(bins, -bound))
         return bins
 
     def G_bin(self, g, nu, g_h, bins, ig_num):  # checked 2017-7-9!!!
@@ -757,7 +782,7 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        g_range = numpy.linspace(left, right, 80)
+        g_range = numpy.linspace(left, right, 60)
         xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
@@ -813,7 +838,7 @@ class Fourier_Quad:
             iters += 1
             if iters > 12:
                 break
-        g_range = numpy.linspace(left, right, 200)
+        g_range = numpy.linspace(left, right, 60)
         xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
         gg4 = numpy.sum(g_range ** 4)
