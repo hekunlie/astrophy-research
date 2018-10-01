@@ -25,11 +25,11 @@ int main(int argc, char*argv[])
 		para all_paras;
 		ifstream fin;
 
-		/* 10 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
+		/* 14 (g1,g2) points and each pairs contain 100 chips which cotians 10000 gals */
 		int chip_num = 100, stamp_num = 10000, shear_pairs = 14;
 		/* remember to change the data_cols when you change the number of estimators recorded */
 		int i, j, seed, data_rows, data_cols=17, chip_id, shear_id;
-		int size =64, num_p = 45, stamp_nx = 100,  psf_type = 2;
+		int size =64, num_p = 50, stamp_nx = 100,  psf_type = 2;
 		double psf_scale = 4., max_radius = 9., st, ed, s1, s2;
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.86, psf_noise_sig = 0., thres = 2.;
@@ -38,7 +38,7 @@ int main(int argc, char*argv[])
 
 		shear_id = myid - myid / shear_pairs*shear_pairs;
 		chip_id = myid / shear_pairs*chip_num;
-
+		all_paras.stamp_size = size;
 		all_paras.gal_noise_sig = gal_noise_sig;
 		all_paras.psf_noise_sig = psf_noise_sig;
 
@@ -67,8 +67,8 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		int sss1, sss2;
-		sss1 = 581143;
-		sss2 = 716113;
+		sss1 = 5811430;
+		sss2 = 7161130;
 		seed = myid *sss1 +sss2;
 		//seed = myid *380 + 1401;// no bias
 		gsl_rng_initialize(seed);
@@ -87,7 +87,7 @@ int main(int argc, char*argv[])
 			i++;
 		}
 		fin.close();
-
+		
 		// read parameters
 		double *flux = new double[total_num];
 		double *mag = new double[total_num];
@@ -96,10 +96,13 @@ int main(int argc, char*argv[])
 		sprintf(set_name1, "/flux");
 		sprintf(set_name2, "/mag");
 		read_h5(para_path, set_name1, flux, set_name2, mag, NULL, NULL);
-
+		cout << "Reading" << endl;
+		
 		 //PSF
 		create_psf(psf, psf_scale, size, psf_type);
+
 		pow_spec(psf, ppow, size, size);
+
 		get_radius(ppow, &all_paras, thres, 1, psf_noise_sig);
 
 		st = clock();
@@ -158,8 +161,8 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 				data[i*stamp_num + j][6] = all_paras.dv;
 				data[i*stamp_num + j][7] = all_paras.gal_osnr;
 				data[i*stamp_num + j][8] = all_paras.gal_flux;
-				data[i*stamp_num + j][9] = all_paras.gal_peak;
-				data[i*stamp_num + j][10] = all_paras.gal_fsnr_c;
+				data[i*stamp_num + j][9] = all_paras.gal_flux_alt;
+				data[i*stamp_num + j][10] = all_paras.gal_flux2;
 				data[i*stamp_num + j][11] = all_paras.gal_snr;
 				data[i*stamp_num + j][12] = all_paras.gal_size;
 				data[i*stamp_num + j][13] = mag[i*stamp_num + j];

@@ -33,19 +33,20 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thres = 0.0001;
 
 	int gal_size, gal_hsize, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_flux2,gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig;
+	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq;
+	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig;
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2, t3, t4;
 
 
-	/*parameters for detection*/
-	int img_size;
-	int img_x, img_y; /* for the 'detection()'*/
-	int area_thres;
+	/*parameters for detection which should be initialized before */
+	int stamp_size; /* the stamp size for get_radius() */
+	int img_x, img_y; /* the size of chip image for the 'source_detector()'*/
+	int area_thres=6; /* the minimun pixels for a detection */
+	double detect_thres; /* the threshold of pixel value of source */
 	double noise_sig;
-	double detect_thres; /* the threshold value of source */
-	int max_source = 100; /* the maximum of sources in each chip*/
+	int max_source = 1000; /* the maximum of sources allowed in each chip, changeable */
 
 
 	/* hyper_fit_5 matrix elements of order 2 of xy polynomials */
@@ -69,28 +70,97 @@ extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 extern ofstream loggers;
 
-void write_log(char *filename, char *inform);
+/********************************************************************************************************************************************/
+/* file reading and writting*/
+/********************************************************************************************************************************************/
+void write_log(char *filename, char *inform); 
+/* write char to log file */
+
 void read_h5(char *filename, char *set_name1, double *matrix1, char*set_name2, double *matrix2, char*set_name3, double*matrix3);
+/* read hdf5 file 
+	set_name and matrix should be used in pair (developing)
+*/
+
 void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
+/* write to hdf5 file with double or integer matrix 
+	only one of "d_matrix" and "i_matrix" should be inputted each time
+*/
+
 void read_img(DATA_TYPE *arr, char *path);
+/* read fits file, the preciseion dependences on the DATA_TYPE */
+
 void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename);
-void pow_spec(double *in_img, double *out_img, int column, int row);
-void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
-void detector(double *source_img, int *soucrce_x, int*source_y, double *source_paras, para* paras, bool cross);
-void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
-void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras);
+/* write the array to  fits file, the preciseion dependences on the DATA_TYPE 
+	the size of each axises should be inputted，ARR(y, x)
+*/
+
+void stack(double *big_arr, double *stamp, int tag, int size, int row, int col); 
+/* from stamps to a integrate image 
+	big_arr:   the big image that will contain all the stamps
+	stamps: the small array that will be stacked into the big image
+	tag: the location label of stamps in tha big image, 
+				| 0,1,2,..., i |
+				| i+1,........  |
+				....
+	size: the pixel of the side of each square stamp
+	row and col:  how many stamps in row and column
+*/
+
+void segment(double *big_arr, double *stamp, int tag, int size, int row, int col);
+/* to cut the specific square area in the big_arr
+	see the annotation of stack()	
+*/
+
+/********************************************************************************************************************************************/
+/* operations on the image */
+/********************************************************************************************************************************************/
 void create_points(double *point, int num_p, double radius);
 void create_epoints(double *point, int num_p, double ellip);
 void create_psf(double*in_img, double scale, int size, int psf);
-void get_psf_thres(double *ppsf, para*paras);
+void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
+void pow_spec(double *in_img, double *out_img, int column, int row);
+void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
+int source_detector(double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
+/* operates on the copy,
+	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
+	source_img: the inputted array where to find the source galaxies
+	source_x, _y:  the array to store the coordinates of sources detected
+	source_paras: the array to store the parameters of sources detected,
+						   8 elemets for each source, [....,area, peak_y, peak_x, peak_val, half_light_area, total_flux, half_light_flux, flux_sq,...]
+	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
+							False for detecion on the nearest eight pixels, "x" and "+"  */
+
+void galaxy_finder(double *stamp_arr, para *paras, bool cross);
+/* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
+	the biggest source which peaks in the central circle with a radius of 6 pixels.	*/
+
+void addnoise(double *image, int pixel_num, double sigma); 
+/* add Gaussian noise to an array */
+
 void initialize(double *array, int size);
-void stack(double *container, double *stamp, int tag, int size, int row, int col);
-void segment(double *chip, double *stamp, int tag, int size, int row, int col);
-void addnoise(double *image, int pixel_num,  double sigma);
-void f_snr(double *image, para *paras);
+/* set every elements to zero*/
+
+/********************************************************************************************************************************************/
+/* Fourier Quad */
+/********************************************************************************************************************************************/
+void get_psf_thres(double *ppsf, para*paras);
+void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras);
+void f_snr(double *image, para *paras, int fit);
+/* if fit=2 for both flux2 and flux_alt estimations 
+	else just estimate the flux2 
+*/
+
+/********************************************************************************************************************************************/
+/* fitting */
+/********************************************************************************************************************************************/
+void smooth(double *image, double*fit_image, double *psf_pow, double *coeffs, para *paras);
+void hyperfit_5(double *data, double*fit_para, para *paras);
+
+/********************************************************************************************************************************************/
+/* GSL library */
+/********************************************************************************************************************************************/
 void gsl_rng_initialize(int seed);
 void gsl_rng_free();
-void smooth(double *image,double*fit_image, double *psf_pow, double *coeffs, para *paras);
-void hyperfit_5(double *data,double*fit_para, para *paras);
+
 #endif // !FQLIB_H
 

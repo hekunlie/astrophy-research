@@ -16,8 +16,7 @@ int main()
 	paras.img_x = size;
 	paras.img_y = size;
 	paras.detect_thres = 0.3;
-	paras.area_thres = 5;
-	paras.img_size = size;
+	paras.stamp_size = size;
 	
 	double *img = new double[size*size]{};
 	double* img_t = new double[size*size]{};

@@ -140,3 +140,7 @@ if rank == 0:
     print("m: %8.5f (%10.7f) c: %8.5f (%10.7f)"%(emc1m[0]-1,emc1m[1],emc1m[2],emc1m[3]))
     print("m: %8.5f (%10.7f) c: %8.5f (%10.7f)"%(emc2m[0]-1,emc2m[1],emc2m[2],emc2m[3]))
 #
+
+
+
+

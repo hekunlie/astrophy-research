@@ -68,24 +68,24 @@ for i in range(3):
     snr_delta_i = (snr_i - snr_0)/snr_0
 
     lb1 = "F-SNR=%.4f,S-SNR=%.4f" %(snr_0,sex_snr_0)
-    ax1.plot(numpy.linspace(0, numpy.pi, num), sex_delta_i, c=colors[i], ms=6, label=lb1, marker=markers[i],fillstyle='none',linestyle=' ')
-    ax2.plot(numpy.linspace(0, numpy.pi, num), snr_delta_i, c=colors[i], ms=6, label=lb1, marker=markers[i],fillstyle='none',linestyle=' ')
+    ax1.plot(numpy.linspace(-0.06, 0.06, num), sex_delta_i, c=colors[i], ms=6, label=lb1, marker=markers[i],fillstyle='none',linestyle=' ')
+    ax2.plot(numpy.linspace(-0.06, 0.06, num), snr_delta_i, c=colors[i], ms=6, label=lb1, marker=markers[i],fillstyle='none',linestyle=' ')
 
 y_ticks = numpy.linspace(-10**(-4), 10**(-4), 5)
 # ax.set_yticks(y_ticks)
-x_ticks = numpy.linspace(0, numpy.pi, 5)
-x_ticks_ = [r"0",r"$\frac{\pi}{4}$",r"$\frac{\pi}{2}$",r"$\frac{3\pi}{4}$",r"$\pi$"]
+x_ticks = numpy.linspace(-0.06, 0.06, 5)
+# x_ticks_ = [r"0",r"$\frac{\pi}{4}$",r"$\frac{\pi}{2}$",r"$\frac{3\pi}{4}$",r"$\pi$"]
 # x_ticks_ = ["0","1","2","3","4"]
 ax1.set_xticks(x_ticks)
-ax1.set_xticklabels(x_ticks_)
+# ax1.set_xticklabels(x_ticks_)
 ax2.set_xticks(x_ticks)
-ax2.set_xticklabels(x_ticks_)
+# ax2.set_xticklabels(x_ticks_)
 
 ax1.tick_params(direction='in', top=True, right=True)
 ax2.tick_params(direction='in', top=True, right=True)
 
-ax1.set_xlabel("Theta")
-ax2.set_xlabel("Theta")
+ax1.set_xlabel("g1")
+ax2.set_xlabel("g1")
 
 ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
 ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
