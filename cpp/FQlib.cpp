@@ -487,12 +487,12 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 	/* copy and mask the candidates pixels */
 	for (i = 0; i < s; i++)
 	{
-			if (source_img[i*x_size + j] >= detect_thres)
+			if (source_img[i] >= detect_thres)
 			{
 				cp_img[i] = source_img[i];
 			}
 	}
-
+	
 	/* search the source by FoF */	
 	for (i = 0; i < y_size; i++)
 	{
@@ -615,20 +615,21 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 	return s_num;
 }
 
-void galaxy_finder(double *stamp_arr, para *paras, bool cross)
+int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 {	
 	int elem_unit = 8; // the number of parameters for each source detected 
 	int source_num, area=0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
-	int detect, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
+	int detect=-1, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
+	int tag_s = 0, tag_e, i, j;
 	double hlr, flux, radius;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
 	double *source_para = new double[140]{}; // default for 20 detections in signal stamps, a fairly large number
 	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
-	for (int i = 0; i < source_num; i++)
+	for ( i = 0; i < source_num; i++)
 	{
 		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
-		if (radius <= 36)
+		if (radius <= 36) // if it peaks within 6 pixels from the stamp center, it will be indentified as a galaxy
 		{
 			if (source_para[i * elem_unit] > area)
 			{
@@ -636,24 +637,46 @@ void galaxy_finder(double *stamp_arr, para *paras, bool cross)
 				detect = i;
 			}
 		}
+		cout << "Peak located"<<detect << endl;
 	}
-	paras->gal_size = area;
-	paras->gal_py = source_para[detect * elem_unit + 1];
-	paras->gal_px = source_para[detect * elem_unit + 2];
-	paras->gal_peak = source_para[detect * elem_unit + 3];
-	paras->gal_hsize = source_para[detect * elem_unit + 4];
-	paras->gal_flux = source_para[detect * elem_unit + 5];
-	paras->gal_hflux = source_para[detect * elem_unit + 6];
+	if (detect == -1) 
+	{/* -1 means the no source peaks at the place away from the center within 6 pixels.
+		then the biggest source that one of its pixel locates near the center within 3 pixels */ 
+		area = 0;
+		for ( i = 0; i < source_num; i++)
+		{
+			tag_e = tag_s + source_para[8 * i];
+			for (j= tag_s; j < tag_e; j++)
+			{
+				if (((source_x[j] - xc) < 3) && ((source_y[j] - yc) < 3) && source_para[8*i]>area)
+				{
+					area = source_para[8 * i];
+					detect = i;
+				}
+			}
+			tag_s = tag_e;
+		}
+		cout << " The near one" << endl;
+	}
+	if (detect != -1)
+	{
+		paras->gal_size = area;
+		paras->gal_py = source_para[detect * elem_unit + 1];
+		paras->gal_px = source_para[detect * elem_unit + 2];
+		paras->gal_peak = source_para[detect * elem_unit + 3];
+		paras->gal_hsize = source_para[detect * elem_unit + 4];
+		paras->gal_flux = source_para[detect * elem_unit + 5];
+		paras->gal_hflux = source_para[detect * elem_unit + 6];
 
 
-	paras->gal_hlr = sqrt(area / Pi);
-	paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-	paras->gal_osnr = source_para[detect * 7 + 5] / sqrt(area) / paras->gal_noise_sig;
-
+		paras->gal_hlr = sqrt(area / Pi);
+		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * 7 + 5] / sqrt(area) / paras->gal_noise_sig;
+	}
 	delete[] source_x;
 	delete[] source_y;
 	delete[] source_para;
-
+	return detect;
 }
 
 void addnoise(double *image, int pixel_num, double sigma)
@@ -664,7 +687,7 @@ void addnoise(double *image, int pixel_num, double sigma)
 	}
 }
 
-void initialize(double *in_img, int length)
+void initialize_arr(double *in_img, int length)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 		in_img[i] = 0.;
@@ -729,12 +752,12 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a array of '0' should be inputted */
-	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thres, alpha, kx, ky, tk;
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thres, alpha, kx, kx2, ky2, ky, tk, k2, k4;
 	double mp1=0., mp2=0.;
 	int i, j, k, size;
 	size = paras->stamp_size;
 
-	alpha = 16*Pi *Pi*Pi*Pi/ (size*size*size*size);
+	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
 	/* beta is the beta_square in the estimators */
 	beta = 1./ paras->psf_hlr / paras->psf_hlr;
 	
@@ -748,13 +771,18 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 		{
 			kx = j - size*0.5;
 			if (psf_img[i*size + j] > thres)
-			{
-				tk = exp( - ( kx*kx + ky*ky ) * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
-				mg1 += -0.5 * ( kx*kx - ky*ky ) * tk;
+			{	
+				k2 = kx*kx + ky*ky;
+				k4 = k2*k2;
+				kx2 = kx*kx;
+				ky2 = ky*ky;
+
+				tk = exp( - k2 * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
+				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
 				mg2 += -kx*ky*tk;
-				mn += ( kx*kx + ky*ky - 0.5*beta*(kx*kx + ky*ky)*(kx*kx + ky*ky) ) * tk;
-				mu += (kx*kx*kx*kx - 6 * kx*kx*ky*ky + ky*ky*ky*ky)*tk * (-0.5*beta);
-				mv += (kx*kx*kx*ky - ky*ky*ky*kx)* tk * (-2.* beta);
+				mn += ( k2 - 0.5*beta*k4 ) * tk;
+				mu += (k4  - 8 *kx2*ky2)*tk * (-0.5*beta);
+				mv += kx*ky*(kx2-ky2)* tk * (-2.* beta);
 				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
 				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
 			}
@@ -869,6 +897,27 @@ void hyperfit_5(double *data, double *fit_paras, para *paras)
 		}
 		fit_paras[i] = temp;
 	}
+}
+
+
+/********************************************************************************************************************************************/
+/* general methods */
+/********************************************************************************************************************************************/
+void initialize_para(para *paras)
+{	
+	paras->gal_size = 0;
+	paras->gal_hsize = 0;
+	paras->gal_px = 0;
+	paras->gal_py = 0;
+	paras->gal_peak = 0;
+	paras->gal_hlr = 0;
+	paras->gal_flux = 0;
+	paras->gal_hflux = 0;
+	paras->gal_fluxsq = 0;
+	paras->gal_flux2 = 0;
+	paras->gal_flux_alt = 0;
+	paras->gal_snr = 0;
+	paras->gal_osnr = 0;
 }
 
 

@@ -130,14 +130,14 @@ int source_detector(double *source_img, int *soucrce_x, int*source_y, double *so
 	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
 							False for detecion on the nearest eight pixels, "x" and "+"  */
 
-void galaxy_finder(double *stamp_arr, para *paras, bool cross);
+int galaxy_finder(double *stamp_arr, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	*/
 
 void addnoise(double *image, int pixel_num, double sigma); 
 /* add Gaussian noise to an array */
 
-void initialize(double *array, int size);
+void initialize_arr(double *array, int size);
 /* set every elements to zero*/
 
 /********************************************************************************************************************************************/
@@ -155,6 +155,13 @@ void f_snr(double *image, para *paras, int fit);
 /********************************************************************************************************************************************/
 void smooth(double *image, double*fit_image, double *psf_pow, double *coeffs, para *paras);
 void hyperfit_5(double *data, double*fit_para, para *paras);
+
+
+/********************************************************************************************************************************************/
+/* general methods */
+/********************************************************************************************************************************************/
+void initialize_para(para *paras);
+
 
 /********************************************************************************************************************************************/
 /* GSL library */

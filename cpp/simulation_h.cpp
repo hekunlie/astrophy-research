@@ -138,7 +138,7 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 				get_radius(gal, &all_paras, 9999999999.*thres, 2, gal_noise_sig);
 
 				pow_spec(gal, gpow, size, size);
-				f_snr(gpow, &all_paras);
+				f_snr(gpow, &all_paras, 1);
 
 				addnoise(noise, size*size, gal_noise_sig);
 
@@ -146,11 +146,11 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 
 				shear_est(gpow, ppow, pnoise, &all_paras);
 
-				initialize(gal, size*size);
-				initialize(gpow, size*size);
-				initialize(point, num_p * 2);
-				initialize(noise, size*size);
-				initialize(pnoise, size*size);
+				initialize_arr(gal, size*size);
+				initialize_arr(gpow, size*size);
+				initialize_arr(point, num_p * 2);
+				initialize_arr(noise, size*size);
+				initialize_arr(pnoise, size*size);
 
 				data[i*stamp_num + j][0] = g1;
 				data[i*stamp_num + j][1] = g2;
@@ -180,7 +180,7 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 			write_img(cp, size*stamp_nx, size*stamp_nx, chip_path);
 			#endif
 
-			initialize(big_img, stamp_nx*stamp_nx*size*size);		
+			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);		
 
 			s2 = clock();
 			sprintf(log_inform, "Thread: %d, chip: %d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);

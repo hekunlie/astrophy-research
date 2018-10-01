@@ -11,32 +11,46 @@ using namespace std;
 
 int main()
 {
-	int size = 50;
+	int size = 40, s_num, area_s=0, area_e;
 	para paras;
 	paras.img_x = size;
 	paras.img_y = size;
-	paras.detect_thres = 0.3;
+	paras.detect_thres = 4.5;
 	paras.stamp_size = size;
-	
+
+	double t1, t2;
 	double *img = new double[size*size]{};
 	double* img_t = new double[size*size]{};
 	int *s_x = new int[size*size]{};
 	int *s_y = new int[size*size]{};
-	double *s_c = new double[7*paras.max_source]{};
-
+	double *s_c = new double[8*paras.max_source]{};
+	int detect;
 	char buffer[60];
 	cout << "starting..." << endl;
-	sprintf(buffer, "/home/hkli/temp/img.fits");
+	sprintf(buffer, "/home/hkli/temp/test.fits");
 	read_img(img, buffer);
 	cout << "read img..." << endl;
-	//for (int k = 0; k < 2112 * 4644; k++) 
-	//{
-	//	img[k] = img[k] - 4000;
-	//}
-	//detector(img, s_x, s_y, s_c, &paras,FALSE);
-	//cout << "finished" << endl;
-	//int count = 0, s=0;
-	double t1, t2;
+	s_num = source_detector(img, s_x, s_y, s_c, &paras, false);
+	detect = galaxy_finder(img, &paras, false);
+	cout << paras.gal_py << " " << paras.gal_px << endl;
+	cout << detect<<"finished, find: "<< s_num << endl;
+	for (int m = 0; m < s_num; m++)
+	{
+		cout << "AREA: "<<s_c[8 * m] << endl;
+		area_e = area_s + s_c[m * 8];
+
+		for (int i = area_s; i < area_e; i++)
+		{
+			img_t[s_x[i] + s_y[i] * size] = 1;
+		}
+		img_t[(int)s_c[8 * m + 1] * size + (int)s_c[8 * m + 2]] += 2;
+		area_s = area_e;
+	}
+	img_t[paras.gal_py*size + paras.gal_px] += 1;
+	sprintf(buffer, "!/home/hkli/temp/t_img.fits");
+	write_img(img_t, size, size, buffer);
+	
+	/*double t1, t2;
 	t1 = clock();
 	f_snr(img, &paras);
 	cout << paras.gal_flux2 << " " << paras.gal_flux_alt << endl;
@@ -57,30 +71,7 @@ int main()
 	}
 	cout << endl;
 	cout << pow(10, fit_paras[0]) <<" "<<img[xc*size+xc]<< endl;
-	/*for (int m = 0; m < 1; m++)
-	{
-		for (int i = 0; i <paras.max_source; i++)
-		{
-			
-			if (s_c[7*i] != 0)
-			{	
-				for (int k = 0; k < 7; k++)
-				{
-					cout << s_c[7 * i+k] << endl;
-				}
-				for (int j = 0; j < s_c[7*i]; j++)
-				{
-					img_t[s_x[s + j] + s_y[s + j] * size] = 1;
-				}
-				s += s_c[7*i];
-			}
-			else
-				break;
-
-		}
-
-		sprintf(buffer, "!/home/hkli/temp/t_img.fits");
-		write_img(img_t, size, size, buffer);
+	/*
 	}*/
 	t2 = clock();
 	cout << (t2 - t1) / CLOCKS_PER_SEC;
