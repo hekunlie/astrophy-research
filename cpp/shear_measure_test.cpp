@@ -27,10 +27,10 @@ int main(int argc, char*argv[])
 	string s;
 
 	/* 14 (g1,g2) points and each pairs contain 500 chips which cotians 10000 gals */
-	int total_chip_num = 1, chip_num, stamp_num = 100, shear_pairs = 14;
+	int total_chip_num = 40, chip_num, stamp_num = 10000, shear_pairs = 14;
 	/* remember to change the data_cols when you change the number of estimators recorded */
 	int i, j, seed, data_rows, data_cols = 7, chip_id, shear_id, detect_label;
-	int size = 60, num_p = 40, stamp_nx = 10, psf_type = 2;
+	int size = 60, num_p = 40, stamp_nx = 100, psf_type = 2;
 	double psf_scale = 4., max_radius = 9., st, ed, s1, s2;
 	double g1 = 0., g2 = 0.;
 	double gal_noise_sig = 0, psf_noise_sig = 0., scale = 2.;

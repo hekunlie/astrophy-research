@@ -807,8 +807,8 @@ def write_log(log_path, content, mode="a"):
     logging.info(content)
 
 
-def congif(path, cmd, contents):
-    r"""
+def config(path, cmd, contents, write=False):
+    """
     operation to the configuration file
     :param path: string, directory to file
     :param cmd: a list of operations , "add, get, sect_del, opt_del"
@@ -882,6 +882,7 @@ def congif(path, cmd, contents):
 
                 else:
                     raise ValueError("Each sublist in contents must have 3 components!")
-            # with open(path, "w") as confile:
-            #     cobj.write(confile)
+            if write:
+                with open(path, "w") as confile:
+                    cobj.write(confile)
             return opt_vals

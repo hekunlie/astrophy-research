@@ -42,7 +42,7 @@ struct para
 
 	/*parameters for detection which should be initialized before */
 	int stamp_size; /* the stamp size for get_radius() */
-	int img_x, img_y; /* the size of chip image for the 'source_detector()'*/
+	int img_x, img_y; /* the size of chip image for the 'source_detector()' and galaxy_finder()*/
 	int area_thres=6; /* the minimun pixels for a detection */
 	double detect_thres; /* the threshold of pixel value of source */
 	double noise_sig;

@@ -113,11 +113,13 @@ void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename)
 	fits_create_file(&fptr, filename, &status);												/* create new file */
 
 	fits_create_img(fptr, IMG_PRE, naxis, naxes, &status);				 /* Create the primary array image (16-bit short integer pixels */
+	//fits_create_img(fptr, FLOAT_IMG, naxis, naxes, &status);
 	//exposure = 1500.;
 	//fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */
-
+	
 	nelements = xsize*ysize;         /* number of pixels to write */
 	fits_write_img(fptr, T_IMG, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+	//fits_write_img(fptr, TFLOAT, fpixel, nelements, img, &status);
 	fits_close_file(fptr, &status);              /* close the file */
 	fits_report_error(stderr, status);      /* print out any error messages */
 	
@@ -637,7 +639,6 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 				detect = i;
 			}
 		}
-		cout << "Peak located"<<detect << endl;
 	}
 	if (detect == -1) 
 	{/* -1 means the no source peaks at the place away from the center within 6 pixels.
@@ -656,7 +657,6 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 			}
 			tag_s = tag_e;
 		}
-		cout << " The near one" << endl;
 	}
 	if (detect != -1)
 	{
@@ -668,10 +668,13 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 		paras->gal_flux = source_para[detect * elem_unit + 5];
 		paras->gal_hflux = source_para[detect * elem_unit + 6];
 
-
 		paras->gal_hlr = sqrt(area / Pi);
 		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
 		paras->gal_osnr = source_para[detect * 7 + 5] / sqrt(area) / paras->gal_noise_sig;
+	}
+	else
+	{
+		initialize_para(paras); // set the relative parameters to zero
 	}
 	delete[] source_x;
 	delete[] source_y;

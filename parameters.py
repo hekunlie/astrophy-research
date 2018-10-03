@@ -1,7 +1,11 @@
-import matplotlib
-matplotlib.use("Agg")
-from sys import path
-path.append("/home/hklee/work/fourier_quad")
+import platform
+if platform.system() == 'Linux':
+    import matplotlib
+    matplotlib.use('Agg')
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+from sys import path, argv
+path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 import matplotlib.pyplot as plt
 from Fourier_Quad import Fourier_Quad
@@ -9,24 +13,26 @@ import tool_box
 import lsstetc
 from mpi4py import MPI
 import h5py
-from sys import argv
 
-
-num = int(argv[1])*10000
-size = int(argv[2])
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-mag_s, mag_e = 21, 25.2
-radius_s, radius_e = 1.0, 1.6
 
-with open("/home/hklee/work/envs/envs.dat", "r") as f:
-    contents = f.readlines()
-for path in contents:
-    if "parameter" in path:
-        para_path = path.split("=")[1]
+envs_path = "%s/work/envs/envs.dat"%my_home
+para_path = tool_box.config(envs_path,["get"],[["selection_bias","pts_path_para","0"]])[0]
+para_ini_path = para_path+"para.ini"
+paras = tool_box.config(para_ini_path,["get",'get',"get",'get',"get",'get'],
+                        [["para","total_num","0"],["para","size","0"],
+                        ["para", "mag_s", "0"],["para","mag_e","0"],
+                        ["para", "radius_s", "0"],["para","radius_e","0"]])
+num = int(paras[0])
+size = int(paras[1])
+mag_s, mag_e = float(paras[2]),float(paras[3])
+radius_s, radius_e = float(paras[4]), float(paras[5])
+if rank == 0:
+    print(num, size, mag_s, mag_e, radius_s, radius_e)
 
 seed = rank*4321554 + int(numpy.random.randint(1, 1256542344, 1)[0])
 rng = numpy.random.RandomState(seed)
@@ -67,7 +73,7 @@ print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max:
 f["/e1"] = e1
 f["/e2"] = e2
 
-# # magnitude & flux
+# magnitude & flux
 
 flux = numpy.zeros((num, 1))
 arr = tool_box.mags_mock(num, mag_s, mag_e)
@@ -99,7 +105,6 @@ elif len(c) < num:
 else:
     f_bt = c
 f["/btr"] = f_bt
-
 f.close()
 
 pic = para_path + "/pic/e1e2ees_%d.png"%rank
@@ -113,7 +118,7 @@ plt.subplot(224)
 plt.hist(es, 100)
 plt.savefig(pic)
 plt.close()
-
+#
 pic = para_path + "/pic/fmrb_%d.png"%rank
 plt.subplot(221)
 plt.hist(arr, 100)
@@ -124,3 +129,6 @@ plt.hist(rad, 100)
 plt.subplot(224)
 plt.hist(f_bt, 100)
 plt.savefig(pic)
+plt.close()
+
+
