@@ -21,17 +21,12 @@ cut = argv[1]
 
 t1 = time.clock()
 
-with open("%s/work/envs/envs.dat"%my_home, "r") as f:
-    contents = f.readlines()
-for path in contents:
-    if "=" in path:
-        env_location, env_path = path.split("=")[0:2]
-        if "select_total_path_dimmer2" == env_location:
-            total_path = env_path
-        elif "select_result_path_dimmer2" == env_location:
-            result_path = env_path
-        elif "select_parameter_path_dimmer2" == env_location:
-            para_path = env_path
+env_path = "%s/work/envs/envs.dat"%my_home
+path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', "pts_path", '1'],
+                                                            ['selection_bias', "pts_path_result", '1'],
+                                                            ['selection_bias', "pts_path_para", '1']])
+
+total_path, result_path, para_path = path_items
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
@@ -39,13 +34,14 @@ fg2 = shear["arr_1"]
 for i in range(5):
     h5path = result_path + "data/data_%d_%d.hdf5"%(rank,i)
     f = h5py.File(h5path, "r")
+    temp = f["/data"].value
     if i == 0:
-        data = f["/data"].value
+        data = temp.copy()
     else:
-        data = numpy.row_stack((data, f["/data"].value))
+        data = numpy.row_stack((data, temp))
     f.close()
 
-fq = Fourier_Quad(90, 152356)
+fq = Fourier_Quad(60, 152356)
 noise_sig = 380.64
 
 detect_ = data[:, 7]
@@ -90,7 +86,7 @@ snr_step = int(len(snr_sort)/cuts_num)
 snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
 
 # flux2
-flux2 = data[:, 13]
+flux2 = data[:, 10]
 flux2_sort = numpy.sort(flux2[detected])
 flux2_step = int(len(flux2_sort)/cuts_num)
 flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
@@ -102,7 +98,7 @@ flux_alt_step = int(len(flux_alt_sort)/cuts_num)
 flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
 
 
-sex_path = total_path + "result/data/sex25_%d_1.5.npz"%rank
+sex_path = total_path + "result/data/sex_1.5_%d.npz"%rank
 sex_data = numpy.load(sex_path)["arr_0"]
 
 sex_snr = sex_data[:, 0]
@@ -163,7 +159,7 @@ detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area":
                   "mag_iso": sex_idx, "mag_auto": sex_idx, "mag_petro": sex_idx, "mag_win": sex_idx}
 
 for tag, cut_s in enumerate(select[cut][1]):
-    idx = select[cut][0] > cut_s
+    idx = select[cut][0] >= cut_s
     num = len(MG1[detected_label[cut]&idx])
 
     nm1 = MG1[detected_label[cut]&idx]

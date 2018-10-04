@@ -74,8 +74,10 @@ int main(int argc, char*argv[])
 
 		// initialize gsl
 		int sss1, sss2;
-		sss1 = 5811430;
-		sss2 = 7161130;
+		sss1 = 430;
+		sss2 = 130;
+		//sss1 = 5811430;
+		//sss2 = 7161130;
 		seed = myid *sss1 +sss2;
 		//seed = myid *380 + 1401;// no bias
 		gsl_rng_initialize(seed);
@@ -84,7 +86,7 @@ int main(int argc, char*argv[])
 		const char *str;
 		// read shear, the input signal
 		double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias_64/parameters/shear.dat");
+		fin.open("/mnt/ddnfs/data_users/hkli/selection_bias_64_dimmer/parameters/shear.dat");
 		i = 0;
 		while (!fin.eof())
 		{
@@ -99,7 +101,7 @@ int main(int argc, char*argv[])
 		double *flux = new double[total_num];
 		double *mag = new double[total_num];
 
-		sprintf(para_path,"/mnt/ddnfs/data_users/hkli/selection_bias_64/parameters/para_%d.hdf5", shear_id);
+		sprintf(para_path,"/mnt/ddnfs/data_users/hkli/selection_bias_64_dimmer/parameters/para_%d.hdf5", shear_id);
 		sprintf(set_name1, "/flux");
 		sprintf(set_name2, "/mag");
 		read_h5(para_path, set_name1, flux, set_name2, mag, NULL, NULL);
@@ -117,7 +119,7 @@ int main(int argc, char*argv[])
 		g1 = shear[shear_id];
 		g2 = shear[shear_id + shear_pairs];
 
-		sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/logs/log_%d_%d.dat", shear_id, myid / shear_pairs);
+		sprintf(log_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64_dimmer/logs/log_%d_%d.dat", shear_id, myid / shear_pairs);
 
 		sprintf(para_inform, "myid: %03d, chip_id: %d, shear_id: %d, size: %d, chip_num: %d * %d\n \
 seed: myid*%d + %d, noise sigma: %.2f, point num: %d \n \
@@ -179,7 +181,7 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 
 
 			}
-			sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias_64/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
+			sprintf(chip_path, "!/mnt/ddnfs/data_users/hkli/selection_bias_64_dimmer/%d/gal_chip_%04d.fits", shear_id, chip_id + i);
 
 			#ifdef PRECISION
 			write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);			
@@ -199,7 +201,7 @@ PSF scale: %.2f, max radius: %.2f", myid, chip_id, shear_id, size, chip_num, (nu
 			}
 		}
 
-		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/result/data/data_%d_%d.hdf5", shear_id, myid / shear_pairs);
+		sprintf(h5_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64_dimmer/result/data/data_%d_%d.hdf5", shear_id, myid / shear_pairs);
 		sprintf(set_name1, "/data");
 		write_h5(h5_path, set_name1, data_rows, data_cols, data[0],NULL);
 		ed = clock();

@@ -27,11 +27,11 @@ int main(int argc, char*argv[])
 	string s;
 
 	/* 14 (g1,g2) points and each pairs contain 500 chips which cotians 10000 gals */
-	int total_chip_num = 40, chip_num, stamp_num = 10000, shear_pairs = 14;
+	int total_chip_num = 50, chip_num, stamp_num = 10000, shear_pairs = 14;
 	/* remember to change the data_cols when you change the number of estimators recorded */
 	int i, j, seed, data_rows, data_cols = 7, chip_id, shear_id, detect_label;
-	int size = 60, num_p = 40, stamp_nx = 100, psf_type = 2;
-	double psf_scale = 4., max_radius = 9., st, ed, s1, s2;
+	int size = 52, num_p = 40, stamp_nx = 100, psf_type = 2;
+	double psf_scale = 4., max_radius = 8., st, ed, s1, s2, s3, s4, s5, s6;
 	double g1 = 0., g2 = 0.;
 	double gal_noise_sig = 0, psf_noise_sig = 0., scale = 2.;
 	int total_num = total_chip_num * stamp_num;
@@ -71,8 +71,8 @@ int main(int argc, char*argv[])
 
 	// initialize gsl
 	int sss1, sss2;
-	sss1 = 5811430;
-	sss2 = 7161130;
+	sss1 = 581140;
+	sss2 = 716110;
 	seed = myid *sss1 + sss2;
 	//seed = myid *380 + 1401;// no bias
 	gsl_rng_initialize(seed);
@@ -93,8 +93,8 @@ int main(int argc, char*argv[])
 	fin.close();
 
 	// read parameters
-	double *flux = new double[total_num];
-	double *mag = new double[total_num];
+	double *flux = new double[5000000];
+	double *mag = new double[5000000];
 
 	//sprintf(para_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/parameters/para_%d.hdf5", shear_id);
 	//sprintf(set_name1, "/flux");
@@ -113,20 +113,20 @@ int main(int argc, char*argv[])
 
 	g1 = shear[shear_id];
 	g2 = shear[shear_id + shear_pairs];
-
+	double t1=0, t2=0, t3=0, t4=0, t5=0;
 	for (i = 0; i < chip_num; i++)
 	{
-		s1 = clock();
+		
 
 		for (j = 0; j < stamp_num; j++)
-		{
-
+		{			
 			initialize_arr(gal, size*size);
 			initialize_arr(gpow, size*size);
 			initialize_arr(point, num_p * 2);
 			initialize_arr(noise, size*size);
 			initialize_arr(pnoise, size*size);
 			initialize_para(&all_paras);
+						
 			create_points(point, num_p, max_radius);
 
 			//create_epoints(point, num_p, ellip[i*stamp_num + j]);
@@ -134,8 +134,8 @@ int main(int argc, char*argv[])
 			convolve(gal, point, 100, size, num_p, 0, psf_scale, g1, g2, psf_type);
 
 			//addnoise(gal, size*size, gal_noise_sig);
-
-			stack(big_img, gal, j, size, stamp_nx, stamp_nx);
+			if(j<stamp_nx*stamp_nx)
+			stack(big_img, gal, j, size, stamp_nx, stamp_nx);			
 
 			//get_radius(gal, &all_paras, 9999999999.*thres, 2, gal_noise_sig);
 			detect_label = galaxy_finder(gal, &all_paras, false);
@@ -146,9 +146,9 @@ int main(int argc, char*argv[])
 			//addnoise(noise, size*size, gal_noise_sig);
 
 			pow_spec(noise, pnoise, size, size);
-
+			
 			shear_est(gpow, ppow, pnoise, &all_paras);
-
+			
 			data[i*stamp_num + j][0] = g1;
 			data[i*stamp_num + j][1] = g2;
 			data[i*stamp_num + j][2] = all_paras.n1;
@@ -163,11 +163,8 @@ int main(int argc, char*argv[])
 			sprintf(chip_path, "!/home/hklee/work/test/gal_chip_%04d.fits", chip_id + i);
 			write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);
 		}
-
-
-		initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
-
-		s2 = clock();
+		
+		initialize_arr(big_img, stamp_nx*stamp_nx*size*size);	
 		
 	}
 

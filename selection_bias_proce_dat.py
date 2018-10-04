@@ -31,10 +31,10 @@ snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
 
 ini_path = "%s/work/envs/envs.dat"%my_home
-path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "pts_path", '1'],
-                                                                  ['selection_bias', "pts_path_result", '1'],
-                                                                  ['selection_bias', "pts_path_para", '1'],
-                                                                  ['selection_bias', "pts_path_pic", '1']])
+path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "ptsm_path", '1'],
+                                                                  ['selection_bias', "ptsm_path_result", '1'],
+                                                                  ['selection_bias', "ptsm_path_para", '1'],
+                                                                  ['selection_bias', "ptsm_path_pic", '1']])
 
 total_path = path_items[0]
 result_path = path_items[1]
@@ -56,7 +56,7 @@ for s in range(int(scale)):
         data_cache_path = path + 'data_%d_%d.hdf5'%(rank, s)
     f = h5py.File(data_cache_path, 'r')
     if s == 0:
-        data = f["/data"].value
+        data = f["/data"].value.copy()
     else:
         data = numpy.row_stack((data, f["/data"].value))
     f.close()
@@ -77,21 +77,21 @@ prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvi
 noise_sig = prop.sigma_sky
 
 # flux
-flux = data[:, 7]/noise_sig
+flux = data[:, 8]/noise_sig
 # half_light_flux
 hflux = data[:, 8]/noise_sig
 # peak
 peak = data[:, 9]/noise_sig
 # area
-area = data[:, 10]
+area = data[:, 12]
 # half_light_area
 harea = data[:, 11]
 # snr
-snr = data[:, 12]
+snr = data[:, 7]
 # flux2
-flux2 = data[:, 13]
+flux2 = data[:, 10]
 # flux_alt
-flux_alt = data[:, 14]
+flux_alt = data[:, 9]
 
 
 if rank == 0:
@@ -157,7 +157,6 @@ res_arr = comm.gather(res_arr, root=0)
 #         res_arr = numpy.column_stack((res_arr, recvs))
 if rank == 0:
     res_arr = numpy.array(res_arr)
-    print(res_arr)
     res_arr = res_arr.T
     # fit the line
     for i in range(3, 4):
