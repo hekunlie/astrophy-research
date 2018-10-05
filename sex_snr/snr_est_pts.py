@@ -83,8 +83,7 @@ for i in range(chip_num):
 numpy.savez(data_path, data)
 t2 = time.time()
 if rank == 0:
-    time.sleep(10)
-    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(nowTime, total_path.split("/")[-1], data_path.split("/")[-1], t2-t1)
+    log = "%s, %s, %.2f"%(total_path.split("/")[-2], data_path.split("/")[-1], t2-t1)
+    tool_box.write_log("./m2_log.dat",log)
 
 
