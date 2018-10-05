@@ -12,26 +12,29 @@ from sys import argv
 from mpi4py import MPI
 import tool_box
 import h5py
+import datetime
+
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cut = argv[1]
+cut, file_num = argv[1], int(argv[2])
 
 t1 = time.clock()
-
+source = "ptsm"
 env_path = "%s/work/envs/envs.dat"%my_home
-path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', "pts_path", '1'],
-                                                            ['selection_bias', "pts_path_result", '1'],
-                                                            ['selection_bias', "pts_path_para", '1']])
+path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', "%s_path"%source, '1'],
+                                                             ['selection_bias', "%s_path_result"%source, '1'],
+                                                             ['selection_bias', "%s_path_para"%source, '1']])
 
 total_path, result_path, para_path = path_items
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
-for i in range(5):
+sex_path = total_path + "result/data/sex2_1.5_%d.npz"%rank
+for i in range(file_num):
     h5path = result_path + "data/data_%d_%d.hdf5"%(rank,i)
     f = h5py.File(h5path, "r")
     temp = f["/data"].value
@@ -98,7 +101,7 @@ flux_alt_step = int(len(flux_alt_sort)/cuts_num)
 flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
 
 
-sex_path = total_path + "result/data/sex_1.5_%d.npz"%rank
+
 sex_data = numpy.load(sex_path)["arr_0"]
 
 sex_snr = sex_data[:, 0]
@@ -187,7 +190,7 @@ else:
         recvs = numpy.empty((6, len(select[cut][1])), dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
         res_arr = numpy.column_stack((res_arr, recvs))
-        print(procs,'I receive',recvs)
+
 
     mc1 = []
     mc2 = []
@@ -265,5 +268,6 @@ else:
 
 t2 = time.clock()
 if rank == 0:
-    print(t2-t1)
+    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(total_path.split("/")[-1], nowTime, cut, t2-t1)
 

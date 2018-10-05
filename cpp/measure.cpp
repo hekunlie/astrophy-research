@@ -27,12 +27,11 @@ int main(int argc, char*argv[])
 
 
 	int size = 90, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
-	chip_num = 500 /(numprocs / 14);
-	int data_rows = chip_num*stamp_num, data_cols = 17;
+	
+	int data_rows = chip_num*stamp_num, data_cols = 13;
 	int i, j, k, tag, seed, chip_id, shear_id;
 	double thres = 2.,  psf_scale = 4., psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
-	double r=0;
-	int area = 0;
+
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 	all_paras.stamp_size = size;
@@ -42,6 +41,7 @@ int main(int argc, char*argv[])
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 
+	chip_num = 500 / (numprocs / 14);
 	shear_id = myid - myid / shear_pairs*shear_pairs;
 	chip_id = myid / shear_pairs*chip_num;
 
@@ -61,9 +61,7 @@ int main(int argc, char*argv[])
 	double*psf_fit_img = new double[size*size]();
 	double*gal_fit_img = new double[size*size]();
 	double *noise_fit_img = new double[size*size]();
-	int *source_x = new int[size*size]{};
-	int *source_y = new int[size*size]{};
-	double *source_paras = new double[7* all_paras.max_source]{};
+
 	
 	double coeffs[150 * 25];
 
@@ -75,9 +73,9 @@ int main(int argc, char*argv[])
 	char data_path[100],chip_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m2/");
 
-	sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
-	sprintf(set_name, "/data");
-	read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
+	//sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
+	//sprintf(set_name, "/data");
+	//read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
 
 	sprintf(log_path, "%slogs/m_%d_log.dat", data_path, myid);
 
@@ -105,6 +103,8 @@ int main(int argc, char*argv[])
 
 		sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path,shear_id, i+chip_id);
 		read_img(big_img, chip_path);
+
+		initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
 
 		for (j = 0; j < stamp_num; j++)
 		{	
@@ -134,21 +134,26 @@ int main(int argc, char*argv[])
 			data[i*stamp_num + j][4] = all_paras.dn;
 			data[i*stamp_num + j][5] = all_paras.du;
 			data[i*stamp_num + j][6] = all_paras.dv;
-			data[i*stamp_num + j][7] = all_paras.gal_flux;
-			data[i*stamp_num + j][8] = all_paras.gal_hflux;
-			data[i*stamp_num + j][9] = all_paras.gal_peak;
-			data[i*stamp_num + j][10] = all_paras.gal_size;
-			data[i*stamp_num + j][11] = all_paras.gal_hsize;
-			data[i*stamp_num + j][12] = all_paras.gal_snr;
-			data[i*stamp_num + j][13] = all_paras.gal_flux2;// original fsnr
-			data[i*stamp_num + j][14] = all_paras.gal_flux_alt;// fitted fsnr
-			data[i*stamp_num + j][15] = 0.;
-			data[i*stamp_num + j][16] = 0.;
+			data[i*stamp_num + j][7] = all_paras.gal_osnr;
+			data[i*stamp_num + j][8] = all_paras.gal_flux;
+			data[i*stamp_num + j][9] = all_paras.gal_flux_alt;
+			data[i*stamp_num + j][10] = all_paras.gal_flux2;
+			data[i*stamp_num + j][11] = all_paras.gal_snr;
+			data[i*stamp_num + j][12] = all_paras.gal_size;
 
+			//data[i*stamp_num + j][7] = all_paras.gal_flux;
+			//data[i*stamp_num + j][8] = all_paras.gal_hflux;
+			//data[i*stamp_num + j][9] = all_paras.gal_peak;
+			//data[i*stamp_num + j][10] = all_paras.gal_size;
+			//data[i*stamp_num + j][11] = all_paras.gal_hsize;
+			//data[i*stamp_num + j][12] = all_paras.gal_snr;
+			//data[i*stamp_num + j][13] = all_paras.gal_flux2;// original fsnr
+			//data[i*stamp_num + j][14] = all_paras.gal_flux_alt;// fitted fsnr
+			//data[i*stamp_num + j][15] = 0.;
+			//data[i*stamp_num + j][16] = 0.;
 
 		}
-		initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
-
+		
 		t2 = clock();
 		sprintf(log_inform, "%03d 's chip finish in %.2f sec", i, (t2-t1)/CLOCKS_PER_SEC);
 		write_log(log_path, log_inform);

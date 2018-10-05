@@ -631,7 +631,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	for ( i = 0; i < source_num; i++)
 	{
 		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
-		if (radius <= 36) // if it peaks within 6 pixels from the stamp center, it will be indentified as a galaxy
+		if (radius <= 64) // if it peaks within 8 pixels from the stamp center, it will be indentified as a galaxy
 		{
 			if (source_para[i * elem_unit] > area)
 			{
@@ -640,24 +640,24 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 			}
 		}
 	}
-	if (detect == -1) 
-	{/* -1 means the no source peaks at the place away from the center within 6 pixels.
-		then the biggest source that one of its pixel locates near the center within 3 pixels */ 
-		area = 0;
-		for ( i = 0; i < source_num; i++)
-		{
-			tag_e = tag_s + source_para[8 * i];
-			for (j= tag_s; j < tag_e; j++)
-			{
-				if (((source_x[j] - xc) < 3) && ((source_y[j] - yc) < 3) && source_para[8*i]>area)
-				{
-					area = source_para[8 * i];
-					detect = i;
-				}
-			}
-			tag_s = tag_e;
-		}
-	}
+	//if (detect == -1) 
+	//{/* -1 means the no source peaks at the place away from the center within 6 pixels.
+	//	then the biggest source that one of its pixel locates near the center within 3 pixels */ 
+	//	area = 0;
+	//	for ( i = 0; i < source_num; i++)
+	//	{
+	//		tag_e = tag_s + source_para[8 * i];
+	//		for (j= tag_s; j < tag_e; j++)
+	//		{
+	//			if (((source_x[j] - xc) < 3) && ((source_y[j] - yc) < 3) && source_para[8*i]>area)
+	//			{
+	//				area = source_para[8 * i];
+	//				detect = i;
+	//			}
+	//		}
+	//		tag_s = tag_e;
+	//	}
+	//}
 	if (detect != -1)
 	{
 		paras->gal_size = area;

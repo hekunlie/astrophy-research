@@ -21,8 +21,8 @@ cpus = comm.Get_size()
 
 cmd = argv[1]
 ini_path = "%s/work/envs/envs.dat"%my_home
-total_path, para_path = tool_box.config(ini_path, ['get', 'get'], [['selection_bias', "pts_path", '1'],
-                                                                 ['selection_bias', "pts_path_para", '1']])
+total_path, para_path = tool_box.config(ini_path, ['get', 'get'], [['selection_bias', "ptsm_path", '1'],
+                                                                 ['selection_bias', "ptsm_path_para", '1']])
 fits_path = total_path + "%d/"%rank
 
 chip_num = 500
@@ -78,7 +78,7 @@ for i in range(chip_num):
                 sex_data[tag, 5] = a_mag_win[i]
     data[i * 10000:(i + 1) * 10000] = sex_data
 
-data_path = total_path + "result/data/sex25_1.5_%d.npz"%rank
+data_path = total_path + "result/data/sex3_1.5_%d.npz"%rank
 numpy.savez(data_path, data)
 
 
