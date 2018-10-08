@@ -29,12 +29,12 @@ stamp_size = 60
 snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
-
+source = "pts"
 ini_path = "%s/work/envs/envs.dat"%my_home
-path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "ptsm_path", '1'],
-                                                                  ['selection_bias', "ptsm_path_result", '1'],
-                                                                  ['selection_bias', "ptsm_path_para", '1'],
-                                                                  ['selection_bias', "ptsm_path_pic", '1']])
+path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "%s_path"%source, '1'],
+                                                                  ['selection_bias', "%s_path_result"%source, '1'],
+                                                                  ['selection_bias', "%s_path_para"%source, '1'],
+                                                                  ['selection_bias', "%s_path_pic"%source, '1']])
 
 total_path = path_items[0]
 result_path = path_items[1]
@@ -50,15 +50,12 @@ path = result_path + "data/"
 
 final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, ch, snr_s)
 for s in range(int(scale)):
-    if scale == 1:
-        data_cache_path = path + "data_%d.hdf5"%rank
-    else:
-        data_cache_path = path + 'data_%d_%d.hdf5'%(rank, s)
+    data_cache_path = path + 'data_%d_%d.hdf5'%(rank, s)
     f = h5py.File(data_cache_path, 'r')
     if s == 0:
         data = f["/data"].value.copy()
     else:
-        data = numpy.row_stack((data, f["/data"].value))
+        data = numpy.row_stack((data, f["/data"].value.copy()))
     f.close()
 
 fq = Fourier_Quad(stamp_size, 123)
@@ -76,27 +73,21 @@ FV = data[:, 6]
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvisits=180)
 noise_sig = prop.sigma_sky
 
-# flux
-flux = data[:, 8]/noise_sig
-# half_light_flux
-hflux = data[:, 8]/noise_sig
-# peak
-peak = data[:, 9]/noise_sig
-# area
-area = data[:, 12]
-# half_light_area
-harea = data[:, 11]
 # snr
 snr = data[:, 7]
-# flux2
-flux2 = data[:, 10]
+# flux
+flux = data[:, 8]/noise_sig
 # flux_alt
 flux_alt = data[:, 9]
-
+# flux2
+flux2 = data[:, 10]
+# great2 snr
+gsnr = data[:, 11]
+# area
+area = data[:, 12]
 
 if rank == 0:
     print("flux: %.2f ~ %.2f\n"%(numpy.min(flux), numpy.max(flux)))
-    print("peak: %.2f ~ %.2f\n"%(numpy.min(peak), numpy.max(peak)))
     print("flux2: %.2f ~ %.2f\n"%(numpy.min(flux2), numpy.max(flux2)))
     print("osnr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
     print("area: %d ~ %d\n" % (numpy.min(area), numpy.max(area)))
@@ -107,8 +98,8 @@ if rank == 0:
 # sex_path = path + "sex25_%d_1.5.npz"%rank
 # sex_snr = numpy.load(sex_path)['arr_0'][:, 0]
 
-select = {"peak": peak, "flux": flux, "flux2": flux2, "area": area, "snr": snr,
-          "hflux": hflux, "harea": harea, "flux_alt": flux_alt}#, "sex_snr": sex_snr}
+select = {"flux": flux, "flux2": flux2, "area": area, "snr": snr,
+          "flux_alt": flux_alt}#, "sex_snr": sex_snr}
 
 res_arr = numpy.zeros((3, 2))
 sp = res_arr.shape

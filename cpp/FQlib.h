@@ -47,6 +47,7 @@ struct para
 	double detect_thres; /* the threshold of pixel value of source */
 	double noise_sig;
 	int max_source = 1000; /* the maximum of sources allowed in each chip, changeable */
+	double max_distance= 8.;/* the max distance of peak away from the center of the source candidate */
 
 
 	/* hyper_fit_5 matrix elements of order 2 of xy polynomials */
@@ -161,6 +162,20 @@ void hyperfit_5(double *data, double*fit_para, para *paras);
 /* general methods */
 /********************************************************************************************************************************************/
 void initialize_para(para *paras);
+/* set the "gal_: parameters zero */
+
+void qsort_double(double *arr, int size, int order);
+/* sort the double array according to the order, order =1 for ascend, else for descend*/
+void qsort_float(float *arr, int size, int order);
+void qsort_int(int *arr, int size, int order);
+
+int com_double_ascend(const void *a, const void *b);
+/* the compare function for the qsort() method */
+int com_float_ascend(const void *a, const void *b);
+int com_int_ascend(const void *a, const void *b);
+int com_double_descend(const void *a, const void *b);
+int com_float_descend(const void *a, const void *b);
+int com_int_descend(const void *a, const void *b);
 
 
 /********************************************************************************************************************************************/

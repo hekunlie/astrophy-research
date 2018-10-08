@@ -26,6 +26,7 @@ cmd = argv[1]
 
 ini_path = "%s/work/envs/envs.dat"%my_home
 source = "dimmerm2"
+sex_filter = "sex4_1.5"
 total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
                                                    [['selection_bias', "%s_path"%source, '1'],
                                                     ['selection_bias', "%s_path_para"%source, '1']])
@@ -37,12 +38,14 @@ size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","size","1"]])
 if rank == 0:
     print(size)
 
-fits_paths = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(14) for j in range(chip_num)]
-fits_path = tool_box.allot(fits_paths, cpus)[rank]
+total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(14) for j in range(chip_num)]
+total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j) for i in range(14) for j in range(chip_num)]
+allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
+allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
 
 if cmd == "snr":
-    for chip_path in fits_path:
-        cat_path = chip_path + ".cat"
+    for ii, chip_path in enumerate(allot_fits_path):
+        cat_path = allot_cat_path[ii]
         # remove the previous cat file
         if os.path.exists(cat_path):
             os.remove(cat_path)
@@ -50,11 +53,11 @@ if cmd == "snr":
         a = Popen(comm, shell=True)
         a.wait()
 
-if rank < 14:
-    snr_data_path = total_path + "result/data/sex3_2_%d.npz" %rank
+if cmd == "add" and rank < 14:
+    snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * 10000, 6))
     for i in range(chip_num):
-        cat_path = total_path + "%d/gal_chip_%04d.fits.cat"%(rank, i)
+        cat_path = total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,rank, i)
         cata_data = numpy.loadtxt(cat_path)
         a_snr = cata_data[:, 0]
         a_mag_iso = cata_data[:, 1]
@@ -89,8 +92,13 @@ if rank < 14:
     numpy.savez(snr_data_path, snr_data)
 t2 = time.time()
 if rank == 0:
-    log = "%s, %s, %.2f"%( total_path.split("/")[-2], snr_data_path.split("/")[-1], t2-t1)
-    tool_box.write_log("./m2_log.dat",log)
+    missing = ""
+    for i in range(14):
+        snr_data_path = total_path + "result/data/%s/sex_%d.npz" % (sex_filter, i)
+        if not os.path.exists(snr_data_path):
+            missing += " %d"%i
+    log = "source: %s, filter: %s, time: %.2f, missing: %s"%(total_path.split("/")[-2], sex_filter, t2-t1, missing)
+    tool_box.write_log("./m2_log.dat", log)
 
 
 

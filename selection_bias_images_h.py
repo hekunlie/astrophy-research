@@ -20,25 +20,15 @@ cpus = comm.Get_size()
 ts = time.clock()
 
 ini_path = "%s/work/envs/envs.dat"%my_home
-path_items = tool_box.congif(ini_path,['get'], [['selection_bias', "dimmerm_path_para", '1']])
-
-total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/"
-result_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/result/"
-para_path = path_items[0]
-pic_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/pic/"
-log_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/log/"
-
-# with open("%s/work/envs/envs1.dat"%my_home, "r") as f:
-#     contents = f.readlines()
-# for path in contents:
-#     if "select_total" in path:
-#         total_path = path.split("=")[1]
-#     elif "select_result" in path:
-#         result_path = path.split("=")[1]
-#     elif "parameter" in path:
-#         para_path = path.split("=")[1]
-#     elif "log" in path:
-#         log_path = path.split("=")[1]
+get_contents = [['selection_bias', "dimmerm3_path", '1'],['selection_bias', "dimmerm3_path_result", '1'],
+                ['selection_bias', "dimmerm3_path_para", '1'],['selection_bias', "dimmerm3_path_log", '1']]
+path_items = tool_box.config(ini_path,['get','get','get','get'], get_contents)
+total_path, result_path, para_path, log_path = path_items
+# total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/"
+# result_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/result/"
+# para_path = path_items[0]
+# pic_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/pic/"
+# log_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/log/"
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -53,7 +43,7 @@ stamp_size = 90
 pixel_scale = 0.2
 shear_num = 14
 chips_num = int(500/int(cpus/shear_num))
-seed = rank*344 + 1121
+seed = rank*344 + 121
 chip_s_id, shear_id = divmod(rank, shear_num)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -128,7 +118,5 @@ for i in range(chips_num):
     t2 = time.clock()
     logger.info("Finish the %04d's chip in %.2f sec"%(i, t2-t1))
 
-ori_snr_path = result_path + "data/input_snr_%d.npz"%rank
-
 te = time.clock()
-logger.info("Used %.2f sec"%(te-ts))
+logger.info("Used %.2f sec. %s"%(te-ts, total_path))

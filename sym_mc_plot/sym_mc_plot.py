@@ -18,12 +18,12 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cut, file_num = argv[1], int(argv[2])
+cut, file_num, filter_name = argv[1], int(argv[2]), argv[3]
 
 t1 = time.clock()
 
 env_path = "%s/work/envs/envs.dat"%my_home
-source = "dimmerm2"
+source = "dimmerm3"
 path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', "%s_path"%source, '1'],
                                                              ['selection_bias', "%s_path_result"%source, '1'],
                                                              ['selection_bias', "%s_path_para"%source, '1']])
@@ -33,7 +33,7 @@ shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
-sex_path = total_path + "result/data/sex2_1.5_%d.npz"%rank
+sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 for i in range(file_num):
     h5path = result_path + "data/data_%d_%d.hdf5"%(rank,i)
     f = h5py.File(h5path, "r")
@@ -44,61 +44,50 @@ for i in range(file_num):
         data = numpy.row_stack((data, temp))
     f.close()
 
-fq = Fourier_Quad(60, 152356)
+fq = Fourier_Quad(90, 152356)
 noise_sig = 380.64
 
 detect_ = data[:, 7]
 detected = detect_ > 0
 
-cuts_num = 20
-
-# flux
-flux = data[:, 7]/noise_sig
-flux_sort = numpy.sort(flux[detected])
-flux_step = int(len(flux_sort)/cuts_num)
-flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
-
-# half_light_flux
-hflux = data[:, 8]/noise_sig
-hflux_sort = numpy.sort(hflux[detected])
-hflux_step = int(len(hflux_sort)/cuts_num)
-hflux_cut = [hflux_sort[i*hflux_step] for i in range(cuts_num)]
-
-# peak
-peak = data[:, 9]/noise_sig
-peak_sort = numpy.sort(peak[detected])
-peak_step = int(len(peak_sort)/cuts_num)
-peak_cut = [peak_sort[i*peak_step] for i in range(cuts_num)]
-
-# area
-area = data[:, 10]
-area_sort = numpy.sort(area[detected])
-area_step = int(len(area_sort)/cuts_num)
-area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
-
-# half_light_area
-harea = data[:, 11]
-harea_sort = numpy.sort(harea[detected])
-harea_step = int(len(harea_sort)/cuts_num)
-harea_cut = [harea_sort[i*harea_step] for i in range(cuts_num)]
+cuts_num = 10
 
 # snr
-snr = data[:, 12]
+snr = data[:, 7]
 snr_sort = numpy.sort(snr[detected])
 snr_step = int(len(snr_sort)/cuts_num)
 snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
 
+# flux
+flux = data[:, 8]/noise_sig
+flux_sort = numpy.sort(flux[detected])
+flux_step = int(len(flux_sort)/cuts_num)
+flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
+
+# flux_alt
+flux_alt = data[:, 9]
+flux_alt_sort = numpy.sort(flux_alt[detected])
+flux_alt_step = int(len(flux_alt_sort)/cuts_num)
+flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
+
 # flux2
-flux2 = data[:, 13]
+flux2 = data[:, 10]
 flux2_sort = numpy.sort(flux2[detected])
 flux2_step = int(len(flux2_sort)/cuts_num)
 flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
 
-# flux_alt
-flux_alt = data[:, 14]
-flux_alt_sort = numpy.sort(flux_alt[detected])
-flux_alt_step = int(len(flux_alt_sort)/cuts_num)
-flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
+# great3 snr
+gsnr = data[:, 11]
+gsnr_sort = numpy.sort(gsnr[detected])
+gsnr_step = int(len(gsnr_sort)/cuts_num)
+gsnr_cut = [gsnr_sort[i*gsnr_step] for i in range(cuts_num)]
+
+# area
+area = data[:, 12]
+area_sort = numpy.sort(area[detected])
+area_step = int(len(area_sort)/cuts_num)
+area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
+
 
 sex_data = numpy.load(sex_path)["arr_0"]
 
@@ -134,9 +123,8 @@ mag_win_step = int(len(mag_win_sort)/cuts_num)
 mag_win_cut = [mag_win_sort[i*mag_win_step] for i in range(cuts_num)]
 
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
-          "hflux":   (hflux, hflux_cut),      "peak":     (peak, peak_cut),
-          "area":    (area, area_cut),        "harea":    (harea, harea_cut),
-          "flux2":   (flux2, flux2_cut),      "flux_alt": (flux_alt, flux_alt_cut),
+          "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),
+          "flux_alt": (flux_alt, flux_alt_cut),
           "sex_snr": (sex_snr, sex_snr_cut),  "sex_area": (sex_area, sex_area_cut),
           "mag_iso": (-mag_iso, mag_iso_cut),  "mag_auto": (-mag_auto, mag_auto_cut),
           "mag_petro": (-mag_petro, mag_petro_cut), "mag_win": (-mag_win, mag_win_cut)}
@@ -202,7 +190,7 @@ else:
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = total_path + "result/cuts/sym/" + cut + "/" + str(round(cut_s,4))+".npz"
+        data_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4))+".npz"
         numpy.savez(data_path, arr, mc)
 
         mc_title = ['0', '0', '0', '0']
@@ -219,14 +207,14 @@ else:
                 mc_title[ii + 2] = "_c" + str(ii+1)
         pic_mc = "".join(mc_title)
 
-        pic_path = total_path + "result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
+        pic_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
         tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', [-0.03,0.03,-0.03,0.03],pic_path)
-        pic_path = total_path + "result/cuts/sym/" + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
+        pic_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
         tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max',[-0.03,0.03,-0.03,0.03],pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
-    mc_path = total_path + "result/cuts/sym/" + cut + "/total.npz"
+    mc_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
@@ -259,12 +247,13 @@ else:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
-    namep = total_path + "result/cuts/sym/" + cut + "/total.eps"
+    namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
     plt.savefig(namep)
     plt.close()
 
 t2 = time.clock()
 if rank == 0:
-    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(total_path.split("/")[-1], nowTime, cut, t2-t1)
+    log = "%s, %s, %s, %.2f, %s"%(total_path.split("/")[-1], filter_name, cut, t2-t1, argv[0])
+    tool_box.write_log("./cutoff.dat", log)
+
 

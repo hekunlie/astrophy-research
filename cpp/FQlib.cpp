@@ -573,7 +573,6 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 								}
 							}
 						}
-
 					}
 					num = len;
 				}
@@ -623,7 +622,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	int source_num, area=0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
 	int detect=-1, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
 	int tag_s = 0, tag_e, i, j;
-	double hlr, flux, radius;
+	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
 	double *source_para = new double[140]{}; // default for 20 detections in signal stamps, a fairly large number
@@ -631,7 +630,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	for ( i = 0; i < source_num; i++)
 	{
 		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
-		if (radius <= 64) // if it peaks within 8 pixels from the stamp center, it will be indentified as a galaxy
+		if (radius <= max_distance) // if it peaks within 8 pixels from the stamp center, it will be indentified as a galaxy
 		{
 			if (source_para[i * elem_unit] > area)
 			{
@@ -658,7 +657,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	//		tag_s = tag_e;
 	//	}
 	//}
-	if (detect != -1)
+	if (detect > -1)
 	{
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
@@ -921,6 +920,72 @@ void initialize_para(para *paras)
 	paras->gal_flux_alt = 0;
 	paras->gal_snr = 0;
 	paras->gal_osnr = 0;
+}
+
+void qsort_double(double* arr, int size, int order=1)
+{
+	if (order == 1)
+	{
+		qsort(arr, size, sizeof(double), com_double_ascend);
+	}
+	else
+	{
+		qsort(arr, size, sizeof(double), com_double_descend);
+	}
+}
+
+void qsort_float(float *arr, int size, int order=1)
+{
+	if (order == 1)
+	{
+		qsort(arr, size, sizeof(float), com_float_ascend);
+	}
+	else
+	{
+		qsort(arr, size, sizeof(float), com_float_descend);
+	}
+}
+
+void qsort_int(int *arr, int size, int order=1)
+{
+	if (order == 1)
+	{
+		qsort(arr, size, sizeof(int), com_int_ascend);
+	}
+	else
+	{
+		qsort(arr, size, sizeof(int), com_int_descend);
+	}
+}
+
+int com_double_ascend(const void *a, const void *b)
+{
+	return (*(double*)a - *(double*)b);
+}
+
+int com_float_ascend(const void *a, const void *b)
+{
+	return (*(float*)a - *(float*)b);
+}
+
+int com_int_ascend(const void *a, const void *b)
+{
+	return (*(int*)a - *(int*)b);
+}
+
+int com_double_descend(const void *a, const void *b)
+{
+	return ( *(double*)b - *(double*)a);
+}
+
+int com_float_descend(const void *a, const void *b)
+{
+	return (*(float*)b - *(float*)a);
+}
+
+int com_int_descend(const void *a, const void *b)
+{
+	return (*(int*)b - *(int*)a);
 }
 
 

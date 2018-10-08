@@ -28,8 +28,8 @@ cpus = comm.Get_size()
 ig1 = numpy.load("./g.npz")['arr_0'][:,0]
 ig2 = numpy.load("./g.npz")['arr_0'][:,1]
 
-num = 300000
-stamp_size = 64
+num = 200000
+stamp_size = 54
 pixel_scale = 0.2
 fq = Fourier_Quad(stamp_size, rank*10+111)
 psf_img = fq.cre_psf(4,1,"Moffat")
