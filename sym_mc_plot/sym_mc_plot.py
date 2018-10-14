@@ -18,12 +18,12 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cut, file_num, filter_name = argv[1], int(argv[2]), argv[3]
+cut, file_num, filter_name, source, sig = argv[1], int(argv[2]), argv[3], argv[4], argv[5]
 
 t1 = time.clock()
 
 env_path = "%s/work/envs/envs.dat"%my_home
-source = "dimmerm3"
+
 path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', "%s_path"%source, '1'],
                                                              ['selection_bias', "%s_path_result"%source, '1'],
                                                              ['selection_bias', "%s_path_para"%source, '1']])
@@ -35,7 +35,7 @@ fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 for i in range(file_num):
-    h5path = result_path + "data/data_%d_%d.hdf5"%(rank,i)
+    h5path = result_path + "data/data_%s/data_%d_%d.hdf5"%(sig,rank,i)
     f = h5py.File(h5path, "r")
     temp = f["/data"].value
     if i == 0:
@@ -253,7 +253,7 @@ else:
 
 t2 = time.clock()
 if rank == 0:
-    log = "%s, %s, %s, %.2f, %s"%(total_path.split("/")[-1], filter_name, cut, t2-t1, argv[0])
+    log = "%s, %s, %s, %.2f, %s"%(total_path.split("/")[-2], filter_name, cut, t2-t1, argv[0])
     tool_box.write_log("./cutoff.dat", log)
 
 

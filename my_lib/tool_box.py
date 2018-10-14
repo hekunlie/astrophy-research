@@ -447,7 +447,7 @@ def rand_gauss2(x_range, y_range, num, cov):
     return numpy.column_stack((numpy.array(xs),numpy.array(ys)))
 
 
-def rand_gauss2n(xy_range,num,means, cov):
+def rand_gauss2n(num, means, cov, xy_range=None):
     r"""
     basing on numpy, to generate two sets of correlated data in (2,n) numpy array
     :param xy_range: list of the bound of the two sets [x_start, x_end, y_start, y_end]
@@ -463,7 +463,7 @@ def rand_gauss2n(xy_range,num,means, cov):
         if gap == 0:
             break
         xy = numpy.random.multivariate_normal(means,cov,gap)
-        if len(xy_range) > 0:
+        if xy_range:
             idx1 = xy[:,0] <= xy_range[0]
             idx2 = xy[:,0] >= xy_range[1]
             idy1 = xy[:,1] <= xy_range[2]
@@ -474,7 +474,7 @@ def rand_gauss2n(xy_range,num,means, cov):
         if target.shape[0] > 0:
             finals[0].extend(target[:,0].tolist())
             finals[1].extend(target[:,1].tolist())
-    data = numpy.array(finals).T
+    data = numpy.array(finals)
     return data
 
 
@@ -527,6 +527,11 @@ def ellip_mock(num, seed=123400, figout=None):
     of bulge-dominated galaxies
 
     See Miller et al, 2013, MNRAS
+
+    The ellipticity is defined as: e = (a - b)/(a + b)exp[2i\theta]
+    as what in Miller et al. 2013 MNRAS and CFHTLenS.
+    And it has been convert to the definition used in Galsim
+    e = (a^2 - b^2)/(a^2 + b^2)exp[2i\theta]
     """
     numpy.random.RandomState(seed)
     b, c = 2.368, 6.691
@@ -541,7 +546,14 @@ def ellip_mock(num, seed=123400, figout=None):
     # normalize
     pe_base = pe_base / numpy.sum(pe_base)
     rbe = numpy.random.choice(es, num, p=pe_base)
-    return rbe
+    # convert to the definition used in Galsim:
+    # e = (a^2 - b^2)/(a^2 + b^2)exp[2i\theta]
+    theta = numpy.random.uniform(0, numpy.pi, num)
+    q = (1 - rbe) / (1 + rbe)
+    es = (1 - q ** 2) / (1 + q ** 2)
+    e1 = es * numpy.cos(2 * theta)
+    e2 = es * numpy.sin(2 * theta)
+    return e1, e2, rbe, es
 
 ################################################################
 # the methods for data analysis

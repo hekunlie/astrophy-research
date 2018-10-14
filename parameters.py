@@ -34,7 +34,7 @@ radius_s, radius_e = float(paras[4]), float(paras[5])
 if rank == 0:
     print(num, size, mag_s, mag_e, radius_s, radius_e)
 
-seed = rank*4321554 + int(numpy.random.randint(1, 1256542344, 1)[0])
+seed = rank*43254 + int(numpy.random.randint(1, 1256542344, 1)[0])
 rng = numpy.random.RandomState(seed)
 fq = Fourier_Quad(size, seed)
 prop = lsstetc.ETC(band='r', pixel_scale=0.2, stamp_size=size, nvisits=180)
@@ -62,12 +62,12 @@ f = h5py.File(path,"w")
 
 # ellipticity
 
-e = tool_box.ellip_mock(num, seed)
-theta = rng.uniform(0, numpy.pi, num)
-q = (1-e)/(1+e)
-es = (1-q**2)/(1+q**2)
-e1 = es*numpy.cos(2*theta)
-e2 = es*numpy.sin(2*theta)
+e1, e2, e, es = tool_box.ellip_mock(num, seed)
+# theta = rng.uniform(0, numpy.pi, num)
+# q = (1-e)/(1+e)
+# es = (1-q**2)/(1+q**2)
+# e1 = es*numpy.cos(2*theta)
+# e2 = es*numpy.sin(2*theta)
 print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max: %.5f, %.5f"
       %(rank, numpy.mean(e1), numpy.std(e1), numpy.mean(e2), numpy.std(e2), numpy.max(e1), numpy.max(e2)))
 f["/e1"] = e1
