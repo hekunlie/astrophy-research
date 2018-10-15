@@ -22,14 +22,14 @@ btr = float(argv[5])
 seed = int(argv[6])
 
 
-num = 17
+num = 21
 pixel_scale = 0.2
 markers = ['p', 'x', 's', '8']
 colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
 
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=size, nvisits=180)
-flux = numpy.array([prop.flux(22.5), prop.flux(23.8),  prop.flux(24.9)])
-sig = prop.sigma_sky
+flux = numpy.array([prop.flux(22.5), prop.flux(23.8),  prop.flux(24.9), prop.flux(25.4)])
+sig = prop.sigma_sky/10
 print(sig)
 
 fq = Fourier_Quad(size, seed)

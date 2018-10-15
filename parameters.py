@@ -19,9 +19,9 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-
+source = "dimmer"
 envs_path = "%s/work/envs/envs.dat"%my_home
-para_path = tool_box.config(envs_path,["get"],[["selection_bias","pts_path_para","0"]])[0]
+para_path = tool_box.config(envs_path,["get"],[["selection_bias","%s_path_para"%source,"0"]])[0]
 para_ini_path = para_path+"para.ini"
 paras = tool_box.config(para_ini_path,["get",'get',"get",'get',"get",'get'],
                         [["para","total_num","0"],["para","size","0"],

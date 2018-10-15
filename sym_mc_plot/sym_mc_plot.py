@@ -35,55 +35,79 @@ fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 for i in range(file_num):
-    h5path = result_path + "data/data_%s/data_%d_%d.hdf5"%(sig,rank,i)
-    f = h5py.File(h5path, "r")
-    temp = f["/data"].value
+    shear_esti_h5path = result_path + "data/data_%d_%d.hdf5"%(rank, i)
+    shear_esti_file = h5py.File(shear_esti_h5path, "r")
+    shear_temp = shear_esti_file["/data"].value
     if i == 0:
-        data = temp.copy()
+        shear_esti_data = shear_temp.copy()
     else:
-        data = numpy.row_stack((data, temp))
-    f.close()
+        shear_esti_data = numpy.row_stack((shear_esti_data, shear_temp))
+    shear_esti_file.close()
+
+    fq_snr_h5path = result_path + "data/data_%s/data_%d_%d.hdf5" % (sig, rank, i)
+    fq_snr_file = h5py.File(fq_snr_h5path, "r")
+    if sig == "1.5sig":
+        set_name = "/mag"
+    else:
+        set_name = "/data"
+    fq_snr_temp = fq_snr_file[set_name].value
+    if i == 0:
+        fq_snr_data = fq_snr_temp.copy()
+    else:
+        fq_snr_data = numpy.row_stack((fq_snr_data, fq_snr_temp))
+    fq_snr_file.close()
 
 fq = Fourier_Quad(90, 152356)
 noise_sig = 380.64
 
-detect_ = data[:, 7]
+MG1 = shear_esti_data[:, 2]
+MG2 = shear_esti_data[:, 3]
+MN = shear_esti_data[:, 4]
+MU = shear_esti_data[:, 5]
+MV = shear_esti_data[:, 6]
+# be careful that the "MU" defined in FRESH is different from that in ours
+# MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
+# those in the paper Zhang et al. 2017 ApJ, 834:8
+DE1 = MN + MU
+DE2 = MN - MU
+
+detect_ = fq_snr_data[:, 0]
 detected = detect_ > 0
 
 cuts_num = 10
 
 # snr
-snr = data[:, 7]
+snr = fq_snr_data[:, 0]
 snr_sort = numpy.sort(snr[detected])
 snr_step = int(len(snr_sort)/cuts_num)
 snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
 
 # flux
-flux = data[:, 8]/noise_sig
+flux = fq_snr_data[:, 1]/noise_sig
 flux_sort = numpy.sort(flux[detected])
 flux_step = int(len(flux_sort)/cuts_num)
 flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
 
 # flux_alt
-flux_alt = data[:, 9]
+flux_alt = fq_snr_data[:, 2]
 flux_alt_sort = numpy.sort(flux_alt[detected])
 flux_alt_step = int(len(flux_alt_sort)/cuts_num)
 flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
 
 # flux2
-flux2 = data[:, 10]
+flux2 = fq_snr_data[:, 3]
 flux2_sort = numpy.sort(flux2[detected])
 flux2_step = int(len(flux2_sort)/cuts_num)
 flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
 
 # great3 snr
-gsnr = data[:, 11]
+gsnr = fq_snr_data[:, 4]
 gsnr_sort = numpy.sort(gsnr[detected])
 gsnr_step = int(len(gsnr_sort)/cuts_num)
 gsnr_cut = [gsnr_sort[i*gsnr_step] for i in range(cuts_num)]
 
 # area
-area = data[:, 12]
+area = fq_snr_data[:, 5]
 area_sort = numpy.sort(area[detected])
 area_step = int(len(area_sort)/cuts_num)
 area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
@@ -130,17 +154,6 @@ select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "mag_petro": (-mag_petro, mag_petro_cut), "mag_win": (-mag_win, mag_win_cut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
-
-MG1 = data[:, 2]
-MG2 = data[:, 3]
-MN = data[:, 4]
-MU = data[:, 5]
-MV = data[:, 6]
-# be careful that the "MU" defined in FRESH is the different from that in ours
-# MN + (-) MU for our definition (g1(2)) of MU and MV which is the same as
-# those in the paper Zhang et al. 2017 ApJ, 834:8
-DE1 = MN + MU
-DE2 = MN - MU
 
 
 detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area": detected, "harea": detected,

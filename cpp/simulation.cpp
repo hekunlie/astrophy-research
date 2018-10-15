@@ -35,7 +35,7 @@ int main(int argc, char*argv[])
 		double g1=0., g2=0.;
 		double gal_noise_sig = 380.86, psf_noise_sig = 0., scale = 2.;
 		int total_num = total_chip_num * stamp_num;
-		int cmd = 0;
+
 		chip_num = total_chip_num / (numprocs/shear_pairs);
 		data_rows = chip_num*stamp_num;
 		shear_id = myid - myid / shear_pairs*shear_pairs;
@@ -146,6 +146,9 @@ int main(int argc, char*argv[])
 		{
 			s1 = clock();
 
+			sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, chip_id + i);
+			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
+
 			sprintf(log_inform, "Thread: %d, chip: %d, start.", myid, i);
 			write_log(log_path, log_inform);
 			for (j = 0; j < stamp_num; j++)
@@ -170,25 +173,22 @@ int main(int argc, char*argv[])
 				//get_radius(gal, &all_paras, 9999999999.*thres, 2, gal_noise_sig);
 				detect_label = galaxy_finder(gal, &all_paras, false);
 
-				if (cmd == 0)// measure the shear esitmators
-				{
-					pow_spec(gal, gpow, size, size);
-					f_snr(gpow, &all_paras, 1);
+				pow_spec(gal, gpow, size, size);
+				f_snr(gpow, &all_paras, 1);
 
-					addnoise(noise, size*size, gal_noise_sig);
+				addnoise(noise, size*size, gal_noise_sig);
 
-					pow_spec(noise, pnoise, size, size);
+				pow_spec(noise, pnoise, size, size);
 
-					shear_est(gpow, ppow, pnoise, &all_paras);
+				shear_est(gpow, ppow, pnoise, &all_paras);
 
-					data[i*stamp_num + j][0] = g1;
-					data[i*stamp_num + j][1] = g2;
-					data[i*stamp_num + j][2] = all_paras.n1;
-					data[i*stamp_num + j][3] = all_paras.n2;
-					data[i*stamp_num + j][4] = all_paras.dn;
-					data[i*stamp_num + j][5] = all_paras.du;
-					data[i*stamp_num + j][6] = all_paras.dv;
-				}
+				data[i*stamp_num + j][0] = g1;
+				data[i*stamp_num + j][1] = g2;
+				data[i*stamp_num + j][2] = all_paras.n1;
+				data[i*stamp_num + j][3] = all_paras.n2;
+				data[i*stamp_num + j][4] = all_paras.dn;
+				data[i*stamp_num + j][5] = all_paras.du;
+				data[i*stamp_num + j][6] = all_paras.dv;
 
 				data_snr[i*stamp_num + j][0] = all_paras.gal_osnr;
 				data_snr[i*stamp_num + j][1] = all_paras.gal_flux;
@@ -197,18 +197,15 @@ int main(int argc, char*argv[])
 				data_snr[i*stamp_num + j][4] = all_paras.gal_snr;
 				data_snr[i*stamp_num + j][5] = all_paras.gal_size;
 				data_snr[i*stamp_num + j][6] = mag[i*stamp_num + j];
-				
+	
 			}
-            sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, chip_id + i);
-
+            
 			#ifdef PRECISION
 			write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);
 			#else
 			copy(big_img, big_img + stamp_nx*stamp_nx*size*size, cp);
 			write_img(cp, size*stamp_nx, size*stamp_nx, chip_path);
-			#endif
-
-			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
+			#endif	
 
 			s2 = clock();
 			sprintf(log_inform, "Thread: %d, chip: %d, done in %.2f s.", myid, i, (s2 - s1) / CLOCKS_PER_SEC);
@@ -220,14 +217,13 @@ int main(int argc, char*argv[])
 		}
 
 		sprintf(set_name1, "/data");
-		if (cmd == 0)//store the shear estimators
-		{
-			sprintf(h5_path, "%sresult/data/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
-			write_h5(h5_path, set_name1, data_rows, shear_esti_data_cols, data[0], NULL);
-		}
-		
+
+		sprintf(h5_path, "%sresult/data/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
+		write_h5(h5_path, set_name1, data_rows, shear_esti_data_cols, data[0], NULL);
+
 		sprintf(snr_h5_path, "%sresult/data/data_2sig/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
 		write_h5(snr_h5_path, set_name1, data_rows, snr_para_data_cols, data_snr[0], NULL);
+
 
 		ed = clock();
 		if (myid == 0)

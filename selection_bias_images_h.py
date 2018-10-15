@@ -18,12 +18,13 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 ts = time.clock()
-
-ini_path = "%s/work/envs/envs.dat"%my_home
-get_contents = [['selection_bias', "dimmerm3_path", '1'],['selection_bias', "dimmerm3_path_result", '1'],
-                ['selection_bias', "dimmerm3_path_para", '1'],['selection_bias', "dimmerm3_path_log", '1']]
-path_items = tool_box.config(ini_path,['get','get','get','get'], get_contents)
+source = "dimmer"
+envs_path = "%s/work/envs/envs.dat"%my_home
+get_contents = [['selection_bias', "%s_path"%source, '1'],['selection_bias', "%s_path_result"%source, '1'],
+                ['selection_bias', "%s_path_para"%source, '1'],['selection_bias', "%s_path_log"%source, '1']]
+path_items = tool_box.config(envs_path,['get','get','get','get'], get_contents)
 total_path, result_path, para_path, log_path = path_items
+
 # total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/"
 # result_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m/PDF/result/"
 # para_path = path_items[0]
