@@ -690,6 +690,41 @@ def set_bin(data, bin_num):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
+def back_to_block(data, num, cols, size_y, size_x, yi, xi, area_i, distance_thresh):
+    """
+    for the analysis of the data measured by SExtractor
+    the sequence of measured parameters are reserved.
+    :param data: (m, n) numpy array
+    :param num: the total number of the true blocks
+    :param cols: the column number of the true blocks
+    :param size_y: size of block
+    :param size_x: size of block
+    :param xi: the column number of x
+    :param yi: the column number of y
+    :param area_i: the column number of area
+    :param distance_thresh: the maximum of the peak be away from the center of the image
+    :return: (num, data.shape[1]) numpy array
+    """
+
+    # for the case that only one source detected, the data will be a (para_num, ) numpy array
+    if len(data.shape) != 2:
+        data.shape = (1, len(data))
+    # the coordinates in SExtractor start from 1 not 0!
+    sex_ori = 1
+    block_arr = numpy.zeros((num, data.shape[1]))
+    my, dy = numpy.divmod(data[:, yi] - sex_ori, size_y)
+    mx, dx = numpy.divmod(data[:, xi] - sex_ori, size_x)
+    block_n = (my*cols + mx).astype(int)
+    away = numpy.sqrt((dy-size_y/2)**2 + (dx-size_x/2)**2)
+    for i in range(data.shape[0]):
+        block_id = block_n[i]
+        # print(block_id)
+        if data[i, area_i] >= block_arr[block_id, area_i] and away[i] <= distance_thresh:
+            block_arr[block_id] = data[i]
+    block_arr[:, yi] -= sex_ori
+    block_arr[:, xi] -= sex_ori
+    return block_arr
+
 
 def field_dict(expo_file):
     # to build a dictionary that contains the exposures as {"field": {"exposure":[expo1, expo2..]}....}
@@ -723,7 +758,6 @@ def cfht_label(field_name):
         mp1 = 10 ** 3
     if field_name[4] == "m":
         mp2 = 10
-
     return int(field_name[1])*10**4 + int(field_name[3])*10**2 + int(field_name[5]) + mp1 + mp2
 
 
@@ -760,6 +794,7 @@ def ellip_plot(ellip, coordi, lent, width, title, mode=1,path=None,show=True):
         plt.savefig(path)
     if show is True:
         plt.show()
+
 
 ################################################################
 # the general methods

@@ -29,22 +29,22 @@ colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
 
 prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=size, nvisits=180)
 flux = numpy.array([prop.flux(22.5), prop.flux(23.8),  prop.flux(24.9), prop.flux(25.4)])
-sig = prop.sigma_sky/10
+sig = prop.sigma_sky
 print(sig)
 
 fq = Fourier_Quad(size, seed)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, sig)
 
-psf = galsim.Moffat(beta=3.5, scale_radius=psf_r, flux=1.0)
+psf = galsim.Moffat(beta=3.5, scale_radius=psf_r, flux=1.0, trunc=psf_r*3)
 
 shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
 for k in range(len(flux)):
 
     pool = []
-    bulge = galsim.Sersic(half_light_radius=0.6 * ra, n=4, trunc=4.5 * ra)  # be careful
-    disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+    bulge = galsim.Sersic(half_light_radius=0.6 * ra, n=4, trunc=3 * ra)  # be careful
+    disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=3 * ra)  # be careful
     gal = bulge * btr + disk * (1 - btr)
     gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
     gal_f = gal.withFlux(flux[k])
