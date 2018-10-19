@@ -26,7 +26,7 @@ int main(int argc, char*argv[])
 	string s;
 
 
-	int size = 60, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
+	int size = 90, shear_pairs = 14, chip_num, stamp_num=10000, stamp_nx =100;
 	chip_num = 500 / (numprocs / 14);
 	int data_rows = chip_num*stamp_num, shear_esti_data_cols = 7, snr_para_data_cols=7;
 	int i, j, k, tag, seed, chip_id, shear_id;
@@ -38,10 +38,10 @@ int main(int argc, char*argv[])
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
 	all_paras.area_thres = 6;
-	all_paras.detect_thres = gal_noise_sig*2;
+	all_paras.detect_thres = gal_noise_sig*1.5;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
-	all_paras.max_distance = 8; /* because the max half light radius of the galsim source is 5.5 pixels */
+	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */
 	
 	shear_id = myid - myid / shear_pairs*shear_pairs;
 	chip_id = myid / shear_pairs*chip_num;
@@ -79,7 +79,7 @@ int main(int argc, char*argv[])
 	}
 
 	char data_path[100],chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64_bright/");
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/");
 
 	sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
 	sprintf(set_name, "/data");
@@ -92,9 +92,9 @@ int main(int argc, char*argv[])
 
 	sprintf(log_path, "%slogs/m2_%d_log.dat", data_path, myid);
 
-	//sprintf(chip_path, "%spsf.fits", data_path);
-	//read_img(psf, chip_path);
-	create_psf(psf, psf_scale, size, 2);
+	sprintf(chip_path, "%spsf.fits", data_path);
+	read_img(psf, chip_path);
+//	create_psf(psf, psf_scale, size, 2);
 
 	pow_spec(psf, ppsf, size, size);
 	get_radius(ppsf, &all_paras, thres, 1, psf_noise_sig);
@@ -187,7 +187,7 @@ int main(int argc, char*argv[])
 		write_h5(h5_path, set_name, data_rows, shear_esti_data_cols, data[0], NULL);
 	}
 
-	sprintf(snr_h5_path, "%sresult/data/data_2sig/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
+	sprintf(snr_h5_path, "%sresult/data/data_1.5sig/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
 	write_h5(snr_h5_path, set_name, data_rows, snr_para_data_cols, data_snr[0], NULL);
 
 	te = clock();
