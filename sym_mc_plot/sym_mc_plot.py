@@ -46,10 +46,7 @@ for i in range(file_num):
 
     fq_snr_h5path = result_path + "data/data_%s/data_%d_%d.hdf5" % (sig, rank, i)
     fq_snr_file = h5py.File(fq_snr_h5path, "r")
-    if sig == "1.5sig":
-        set_name = "/mag"
-    else:
-        set_name = "/data"
+    set_name = list(fq_snr_file.keys())[0]
     fq_snr_temp = fq_snr_file[set_name].value
     if i == 0:
         fq_snr_data = fq_snr_temp.copy()
@@ -121,30 +118,30 @@ sex_snr_sort = numpy.sort(sex_snr[sex_idx])
 sex_snr_step = int(len(sex_snr_sort)/cuts_num)
 sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
 
-sex_area = sex_data[:, 1]
-sex_area_sort = numpy.sort(sex_area[sex_idx])
-sex_area_step = int(len(sex_area_sort)/cuts_num)
-sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
-
-mag_iso = sex_data[:, 2]
+mag_iso = sex_data[:, 1]
 mag_iso_sort = numpy.sort(-mag_iso[sex_idx])
 mag_iso_step = int(len(mag_iso_sort)/cuts_num)
 mag_iso_cut = [mag_iso_sort[i*mag_iso_step] for i in range(cuts_num)]
 
-mag_auto = sex_data[:, 3]
+mag_auto = sex_data[:, 2]
 mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
 mag_auto_step = int(len(mag_auto_sort)/cuts_num)
 mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
 
-mag_petro = sex_data[:, 4]
+mag_petro = sex_data[:, 3]
 mag_petro_sort = numpy.sort(-mag_petro[sex_idx])
 mag_petro_step = int(len(mag_petro_sort)/cuts_num)
 mag_petro_cut = [mag_petro_sort[i*mag_petro_step] for i in range(cuts_num)]
 
-mag_win = sex_data[:, 5]
+mag_win = sex_data[:, 4]
 mag_win_sort = numpy.sort(-mag_win[sex_idx])
 mag_win_step = int(len(mag_win_sort)/cuts_num)
 mag_win_cut = [mag_win_sort[i*mag_win_step] for i in range(cuts_num)]
+
+sex_area = sex_data[:, 5]
+sex_area_sort = numpy.sort(sex_area[sex_idx])
+sex_area_step = int(len(sex_area_sort)/cuts_num)
+sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
 
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),

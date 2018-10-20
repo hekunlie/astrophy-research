@@ -66,11 +66,21 @@ if cmd == "add" and rank < 14:
 
 if cmd == "check" and rank < 14:
     # check
-    check_path = total_path + "data/result/check/%s/"%sex_filter
-    if os.path.exists(check_path):
-        os.rmdir(check_path)
+    check_path = total_path + "result/data/check/%s/"%sex_filter
+    if rank == 0:
+        if not os.path.exists(check_path):
+            # os.removedirs(check_path)
+            os.makedirs(check_path)
+        cmd = "done"
     else:
-        os.makedirs(check_path)
+        cmd = None
+    # it has been found that the program will be hung on until the bcast() has been done
+    # even if the 'cmd = "done"' is putted before the 'if ...'
+    # and all the threads will synchronized before the communion, the thread that runs faster will be hung on
+    # so a judge of the 'cmd' is not need
+    cmd = comm.bcast(cmd, root=0)
+    # if cmd == "done":
+    #     print("DONE", rank)
 
     input_para_path = para_path + "para_%d.hdf5"%rank
     para_h5 = h5py.File(input_para_path, "r")
@@ -84,28 +94,29 @@ if cmd == "check" and rank < 14:
     sex_mag = snr_data[:, 2]
     sex_area = snr_data[:, 5]
     idx = sex_mag > 0
-
-    plt.figure(figsize=(21, 21))
-    plt.subplot(331)
-    plt.scatter(sex_snr[idx], input_mag[idx], s=1)
+    ms = 0.2
+    plt.figure(figsize=(35, 14))
+    plt.subplot(2,5,1)
+    plt.scatter(sex_snr[idx], input_mag[idx], s=ms)
     plt.xlabel("SNR")
     plt.ylabel("INPUT MAG")
-    plt.subplot(332)
-    plt.scatter(sex_mag[idx], input_mag[idx], s=1)
+    plt.title("%d detected"%len(sex_snr[idx]))
+    plt.subplot(2,5,2)
+    plt.scatter(sex_mag[idx], input_mag[idx], s=ms)
     plt.xlabel("MAG_AUTO")
     plt.ylabel("INPUT MAG")
-    plt.subplot(333)
-    plt.scatter(sex_area[idx], input_mag[idx], s=1)
+    plt.subplot(2,5,3)
+    plt.scatter(sex_area[idx], input_mag[idx], s=ms)
     plt.xlabel("SEX_AREA")
     plt.ylabel("INPUT MAG")
-    plt.subplot(334)
+    plt.subplot(2,5,6)
     idx_s = sex_snr < 200
     plt.hist(sex_snr[idx&idx_s], 100)
     plt.xlabel("SEX_SNR")
-    plt.subplot(335)
+    plt.subplot(2,5,7)
     plt.hist(sex_mag[idx], 100)
     plt.xlabel("MAG_AUTO")
-    plt.subplot(336)
+    plt.subplot(2,5,8)
     plt.hist(input_mag, 100)
     plt.xlabel("INPUT MAG")
 
@@ -114,22 +125,34 @@ if cmd == "check" and rank < 14:
     meas_para_path = total_path + "result/data/data_%ssig/data_%d_0.hdf5" % (sig_level, rank)
     if os.path.exists(meas_para_path):
         meas_para = h5py.File(meas_para_path, "r")
-        fsnr = meas_para["/data"].value[:, 3]
-        print(fsnr.shape, input_mag.shape)
+        set_name = list(meas_para.keys())[0]
+        fsnr = meas_para[set_name].value[:, 3]
         meas_para.close()
-        plt.subplot(337)
-        plt.scatter(fsnr, input_mag, s=1)
-        plt.xlabel("F-SNR (1.5$/sigma$)")
+        plt.subplot(2,5,4)
+        plt.scatter(fsnr, input_mag, s=ms)
+        plt.xlabel("F-SNR (1.5$\sigma$)")
         plt.ylabel("INPUT MAG")
-        plt.hist(fsnr, 100)
-        plt.xlabel("F-SNR (%s$/sigma$)"%sig_level)
-        plt.subplot(339)
-        plt.scatter(sex_snr, fsnr, s=1)
-        plt.xlabel("F-SNR (%s$/sigma$)"%sig_level)
-        plt.ylabel("SEX_SNR (%s$/sigma$)"%sig_level)
+        plt.subplot(2,5,9)
+        plt.hist(fsnr[fsnr<50], 100)
+        plt.xlabel("F-SNR (%s$\sigma$)"%sig_level)
+        idx_f = fsnr > 0
+        plt.title("%d detected" %len(fsnr[idx_f]))
+        plt.subplot(2,5,5)
+        plt.scatter(sex_snr, fsnr, s=ms)
+        plt.xlabel("SEX-SNR (%s$\sigma$)"%sig_level)
+        plt.ylabel("F-SNR (%s$\sigma$)"%sig_level)
+        plt.subplot(2,5,10)
+        idx_s = sex_snr < 50
+        plt.scatter(sex_snr[idx_s], fsnr[idx_s], s=ms)
+        plt.xlabel("SEX-SNR (%s$\sigma$)"%sig_level)
+        plt.ylabel("F-SNR (%s$\sigma$)"%sig_level)
     pic_nm = check_path + "check_%d.png"%rank
+    if os.path.exists(pic_nm):
+        os.remove(pic_nm)
     plt.savefig(pic_nm)
     plt.close()
+
+    print(cmd, rank)
 t2 = time.time()
 if rank == 0:
     log = "operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
