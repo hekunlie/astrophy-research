@@ -258,6 +258,7 @@ else:
     ax2.set_ylabel("c")
 
     namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
+    plt.suptitle(cut)
     plt.savefig(namep)
     plt.close()
 
