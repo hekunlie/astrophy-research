@@ -110,11 +110,34 @@ def find_binary(image, ysize, xsize, sig):
     return objects, peaks, image_c, mask_0
 
 
-def source_detector(mask, ysize, xsize):
-    # get the source object
+def source_detector(img_arr, area_thresh, noise_level, cross=True):
+    """
+    to find the sources in the 2-D image
+    :param img_arr: the 2-D numpy array, image
+    :param area_thresh: the threshold for a source detection
+    :param noise_level: the threshold of source value above which the pixel will be regarded as source
+    :param cross: If True, the algorithm will check the nearest 4 pixels of the pixels of source
+                  if False, the algorithm will check the nearest 8 pixels around the pixels of source
+    :return: list of source coordinates [[..., (y_i, x_i),..], ..., [...]], each sublist contains tuples of the
+            x- and y- coordinates
+    """
+    ysize, xsize = img_arr.shape
+    mask = img_arr.copy()
+    idx = mask < noise_level
+    mask[idx] = 0
     objects = []
     p = numpy.where(mask > 0)
     yp, xp = p[0], p[1]
+
+    # the relative coordinates of the nearest pixels
+    if cross:
+        # "+"
+        relative_y, relative_x = [-1, 1, 0, 0], [0, 0, -1, 1]
+        check_num = 4
+    else:
+        # "+" & "x"
+        relative_y, relative_x = [-1, -1, -1, 0, 0, 1, 1, 1], [-1, 0, 1, -1, 1, -1, 0, 1]
+        check_num = 8
     for j in range(len(xp)):
         if mask[yp[j], xp[j]] > 0:
             cache = [(yp[j], xp[j])]
@@ -129,13 +152,15 @@ def source_detector(mask, ysize, xsize):
                 p_new = []
                 for k in range(num_new, 0):
                     xy = cache[k]
-                    for coord in ((xy[0] + 1, xy[1]), (xy[0] - 1, xy[1]), (xy[0], xy[1] - 1), (xy[0], xy[1] + 1)):
-                        if -1 < coord[0] < ysize and -1 < coord[1] < xsize and mask[coord[0], coord[1]] > 0:
-                            p_new.append(coord)
-                            mask[coord[0], coord[1]] = 0
+                    #for coord in ((xy[0] + 1, xy[1]), (xy[0] - 1, xy[1]), (xy[0], xy[1] - 1), (xy[0], xy[1] + 1)):
+                    for i in range(check_num):
+                        coord_y, coord_x = xy[0] + relative_y[i], xy[1] + relative_x[i]
+                        if -1 < coord_y < ysize and -1 < coord_x < xsize and mask[coord_y, coord_x] > 0:
+                            p_new.append((coord_y, coord_x))
+                            mask[coord_y, coord_x] = 0
                 cache.extend(p_new)
                 num = len(cache)
-            if num > 5:
+            if num >= area_thresh:
                 objects.append(cache)
     return objects
 

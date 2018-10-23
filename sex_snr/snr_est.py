@@ -110,7 +110,6 @@ if cmd == "check" and rank < 14:
     plt.xlabel("INPUT MAG")
 
     sig_level = sex_filter.split("_")[-1]
-
     meas_para_path = total_path + "result/data/data_%ssig/data_%d_0.hdf5" % (sig_level, rank)
     if os.path.exists(meas_para_path):
         meas_para = h5py.File(meas_para_path, "r")
