@@ -37,7 +37,7 @@ total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
 psf_path = total_path + "psf.fits"
 size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","size","1"]])[0])
 
-chip_labels = tool_box.allot(list(range(0, total_chip_num)), cpus)[rank]
+chip_labels = tool_box.allot([i for i in range(total_chip_num)], cpus)[rank]
 chip_num = len(chip_labels)
 
 fq = Fourier_Quad(size, 123)
@@ -49,8 +49,8 @@ tool_box.write_log(log_name, log_informs)
 ts = time.time()
 for i in range(shear_num):
     R_factor = numpy.zeros((chip_num*gal_num, 1))
-    for j in range(chip_num):
-        log_informs = "%d / gal_chip_%04d.fits start"%(i, j)
+    for j in chip_labels:
+        log_informs = "%02d/gal_chip_%04d.fits start"%(i, j)
         tool_box.write_log(log_name, log_informs)
         t1 = time.time()
         chip_path = total_path + "%d/gal_chip_%04d.fits"%(i, j)
@@ -58,9 +58,9 @@ for i in range(shear_num):
         gals = fq.segment(chip_img)
         for k in range(len(gals)):
             gal_img = galsim.Image(gals[k])
-            result = galsim.hsm.EstimateShear(gal_img, psf_img, strict=False).resolution_factor
+            R_factor[j*chip_num + k] = galsim.hsm.EstimateShear(gal_img, psf_img, strict=False).resolution_factor
         t2 = time.time()
-        log_informs = "%d / gal_chip_%04d.fits finish in %.2f"%(i, j, t2 - t1)
+        log_informs = "%02d/gal_chip_%04d.fits finish in %.2f"%(i, j, t2 - t1)
         tool_box.write_log(log_name, log_informs)
     if rank == 0:
         Recv_buffer = numpy.empty((total_chip_num*gal_num, 1), dtype=numpy.float64)
