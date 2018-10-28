@@ -583,6 +583,48 @@ def ellip_mock(num, seed=123400, figout=None):
 ################################################################
 # the methods for data analysis
 ################################################################
+def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_nx, block_boundy, block_boundx):
+    """
+    the coordinate origin of the points should be set to the upper left corner of the big block.
+    |(0,0),..., (0,x) ...|
+    |....................|
+    |(y,0),..............|
+    for the correlation calculation
+    find the target blocks with a distance which is between two given radius for the specific point
+    :param scale: the side length of the square blocks
+    :param radius_s, radius_e: the lower bound of radius, the upper bound of radius
+    :param ny, nx: the block tag of the point
+    :param pts_y, pts_x: y, x of the point
+    :param block_ny, block_nx: number of the blocks along y-axis and x-axis for saving time
+    :param block_boundy, block_boundx: (n, 4) numpy array, each row contains the y-coordinates (x-coordinates)
+                        of the four point of each block
+                        |y1, y2|    |x1, x2|
+                        |y4, y3|,   |x4, x3|, actually, y1 = y2, y4 = y3, x1 = x4, x2 = x3
+    :return: list of the target blocks
+    """
+    rs, re = radius_s ** 2, radius_e ** 2
+    nx_left = int((radius_e - pts_x) / scale + nx) + 1
+    nx_right = int((radius_e + pts_x) / scale - nx)
+    ny_up = int((radius_e + pts_y) / scale - ny)
+    nx_s, nx_e = max(nx - nx_left, 0), min(nx + nx_right + 1, block_nx)
+    ny_e = min(ny + ny_up + 1, block_ny)
+
+    needs = [iy * block_nx + ix for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
+    nxy = [(iy, ix) for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
+    dr_n = (block_boundy[needs] - pts_y) ** 2 + (block_boundx[needs] - pts_x) ** 2
+    dr_n.sort()
+
+    blocks_found = []
+    for tag, xy in enumerate(nxy):
+        iy, ix = nxy[tag]
+        if dr_n[tag][3] < rs or (dr_n[tag][0] > re and iy != ny and ix != nx):
+            continue
+        else:
+            if iy > ny or (iy == ny and ix >= nx):
+                blocks_found.append((iy, ix))
+    return blocks_found
+
+
 def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
     # "x_data' is the 'x'
     # 'y_data' is an (3,n) array "[[y's],[dy's],[num's]]
