@@ -348,9 +348,10 @@ def fit_2d(x, y, fun_val, order):
     return res, pows
 
 
-def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=False):
+def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True):
     r"""
     fit the background noise with n-order polynomial
+    !!! sort=True is highly recommanded either for the background fitting or noise fitting
     :param image: the image
     :param pix_num: the number of pixel for fitting
     :param function: "flat" for fitting background noise value in the plane,
@@ -384,7 +385,7 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Fa
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
+                bottom, upper = fz_s[int(pix_num*0.1)], fz_s[int(pix_num*0.9)]
                 idx_1 = fz >= bottom
                 idx_2 = fz <= upper
                 if function == "flat":
@@ -904,13 +905,13 @@ def file_name(path):
         i += 1
     return path
 
-def write_log(log_path, content, mode="a"):
+def get_logger(log_path, mode="a"):
     """
-    write log
+    call it before any loops!!!
+    return the logger object for write logs, such as logger.info()
     :param log_path: absolute path to log file
-    :param content: to write into the log file
     :param mode: "w": truncate the file and write, "a": append new messages
-    :return: no return
+    :return: the logger object
     """
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -918,7 +919,19 @@ def write_log(log_path, content, mode="a"):
     form = logging.Formatter('%(asctime)s - %(message)s')
     lf.setFormatter(form)
     logger.addHandler(lf)
-    logging.info(content)
+    return logger
+
+def write_log(log_path, content, mode="a"):
+    """
+    write log
+    :param log_path: absolute path to log file
+    :param content: to write into the log file
+    :param way: write with logger or directly
+    :param mode: "w": truncate the file and write, "a": append new messages
+    :return: no return
+    """
+    with open(log_path, mode) as f:
+        f.write(content)
 
 
 def config(path, cmd, contents, write=False):

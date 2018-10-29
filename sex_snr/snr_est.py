@@ -26,6 +26,7 @@ cmd, source, sex_filter, max_distance = argv[1], argv[2], argv[3], float(argv[4]
 
 ini_path = "%s/work/envs/envs.dat"%my_home
 log_name = "./m2_log.dat"
+logger = tool_box.get_logger(log_name)
 total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
                                                    [['selection_bias', "%s_path"%source, '1'],
                                                     ['selection_bias', "%s_path_para"%source, '1']])
@@ -156,7 +157,7 @@ t2 = time.time()
 if rank == 0:
     log = "operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
           %(argv[1], total_path.split("/")[-2], max_distance, size, sex_filter, t2-t1, argv[0])
-    tool_box.write_log(log_name, log)
+    logger.info(log)
 
 
 

@@ -14,11 +14,11 @@ from mpi4py import MPI
 import h5py
 import time
 
+loops, source = int(argv[1]), argv[2]
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
-
-loops, source = int(argv[1]), argv[2]
 
 envs_path = "%s/work/envs/envs.dat"%my_home
 para_path = tool_box.config(envs_path,["get"],[["selection_bias","%s_path_para"%source,"0"]])[0]
@@ -36,17 +36,19 @@ if rank == 0:
     print(num, size, mag_s, mag_e, radius_s, radius_e)
 
 prop = lsstetc.ETC(band='r', pixel_scale=0.2, stamp_size=size, nvisits=180)
-path = para_path+'para_%d.hdf5'%rank
-f = h5py.File(path,"w")
+h5_path = para_path+'para_%d.hdf5'%rank
+para_logs_path = para_path + "logs/logs_%d.dat"%rank
+log_inform = "RANK: %d, LOOP: %d, TOTAL NUM: %d, NUM in LOOP: %d, " \
+             "SIZEL %d, MAG: %d ~ %d, RADIUS: %.2f ~ %.2f\n"%(rank, loops, num, num_i, size, mag_s, mag_e, radius_s, radius_e)
 
-# def ran(start, end, num):
-#     return numpy.random.uniform(start, end, num)
-#
-#
+tool_box.write_log(log_path=para_logs_path, content=log_inform, way='direct')
+f = h5py.File(h5_path,"w")
+
+
 # g1 = numpy.append(numpy.append(ran(-0.02, 0, 4), ran(0, 0.021, 3)),numpy.append(ran(-0.02, 0, 3), ran(0, 0.021, 4)))
 # g2 = numpy.append(numpy.append(ran(-0.02, 0, 3), ran(0, 0.021, 4)),numpy.append(ran(0, 0.021, 3), ran(-0.02, 0, 4)))
-# # numpy.random.shuffle(g1)
-# # numpy.random.shuffle(g2)
+# numpy.random.shuffle(g1)
+# numpy.random.shuffle(g2)
 # plt.subplot(131)
 # plt.scatter(g1,g2)
 # plt.subplot(132)
@@ -59,57 +61,62 @@ f = h5py.File(path,"w")
 
 
 # ellipticity
-e1, e2, e, es = [], [], [], []
+e1, e2, e, es = numpy.zeros((num, 1)),numpy.zeros((num, 1)),numpy.zeros((num, 1)),numpy.zeros((num, 1))
 for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 1256542344, 1)[0])
-    time.sleep(rank*0.1+0.5)
-    e1_i, e2_i, e_i, es_i = tool_box.ellip_mock(num_i, seed)
-    e1.extend(e1_i.tolist())
-    e2.extend(e2_i.tolist())
-    e.extend(e_i.tolist())
-    es.extend(es_i.tolist())
+    seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
 
-e1 = numpy.array(e1)
-e2 = numpy.array(e2)
-e = numpy.array(e)
-es = numpy.array(es)
+    time.sleep(rank*0.05)
+    e1_i, e2_i, e_i, es_i = tool_box.ellip_mock(num_i, seed)
+    e1[i*num_i: (i+1)*num_i, 0] = e1_i
+    e2[i*num_i: (i+1)*num_i, 0] = e2_i
+    e[i*num_i: (i+1)*num_i, 0] = e_i
+    es[i*num_i: (i+1)*num_i, 0] = es_i
+
+    log_inform = "ELLIP loop: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
+                 "max(e1): %.4f, max(e2): %.4f\n"\
+                 %(i, seed, e1_i.mean(), e1_i.std(), e2_i.mean(), e2_i.std(), e1_i.max(), e2_i.max())
+    tool_box.write_log(log_path=para_logs_path, content=log_inform, way="direct")
+
 print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max: %.5f, %.5f"
-      %(rank, numpy.mean(e1)[0], numpy.std(e1)[0], numpy.mean(e2)[0], numpy.std(e2)[0], numpy.max(e1), numpy.max(e2)))
+      %(rank, numpy.mean(e1), numpy.std(e1), numpy.mean(e2), numpy.std(e2), numpy.max(e1), numpy.max(e2)))
 f["/e1"] = e1
 f["/e2"] = e2
 f["/e"] = e
 f["/es"] = es
 
 # magnitude & flux
-flux = []
-mag = []
+flux, mag = numpy.zeros((num, 1)),numpy.zeros((num, 1))
 for i in range(loops):
-    time.sleep(rank * 0.1 + 0.5)
+    time.sleep(rank * 0.05)
     mag_i = tool_box.mags_mock(num_i, mag_s, mag_e)
-    mag.extend(mag_i.tolist())
-    flux_i = prop.flux(mag_i).tolist()
-    flux.extend(flux_i)
-flux = numpy.array(flux)
-mag = numpy.array(mag)
+    flux_i = prop.flux(mag_i)
+    mag[i*num_i: (i+1)*num_i, 0] = mag_i
+    flux[i*num_i: (i+1)*num_i, 0] = flux_i
+
+    log_inform = "MAGNITUDE loop: %d, min(mag): %.2f, max(mag): %.2f\n"%(i, mag_i.min(), mag_i.max())
+    tool_box.write_log(para_logs_path, log_inform, "direct")
+
 f["/flux"] = flux
 f["/mag"] = mag
 
 # galactic radius
-radius = []
+radius = numpy.zeros((num, 1))
 for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 1256542344, 1)[0])
-    time.sleep(rank*0.1+0.5)
+    seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
+    time.sleep(rank*0.05)
     rng = numpy.random.RandomState(seed=seed)
     radius_i = rng.uniform(radius_s, radius_e, num_i)
-    radius.extend(radius_i.tolist())
-radius = numpy.array(radius)
+    radius[i*num_i: (i+1)*num_i, 0] = radius_i
+
+    log_inform = "RADIUS loop: %d, min: %.2f, max: %.2f\n"%(i, radius_i.min(), radius_i.max())
+    tool_box.write_log(para_logs_path, log_inform, "direct")
 f["/radius"] = radius
 
 # B/T ratio
-btr = []
+btr = numpy.zeros((num, 1))
 for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 1256542344, 1)[0])
-    time.sleep(rank*0.1+0.5)
+    seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
+    time.sleep(rank*0.05)
     rng = numpy.random.RandomState(seed=seed)
     btr_i = rng.normal(0, 0.1, 2*num_i)
     btr_i.shape = (len(btr_i), 1)
@@ -131,7 +138,12 @@ for i in range(loops):
             c_i = numpy.row_stack((c_i, plus))
     else:
         f_btr_i = c_i
-    btr.extend(f_btr_i.tolist())
+    f_btr_i.shape = (num_i, 1)
+    btr[i*num_i: (i+1)*num_i] = f_btr_i
+
+    log_inform = "B/T loop: %d, seed: %d, min: %.2f, max: %.2f\n"%(i, seed, f_btr_i.min(), f_btr_i.max())
+    tool_box.write_log(para_logs_path, log_inform, "direct")
+
 f["/btr"] = btr
 f.close()
 

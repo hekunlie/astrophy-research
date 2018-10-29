@@ -18,7 +18,7 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 ts = time.clock()
-source = "dimmer"
+source = "dimmerm3"
 envs_path = "%s/work/envs/envs.dat"%my_home
 get_contents = [['selection_bias', "%s_path"%source, '1'],['selection_bias', "%s_path_result"%source, '1'],
                 ['selection_bias', "%s_path_para"%source, '1'],['selection_bias', "%s_path_log"%source, '1']]
@@ -44,7 +44,7 @@ stamp_size = 90
 pixel_scale = 0.2
 shear_num = 14
 chips_num = int(500/int(cpus/shear_num))
-seed = rank*344 + 121
+seed = rank*344 + 1212
 chip_s_id, shear_id = divmod(rank, shear_num)
 
 fq = Fourier_Quad(stamp_size, seed)
@@ -69,7 +69,8 @@ noise_sig = prop.sigma_sky
 psf = galsim.Moffat(beta=3.5, scale_radius=0.8, flux=1.0, trunc=3)
 psf_img = galsim.ImageD(stamp_size, stamp_size)
 psf.drawImage(image=psf_img, scale=pixel_scale)
-
+hdu = fits.PrimaryHDU(psf_img.array)
+hdu.writeto(total_path+"psf.fits",overwrite=True)
 #psf = psf_o.shear(e1=0.081, e2=-0.066)
 
 if rank == 0:
@@ -113,7 +114,7 @@ for i in range(chips_num):
         t += 1
 
     big_chip = fq.stack(gal_pool, 100)
-    big_chip = numpy.float32(big_chip)
+    # big_chip = numpy.float32(big_chip)
     hdu = fits.PrimaryHDU(big_chip)
     hdu.writeto(chip_path, overwrite=True)
     t2 = time.clock()
