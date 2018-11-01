@@ -18,7 +18,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cut, file_num, filter_name, source, sig = argv[1], int(argv[2]), argv[3], argv[4], argv[5]
+cut, file_num, filter_name, source, sig, r_thresh = argv[1], int(argv[2]), argv[3], argv[4], argv[5], float(argv[6])
 
 t1 = time.clock()
 
@@ -34,6 +34,8 @@ shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
+rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
+
 for i in range(file_num):
     shear_esti_h5path = result_path + "data/data_%d_%d.hdf5"%(rank, i)
     shear_esti_file = h5py.File(shear_esti_h5path, "r")
@@ -143,6 +145,10 @@ sex_area_sort = numpy.sort(sex_area[sex_idx])
 sex_area_step = int(len(sex_area_sort)/cuts_num)
 sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
 
+# Resolution factor
+rfactor = numpy.load(rfactor_path)["arr_0"][:,0] # [:,0] to avoid memory error
+idx_rf = rfactor >= r_thresh
+
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),
           "flux_alt": (flux_alt, flux_alt_cut),
@@ -159,12 +165,12 @@ detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area":
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] >= cut_s
-    num = len(MG1[detected_label[cut]&idx])
+    num = len(MG1[detected_label[cut]&idx&idx_rf])
 
-    nm1 = MG1[detected_label[cut]&idx]
-    de1 = DE1[detected_label[cut]&idx]
-    nm2 = MG2[detected_label[cut]&idx]
-    de2 = DE2[detected_label[cut]&idx]
+    nm1 = MG1[detected_label[cut]&idx&idx_rf]
+    de1 = DE1[detected_label[cut]&idx&idx_rf]
+    nm2 = MG2[detected_label[cut]&idx&idx_rf]
+    de2 = DE2[detected_label[cut]&idx&idx_rf]
 
     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
@@ -264,7 +270,8 @@ else:
 
 t2 = time.clock()
 if rank == 0:
-    log = "%s, %s, %s, %.2f, %s"%(total_path.split("/")[-2], filter_name, cut, t2-t1, argv[0])
-    tool_box.write_log("./cutoff.dat", log)
+    log = "%s, %s, %s, %.2f, %s, %.2f"%(total_path.split("/")[-2], filter_name, cut, t2-t1, argv[0], r_thresh)
+    logger = tool_box.get_logger("./cutoff.dat")
+    logger.info(log)
 
 

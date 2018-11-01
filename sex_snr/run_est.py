@@ -30,7 +30,7 @@ for source in sources:
         a.wait()
 
         # check
-        cmd = "mpirun -np 14 python snr_est.py check %s %s %.1f"%(source, filter_name, max_radius)
-        a = Popen(cmd, shell=True)
-        a.wait()
+        # cmd = "mpirun -np 14 python snr_est.py check %s %s %.1f"%(source, filter_name, max_radius)
+        # a = Popen(cmd, shell=True)
+        # a.wait()
 

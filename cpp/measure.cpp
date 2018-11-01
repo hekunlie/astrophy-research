@@ -38,7 +38,7 @@ int main(int argc, char*argv[])
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
 	all_paras.area_thres = 6;
-	all_paras.detect_thres = gal_noise_sig*2;
+	all_paras.detect_thres = gal_noise_sig*1.5;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */
@@ -187,7 +187,7 @@ int main(int argc, char*argv[])
 		write_h5(h5_path, set_name, data_rows, shear_esti_data_cols, data[0], NULL);
 	}
 
-	sprintf(snr_h5_path, "%sresult/data/data_2sig/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
+	sprintf(snr_h5_path, "%sresult/data/data_1.5sig/data_%d_%d.hdf5", data_path, shear_id, myid / shear_pairs);
 	write_h5(snr_h5_path, set_name, data_rows, snr_para_data_cols, data_snr[0], NULL);
 
 	te = clock();

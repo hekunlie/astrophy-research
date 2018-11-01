@@ -10,7 +10,7 @@ import os
 import scipy
 import configparser
 import logging
-
+import time
 
 ################################################################
 # the detection methods
@@ -905,18 +905,22 @@ def file_name(path):
         i += 1
     return path
 
-def get_logger(log_path, mode="a"):
+
+def get_logger(log_path, log_name="RECORD", mode="a"):
     """
-    call it before any loops!!!
-    return the logger object for write logs, such as logger.info()
+    Call it before any loops!!!
+    If more than one log files will be created,
+    then different log_name should be provided for each log file!!!
+    return the logger object for write logs, then call logger.info("...")
+
     :param log_path: absolute path to log file
     :param mode: "w": truncate the file and write, "a": append new messages
     :return: the logger object
     """
-    logger = logging.getLogger()
+    logger = logging.getLogger(log_name)
     logger.setLevel(logging.INFO)
     lf = logging.FileHandler(log_path, mode)
-    form = logging.Formatter('%(asctime)s - %(message)s')
+    form = logging.Formatter('%(asctime)s -- %(message)s')
     lf.setFormatter(form)
     logger.addHandler(lf)
     return logger
@@ -930,6 +934,9 @@ def write_log(log_path, content, mode="a"):
     :param mode: "w": truncate the file and write, "a": append new messages
     :return: no return
     """
+    content = time.strftime("%Y-%m-%d %H:%M:%S -- ") + content
+    if content[-1] != "\n":
+        content += "\n"
     with open(log_path, mode) as f:
         f.write(content)
 
