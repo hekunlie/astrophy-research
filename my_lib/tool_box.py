@@ -518,16 +518,19 @@ def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3):
     return numpy.sqrt(zpt * 10**(-0.4*(sky_bright-24))*exp_time)*pix_scale
 
 
-def CFHT_flux(mag, zpt=26.22, exp_time=600):
+def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
     """
-    calculate the flux relates to the magnitude,
-    flux = 10**(-0.4*(mag - zeropoint))*exposure time
+    calculate the flux (ADU) relates to the magnitude,
+    the default values are for CFHTLenS,
+    flux = 10**(-0.4*(mag - zeropoint))*exposure time*effective area
     :param mag: numpy array or float
-    :param zpt: zero point, default for CFHTLenS
-    :param exp_time: exposure time, second, default for CFHTLenS
-    :return: numpy array or float, depends on the type of the input
+    :param zpt: zero point, default for CFHTLenS, 25.77 from the observational images
+    :param exp_time: exposure time, second, default for CFHTLenS, ~ 600 sec from the observational images
+    :param area: effective area of the camera, m^2, default for CFHTLenS, 8.0216 m^2
+    :param gain: default for the CFHTLenS, ~1.5 from the observational images
+    :return: numpy array or float, depends on the type of the input, the total ADU number of a galaxy
     """
-    return zpt*10**(-0.4*(mag - zpt))*exp_time
+    return 10**(-0.4*(mag - zpt))*exp_time*area/gain
 
 
 def mags_mock(num, mag_min, mag_max):
