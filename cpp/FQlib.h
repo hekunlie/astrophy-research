@@ -129,11 +129,15 @@ int source_detector(double *source_img, int *soucrce_x, int*source_y, double *so
 	source_paras: the array to store the parameters of sources detected,
 						   8 elemets for each source, [....,area, peak_y, peak_x, peak_val, half_light_area, total_flux, half_light_flux, flux_sq,...]
 	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
-							False for detecion on the nearest eight pixels, "x" and "+"  */
+							False for detecion on the nearest eight pixels, "x" and "+"  
+	return : int, the total number of detection */
+
 
 int galaxy_finder(double *stamp_arr, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
-	the biggest source which peaks in the central circle with a radius of 6 pixels.	*/
+	the biggest source which peaks in the central circle with a radius of 6 pixels.	
+	return: int, "-1" means no detection
+	*/
 
 void addnoise(double *image, int pixel_num, double sigma); 
 /* add Gaussian noise to an array */

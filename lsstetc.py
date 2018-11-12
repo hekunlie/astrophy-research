@@ -76,6 +76,7 @@ class ETC(object):
     #     return img
 
     def flux(self, mag):
+        # effective zero point 37.699
         return self.s0 * 10**(-0.4*(mag - 24.0)) * self.exptime
 
 #     def SNR(self, profile, mag):

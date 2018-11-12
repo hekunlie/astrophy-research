@@ -503,6 +503,37 @@ def rand_gauss2n(num, means, cov, xy_range=None):
     data = numpy.array(finals)
     return data
 
+def ran_generator(pdf, num, seed, *args):
+    """
+    generate the n-dimension random according to the given pdf
+    :param pdf: the probability distribution function
+    :param num: size
+    :param seed: initialize the random generator
+    :param args: length = dimensions+2, the lower and upper bound for each dimension
+                !!! and plus the last two values (also the lower and upper bound) for
+                !!! the function values to compare to.
+                !!! the last pair should contain the region of pdf
+    :return: (n,num) numpy array
+    """
+    dims = divmod(len(args), 2)[0] - 1
+    final_vars = [numpy.array([]) for i in range(dims)]
+    rng = numpy.random.RandomState(seed)
+    while True:
+        gap = num - len(final_vars[0])
+        if gap == 0:
+            break
+        vars = [rng.uniform(args[i*2], args[(i*2+1)], int(gap*2)) for i in range(dims+1)]
+        diff = vars[-1] - pdf(vars[:dims])
+        idx = diff <= 0
+        candi_num = len(vars[0][idx])
+        if candi_num <= gap:
+            for i in range(dims):
+                final_vars[i] = numpy.append(final_vars[i], vars[i][idx])
+        else:
+            for i in range(dims):
+                final_vars[i] = numpy.append(final_vars[i], vars[i][idx][:gap])
+    return numpy.array(final_vars)
+
 
 def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3):
     """
@@ -525,10 +556,14 @@ def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
     flux = 10**(-0.4*(mag - zeropoint))*exposure time*effective area
     :param mag: numpy array or float
     :param zpt: zero point, default for CFHTLenS, 25.77 from the observational images
-    :param exp_time: exposure time, second, default for CFHTLenS, ~ 600 sec from the observational images
+    :param exp_time: exposure time, second,
+                    default for CFHTLenS, ~ 600 sec from the observational images
     :param area: effective area of the camera, m^2, default for CFHTLenS, 8.0216 m^2
     :param gain: default for the CFHTLenS, ~1.5 from the observational images
-    :return: numpy array or float, depends on the type of the input, the total ADU number of a galaxy
+    :return: numpy array or float, depends on the type of the input,
+            the total ADU number of a galaxy
+
+    the default effective zero point: 34.5358
     """
     return 10**(-0.4*(mag - zpt))*exp_time*area/gain
 
@@ -542,14 +577,41 @@ def mags_mock(num, mag_min, mag_max):
     :return: 1-D numpy array
     """
     m = numpy.linspace(mag_min, mag_max, 1000000)
-    # the parameters come from the fitting to the cfht i-band catalog
+    # the parameters come from the fitting to the CFHTLenS i-band catalog
     pm = 10**(0.294895*m - 1.082894)
     pm = pm/numpy.sum(pm)
     new_pdf = numpy.random.choice(m, num, p=pm)
     return new_pdf
 
+def disc_e_pdf(ellip):
+    """
+    the pdf for the ran_generator() method
+    to generator the ellipticities of disc-dominated galaxies.
+    P(e) = A*e*(1-exp((e-e_m)/a))/((1+e)*sqrt(e^2+e_0^2))
+    A, e_m, e_0, a = 2.4318, 0.804, 0.0256, 0.2539
+    See Miller et al, 2013, MNRAS
 
-def ellip_mock(num, seed=123400, figout=None):
+    :param ellip: list of variable
+    :return: probability
+    """
+    return 2.4318*ellip[0]*(1-numpy.exp((ellip[0] - 0.804)/0.2539))/((1+ellip[0])*numpy.sqrt(ellip[0]**2+0.0256**2))
+
+def bulge_e_pdf(ellip):
+    """
+    the pdf for the ran_generator() method
+    to generator the ellipticities of bulge-dominated galaxies.
+    P(e) = 27.7478 * e * numpy.exp(-b * e - c * e * e) for e ~ (0, 1)
+    b, c = 2.368, 6.691
+    the factor "27.8366" for e ~ (0, 0.804)
+    See Miller et al, 2013, MNRAS
+
+    :param ellip: list of variable
+    :return: probability
+    """
+    return 27.8366 * ellip[0] * numpy.exp(-2.368 * ellip[0] - 6.691*ellip[0]*ellip[0])
+
+
+def ellip_bulge(num, seed=123400, figout=None):
     """
     Generate random ellipticity for a given number
     following the distribution of the ellipticity
@@ -567,7 +629,7 @@ def ellip_mock(num, seed=123400, figout=None):
     # probability
     pe = lambda e: 27.7478 * e * numpy.exp(-b * e - c * e * e)
 
-    emin, emax = 0.0, 0.6
+    emin, emax = 0.0, 0.803
     pmin, pmax = 0.0, 2.64456
 
     es = numpy.linspace(emin, emax, int((emax - emin) / 0.000001) + 1)
@@ -578,11 +640,11 @@ def ellip_mock(num, seed=123400, figout=None):
     # convert to the definition used in Galsim:
     # e = (a^2 - b^2)/(a^2 + b^2)exp[2i\theta]
     theta = numpy.random.uniform(0, numpy.pi, num)
-    q = (1 - rbe) / (1 + rbe)
-    es = (1 - q ** 2) / (1 + q ** 2)
-    e1 = es * numpy.cos(2 * theta)
-    e2 = es * numpy.sin(2 * theta)
-    return e1, e2, rbe, es
+    # q = (1 - rbe) / (1 + rbe)
+    # es = (1 - q ** 2) / (1 + q ** 2)
+    e1 = rbe * numpy.cos(2 * theta)
+    e2 = rbe * numpy.sin(2 * theta)
+    return e1, e2, rbe#, es
 
 ################################################################
 # the methods for data analysis
@@ -768,10 +830,8 @@ def back_to_block(data, num, cols, size_y, size_x, yi, xi, area_i, distance_thre
     :param data: (m, n) numpy array
     :param num: the total number of the true blocks
     :param cols: the column number of the true blocks
-    :param size_y: size of block
-    :param size_x: size of block
-    :param xi: the column number of x
-    :param yi: the column number of y
+    :param size_y, size_x: size of block
+    :param yi, xi: the column number of y and x
     :param area_i: the column number of area
     :param distance_thresh: the maximum of the peak be away from the center of the image
     :return: (num, data.shape[1]) numpy array
@@ -871,6 +931,12 @@ def ellip_plot(ellip, coordi, lent, width, title, mode=1,path=None,show=True):
 # the general methods
 ################################################################
 def allot(allot_list, fractions):
+    """
+    allot the "target mission list" to CPUs
+    :param allot_list: list of any thing
+    :param fractions: INT, the number of sub-list
+    :return: list of some sub-list
+    """
     num = len(allot_list)
     m, n = divmod(num, fractions)
     pool = []
@@ -911,10 +977,12 @@ def file_name(path):
 
 def get_logger(log_path, log_name="RECORD", mode="a"):
     """
+    It is the same as the method "write_log()"
     Call it before any loops!!!
     If more than one log files will be created,
     then different log_name should be provided for each log file!!!
-    return the logger object for write logs, then call logger.info("...")
+    return the logger object for write logs,
+    !!! then call logger.info("...") anywhere in the program!!!
 
     :param log_path: absolute path to log file
     :param mode: "w": truncate the file and write, "a": append new messages

@@ -61,16 +61,15 @@ f = h5py.File(h5_path,"w")
 
 
 # ellipticity
-e1, e2, e, es = numpy.zeros((num, 1)),numpy.zeros((num, 1)),numpy.zeros((num, 1)),numpy.zeros((num, 1))
+e1, e2, e = numpy.zeros((num, 1)),numpy.zeros((num, 1)),numpy.zeros((num, 1))
 for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
 
     time.sleep(rank*0.05)
-    e1_i, e2_i, e_i, es_i = tool_box.ellip_mock(num_i, seed)
+    e1_i, e2_i, e_i = tool_box.ellip_mock(num_i, seed)
     e1[i*num_i: (i+1)*num_i, 0] = e1_i
     e2[i*num_i: (i+1)*num_i, 0] = e2_i
     e[i*num_i: (i+1)*num_i, 0] = e_i
-    es[i*num_i: (i+1)*num_i, 0] = es_i
 
     log_inform = "ELLIP loop: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
                  "max(e1): %.4f, max(e2): %.4f\n"\
@@ -82,7 +81,7 @@ print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max:
 f["/e1"] = e1
 f["/e2"] = e2
 f["/e"] = e
-f["/es"] = es
+
 
 # magnitude & flux
 flux, mag = numpy.zeros((num, 1)),numpy.zeros((num, 1))
