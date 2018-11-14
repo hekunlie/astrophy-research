@@ -130,7 +130,7 @@ if cmd == "check" and rank < 14:
         meas_para.close()
         plt.subplot(2,5,4)
         plt.scatter(fsnr, input_mag, s=ms)
-        plt.xlabel("F-SNR (1.5$\sigma$)")
+        plt.xlabel("F-SNR (2.0$\sigma$)")
         plt.ylabel("INPUT MAG")
         plt.subplot(2,5,9)
         plt.hist(fsnr[fsnr<50], 100)

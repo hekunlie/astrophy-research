@@ -348,24 +348,23 @@ def fit_2d(x, y, fun_val, order):
     return res, pows
 
 
-def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True):
+def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True, pic_path=None):
     r"""
     fit the background noise with n-order polynomial
-    !!! sort=True is highly recommanded either for the background fitting or noise fitting
+    !!! sort=True is highly recommended for either the background fitting or noise fitting
     :param image: the image
     :param pix_num: the number of pixel for fitting
     :param function: "flat" for fitting background noise value in the plane,
                     "gauss" for fitting the sigma of the noise,
                     "sort=True" is suggested,
                     and the sigma fitting should be called after the background removing
-    :param yblock: number of the block in y-axis
-    :param xblock: number of the block in x-axis
+    :param yblock, xblock : number of the block in y-axis, x-axis
     :param order: the highest order of polynomial
     :param sort: Boolean, True: fitting with the mid-part (0.3~0.7) of the PDF of pixel values
                         False: fitting with all the pixels chosen
     :return: list of coefficients in each block,
-            the sub-lists of the coefficients of each block are arranged like the 1-D numpy array which is reshape from
-            the 2-D numpy array.
+            the sub-lists of the coefficients of each block are arranged like the 1-D numpy
+            array which is reshape from the 2-D numpy array.
             if function=="gauss", the list looks like [.., [[mean,sigma],[amplitude]], [[],[]], ...]
     """
     y, x = image.shape
@@ -385,7 +384,7 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Tr
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(pix_num*0.1)], fz_s[int(pix_num*0.9)]
+                bottom, upper = fz_s[int(pix_num*0.3)], fz_s[int(pix_num*0.7)]
                 idx_1 = fz >= bottom
                 idx_2 = fz <= upper
                 if function == "flat":
@@ -393,16 +392,18 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Tr
                 elif function == "gauss":
                     nums, bins = numpy.histogram(fz[idx_1&idx_2], 100)
                     para = gauss_fit([bins[:-1]], nums)
-                    #
-                    # a,b,c = para[1][0], para[0][0], para[0][1]
-                    # print(para,a,b,c,numpy.sqrt(c))
-                    # plt.hist(fz[idx_1&idx_2], 100)
-                    # px = bins[:-1]#numpy.arange(0,len(nums))
-                    # plt.plot(px, a*numpy.exp(-(px-b)**2/2/c))
-                    # # plt.plot(range(len(nums)), nums)
-                    # plt.show()
+                    if pic_path:
+                        a, b, c = para[1][0], para[0][0], para[0][1]
+                        plt.hist(fz[idx_1&idx_2], 100)
+                        px = bins[:-1]
+                        plt.plot(px, a*numpy.exp(-(px-b)**2/2/c))
+                        plt.title("sig: %.2f, mu: %.3f, A: %.2f"%(numpy.sqrt(c), b, a))
+                        plt.savefig(pic_path)
+                        plt.close()
+                        # plt.plot(range(len(nums)), nums)
+                        # plt.show()
+                        # print(a, b, c, numpy.sqrt(c))
 
-                    # para = gaussnosie_fit(fz[idx_1&idx_2], 100)
                 else:
                     raise ValueError("function must be one of \"flat, gauss\"")
             else:
@@ -414,8 +415,8 @@ def fit_backgroud(image, pix_num, function, yblock=1, xblock=1, order=1, sort=Tr
                 else:
                     raise ValueError("function must be one of \"flat, gauss\"")
             fit_paras.append(para)
-    return fit_paras
 
+    return fit_paras
 
 def data_fit(x_data, y_data, y_err):
     r"""
@@ -535,7 +536,7 @@ def ran_generator(pdf, num, seed, *args):
     return numpy.array(final_vars)
 
 
-def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3):
+def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3): # developing
     """
     the result seems to be wrong, the noise variance from fitting is about 60.
     the default values come from the CFHT MegaPrime/MegaCam telescope
@@ -592,7 +593,7 @@ def disc_e_pdf(ellip):
     See Miller et al, 2013, MNRAS
 
     :param ellip: list of variable
-    :return: probability
+    :return: probability, maximum=2.0207
     """
     return 2.4318*ellip[0]*(1-numpy.exp((ellip[0] - 0.804)/0.2539))/((1+ellip[0])*numpy.sqrt(ellip[0]**2+0.0256**2))
 
@@ -606,10 +607,19 @@ def bulge_e_pdf(ellip):
     See Miller et al, 2013, MNRAS
 
     :param ellip: list of variable
-    :return: probability
+    :return: probability, maximum=2.653
     """
     return 27.8366 * ellip[0] * numpy.exp(-2.368 * ellip[0] - 6.691*ellip[0]*ellip[0])
 
+def bulge_frac(fraction):
+    """
+    normal distribution of Bulge-to-Total fraction for disc-dominated galaxies
+    see Miller et al, 2013, MNRAS
+    :param fraction: bulge-to-total fraction
+    :return: probability, maximum <= 1./numpy.sqrt(2*numpy.pi)/sig ~ 0.4/sig
+    """
+    mean, sig = 0, 0.2
+    return 1./numpy.sqrt(2*numpy.pi)/sig*numpy.exp(-(fraction[0]-mean)**2/2/sig/sig)
 
 def ellip_bulge(num, seed=123400, figout=None):
     """
@@ -857,9 +867,9 @@ def back_to_block(data, num, cols, size_y, size_x, yi, xi, area_i, distance_thre
     return block_arr
 
 
-def field_dict(expo_file):
+def field_dict(file_list_path):
     # to build a dictionary that contains the exposures as {"field": {"exposure":[expo1, expo2..]}....}
-    with open(expo_file, "r") as f:
+    with open(file_list_path, "r") as f:
         contents = f.readlines()
     file_dict = {}
     fields = [] # to avoid the disorder of the field sequence

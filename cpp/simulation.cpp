@@ -33,7 +33,7 @@ int main(int argc, char*argv[])
 		int size =60, num_p = 40, stamp_nx = 100,  psf_type = 2;
 		double psf_scale = 4., max_radius = 8., st, ed, s1, s2;
 		double g1=0., g2=0.;
-		double gal_noise_sig = 380.86, psf_noise_sig = 0., scale = 2.;
+		double gal_noise_sig = 65., psf_noise_sig = 0., scale = 2.;
 		int total_num = total_chip_num * stamp_num;
 
 		chip_num = total_chip_num / (numprocs/shear_pairs);
@@ -61,7 +61,7 @@ int main(int argc, char*argv[])
 		char para_inform[500], data_path[60], shear_path[120], para_path[120], log_path[120], log_inform[120], chip_path[120], buffer[200];
 		char h5_path[120], snr_h5_path[120];
 		char set_name1[20], set_name2[20];
-		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");// the total path of all the data
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64_bright/");// the total path of all the data
 
 		#ifndef PRECISION
 		DATA_TYPE *cp = new DATA_TYPE[stamp_nx*stamp_nx*size*size]();

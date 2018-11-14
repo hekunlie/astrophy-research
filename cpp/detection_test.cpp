@@ -33,7 +33,7 @@ int main(int argc, char*argv[])
 	int size = 60, num_p = 40, stamp_nx = 100, psf_type = 2;
 	double psf_scale = 4., max_radius = 8., st, ed, s1, s2;
 	double g1 = 0., g2 = 0.;
-	double gal_noise_sig = 70., psf_noise_sig = 0., scale = 2.;
+	double gal_noise_sig = 60, psf_noise_sig = 0., scale = 2.;
 	int total_num = total_chip_num * stamp_num;
 
 	chip_num = 1;
