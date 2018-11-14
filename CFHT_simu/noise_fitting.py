@@ -24,13 +24,13 @@ cpus = comm.Get_size()
 log_path = "./log_%d.dat"%rank
 logger = tool_box.get_logger(log_path)
 
-nm_path = "./nname.dat"
+nm_path = "/mw/w1234/original//nname.dat"
 all_expos, all_fields = tool_box.field_dict(nm_path)
 
 fields = tool_box.allot(all_fields, cpus)[rank]
 
-chip_data_path = "/mnt/ddnfs/data_users/hkli/CFHT/w1234/original/"
-result_path = "/mnt/ddnfs/data_users/hkli/CFHT/para_fit/"
+chip_data_path = "/mw/w1234/original/"
+result_path = "/lmc/cfht/para_fit/"
 
 
 my, mx = numpy.mgrid[0:4644, 0:2112]
@@ -57,21 +57,25 @@ if cmd == "fit":
             logger.info("RANK: %d %s -- %s starts..."%(rank, field_name, expo_name))
             # sigma, mean, amplitude, a1, a2 (x), a3 (y)
             noise_data = numpy.zeros((36, 6)) - 1
-            fig = plt.figure()
+
+            pic_path = result_path + '%s/%s.png' % (field_name, expo_name)
+            fig = plt.figure(figsize=(36, 16))
             for i in range(36):
                 ax = fig.add_subplot(4, 9, i+1)
                 chip_path = chip_data_path + "%s/science/%s_%d.fits"%(field_name, expo_name, i+1)
-                pic_path = result_path + '%s/%s/%s_%d.png'%(field_name, expo_name, expo_name, i+1)
-
                 if os.path.exists(chip_data_path):
                     img = fits.open(chip_path)[0].data
-                    back_grd_info = tool_box.fit_background(img, 300000, "flat")[0][0]
+                    back_grd_info = tool_box.fit_background(img, 200000, "flat")[0][0]
                     noise_data[i, 3:6] = back_grd_info.reshape(1, 3)
                     img_zero = img - back_grd_info[0] - back_grd_info[1]*mx - back_grd_info[2]*my
-                    noise_info = tool_box.fit_background(image=img_zero, pix_num=300000, function="gauss", ax=ax)[0]
+                    noise_info = tool_box.fit_background(image=img_zero, pix_num=200000, function="gauss", ax=ax)[0]
                     noise_data[i,0:3] = numpy.sqrt(noise_info[0][1]), noise_info[0][0], noise_info[1][0]
                 else:
                     print("RANK %02d:  CHIP %s_%d.fits does not exist!!"%(rank, expo_name,i))
+            plt.subplots_adjust(wspace=0)
+            plt.savefig(pic_path)
+            plt.close()
+
             if count == 0:
                 final_data = noise_data.copy()
             else:
@@ -94,7 +98,7 @@ if cmd == "fit":
             final_data_list.append(recvs)
 
         h5file = h5py.File(result_path + "sigma.hdf5", "w")
-        for i in range(all_names):
+        for i in range(len(all_names)):
             if i == 0:
                 all_data = final_data_list[i].copy()
             else:
