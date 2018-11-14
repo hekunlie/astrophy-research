@@ -4,7 +4,7 @@ from subprocess import Popen
 file_num = 1
 # sources = ["dimmerm3", "dimmer", "pts", "ptsb"]
 # resolution_factor = [0.7, 0.7, 0.33, 0.33]
-sources = ["dimmerm3"]#, "pts", "ptsb"]
+sources = ["pts"]#, "pts", "ptsb"]
 resolution_factor = [0.7]#, 0.33, 0.33]
 
 cuts = ['sex_snr', 'mag_auto', "flux2"]

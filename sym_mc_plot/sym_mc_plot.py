@@ -34,7 +34,7 @@ shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
-rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
+# rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
 
 for i in range(file_num):
     shear_esti_h5path = result_path + "data/data_%d_%d.hdf5"%(rank, i)
@@ -56,8 +56,8 @@ for i in range(file_num):
         fq_snr_data = numpy.row_stack((fq_snr_data, fq_snr_temp))
     fq_snr_file.close()
 
-fq = Fourier_Quad(90, 152356)
-noise_sig = 380.64
+fq = Fourier_Quad(60, 152356)
+noise_sig = 65
 
 MG1 = shear_esti_data[:, 2]
 MG2 = shear_esti_data[:, 3]
@@ -145,9 +145,9 @@ sex_area_sort = numpy.sort(sex_area[sex_idx])
 sex_area_step = int(len(sex_area_sort)/cuts_num)
 sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
 
-# Resolution factor
-rfactor = numpy.load(rfactor_path)["arr_0"][:,0] # [:,0] to avoid memory error
-idx_rf = rfactor >= r_thresh
+# # Resolution factor
+# rfactor = numpy.load(rfactor_path)["arr_0"][:,0] # [:,0] to avoid memory error
+# idx_rf = rfactor >= r_thresh
 
 select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),
@@ -165,12 +165,12 @@ detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area":
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] >= cut_s
-    num = len(MG1[detected_label[cut]&idx&idx_rf])
+    num = len(MG1[detected_label[cut]&idx])
 
-    nm1 = MG1[detected_label[cut]&idx&idx_rf]
-    de1 = DE1[detected_label[cut]&idx&idx_rf]
-    nm2 = MG2[detected_label[cut]&idx&idx_rf]
-    de2 = DE2[detected_label[cut]&idx&idx_rf]
+    nm1 = MG1[detected_label[cut]&idx]
+    de1 = DE1[detected_label[cut]&idx]
+    nm2 = MG2[detected_label[cut]&idx]
+    de2 = DE2[detected_label[cut]&idx]
 
     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
