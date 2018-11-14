@@ -13,7 +13,7 @@ from mpi4py import MPI
 import time
 import h5py
 from astropy.io import fits
-
+import matplotlib.pyplot as plt
 
 cmd = argv[1]
 
@@ -57,7 +57,9 @@ if cmd == "fit":
             logger.info("RANK: %d %s -- %s starts..."%(rank, field_name, expo_name))
             # sigma, mean, amplitude, a1, a2 (x), a3 (y)
             noise_data = numpy.zeros((36, 6)) - 1
+            fig = plt.figure()
             for i in range(36):
+                ax = fig.add_subplot(4, 9, i+1)
                 chip_path = chip_data_path + "%s/science/%s_%d.fits"%(field_name, expo_name, i+1)
                 pic_path = result_path + '%s/%s/%s_%d.png'%(field_name, expo_name, expo_name, i+1)
 
@@ -66,7 +68,7 @@ if cmd == "fit":
                     back_grd_info = tool_box.fit_background(img, 300000, "flat")[0][0]
                     noise_data[i, 3:6] = back_grd_info.reshape(1, 3)
                     img_zero = img - back_grd_info[0] - back_grd_info[1]*mx - back_grd_info[2]*my
-                    noise_info = tool_box.fit_background(image=img_zero, pix_num=300000, function="gauss", pic_path=pic_path)[0]
+                    noise_info = tool_box.fit_background(image=img_zero, pix_num=300000, function="gauss", ax=ax)[0]
                     noise_data[i,0:3] = numpy.sqrt(noise_info[0][1]), noise_info[0][0], noise_info[1][0]
                 else:
                     print("RANK %02d:  CHIP %s_%d.fits does not exist!!"%(rank, expo_name,i))

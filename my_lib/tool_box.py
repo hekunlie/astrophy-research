@@ -348,7 +348,7 @@ def fit_2d(x, y, fun_val, order):
     return res, pows
 
 
-def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True, pic_path=None):
+def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True, ax=None):
     r"""
     fit the background noise with n-order polynomial
     !!! sort=True is highly recommended for either the background fitting or noise fitting
@@ -384,7 +384,7 @@ def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=T
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(pix_num*0.3)], fz_s[int(pix_num*0.7)]
+                bottom, upper = fz_s[int(pix_num*0.1)], fz_s[int(pix_num*0.9)]
                 idx_1 = fz >= bottom
                 idx_2 = fz <= upper
                 if function == "flat":
@@ -392,17 +392,17 @@ def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=T
                 elif function == "gauss":
                     nums, bins = numpy.histogram(fz[idx_1&idx_2], 100)
                     para = gauss_fit([bins[:-1]], nums)
-                    if pic_path:
+                    if ax:
                         a, b, c = para[1][0], para[0][0], para[0][1]
-                        plt.hist(fz[idx_1&idx_2], 100)
                         px = bins[:-1]
-                        plt.plot(px, a*numpy.exp(-(px-b)**2/2/c))
-                        plt.title("sig: %.2f, mu: %.3f, A: %.2f"%(numpy.sqrt(c), b, a))
-                        plt.savefig(pic_path)
-                        plt.close()
-                        # plt.plot(range(len(nums)), nums)
-                        # plt.show()
-                        # print(a, b, c, numpy.sqrt(c))
+                        ax.hist(fz[idx_1&idx_2], 100, alpha=0.5, color="green")
+                        ax.plot(px, a*numpy.exp(-(px-b)**2/2/c), c="orange")
+                        ax.text(0.3, 0.35, "sig: %.2f"%numpy.sqrt(c), horizontalalignment='center',
+                                verticalalignment='center',transform=ax.transAxes,color="dimgray")
+                        ax.text(0.3, 0.25, "mu: %.2f"%b, horizontalalignment='center',
+                                verticalalignment='center',transform=ax.transAxes,color="dimgray")
+                        ax.text(0.3, 0.15, "A: %.2f"%a, horizontalalignment='center',
+                                verticalalignment='center',transform=ax.transAxes,color="dimgray")
 
                 else:
                     raise ValueError("function must be one of \"flat, gauss\"")
