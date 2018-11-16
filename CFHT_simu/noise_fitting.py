@@ -41,16 +41,17 @@ if cmd == "files":
             field_path = result_path + '%s/'%field_name
             if not os.path.exists(field_path):
                 os.mkdir(field_path)
-            for expo_name in all_expos[field_name].keys():
-                expo_path = field_path + "%s/"%expo_name
-                if not os.path.exists(expo_path):
-                    os.mkdir(expo_path)
+            # for expo_name in all_expos[field_name].keys():
+            #     expo_path = field_path + "%s/"%expo_name
+            #     if not os.path.exists(expo_path):
+            #         os.mkdir(expo_path)
 
 if cmd == "fit":
     t1 = time.time()
     final_data_list = []
     all_names = []
     count = 0
+    bad_pix, saturated = 0.1, 40000
     for field_name in fields:
         for expo_name in all_expos[field_name].keys():
             ts = time.time()
@@ -65,16 +66,19 @@ if cmd == "fit":
                 chip_path = chip_data_path + "%s/science/%s_%d.fits"%(field_name, expo_name, i+1)
                 if os.path.exists(chip_data_path):
                     img = fits.open(chip_path)[0].data
-                    back_grd_info = tool_box.fit_background(img, 200000, "flat")[0][0]
+                    back_grd_info = tool_box.fit_background(img, 200000, "flat", bad_pix, saturated)[0][0]
                     noise_data[i, 3:6] = back_grd_info.reshape(1, 3)
                     img_zero = img - back_grd_info[0] - back_grd_info[1]*mx - back_grd_info[2]*my
-                    noise_info = tool_box.fit_background(image=img_zero, pix_num=200000, function="gauss", ax=ax)[0]
-                    noise_data[i,0:3] = numpy.sqrt(noise_info[0][1]), noise_info[0][0], noise_info[1][0]
+                    noise_info = tool_box.fit_background(image=img_zero, pix_num=200000, function="gauss",
+                                                         pix_lb=bad_pix-back_grd_info[0], pix_ub=saturated,ax=ax)[0]
+                    noise_data[i,0:3] = noise_info[0][1], noise_info[0][0], noise_info[1][0]
                 else:
                     print("RANK %02d:  CHIP %s_%d.fits does not exist!!"%(rank, expo_name,i))
             plt.subplots_adjust(wspace=0)
             plt.savefig(pic_path)
             plt.close()
+
+            numpy.savez(result_path+'%s/%s.npz' % (field_name, expo_name), noise_data)
 
             if count == 0:
                 final_data = noise_data.copy()

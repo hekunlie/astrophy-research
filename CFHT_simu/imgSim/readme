@@ -1,0 +1,19 @@
+#Structure
+
+parentCat/:
+1) the input catalogs for image simulation: star catalog, galaxy catalog, 
+   observational information for each exposure ...
+2) to store the output mock catalog
+
+pype/:
+the code to generate the simulated images.
+1) defaultSim.param: parameter configuration file for the simulation
+2) mockSample.py: routine to generate the mock catalog
+3) chipSim.py:    routine to generate the image
+4) imgMock.py, genStrFun.py: functions needed for the simulation
+
+To generate the image, firstly run mockSample.py, then run chipSim.py
+
+simg/:
+to store the simulated images.
+

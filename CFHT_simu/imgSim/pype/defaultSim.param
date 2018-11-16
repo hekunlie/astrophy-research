@@ -1,0 +1,94 @@
+###################################################
+#         Default Configuration File              #
+#            For Voice Simulation                 #
+#                                                 #
+#            Liu Dezi, 2016.6.19                  #
+###################################################
+# This is the configuration file for VOICE simulation.
+# There are two independent steps for the simulation:
+# 1) Generate mock catalog by mocksample.py
+# 2) Generate simulated images, based on the mock catalog, by chipsim_v3.py
+# 
+# HOW TO USE:
+# Open a terminal, type
+# $ python mocksample.py
+# $ python chipsim_v3.py
+
+# FIELD
+field       cdfs1           # which field to be simulated. 
+                            # It can only be cdfs1, cdfs2, cdfs3 or cdfs4
+
+# In following part, %s denotes the value of 'field' parameter
+# Work directory
+dir_cat      parentCat/                               # directory of parent and other catalogs
+dir_fig      figures/                                 # output figure directory
+dir_sim      simg/%s/                                 # output simulated images
+
+# CCD and image layout
+nchip        32             # number of CCD chips in the entire mosaic
+xsize_chip   2047           # xsize of each CCD chip [pixel]
+ysize_chip   4000           # ysize of each CCD chip [pixel]
+xsize_mosaic 17027          # xsize of the entire CCD mosaic (4*8) [pixel]
+ysize_mosaic 16963          # ysize of the entire CCD mosaic (4*8) [pixel]
+pixel_scale  0.213          # pixel size [arcsec/pixel]
+
+# Observation parameters
+zeropoint  30.97            # CCD zeropoint (assumed to be identical for all chips)
+bkg_sigma  0.01            # Background noise dispersion for each chip after sky 
+                            # subtraction (assumed to be identical for all exposures).
+                            # It turns out that the background noise can be well 
+                            # described by Gaussian function.
+bsig_file  %s_bkgsig.cat    # The background sigma file, the sigma corresponds to each CCD chip
+pos_angle  0.0              # Position angle for telescope targeting
+gain_file  gain.chip        # updated gains for CCD chips, in 'dir_cat'
+dither_file %s.ditherNew    # dither file, in 'dir_cat'
+
+rotate_ell  0.0             # rotate the intrinsic ellipticity by a given angle, only support 
+                            # 0.0, 45.0, 90.0, 135.0. 
+
+# shear method
+shear_method  constant      # Three methods are provided to generate mock shear field:
+                            # 'constant', 'ps_shear' or 'extra'.
+                            # 'constant': all galaxies are assigned a constant reduced shear,
+                            #             but with different betas (orientations).
+                            # 'ps_shear': using weak lensing power spectrum to construct
+                            #             shear field, and assign a shear for every galaxy
+                            #             at corresponding celestial coordinates.
+                            # 'extra'   : you can provide an ascii catalog, which contains the 
+                            #             reduced shear g1, g2 in two individual columns. The 
+                            #             total number should be identical to the number of 
+                            #             input galaxies.
+
+# Constant shear field
+reduced_g1  0.0283            # g1 component if 'shear_method'=constant
+reduced_g2  0.0283            # g2 component if 'shear_method'=constant
+
+# Background shear field construction
+seed_ps        22222                       # seed
+ps_file        power_spectrum_VOICE.cat    # file name of the PS, in 'dir_cat'
+grid_spacing   180.0                       # grid space for interpolation
+ra_ps          52.82488                    # Reference RA
+dec_ps        -28.06522                    # Reference DEC
+
+# Extra shear file
+shear_cat      %s_mockShear.cat                   # extra provided shear catalog
+
+# Mock catalog
+galaxy_refcat     %s_galaxy_LP.fits        # reference galaxy catalog, in 'dir_cat'
+star_refcat       %s_stars_LP.fits         # reference star catalog, in 'dir_cat'
+mock_catalog      %s_mock.fits             # catalog name of the mock catalog, FIIS format, in 'dir_cat'
+catalog_contents  table.contents           # table contents, in 'dir_cat'
+
+# Seeds used for generating galaxy parameters, such e, re ...
+seed_bulge_fraction  12345                 # seed for generating bulge fraction
+seed_ell_disc        12489                 # seed for generating disc-dominated ellipticity
+seed_ell_bulge       12482                 # seed for generating bulge-dominated  ellipticity
+seed_hlr_disc        12348                 # seed for generating disc-dominated half-light radius
+seed_hlr_bulge       12349                 # seed for generating bulge-dominated half-light radius
+seed_theta           12589                 # seed for generating intrinsic orientation
+
+# Test parameters
+epoch  2                                   # 14,30 which epoch for test
+expxx  1                                   # which exposure in the epoch, 0-5
+chipxx 15                                   # which chip for the exposure, 0-32
+

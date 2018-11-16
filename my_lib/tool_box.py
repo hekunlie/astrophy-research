@@ -348,7 +348,7 @@ def fit_2d(x, y, fun_val, order):
     return res, pows
 
 
-def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=True, ax=None):
+def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1, order=1, sort=True, ax=None):
     r"""
     fit the background noise with n-order polynomial
     !!! sort=True is highly recommended for either the background fitting or noise fitting
@@ -358,6 +358,8 @@ def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=T
                     "gauss" for fitting the sigma of the noise,
                     "sort=True" is suggested,
                     and the sigma fitting should be called after the background removing
+    :param pix_lb, pix_ub : the lower (upper) bound of value of the target chosen pixel for fitting,
+                            to avoid the bad and the saturated pixels.
     :param yblock, xblock : number of the block in y-axis, x-axis
     :param order: the highest order of polynomial
     :param sort: Boolean, True: fitting with the mid-part (0.3~0.7) of the PDF of pixel values
@@ -384,9 +386,9 @@ def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=T
             fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
             if sort:
                 fz_s = numpy.sort(fz)
-                bottom, upper = fz_s[int(pix_num*0.1)], fz_s[int(pix_num*0.9)]
-                idx_1 = fz >= bottom
-                idx_2 = fz <= upper
+                bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
+                idx_1 = fz >= max(pix_lb, bottom)
+                idx_2 = fz <= min(pix_ub, upper)
                 if function == "flat":
                     para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
                 elif function == "gauss":
@@ -397,7 +399,7 @@ def fit_background(image, pix_num, function, yblock=1, xblock=1, order=1, sort=T
                         px = bins[:-1]
                         ax.hist(fz[idx_1&idx_2], 100, alpha=0.5, color="green")
                         ax.plot(px, a*numpy.exp(-(px-b)**2/2/c), c="orange")
-                        ax.text(0.3, 0.35, "sig: %.2f"%numpy.sqrt(c), horizontalalignment='center',
+                        ax.text(0.3, 0.35, "sig: %.2f (%.2f)"%(numpy.sqrt(c),c), horizontalalignment='center',
                                 verticalalignment='center',transform=ax.transAxes,color="dimgray")
                         ax.text(0.3, 0.25, "mu: %.2f"%b, horizontalalignment='center',
                                 verticalalignment='center',transform=ax.transAxes,color="dimgray")
@@ -510,9 +512,9 @@ def ran_generator(pdf, num, seed, *args):
     :param pdf: the probability distribution function
     :param num: size
     :param seed: initialize the random generator
-    :param args: length = dimensions+2, the lower and upper bound for each dimension
+    :param args: length = dimensions*2+2, the lower and upper bound for each dimension
                 !!! and plus the last two values (also the lower and upper bound) for
-                !!! the function values to compare to.
+                !!! the PDF function values to compare to.
                 !!! the last pair should contain the region of pdf
     :return: (n,num) numpy array
     """
@@ -535,19 +537,62 @@ def ran_generator(pdf, num, seed, *args):
                 final_vars[i] = numpy.append(final_vars[i], vars[i][idx][:gap])
     return numpy.array(final_vars)
 
+def disc_r_pdf(r, scale):
+    """
+    PDF of the semi-major axis scale-length of a specific scaled radius obtained from
+    the relation: ln(R) = -1.145 - 0.269*(MAG - 23)
+    P(r) ~ r*exp[-(r/scale)**(4/3)]
+    See Miller et al, 2013, MNRAS
 
-def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3): # developing
+    the maximum of scaled radius is
+    scale*0.75**0.75*exp[-0.75] ~ 0.381*scale
+
+    :param r: a list of numpy array of radius, [ ]
+    :param scale: the specific scaled radius, scale = rd/0.833
+    :return: PDF(r), r*exp[-(r/scale)**(4/3)]
     """
-    the result seems to be wrong, the noise variance from fitting is about 60.
-    the default values come from the CFHT MegaPrime/MegaCam telescope
-    and the formula comes from the ETC of lsst
-    :param zpt: zero point
-    :param exp_time: exposure time, default = 300 sec
-    :param pix_scale: arcsec/pixel
-    :param sky_bright:
-    :return: the sky background noise variance
+    return r[0]*numpy.exp(-(r[0]/scale)**(4./3))
+
+def disc_e_pdf(ellip):
     """
-    return numpy.sqrt(zpt * 10**(-0.4*(sky_bright-24))*exp_time)*pix_scale
+    the pdf for the ran_generator() method
+    to generator the ellipticities of disc-dominated galaxies.
+    P(e) = A*e*(1-exp((e-e_m)/a))/((1+e)*sqrt(e^2+e_0^2))
+    A, e_m, e_0, a = 2.4318, 0.804, 0.0256, 0.2539
+    See Miller et al, 2013, MNRAS
+
+    :param ellip: list of numpy array
+    :return: probability, maximum=2.0207
+    """
+    return 2.4318*ellip[0]*(1-numpy.exp((ellip[0] - 0.804)/0.2539))/((1+ellip[0])*numpy.sqrt(ellip[0]**2+0.0256**2))
+
+def bulge_e_pdf(ellip):
+    """
+    the pdf for the ran_generator() method
+    to generator the ellipticities of bulge-dominated galaxies.
+    P(e) = 27.7478 * e * numpy.exp(-b * e - c * e * e) for e ~ (0, 1)
+    b, c = 2.368, 6.691
+    the factor "27.8366" for e ~ (0, 0.804)
+    See Miller et al, 2013, MNRAS
+
+    :param ellip: list of numpy array
+    :return: probability, maximum=2.653
+    """
+    return 27.8366 * ellip[0] * numpy.exp(-2.368 * ellip[0] - 6.691*ellip[0]*ellip[0])
+
+def mag_generator(num, mag_min, mag_max):
+    """
+    to generate the magnitudes by fitting the CFHTLenS i-band catalog
+    :param num: total number
+    :param mag_min, mag_max: bound of magnitude
+    :return: 1-D numpy array
+    """
+    m = numpy.linspace(mag_min, mag_max, 1000000)
+    # the parameters come from the fitting to the CFHTLenS i-band catalog
+    pm = 10**(0.294895*m - 1.082894)
+    pm = pm/numpy.sum(pm)
+    new_pdf = numpy.random.choice(m, num, p=pm)
+    return new_pdf
 
 
 def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
@@ -568,60 +613,48 @@ def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
     """
     return 10**(-0.4*(mag - zpt))*exp_time*area/gain
 
-
-def mags_mock(num, mag_min, mag_max):
-    r"""
-    to generate the magnitudes by fitting the CFHTLenS i-band catalog
-    :param num: total number
-    :param mag_min:
-    :param mag_max:
-    :return: 1-D numpy array
+def mag_to_radius(mag):
     """
-    m = numpy.linspace(mag_min, mag_max, 1000000)
-    # the parameters come from the fitting to the CFHTLenS i-band catalog
-    pm = 10**(0.294895*m - 1.082894)
-    pm = pm/numpy.sum(pm)
-    new_pdf = numpy.random.choice(m, num, p=pm)
-    return new_pdf
-
-def disc_e_pdf(ellip):
+    ln(R) = -1.145 - 0.269*(MAG - 23)
+    See Miller et al, 2013, MNRAS, APPENDIX B1
+    :param mag:
+    :return: semi-major axis scale length, arcsec
     """
-    the pdf for the ran_generator() method
-    to generator the ellipticities of disc-dominated galaxies.
-    P(e) = A*e*(1-exp((e-e_m)/a))/((1+e)*sqrt(e^2+e_0^2))
-    A, e_m, e_0, a = 2.4318, 0.804, 0.0256, 0.2539
-    See Miller et al, 2013, MNRAS
+    return numpy.exp(-1.145-0.269*(mag-23))
 
-    :param ellip: list of variable
-    :return: probability, maximum=2.0207
+def radii_from_mag(mag, ra_lb, ra_ub):
     """
-    return 2.4318*ellip[0]*(1-numpy.exp((ellip[0] - 0.804)/0.2539))/((1+ellip[0])*numpy.sqrt(ellip[0]**2+0.0256**2))
+    generate the radii from the magnitudes
+    :param mag: numpy array, magnitude
+    :param ra_lb, ra_ub: lower and upper bound of radius
+    :return: numpy array, radii
+    """
+    num, mag_bin = numpy.histogram(mag, 500)
+    mid_mags = mag_bin[:-1] + (mag_bin[1] - mag_bin[0])/2
+    mag_bin[0] -= 0.0005
+    # a = rd/0.833
+    a = mag_to_radius(mid_mags)/0.833
+    radii = numpy.zeros_like(mag)
+    for i in range(len(num)):
+        pr_ = lambda r: disc_r_pdf(r, a[i])
+        if num[i] == 0:
+            continue
+        idx = (mag_bin[i] < mag) & (mag <= mag_bin[i+1])
+        sub_num = idx.sum()
+        radii[idx] = ran_generator(pr_, sub_num, i, ra_lb, ra_ub, 0, a[i]*0.39)[0]
+    return radii
 
-def bulge_e_pdf(ellip):
-    """
-    the pdf for the ran_generator() method
-    to generator the ellipticities of bulge-dominated galaxies.
-    P(e) = 27.7478 * e * numpy.exp(-b * e - c * e * e) for e ~ (0, 1)
-    b, c = 2.368, 6.691
-    the factor "27.8366" for e ~ (0, 0.804)
-    See Miller et al, 2013, MNRAS
 
-    :param ellip: list of variable
-    :return: probability, maximum=2.653
+def bulge_frac_pdf(fraction, sig, mean):
     """
-    return 27.8366 * ellip[0] * numpy.exp(-2.368 * ellip[0] - 6.691*ellip[0]*ellip[0])
-
-def bulge_frac(fraction):
-    """
-    normal distribution of Bulge-to-Total fraction for disc-dominated galaxies
+    PDF of Bulge-to-Total fraction for disc-dominated galaxies
     see Miller et al, 2013, MNRAS
-    :param fraction: bulge-to-total fraction
+    :param fraction: list of numpy array, bulge-to-total fraction
     :return: probability, maximum <= 1./numpy.sqrt(2*numpy.pi)/sig ~ 0.4/sig
     """
-    mean, sig = 0, 0.2
     return 1./numpy.sqrt(2*numpy.pi)/sig*numpy.exp(-(fraction[0]-mean)**2/2/sig/sig)
 
-def ellip_bulge(num, seed=123400, figout=None):
+def ellip_bulge(num, seed=123400): # old-version
     """
     Generate random ellipticity for a given number
     following the distribution of the ellipticity
@@ -655,6 +688,20 @@ def ellip_bulge(num, seed=123400, figout=None):
     e1 = rbe * numpy.cos(2 * theta)
     e2 = rbe * numpy.sin(2 * theta)
     return e1, e2, rbe#, es
+
+def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3): # developing
+    """
+    the result seems to be wrong, the noise variance from fitting is about 60.
+    the default values come from the CFHT MegaPrime/MegaCam telescope
+    and the formula comes from the ETC of lsst
+    :param zpt: zero point
+    :param exp_time: exposure time, default = 300 sec
+    :param pix_scale: arcsec/pixel
+    :param sky_bright:
+    :return: the sky background noise variance
+    """
+    return numpy.sqrt(zpt * 10**(-0.4*(sky_bright-24))*exp_time)*pix_scale
+
 
 ################################################################
 # the methods for data analysis

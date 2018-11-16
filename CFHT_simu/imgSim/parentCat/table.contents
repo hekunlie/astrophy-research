@@ -1,0 +1,20 @@
+## The catalogue contains the following contents:
+## Content       Format   Explanation
+id                  J     Index, 1,2,3 ..., n
+ra                  E     Right Ascension in degree (J2000.0)
+dec                 E     Declination in degree (J2000.0)
+mag                 E     r-band magnitude
+e                   E     Intrinsic ellipticity
+theta_e             E     Intrinsic position angle
+e1                  E     Intrinsic ellipticity component e1
+e2                  E     Intrinsic ellipticity component e2
+g                   E     Module of reduced shear
+theta_g             E     Position angle of the reduced shear
+g1                  E     Component g1 of reduced shear
+g2                  E     Component g2 of reduced shear
+eobs                E     Sheared (observed) ellipticity
+theta_obs           E     Sheared (observed) position angle
+eobs1               E     Sheared (observed) ellipticity component e1
+eobs2               E     Sheared (observed) ellipticity component e2
+scale_length        E     Scale Length
+bulge_fraction      E     Fraction of bulge to disc flux
