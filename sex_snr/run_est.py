@@ -1,7 +1,12 @@
 from subprocess import Popen
 
-sources = ["dimmerm3", "dimmer", "pts", "ptsb"]
+sources = ["dimmerm3"]
+
 for source in sources:
+
+    cmd = "mpirun -np 30 python /home/hklee/work/selection_bias/CFHT_simu/selection_bias_image_h.py"
+    a = Popen(cmd, shell=True)
+    a.wait()
 
     if "pts" in source:
         max_radius = 8
@@ -20,7 +25,7 @@ for source in sources:
             f.writelines(contents)
 
         # run the estimation code
-        cmd = "mpirun -np 14 python snr_est.py snr %s %s %.1f"%(source, filter_name, max_radius)
+        cmd = "mpirun -np 28 python snr_est.py snr %s %s %.1f"%(source, filter_name, max_radius)
         a = Popen(cmd, shell=True)
         a.wait()
 
@@ -29,8 +34,8 @@ for source in sources:
         a = Popen(cmd, shell=True)
         a.wait()
 
-        # check
-        # cmd = "mpirun -np 14 python snr_est.py check %s %s %.1f"%(source, filter_name, max_radius)
-        # a = Popen(cmd, shell=True)
-        # a.wait()
+        check
+        cmd = "mpirun -np 14 python snr_est.py check %s %s %.1f"%(source, filter_name, max_radius)
+        a = Popen(cmd, shell=True)
+        a.wait()
 

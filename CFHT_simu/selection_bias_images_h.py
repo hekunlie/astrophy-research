@@ -16,7 +16,7 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 ts = time.clock()
-source = "dimmer"
+source = "dimmerm3"
 envs_path = "%s/work/envs/envs.dat"%my_home
 get_contents = [['selection_bias', "%s_path"%source, '1'],['selection_bias', "%s_path_result"%source, '1'],
                 ['selection_bias', "%s_path_para"%source, '1'],['selection_bias', "%s_path_log"%source, '1']]
