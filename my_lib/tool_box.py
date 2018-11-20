@@ -623,7 +623,7 @@ def mag_to_radius(mag):
     """
     return numpy.exp(-1.145-0.269*(mag-23))
 
-def radii_from_mag(mag, ra_lb, ra_ub):
+def radii_from_mags(mag, ra_lb, ra_ub):
     """
     generate the radii from the magnitudes
     :param mag: numpy array, magnitude
@@ -646,13 +646,14 @@ def radii_from_mag(mag, ra_lb, ra_ub):
     return radii
 
 
-def bulge_frac_pdf(fraction, sig, mean):
+def bulge_frac_pdf(fraction):
     """
     PDF of Bulge-to-Total fraction for disc-dominated galaxies
     see Miller et al, 2013, MNRAS
     :param fraction: list of numpy array, bulge-to-total fraction
     :return: probability, maximum <= 1./numpy.sqrt(2*numpy.pi)/sig ~ 0.4/sig
     """
+    sig, mean = 0.2, 0.
     return 1./numpy.sqrt(2*numpy.pi)/sig*numpy.exp(-(fraction[0]-mean)**2/2/sig/sig)
 
 def ellip_bulge(num, seed=123400): # old-version

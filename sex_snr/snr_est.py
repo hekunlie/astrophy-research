@@ -38,7 +38,9 @@ gal_num = 10000
 size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","size","1"]])[0])
 
 if rank == 0:
-    print(size)
+    log = "START: operation: %s, source: %s, code: %s"\
+          %(argv[1], total_path.split("/")[-2], argv[0])
+    logger.info(log)
 
 total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(14) for j in range(chip_num)]
 total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j) for i in range(14) for j in range(chip_num)]
@@ -155,7 +157,7 @@ if cmd == "check" and rank < 14:
     print(cmd, rank)
 t2 = time.time()
 if rank == 0:
-    log = "operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
+    log = "END:   operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
           %(argv[1], total_path.split("/")[-2], max_distance, size, sex_filter, t2-t1, argv[0])
     logger.info(log)
 

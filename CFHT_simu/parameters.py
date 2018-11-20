@@ -32,8 +32,9 @@ size = int(paras[1])
 num_i = int(num/loops)
 mag_s, mag_e = float(paras[2]),float(paras[3])
 radius_s, radius_e = float(paras[4]), float(paras[5])
+stamp_num = 10000
 if rank == 0:
-    print(num*10000, size, mag_s, mag_e, radius_s, radius_e)
+    print(num*stamp_num, size, mag_s, mag_e, radius_s, radius_e)
 
 pic = para_path + "/pic/ellip_%d.png"%rank
 plt.figure(figsize=(16,16))
@@ -63,14 +64,14 @@ f = h5py.File(h5_path,"w")
 
 
 # ellipticity
-e1, e2, e = numpy.zeros((num*10000, 1)),numpy.zeros((num*10000, 1)),numpy.zeros((num*10000, 1))
-gal_type = numpy.zeros((num*10000, 1))
+e1, e2, e = numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1))
+gal_type = numpy.zeros((num*stamp_num, 1))
 dsic_frac = 0.9
 bulge_frac = 0.1
-disc_num_i = int(dsic_frac*num_i)*10000
-disc_num = int(dsic_frac*num)*10000
-bulge_num_i = int(bulge_frac*num_i)*10000
-bulge_num = int(bulge_frac*num)*10000
+disc_num_i = int(dsic_frac*num_i)*stamp_num
+disc_num = int(dsic_frac*num)*stamp_num
+bulge_num_i = int(bulge_frac*num_i)*stamp_num
+bulge_num = int(bulge_frac*num)*stamp_num
 # disc-dominated galaxies
 for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
@@ -140,12 +141,12 @@ f["/type"] = gal_type
 
 
 # magnitude & flux
-flux, mag = numpy.zeros((num*10000, 1)),numpy.zeros((num*10000, 1))
+flux, mag = numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
     time.sleep(rank * 0.05)
-    mag_i = tool_box.mags_mock(num_i*10000, mag_s, mag_e)
+    mag_i = tool_box.mag_generator(num_i*stamp_num, mag_s, mag_e)
     flux_i = tool_box.mag_to_flux(mag_i)
-    sp, ep = i*num_i*10000, (i+1)*num_i*10000
+    sp, ep = i*num_i*stamp_num, (i+1)*num_i*stamp_num
     mag[sp: ep, 0] = mag_i
     flux[sp: ep, 0] = flux_i
 
@@ -159,13 +160,15 @@ plt.title("MAG")
 plt.hist(mag, 100)
 
 # galactic radius
-radius = numpy.zeros((num*10000, 1))
+radius = numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
     time.sleep(rank*0.05)
     rng = numpy.random.RandomState(seed=seed)
-    radius_i = rng.uniform(radius_s, radius_e, num_i*10000)
-    sp, ep = i*num_i*10000, (i+1)*num_i*10000
+    # radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
+    sp, ep = i * num_i * stamp_num, (i + 1) * num_i * stamp_num
+    radius_i = tool_box.radii_from_mags(mag[sp: ep, 0], radius_s, radius_e)
+
     radius[sp: ep, 0] = radius_i
 
     log_inform = "RADIUS loop: %d, min: %.2f, max: %.2f\n"%(i, radius_i.min(), radius_i.max())
@@ -176,10 +179,10 @@ plt.title("Radius")
 plt.hist(radius, 100)
 
 # B/T ratio
-btr = numpy.zeros((num*10000, 1))
+btr = numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
-    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac, num_i*10000, seed, 0, 1, 0, 2.1)[0]
+    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac_pdf, num_i*stamp_num, seed, 0, 1, 0, 2.1)[0]
 
     # rng = numpy.random.RandomState(seed=seed)
     # btr_i = rng.normal(0, 0.1, 2*num_i)
@@ -203,7 +206,7 @@ for i in range(loops):
     # else:
     #     f_btr_i = c_i
     # f_btr_i.shape = (num_i, 1)
-    sp, ep = i*num_i*10000, (i + 1)*num_i*10000
+    sp, ep = i*num_i*stamp_num, (i + 1)*num_i*stamp_num
     btr[sp: ep, 0] = f_btr_i
 
     log_inform = "B/T loop: %d, seed: %d, min: %.2f, max: %.2f\n"%(i, seed, f_btr_i.min(), f_btr_i.max())
