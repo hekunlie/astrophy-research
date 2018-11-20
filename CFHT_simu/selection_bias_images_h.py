@@ -1,6 +1,6 @@
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
-from sys import path
+from sys import path,argv
 path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 import galsim
@@ -16,7 +16,7 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 ts = time.clock()
-source = "dimmerm3"
+source = argv[1]
 envs_path = "%s/work/envs/envs.dat"%my_home
 get_contents = [['selection_bias', "%s_path"%source, '1'],['selection_bias', "%s_path_result"%source, '1'],
                 ['selection_bias', "%s_path_para"%source, '1'],['selection_bias', "%s_path_log"%source, '1']]
@@ -51,8 +51,8 @@ if rank == 0:
     hdu = fits.PrimaryHDU(psf_img.array)
     psf_path = total_path + 'psf.fits'
     hdu.writeto(psf_path, overwrite=True)
-    logger.info("size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"%(stamp_size, pixel_scale,
-                                                                                         noise_sig, total_chips_num))
+    logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
+                %(source,stamp_size, pixel_scale, noise_sig, total_chips_num))
 logger.info("seed: %d"%seed)
 
 chip_tags = [i for i in range(total_chips_num)]

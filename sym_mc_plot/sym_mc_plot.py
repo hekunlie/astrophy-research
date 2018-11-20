@@ -1,7 +1,5 @@
 import matplotlib
 matplotlib.use("Agg")
-import numpy
-import matplotlib.pyplot as plt
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
@@ -12,7 +10,9 @@ from sys import argv
 from mpi4py import MPI
 import tool_box
 import h5py
-import datetime
+import numpy
+import matplotlib.pyplot as plt
+
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -271,7 +271,7 @@ else:
 t2 = time.clock()
 if rank == 0:
     log = "%s, %s, %s, %.2f, %s, %.2f"%(total_path.split("/")[-2], filter_name, cut, t2-t1, argv[0], r_thresh)
-    logger = tool_box.get_logger("./cutoff.dat")
+    logger = tool_box.get_logger("%s/selection_bias/sym_mc_plot/cutoff.dat"%my_home)
     logger.info(log)
 
 
