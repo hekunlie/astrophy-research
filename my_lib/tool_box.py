@@ -233,7 +233,7 @@ def smooth(image,size):
                     tag += 1
 
             x_d = numpy.array(x_d).T
-            a1, a2 = curve_fit(f, x_d, z)
+            a1, a2 = curve_fit(fxy, x_d, z)
             fit_img[i, j] = a1[5]
     return fit_img
 
@@ -247,7 +247,7 @@ def exp_fun(x, ampli, sig, mu):
     return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
 
 
-def f(x, a, b, c, d, e, f):
+def fxy(x, a, b, c, d, e, f):
     return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
 
 
@@ -389,6 +389,7 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1,
                 bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
                 idx_1 = fz >= max(pix_lb, bottom)
                 idx_2 = fz <= min(pix_ub, upper)
+                print(function, pix_lb, bottom, pix_ub, upper)
                 if function == "flat":
                     para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
                 elif function == "gauss":

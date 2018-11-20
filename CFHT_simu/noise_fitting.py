@@ -17,14 +17,15 @@ import matplotlib.pyplot as plt
 
 cmd = argv[1]
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-cpus = comm.Get_size()
-
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# cpus = comm.Get_size()
+cpus = 1
+rank = 0
 log_path = "./log_%d.dat"%rank
 logger = tool_box.get_logger(log_path)
 
-nm_path = "/mw/w1234/original//nname.dat"
+nm_path = "/mw/w1234/original/nname.dat"
 all_expos, all_fields = tool_box.field_dict(nm_path)
 
 fields = tool_box.allot(all_fields, cpus)[rank]
@@ -54,6 +55,7 @@ if cmd == "fit":
     bad_pix, saturated = 0.1, 40000
     for field_name in fields:
         for expo_name in all_expos[field_name].keys():
+            print(field_name, expo_name)
             ts = time.time()
             logger.info("RANK: %d %s -- %s starts..."%(rank, field_name, expo_name))
             # sigma, mean, amplitude, a1, a2 (x), a3 (y)
@@ -70,7 +72,7 @@ if cmd == "fit":
                     noise_data[i, 3:6] = back_grd_info.reshape(1, 3)
                     img_zero = img - back_grd_info[0] - back_grd_info[1]*mx - back_grd_info[2]*my
                     noise_info = tool_box.fit_background(image=img_zero, pix_num=200000, function="gauss",
-                                                         pix_lb=bad_pix-back_grd_info[0], pix_ub=saturated,ax=ax)[0]
+                                                         pix_lb=bad_pix-back_grd_info[0,0], pix_ub=saturated,ax=ax)[0]
                     noise_data[i,0:3] = noise_info[0][1], noise_info[0][0], noise_info[1][0]
                 else:
                     print("RANK %02d:  CHIP %s_%d.fits does not exist!!"%(rank, expo_name,i))
