@@ -1,19 +1,19 @@
 import matplotlib
 matplotlib.use("Agg")
 import numpy
-import os
-my_home = os.popen("echo $HOME").readlines()[0][:-1]
-from sys import path
-path.append('%s/work/fourier_quad/'%my_home)
-# path.append("E:/Github/astrophy-research/")
-import time
-from Fourier_Quad import Fourier_Quad
-# import galsim
-import matplotlib.pyplot as plt
-from astropy.io import fits
-import tool_box
-from mpi4py import MPI
-#
+# import os
+# my_home = os.popen("echo $HOME").readlines()[0][:-1]
+# from sys import path
+# path.append('%s/work/fourier_quad/'%my_home)
+# # path.append("E:/Github/astrophy-research/")
+# import time
+# from Fourier_Quad import Fourier_Quad
+# # import galsim
+# import matplotlib.pyplot as plt
+# from astropy.io import fits
+# import tool_box
+# from mpi4py import MPI
+# #
 #
 
 comm = MPI.COMM_WORLD
