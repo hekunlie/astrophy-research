@@ -36,6 +36,11 @@ fg2 = shear["arr_1"]
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 # rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
 
+if rank == 0:
+    log = "START -- %s, %7s, %9s,      , %5.2f, %12s"%(total_path.split("/")[-2], filter_name, cut, r_thresh, argv[0])
+    logger = tool_box.get_logger("%s/work/selection_bias/sym_mc_plot/cutoff.dat"%my_home)
+    logger.info(log)
+
 for i in range(file_num):
     shear_esti_h5path = result_path + "data/data_%d_%d.hdf5"%(rank, i)
     shear_esti_file = h5py.File(shear_esti_h5path, "r")
@@ -270,8 +275,8 @@ else:
 
 t2 = time.clock()
 if rank == 0:
-    log = "%s, %s, %s, %.2f, %s, %.2f"%(total_path.split("/")[-2], filter_name, cut, t2-t1, argv[0], r_thresh)
-    logger = tool_box.get_logger("%s/selection_bias/sym_mc_plot/cutoff.dat"%my_home)
+    log = "END  --  %s, %7s, %9s, %6.2f, %5.2f, %12s"%\
+          (total_path.split("/")[-2], filter_name, cut, t2-t1, r_thresh, argv[0])
     logger.info(log)
 
 
