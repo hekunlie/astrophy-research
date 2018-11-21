@@ -92,28 +92,28 @@ for shear_id in range(shear_num):
             btr = fbt[para_n+k, 0]
             c_profile = gal_profile[para_n+k, 0]
 
-            if c_profile == 1:
-                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5*ra, flux_untruncated=True).shear(e1=e1, e2=e2)
-            else:
-                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5*ra, flux_untruncated=True)# be careful
-                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5*ra, flux_untruncated=True)# be careful
-                gal = bulge * btr + disk * (1-btr)
-                gal = gal.shear(e1=e1, e2=e2)
-
-            gal_s = gal.withFlux(gal_flux)
-            gal_g = gal_s.shear(g1=g1, g2=g2)
-            gal_c = galsim.Convolve([gal_g, psf])
-
-            img = galsim.ImageD(stamp_size, stamp_size)
-            gal_c.drawImage(image=img, scale=pixel_scale)
-            gal_pool.append(img.array)
-            t += 1
-
-        noise_img = rng.normal(0, noise_sig, nx*ny).reshape((ny, nx))
-        big_chip = fq.stack(gal_pool, stamp_col) + noise_img
-        big_chip = numpy.float32(big_chip)
-        hdu = fits.PrimaryHDU(big_chip)
-        hdu.writeto(chip_path, overwrite=True)
+        #     if c_profile == 1:
+        #         gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5*ra, flux_untruncated=True).shear(e1=e1, e2=e2)
+        #     else:
+        #         bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5*ra, flux_untruncated=True)# be careful
+        #         disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5*ra, flux_untruncated=True)# be careful
+        #         gal = bulge * btr + disk * (1-btr)
+        #         gal = gal.shear(e1=e1, e2=e2)
+        #
+        #     gal_s = gal.withFlux(gal_flux)
+        #     gal_g = gal_s.shear(g1=g1, g2=g2)
+        #     gal_c = galsim.Convolve([gal_g, psf])
+        #
+        #     img = galsim.ImageD(stamp_size, stamp_size)
+        #     gal_c.drawImage(image=img, scale=pixel_scale)
+        #     gal_pool.append(img.array)
+        #     t += 1
+        #
+        # noise_img = rng.normal(0, noise_sig, nx*ny).reshape((ny, nx))
+        # big_chip = fq.stack(gal_pool, stamp_col) + noise_img
+        # big_chip = numpy.float32(big_chip)
+        # hdu = fits.PrimaryHDU(big_chip)
+        # hdu.writeto(chip_path, overwrite=True)
         t2 = time.clock()
         logger.info("Finish the %04d's chip at shear %02d in %.2f sec"%(chip_tag, shear_id, t2-t1))
 
