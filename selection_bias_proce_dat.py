@@ -29,7 +29,7 @@ stamp_size = 60
 snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
-source = "pts"
+source = "dimmer"
 ini_path = "%s/work/envs/envs.dat"%my_home
 path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "%s_path"%source, '1'],
                                                                   ['selection_bias', "%s_path_result"%source, '1'],
@@ -57,10 +57,19 @@ for s in range(int(scale)):
     else:
         data = numpy.row_stack((data, f["/data"].value.copy()))
     f.close()
+    fq_snr_h5path = result_path + "data/data_2sig/data_%d_%d.hdf5" % (rank, s)
+    fq_snr_file = h5py.File(fq_snr_h5path, "r")
+    set_name = list(fq_snr_file.keys())[0]
+    fq_snr_temp = fq_snr_file[set_name].value
+    if s == 0:
+        fq_snr_data = fq_snr_temp.copy()
+    else:
+        fq_snr_data = numpy.row_stack((fq_snr_data, fq_snr_temp))
+    fq_snr_file.close()
 
 fq = Fourier_Quad(stamp_size, 123)
 
-flux = data[:, 7]
+flux = fq_snr_data[:, 0]
 detect = flux > 0
 
 # F_Q data
@@ -74,17 +83,17 @@ prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=stamp_size, nvi
 noise_sig = prop.sigma_sky
 
 # snr
-snr = data[:, 7]
+snr = fq_snr_data[:, 0]
 # flux
-flux = data[:, 8]/noise_sig
+flux = fq_snr_data[:, 1]/noise_sig
 # flux_alt
-flux_alt = data[:, 9]
+flux_alt = fq_snr_data[:, 2]
 # flux2
-flux2 = data[:, 10]
+flux2 = fq_snr_data[:, 3]
 # great2 snr
-gsnr = data[:, 11]
+gsnr = fq_snr_data[:, 4]
 # area
-area = data[:, 12]
+area = fq_snr_data[:, 5]
 
 if rank == 0:
     print("flux: %.2f ~ %.2f\n"%(numpy.min(flux), numpy.max(flux)))

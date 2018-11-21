@@ -348,7 +348,7 @@ def fit_2d(x, y, fun_val, order):
     return res, pows
 
 
-def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1, order=1, sort=True, ax=None):
+def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, yblock=1, xblock=1, order=1, sort=True, ax=None):
     r"""
     fit the background noise with n-order polynomial
     !!! sort=True is highly recommended for either the background fitting or noise fitting
@@ -360,6 +360,9 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1,
                     and the sigma fitting should be called after the background removing
     :param pix_lb, pix_ub : the lower (upper) bound of value of the target chosen pixel for fitting,
                             to avoid the bad and the saturated pixels.
+    :param my, mx, seqs: my, mx are the grids of coordinates made by numpy.mgrid[...],
+                        seqs is a list of the No. of the each cross of grids, seqs = numpy.arange(0, len(my))
+                        these three parameters are made outside for time saving
     :param yblock, xblock : number of the block in y-axis, x-axis
     :param order: the highest order of polynomial
     :param sort: Boolean, True: fitting with the mid-part (0.3~0.7) of the PDF of pixel values
@@ -375,21 +378,21 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1,
     # rng = numpy.random.RandomState(num)
     for i in range(yblock):
         for j in range(xblock):
-            my, mx = numpy.mgrid[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep]
-            my = my.flatten()
-            mx = mx.flatten()
-            tags = numpy.arange(0,len(my))
+            # my, mx = numpy.mgrid[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep]
+            # my = my.flatten()
+            # mx = mx.flatten()
+            # tags = numpy.arange(0,len(my))
             # ch_tag = rng.choice(tags, num, replace=False)
-            ch_tag = numpy.random.choice(tags, pix_num, replace=False)
-            ys = my[ch_tag]
-            xs = mx[ch_tag]
-            fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_tag]
+            ch_seqs = numpy.random.choice(seqs, pix_num, replace=False)
+            ys = my[ch_seqs]
+            xs = mx[ch_seqs]
+            fz = image[i*ystep:(i+1)*ystep, j*xstep:(j+1)*xstep].flatten()[ch_seqs]
             if sort:
                 fz_s = numpy.sort(fz)
                 bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
                 idx_1 = fz >= max(pix_lb, bottom)
                 idx_2 = fz <= min(pix_ub, upper)
-                print(function, pix_lb, bottom, pix_ub, upper)
+                # print(function, pix_lb, bottom, pix_ub, upper)
                 if function == "flat":
                     para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
                 elif function == "gauss":
@@ -399,8 +402,8 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, yblock=1, xblock=1,
                         a, b, c = para[1][0], para[0][0], para[0][1]
                         px = bins[:-1]
                         ax.hist(fz[idx_1&idx_2], 100, alpha=0.5, color="green")
-                        ax.plot(px, a*numpy.exp(-(px-b)**2/2/c), c="orange")
-                        ax.text(0.3, 0.35, "sig: %.2f (%.2f)"%(numpy.sqrt(c),c), horizontalalignment='center',
+                        ax.plot(px, a*numpy.exp(-(px-b)**2/2/abs(c)), c="orange")
+                        ax.text(0.3, 0.35, "sig: %.2f (%.2f)"%(numpy.sqrt(abs(c)),c), horizontalalignment='center',
                                 verticalalignment='center',transform=ax.transAxes,color="dimgray")
                         ax.text(0.3, 0.25, "mu: %.2f"%b, horizontalalignment='center',
                                 verticalalignment='center',transform=ax.transAxes,color="dimgray")
