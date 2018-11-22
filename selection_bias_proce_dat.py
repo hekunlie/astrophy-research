@@ -21,7 +21,7 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-ch, snr_s, snr_e, scale, del_bin = argv[1:8]
+ch, snr_s, snr_e, scale, del_bin, source = argv[1:9]
 
 pixel_scale = 0.2
 stamp_size = 60
@@ -29,7 +29,7 @@ stamp_size = 60
 snr_cut_s = float(snr_s)
 snr_cut_e = float(snr_e)
 del_bin = int(del_bin)
-source = "dimmer"
+#source = "dimmer"
 ini_path = "%s/work/envs/envs.dat"%my_home
 path_items = tool_box.config(ini_path,['get','get','get','get'], [['selection_bias', "%s_path"%source, '1'],
                                                                   ['selection_bias', "%s_path_result"%source, '1'],
@@ -118,10 +118,10 @@ idxs = ssnr > snr_cut_s
 idxe = ssnr <= snr_cut_e
 
 
-G1 = FG1[idxs&idxe]
-G2 = FG2[idxs & idxe]
-N = FN[idxs&idxe]
-U = FU[idxs&idxe]
+G1 = FG1[idxs&idxe][:150000]
+G2 = FG2[idxs & idxe][:150000]
+N = FN[idxs&idxe][:150000]
+U = FU[idxs&idxe][:150000]
 DE1 = N + U
 DE2 = N - U
 

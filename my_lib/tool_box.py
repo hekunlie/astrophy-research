@@ -204,10 +204,15 @@ def get_hlr(image, scale, size, thres=None):
     return numpy.sqrt(len(cache)/numpy.pi), flux, flux_sq, num, maxi
 
 
-def smooth(image,size):
+def smooth(image, size):
+    """
+    replace the pixel value with a fitting one from the 5*5 nearby block
+    adopting quadratic function
+    :return: new image
+    """
     my, mx = numpy.mgrid[-2:3, -2:3]
     x, y = mx.reshape((1, 25)), my.reshape((1, 25))
-    cen = int((size * size + size) / 2)
+    cen = int((size * size + size) / 2) # center of image
     fit_img = numpy.zeros_like(image)
     for i in range(size):
         for j in range(size):
@@ -227,14 +232,14 @@ def smooth(image,size):
                         if p * size + q != cen:
                             pos.append((p, q))
                             z.append(image[p, q])
-                            x_d.append((x[0, tag], y[0, tag]))
+                            x_d.append((y[0, tag], x[0, tag]))
                         else:
                             pk = tag
                     tag += 1
 
             x_d = numpy.array(x_d).T
             a1, a2 = curve_fit(fxy, x_d, z)
-            fit_img[i, j] = a1[5]
+            fit_img[i, j] = a1[0]
     return fit_img
 
 ################################################################
@@ -248,8 +253,12 @@ def exp_fun(x, ampli, sig, mu):
 
 
 def fxy(x, a, b, c, d, e, f):
-    return a * x[0] ** 2 + b * x[0] * x[1] + c * x[1] ** 2 + d * x[0] + e * x[1] + f
-
+    """
+    for scipy's curve_fit(), a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2
+    :param x: (2,n) numpy array, the [[y],[x]]
+    :param a ~ f: the coefficients
+    """
+    return a + b*x[1] + c*x[0] + d*x[1]**2 + e*x[0]*x[1] + f*x[1]**2
 
 def gaussnosie_fit(data, bin_num):
     r"""
