@@ -628,6 +628,8 @@ def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
 
 def mag_to_radius(mag):
     """
+    called by radii_from_mags() to generating
+    the magnitudes.
     ln(R) = -1.145 - 0.269*(MAG - 23)
     See Miller et al, 2013, MNRAS, APPENDIX B1
     :param mag:
@@ -665,8 +667,9 @@ def bulge_frac_pdf(fraction):
     :param fraction: list of numpy array, bulge-to-total fraction
     :return: probability, maximum <= 1./numpy.sqrt(2*numpy.pi)/sig ~ 0.4/sig
     """
-    sig, mean = 0.2, 0.
+    sig, mean = 0.1, 0.
     return 1./numpy.sqrt(2*numpy.pi)/sig*numpy.exp(-(fraction[0]-mean)**2/2/sig/sig)
+
 
 def ellip_bulge(num, seed=123400): # old-version
     """

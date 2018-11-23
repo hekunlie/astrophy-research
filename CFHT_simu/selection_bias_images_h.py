@@ -1,8 +1,6 @@
 import os
-
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path, argv
-
 path.append('%s/work/fourier_quad/' % my_home)
 import numpy
 import galsim
@@ -12,14 +10,15 @@ import time
 from mpi4py import MPI
 import h5py
 import tool_box
-import matplotlib.pyplot as plt
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 ts = time.clock()
-source, show_t = argv[1], int(argv[2])
+
+source = argv[1]
+
 envs_path = "%s/work/envs/envs.dat" % my_home
 get_contents = [['selection_bias', "%s_path" % source, '1'], ['selection_bias', "%s_path_result" % source, '1'],
                 ['selection_bias', "%s_path_para" % source, '1'], ['selection_bias', "%s_path_log" % source, '1']]
@@ -28,21 +27,21 @@ total_path, result_path, para_path, log_path = path_items
 
 logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
 
-stamp_size = 100
+stamp_size = 90
 stamp_col = 100
 stamp_num = 10000
 pixel_scale = 0.187
 shear_num = 14
-noise_sig = 55
+noise_sig = 60
 total_chips_num = 500
 total_gal_num = total_chips_num * stamp_num
-seed = rank * 344 + 1212
+seed = rank * 344 + 12121
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.8, flux=1.0, trunc=2)
+psf = galsim.Moffat(beta=3.5, fwhm=0.8, flux=1.0, trunc=1.6)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -110,11 +109,9 @@ for shear_id in range(shear_num):
 
     # for checking
     logger.info("SHEAR ID: %02d, RANk: %02d, e1s: %.3f, e2s: %.3f, radius: %.2f, fbt: %.2f"
-                %(shear_id, rank, e1s[numpy.random.randint(0, total_gal_num, 1)[0]],
-                  e2s[numpy.random.randint(0, total_gal_num, 1)[0]],
-                  radius[numpy.random.randint(0, total_gal_num, 1)[0]],
-                  fbt[numpy.random.randint(0, total_gal_num, 1)[0]]))
-    t = 0
+                %(shear_id, rank, e1s[int(0.5*total_gal_num)], e2s[int(0.9*total_gal_num)],
+                  radius[int(0.1*total_gal_num)], fbt[int(0.99*total_gal_num)]))
+
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
@@ -135,22 +132,20 @@ for shear_id in range(shear_num):
             c_profile = gal_profile[para_n + k, 0]
 
             if c_profile == 1:
-                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra, flux_untruncated=True).shear(e1=e1,
-                                                                                                              e2=e2)
+                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra).shear(e1=e1, e2=e2)
             else:
-                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra, flux_untruncated=True)  # be careful
-                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra, flux_untruncated=True)  # be careful
-                gal = bulge * btr + disk * (1 - btr)
-                gal = gal.shear(e1=e1, e2=e2)
+                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
+                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+                gal_com = bulge * btr + disk * (1 - btr)
+                gal = gal_com.shear(e1=e1, e2=e2)
 
-            gal_s = gal.withFlux(gal_flux)
-            gal_g = gal_s.shear(g1=g1, g2=g2)
-            gal_c = galsim.Convolve([gal_g, psf])
+            gal_f = gal.withFlux(gal_flux)
+            gal_s = gal_f.shear(g1=g1, g2=g2)
+            gal_c = galsim.Convolve([gal_s, psf])
 
             img = galsim.ImageD(stamp_size, stamp_size)
             gal_c.drawImage(image=img, scale=pixel_scale)
             gal_pool.append(img.array)
-        t += 1
 
         noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
         big_chip = fq.stack(gal_pool, stamp_col) + noise_img

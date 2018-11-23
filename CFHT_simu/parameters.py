@@ -9,7 +9,6 @@ path.append('%s/work/fourier_quad/'%my_home)
 import numpy
 import matplotlib.pyplot as plt
 import tool_box
-import lsstetc
 from mpi4py import MPI
 import h5py
 import time
@@ -66,40 +65,41 @@ f = h5py.File(h5_path,"w")
 # ellipticity
 e1, e2, e = numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1))
 gal_type = numpy.zeros((num*stamp_num, 1))
-dsic_frac = 0.9
+disc_frac = 0.9
 bulge_frac = 0.1
-disc_num_i = int(dsic_frac*num_i)*stamp_num
-disc_num = int(dsic_frac*num)*stamp_num
+disc_num_i = int(disc_frac*num_i)*stamp_num
+disc_num = int(disc_frac*num)*stamp_num
 bulge_num_i = int(bulge_frac*num_i)*stamp_num
 bulge_num = int(bulge_frac*num)*stamp_num
 # disc-dominated galaxies
-for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
-    rng = numpy.random.RandomState(seed)
+if disc_frac > 0:
+    for i in range(loops):
+        seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
+        rng = numpy.random.RandomState(seed)
 
-    disc_e_i = tool_box.ran_generator(tool_box.disc_e_pdf, disc_num_i, seed, 0, 0.804, 0, 2.1)[0]
-    theta = rng.uniform(0, 2*numpy.pi, disc_num_i)
-    disc_e1_i, disc_e2_i = disc_e_i*numpy.cos(theta), disc_e_i*numpy.sin(theta)
+        disc_e_i = tool_box.ran_generator(tool_box.disc_e_pdf, disc_num_i, seed, 0, 0.804, 0, 2.1)[0]
+        theta = rng.uniform(0, 2*numpy.pi, disc_num_i)
+        disc_e1_i, disc_e2_i = disc_e_i*numpy.cos(theta), disc_e_i*numpy.sin(theta)
 
-    sp, ep = i*disc_num_i, (i + 1)*disc_num_i
-    e1[sp:ep, 0] = disc_e1_i
-    e2[sp:ep, 0] = disc_e2_i
-    e[sp:ep, 0] = disc_e_i
+        sp, ep = i*disc_num_i, (i + 1)*disc_num_i
+        e1[sp:ep, 0] = disc_e1_i
+        e2[sp:ep, 0] = disc_e2_i
+        e[sp:ep, 0] = disc_e_i
 
-    log_inform = "Disc loop: %d, %d: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
-                 "max(e1): %.4f, max(e2): %.4f\n"\
-                 %(i, sp, ep, seed, e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
-                   e1[sp:ep, 0].max(), e2[sp:ep, 0].max())
-    logger.info(log_inform)
-plt.subplot(331)
-plt.hist(e1[:disc_num], 100)
-plt.title("Disc e1")
-plt.subplot(332)
-plt.hist(e2[:disc_num], 100)
-plt.title("Disc e2")
-plt.subplot(333)
-plt.hist(e[:disc_num], 100)
-plt.title("Disc e")
+        log_inform = "Disc loop: %d, %d: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
+                     "max(e1): %.4f, max(e2): %.4f\n"\
+                     %(i, sp, ep, seed, e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
+                       e1[sp:ep, 0].max(), e2[sp:ep, 0].max())
+        logger.info(log_inform)
+    plt.subplot(331)
+    plt.hist(e1[:disc_num], 100)
+    plt.title("Disc e1")
+    plt.subplot(332)
+    plt.hist(e2[:disc_num], 100)
+    plt.title("Disc e2")
+    plt.subplot(333)
+    plt.hist(e[:disc_num], 100)
+    plt.title("Disc e")
 
 # bulge-dominated galaxies
 if bulge_num > 0:
@@ -182,7 +182,7 @@ plt.hist(radius, 100)
 btr = numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
-    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac_pdf, num_i*stamp_num, seed, 0, 1, 0, 2.1)[0]
+    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac_pdf, num_i*stamp_num, seed, 0, 1, 0, 4.1)[0]
 
     # rng = numpy.random.RandomState(seed=seed)
     # btr_i = rng.normal(0, 0.1, 2*num_i)

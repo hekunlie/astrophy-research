@@ -30,7 +30,7 @@ int main(int argc, char*argv[])
 	chip_num = 500 / (numprocs / 14);
 	int data_rows = chip_num*stamp_num, shear_esti_data_cols = 7, snr_para_data_cols=7;
 	int i, j, k, tag, seed, chip_id, shear_id;
-	double thres = 2.,  psf_scale = 4., psf_noise_sig = 0, gal_noise_sig = 380.86, ts, te, t1, t2;
+	double thres = 2.,  psf_scale = 4., psf_noise_sig = 0, gal_noise_sig = 60, ts, te, t1, t2;
 	int cmd = 1;
 
 	all_paras.gal_noise_sig = gal_noise_sig;
@@ -81,9 +81,9 @@ int main(int argc, char*argv[])
 	char data_path[100],chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/");
 
-	sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
-	sprintf(set_name, "/data");
-	read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
+	//sprintf(buffer, "/home/hkli/work/c/coeffs.hdf5");
+	//sprintf(set_name, "/data");
+	//read_h5(buffer, set_name, coeffs, NULL, NULL, NULL, NULL);
 
 	sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
 	sprintf(set_name, "/mag");
