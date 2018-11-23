@@ -988,6 +988,46 @@ int com_int_descend(const void *a, const void *b)
 	return (*(int*)b - *(int*)a);
 }
 
+/*double quick_exp(double x, double precision, para* paras)
+{
+	int i, j, m, mm;
+	double temp=1, expo = 0, n;
+	if (x >1 or x<-1)
+	{
+		m = (int)x;
+		n = x - m;
+	}
+	else
+	{
+		m = 0;
+		n = x;
+	}
+	for (i = 0; temp >= precision; i++)
+	{
+		temp *= n / i;
+		expo += temp;
+	}
+
+	if(m>0)
+	{
+		expo *= paras->exp_val[m-1];
+	}
+	else if (m < 0)
+	{	
+		m = abs(m);
+
+		if (m >= -15)
+		{
+			expo /= paras->exp_val[abs(m + 1)];
+		}
+		else
+		{
+
+		}
+	}
+
+	return expo;
+}*/
 
 /********************************************************************************************************************************************/
 /* GSL library */

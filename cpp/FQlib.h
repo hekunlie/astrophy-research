@@ -62,6 +62,8 @@ struct para
 		{ 0.0517316,0.0399351,0.0517316,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,-0.0172078,-0.0525974,-0.0525974,-0.0172078,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,0.0517316,0.0399351,0.0517316 },
 	};
 
+	/* for calculating the exponential exp() quickly */
+	double exp_val[15] = {  exp(1.), exp(2.), exp(3.), exp(4.), exp(5.), exp(6.), exp(7.), exp(8.), exp(9.),  exp(10.), exp(11.), exp(12.), exp(13. ), exp(14.), exp(15.), }
 };
 
 
@@ -181,6 +183,7 @@ int com_double_descend(const void *a, const void *b);
 int com_float_descend(const void *a, const void *b);
 int com_int_descend(const void *a, const void *b);
 
+/*double qucik_exp(double x, double precision, para* paras);*/
 
 /********************************************************************************************************************************************/
 /* GSL library */
