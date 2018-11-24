@@ -25,6 +25,10 @@ get_contents = [['selection_bias', "%s_path" % source, '1'], ['selection_bias', 
 path_items = tool_box.config(envs_path, ['get', 'get', 'get', 'get'], get_contents)
 total_path, result_path, para_path, log_path = path_items
 
+finish_path = "%s/work/test/job/%s/finish_%d.dat"%(my_home, source, rank)
+if os.path.exists(finish_path):
+    os.remove(finish_path)
+
 logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
 
 stamp_size = 90
@@ -41,7 +45,7 @@ ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.8, flux=1.0, trunc=1.6)
+psf = galsim.Moffat(beta=3.5, fwhm=0.8, flux=1.0, trunc=2)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -56,56 +60,20 @@ logger.info("seed: %d"%seed)
 chip_tags = [i for i in range(total_chips_num)]
 chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
 
-# allocate the memory blocks for parameters
-d_size = MPI.DOUBLE.Get_size()
-if rank == 0:
-    # bytes for n double elements
-    nbytes = total_gal_num * d_size
-else:
-    nbytes = 0
-
-win_e1s = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-e1s_buf, itemsize = win_e1s.Shared_query(0)
-e1s = numpy.ndarray(buffer=e1s_buf, dtype='d', shape=(total_gal_num, 1))
-
-win_e2s = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-e2s_buf, itemsize = win_e2s.Shared_query(0)
-e2s = numpy.ndarray(buffer=e2s_buf, dtype='d', shape=(total_gal_num, 1))
-
-win_radius = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-radius_buf, itemsize = win_radius.Shared_query(0)
-radius = numpy.ndarray(buffer=radius_buf, dtype='d', shape=(total_gal_num, 1))
-
-win_flux = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-flux_buf, itemsize = win_flux.Shared_query(0)
-flux = numpy.ndarray(buffer=flux_buf, dtype='d', shape=(total_gal_num, 1))
-
-win_fbt = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-fbt_buf, itemsize = win_fbt.Shared_query(0)
-fbt = numpy.ndarray(buffer=fbt_buf, dtype='d', shape=(total_gal_num, 1))
-
-win_gal = MPI.Win.Allocate_shared(nbytes, d_size, comm=comm)
-gal_buf, itemsize = win_gal.Shared_query(0)
-gal_profile = numpy.ndarray(buffer=gal_buf, dtype='d', shape=(total_gal_num, 1))
-
 for shear_id in range(shear_num):
     shear_cata = para_path + "shear.npz"
     shear = numpy.load(shear_cata)
     g1 = shear["arr_0"][shear_id]
     g2 = shear["arr_1"][shear_id]
 
-    # rank 0 read all the parameters which will be shared by other ranks
-    if rank == 0:
-        paras = para_path + "para_%d.hdf5" % shear_id
-        f = h5py.File(paras, 'r')
-        e1s[:total_gal_num, 0] = f["/e1"].value[:total_gal_num, 0]
-        e2s[:total_gal_num, 0] = f["/e2"].value[:total_gal_num, 0]
-        radius[:total_gal_num, 0] = f["/radius"].value[:total_gal_num, 0]
-        flux[:total_gal_num, 0] = f["/flux"].value[:total_gal_num, 0]
-        fbt[:total_gal_num, 0] = f['/btr'].value[:total_gal_num, 0]
-        gal_profile[:total_gal_num, 0] = f["/type"].value[:total_gal_num, 0]
-        f.close()
-    comm.Barrier()
+    paras = para_path + "para_%d.hdf5" % shear_id
+    f = h5py.File(paras, 'r')
+    e1s = f["/e1"].value
+    e2s = f["/e2"].value
+    radius = f["/radius"].value
+    flux = f["/flux"].value
+    fbt = f['/btr'].value
+    gal_profile = f["/type"].value
 
     # for checking
     logger.info("SHEAR ID: %02d, RANk: %02d, e1s: %.3f, e2s: %.3f, radius: %.2f, fbt: %.2f"
@@ -154,6 +122,10 @@ for shear_id in range(shear_num):
         hdu.writeto(chip_path, overwrite=True)
         t2 = time.clock()
         logger.info("SHEAR ID: %02d, Finish the %04d's chip in %.2f sec" % (shear_id, chip_tag, t2 - t1))
+
+
+with open(finish_path, "w") as f:
+    f.write("done")
 
 te = time.clock()
 logger.info("Used %.2f sec. %s" % (te - ts, total_path))
