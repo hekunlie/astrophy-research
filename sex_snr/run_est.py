@@ -1,15 +1,23 @@
 from subprocess import Popen
+import numpy
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
 
-sources = ["dimmer", "dimmerm3"]
+
+sources = ["dimmer"]
+
+num = 64
+a = numpy.zeros((num, 1))
 
 for source in sources:
 
-    cmd = "mpirun -np 50 python /home/hkli/work/selection_bias/CFHT_simu/selection_bias_images_h.py %s"%source
-    a = Popen(cmd, shell=True)
-    a.wait()
+    while True:
+        if a.sum() == num:
+            break
+        for i in range(num):
+            if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
+                a[i, 0] = 1
 
-
-for source in sources:
     if "pts" in source:
         max_radius = 8
     else:

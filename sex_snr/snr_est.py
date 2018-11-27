@@ -79,16 +79,12 @@ if cmd == "check" and rank < 14:
         if not os.path.exists(check_path):
             # os.removedirs(check_path)
             os.makedirs(check_path)
-        cmd = "done"
-    else:
-        cmd = None
+
     # it has been found that the program will be hung on until the bcast() has been done
     # even if the 'cmd = "done"' is putted before the 'if ...'
     # and all the threads will synchronized before the communion, the thread that runs faster will be hung on
     # so a judge of the 'cmd' is not need
-    cmd = comm.bcast(cmd, root=0)
-    # if cmd == "done":
-    #     print("DONE", rank)
+    comm.Barrier()
 
     input_para_path = para_path + "para_%d.hdf5"%rank
     para_h5 = h5py.File(input_para_path, "r")
@@ -132,24 +128,30 @@ if cmd == "check" and rank < 14:
     meas_para_path = total_path + "result/data/data_%ssig/data_%d_0.hdf5" % (sig_level, rank)
     if os.path.exists(meas_para_path):
         meas_para = h5py.File(meas_para_path, "r")
-        set_name = list(meas_para.keys())[0]
-        fsnr = meas_para[set_name].value[:, 3]
+        f_data = meas_para["data"].value
+        fsnr = f_data[:,3]
+        detect = f_data[:,0]
+        idx_f = detect > 0
         meas_para.close()
+
         plt.subplot(2,5,4)
-        plt.scatter(fsnr, input_mag, s=ms)
+        plt.scatter(fsnr[idx_f], input_mag[idx_f], s=ms)
         plt.xlabel("F-SNR (2.0$\sigma$)")
         plt.ylabel("INPUT MAG")
+
         plt.subplot(2,5,9)
-        plt.hist(fsnr[fsnr<50], 100)
+        idx_f_lim = fsnr < 30
+        plt.hist(fsnr[idx_f_lim&idx_f], 100)
         plt.xlabel("F-SNR (%s$\sigma$)"%sig_level)
-        idx_f = fsnr > 0
+
         plt.title("%d detected" %len(fsnr[idx_f]))
         plt.subplot(2,5,5)
-        plt.scatter(sex_snr, fsnr, s=ms)
+        plt.scatter(sex_snr[idx&idx_f], fsnr[idx&idx_f], s=ms)
         plt.xlabel("SEX-SNR (%s$\sigma$)"%sig_level)
         plt.ylabel("F-SNR (%s$\sigma$)"%sig_level)
+
         plt.subplot(2,5,10)
-        idx_s = sex_snr < 50
+        idx_s = sex_snr < 80
         plt.scatter(sex_snr[idx_s], fsnr[idx_s], s=ms)
         plt.xlabel("SEX-SNR (%s$\sigma$)"%sig_level)
         plt.ylabel("F-SNR (%s$\sigma$)"%sig_level)
