@@ -1062,6 +1062,7 @@ def file_name(path):
     :param path: absolute path to the file, include the filename
     :return: absolute path of file
     """
+    path = path.replace("\\","/")
     ex = os.path.exists(path)
     ori_name = os.path.basename(path)
     ab_path = path.split(ori_name)[0]

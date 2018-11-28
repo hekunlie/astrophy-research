@@ -9,7 +9,9 @@ figs = (fig_x*2, fig_x*4/3)
 fig = plt.figure(figsize=figs)
 fonts = 16
 xy_lb_size = 12
-total_path = "E:/works/selection_bias/data_for_paper/galsim/dimmer_m3/"
+lenged_size = fonts - 6
+total_path = "F:/works/selection_bias/data/pts/64_bright/"
+total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto"]
 lbs = ["F-SNR", "S-SNR", "MAG_AUTO"]
@@ -19,46 +21,52 @@ xticks = mtick.FormatStrFormatter(xfmt)
 ch = numpy.arange(7)
 
 
-# for 'm' of /pts/64
-# xy_lim = (-0.035, 0.012)
-# text_y = -0.03
-# for 'c' of /pts/64
-# xy_lim = (-0.00024, 0.00022)
-# text_y = -0.0002
+# dimmer c
+# xy_lim = [[-0.00005, -0.00005, -0.00005], [0.00005, 0.00005, 0.00005]]
+# text_y = [-0.004,-0.009,-0.004]
+# y_ticks = [numpy.arange(-0.00004, 0.00005, 0.00002),
+#            numpy.arange(-0.00004, 0.00005, 0.00002),
+#            numpy.arange(-0.00004, 0.00005, 0.00002)]
 
-# for 'm' of /pts/64_bright
-# xy_lim = (-0.035, 0.012)
-# text_y = -0.02
-# for 'c' of /pts/64_bright
-# xy_lim = (-0.00024, 0.00015)
-# text_y = -0.00015
+# dimmerm3 c / m
+# xy_lim = [[-0.00006, -0.00006, -0.00006], [0.00005, 0.00005, 0.00005]]
+# text_y = [-0.004,-0.009,-0.004]
+# y_ticks = [numpy.arange(-0.00004, 0.00005, 0.00002),
+#            numpy.arange(-0.00004, 0.00005, 0.00002),
+#            numpy.arange(-0.00004, 0.00005, 0.00002)]
+# xy_lim = [[-0.0055, -0.012, -0.0055], [0.006, 0.012, 0.006]]
+# text_y = [-0.004,-0.009,-0.004]
+# y_ticks = [numpy.arange(-0.005, 0.0051, 0.0025),
+#            numpy.arange(-0.01, 0.011, 0.005),
+#            numpy.arange(-0.005, 0.0051, 0.0025)]
+# pts 64 m / c
+# xy_lim = [[-0.04, -0.04, -0.04], [0.025, 0.025, 0.025]]
+# text_y = [-0.004,-0.009,-0.004]
+# y_ticks = [numpy.arange(-0.03, 0.016, 0.015),
+#            numpy.arange(-0.03, 0.016, 0.015),
+#            numpy.arange(-0.03, 0.016, 0.015)]
+# xy_lim = [[-0.00022, -0.00022, -0.00022], [0.00015, 0.00015, 0.00015]]
+# text_y = [-0.004,-0.009, -0.004]
+# y_ticks = [numpy.arange(-0.0002, 0.00015, 0.0001),
+#            numpy.arange(-0.0002, 0.00015, 0.0001),
+#            numpy.arange(-0.0002, 0.00015, 0.0001)]
 
-# for 'm' of /pts/64_dimmer
-# xy_lim = (-0.035, 0.012)
-# text_y = -0.02
-# for 'c' of /pts/64_bright
-# xy_lim = (-0.00026, 0.00026)
-# text_y = -0.00015
+# pts 64_bright m / c
+# xy_lim = [[-0.018, -0.04, -0.018], [0.012, 0.005, 0.012]]
+# text_y = [-0.004,-0.009,-0.004]
+# y_ticks = [numpy.arange(-0.016, 0.011, 0.008),
+#            numpy.arange(-0.03, 0.01, 0.01),
+#            numpy.arange(-0.016, 0.011, 0.008)]
 
+xy_lim = [[-0.00014, -0.00014, -0.00014], [0.00012, 0.00012, 0.00012]]
+text_y = [-0.004,-0.009, -0.004]
+y_ticks = [numpy.arange(-0.0001, 0.00015, 0.00005),
+           numpy.arange(-0.0001, 0.00015, 0.00005),
+           numpy.arange(-0.0001, 0.00015, 0.00005)]
 
-# for 'm' of m1
-# xy_lim = (-0.025, 0.012)
-# text_y = -0.01
-# for 'c' of m3
-xy_lim = (-0.0001, 0.00014)
-text_y = -0.00007
-
-# for 'c' of m3
-# xy_lim = (-0.00022, 0.00022)
-# text_y = -0.00013
-# for 'c' of m3
-# xy_lim = (-0.032, 0.005)
-# text_y = -0.022
-# for 'c' of m3
-# xy_lim = (-0.00022, 0.00022)
-# text_y = -0.00013
 sig = "2"
 mc_plot = 'c'
+lim = 1
 if mc_plot == "m":
     plot_tag = 0
     stand = 1
@@ -71,49 +79,91 @@ markers = ["s", "p", '>']
 colors = ["blue", "red", 'green']
 for row in range(3):
     if row == 0:
-        data = numpy.load(total_path + "flux2_%ssigma/total.npz" % sig)
+        data_path = total_path + "sex2_%s/flux2/total.npz" % sig
+        data = numpy.load(data_path)
         mcs = [data["arr_0"], data["arr_1"]]
         for col in range(2):
-            ax = fig.add_subplot(321+row*2+col)
+            ax = fig.add_subplot(3, 2, 2*row+col+1)
+            lb = "F-SNR: $%s_%d$"%(mc_plot, col+1)
             ax.errorbar(ch*10.,mcs[col][:,ch][plot_tag] - stand, mcs[col][:,ch][plot_tag+1], color=colors[0],capsize=4,
-                        marker='s',ms=5)
-            ax.text(0, text_y, lbs[row] + ": $%s_%d$" % (mc_plot,col + 1), fontsize=fonts - 4)
+                        marker='s',ms=5, label=lb)
+
             x = ax.set_xlim()
-            y = ax.set_ylim(xy_lim[0], xy_lim[1])
-            ax.plot([x[0], x[1]],[0,0], linestyle="-.", c='black')
+            if lim:
+                y = ax.set_ylim(xy_lim[0][row], xy_lim[1][row])
+                ax.set_yticks(y_ticks[row])
+            if col == 0:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')
+            else:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')
+            ax.plot([x[0], x[1]],[0,0], linestyle="-.", c='grey')
             ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
-            # ax.set_xticks([])
-            if col == 1:
-                ax.set_yticklabels([])
-    else:
-        mcs = [[], []]
-        for i in range(3):
-            data = numpy.load(total_path + filter_names[i] + "%s/%s/total.npz" % (sig,select[row]))
-            mcs[0].append(data['arr_0'])
-            mcs[1].append(data['arr_1'])
-        for col in range(2):
-            ax = fig.add_subplot(321 + row * 2 + col)
-            for ii in range(3):
-                lb = "%s" % (gauss_filter[ii])
-                ax.errorbar(ch*10., mcs[col][ii][:,ch][plot_tag] - stand, mcs[col][ii][:,ch][plot_tag+1],color=colors[ii],
-                            capsize=4, marker=markers[ii],ms=5,label=lb)
-            ax.text(0, text_y,lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
-            if row == 1:
-                ax.legend(ncol=3,fontsize=fonts-4, loc='upper left')
-            else:
-                ax.legend(ncol=3, fontsize=fonts - 4, loc='upper left')
-            ax.set_xlim(x[0],x[1])
-            y = ax.set_ylim(xy_lim[0], xy_lim[1])
-            ax.plot([x[0], x[1]],[0,0], linestyle="-.", c='black')
-            if row == 1:
-                ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
-            else:
-                ax.xaxis.set_major_formatter(xticks)
-                ax.set_xlabel("Cutoff percentage", fontsize=fonts)
-                ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+
             if col == 1:
                 ax.set_yticklabels([])
 
+    elif row == 1:
+        mcs = [[],[]]
+        for i in range(3):
+            data_path = total_path + filter_names[i] + "%s/%s/total.npz" % (sig,select[row])
+            data = numpy.load(data_path)
+            mcs[0].append(data['arr_0'])
+            mcs[1].append(data['arr_1'])
+        for col in range(2):
+            ax = fig.add_subplot(3, 2, 2*row+col+1)
+            for ii in range(3):
+                lb = "S-SNR: $%s_%d$, %s" % (mc_plot,col+1, gauss_filter[ii])
+                ax.errorbar(ch*10., mcs[col][ii][:,ch][plot_tag] - stand, mcs[col][ii][:,ch][plot_tag+1],color=colors[ii],
+                            capsize=4, marker=markers[ii],ms=5,label=lb)
+            if col == 0:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')#,bbox_to_anchor=(0.98,0.7))
+            else:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')#,bbox_to_anchor=(0.98,0.7))
+            ax.set_xlim(x[0],x[1])
+            if lim:
+                y = ax.set_ylim(xy_lim[0][row], xy_lim[1][row])
+                ax.set_yticks(y_ticks[row])
+            ax.plot([x[0], x[1]],[0,0], linestyle="-.", c='grey')
+            ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+
+            if col == 1:
+                ax.set_yticklabels([])
+
+    else:
+        mcs = [[],[]]
+        for i in range(3):
+            data_path = total_path + filter_names[i] + "%s/%s/total.npz" % (sig, select[row])
+
+            data = numpy.load(data_path)
+            mcs[0].append(data['arr_0'])
+            mcs[1].append(data['arr_1'])
+        for col in range(2):
+            ax = fig.add_subplot(3, 2, 2*row+col+1)
+            for ii in range(3):
+                lb = "MAG_AUTO: $%s_%d$, %s" % (mc_plot,col+1, gauss_filter[ii])
+                ax.errorbar(ch * 10., mcs[col][ii][:, ch][plot_tag] - stand, mcs[col][ii][:, ch][plot_tag + 1],
+                            color=colors[ii],
+                            capsize=4, marker=markers[ii], ms=5, label=lb)
+            if col == 0:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')
+            else:
+                # ax.text(0, text_y[row],lbs[row]+": $%s_%d$"%(mc_plot, col+1),fontsize=fonts-4)
+                ax.legend(ncol=1,fontsize=lenged_size, loc='upper left')
+            ax.set_xlim(x[0], x[1])
+            if lim:
+                y = ax.set_ylim(xy_lim[0][row], xy_lim[1][row])
+                ax.set_yticks(y_ticks[row])
+            ax.plot([x[0], x[1]], [0, 0], linestyle="-.", c='grey')
+            ax.xaxis.set_major_formatter(xticks)
+            ax.set_xlabel("Cutoff percentage", fontsize=fonts)
+            ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+            if col == 1:
+                ax.set_yticklabels([])
 
 plt.subplots_adjust(wspace=0,hspace=0)
 plt.savefig(pic_name)
