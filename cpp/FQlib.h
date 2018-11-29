@@ -65,7 +65,7 @@ struct para
 	};
 
 	/* for calculating the exponential exp() quickly */
-	double exp_val[15] = {  exp(1.), exp(2.), exp(3.), exp(4.), exp(5.), exp(6.), exp(7.), exp(8.), exp(9.),  exp(10.), exp(11.), exp(12.), exp(13. ), exp(14.), exp(15.), }
+	double exp_val[15] = { exp(1.), exp(2.), exp(3.), exp(4.), exp(5.), exp(6.), exp(7.), exp(8.), exp(9.),  exp(10.), exp(11.), exp(12.), exp(13.), exp(14.), exp(15.), };
 };
 
 
@@ -189,6 +189,7 @@ int com_double_descend(const void *a, const void *b);
 int com_float_descend(const void *a, const void *b);
 int com_int_descend(const void *a, const void *b);
 
+void read_para()
 /*double qucik_exp(double x, double precision, para* paras);*/
 
 /********************************************************************************************************************************************/
