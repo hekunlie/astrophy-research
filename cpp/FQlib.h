@@ -4,6 +4,8 @@
 #pragma once
 #include <iostream>
 #include<fstream>
+#include<string.h>
+#include<sstream>
 #include <iomanip>
 #include <cmath>
 #include "fitsio.h"
@@ -14,7 +16,7 @@
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
-#include<string.h>
+
 //#include<mkl.h>
 
 #define PRECISION
@@ -78,6 +80,10 @@ extern ofstream loggers;
 /********************************************************************************************************************************************/
 void write_log(char *filename, char *inform); 
 /* write char to log file */
+
+void read_para(const std::string path, const std::string name, int &para);
+void read_para(const std::string path, const std::string name, double &para);
+void read_para(const std::string path, const std::string name, float &para);
 
 void read_h5(char *filename, char *set_name1, double *matrix1, char*set_name2, double *matrix2, char*set_name3, double*matrix3);
 /* read hdf5 file 

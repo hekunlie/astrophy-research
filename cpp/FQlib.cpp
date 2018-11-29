@@ -10,6 +10,84 @@ char buffer[1000], exception_name[50];
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
+void read_para(const std::string path, const std::string name, int &para)
+{
+	std::ifstream infile;
+	std::string str, str1, str2, str3;
+	std::stringstream strs;
+	infile.open(path);
+	while (!infile.eof())
+	{
+		str.clear();
+		str1.clear();
+		str2.clear();
+		str3.clear();
+		strs.clear();
+
+		getline(infile, str);
+		strs << str;
+		strs >> str1 >> str2 >> str3;
+
+		if (str1 == name)
+		{
+			para = std::stoi(str3);
+			break;
+		}
+	}
+}
+
+void read_para(const std::string path, const std::string name, double &para)
+{
+	std::ifstream infile;
+	std::string str, str1, str2, str3;
+	std::stringstream strs;
+	infile.open(path);
+	while (!infile.eof())
+	{
+		str.clear();
+		str1.clear();
+		str2.clear();
+		str3.clear();
+		strs.clear();
+
+		getline(infile, str);
+		strs << str;
+		strs >> str1 >> str2 >> str3;
+
+		if (str1 == name)
+		{
+			para = std::stod(str3);
+			break;
+		}
+	}
+}
+
+void read_para(const std::string path, const std::string name, float &para)
+{
+	std::ifstream infile;
+	std::string str, str1, str2, str3;
+	std::stringstream strs;
+	infile.open(path);
+	while (!infile.eof())
+	{
+		str.clear();
+		str1.clear();
+		str2.clear();
+		str3.clear();
+		strs.clear();
+
+		getline(infile, str);
+		strs << str;
+		strs >> str1 >> str2 >> str3;
+
+		if (str1 == name)
+		{
+			para = std::stof(str3);
+			break;
+		}
+	}
+}
+
 void write_log(char*filename,  char *inform)
 {
 	loggers.open(filename,ios::out|ios::app);
@@ -987,6 +1065,9 @@ int com_int_descend(const void *a, const void *b)
 {
 	return (*(int*)b - *(int*)a);
 }
+
+
+
 
 /*double quick_exp(double x, double precision, para* paras)
 {
