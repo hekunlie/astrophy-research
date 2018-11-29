@@ -32,7 +32,7 @@ field = params["field"].lower()
 
 if not field in ["cdfs1", "cdfs2", "cdfs3", "cdfs4"]:
     raise ValueError("!!! Parameter 'field' can only be cdfs1-4.")
-seed_seed = int(field[-1])
+seed_seed = int(field[-1]) 1220*
 
 ##  directory
 #maindir = os.path.dirname(os.getcwd()) + "/"
