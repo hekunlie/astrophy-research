@@ -21,11 +21,13 @@ cpus = comm.Get_size()
 
 envs_path = "%s/work/envs/envs.dat"%my_home
 para_path = tool_box.config(envs_path,["get"],[["selection_bias","%s_path_para"%source,"0"]])[0]
+
 para_ini_path = para_path+"para.ini"
 paras = tool_box.config(para_ini_path,["get",'get',"get",'get',"get",'get'],
-                        [["para","total_num","0"],["para","size","0"],
+                        [["para","total_num","0"],["para","stamp_size","0"],
                         ["para", "mag_s", "0"],["para","mag_e","0"],
                         ["para", "radius_s", "0"],["para","radius_e","0"]])
+
 num = int(paras[0])
 size = int(paras[1])
 num_i = int(num/loops)
@@ -165,9 +167,9 @@ for i in range(loops):
     seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
     time.sleep(rank*0.05)
     rng = numpy.random.RandomState(seed=seed)
-    # radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
+    radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
     sp, ep = i * num_i * stamp_num, (i + 1) * num_i * stamp_num
-    radius_i = tool_box.radii_from_mags(mag[sp: ep, 0], radius_s, radius_e)
+    # radius_i = tool_box.radii_from_mags(mag[sp: ep, 0], radius_s, radius_e)
 
     radius[sp: ep, 0] = radius_i
 

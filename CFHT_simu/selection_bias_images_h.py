@@ -25,21 +25,27 @@ get_contents = [['selection_bias', "%s_path" % source, '1'], ['selection_bias', 
 path_items = tool_box.config(envs_path, ['get', 'get', 'get', 'get'], get_contents)
 total_path, result_path, para_path, log_path = path_items
 
+logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
+
+# the parameters
+para_contents = [["para","total_num",1], ["para","stamp_size",1], ["para", "stamp_col", 1], ["para","shear_num",1],
+                 ["para","noise_sig",1], ["para", "pixel_scale", 1]]
+para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get', 'get', 'get'], para_contents)
+
+total_chips_num = int(para_items[0])
+stamp_size = int(para_items[1])
+stamp_col = int(para_items[2])
+shear_num = int(para_items[3])
+noise_sig = int(para_items[4])
+pixel_scale = float(para_items[5])
+stamp_num = 10000
+
 finish_path = "%s/work/test/job/%s/finish_%d.dat"%(my_home, source, rank)
 if os.path.exists(finish_path):
     os.remove(finish_path)
 
-logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
-
-stamp_size = 90
-stamp_col = 100
-stamp_num = 10000
-pixel_scale = 0.187
-shear_num = 14
-noise_sig = 60
-total_chips_num = 500
 total_gal_num = total_chips_num * stamp_num
-seed = rank * 344 + 12121
+seed = rank * 344 + 121
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)

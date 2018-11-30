@@ -1,18 +1,15 @@
 import matplotlib
 matplotlib.use("Agg")
-from sys import path
-path.append('/home/hkli/work/fourier_quad/')
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+from sys import path, argv
+path.append('%s/work/fourier_quad/' % my_home)
 from astropy.io import fits
 import numpy
-import matplotlib.pyplot as plt
 from Fourier_Quad import Fourier_Quad
 import tool_box
-import lsstetc
-from subprocess import Popen
-import os
-from sys import argv
 import galsim
-import copy
+
 
 size = int(argv[1])
 psf_r = float(argv[2])
@@ -23,28 +20,29 @@ seed = int(argv[6])
 
 
 num = 21
-pixel_scale = 0.2
+pixel_scale = 0.187
 markers = ['p', 'x', 's', '8']
 colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
 
-prop = lsstetc.ETC(band='r', pixel_scale=pixel_scale, stamp_size=size, nvisits=180)
-flux = numpy.array([prop.flux(22.5), prop.flux(23.8),  prop.flux(24.9), prop.flux(25.4)])
-sig = prop.sigma_sky
+
+flux = numpy.array([tool_box.mag_to_flux(20), tool_box.mag_to_flux(22),
+                    tool_box.mag_to_flux(23), tool_box.mag_to_flux(24)])
+sig = 60
 print(sig)
 
 fq = Fourier_Quad(size, seed)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, sig)
 
-psf = galsim.Moffat(beta=3.5, scale_radius=psf_r, flux=1.0, trunc=psf_r*3)
+psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
 
 shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
 for k in range(len(flux)):
 
     pool = []
-    bulge = galsim.Sersic(half_light_radius=0.6 * ra, n=4, trunc=3 * ra)  # be careful
-    disk = galsim.Sersic(half_light_radius=ra, n=1, trunc=3 * ra)  # be careful
+    bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
+    disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
     gal = bulge * btr + disk * (1 - btr)
     gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
     gal_f = gal.withFlux(flux[k])
@@ -53,7 +51,7 @@ for k in range(len(flux)):
     img_0 = galsim.ImageD(size, size)
     gal_c.drawImage(image=img_0, scale=pixel_scale)
     gal_img = img_0.array + noise
-    path = "/home/hkli/work/sex/imgs/gal0_%d.fits" %k
+    path = "%s/work/sex_2/imgs/gal0_%d.fits" %(my_home,k)
     hdu = fits.PrimaryHDU(gal_img)
     hdu.writeto(path, overwrite=True)
 
@@ -65,7 +63,7 @@ for k in range(len(flux)):
         gal_s_c.drawImage(image=img_s, scale=pixel_scale)
         gal_s_img = img_s.array + noise
 
-        path = "/home/hkli/work/sex/imgs/gal_%d_%d.fits"%(k,i)
+        path = "%s/work/sex_2/imgs/gal_%d_%d.fits"%(my_home,k,i)
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
 title = "xy_%d\\pr_%.2f\\gr_%.2f\\e1%.2f\\btr_%.2f\\seed_%d"%(size, psf_r,ra, e, btr, seed)

@@ -35,7 +35,7 @@ chip_num = 500
 columns = 100
 area_thresh = 6
 gal_num = 10000
-size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","size","1"]])[0])
+size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","stamp_size","1"]])[0])
 
 if rank == 0:
     log = "START: operation: %s, source: %s, code: %s"\

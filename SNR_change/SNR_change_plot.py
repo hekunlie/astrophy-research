@@ -1,15 +1,14 @@
 import matplotlib
 matplotlib.use("Agg")
-from sys import path
-path.append('/home/hkli/work/fourier_quad/')
+import os
+my_home = os.popen("echo $HOME").readlines()[0][:-1]
+from sys import path, argv
+path.append('%s/work/fourier_quad/' % my_home)
 from astropy.io import fits
 import numpy
 import matplotlib.pyplot as plt
 from Fourier_Quad import Fourier_Quad
-import tool_box
-import lsstetc
 from subprocess import Popen
-from sys import argv
 
 
 size, num, title = int(argv[1]), int(argv[2]), argv[3]
@@ -18,16 +17,13 @@ seed = 80000
 markers = ['o','v','p','h','d','s']
 colors = ['red','orange','green','violet','cyan','b']
 
-prop = lsstetc.ETC(band='r', pixel_scale=0.2, stamp_size=size, nvisits=180)
-flux = numpy.array([prop.flux(22.5), prop.flux(23.8),  prop.flux(24.9), prop.flux(25.4)])
-
 fq = Fourier_Quad(size, seed)
 
 fig = plt.figure(figsize=(18,6))
 ax1 = fig.add_subplot(131)
 ax2 = fig.add_subplot(132)
 ax3 = fig.add_subplot(133)
-total_path = '/home/hkli/work/sex/imgs/'
+total_path = '%s/work/sex_2/imgs/'%my_home
 
 data = numpy.zeros((12, num))
 data_0 = numpy.zeros((12, 1))
