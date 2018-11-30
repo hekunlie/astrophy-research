@@ -4,7 +4,7 @@
 #pragma once
 #include <iostream>
 #include<fstream>
-#include<string.h>
+#include<string>
 #include<sstream>
 #include <iomanip>
 #include <cmath>
@@ -189,7 +189,6 @@ int com_double_descend(const void *a, const void *b);
 int com_float_descend(const void *a, const void *b);
 int com_int_descend(const void *a, const void *b);
 
-void read_para()
 /*double qucik_exp(double x, double precision, para* paras);*/
 
 /********************************************************************************************************************************************/
