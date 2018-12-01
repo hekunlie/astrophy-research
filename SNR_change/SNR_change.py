@@ -67,5 +67,5 @@ for k in range(len(flux)):
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
 title = "xy_%d\\pr_%.2f\\gr_%.2f\\e1%.2f\\btr_%.2f\\seed_%d"%(size, psf_r,ra, e, btr, seed)
-cmd = "python SNR_change_plot.py %d %d %s"%(size, num, title)
+cmd = "python SNR_change_plot.py %d %d %s %d"%(size, num, title, len(flux))
 os.system(cmd)

@@ -31,18 +31,25 @@ total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
                                                    [['selection_bias', "%s_path"%source, '1'],
                                                     ['selection_bias', "%s_path_para"%source, '1']])
 
-chip_num = 500
-columns = 100
+para_contents = [["para","total_num",1], ["para","stamp_size",1],
+                 ["para", "stamp_col", 1], ["para","shear_num",1]]
+para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get'], para_contents)
+
+chip_num = int(para_items[0])
+size = int(para_items[1])
+columns = int(para_items[2])
+shear_num = int(para_items[3])
+
 area_thresh = 6
 gal_num = 10000
-size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","stamp_size","1"]])[0])
+
 
 if rank == 0:
     log = "START: operation: %s, source: %s, code: %s"\
           %(argv[1], total_path.split("/")[-2], argv[0])
     logger.info(log)
 
-total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(14) for j in range(chip_num)]
+total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(shear_num) for j in range(chip_num)]
 total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j) for i in range(14) for j in range(chip_num)]
 allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
 allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
@@ -62,7 +69,7 @@ if cmd == "snr":
         a = Popen(comm, shell=True)
         a.wait()
 
-if cmd == "add" and rank < 14:
+if cmd == "add" and rank < shear_num:
     snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * gal_num, 8))
     for i in range(chip_num):
@@ -72,7 +79,7 @@ if cmd == "add" and rank < 14:
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
     numpy.savez(snr_data_path, snr_data)
 
-if cmd == "check" and rank < 14:
+if cmd == "check" and rank < shear_num:
     # check
     check_path = total_path + "result/data/check/%s/"%sex_filter
     if rank == 0:

@@ -35,7 +35,7 @@ if cmd == "sex":
         if os.path.exists(sex_path):
             shutil.rmtree(sex_path)
         os.makedirs(sex_path + "cat/")
-        print("Build: %s/cat/" % sex_path)
+        print("Build: %scat/" % sex_path)
 
 if cmd == "all":
     for i in range(14):

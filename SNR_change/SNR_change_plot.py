@@ -11,7 +11,7 @@ from Fourier_Quad import Fourier_Quad
 from subprocess import Popen
 
 
-size, num, title = int(argv[1]), int(argv[2]), argv[3]
+size, num, title, flux_num = int(argv[1]), int(argv[2]), argv[3], int(argv[4])
 seed = 80000
 
 markers = ['o','v','p','h','d','s']
@@ -28,7 +28,7 @@ total_path = '%s/work/sex_2/imgs/'%my_home
 data = numpy.zeros((12, num))
 data_0 = numpy.zeros((12, 1))
 
-for i in range(4):
+for i in range(flux_num):
     gal0_path = total_path+'gal0_%d.fits'%i
     gal0 = fits.open(gal0_path)[0].data
     snr_0 = fq.snr_f(gal0)
