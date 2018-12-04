@@ -16,6 +16,7 @@ void read_para(const std::string path, const std::string name, int &para)
 	std::string str, str1, str2, str3;
 	std::stringstream strs;
 	infile.open(path);
+	int f = 0;
 	while (!infile.eof())
 	{
 		str.clear();
@@ -31,8 +32,16 @@ void read_para(const std::string path, const std::string name, int &para)
 		if (str1 == name)
 		{
 			para = std::stoi(str3);
+			f = 1;
 			break;
 		}
+	}
+	if (f == 0)
+	{	
+		str.clear();
+		str = name + "can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
 	}
 }
 
@@ -41,6 +50,7 @@ void read_para(const std::string path, const std::string name, double &para)
 	std::ifstream infile;
 	std::string str, str1, str2, str3;
 	std::stringstream strs;
+	int f = 0;
 	infile.open(path);
 	while (!infile.eof())
 	{
@@ -57,8 +67,16 @@ void read_para(const std::string path, const std::string name, double &para)
 		if (str1 == name)
 		{
 			para = std::stod(str3);
+			f = 1;
 			break;
 		}
+	}
+	if (f == 0)
+	{
+		str.clear();
+		str = name + "can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
 	}
 }
 
@@ -67,6 +85,7 @@ void read_para(const std::string path, const std::string name, float &para)
 	std::ifstream infile;
 	std::string str, str1, str2, str3;
 	std::stringstream strs;
+	int f = 0;
 	infile.open(path);
 	while (!infile.eof())
 	{
@@ -83,15 +102,25 @@ void read_para(const std::string path, const std::string name, float &para)
 		if (str1 == name)
 		{
 			para = std::stof(str3);
+			f = 1;
 			break;
 		}
+	}
+	if (f == 0)
+	{
+		str.clear();
+		str = name + "can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
 	}
 }
 
 void write_log(char*filename,  char *inform)
-{
+{	
+	char time_now[40];
+	get_time(time_now, 40);
 	loggers.open(filename,ios::out|ios::app);
-	loggers << inform<< endl;
+	loggers <<time_now<<" ---- "<< inform<< endl;
 	loggers.close();
 }
 
@@ -1066,6 +1095,13 @@ int com_int_descend(const void *a, const void *b)
 	return (*(int*)b - *(int*)a);
 }
 
+void get_time(char *str_time, int length)
+{	
+	/* the length of str_time should be larger than 40 */
+	time_t timer;
+	time(&timer);
+	strftime(str_time, length, "%Y-%m-%d %H:%M:%S", localtime(&timer));
+}
 
 
 

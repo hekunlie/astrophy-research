@@ -5,6 +5,7 @@
 #include <iostream>
 #include<fstream>
 #include<string>
+#include<string.h>
 #include<sstream>
 #include <iomanip>
 #include <cmath>
@@ -16,6 +17,7 @@
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
+#include<stdlib.h>
 
 //#include<mkl.h>
 
@@ -188,6 +190,10 @@ int com_int_ascend(const void *a, const void *b);
 int com_double_descend(const void *a, const void *b);
 int com_float_descend(const void *a, const void *b);
 int com_int_descend(const void *a, const void *b);
+
+void get_time(char *str_time, int length);
+/* get the current time.
+	the length of str_time should be larger than 40 */
 
 /*double qucik_exp(double x, double precision, para* paras);*/
 
