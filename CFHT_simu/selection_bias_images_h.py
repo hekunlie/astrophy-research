@@ -51,7 +51,7 @@ ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.8, flux=1.0, trunc=2)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=2)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -106,10 +106,10 @@ for shear_id in range(shear_num):
             c_profile = gal_profile[para_n + k, 0]
 
             if c_profile == 1:
-                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra).shear(e1=e1, e2=e2)
+                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra,flux=1.0).shear(e1=e1, e2=e2)
             else:
-                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
-                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra,flux=1.0)  # be careful
+                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra,flux=1.0)  # be careful
                 gal_com = bulge * btr + disk * (1 - btr)
                 gal = gal_com.shear(e1=e1, e2=e2)
 

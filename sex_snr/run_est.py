@@ -4,19 +4,19 @@ import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 
 
-sources = ["dimmer"]
+sources = ["dimmer","dimmerm3"]
 
-num = 64
-a = numpy.zeros((num, 1))
+num = 60
+jobs = numpy.zeros((num, 1))
 
 for source in sources:
 
     while True:
-        if a.sum() == num:
+        if jobs.sum() == num:
             break
         for i in range(num):
             if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
-                a[i, 0] = 1
+                jobs[i, 0] = 1
 
     if "pts" in source:
         max_radius = 8

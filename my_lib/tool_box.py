@@ -650,7 +650,7 @@ def mag_to_flux(mag, zpt=25.77, exp_time=600, area=8.0216, gain=1.5):
     :param exp_time: exposure time, second,
                     default for CFHTLenS, ~ 600 sec from the observational images
     :param area: effective area of the camera, m^2, default for CFHTLenS, 8.0216 m^2
-    :param gain: default for the CFHTLenS, ~1.5 from the observational images
+    :param gain: default for the CFHTLenS, ~ 1.5 from the observational images
     :return: numpy array or float, depends on the type of the input,
             the total ADU number of a galaxy
 

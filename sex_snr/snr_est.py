@@ -50,7 +50,8 @@ if rank == 0:
     logger.info(log)
 
 total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(shear_num) for j in range(chip_num)]
-total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j) for i in range(14) for j in range(chip_num)]
+total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j)
+                   for i in range(shear_num) for j in range(chip_num)]
 allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
 allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
 if rank == 0:
