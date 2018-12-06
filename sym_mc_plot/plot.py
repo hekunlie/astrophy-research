@@ -2,6 +2,17 @@ import numpy
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import os
+import time
+
+i = 0.000000001
+while True:
+    i += 0.00000001
+    print(i)
+    time.sleep(10)
+
+
+
+
 
 fig_x = 8
 fig_y = fig_x*4/6

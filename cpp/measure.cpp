@@ -25,10 +25,10 @@ int main(int argc, char*argv[])
 	ifstream fin;
 	string s,  str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx="stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/");
-	string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
+	string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
 	string str_paraf_path = str_data_path + "parameters/para.ini";
-
+	sprintf(log_path, "%slogs/measue%02d_log.dat", data_path, myid);
 
 	int size , total_chips,  chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols=7;
@@ -43,13 +43,18 @@ int main(int argc, char*argv[])
 	read_para(str_paraf_path, str_shear_num, shear_pairs);
 	read_para(str_paraf_path, str_nx, stamp_nx);
 
-
 	chip_num = total_chips / numprocs;
 	total_data_row = total_chips*stamp_num;
 	data_row = chip_num*stamp_num;
 
 	chip_id_s = chip_num*myid;
 	chip_id_e = chip_num*(myid+1);	
+
+	if (0 == myid)
+	{	
+		sprintf(log_inform, "RANK: %03d,  thresd: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
+		write_log(log_path, log_inform);
+	}
 
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
@@ -59,8 +64,7 @@ int main(int argc, char*argv[])
 	all_paras.detect_thres = gal_noise_sig*2;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
-	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */
-	
+	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */	
 
 	ts = clock();
 	seed = myid * 15322 + 4332;
@@ -96,17 +100,16 @@ int main(int argc, char*argv[])
 	if (0 == myid)
 	{
 		cout << "PSF THRES: " << all_paras.psf_pow_thres << endl<< all_paras.psf_hlr << endl;
-	}
+	}	
 	
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{	
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d, total chips: %d (%d cpus)", myid, shear_id, chip_id_s, chip_id_e, total_chips, numprocs);
+		write_log(log_path, log_inform);
 
 		sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_name, "/mag");
-
 		read_h5(para_path, set_name, mag, NULL, NULL, NULL, NULL);
-
-		sprintf(log_path, "%slogs/measue%02d_log.dat", data_path, myid);
 
 		if (0 == myid)
 		{
@@ -151,11 +154,10 @@ int main(int argc, char*argv[])
 				{
 					addnoise(noise, size*size, gal_noise_sig);
 					pow_spec(noise, pnoise, size, size);
-
 					shear_est(pgal, ppsf, pnoise, &all_paras);
 
-					data[row + j * shear_esti_data_cols +0] = 0;
-					data[row + j * shear_esti_data_cols + 1] = 0;
+					data[row + j * shear_esti_data_cols +0] = i;
+					data[row + j * shear_esti_data_cols + 1] = j;
 					data[row + j * shear_esti_data_cols + 2] = all_paras.n1;
 					data[row + j * shear_esti_data_cols + 3] = all_paras.n2;
 					data[row + j * shear_esti_data_cols + 4] = all_paras.dn;
@@ -179,8 +181,7 @@ int main(int argc, char*argv[])
 			{
 				cout << log_inform << endl;
 			}
-		}
-	
+		}	
 		
 		sprintf(set_name, "/data");
 		if ( 0 == cmd)
@@ -189,8 +190,10 @@ int main(int argc, char*argv[])
 			if (0 == myid)
 			{
 				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
-				write_h5(h5_path, set_name, data_row, shear_esti_data_cols, data, NULL);
+				write_h5(h5_path, set_name, total_data_row, shear_esti_data_cols, recvbuf, NULL);
 			}
+			sprintf(h5_path, "%sresult/data/check_data_%d_%d.hdf5", data_path, shear_id, myid);
+			write_h5(h5_path, set_name, data_row, shear_esti_data_cols, data, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -198,12 +201,12 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			sprintf(snr_h5_path, "%sresult/data/data_2sig/data_%d.hdf5", data_path, shear_id);
-			write_h5(snr_h5_path, set_name, data_row, snr_para_data_cols, data_s, NULL);
+			write_h5(snr_h5_path, set_name, total_data_row, snr_para_data_cols, recvbuf_s, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		te = clock();
-		sprintf(log_inform, "write data to file and finish jobs in %.2f sec", (te-ts)/CLOCKS_PER_SEC);
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d: write data to file and finish jobs in %.2f sec",myid, shear_id, (te-ts)/CLOCKS_PER_SEC);
 		write_log(log_path, log_inform);
 		if (0 == myid)
 		{
