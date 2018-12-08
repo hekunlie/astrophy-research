@@ -13,20 +13,24 @@ import galsim
 
 size = int(argv[1])
 psf_r = float(argv[2])
-ra = float(argv[3])
-e = float(argv[4])
-btr = float(argv[5])
-seed = int(argv[6])
+e = float(argv[3])
+btr = float(argv[4])
+ra = float(argv[5])
+# seed = int(argv[6])
 
 
-num = 21
+seed = numpy.random.randint(0,100000,1)[0]
+num = 17
 pixel_scale = 0.187
 markers = ['p', 'x', 's', '8']
 colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
 
 
-flux = numpy.array([tool_box.mag_to_flux(20), tool_box.mag_to_flux(22),
-                    tool_box.mag_to_flux(23), tool_box.mag_to_flux(24)])
+flux = numpy.array([tool_box.mag_to_flux(22.5),tool_box.mag_to_flux(23.2),
+                    tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24),
+                    tool_box.mag_to_flux(24.2),tool_box.mag_to_flux(24.4),
+                   tool_box.mag_to_flux(24.5), tool_box.mag_to_flux(24.7),
+                    tool_box.mag_to_flux(24.9),tool_box.mag_to_flux(25.1)])
 sig = 60
 print(sig)
 
@@ -38,6 +42,7 @@ psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
 
 shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
+img_path = os.getcwd() + "/imgs/"
 for k in range(len(flux)):
 
     pool = []
@@ -51,7 +56,7 @@ for k in range(len(flux)):
     img_0 = galsim.ImageD(size, size)
     gal_c.drawImage(image=img_0, scale=pixel_scale)
     gal_img = img_0.array + noise
-    path = "%s/work/sex_2/imgs/gal0_%d.fits" %(my_home,k)
+    path = img_path + "gal0_%d.fits" %k
     hdu = fits.PrimaryHDU(gal_img)
     hdu.writeto(path, overwrite=True)
 
@@ -63,9 +68,9 @@ for k in range(len(flux)):
         gal_s_c.drawImage(image=img_s, scale=pixel_scale)
         gal_s_img = img_s.array + noise
 
-        path = "%s/work/sex_2/imgs/gal_%d_%d.fits"%(my_home,k,i)
+        path = img_path + "gal_%d_%d.fits"%(k,i)
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
-title = "xy_%d\\pr_%.2f\\gr_%.2f\\e1%.2f\\btr_%.2f\\seed_%d"%(size, psf_r,ra, e, btr, seed)
+title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d"%(size, psf_r, e, btr, ra, seed)
 cmd = "python SNR_change_plot.py %d %d %s %d"%(size, num, title, len(flux))
 os.system(cmd)

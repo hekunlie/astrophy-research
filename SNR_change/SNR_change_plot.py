@@ -14,8 +14,8 @@ from subprocess import Popen
 size, num, title, flux_num = int(argv[1]), int(argv[2]), argv[3], int(argv[4])
 seed = 80000
 
-markers = ['o','v','p','h','d','s']
-colors = ['red','orange','green','violet','cyan','b']
+markers = ['o','v','p','h','d','s',"4","*","X","^",">","+"]
+colors = ['red','orange','green','violet','cyan','b',"limegreen","k","purple","teal","saddlebrown"]
 
 fq = Fourier_Quad(size, seed)
 
@@ -23,10 +23,10 @@ fig = plt.figure(figsize=(18,6))
 ax1 = fig.add_subplot(131)
 ax2 = fig.add_subplot(132)
 ax3 = fig.add_subplot(133)
-total_path = '%s/work/sex_2/imgs/'%my_home
+total_path = os.getcwd() + '/imgs/'
 
-data = numpy.zeros((12, num))
-data_0 = numpy.zeros((12, 1))
+data = numpy.zeros((flux_num*3, num))
+data_0 = numpy.zeros((flux_num*3, 1))
 
 for i in range(flux_num):
     gal0_path = total_path+'gal0_%d.fits'%i
@@ -100,7 +100,7 @@ ax2.set_xlabel("g1")
 ax3.set_xlabel("g1")
 ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
 ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
-
+ax3.yaxis.get_major_formatter().set_powerlimits((1, 2))
 
 ax1.set_ylabel("Change rate of sex_snr")
 ax2.set_ylabel("Change rate of fsnr")
