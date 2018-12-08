@@ -764,14 +764,14 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     for the correlation calculation
     find the target blocks with a distance which is between two given radius for the specific point
     :param scale: the side length of the square blocks
-    :param radius_s, radius_e: the lower bound of radius, the upper bound of radius
-    :param ny, nx: the block tag of the point
+    :param radius_s, radius_e: the lower (upper) bound of radius
+    :param ny, nx: the block labels of the point
     :param pts_y, pts_x: y, x of the point
     :param block_ny, block_nx: number of the blocks along y-axis and x-axis for saving time
     :param block_boundy, block_boundx: (n, 4) numpy array, each row contains the y-coordinates (x-coordinates)
                         of the four point of each block
                         |y1, y2|    |x1, x2|
-                        |y4, y3|,   |x4, x3|, actually, y1 = y2, y4 = y3, x1 = x4, x2 = x3
+                        |y4, y3|,   |x4, x3|, actually, y1 = y2, y4 = y3 & x1 = x4, x2 = x3
     :return: list of the target blocks
     """
     rs, re = radius_s ** 2, radius_e ** 2
