@@ -1029,6 +1029,51 @@ void initialize_para(para *paras)
 	paras->gal_osnr = 0;
 }
 
+void histogram(double *data, double *bins, int *num, int data_num, int bin_num)
+{
+	for (int i = 0; i < data_num; i++)
+	{
+		for (int j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num[j] += 1;
+				continue;
+			}
+		}
+	}
+}
+
+void histogram(float *data, float *bins, int *num, int data_num, int bin_num)
+{
+	for (int i = 0; i < data_num; i++)
+	{
+		for (int j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num[j] += 1;
+				continue;
+			}
+		}
+	}
+}
+
+void histogram(int *data, int *bins, int *num, int data_num, int bin_num)
+{
+	for (int i = 0; i < data_num; i++)
+	{
+		for (int j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num[j] += 1;
+				continue;
+			}
+		}
+	}
+}
+
 void qsort_double(double* arr, int size, int order=1)
 {
 	if (order == 1)

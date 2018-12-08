@@ -178,6 +178,10 @@ void hyperfit_5(double *data, double*fit_para, para *paras);
 void initialize_para(para *paras);
 /* set the "gal_: parameters zero */
 
+void histogram(double *data, double *bins, int *num, int data_num, int bin_num);
+void histogram(float *data, float *bins, int *num, int data_num, int bin_num);
+void histogram(int *data, int *bins, int *num, int data_num, int bin_num);
+
 void qsort_double(double *arr, int size, int order);
 /* sort the double array according to the order, order =1 for ascend, else for descend*/
 void qsort_float(float *arr, int size, int order);
