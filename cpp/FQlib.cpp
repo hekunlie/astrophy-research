@@ -1215,11 +1215,11 @@ void sort_double(double* arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		std::sort(arr, arr+size, com_double_ascend);
+		std::sort(arr, arr+size, std::less<double>());
 	}
 	else
 	{
-		std::sort(arr, arr+size,com_double_descend);
+		std::sort(arr, arr+size,std::greater<double>());
 	}
 }
 
@@ -1227,11 +1227,11 @@ void sort_float(float *arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		std::sort(arr, arr+size,  com_float_ascend);
+		std::sort(arr, arr+size,  std::less<float>());
 	}
 	else
 	{
-		std::sort(arr, arr+size, com_float_descend);
+		std::sort(arr, arr+size, std::greater<float>());
 	}
 }
 
@@ -1239,11 +1239,11 @@ void sort_int(int *arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		std::sort(arr, arr+size, com_int_ascend);
+		std::sort(arr, arr+size, std::less<int>());
 	}
 	else
 	{
-		std::sort(arr, arr+size, com_int_descend);
+		std::sort(arr, arr+size, std::greater<int>());
 	}
 }
 

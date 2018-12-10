@@ -18,7 +18,8 @@
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
 #include<stdlib.h>
-#include<algorithm>
+#include<algorithm> // sort()
+#include<functional> // std::less, std::greater..
 
 //#include<mkl.h>
 
