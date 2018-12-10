@@ -484,6 +484,7 @@ class Fourier_Quad:
 
         if sym:
             bin_size = len(temp_data) / bin_num * 2
+            print(bin_size)
             bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
             bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
             bound = numpy.max(numpy.abs(data)) * 100.

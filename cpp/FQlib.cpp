@@ -4,7 +4,7 @@
 //using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
-ofstream loggers;
+std::ofstream loggers;
 
 char buffer[1000], exception_name[50];
 /********************************************************************************************************************************************/
@@ -119,8 +119,8 @@ void write_log(char*filename,  char *inform)
 {	
 	char time_now[40];
 	get_time(time_now, 40);
-	loggers.open(filename,ios::out|ios::app);
-	loggers <<time_now<<" ---- "<< inform<< endl;
+	loggers.open(filename,std::ios::out|std::ios::app);
+	loggers <<time_now<<" ---- "<< inform<< std::endl;
 	loggers.close();
 }
 
@@ -688,7 +688,7 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 				{	
 					if (s_num >= paras->max_source)
 					{
-						cout << "Too many source!" << endl;
+						std::cout << "Too many source!" << std::endl;
 						break;
 					}
 					for (m = 0; m < len; m++)
@@ -799,7 +799,9 @@ void addnoise(double *image, int pixel_num, double sigma)
 void initialize_arr(double *in_img, int length)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
+	{
 		in_img[i] = 0.;
+	}
 }
 
 
@@ -1029,6 +1031,66 @@ void initialize_para(para *paras)
 	paras->gal_osnr = 0;
 }
 
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num)
+{
+	double *data_cp = new double[data_num];
+	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
+	for (i = 0; i < data_num; i++)
+	{
+		data_cp[i] = fabs(data[i]);
+	}
+	sort_double(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * 100;
+	bins[bin_num] = data_cp[data_num - 1] * 100;
+	bins[mid] = 0;
+	for (i = 1; i < bin_num / 2; i++)
+	{
+		bins[mid + i] = data_cp[step*i];
+		bins[mid - i] = -data_cp[step*i];
+	}
+	delete[] data_cp;
+}
+
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num)
+{
+	float *data_cp = new float[data_num];
+	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
+	for (i = 0; i < data_num; i++)
+	{
+		data_cp[i] = fabs(data[i]);
+	}
+	sort_float(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * 100.;
+	bins[bin_num] = data_cp[data_num - 1] * 100.;
+	bins[mid] = 0;
+	for (i = 1; i < bin_num / 2; i++)
+	{
+		bins[mid + i] = data_cp[step*i];
+		bins[mid - i] = -data_cp[step*i];
+	}
+	delete[] data_cp;
+}
+
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num)
+{
+	int *data_cp = new int[data_num];
+	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
+	for (i = 0; i < data_num; i++)
+	{
+		data_cp[i] = fabs(data[i]);
+	}
+	sort_int(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * 100;
+	bins[bin_num] = data_cp[data_num - 1] * 100;
+	bins[mid] = 0;
+	for (i = 1; i < bin_num / 2; i++)
+	{
+		bins[mid + i] = data_cp[step*i];
+		bins[mid - i] = -data_cp[step*i];
+	}
+	delete[] data_cp;
+}
+
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num)
 {
 	for (int i = 0; i < data_num; i++)
@@ -1149,70 +1211,70 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 	}
 }
 
-void qsort_double(double* arr, int size, int order=1)
+void sort_double(double* arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		qsort(arr, size, sizeof(double), com_double_ascend);
+		std::sort(arr, arr+size, com_double_ascend);
 	}
 	else
 	{
-		qsort(arr, size, sizeof(double), com_double_descend);
+		std::sort(arr, arr+size,com_double_descend);
 	}
 }
 
-void qsort_float(float *arr, int size, int order=1)
+void sort_float(float *arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		qsort(arr, size, sizeof(float), com_float_ascend);
+		std::sort(arr, arr+size,  com_float_ascend);
 	}
 	else
 	{
-		qsort(arr, size, sizeof(float), com_float_descend);
+		std::sort(arr, arr+size, com_float_descend);
 	}
 }
 
-void qsort_int(int *arr, int size, int order=1)
+void sort_int(int *arr, int size, int order=1)
 {
 	if (order == 1)
 	{
-		qsort(arr, size, sizeof(int), com_int_ascend);
+		std::sort(arr, arr+size, com_int_ascend);
 	}
 	else
 	{
-		qsort(arr, size, sizeof(int), com_int_descend);
+		std::sort(arr, arr+size, com_int_descend);
 	}
 }
 
-int com_double_ascend(const void *a, const void *b)
+int com_double_ascend(const double a, const double b)
 {
-	return (*(double*)a - *(double*)b);
+	return a < b;
 }
 
-int com_float_ascend(const void *a, const void *b)
+int com_float_ascend(const float a, const float b)
 {
-	return (*(float*)a - *(float*)b);
+	return a<b;
 }
 
-int com_int_ascend(const void *a, const void *b)
+int com_int_ascend(const int a, const int b)
 {
-	return (*(int*)a - *(int*)b);
+	return a<b;
 }
 
-int com_double_descend(const void *a, const void *b)
+int com_double_descend(const double a, const double b)
 {
-	return ( *(double*)b - *(double*)a);
+	return a>b;
 }
 
-int com_float_descend(const void *a, const void *b)
+int com_float_descend(const float a, const float b)
 {
-	return (*(float*)b - *(float*)a);
+	return a>b;
 }
 
-int com_int_descend(const void *a, const void *b)
+int com_int_descend(const int a, const int b)
 {
-	return (*(int*)b - *(int*)a);
+	return a>b;
 }
 
 void get_time(char *str_time, int length)

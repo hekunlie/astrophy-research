@@ -18,6 +18,7 @@
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
 #include<stdlib.h>
+#include<algorithm>
 
 //#include<mkl.h>
 
@@ -71,11 +72,11 @@ struct para
 };
 
 
-using namespace std;
+//using namespace std;
 const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
-extern ofstream loggers;
+extern std::ofstream loggers;
 
 /********************************************************************************************************************************************/
 /* file reading and writting*/
@@ -178,6 +179,10 @@ void hyperfit_5(double *data, double*fit_para, para *paras);
 void initialize_para(para *paras);
 /* set the "gal_: parameters zero */
 
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num);
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num);
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num);
+
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num);
 void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num);
 void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num);
@@ -186,18 +191,18 @@ void histogram2d(const double *data_y, const double*data_x, const double *bin_y,
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num);
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num);
 
-void qsort_double(double *arr, int size, int order);
+void sort_double(double *arr, int size, int order);
 /* sort the double array according to the order, order =1 for ascend, else for descend*/
-void qsort_float(float *arr, int size, int order);
-void qsort_int(int *arr, int size, int order);
+void sort_float(float *arr, int size, int order);
+void sort_int(int *arr, int size, int order);
 
-int com_double_ascend(const void *a, const void *b);
+int com_double_ascend(const double a, const double b);
 /* the compare function for the qsort() method */
-int com_float_ascend(const void *a, const void *b);
-int com_int_ascend(const void *a, const void *b);
-int com_double_descend(const void *a, const void *b);
-int com_float_descend(const void *a, const void *b);
-int com_int_descend(const void *a, const void *b);
+int com_float_ascend(const float a, const float b);
+int com_int_ascend(const int a, const int b);
+int com_double_descend(const  double a, const double b);
+int com_float_descend(const float a, const float b);
+int com_int_descend(const int a, const int b);
 
 void get_time(char *str_time, int length);
 /* get the current time.

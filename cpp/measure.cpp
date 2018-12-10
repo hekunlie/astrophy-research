@@ -25,10 +25,10 @@ int main(int argc, char*argv[])
 	ifstream fin;
 	string s,  str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx="stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
-	string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/");
+	string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/";
 	string str_paraf_path = str_data_path + "parameters/para.ini";
-	sprintf(log_path, "%slogs/measue%02d_log.dat", data_path, myid);
+	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size , total_chips,  chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols=7;
@@ -61,14 +61,12 @@ int main(int argc, char*argv[])
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
 	all_paras.area_thres = 6;
-	all_paras.detect_thres = gal_noise_sig*2;
+	all_paras.detect_thres = gal_noise_sig*1.5;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */	
 
 	ts = clock();
-	seed = myid * 15322 + 4332;
-	gsl_rng_initialize(seed);
 
 	double *psf = new double[size*size]();
 	double *ppsf = new double[size*size]();
@@ -120,7 +118,9 @@ int main(int argc, char*argv[])
 		initialize_arr(data_s, data_row*snr_para_data_cols);
 
 		for (i = chip_id_s; i < chip_id_e; i++)
-		{
+		{ 
+			seed = myid * i+shear_id + 1;
+			gsl_rng_initialize(seed);
 			t1 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip start...", myid, shear_id, i);
 			write_log(log_path, log_inform);
@@ -181,6 +181,7 @@ int main(int argc, char*argv[])
 			{
 				cout << log_inform << endl;
 			}
+			gsl_rng_free();
 		}	
 		
 		sprintf(set_name, "/data");
@@ -192,15 +193,15 @@ int main(int argc, char*argv[])
 				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
 				write_h5(h5_path, set_name, total_data_row, shear_esti_data_cols, recvbuf, NULL);
 			}
-			sprintf(h5_path, "%sresult/data/check_data_%d_%d.hdf5", data_path, shear_id, myid);
-			write_h5(h5_path, set_name, data_row, shear_esti_data_cols, data, NULL);
+			//sprintf(h5_path, "%sresult/data/check_data_%d_%d.hdf5", data_path, shear_id, myid);
+			//write_h5(h5_path, set_name, data_row, shear_esti_data_cols, data, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		MPI_Gather(data_s, data_row*snr_para_data_cols, MPI_DOUBLE, recvbuf_s, data_row*snr_para_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == myid)
 		{
-			sprintf(snr_h5_path, "%sresult/data/data_2sig/data_%d.hdf5", data_path, shear_id);
+			sprintf(snr_h5_path, "%sresult/data/data_1.5sig/data_%d.hdf5", data_path, shear_id);
 			write_h5(snr_h5_path, set_name, total_data_row, snr_para_data_cols, recvbuf_s, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -224,7 +225,6 @@ int main(int argc, char*argv[])
 	delete[] data;
 	delete[] data_s;
 	delete[] mag;
-	gsl_rng_free();
 	MPI_Finalize();
 	return 0;
 }
