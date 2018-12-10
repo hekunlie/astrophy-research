@@ -42,22 +42,24 @@ para_path = path_items[2]
 pic_path = path_items[3]
 
 shear_input = numpy.load(para_path+"shear.npz")
-fg1 = shear_input['arr_0']
-fg2 = shear_input['arr_1']
+fg1 = shear_input['arr_0'][:,0]
+fg2 = shear_input['arr_1'][:,0]
+gmin = min(fg1.min(), fg2.min())
+gmax = max(fg1.max(), fg2.max())
 
 # where the result data file are placed
 path = result_path + "data/"
 
 final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, ch, snr_s)
 for s in range(int(scale)):
-    data_cache_path = path + 'data_%d_%d.hdf5'%(rank, s)
+    data_cache_path = path + 'data_%d.hdf5'%rank
     f = h5py.File(data_cache_path, 'r')
     if s == 0:
         data = f["/data"].value.copy()
     else:
         data = numpy.row_stack((data, f["/data"].value.copy()))
     f.close()
-    fq_snr_h5path = result_path + "data/data_2sig/data_%d_%d.hdf5" % (rank, s)
+    fq_snr_h5path = result_path + "data/data_1.5sig/data_%d.hdf5" %rank
     fq_snr_file = h5py.File(fq_snr_h5path, "r")
     set_name = list(fq_snr_file.keys())[0]
     fq_snr_temp = fq_snr_file[set_name].value
@@ -117,16 +119,15 @@ ssnr = select[ch]
 idxs = ssnr > snr_cut_s
 idxe = ssnr <= snr_cut_e
 
-
-G1 = FG1[idxs&idxe][:150000]
-G2 = FG2[idxs & idxe][:150000]
-N = FN[idxs&idxe][:150000]
-U = FU[idxs&idxe][:150000]
+a,b = 1000000,2000000
+G1 = FG1[idxs&idxe][a:b]
+G2 = FG2[idxs & idxe][a:b]
+N = FN[idxs&idxe][a:b]
+U = FU[idxs&idxe][a:b]
 DE1 = N + U
 DE2 = N - U
 
 num = len(G1)
-print(rank, num)
 
 g1_xi2_pic = pic_path + "%d_%s_%d_g1_xi2.png"%(rank, ch, del_bin)
 g2_xi2_pic = pic_path + "%d_%s_%d_g2_xi2.png"%(rank, ch, del_bin)
@@ -193,7 +194,8 @@ if rank == 0:
         print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m1_b, e1mc[0]-1, e1mc[1], c1_b, e1mc[2], e1mc[3]))
         print("%10s: %8.5f (%6.5f), %10s: %10.6f (%.6f)"%(m2_b, e2mc[0]-1, e2mc[1], c2_b, e2mc[2], e2mc[3]))
         nm = pic_path + "mc_%s.png"%ch
-        tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max',[-0.03,0.03,-0.03,0.03], nm)
+        plot_range = [gmin-(gmax-gmin)*0.05, gmax+(gmax-gmin)*0.05,gmin-(gmax-gmin)*0.05,gmax+(gmax-gmin)*0.05]
+        tool_box.mcplot(fg1, arr1, fg2, arr2, e1mc, e2mc, snr_s, 'max',plot_range, nm)
 
 te = time.clock()
 if rank == 0:
