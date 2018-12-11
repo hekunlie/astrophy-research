@@ -25,15 +25,15 @@ int main(int argc, char*argv[])
 	ifstream fin;
 	string s,  str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx="stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/");
-	string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+	string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 	string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size , total_chips,  chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols=7;
 	int i, j, k, row, row_s,  seed, chip_id_s, chip_id_e, shear_id;
-	double thres = 2., psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2;
+	double psf_thres = 2., sig_level=1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2;
 
 	int cmd = 0;
 
@@ -61,7 +61,7 @@ int main(int argc, char*argv[])
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
 	all_paras.area_thres = 6;
-	all_paras.detect_thres = gal_noise_sig*1.5;
+	all_paras.detect_thres = gal_noise_sig* sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.max_distance = 5.5; /* because the max half light radius of the galsim source is 5.5 pixels */	
@@ -91,7 +91,7 @@ int main(int argc, char*argv[])
 	read_img(psf, chip_path);
 
 	pow_spec(psf, ppsf, size, size);
-	get_radius(ppsf, &all_paras, thres, 1, psf_noise_sig);
+	get_radius(ppsf, &all_paras, psf_thres, 1, psf_noise_sig);
 	
 	get_psf_thres(ppsf, &all_paras);
 
@@ -201,7 +201,7 @@ int main(int argc, char*argv[])
 		MPI_Gather(data_s, data_row*snr_para_data_cols, MPI_DOUBLE, recvbuf_s, data_row*snr_para_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == myid)
 		{
-			sprintf(snr_h5_path, "%sresult/data/data_1.5sig/data_%d.hdf5", data_path, shear_id);
+			sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
 			write_h5(snr_h5_path, set_name, total_data_row, snr_para_data_cols, recvbuf_s, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
