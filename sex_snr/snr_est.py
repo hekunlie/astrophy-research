@@ -132,8 +132,8 @@ if cmd == "check" and rank < shear_num:
     plt.hist(input_mag, 100)
     plt.xlabel("INPUT MAG")
 
-    sig_level = sex_filter.split("_")[-1]
-    meas_para_path = total_path + "result/data/data_%ssig/data_%d_0.hdf5" % (sig_level, rank)
+    sig_level = float(sex_filter.split("_")[1])
+    meas_para_path = total_path + "result/data/data_%.1fsig/data_%d.hdf5" % (sig_level, rank)
     if os.path.exists(meas_para_path):
         meas_para = h5py.File(meas_para_path, "r")
         f_data = meas_para["data"].value
@@ -144,7 +144,7 @@ if cmd == "check" and rank < shear_num:
 
         plt.subplot(2,5,4)
         plt.scatter(fsnr[idx_f], input_mag[idx_f], s=ms)
-        plt.xlabel("F-SNR (2.0$\sigma$)")
+        plt.xlabel("F-SNR (%s$\sigma$)"%sig_level)
         plt.ylabel("INPUT MAG")
 
         plt.subplot(2,5,9)
