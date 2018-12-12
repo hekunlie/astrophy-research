@@ -44,7 +44,7 @@ if cmd == "all":
     os.makedirs(para_path + "logs/")
     os.makedirs(para_path + "pic/")
     os.mkdir(total_path + "logs/")
-    os.makedirs(result_path + "data/data_2sig/")
+    os.makedirs(result_path + "data/data_2.0sig/")
     os.makedirs(result_path + "data/data_1.5sig/")
     os.makedirs(result_path + "data/check/")
     os.makedirs(result_path + "pic/")
