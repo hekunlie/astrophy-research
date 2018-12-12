@@ -46,11 +46,15 @@ img_path = os.getcwd() + "/imgs/"
 for k in range(len(flux)):
 
     pool = []
-    bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
-    disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
-    gal = bulge * btr + disk * (1 - btr)
-    gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
-    gal_f = gal.withFlux(flux[k])
+    # bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
+    # disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+    # gal = bulge * btr + disk * (1 - btr)
+    # gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
+    # gal_f = gal.withFlux(flux[k])
+
+    rng = galsim.BaseDeviate(12300000)
+    gal = galsim.randwalk.RandomWalk(npoints=500, half_light_radius=ra, flux=flux[k], rng=rng)
+    gal_f = gal.shear(e1=e, e2=0)
 
     gal_c = galsim.Convolve([gal_f, psf])
     img_0 = galsim.ImageD(size, size)

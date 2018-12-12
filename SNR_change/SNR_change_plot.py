@@ -110,11 +110,11 @@ ax2.legend()
 ax3.legend()
 fig.suptitle(title)
 
-pic_name = total_path + '%s.png'%argv[3]
+pic_name = total_path + '/imgs/%s.png'%argv[3]
 plt.savefig(pic_name)
 plt.show()
 plt.close()
 
-data_path = total_path + "total.npz"
+data_path = total_path + "/imgs/total.npz"
 numpy.savez(data_path, data_0, data)
 
