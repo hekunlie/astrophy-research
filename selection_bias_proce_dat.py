@@ -48,7 +48,7 @@ gmin = min(fg1.min(), fg2.min())
 gmax = max(fg1.max(), fg2.max())
 
 # where the result data file are placed
-path = result_path + "data/"
+path = result_path + "data_ori/"
 
 final_cache_path = path + '%d_%s_%s_final_cache.npz'%(del_bin, ch, snr_s)
 for s in range(int(scale)):
@@ -102,7 +102,7 @@ if rank == 0:
     print("flux2: %.2f ~ %.2f\n"%(numpy.min(flux2), numpy.max(flux2)))
     print("osnr: %.2f ~ %.2f\n"%(numpy.min(snr), numpy.max(snr)))
     print("area: %d ~ %d\n" % (numpy.min(area), numpy.max(area)))
-
+    print(fg1)
 # sex_path = total_path + "result/data/sex25_%d_1.5.npz"%rank
 # sex_data = numpy.load(sex_path)["arr_0"]
 # sex_snr = sex_data[:, 0]
@@ -119,7 +119,7 @@ ssnr = select[ch]
 idxs = ssnr > snr_cut_s
 idxe = ssnr <= snr_cut_e
 
-a,b = 1000000,2000000
+a,b = 0,2000000
 G1 = FG1[idxs&idxe][a:b]
 G2 = FG2[idxs & idxe][a:b]
 N = FN[idxs&idxe][a:b]

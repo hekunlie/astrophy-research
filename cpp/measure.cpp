@@ -33,7 +33,7 @@ int main(int argc, char*argv[])
 	int size , total_chips,  chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols=7;
 	int i, j, k, row, row_s,  seed, chip_id_s, chip_id_e, shear_id;
-	double psf_thres = 2., sig_level=1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2;
+	double psf_thres_scale = 2., sig_level=1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2;
 
 	int cmd = 0;
 
@@ -51,7 +51,15 @@ int main(int argc, char*argv[])
 	chip_id_e = chip_num*(myid+1);	
 
 	if (0 == myid)
-	{	
+	{
+		if (0 == cmd)
+		{
+			cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << endl;
+		}
+		if (1 == cmd)
+		{
+			cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << endl;
+		}
 		sprintf(log_inform, "RANK: %03d,  thresd: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
 		write_log(log_path, log_inform);
 	}
@@ -91,9 +99,7 @@ int main(int argc, char*argv[])
 	read_img(psf, chip_path);
 
 	pow_spec(psf, ppsf, size, size);
-	get_radius(ppsf, &all_paras, psf_thres, 1, psf_noise_sig);
-	
-	get_psf_thres(ppsf, &all_paras);
+	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
 
 	if (0 == myid)
 	{
@@ -212,6 +218,14 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			cout << log_inform << endl;
+			if (0 == cmd)
+			{
+				cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << endl;
+			}
+			if (1 == cmd)
+			{
+				cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << endl;
+			}
 		}
 	}
 

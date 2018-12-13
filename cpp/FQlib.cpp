@@ -483,12 +483,12 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 	
 	int *col = new int[size*size];
 	int *row = new int[size*size];
-	col[0] = xp;
 	row[0] = yp;
+	col[0] = xp;
 	flux = max;
 	flux_sq = max*max;
 	/* the peak coordinates have been put in the coordinate lists */
-	cp_img[xp + yp*size] = 0.;
+	cp_img[ yp*size + xp] = 0.;
 
 	while (num0 != num)
 	{
@@ -576,6 +576,84 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 	delete[] col;
 	delete[] row;
 	delete[] cp_img;
+}
+
+void get_psf_radius(const double *psf_pow, para*paras, const double scale)
+{
+	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
+	double max = 0;
+
+	/* find the maximun, but power of k=0 may be not the maximun, be careful!!!! */
+	for (y = size / 2 - 5; y < size / 2 + 5; y++)
+	{
+		for (x = size / 2 - 5; x < size / 2 + 5; x++)
+		{
+			if (psf_pow[y*size + x] > max)
+			{
+				max = psf_pow[y*size + x];
+				xp = x;
+				yp = y;
+			}
+		}
+	}
+	paras->psf_pow_thres = max / 10000.;
+	/* copy the image and wrap out the value smaller than the specific one */
+	double *cp_img = new double[size*size]();
+	for (x = 0; x < size*size; x++)
+	{
+		if (psf_pow[x] > max / scale)
+		{
+			cp_img[x] = psf_pow[x];
+		}
+	}
+
+	int *col = new int[size*size];
+	int *row = new int[size*size];
+	row[0] = yp;
+	col[0] = xp;
+	p = 1;
+	/* the peak coordinates have been put in the coordinate lists */
+	cp_img[yp*size + xp] = 0.;
+
+	while (num0 != num)
+	{
+		nump = num - num0;
+		num0 = p;
+		for (x = num0 - nump; x < num0; x++)
+		{
+			if ((row[x] - 1) > -1 && fabs(cp_img[col[x] + (row[x] - 1) * size]) > 0)
+			{
+				cp_img[col[x] + (row[x] - 1) * size] = 0.;
+				row[p] = row[x] - 1;
+				col[p] = col[x];
+				p++;
+			}
+			if ((row[x] + 1) < size && fabs(cp_img[col[x] + (row[x] + 1) * size]) > 0)
+			{
+				cp_img[col[x] + (row[x] + 1) * size] = 0.;
+				row[p] = row[x] + 1;
+				col[p] = col[x];
+				p++;
+			}
+			if ((col[x] - 1) > -1 && fabs(cp_img[col[x] - 1 + row[x] * size]) > 0)
+			{
+				cp_img[col[x] - 1 + row[x] * size] = 0.;
+				row[p] = row[x];
+				col[p] = col[x] - 1;
+				p++;
+			}
+			if ((col[x] + 1) < size && fabs(cp_img[col[x] + 1 + row[x] * size]) > 0)
+			{
+				cp_img[col[x] + 1 + row[x] * size] = 0.;
+				row[p] = row[x];
+				col[p] = col[x] + 1;
+				p++;
+			}
+		}
+		num = p;
+	}
+	paras->psf_hlr = sqrt(p / Pi);
+
 }
 
 int source_detector(double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
@@ -808,21 +886,8 @@ void initialize_arr(double *in_img, int length)
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
-void get_psf_thres(double *psf_pow, para* paras)
-{
-	double pow_max = 0;
-	int num = paras->stamp_size*paras->stamp_size;
-	for (int i = 0; i < num; i++)
-	{
-		if (psf_pow[i] > pow_max)
-		{
-			pow_max = psf_pow[i];
-		}
-	}
-	paras->psf_pow_thres = pow_max / 10000.;
-}
 
-void f_snr(double *image, para *paras, int fit)
+void f_snr(const double *image, para *paras, int fit)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
 	double n = 0, noise;
@@ -856,6 +921,71 @@ void f_snr(double *image, para *paras, int fit)
 		}
 		hyperfit_5(fz, fit_paras, paras);
 		paras->gal_flux_alt = sqrt(pow(10, fit_paras[0]) / noise);
+	}
+}
+
+void possion_subtraction(double *arr, para *paras, int edge)
+{
+	int i, j,size = paras->stamp_size;
+	double noise = 0;
+	for (i = 0; i < size; i++) //y
+	{
+		for (j = 0; j < size; j++) // x
+		{
+			if (i< edge || i> size - edge - 1)
+			{
+				noise += arr[i*size + j];
+			}
+			else if (j < edge || j>size - edge - 1)
+			{
+				noise += arr[i*size + j];
+			}
+		}
+	}
+	noise = noise * 0.25 / ((size - edge)*edge);
+	for (i = 0; i < size*size; i++) 
+	{
+		arr[i] = arr[i] - noise;
+	}
+}
+
+void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion)
+{
+	int i, j, size = paras->stamp_size;
+	double inoise = 0, pnoise=0;
+
+	if (0 == possion)
+	{
+		for (i = 0; i < size*size; i++)
+		{
+			image_pow[i] = image_pow[i] - noise_pow[i];
+		}
+	}
+	else
+	{
+		for (i = 0; i < size; i++) //y
+		{
+			for (j = 0; j < size; j++) // x
+			{
+				if (i< edge || i> size - edge - 1)
+				{
+					inoise += image_pow[i*size + j];
+					pnoise += noise_pow[i*size + j];
+				}
+				else if (j < edge || j>size - edge - 1)
+				{
+					inoise += image_pow[i*size + j];
+					pnoise += noise_pow[i*size + j];
+				}
+			}
+		}
+		inoise = inoise * 0.25 / ((size - edge)*edge);
+		pnoise = pnoise * 0.25 / ((size - edge)*edge);
+
+		for (i = 0; i < size*size; i++)
+		{
+			image_pow[i] = image_pow[i] - inoise - noise_pow[i] + pnoise;
+		}
 	}
 }
 

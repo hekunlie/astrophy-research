@@ -132,7 +132,12 @@ void create_epoints(double *point, int num_p, double ellip);
 void create_psf(double*in_img, double scale, int size, int psf);
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
 void pow_spec(double *in_img, double *out_img, int column, int row);
+
 void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
+void get_psf_radius(const double *psf_pow, para*para, const double scale);
+/*measure the size of psf power spectrum for the \beta parameter in the measurement.
+	power of k=0 may be not the maximun, be careful!!!! */
+
 int source_detector(double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
@@ -160,9 +165,10 @@ void initialize_arr(double *array, int size);
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
-void get_psf_thres(double *ppsf, para*paras);
+void possion_subtraction(double *image_pow, para *paras, int edge);
+void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);
 void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras);
-void f_snr(double *image, para *paras, int fit);
+void f_snr(const double *image, para *paras, int fit);
 /* if fit=2 for both flux2 and flux_alt estimations 
 	else just estimate the flux2 
 */

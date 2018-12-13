@@ -10,6 +10,7 @@ import time
 from mpi4py import MPI
 import h5py
 import tool_box
+import shutil
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -44,8 +45,9 @@ finish_path = "%s/work/test/job/%s/finish_%d.dat"%(my_home, source, rank)
 if rank == 0:
     indicator = "%s/work/test/job/%s"%(my_home, source)
     if os.path.exists(indicator):
-        os.remove(indicator)
+        shutil.rmtree(indicator)
     os.makedirs(indicator)
+comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
 seed = rank * 344 + 121
@@ -121,8 +123,7 @@ for shear_id in range(shear_num):
             # random walk
             gal_rng_seed = seed + shear_id + t + k
             gal_rng = galsim.BaseDeviate(gal_rng_seed)
-            gal = galsim.randwalk.RandomWalk(npoints=200, half_light_radius=ra, rng=gal_rng)#.shear(e1=e1, e2=e2)
-            gal_f = gal.withFlux(gal_flux)
+            gal_f = galsim.randwalk.RandomWalk(npoints=80, half_light_radius=ra, flux=gal_flux, rng=gal_rng)#.shear(e1=e1, e2=e2)
 
             gal_s = gal_f.shear(g1=g1, g2=g2)
             gal_c = galsim.Convolve([gal_s, psf])
