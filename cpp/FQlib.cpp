@@ -989,7 +989,7 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 	}
 }
 
-void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
+void shear_est(double *gal_img, double *psf_img, para *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no backgroud noise, a array of '0' should be inputted */
@@ -1018,7 +1018,8 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 				kx2 = kx*kx;
 				ky2 = ky*ky;
 
-				tk = exp( - k2 * beta ) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size+j]) * alpha;
+				tk = exp( - k2 * beta ) / psf_img[i*size + j] * gal_img[i*size + j] * alpha;
+				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
 				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
 				mg2 += -kx*ky*tk;
 				mn += ( k2 - 0.5*beta*k4 ) * tk;
@@ -1044,6 +1045,84 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
+void smooth(double *image,  const double *coeffs, para*paras)//be careful of the memset()
+{
+	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
+	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
+	double fz[6]{}, z[25]{}, fit_para_6, max = 0., thres;
+	double*temp = new double[size*size];
+	double *fit_image = new double[size*size];
+	double fit_temp[6 * 25]{};
+	double ones[6]{ 1.,1.,1.,1.,1.,1. };
+
+	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
+	for (i = 0; i < size*size; i++)
+	{
+		temp[i] = log10(image[i]);
+	}
+	for (i = 0; i < size; i++) //y
+	{
+		for (j = 0; j < size; j++)//x
+		{
+			tag = 0;
+			pk = 0;
+			for (m = -2; m < 3; m++)
+			{
+				if (2 < i && i < size - 2)
+				{
+					p = (i + m)*size;
+				}
+				else
+				{
+					p = (i + m + size) % size*size;// the periodic boundry condition
+				}
+				for (n = -2; n < 3; n++)
+				{
+					if (2 < j && j < size - 2)
+					{
+						q = j + n;
+					}
+					else
+					{
+						q = (j + n + size) % size; // the periodic boundry condition
+					}
+
+					if (tag != 0 && tag != 4 && tag != 20 && tag != 24)
+						// exclude the corner and center of each 5*5 block and the k0 of the power spectrum
+					{
+						if (p + q != cen)
+						{
+							z[tag] = temp[p + q];
+						}
+						else
+						{
+							pk = tag; // tag dicides the row of invers coefficients matrix to be used
+						}
+					}
+					tag++;
+				}
+			}
+			coe = pk * 150;
+			for (q = 0; q < 150; q++)
+			{
+				fit_temp[q] = coeffs[coe + q];
+			}
+			cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
+			fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
+			fit_image[i*size + j] = pow(10., fit_para_6);
+			memset(fz, 0, sizeof(fz));
+			memset(z, 0, sizeof(z));			
+		}
+	}
+	for (i = 0; i < size*size; i++)
+	{
+		image[i] = fit_image[i];
+	}
+
+	delete[] fit_image;
+	delete[] temp;
+}
+
 void smooth(double *image, const double* psf_pow, const double *coeffs, para*paras)//be careful of the memset()
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
@@ -1060,7 +1139,6 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 		temp[i] = log10(image[i]);
 	}
 	thres =  paras->psf_pow_thres;
-	//st2 = clock();
 
 	for (i = 0; i < size; i++) //y
 	{
@@ -1125,7 +1203,7 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 	{
 		image[i] = fit_image[i];
 	}
-	//paras->t1 += st2 - st1;
+
 	delete[] fit_image;
 	delete[] temp;
 }

@@ -167,7 +167,7 @@ void initialize_arr(double *array, int size);
 /********************************************************************************************************************************************/
 void possion_subtraction(double *image_pow, para *paras, int edge);
 void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);
-void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras);
+void shear_est(double *gal_img, double *psf_img, para *paras);
 void snr_est(const double *image, para *paras, int fit);
 /* if fit=2 for both flux2 and flux_alt estimations 
 	else just estimate the flux2 
@@ -176,8 +176,11 @@ void snr_est(const double *image, para *paras, int fit);
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
+void smooth(double *image, const double *coeffs, para *paras);
+/* smooth all the region */
 void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);
 /* the image will be repalced by the smoothed one. 
+	the psf_pow and the paras->psf_thres_pow are the mask and  threshold to label the region where to be smoothed
 	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 void hyperfit_5(double *data, double*fit_para, para *paras);
 

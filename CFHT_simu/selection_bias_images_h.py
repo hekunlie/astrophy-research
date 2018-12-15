@@ -109,21 +109,21 @@ for shear_id in range(shear_num):
             ra = radius[para_n + k, 0]
             btr = fbt[para_n + k, 0]
 
-            # # regular galaxy
-            # c_profile = gal_profile[para_n + k, 0]
-            # if c_profile == 1:
-            #     gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra,flux=1.0)
-            # else:
-            #     bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra,flux=1.0)  # be careful
-            #     disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra,flux=1.0)  # be careful
-            #     gal = bulge * btr + disk * (1 - btr)
-            # gal_e = gal.shear(e1=e1, e2=e2)
-            # gal_f = gal_e.withFlux(gal_flux)
+            # regular galaxy
+            c_profile = gal_profile[para_n + k, 0]
+            if c_profile == 1:
+                gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra,flux=1.0)
+            else:
+                bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra,flux=1.0)  # be careful
+                disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra,flux=1.0)  # be careful
+                gal = bulge * btr + disk * (1 - btr)
+            gal_e = gal.shear(e1=e1, e2=e2)
+            gal_f = gal_e.withFlux(gal_flux)
 
             # random walk
-            gal_rng_seed = seed + shear_id + t + k
-            gal_rng = galsim.BaseDeviate(gal_rng_seed)
-            gal_f = galsim.randwalk.RandomWalk(npoints=80, half_light_radius=ra, flux=gal_flux, rng=gal_rng)#.shear(e1=e1, e2=e2)
+            # gal_rng_seed = seed + shear_id + t + k
+            # gal_rng = galsim.BaseDeviate(gal_rng_seed)
+            # gal_f = galsim.randwalk.RandomWalk(npoints=80, half_light_radius=ra, flux=gal_flux, rng=gal_rng)#.shear(e1=e1, e2=e2)
 
             gal_s = gal_f.shear(g1=g1, g2=g2)
             gal_c = galsim.Convolve([gal_s, psf])
