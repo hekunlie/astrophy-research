@@ -887,7 +887,7 @@ void initialize_arr(double *in_img, int length)
 /* Fourier Quad */
 /********************************************************************************************************************************************/
 
-void f_snr(const double *image, para *paras, int fit)
+void snr_est(const double *image, para *paras, int fit)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
 	double n = 0, noise;
@@ -1044,27 +1044,27 @@ void shear_est(double *gal_img, double *psf_img, double *noise_img, para *paras)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
-void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, para*paras)//be careful of the memset()
+void smooth(double *image, const double* psf_pow, const double *coeffs, para*paras)//be careful of the memset()
 {
+	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
 	double fz[6]{}, z[25]{}, fit_para_6, max = 0., thres;
 	double*temp = new double[size*size];
+	double *fit_image = new double[size*size];
 	double fit_temp[6 * 25]{};
 	double ones[6]{ 1.,1.,1.,1.,1.,1. };
 
 	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
-
-								  /*  to fit the curve: a*x^2 + b*x*y+ c*y^2 + d*x + e*y + f  */
 	for (i = 0; i < size*size; i++)
 	{
 		temp[i] = log10(image[i]);
 	}
-	thres = paras->psf_pow_thres;
+	thres =  paras->psf_pow_thres;
 	//st2 = clock();
 
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) //y
 	{
-		for (j = 0; j < size; j++)
+		for (j = 0; j < size; j++)//x
 		{
 			if (psf_pow[i*size + j] >= thres)
 			{
@@ -1121,8 +1121,13 @@ void smooth(double *image, double*fit_image, double* psf_pow, double *coeffs, pa
 			}
 		}
 	}
+	for (i = 0; i < size*size; i++)
+	{
+		image[i] = fit_image[i];
+	}
 	//paras->t1 += st2 - st1;
-	delete temp;
+	delete[] fit_image;
+	delete[] temp;
 }
 
 void hyperfit_5(double *data, double *fit_paras, para *paras)

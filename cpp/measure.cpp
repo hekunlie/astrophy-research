@@ -154,7 +154,7 @@ int main(int argc, char*argv[])
 
 				galaxy_finder(gal, &all_paras, false);
 
-				f_snr(pgal, &all_paras, 2);
+				snr_est(pgal, &all_paras, 2);
 
 				if (cmd == 0)
 				{

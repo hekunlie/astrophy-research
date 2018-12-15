@@ -227,7 +227,6 @@ def smooth(image, size):
                 p = (i + m + size) % size
                 for n in range(-2, 3):
                     q = (j + n + size) % size
-
                     if tag not in [0, 4, 20, 24]:  # abs(m) != 2 or abs(n) != 2:
                         if p * size + q != cen:
                             pos.append((p, q))

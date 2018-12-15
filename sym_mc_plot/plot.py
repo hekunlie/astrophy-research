@@ -17,7 +17,7 @@ lenged_size = fonts - 10
 axis_linewidth = 1.2
 
 
-total_path = "F:\works\selection_bias/tests\simu_test/3/"
+total_path = "E:\works\selection_bias\data_for_paper\simu_test\cuts\sym/"
 total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto"]

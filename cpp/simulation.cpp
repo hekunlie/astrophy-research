@@ -174,7 +174,7 @@ int main(int argc, char*argv[])
 				detect_label = galaxy_finder(gal, &all_paras, false);
 
 				pow_spec(gal, gpow, size, size);
-				f_snr(gpow, &all_paras, 1);
+				snr_est(gpow, &all_paras, 1);
 
 				addnoise(noise, size*size, gal_noise_sig);
 
