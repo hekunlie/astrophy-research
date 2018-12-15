@@ -20,7 +20,7 @@ int main(int argc, char*argv[])
 	para all_paras;
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
-	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150];
+	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150],coeff_path[50];
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
 	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
@@ -29,7 +29,7 @@ int main(int argc, char*argv[])
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 7;
 	int i, j, k, row, row_s, seed, chip_id_s, chip_id_e, shear_id;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2;
+	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
 	int cmd = 0;
 
@@ -91,24 +91,42 @@ int main(int argc, char*argv[])
 		recvbuf = new double[total_chips*stamp_num*shear_esti_data_cols];
 		recvbuf_s = new double[total_chips*stamp_num*snr_para_data_cols];
 	}
-	sprintf(data_path, "coeffs.hdf5");
+	sprintf(coeff_path, "coeffs.hdf5");
 	sprintf(set_name, "/data");
-	read_h5(data_path, set_name, coeff, NULL, NULL, NULL, NULL);
+	read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
 
 	sprintf(chip_path, "%spsf.fits", data_path);
 	read_img(psf, chip_path);
 
+	seed = 12300;
+	gsl_rng_initialize(seed);
+
 	pow_spec(psf, ppsf, size, size);
-	/*for (i = 0; i < size*size; i++)
+	
+	for (i = 0; i < size*size; i++)
 	{
 		ppsf_cp[i] = ppsf[i];
 	}
+
 	addnoise(noise, size*size, gal_noise_sig);
 	pow_spec(noise, pnoise, size, size);
 	smooth(ppsf, coeff, &all_paras);
-	smooth(pnoise, coeff, &all_paras);*/
+	smooth(pnoise, coeff, &all_paras);	
+	noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);
+	for (i = 0; i < size*size; i++)
+	{
+		if(ppsf[i] > psf_peak)
+		{
+			psf_peak = ppsf[i];
+		}
+	}
+	for (i = 0; i < size*size; i++)
+	{
+		ppsf[i] = ppsf[i] / psf_peak;
+	}
 	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
-	//noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);
+	
+	gsl_rng_free();
 
 	if (0 == myid)
 	{

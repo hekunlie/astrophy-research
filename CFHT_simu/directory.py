@@ -37,6 +37,20 @@ if cmd == "sex":
         os.makedirs(sex_path + "cat/")
         print("Build: %scat/" % sex_path)
 
+if cmd == "data":
+    os.makedirs(result_path + "data/data_2.0sig/")
+    print("Build: %scat/" % (result_path + "data/data_2.0sig/"))
+    os.makedirs(result_path + "data/data_1.5sig/")
+    print("Build: %scat/" % (result_path + "data/data_1.5sig/"))
+    os.makedirs(result_path + "data/check/")
+    print("Build: %scat/" % (result_path + "data/check/"))
+    for sub_sex in sex_filters:
+        sex_path = result_path + "data/%s/"%sub_sex
+        if os.path.exists(sex_path):
+            shutil.rmtree(sex_path)
+        os.makedirs(sex_path + "cat/")
+        print("Build: %scat/" % sex_path)
+
 if cmd == "all":
     for i in range(14):
         img_path = total_path + "%d/"
