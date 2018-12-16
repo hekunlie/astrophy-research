@@ -84,6 +84,7 @@ int main(int argc, char*argv[])
 	double *recvbuf, *recvbuf_s;
 	double *data = new double[data_row*shear_esti_data_cols]();
 	double *coeff = new double[3750]();
+
 	// the snr parameters data matrix data_snr[i][j]
 	double *data_s = new double[data_row*snr_para_data_cols]();
 	if (myid == 0)
@@ -97,35 +98,21 @@ int main(int argc, char*argv[])
 
 	sprintf(chip_path, "%spsf.fits", data_path);
 	read_img(psf, chip_path);
+	pow_spec(psf, ppsf, size, size);
 
 	seed = 12300;
-	gsl_rng_initialize(seed);
-
-	pow_spec(psf, ppsf, size, size);
-	
-	for (i = 0; i < size*size; i++)
-	{
-		ppsf_cp[i] = ppsf[i];
-	}
+	gsl_rng_initialize(seed);	
 
 	addnoise(noise, size*size, gal_noise_sig);
 	pow_spec(noise, pnoise, size, size);
+	
 	smooth(ppsf, coeff, &all_paras);
 	smooth(pnoise, coeff, &all_paras);	
-	noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);
-	for (i = 0; i < size*size; i++)
-	{
-		if(ppsf[i] > psf_peak)
-		{
-			psf_peak = ppsf[i];
-		}
-	}
-	for (i = 0; i < size*size; i++)
-	{
-		ppsf[i] = ppsf[i] / psf_peak;
-	}
-	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
 	
+	noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
+	normalize_arr(ppsf, size);
+	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
+
 	gsl_rng_free();
 
 	if (0 == myid)
@@ -170,7 +157,8 @@ int main(int argc, char*argv[])
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;
 
 			for (j = 0; j < stamp_num; j++)
-			{
+			
+{
 				initialize_arr(noise, size*size);
 				initialize_arr(pnoise, size*size);
 				initialize_arr(gal, size*size);

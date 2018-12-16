@@ -882,6 +882,31 @@ void initialize_arr(double *in_img, int length)
 	}
 }
 
+void normalize_arr(double * arr, int size)
+{
+	int i;
+	double peak=0;
+	for (i = 0; i < size*size; i++)
+	{
+		if (arr[i] > peak)
+		{
+			peak = arr[i];
+		}
+	}
+	if (peak != 0)
+	{
+		for (i = 0; i < size*size; i++)
+		{
+			arr[i] = arr[i] / peak;
+		}
+	}
+	else
+	{
+		std::cout << "Divided by ZERO!!!" << std::endl;
+		exit(0);
+	}
+}
+
 
 /********************************************************************************************************************************************/
 /* Fourier Quad */
@@ -1011,7 +1036,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras)
 		for (j = 0; j < size; j++) // x coordinates
 		{
 			kx = j - size*0.5;
-			if (psf_img[i*size + j] > thres)
+			if (psf_img[i*size + j] >= thres)
 			{	
 				k2 = kx*kx + ky*ky;
 				k4 = k2*k2;
@@ -1050,8 +1075,7 @@ void smooth(double *image,  const double *coeffs, para*paras)//be careful of the
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
 	double fz[6]{}, z[25]{}, fit_para_6, max = 0., thres;
-	double*temp = new double[size*size];
-	double *fit_image = new double[size*size];
+	double*temp = new double[size*size]{};
 	double fit_temp[6 * 25]{};
 	double ones[6]{ 1.,1.,1.,1.,1.,1. };
 
@@ -1109,17 +1133,11 @@ void smooth(double *image,  const double *coeffs, para*paras)//be careful of the
 			}
 			cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
 			fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
-			fit_image[i*size + j] = pow(10., fit_para_6);
+			image[i*size + j] = pow(10., fit_para_6);
 			memset(fz, 0, sizeof(fz));
 			memset(z, 0, sizeof(z));			
 		}
 	}
-	for (i = 0; i < size*size; i++)
-	{
-		image[i] = fit_image[i];
-	}
-
-	delete[] fit_image;
 	delete[] temp;
 }
 
@@ -1127,9 +1145,8 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
-	double fz[6]{}, z[25]{}, fit_para_6, max = 0., thres;
-	double*temp = new double[size*size];
-	double *fit_image = new double[size*size];
+	double fz[6]{}, z[25]{}, fit_para_6, max = 0., thres = paras->psf_pow_thres/1.2; // the lower thres (divided by 1.2) for safety!!
+	double*temp = new double[size*size]{};
 	double fit_temp[6 * 25]{};
 	double ones[6]{ 1.,1.,1.,1.,1.,1. };
 
@@ -1138,14 +1155,13 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 	{
 		temp[i] = log10(image[i]);
 	}
-	thres =  paras->psf_pow_thres;
-
+	
 	for (i = 0; i < size; i++) //y
 	{
 		for (j = 0; j < size; j++)//x
 		{
 			if (psf_pow[i*size + j] >= thres)
-			{
+			{				
 				tag = 0;
 				pk = 0;
 				for (m = -2; m < 3; m++)
@@ -1192,19 +1208,13 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 
 				cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
 				fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
-				fit_image[i*size + j] = pow(10., fit_para_6);
+				image[i*size + j] = pow(10., fit_para_6);
 
 				memset(fz, 0, sizeof(fz));
 				memset(z, 0, sizeof(z));
 			}
 		}
 	}
-	for (i = 0; i < size*size; i++)
-	{
-		image[i] = fit_image[i];
-	}
-
-	delete[] fit_image;
 	delete[] temp;
 }
 

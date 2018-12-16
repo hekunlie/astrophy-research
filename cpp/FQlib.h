@@ -162,6 +162,10 @@ void addnoise(double *image, int pixel_num, double sigma);
 void initialize_arr(double *array, int size);
 /* set every elements to zero*/
 
+void normalize_arr(double *arr, int size);
+/* normalize the PSF power spectrum,
+	divide each pixel by the peak */
+
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
