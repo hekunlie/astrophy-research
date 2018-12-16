@@ -53,7 +53,7 @@ if cmd == "data":
 
 if cmd == "all":
     for i in range(14):
-        img_path = total_path + "%d/"
+        img_path = total_path + "%d/"%i
         os.makedirs(img_path)
     os.makedirs(para_path + "logs/")
     os.makedirs(para_path + "pic/")
