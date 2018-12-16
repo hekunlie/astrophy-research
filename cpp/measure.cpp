@@ -29,9 +29,9 @@ int main(int argc, char*argv[])
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 7;
 	int i, j, k, row, row_s, seed, chip_id_s, chip_id_e, shear_id;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
+	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
-	int cmd = 0;
+	int cmd = 1;
 
 	read_para(str_paraf_path, str_stampsize, size);
 	read_para(str_paraf_path, str_total_num, total_chips);
@@ -106,8 +106,8 @@ int main(int argc, char*argv[])
 	addnoise(noise, size*size, gal_noise_sig);
 	pow_spec(noise, pnoise, size, size);
 	
-	smooth(ppsf, coeff, &all_paras);
-	smooth(pnoise, coeff, &all_paras);	
+	//smooth(ppsf, coeff, &all_paras);
+	//smooth(pnoise, coeff, &all_paras);	
 	
 	noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
 	normalize_arr(ppsf, size);
