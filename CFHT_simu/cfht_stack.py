@@ -23,8 +23,8 @@ cpus = comm.Get_size()
 ts = time.clock()
 
 envs_path = "%s/work/envs/envs.dat" % my_home
-get_contents = [['cfht', "cfht_path_catalog", '1'], ['cfht', "cfht_path_result", '1'], ['cfht', "cfht_path_field", '1']]
-path_items = tool_box.config(envs_path, ['get', 'get',"get"], get_contents)
+get_contents = [['cfht', "cfht_path_catalog", '1'], ['cfht', "cfht_path_result", '1']]
+path_items = tool_box.config(envs_path, ['get', 'get'], get_contents)
 total_cata_path, result_path = path_items
 
 field_dict, fields = tool_box.field_dict(total_cata_path + "nname.dat")
@@ -61,20 +61,25 @@ for field in fields:
 sub_fields = tool_box.allot(fields, cpus)[rank]
 
 fcount = 0
-for count, field_name in enumerate(sub_fields):
-        filed_data_path = total_cata_path + "%s/result/%s_shear.dat" %(field_name, field_name)
-        if fcount == 0:
-            data = temp.copy()
-        else:
-            data = numpy.row_stack((data, temp))
-        fcount += 1
-    else:
-        print(rank, os.path.basename(data_path))
+for field_name in sub_fields:
+        sub_filed_path = total_cata_path + "%s/result/%s_shear.dat" %(field_name, field_name)
+        t11 = time.time()
+        try:
+            temp = numpy.loadtxt(sub_filed_path)
+            if fcount == 0:
+                data = temp.copy()
+            else:
+                data = numpy.row_stack((data, temp))
+            fcount += 1
+        except:
+            print(rank," can't find ", field_name)
+        t12 = time.time()
+        if rank == 0:
+            print(t12- t11)
 
-recv_fcount = comm.gather(fcount,root=0)
+recv_fcount = comm.gather(fcount, root=0)
 sp = data.shape
 recv_sp = comm.gather(sp, root=0)
-recv_npz_cat = comm.gather(npz_cat, root=0)
 
 if rank > 0:
     comm.Send(data, dest=0, tag=rank)
@@ -83,15 +88,11 @@ else:
         recvs = numpy.empty(recv_sp[procs], dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
         data = numpy.row_stack((data, recvs))
-    numpy.savez(data_cache, data)
+    fh5 = h5py.File(result_path+"cata.hdf5","w")
+    fh5['/data'] = data
+    fh5.close()
     print("Totally, %d galaxies are detected in %d (%d) fields"%(len(data), sum(recv_fcount), field_count))
 
 te = time.clock()
 if rank == 0:
-    # if not filter_exist:
-    #     npzs = []
-    #     for sub_ in recv_npz_cat:
-    #         npzs.extend(sub_)
-    #     with open(filter_path, "w") as f:
-    #         f.writelines(npzs)
     print(te-ts)
