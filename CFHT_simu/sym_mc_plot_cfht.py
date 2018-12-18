@@ -90,7 +90,7 @@ if rank == 0:
     h5f = h5py.File(data_path,"r")
     data = h5f["/data"].value
     h5f.close()
-    select_data = data[:,scale_idx_dict[select_cri]]
+    select_data = data[:, scale_idx_dict[select_cri]]
     select_data_sort = numpy.sort(select_data)
     select_data_step = int(len(select_data_sort) / cut_num)
     for i in range(cut_num):
@@ -154,16 +154,16 @@ for i in range(2): # fg1 & fg2
             mcs[i].append(mc)
             fig = plt.figure(figsize=(6,6))
             ax = fig.add_subplot(111)
-            lb = "fg_%d: $10^2$m: %.2f (%.2f), $10^5$c: %.2f (%.2f)"\
-                 %(i, 100*(mc[0]-1), 100*mc[1], 10**5*mc[2], 10**5*mc[3])
+            lb = "fg_%d: %d \n$10^2$m: %.2f (%.2f), \n$10^5$c: %.2f (%.2f)"\
+                 %(i+1,all_source_num[ic].sum(), 100*(mc[0]-1), 100*mc[1], 10**5*mc[2], 10**5*mc[3])
             ax.errorbar(fgs[i], all_measured_fg[ic], all_sigma_fg[ic], c='red',alpha=0.8, capsize=3, label=lb)
             x1, x2 = fgs[i][0], fgs[i][-1]
             ax.plot([x1,x2],[x1,x2], c='black',linestyle="--")
-            ax.set_xlim(x1 - 0.1 * (x2 - x1), x2 + 0.1 * (x2 - x1))
-            ax.set_ylim(x1 - 0.1 * (x2 - x1), x2 + 0.1 * (x2 - x1))
+            ax.set_xlim(x1 - 0.3 * (x2 - x1), x2 + 0.3 * (x2 - x1))
+            ax.set_ylim(x1 - 0.3 * (x2 - x1), x2 + 0.3 * (x2 - x1))
             ax.legend()
-            pic_path = cut_path + "%s/g%d_%.2f.png"%(select_cri, i, select_scale[ic])
-            plt.savefig()
+            pic_path = cut_path + "%s/g%d_%.2f.png"%(select_cri, i+1, select_scale[ic])
+            plt.savefig(pic_path)
             plt.close()
 
     comm.Barrier()
