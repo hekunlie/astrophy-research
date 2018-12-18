@@ -9,7 +9,7 @@ rank = comm.Get_rank()
 # show how to create two contiguous shared blocks in memory
 # length of double
 itemsize = MPI.DOUBLE.Get_size()
-element_num = 1000000
+element_num = 10
 if rank == 0:
     # bytes for 10 double elements
     nbytes = element_num*itemsize
@@ -18,7 +18,7 @@ else:
 
 # on rank 0 of comm, create the contiguous shared block
 win1 = MPI.Win.Allocate_shared(nbytes, itemsize, comm=comm)
-win2 = MPI.Win.Allocate_shared(nbytes, itemsize, comm=comm)
+win2 = MPI.Win.Allocate_shared(nbytes*5, itemsize, comm=comm)
 # create a numpy array whose data points to the shared block
 # buf is the block's address in the memory
 buf1, itemsize = win1.Shared_query(0)
@@ -29,8 +29,9 @@ buf2, itemsize = win2.Shared_query(0)
 # buf = np.array(buf, dtype='float64', copy=False) # may be redundant
 # "d" means double = 'float64'
 ary1 = numpy.ndarray(buffer=buf1, dtype='d', shape=(element_num,)) # array filled with zero
-ary2 = numpy.ndarray(buffer=buf2, dtype='d', shape=(element_num,1))
-
+ary2 = numpy.ndarray(buffer=buf2, dtype='d', shape=(element_num, 5))
+for i in range(5):
+    ary2[rank,i] = rank
 # the rank 1 changes the array
 if rank == 1:
     # show how to read data from a hdf5 file and
@@ -51,14 +52,14 @@ if rank == 1:
 # wait in process rank 0 of comm until process 1 has written to the array
 comm.Barrier() # necessary
 
-ary_sum1 = numpy.sum(ary1**2)
-ary_sum12 = numpy.sum(ary1 ** 2)
-ary_cos = numpy.cos(ary1**2)*numpy.sin(ary1**2)
-ary_sum2 = numpy.sum(ary2)
+# ary_sum1 = numpy.sum(ary1**2)
+# ary_sum12 = numpy.sum(ary1 ** 2)
+# ary_cos = numpy.cos(ary1**2)*numpy.sin(ary1**2)
+# ary_sum2 = numpy.sum(ary2)
 time.sleep(0.001)
 # the you will see that the changed array will be seen by each process
 
-print(rank, ary1.shape, ary_sum1, ary_sum12, ary_sum2)
+print(rank, ary1.shape, ary2)#, ary_sum1, ary_sum12, ary_sum2)
 
 
 

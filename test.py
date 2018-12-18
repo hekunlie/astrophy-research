@@ -16,8 +16,20 @@ import tool_box
 import h5py
 from mpl_toolkits.mplot3d.axes3d import Axes3D, get_test_data
 from matplotlib import cm
+from numpy import fft
 
+def pow_spec(image):
+    image_ps = fft.fft2(image)
+    return image_ps
 
+def inv_pow(image):
+    image_ps = fft.ifft2(image)
+    return image_ps
+
+def err(message):
+    err_message = "%s is wrong"%message
+    raise ValueError(err_message)
+err("aaa")
 img = fits.open("E:/gal_chip_0000.fits")[0].data
 x, y = numpy.mgrid[24-15:24+15,24-15:24+15]
 
