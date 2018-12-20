@@ -21,8 +21,8 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
@@ -64,7 +64,7 @@ int main(int argc, char*argv[])
 	all_paras.psf_noise_sig = psf_noise_sig;
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
-	all_paras.area_thres = 6;
+	all_paras.area_thres = 5;
 	all_paras.detect_thres = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
