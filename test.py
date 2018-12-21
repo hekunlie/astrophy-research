@@ -29,8 +29,13 @@ def inv_pow(image):
 def err(message):
     err_message = "%s is wrong"%message
     raise ValueError(err_message)
-err("aaa")
-img = fits.open("E:/gal_chip_0000.fits")[0].data
+
+def mag(snr, r):
+    return -numpy.log10(snr*numpy.sqrt(numpy.pi*(r/0.187)**2)*120)/0.4 + 34.5358
+r = numpy.linspace(0.2, 1.2, 100)
+plt.plot(r, mag(5, r))
+plt.show()
+exit()
 x, y = numpy.mgrid[24-15:24+15,24-15:24+15]
 
 fq = Fourier_Quad(48, 123)

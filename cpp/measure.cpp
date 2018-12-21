@@ -21,8 +21,8 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
@@ -104,14 +104,14 @@ int main(int argc, char*argv[])
 	seed = 12300;
 	gsl_rng_initialize(seed);	
 
-	addnoise(noise, size*size, gal_noise_sig);
-	pow_spec(noise, pnoise, size, size);
+	//addnoise(noise, size*size, gal_noise_sig);
+	//pow_spec(noise, pnoise, size, size);
 	
 	//smooth(ppsf, coeff, &all_paras);
 	//smooth(pnoise, coeff, &all_paras);	
 	
-	noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
-	normalize_arr(ppsf, size);
+	//noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
+	//normalize_arr(ppsf, size);
 	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
 
 	gsl_rng_free();
@@ -159,11 +159,12 @@ int main(int argc, char*argv[])
 
 			for (j = 0; j < stamp_num; j++)
 			
-{
+			{
 				initialize_arr(noise, size*size);
 				initialize_arr(pnoise, size*size);
 				initialize_arr(gal, size*size);
 				initialize_arr(pgal, size*size);
+				initialize_para(&all_paras);
 
 				segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 				pow_spec(gal, pgal, size, size);

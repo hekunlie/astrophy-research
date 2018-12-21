@@ -15,7 +15,8 @@ size = int(argv[1])
 psf_r = float(argv[2])
 e = float(argv[3])
 btr = float(argv[4])
-ra = float(argv[5])
+ktr = float(argv[5])
+ra = float(argv[6])
 # seed = int(argv[6])
 
 
@@ -26,7 +27,7 @@ markers = ['p', 'x', 's', '8']
 colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
 
 
-flux = numpy.array([tool_box.mag_to_flux(22.5),tool_box.mag_to_flux(23.2),
+flux = numpy.array([tool_box.mag_to_flux(20),tool_box.mag_to_flux(22.2),
                     tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24),
                     tool_box.mag_to_flux(24.2),tool_box.mag_to_flux(24.4),
                    tool_box.mag_to_flux(24.5), tool_box.mag_to_flux(24.7),
@@ -46,15 +47,17 @@ img_path = os.getcwd() + "/imgs/"
 for k in range(len(flux)):
 
     pool = []
-    # bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
-    # disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
-    # gal = bulge * btr + disk * (1 - btr)
-    # gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
-    # gal_f = gal.withFlux(flux[k])
-
     rng = galsim.BaseDeviate(12300000)
-    gal = galsim.randwalk.RandomWalk(npoints=500, half_light_radius=ra, flux=flux[k], rng=rng)
-    gal_f = gal.shear(e1=e, e2=0)
+    knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
+    bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
+    disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+    gal = bulge * btr + disk * (1 - btr - ktr) + ktr*knot
+    gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
+    gal_f = gal.withFlux(flux[k])
+
+    # rng = galsim.BaseDeviate(12300000)
+    # gal = galsim.randwalk.RandomWalk(npoints=200, half_light_radius=ra, flux=flux[k], rng=rng)
+    # gal_f = gal.shear(e1=e, e2=0)
 
     gal_c = galsim.Convolve([gal_f, psf])
     img_0 = galsim.ImageD(size, size)

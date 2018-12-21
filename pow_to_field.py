@@ -1,6 +1,6 @@
 import numpy
 from sys import path
-path.append("D:/Github/astrophy-research/my_lib/")
+path.append("E:/Github/astrophy-research/my_lib/")
 from Fourier_Quad import Fourier_Quad
 import matplotlib.pyplot as plt
 import tool_box
@@ -16,7 +16,7 @@ def inv_pow(image):
 
 
 
-size = 200
+size = 500
 fq = Fourier_Quad(size, 123)
 my, mx = numpy.mgrid[-size:size,0:size]
 # print(my,mx)
@@ -25,7 +25,7 @@ pow_inv = tool_box.mirror_arr(pows)
 pows = numpy.column_stack((pows, pow_inv))
 
 my, mx = numpy.mgrid[-size:size,-size:size]
-pows = numpy.exp(-((my**2+mx**2)/2/3**2))*10000
+pows = numpy.exp(-((my**2+mx**2)/2/200**2))*10000
 plt.imshow(pows)
 plt.show()
 theta = numpy.random.random_sample(int(size*size*2)).reshape((size*2,size))*numpy.pi*2

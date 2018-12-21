@@ -42,7 +42,7 @@ if rank == 0:
     logger.info(log)
 
 for i in range(file_num):
-    shear_esti_h5path = result_path + "data/data_%d_%d.hdf5"%(rank, i)
+    shear_esti_h5path = result_path + "data/data_%d.hdf5"%rank
     shear_esti_file = h5py.File(shear_esti_h5path, "r")
     shear_temp = shear_esti_file["/data"].value
     if i == 0:
@@ -51,7 +51,7 @@ for i in range(file_num):
         shear_esti_data = numpy.row_stack((shear_esti_data, shear_temp))
     shear_esti_file.close()
 
-    fq_snr_h5path = result_path + "data/data_%s/data_%d_%d.hdf5" % (sig, rank, i)
+    fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
     fq_snr_file = h5py.File(fq_snr_h5path, "r")
     set_name = list(fq_snr_file.keys())[0]
     fq_snr_temp = fq_snr_file[set_name].value
