@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("Agg")
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
-from sys import path
+from sys import path, argv
 path.append('%s/work/fourier_quad/' % my_home)
 import numpy
 from Fourier_Quad import Fourier_Quad
@@ -62,12 +62,61 @@ for num in gal_num:
         # those in the paper Zhang et al. 2017 ApJ, 834:8
         DE1 = MN + MU
         DE2 = MN - MU
-        tag = [i for i in range(len(MG1))]
-        if rank == 0:
-            print(len(MG1))
+        sample_size = len(MG1)
+
+        # pure noise
+        data_path = result_path + "data/noise/data_%d.hdf5" % i
+        h5f = h5py.File(data_path, "r")
+        noise = h5f["/data"].value
+        h5f.close()
+        nMG1 = noise[:, 2]
+        nMG2 = noise[:, 3]
+        nMN = noise[:, 4]
+        nMU = noise[:, 5]
+        nMV = noise[:, 6]
+        nDE1 = nMN + nMU
+        nDE2 = nMN - nMU
+        nsample_size = len(nMG1)
+
+        tag = [i for i in range(sample_size)]
         ch = rng.choice(tag, num * 10000)
-        g1_h, g1_sig = fq.fmin_g_new(MG1[ch], DE1[ch], bin_num=8)
-        g2_h, g2_sig = fq.fmin_g_new(MG2[ch], DE2[ch], bin_num=8)
+        if rank == 0:
+            print(sample_size)
+
+        if argv[1] == "noise":
+            scale = int(argv[2])
+            nch = int(num * 10000*scale)
+            if nch > nsample_size:
+                nch = nsample_size
+            MG1 = MG1[ch]
+            MG1.shape = (sample_size, 1)
+            DE1 = DE1[ch]
+            DE1.shape = (sample_size, 1)
+            MG2 = MG2[ch]
+            MG2.shape = (sample_size, 1)
+            DE2 = DE2[ch]
+            DE2.shape = (sample_size, 1)
+
+            nMG1 = nMG1[:nch]
+            nMG1.shape = (nsample_size, 1)
+            nDE1 = nDE1[:nch]
+            nDE1.shape = (nsample_size, 1)
+            nMG2 = nMG2[:nch]
+            nMG2.shape = (nsample_size, 1)
+            nDE2 = nDE2[:nch]
+            nDE2.shape = (nsample_size, 1)
+
+            MG1s = numpy.row_stack((MG1, nMG1))[:,0]
+            DE1s = numpy.row_stack((DE1, nDE1))[:,0]
+            MG2s = numpy.row_stack((MG2, nMG2))[:,0]
+            DE2s = numpy.row_stack((DE2, nDE2))[:,0]
+
+            g1_h, g1_sig = fq.fmin_g_new(MG1s, DE1s, bin_num=8)
+            g2_h, g2_sig = fq.fmin_g_new(MG2s, DE2s, bin_num=8)
+        else:
+            g1_h, g1_sig = fq.fmin_g_new(MG1[ch], DE1[ch], bin_num=8)
+            g2_h, g2_sig = fq.fmin_g_new(MG2[ch], DE2[ch], bin_num=8)
+
         md[0,i],md[1,i],md[2,i],md[3,i] = g1_h, g1_sig, g2_h, g2_sig
 
     e1mc = tool_box.data_fit(g1, md[0], md[1])
@@ -75,13 +124,13 @@ for num in gal_num:
     plt.figure(figsize=(16,8))
     plt.subplot(121)
     lb = "m: %.5f(%.5f), \nc: %.6f(%.6f)"%(e1mc[0]-1,e1mc[1], e1mc[2], e1mc[3])
-    plt.errorbar(g1, md[0], md[1],fmt="none",label=lb)
-    plt.plot([-0.04, 0.04],[-0.04,0.04])
+    plt.plot([-0.04, 0.04],[-0.04,0.04],linewidth=1)
+    plt.errorbar(g1, md[0], md[1], fmt="none", label=lb, capsize=3)
     plt.legend()
     plt.subplot(122)
     lb = "m: %.5f(%.5f), \nc: %.6f(%.6f)" % (e2mc[0] - 1, e2mc[1], e2mc[2], e2mc[3])
-    plt.errorbar(g2, md[2], md[3],fmt="none",label=lb)
-    plt.plot([-0.04, 0.04],[-0.04,0.04])
+    plt.plot([-0.04, 0.04],[-0.04,0.04],linewidth=1)
+    plt.errorbar(g2, md[2], md[3], fmt="none", label=lb, capsize=3)
     plt.legend()
     plt.savefig(result_path+"pic/%d_%d.png"%(num,rank))
     plt.close()
@@ -100,16 +149,16 @@ for num in gal_num:
 
 if rank == 0:
 
-    # for num in gal_num:
-    #     a = numpy.load(result_path + "pic/%d.npz" % num)
-    #     pool.append((a["arr_0"], a["arr_1"]))
+    for num in gal_num:
+        a = numpy.load(result_path + "pic/%d.npz" % num)
+        pool.append((a["arr_0"], a["arr_1"]))
 
     y = numpy.ones((cpus,))
     a = 1
-    b = 12
+    b = 20
     cols = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
     for i in range(cpus):
-        a += 0.6
+        a += 0.8
         y[i] = a
 
     plt.figure(figsize=(18,18))
@@ -163,4 +212,5 @@ if rank == 0:
     plt.plot([0.0001, 0.0001], [y1, y2], c="grey", linestyle="--")
     plt.ylim(y1,y2)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(result_path+"pic/total.png")
