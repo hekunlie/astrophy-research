@@ -64,7 +64,7 @@ int main(int argc, char*argv[])
 	all_paras.psf_noise_sig = psf_noise_sig;
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
-	all_paras.area_thres = 6;
+	all_paras.area_thres = 5;
 	all_paras.detect_thres = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
