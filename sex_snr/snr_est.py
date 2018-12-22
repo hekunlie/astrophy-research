@@ -40,7 +40,7 @@ size = int(para_items[1])
 columns = int(para_items[2])
 shear_num = int(para_items[3])
 
-area_thresh = 6
+area_thresh = 5
 gal_num = 10000
 
 
@@ -76,7 +76,7 @@ if cmd == "add" and rank < shear_num:
     for i in range(chip_num):
         cat_path = total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
-        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, 7, 6, 5, max_distance)
+        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, 6, 5, 4, max_distance)
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
     numpy.savez(snr_data_path, snr_data)
 

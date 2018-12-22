@@ -75,7 +75,7 @@ bulge_num_i = int(bulge_frac*num_i)*stamp_num
 bulge_num = int(bulge_frac*num)*stamp_num
 # disc-dominated galaxies
 
-pesb = numpy.linspace(0, 0.95, int(0.95 / 0.0000001) + 1)
+pesb = numpy.linspace(0, 0.8, int(0.8 / 0.0000001) + 1)
 
 if disc_frac > 0:
 
@@ -86,10 +86,12 @@ if disc_frac > 0:
         seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
         rng = numpy.random.RandomState(seed)
 
-        # disc_e_i = rng.choice(pesb, disc_num_i, p=pe)
+        disc_e_i = rng.choice(pesb, disc_num_i, p=pe)
 
         # disc_e_i = tool_box.ran_generator(tool_box.disc_e_pdf, disc_num_i, seed, 0, 0.804, 0, 2.1)[0]
-        disc_e_i = rng.uniform(0, 0.9, disc_num_i)
+
+        # disc_e_i = rng.uniform(0, 0.9, disc_num_i)
+
         theta = rng.uniform(0, 2*numpy.pi, disc_num_i)
         disc_e1_i, disc_e2_i = disc_e_i*numpy.cos(theta), disc_e_i*numpy.sin(theta)
 
@@ -123,10 +125,12 @@ if bulge_num > 0:
         seed = rank * 432 + int(numpy.random.randint(1, 12565, 1)[0])
         rng = numpy.random.RandomState(seed)
 
-        # bulge_e_i = rng.choice(pesb, bulge_num_i, p=pe)
+        bulge_e_i = rng.choice(pesb, bulge_num_i, p=pe)
 
         # bulge_e_i = tool_box.ran_generator(tool_box.bulge_e_pdf, bulge_num_i, seed, 0, 0.804, 0, 2.7)[0]
-        bulge_e_i = rng.uniform(0, 0.9, bulge_num_i)
+
+        # bulge_e_i = rng.uniform(0, 0.9, bulge_num_i)
+
         theta = rng.uniform(0, 2*numpy.pi, bulge_num_i)
         bulge_e1_i, bulge_e2_i = bulge_e_i*numpy.cos(theta), bulge_e_i*numpy.sin(theta)
 
@@ -186,10 +190,10 @@ for i in range(loops):
     time.sleep(rank*0.05)
     rng = numpy.random.RandomState(seed=seed)
 
-    radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
+    # radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
 
     sp, ep = i * num_i * stamp_num, (i + 1) * num_i * stamp_num
-    # radius_i = tool_box.radii_from_mags(mag[sp: ep, 0], radius_s, radius_e)
+    radius_i = tool_box.radii_from_mags(mag[sp: ep, 0], radius_s, radius_e)
 
     radius[sp: ep, 0] = radius_i
 

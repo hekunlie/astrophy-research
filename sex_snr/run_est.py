@@ -7,9 +7,9 @@ import numpy
 import tool_box
 import time
 
-sources = ["dimmer"]
-cpus = 50
-num = 60
+sources = ["dimmerm3"]
+cpus = 70
+num = 140
 jobs = numpy.zeros((num, 1))
 
 t1 = time.time()
@@ -26,12 +26,12 @@ for source in sources:
     noise_sig = float(para_items[0])
     shear_num = int(para_items[1])
 
-    # while True:
-    #     if jobs.sum() == num:
-    #         break
-    #     for i in range(num):
-    #         if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
-    #             jobs[i, 0] = 1
+    while True:
+        if jobs.sum() == num:
+            break
+        for i in range(num):
+            if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
+                jobs[i, 0] = 1
 
     if "pts" in source:
         max_radius = 8
