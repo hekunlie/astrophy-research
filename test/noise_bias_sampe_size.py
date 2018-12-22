@@ -79,41 +79,44 @@ for num in gal_num:
         nsample_size = len(nMG1)
 
         tag = [i for i in range(sample_size)]
-        ch = rng.choice(tag, num * 10000)
-        if rank == 0:
-            print(sample_size)
+        ch_size = num * 10000
+        ch = rng.choice(tag, ch_size)
 
         if argv[1] == "noise":
             scale = int(argv[2])
-            nch = int(num * 10000*scale)
-            if nch > nsample_size:
-                nch = nsample_size
+            nch_size = int(num * 10000*scale)
+            if nch_size > nsample_size:
+                nch_size = nsample_size
             MG1 = MG1[ch]
-            MG1.shape = (sample_size, 1)
+            MG1.shape = (ch_size, 1)
             DE1 = DE1[ch]
-            DE1.shape = (sample_size, 1)
+            DE1.shape = (ch_size, 1)
             MG2 = MG2[ch]
-            MG2.shape = (sample_size, 1)
+            MG2.shape = (ch_size, 1)
             DE2 = DE2[ch]
-            DE2.shape = (sample_size, 1)
+            DE2.shape = (ch_size, 1)
 
-            nMG1 = nMG1[:nch]
-            nMG1.shape = (nsample_size, 1)
-            nDE1 = nDE1[:nch]
-            nDE1.shape = (nsample_size, 1)
-            nMG2 = nMG2[:nch]
-            nMG2.shape = (nsample_size, 1)
-            nDE2 = nDE2[:nch]
-            nDE2.shape = (nsample_size, 1)
+            nMG1 = nMG1[:nch_size]
+            nMG1.shape = (nch_size, 1)
+            nDE1 = nDE1[:nch_size]
+            nDE1.shape = (nch_size, 1)
+            nMG2 = nMG2[:nch_size]
+            nMG2.shape = (nch_size, 1)
+            nDE2 = nDE2[:nch_size]
+            nDE2.shape = (nch_size, 1)
 
             MG1s = numpy.row_stack((MG1, nMG1))[:,0]
             DE1s = numpy.row_stack((DE1, nDE1))[:,0]
             MG2s = numpy.row_stack((MG2, nMG2))[:,0]
             DE2s = numpy.row_stack((DE2, nDE2))[:,0]
 
+            if rank == 0:
+                print(num * 10000, ", ",len(MG1s))
             g1_h, g1_sig = fq.fmin_g_new(MG1s, DE1s, bin_num=8)
             g2_h, g2_sig = fq.fmin_g_new(MG2s, DE2s, bin_num=8)
         else:
+            if rank == 0:
+                print(num * 10000, ", ",len(MG1[ch]))
             g1_h, g1_sig = fq.fmin_g_new(MG1[ch], DE1[ch], bin_num=8)
             g2_h, g2_sig = fq.fmin_g_new(MG2[ch], DE2[ch], bin_num=8)
 

@@ -51,6 +51,7 @@ comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
 seed = rank * 344 + 121
+rad_n = numpy.random.randint(0,10000,1)[0]
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)
@@ -94,7 +95,7 @@ for shear_id in range(shear_num):
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
-        rng = numpy.random.RandomState(seed + shear_id + t)
+        rng = numpy.random.RandomState(seed + shear_id + rad_n + t)
 
         chip_path = total_path + "%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
         gal_pool = []

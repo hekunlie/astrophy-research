@@ -21,15 +21,15 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[150],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 7;
 	int i, j, k, row, row_s, seed, chip_id_s, chip_id_e, shear_id;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
+	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
 	int cmd = 0;
 
@@ -51,6 +51,7 @@ int main(int argc, char*argv[])
 		if (0 == cmd)
 		{
 			std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << std::endl;
+			std::cout << "Total chip: " << total_chips <<std::endl;
 		}
 		if (1 == cmd)
 		{
@@ -76,7 +77,7 @@ int main(int argc, char*argv[])
 	double *ppsf = new double[size*size]();
 	double *ppsf_cp = new double[size*size]();
 	double *big_img = new double[size*size*stamp_num]();
-	double *check_img = new double[size*size*stamp_num]();
+	//double *check_img = new double[size*size*stamp_num]();
 	double *gal = new double[size*size]();
 	double *pgal = new double[size*size]();
 	double *noise = new double[size*size]();
@@ -84,18 +85,18 @@ int main(int argc, char*argv[])
 	double *mag = new double[total_data_row]();
 	double *recvbuf, *recvbuf_s;
 	double *data = new double[data_row*shear_esti_data_cols]();
-	double *coeff = new double[3750]();
+	//double *coeff = new double[3750]();
 
 	// the snr parameters data matrix data_snr[i][j]
 	double *data_s = new double[data_row*snr_para_data_cols]();
-	if (myid == 0)
+	if (0 == myid)
 	{
 		recvbuf = new double[total_chips*stamp_num*shear_esti_data_cols];
 		recvbuf_s = new double[total_chips*stamp_num*snr_para_data_cols];
 	}
-	sprintf(coeff_path, "coeffs.hdf5");
-	sprintf(set_name, "/data");
-	read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
+	//sprintf(coeff_path, "coeffs.hdf5");
+	//sprintf(set_name, "/data");
+	//read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
 
 	sprintf(chip_path, "%spsf.fits", data_path);
 	read_img(psf, chip_path);
@@ -121,11 +122,12 @@ int main(int argc, char*argv[])
 		std::cout << "PSF THRES: " << all_paras.psf_pow_thres << std::endl << all_paras.psf_hlr << std::endl;
 	}
 
-	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
+	for (shear_id = 9; shear_id < shear_pairs; shear_id++)
 	{
+
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d, total chips: %d (%d cpus)", myid, shear_id, chip_id_s, chip_id_e, total_chips, numprocs);
 		write_log(log_path, log_inform);
-
+		
 		sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_name, "/mag");
 		read_h5(para_path, set_name, mag, NULL, NULL, NULL, NULL);
@@ -140,6 +142,7 @@ int main(int argc, char*argv[])
 
 		for (i = chip_id_s; i < chip_id_e; i++)
 		{
+			
 			seed = myid * i + shear_id + 1;
 			gsl_rng_initialize(seed);
 			t1 = clock();
@@ -160,6 +163,7 @@ int main(int argc, char*argv[])
 			for (j = 0; j < stamp_num; j++)
 			
 			{
+				continue;
 				initialize_arr(noise, size*size);
 				initialize_arr(pnoise, size*size);
 				initialize_arr(gal, size*size);
@@ -203,14 +207,10 @@ int main(int argc, char*argv[])
 				data_s[row + j * snr_para_data_cols + 5] = all_paras.gal_size;
 				data_s[row + j * snr_para_data_cols + 6] = mag[i*stamp_num + j];
 			}
-			//if (0==cmd && chip_id_s == i && 0 == myid && 0 == shear_id)
-			//{
-			//	sprintf(chip_path, "%s/check_%d.fits", data_path,i);
-			//	write_img(check_img, size*stamp_nx, size*stamp_nx, chip_path);
-			//}
+
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip finish in %.2f sec", myid, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
-			write_log(log_path, log_inform);
+			//write_log(log_path, log_inform);
 			if (0 == myid)
 			{
 				std::cout << log_inform << std::endl;
@@ -229,7 +229,7 @@ int main(int argc, char*argv[])
 			}
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
-
+		std::cout << myid << " Done 1  "  <<shear_id<< std::endl;
 		MPI_Gather(data_s, data_row*snr_para_data_cols, MPI_DOUBLE, recvbuf_s, data_row*snr_para_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == myid)
 		{
@@ -237,6 +237,7 @@ int main(int argc, char*argv[])
 			write_h5(snr_h5_path, set_name, total_data_row, snr_para_data_cols, recvbuf_s, NULL);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
+		std::cout << myid << " Done 2  " << shear_id << std::endl;
 
 		te = clock();
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: write data to file and finish jobs in %.2f sec", myid, shear_id, (te - ts) / CLOCKS_PER_SEC);
@@ -244,30 +245,46 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			std::cout << log_inform << std::endl;
-			if (0 == cmd)
-			{
-				std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << std::endl;
-			}
-			if (1 == cmd)
-			{
-				std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << std::endl;
-			}
 		}
 	}
-
+	sprintf(log_inform, "begin delete arraies");
+	write_log(log_path, log_inform);
+	if (0 == myid)
+	{
+		//delete[] recvbuf;
+		//delete[] recvbuf_s;
+		sprintf(log_inform, "delete recv arraies");
+		write_log(log_path, log_inform);
+	}
+		
 	delete[] psf;
+	sprintf(log_inform, "delete psf arraies");
+	write_log(log_path, log_inform);
+	
 	delete[] ppsf;
+	sprintf(log_inform, "delete ppsf arraies");
+	write_log(log_path, log_inform);
 	delete[] ppsf_cp;
 	delete[] big_img;
 	delete[] gal;
 	delete[] pgal;
+	sprintf(log_inform, "delete pgal arraies");
+	write_log(log_path, log_inform);
 	delete[] noise;
 	delete[] pnoise;
 	delete[] data;
 	delete[] data_s;
 	delete[] mag;
-	delete[] coeff;
-	delete[] check_img;
+	sprintf(log_inform, "delete mag arraies");
+	write_log(log_path, log_inform);
+	//delete[] coeff;
+	sprintf(log_inform, "delete coeff arraies");
+	write_log(log_path, log_inform);
+	//delete[] check_img;
+	sprintf(log_inform, "delete check_img arraies");
+	write_log(log_path, log_inform);
 	MPI_Finalize();
+	sprintf(log_inform, "delete all arraies");
+	write_log(log_path, log_inform);
 	return 0;
 }
