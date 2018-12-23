@@ -6,7 +6,7 @@ sources = ["dimmerm3"]#, "pts", "ptsb"]
 resolution_factor = [0.7]#, 0.33, 0.33]
 
 cuts = ["snr_auto", 'sex_snr', 'mag_auto', "flux2","flux_alt"]
-filter_name = ["sex2_2", "sex3_2","sex4_2","sex2_2", "sex3_2","sex4_2"]
+filter_name = ["sex2_1.5", "sex3_1.5","sex4_1.5","sex2_2", "sex3_2","sex4_2"]
 sig = ["1.5sig","1.5sig","1.5sig","2sig", "2sig", "2sig"]
 
 # cuts = ['sex_snr', 'mag_auto', "flux2"]
