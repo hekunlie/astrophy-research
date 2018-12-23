@@ -763,7 +763,8 @@ def CFHT_skysig(zpt=26.22, exp_time=600, pix_scale=0.187, sky_bright=20.3): # de
 ################################################################
 def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_nx, block_boundy, block_boundx):
     """
-    the coordinate origin of the points should be set to the upper left corner of the big block.
+    for correlation function calculation
+    the coordinate origin of the points should be set to the upper left corner of the grid.
     |(0,0),..., (0,x) ...|
     |....................|
     |(y,0),..............|
@@ -775,20 +776,28 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     :param pts_y, pts_x: y, x of the point
     :param block_ny, block_nx: number of the blocks along y-axis and x-axis for saving time
     :param block_boundy, block_boundx: (n, 4) numpy array, each row contains the y-coordinates (x-coordinates)
-                        of the four point of each block
+                        of the four point of each block.
+                        y: [[y1, y1, y3, y4],[]...], x: [[x1,x2,x3,x4],[]...]
+
+                        the sequence of four corners
                         |y1, y2|    |x1, x2|
-                        |y4, y3|,   |x4, x3|, actually, y1 = y2, y4 = y3 & x1 = x4, x2 = x3
+                        |y4, y3|,   |x4, x3|,
+                        actually, y1 = y2, y4 = y3 & x1 = x4, x2 = x3
     :return: list of the target blocks
     """
+    # the squared radius of the annulus
     rs, re = radius_s ** 2, radius_e ** 2
+    # find the minimum square area contains the annulus
     nx_left = int((radius_e - pts_x) / scale + nx) + 1
     nx_right = int((radius_e + pts_x) / scale - nx)
     ny_up = int((radius_e + pts_y) / scale - ny)
+
     nx_s, nx_e = max(nx - nx_left, 0), min(nx + nx_right + 1, block_nx)
     ny_e = min(ny + ny_up + 1, block_ny)
-
     needs = [iy * block_nx + ix for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
     nxy = [(iy, ix) for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
+    # the distance of each block corner from this point
+    # the 3'th of each row is the max distance of the block from the point
     dr_n = (block_boundy[needs] - pts_y) ** 2 + (block_boundx[needs] - pts_x) ** 2
     dr_n.sort()
 
@@ -796,6 +805,9 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     for tag, xy in enumerate(nxy):
         iy, ix = nxy[tag]
         if dr_n[tag][3] < rs or (dr_n[tag][0] > re and iy != ny and ix != nx):
+            # if maximum distance (minimum distance) of the block from the point is
+            # larger (smaller) than rs (re), this block will be neglected.
+            # but be careful with the block in cross center on this point.
             continue
         else:
             if iy > ny or (iy == ny and ix >= nx):

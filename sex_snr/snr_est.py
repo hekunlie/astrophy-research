@@ -43,7 +43,13 @@ shear_num = int(para_items[3])
 area_thresh = 5
 gal_num = 10000
 
-
+snr_idx = 0
+flux_auto_idx = 1
+flux_err_idx = 2
+mag_auto_idx = 3
+area_idx = 4
+x_idx = 5
+y_idx = 6
 if rank == 0:
     log = "START: operation: %s, source: %s, code: %s"\
           %(argv[1], total_path.split("/")[-2], argv[0])
@@ -72,7 +78,7 @@ if cmd == "snr":
 
 if cmd == "add" and rank < shear_num:
     snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
-    snr_data = numpy.zeros((chip_num * gal_num, 8))
+    snr_data = numpy.zeros((chip_num * gal_num, 7))
     for i in range(chip_num):
         cat_path = total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
@@ -102,9 +108,9 @@ if cmd == "check" and rank < shear_num:
 
     snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.load(snr_data_path)["arr_0"]
-    sex_snr = snr_data[:, 0]
-    sex_mag = snr_data[:, 2]
-    sex_area = snr_data[:, 5]
+    sex_snr = snr_data[:, snr_idx]
+    sex_mag = snr_data[:, mag_auto_idx]
+    sex_area = snr_data[:, area_idx]
     idx = sex_mag > 0
     ms = 0.2
     plt.figure(figsize=(35, 14))

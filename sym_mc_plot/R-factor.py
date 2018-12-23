@@ -20,32 +20,37 @@ cpus = comm.Get_size()
 
 source = argv[1]
 
-total_chip_num = 500
-columns = 100
-gal_num = 10000
-shear_num = 14
-
 ini_path = "%s/work/envs/envs.dat"%my_home
-log_name = "./r_log_%d.dat"%rank
+total_path, para_path = tool_box.config(ini_path, ['get', 'get'],[['selection_bias', "%s_path"%source, '1'],
+                                                    ['selection_bias', "%s_path_para"%source, '1']])
+
+log_name = total_path + "logs/R_%02d.dat"%rank
 logger = tool_box.get_logger(log_name)
 
-total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
-                                                   [['selection_bias', "%s_path"%source, '1'],
-                                                    ['selection_bias', "%s_path_para"%source, '1']])
+# the parameters
+para_contents = [["para","total_num",1], ["para","stamp_size",1], ["para", "stamp_col", 1], ["para","shear_num",1],
+                 ["para","noise_sig",1], ["para", "pixel_scale", 1]]
+para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get', 'get', 'get'], para_contents)
+
+total_chip_num = int(para_items[0])
+stamp_size = int(para_items[1])
+columns = int(para_items[2])
+shear_num = int(para_items[3])
+stamp_num = 10000
+
 psf_path = total_path + "psf.fits"
-size = int(tool_box.config(para_path+"para.ini", ["get"], [["para","size","1"]])[0])
 
 chip_labels = tool_box.allot([i for i in range(total_chip_num)], cpus)[rank]
 chip_num = len(chip_labels)
 
-fq = Fourier_Quad(size, 123)
+fq = Fourier_Quad(stamp_size, 123)
 psf_img = galsim.Image(fits.open(psf_path)[0].data)
 log_informs = "RANK: %d, SOURCE: %s, TOTAL CHIPS: %d, MY CHIPS: %d (%d ~ %d)"%(rank, source, total_chip_num,
                                                                                chip_num, chip_labels[0], chip_labels[-1])
 logger.info(log_informs)
 ts = time.time()
 for i in range(shear_num):
-    R_factor = numpy.zeros((chip_num*gal_num, 1))
+    R_factor = numpy.zeros((chip_num*stamp_num, 1))
     for tag, j in enumerate(chip_labels):
         log_informs = "%02d/gal_chip_%04d.fits start"%(i, j)
         logger.info(log_informs)
@@ -55,12 +60,12 @@ for i in range(shear_num):
         gals = fq.segment(chip_img)
         for k in range(len(gals)):
             gal_img = galsim.Image(gals[k])
-            R_factor[tag*gal_num + k] = galsim.hsm.EstimateShear(gal_img, psf_img, strict=False).resolution_factor
+            R_factor[tag*stamp_num + k] = galsim.hsm.EstimateShear(gal_img, psf_img, strict=False).resolution_factor
         t2 = time.time()
         log_informs = "%02d/gal_chip_%04d.fits finish in %.2f"%(i, j, t2 - t1)
         logger.info(log_informs)
     if rank == 0:
-        Recv_buffer = numpy.empty((total_chip_num*gal_num, 1), dtype=numpy.float64)
+        Recv_buffer = numpy.empty((total_chip_num*stamp_num, 1), dtype=numpy.float64)
     else:
         Recv_buffer = None
     comm.Gather(R_factor, Recv_buffer, root=0)
