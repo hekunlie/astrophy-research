@@ -18,7 +18,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cut, file_num, filter_name, source, sig, r_thresh = argv[1], int(argv[2]), argv[3], argv[4], argv[5], float(argv[6])
+cut, filter_name, source, sig, r_thresh = argv[1], argv[2], argv[3], argv[4], float(argv[5])
 
 t1 = time.clock()
 
@@ -33,6 +33,7 @@ shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
+
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 # rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
 
@@ -41,25 +42,16 @@ if rank == 0:
     logger = tool_box.get_logger("%s/work/selection_bias/sym_mc_plot/cutoff.dat"%my_home)
     logger.info(log)
 
-for i in range(file_num):
-    shear_esti_h5path = result_path + "data/data_%d.hdf5"%rank
-    shear_esti_file = h5py.File(shear_esti_h5path, "r")
-    shear_temp = shear_esti_file["/data"].value
-    if i == 0:
-        shear_esti_data = shear_temp.copy()
-    else:
-        shear_esti_data = numpy.row_stack((shear_esti_data, shear_temp))
-    shear_esti_file.close()
+shear_esti_h5path = result_path + "data/data_%d.hdf5"%rank
+shear_esti_file = h5py.File(shear_esti_h5path, "r")
+shear_esti_data = shear_esti_file["/data"].value
+shear_esti_file.close()
 
-    fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
-    fq_snr_file = h5py.File(fq_snr_h5path, "r")
-    set_name = list(fq_snr_file.keys())[0]
-    fq_snr_temp = fq_snr_file[set_name].value
-    if i == 0:
-        fq_snr_data = fq_snr_temp.copy()
-    else:
-        fq_snr_data = numpy.row_stack((fq_snr_data, fq_snr_temp))
-    fq_snr_file.close()
+fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
+fq_snr_file = h5py.File(fq_snr_h5path, "r")
+set_name = list(fq_snr_file.keys())[0]
+fq_snr_data = fq_snr_file[set_name].value
+fq_snr_file.close()
 
 fq = Fourier_Quad(60, 152356)
 noise_sig = 65
@@ -125,27 +117,20 @@ sex_snr_sort = numpy.sort(sex_snr[sex_idx])
 sex_snr_step = int(len(sex_snr_sort)/cuts_num)
 sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
 
-mag_iso = sex_data[:, 1]
-mag_iso_sort = numpy.sort(-mag_iso[sex_idx])
-mag_iso_step = int(len(mag_iso_sort)/cuts_num)
-mag_iso_cut = [mag_iso_sort[i*mag_iso_step] for i in range(cuts_num)]
+flux_auto = sex_data[:, 1]
+flux_err = sex_data[:, 2]
+flux_err[sex_idx] = 1
+snr_auto = flux_auto/flux_err
+snr_auto_sort = numpy.sort(snr_auto[sex_idx])
+snr_auto_step = int(len(snr_auto_sort)/cuts_num)
+snr_auto_cut = [snr_auto_sort[i*snr_auto_step] for i in range(cuts_num)]
 
-mag_auto = sex_data[:, 2]
+mag_auto = sex_data[:, 3]
 mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
 mag_auto_step = int(len(mag_auto_sort)/cuts_num)
 mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
 
-mag_petro = sex_data[:, 3]
-mag_petro_sort = numpy.sort(-mag_petro[sex_idx])
-mag_petro_step = int(len(mag_petro_sort)/cuts_num)
-mag_petro_cut = [mag_petro_sort[i*mag_petro_step] for i in range(cuts_num)]
-
-mag_win = sex_data[:, 4]
-mag_win_sort = numpy.sort(-mag_win[sex_idx])
-mag_win_step = int(len(mag_win_sort)/cuts_num)
-mag_win_cut = [mag_win_sort[i*mag_win_step] for i in range(cuts_num)]
-
-sex_area = sex_data[:, 5]
+sex_area = sex_data[:, 4]
 sex_area_sort = numpy.sort(sex_area[sex_idx])
 sex_area_step = int(len(sex_area_sort)/cuts_num)
 sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
@@ -158,15 +143,14 @@ select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
           "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),
           "flux_alt": (flux_alt, flux_alt_cut),
           "sex_snr": (sex_snr, sex_snr_cut),  "sex_area": (sex_area, sex_area_cut),
-          "mag_iso": (-mag_iso, mag_iso_cut),  "mag_auto": (-mag_auto, mag_auto_cut),
-          "mag_petro": (-mag_petro, mag_petro_cut), "mag_win": (-mag_win, mag_win_cut)}
+          "snr_auto": (snr_auto, snr_auto_cut),  "mag_auto": (-mag_auto, mag_auto_cut)}
 
 res_arr = numpy.zeros((6, len(select[cut][1])))
 
 
 detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area": detected, "harea": detected,
                   "snr": detected, "flux2": detected, "flux_alt": detected, "sex_snr": sex_idx, "sex_area": sex_idx,
-                  "mag_iso": sex_idx, "mag_auto": sex_idx, "mag_petro": sex_idx, "mag_win": sex_idx}
+                  "snr_auto": sex_idx, "mag_auto": sex_idx}
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] >= cut_s
