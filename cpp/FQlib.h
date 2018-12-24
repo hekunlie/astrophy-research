@@ -52,7 +52,7 @@ struct para
 	int area_thres=6; /* the minimun pixels for a detection */
 	double detect_thres; /* the threshold of pixel value of source */
 	double noise_sig;
-	int max_source = 1000; /* the maximum of sources allowed in each chip, changeable */
+	int max_source = 20; /* the maximum of sources allowed in each chip, changeable */
 	double max_distance= 8.;/* the max distance of peak away from the center of the source candidate */
 
 

@@ -119,7 +119,11 @@ sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
 
 flux_auto = sex_data[:, 1]
 flux_err = sex_data[:, 2]
-flux_err[sex_idx] = 1
+err_idx = flux_err == 0
+sex_undetect = sex_snr == 0
+if rank == 0:
+    print(sig,err_idx.sum()-sex_undetect.sum())
+flux_err[err_idx] = 1
 snr_auto = flux_auto/flux_err
 snr_auto_sort = numpy.sort(snr_auto[sex_idx])
 snr_auto_step = int(len(snr_auto_sort)/cuts_num)

@@ -21,8 +21,8 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
@@ -51,20 +51,20 @@ int main(int argc, char*argv[])
 		if (0 == cmd)
 		{
 			std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << std::endl;
-			std::cout << "Total chip: " << total_chips <<std::endl;
+			std::cout << "Total chip: " << total_chips <<" Stamp size: "<<size <<std::endl;
 		}
 		if (1 == cmd)
 		{
 			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << std::endl;
 		}
-		sprintf(log_inform, "RANK: %03d,  thresd: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
+		sprintf(log_inform, "RANK: %03d,  thread: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
 		write_log(log_path, log_inform);
 	}
 
 	all_paras.gal_noise_sig = gal_noise_sig;
 	all_paras.psf_noise_sig = psf_noise_sig;
 	all_paras.stamp_size = size;
-	all_paras.max_source = 60;
+	all_paras.max_source = 30;
 	all_paras.area_thres = 5;
 	all_paras.detect_thres = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
@@ -131,11 +131,13 @@ int main(int argc, char*argv[])
 		
 		if (0 == myid)
 		{
+			
 			initialize_arr(recvbuf, total_chips*stamp_num*shear_esti_data_cols);
 			initialize_arr(recvbuf_s, total_chips*stamp_num*snr_para_data_cols);
 		}
 		initialize_arr(data, data_row*shear_esti_data_cols);
 		initialize_arr(data_s, data_row*snr_para_data_cols);
+
 
 		for (i = chip_id_s; i < chip_id_e; i++)
 		{
@@ -157,8 +159,7 @@ int main(int argc, char*argv[])
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;
 
 			for (j = 0; j < stamp_num; j++)			
-			{
-				
+			{				
 				initialize_arr(noise, size*size);
 				initialize_arr(pnoise, size*size);
 				initialize_arr(gal, size*size);

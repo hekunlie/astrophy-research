@@ -810,8 +810,9 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
-	double *source_para = new double[140]{}; // default for 20 detections in signal stamps, a fairly large number
+	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
 	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
+
 	for ( i = 0; i < source_num; i++)
 	{
 		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);

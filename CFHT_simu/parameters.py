@@ -36,7 +36,7 @@ radius_s, radius_e = float(paras[4]), float(paras[5])
 stamp_num = 10000
 if rank == 0:
     print(num*stamp_num, size, mag_s, mag_e, radius_s, radius_e)
-
+comm.Barrier()
 pic = para_path + "/pic/ellip_%d.png"%rank
 plt.figure(figsize=(16,16))
 
@@ -155,9 +155,11 @@ if bulge_num > 0:
     plt.subplot(336)
     plt.hist(e[disc_num:], 100)
     plt.title("Bulge e")
-
-print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max: %.5f, %.5f"
-      %(rank, numpy.mean(e1), numpy.std(e1), numpy.mean(e2), numpy.std(e2), numpy.max(e1), numpy.max(e2)))
+for i in range(cpus):
+    if i == rank:
+        print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max: %.5f, %.5f"
+              %(rank, numpy.mean(e1), numpy.std(e1), numpy.mean(e2), numpy.std(e2), numpy.max(e1), numpy.max(e2)))
+        comm.Barrier()
 f["/e1"] = e1
 f["/e2"] = e2
 f["/e"] = e
