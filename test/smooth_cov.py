@@ -43,7 +43,7 @@ for m in range(0, 5): # y
                            [xy, x2y, xy2, x3y, x2y2, xy3],
                            [y2, xy2, y3, x2y2, xy3, y4]])
         inv_cov = numpy.linalg.inv(cov)
-        print(inv_cov[0])
+        # print(inv_cov[0])
         sub_matrix = numpy.ones((6,25))*inv_cov[0,0] # the first row are const.
         sub_matrix[1] = inv_cov[0, 1] * (x.reshape((1, 25)))
         sub_matrix[2] = inv_cov[0, 2] * (y.reshape((1, 25)))
@@ -51,7 +51,7 @@ for m in range(0, 5): # y
         sub_matrix[4] = inv_cov[0, 4] * ((x*y).reshape((1, 25)))
         sub_matrix[5] = inv_cov[0, 5] * ((y*y).reshape((1, 25)))
         all_matrix[tag*6: (tag+1)*6] = sub_matrix
-        print(sub_matrix)
+
         # print(all_matrix)
         # print(x)
         # print(y)
@@ -65,6 +65,7 @@ for m in range(0, 5): # y
         # plt.show()
 
         tag += 1
+print(all_matrix)
 f = h5py.File("coeffs.hdf5","w")
 f["/data"] = all_matrix
 f.close()

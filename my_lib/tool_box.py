@@ -284,6 +284,9 @@ def mirror_arr(image):
 # the fitting methods
 ################################################################
 
+def gauss_profile(size,sigma,yc,xc):
+    my, mx = numpy.mgrid[0:size, 0:size]
+    return numpy.exp(-((my-yc)**2+(mx-xc)**2)/2/sigma/sigma)
 
 def exp_fun(x, ampli, sig, mu):
     # for fitting

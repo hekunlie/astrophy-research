@@ -939,6 +939,8 @@ void snr_est(const double *image, para *paras, int fit)
 	}
 	noise = n*0.25 / ((size - edge)*edge);
 	paras->gal_flux2 = sqrt(image[xc*size + xc] / noise);
+	paras->gal_flux2_new = paras->gal_total_flux / sqrt(noise);
+
 	if (fit == 2)
 	{
 		for (i = 0; i < 20; i++)
@@ -1216,6 +1218,73 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 			}
 		}
 	}
+	delete[] temp;
+}
+
+void smooth_real(double *image, const double *coeffs, para*paras)//be careful of the memset()
+{
+	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
+	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
+	double fz[6]{}, z[25]{}, fit_para_6, flux=0;
+	double*temp = new double[size*size]{};
+	double fit_temp[6 * 25]{};
+	double ones[6]{ 1.,1.,1.,1.,1.,1. };
+
+	for (q = 0; q < 150; q++)
+	{
+		fit_temp[q] = coeffs[q];
+	}
+
+	cen = (size*size + size)*0.5; // the position of the k0 of the power spectrum
+	for (i = 0; i < size*size; i++)
+	{
+		temp[i] = image[i];
+	}
+	for (i = 0; i < size; i++) //y
+	{
+		for (j = 0; j < size; j++)//x
+		{
+			tag = 0;
+
+			for (m = -2; m < 3; m++)
+			{
+				if (2 < i && i < size - 2)
+				{
+					p = (i + m)*size;
+				}
+				else
+				{
+					p = (i + m + size) % size*size;// the periodic boundry condition
+				}
+				for (n = -2; n < 3; n++)
+				{
+					if (2 < j && j < size - 2)
+					{
+						q = j + n;
+					}
+					else
+					{
+						q = (j + n + size) % size; // the periodic boundry condition
+					}
+
+					if (tag != 0 && tag != 4 && tag != 20 && tag != 24)
+						// exclude the corner and center of each 5*5 block 
+					{
+						z[tag] = temp[p + q];
+					}
+					tag++;
+				}
+			}
+
+			cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 25, 1, fit_temp, 25, z, 1, 0, fz, 1);
+			fit_para_6 = cblas_ddot(6, fz, 1, ones, 1);
+			//image[i*size + j] = fit_para_6;
+			flux += fit_para_6;
+			memset(fz, 0, sizeof(fz));
+			memset(z, 0, sizeof(z));
+		}
+	}
+	paras->gal_total_flux = fabs(flux);
 	delete[] temp;
 }
 

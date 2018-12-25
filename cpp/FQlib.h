@@ -39,8 +39,8 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thres = 0.0001;
 
 	int gal_size, gal_hsize, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq;
-	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig;
+	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux;
+	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig, gal_flux2_new;
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2, t3, t4;
@@ -186,6 +186,10 @@ void smooth(double *image, const double *psf_pow, const double *coeffs, para *pa
 /* the image will be repalced by the smoothed one. 
 	the psf_pow and the paras->psf_thres_pow are the mask and  threshold to label the region where to be smoothed
 	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
+
+void smooth_real(double*image, const double *coeffs, para *paras);
+/* smooth the image by fitting a polynomial */
+
 void hyperfit_5(double *data, double*fit_para, para *paras);
 
 
