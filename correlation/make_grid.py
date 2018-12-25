@@ -10,7 +10,6 @@ import tool_box
 import h5py
 from mpi4py import MPI
 from sys import argv
-import configparser
 import time
 
 
@@ -27,13 +26,18 @@ if cmd not in cmds:
 
 area_num = 4
 
-grid_scale = numpy.array([5., 10., 25., 60.]) # arcmin
+grid_scale = numpy.array([5., 10., 25., 60.]) # arcsec
 corre_scale = [10**(0.2*i) for i in range(11)]
 
 cpu_block_size = int(cpus/area_num)
 
-config = configparser.ConfigParser()
-config.read("%s/work/envs/envs.dat"%my_home)
+
+
+envs_path = "%s/work/envs/envs.dat"%my_home
+gets_item = [["cfht","%s_path_para","0"]]
+para_path = tool_box.config(envs_path,["get"],[])[0]
+
+!!!
 data_path = config.get("cfht", "data_path_in")
 res_path = config.get("cfht", "result_path")
 flux_alt = int(config.get("fresh_para_idx", "flux_alt"))
@@ -126,7 +130,7 @@ if cmd == "grid":
 
         for i, scale in enumerate(grid_scale):
             # the grid: x-axis--ra, y-axis--dec
-            rows, cols = int((ra_max - ra_min)/scale+1), int((dec_max - dec_min)/scale+1)
+            rows, cols = int((dec_max - dec_min)/scale+1), int((ra_max - ra_min)/scale+1)
             test_arr = numpy.zeros((5 * rows, 5 * cols))
             for col in range(cols):
                 for row in range(rows):

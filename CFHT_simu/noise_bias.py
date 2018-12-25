@@ -72,6 +72,9 @@ logger.info("seed: %d"%seed)
 chip_tags = [i for i in range(total_chips_num)]
 chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
 
+snr_data_path = para_path + "snr.npz"
+snr_data = numpy.load(snr_data_path)["arr_0"]
+
 for shear_id in range(shear_num):
     shear_cata = para_path + "shear.npz"
     shear = numpy.load(shear_cata)
@@ -107,7 +110,8 @@ for shear_id in range(shear_num):
             e1 = e1s[para_n + k, 0]
             e2 = e2s[para_n + k, 0]
             gal_flux = flux[para_n + k, 0]
-            ra = radius[para_n + k, 0]
+            snr = snr_data[para_n + k, 0]
+            ra = gal_flux*pixel_scale/2/numpy.sqrt(numpy.pi)/noise_sig/snr
             btr = fbt[para_n + k, 0]
 
             # regular galaxy
