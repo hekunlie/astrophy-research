@@ -63,13 +63,22 @@ b. galsim: 200 points, half_light_radius and flux are the same as galsim galaxy 
 noise free,\\(48 \times 48\\),\\(64 \times 64\\),\\(96 \times 96\\) magnitude: 20, scale raidus(arcsec): 1.0(left) \\( \sim \\) 0.5(right), btr=0 (the most extensive profile)
 
 <img src="m_2sig.png" width = 100% height = 100% div align=center\>
-<img src="c_2sig.png" width = 100% height = 100% div align=center\>
+<!--<img src="c_2sig.png" width = 100% height = 100% div align=center\>-->
 <img src="m_2sig_trunc_32.png" width = 100% height = 100% div align=center\>
+<img src="m_1.5sig_48X48_500w.png" width = 100% height = 100% div align=center\>
 
 Upper: 10 million galaxies, \\(48 \times 48\\), Scale radius 0.2 \\( \sim \\) 0.9.
-Lower: 10 million galaxies, \\(32 \times 32\\), Scale radius 0.2 \\( \sim \\) 0.9
+Middle: 10 million galaxies, \\(32 \times 32\\), Scale radius 0.2 \\( \sim \\) 0.9
+Lower: 5 million galaxies, \\(48, \times 48 \\), Scale radius 0.2 \\( \sim \\) 0.9
 
-The brighter, the larger. So as the cutoff threshold increasingthe, the effects of truncation will be more obvious and will give rise to multiplicative bias. However, the fitting \\( SNR_F\\) will correct it. But the correction will be useless when the stamp becomes smaller. The lower panel show a obvious multiplicative bias.
+The brighter, the larger. So as the cutoff threshold increasing, the effects of truncation will be more obvious and will give rise to multiplicative bias. However, it seems that the fitting \\( SNR_F\\) will correct it. But the correction will be useless when the stamp becomes smaller. The middle panel show a obvious multiplicative bias.
+
+<img src="m_1.5sig_96X96_500w.png" width = 100% height = 100% div align=center\>
+
+5 million galaxies, \\( 96 \times 96 \\), Scale radius \\(0.3 \sim 1.0 \\), mag: \\(20 \sim 24.8 \\)
+
+
+<img src="m_2sig_faint.png" width = 100% height = 100% div align=center\>
 
 
 ## <center> smooth

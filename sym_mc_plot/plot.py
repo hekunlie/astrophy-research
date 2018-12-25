@@ -15,9 +15,8 @@ fonts = 20
 xy_lb_size = 16
 lenged_size = fonts - 10
 axis_linewidth = 1.2
-print(os.path.exists("D:/cuts_all_smooth/sym/sex2_2/flux2/total.npz"))
-print(os.path.exists('D:/cuts_all_smooth/sym/sex2_2/flux2/total.npz'))
-total_path = "D:/cuts/sym/"
+
+total_path = "E:/cuts/sym/"
 total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto","snr_auto"]
@@ -87,7 +86,7 @@ y_ticks = [numpy.arange(-0.004, 0.0021, 0.002),
            numpy.arange(-0.009, 0.002, 0.003),
            numpy.arange(-0.004, 0.0021, 0.002)]
 
-sig = "1.5"
+sig = "2"
 mc_plot = 'c'
 lim = 0
 if mc_plot == "m":
@@ -208,7 +207,7 @@ for row in range(fig_rows):
                 # ax.set_yticks(y_ticks[row])
             ax.plot([x[0], x[1]], [0, 0], linestyle="-.", c='grey')
             ax.xaxis.set_major_formatter(xticks)
-            ax.set_xlabel("Cutoff percentage", fontsize=fonts)
+            # ax.set_xlabel("Cutoff percentage", fontsize=fonts)
             ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
             # if col == 1:
             #     ax.set_yticklabels([])

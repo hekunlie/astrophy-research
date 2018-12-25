@@ -7,9 +7,9 @@ import numpy
 import tool_box
 import time
 
-sources = ["dimmerm3"]
-cpus = 70
-num = 140
+sources = ["debug"]
+cpus = 50
+num = 80
 jobs = numpy.zeros((num, 1))
 
 t1 = time.time()
@@ -65,9 +65,9 @@ for source in sources:
         a.wait()
 
         # check
-        cmd = "mpirun -np %d python snr_est.py check %s %s %.1f"%(shear_num,source, filter_name, max_radius)
-        a = Popen(cmd, shell=True)
-        a.wait()
+        #cmd = "mpirun -np %d python snr_est.py check %s %s %.1f"%(shear_num,source, filter_name, max_radius)
+        #a = Popen(cmd, shell=True)
+        #a.wait()
 t2 = time.time()
 print("SNR EST: ",sources, cpus, t2-t1)
 
