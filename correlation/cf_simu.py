@@ -1,131 +1,186 @@
-import matplotlib
-matplotlib.use('Agg')
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
 path.append('%s/work/fourier_quad/'%my_home)
 import time
 from mpi4py import MPI
-from Fourier_Quad import *
+from Fourier_Quad import Fourier_Quad
 import tool_box
 import numpy
 import h5py
-import warnings
 from sys import argv
-import galsim
 from astropy.io import fits
-import matplotlib.pyplot as plt
+import shutil
 
-cmd = argv[1]
+
+# run after the parameters.py
+# 1. "para"
+# 2. then simulation
+# 3. measure the shear
+
+sect, source, cmd = argv[1], argv[2], argv[3]
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-t1 = time.time()
+envs_path = "%s/work/envs/envs.dat" % my_home
+get_contents = [['%s'%sect, "%s_path" % source, '1'], ['%s'%sect, "%s_path_result" % source, '1'],
+                ['%s'%sect, "%s_path_para" % source, '1'], ['%s'%sect, "%s_path_log" % source, '1']]
+path_items = tool_box.config(envs_path, ['get', 'get', 'get', 'get'], get_contents)
+total_path, result_path, para_path, log_path = path_items
 
-envs_path = "%s/work/envs/envs.dat"%my_home
-data_path, simu_para_path = tool_box.config(envs_path, ['get','get'], [["correlation", "simu_path", "1"],
-                                                                       ["correlation", "simu_para_path", "1"]])
-para_file = simu_para_path + "para.ini"
-para_items = tool_box.config(para_file, ['get', 'get','get','get'], [["para", 'num', 1], ['para', 'size', 1],
-                                                                     ["para", 'cov11', 1], ['para', 'cov12', 1]])
-total_num, stamp_size = int(para_items[0]), int(para_items[1])
-cov11, cov12 = float(para_items[2]), float(para_items[3])
+logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
 
-cpu_mid = int(cpus/2)
-region, data_tag = divmod(rank, cpu_mid)
-partial_num = int(total_num/cpu_mid)
-start_pt, end_pt = partial_num*rank, partial_num*(rank + 1)
+# the parameters
+para_contents = [["para", "total_num", 1], ["para", "stamp_size", 1], ["para", "stamp_col", 1], ["para", "shear_num", 1],
+                 ["para", "noise_sig", 1], ["para", "pixel_scale", 1]]
+para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get', 'get', 'get'], para_contents)
 
-para_h5path = simu_para_path + "para.hdf5"
+total_chips_num = int(para_items[0])
+stamp_size = int(para_items[1])
+stamp_col = int(para_items[2])
+shear_num = int(para_items[3])
+noise_sig = int(para_items[4])
+pixel_scale = float(para_items[5])
+stamp_num = 10000
+
+cov11, cov12 = 0.0006, -0.0003
 
 if cmd == "para":
     if rank == 0:
-        para_h5 = h5py.File(para_h5path, "w")
+        for i in range(int(shear_num/2)):
+            cov_g1 = [[cov11, cov12 + i * 0.0001], [cov12 + i * 0.0001, cov11]]
+            cov_g2 = [[cov11, -cov12 - i * 0.0001], [-cov12 - i * 0.0001, cov11]]
 
-        for i in range(2):
-            cov = [[cov11, cov12+i*0.0002], [cov12+i*0.0002, cov11]]
-            gs = tool_box.rand_gauss2n(num=total_num, means=[0, 0], cov=cov).T
-            print(gs.shape)
-            e1, e2 = tool_box.ellip_mock(total_num, 10*i+1)
-            plt.subplot(121)
-            plt.hist(e1, 100)
-            plt.subplot(122)
-            plt.hist(e2, 100)
-            plt.savefig(data_path+"ellip_%d.png"%i)
-            plt.close()
-            plt.scatter(gs[:,0], gs[:,1], s=1)
-            plt.xlim(-0.1, 0.1)
-            plt.ylim(-0.1, 0.1)
-            plt.savefig(data_path+"gg_%d.png"%i)
-            plt.close()
-            for j in range(cpu_mid):
-                g_set_1 = "/0/g%d/%d/"%(i+1, j)
-                g_set_2 = "/1/g%d/%d/"%(i+1, j)
-                para_h5[g_set_1] = gs[partial_num*j: partial_num*(j+1), 0]
-                para_h5[g_set_2] = gs[partial_num*j: partial_num*(j+1), 1]
-                e_set_1 = "/%d/e1/%d/"%(i, j)
-                e_set_2 = "/%d/e2/%d/"%(i, j)
-                para_h5[e_set_1] = e1[partial_num*j: partial_num*(j+1)]
-                para_h5[e_set_2] = e2[partial_num*j: partial_num*(j+1)]
-        para_h5.close()
+            g1s = tool_box.rand_gauss2n(num=total_chips_num*stamp_num, means=[0, 0], cov=cov_g1).T
+            g2s = tool_box.rand_gauss2n(num=total_chips_num*stamp_num, means=[0, 0], cov=cov_g2).T
+
+            para_h5path = para_path + "para_%d.hdf5"%i
+            para_h5 = h5py.File(para_h5path, "r+")
+            try:
+                para_h5.__delitem__("/g1")
+                para_h5.__delitem__("/g2")
+            except:
+                print("Update /g1, /g2")
+            para_h5["/g1"] = g1s[:, 0]
+            para_h5["/g2"] = g2s[:, 0]
+            para_h5.close()
+
+            para_h5path = para_path + "para_%d.hdf5"%(i+int(shear_num/2))
+            para_h5 = h5py.File(para_h5path, "r+")
+            try:
+                para_h5.__delitem__("/g1")
+                para_h5.__delitem__("/g2")
+            except:
+                print("Update /g1, /g2")
+            para_h5["/g1"] = g1s[:, 1]
+            para_h5["/g2"] = g2s[:, 1]
+            para_h5.close()
 
 else:
-    para_h5 = h5py.File(para_h5path,"r")
+    import galsim
 
-    g1_setname = "/%d/g1/%d/"%(region, data_tag)
-    g1 = para_h5[g1_setname].value
-    g2_setname = "/%d/g2/%d/"%(region, data_tag)
-    g2 = para_h5[g2_setname].value
-    e1_setname = "/%d/e1/%d/"%(region, data_tag)
-    e1 = para_h5[e1_setname].value
-    e2_setname = "/%d/e2/%d/"%(region, data_tag)
-    e2 = para_h5[e2_setname].value
-    para_h5.close()
-
-    fq = Fourier_Quad(stamp_size, rank*10+10)
-
-    gal_radius = 1.0
-    pixel_scale = 0.2
-    gal_flux = 1.e5
-
-    psf = galsim.Moffat(beta=3.5, scale_radius=0.8, flux=1.0, trunc=3)
-    psf_img = galsim.ImageD(stamp_size, stamp_size)
-    psf.drawImage(image=psf_img, scale=pixel_scale)
-    psf_pow = fq.pow_spec(psf_img.array)
-    hlr = fq.get_radius_new(psf_pow, 2)
-
-    gal_pool = []
-    sp = (partial_num, 4)
-    measure_data = numpy.zeros(sp)
-    for i in range(partial_num):
-
-        gal = galsim.Sersic(half_light_radius=gal_radius, n=2, trunc=4.5 * gal_radius)  # be careful
-        gal = gal.shear(e1=e1[i], e2=e2[i])
-
-        gal_s = gal.withFlux(gal_flux)
-        gal_g = gal_s.shear(g1=g1[i], g2=g2[i])
-        gal_c = galsim.Convolve([gal_g, psf])
-        img = galsim.ImageD(stamp_size, stamp_size)
-        gal_c.drawImage(image=img, scale=pixel_scale)
-        gal_img = img.array# + fq.draw_noise(0, noise_sig)
-        if rank == 0 and i < 10000:
-            gal_pool.append(gal_img)
-
-        measure_data[i] = fq.shear_est(gal_img, psf_pow, F=True)[:4]
-
-    rev_buffer = None
+    ts = time.clock()
+    finish_path = "%s/work/test/job/%s/finish_%d.dat" % (my_home, source, rank)
     if rank == 0:
-        rev_buffer = numpy.empty((2*total_num, 4), dtype="numpy.float64")
-    comm.Gather(measure_data, rev_buffer, root=0)
+        indicator = "%s/work/test/job/%s" % (my_home, source)
+        if os.path.exists(indicator):
+            shutil.rmtree(indicator)
+        os.makedirs(indicator)
+    comm.Barrier()
 
+    total_gal_num = total_chips_num * stamp_num
+    seed = rank * 344 + 11121
+
+    ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
+    fq = Fourier_Quad(stamp_size, seed)
+
+    # PSF
+    psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=2)
     if rank == 0:
-        galaxies = fq.stack(gal_pool, 100)
-        hdu = fits.PrimaryHDU(galaxies)
-        hdu.writeto(data_path + "gal.fits", overwrite=True)
-        data_1, data_2 = rev_buffer[:total_num], rev_buffer[total_num:]
-        numpy.savez(data_path+"data.npz", data_1, data_2)
-t2 = time.time()
-if rank == 0:
-    print(t2 - t1)
+        psf_img = galsim.ImageD(stamp_size, stamp_size)
+        psf.drawImage(image=psf_img, scale=pixel_scale)
+        hdu = fits.PrimaryHDU(psf_img.array)
+        psf_path = total_path + 'psf.fits'
+        hdu.writeto(psf_path, overwrite=True)
+        logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
+                    % (source, stamp_size, pixel_scale, noise_sig, total_chips_num))
+    logger.info("seed: %d" % seed)
+
+    # task allocation
+    chip_tags = [i for i in range(total_chips_num)]
+    chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
+
+    for shear_id in range(shear_num):
+        paras = para_path + "para_%d.hdf5" % shear_id
+        f = h5py.File(paras, 'r')
+        e1s = f["/e1"].value
+        e2s = f["/e2"].value
+        radius = f["/radius"].value
+        flux = f["/flux"].value
+        fbt = f['/btr'].value
+        gal_profile = f["/type"].value
+        g1s = f["/g1"].value
+        g2s = f["/g2"].value
+
+        # for checking
+        logger.info("SHEAR ID: %02d, RANk: %02d, e1s: %.3f, e2s: %.3f, radius: %.2f, fbt: %.2f"
+                    % (shear_id, rank, e1s[int(0.5 * total_gal_num)], e2s[int(0.9 * total_gal_num)],
+                       radius[int(0.1 * total_gal_num)], fbt[int(0.99 * total_gal_num)]))
+
+        for t, chip_tag in enumerate(chip_tags_rank):
+            t1 = time.clock()
+
+            rng = numpy.random.RandomState(seed + shear_id + t)
+
+            chip_path = total_path + "%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
+            gal_pool = []
+            logger.info("SHEAR ID: %02d, Start the %04d's chip.." % (shear_id, chip_tag))
+
+            para_n = chip_tag * stamp_num
+
+            for k in range(stamp_num):
+                e1 = e1s[para_n + k, 0]
+                e2 = e2s[para_n + k, 0]
+                gal_flux = flux[para_n + k, 0]
+                ra = radius[para_n + k, 0]
+                btr = fbt[para_n + k, 0]
+                g1 = g1s[para_n + k]
+                g2 = g2s[para_n + k]
+                # regular galaxy
+                c_profile = gal_profile[para_n + k, 0]
+                if c_profile == 1:
+                    gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra, flux=1.0)
+                else:
+                    bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra, flux=1.0)  # be careful
+                    disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra, flux=1.0)  # be careful
+                    gal = bulge * btr + disk * (1 - btr)
+                gal_e = gal.shear(e1=e1, e2=e2)
+                gal_f = gal_e.withFlux(gal_flux)
+
+                # random walk
+                # gal_rng_seed = seed + shear_id + t + k
+                # gal_rng = galsim.BaseDeviate(gal_rng_seed)
+                # gal_f = galsim.randwalk.RandomWalk(npoints=80, half_light_radius=ra, flux=gal_flux, rng=gal_rng)#.shear(e1=e1, e2=e2)
+
+                gal_s = gal_f.shear(g1=g1, g2=g2)
+                gal_c = galsim.Convolve([gal_s, psf])
+
+                img = galsim.ImageD(stamp_size, stamp_size)
+                gal_c.drawImage(image=img, scale=pixel_scale)
+                gal_pool.append(img.array)
+
+            noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
+            big_chip = fq.stack(gal_pool, stamp_col) + noise_img
+            big_chip = numpy.float32(big_chip)
+            hdu = fits.PrimaryHDU(big_chip)
+            hdu.writeto(chip_path, overwrite=True)
+            t2 = time.clock()
+            logger.info("SHEAR ID: %02d, Finish the %04d's chip in %.2f sec" % (shear_id, chip_tag, t2 - t1))
+
+    with open(finish_path, "w") as f:
+        f.write("done")
+
+    te = time.clock()
+    logger.info("Used %.2f sec. %s" % (te - ts, total_path))

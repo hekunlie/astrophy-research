@@ -1,13 +1,13 @@
 from sys import path
-path.append('D:/GitHub/astrophy-research/my_lib')
+path.append('E:/GitHub/astrophy-research/my_lib')
 import time
 import tool_box
 import numpy
 import matplotlib.pyplot as plt
 
 scale = 5
-ny,nx = 50,50
-radius_s, radius_e = 13, 30
+ny,nx = 20,20
+radius_s, radius_e = 13, 27.5
 
 # grid
 my,mx = numpy.mgrid[0:ny+1,0:nx+1]*scale

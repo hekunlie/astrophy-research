@@ -13,14 +13,14 @@ from mpi4py import MPI
 import h5py
 import time
 
-loops, source = int(argv[1]), argv[2]
+sect, source,loops = argv[1], argv[2], int(argv[3])
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 envs_path = "%s/work/envs/envs.dat"%my_home
-para_path = tool_box.config(envs_path,["get"],[["selection_bias","%s_path_para"%source,"0"]])[0]
+para_path = tool_box.config(envs_path,["get"],[["%s"%sect,"%s_path_para"%source,"0"]])[0]
 
 para_ini_path = para_path+"para.ini"
 paras = tool_box.config(para_ini_path,["get",'get',"get",'get',"get",'get'],

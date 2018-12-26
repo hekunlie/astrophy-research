@@ -7,11 +7,11 @@ import tool_box
 import shutil
 
 
-source, cmd = argv[1], argv[2]
+sect, source, cmd = argv[1], argv[2], argv[3]
 
 envs_path = "%s/work/envs/envs.dat"%my_home
-get_contents = [['selection_bias', "%s_path"%source, '1'],['selection_bias', "%s_path_result"%source, '1'],
-                ['selection_bias', "%s_path_para"%source, '1'],['selection_bias', "%s_path_log"%source, '1']]
+get_contents = [['%s'%sect, "%s_path"% source, '1'],['%s'%sect, "%s_path_result"%source, '1'],
+                ['%s'%sect, "%s_path_para"%source, '1'],['%s'%sect, "%s_path_log"%source, '1']]
 path_items = tool_box.config(envs_path,['get','get','get','get'], get_contents)
 total_path, result_path, para_path, log_path = path_items
 
