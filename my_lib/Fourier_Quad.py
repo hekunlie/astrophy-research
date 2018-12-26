@@ -540,7 +540,7 @@ class Fourier_Quad:
         # print("ny, nx:", ny,nx)
         chi_sq = 0
         mu = [0,0]
-        cov = [[0.07,g_corr],[g_corr,0.07]]
+        cov = [[abs(2*g_corr),g_corr],[g_corr,abs(2*g_corr)]]
         data_len = len(mgs[0])
         for i in range(resample):
             t1 = time.time()
@@ -559,7 +559,7 @@ class Fourier_Quad:
             chi_sq += 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
             t3 = time.time()
             # print("%d resample %d %.2f %.2f" %(self.counter,i, t2-t1, t3-t2))
-        return chi_sq/resample, arr_1, arr_2, arr_3, arr_4
+        return chi_sq/resample#, arr_1, arr_2, arr_3, arr_4
 
     def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=0, left=-0.001, right=0.001,pic_path=False):
         r"""
@@ -593,10 +593,10 @@ class Fourier_Quad:
             fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
             fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
             values = [fL, fm2, fm1, fm3, fR]
-            print("iteration \n",iters,values,"\n", left, m2, m1, m3, right)
+            # print("iteration \n",iters,values,"\n", left, m2, m1, m3, right)
             records[iters, ] = fm1, left, fL, right, fR
             if max(values) - min(values) < 20:
-                print("BREAK ", iters, left, right, abs(left - right))
+                # print("BREAK ", iters, left, right, abs(left - right))
                 break
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
                 if fm1 == fm2:
@@ -651,14 +651,14 @@ class Fourier_Quad:
 
             if abs(left-right) < 1.e-5:
                 g_h = (left+right)/2.
-                print("BREAK ",iters, left, right, abs(left - right))
+                # print("BREAK ",iters, left, right, abs(left - right))
                 break
             iters += 1
             if left == templ and right == tempr:
                 same += 1
             if iters > 12 and same > 2 or iters > 14:
                 g_h = (left+right)/2.
-                print("BREAK ",iters,left, right, abs(left - right))
+                # print("BREAK ",iters,left, right, abs(left - right))
                 break
 
         fit_range = numpy.linspace(left, right, 20)
@@ -666,11 +666,11 @@ class Fourier_Quad:
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
-        print("Fitting finish", left, right,g_corr, corr_sig)
-        plt.scatter(fit_range,chi_sq)
-        plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-        plt.show()
-        return g_corr, corr_sig
+        # print("Fitting finish", left, right,g_corr, corr_sig)
+        # plt.scatter(fit_range,chi_sq)
+        # plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+        # plt.show()
+        return -g_corr, corr_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
         # nu = N + U for g1
