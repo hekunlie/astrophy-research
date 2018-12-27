@@ -745,7 +745,7 @@ class Fourier_Quad:
             right = 2*m1 - left
 
         fit_range = numpy.linspace(left, right, 60)
-        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
+        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
@@ -764,7 +764,7 @@ class Fourier_Quad:
     def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
         """
         G1 (G2): the shear estimator for g1 (g2),
-        N: shear estimator corresponding to the PSF correction 
+        N: shear estimator corresponding to the PSF correction
         U: the term for PDF-SYM
         V: the term for transformation
         :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
@@ -797,7 +797,7 @@ class Fourier_Quad:
             if iters > 12:
                 break
         fit_range = numpy.linspace(left, right, 60)
-        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
+        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
