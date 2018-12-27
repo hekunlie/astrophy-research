@@ -605,7 +605,7 @@ class Fourier_Quad:
                 fmc = self.G_bin2d(mgs, mnus, mc, bins, ig_nums=ig_nums)
                 fmcl = self.G_bin2d(mgs, mnus, mcl, bins, ig_nums=ig_nums)
                 fmcr = self.G_bin2d(mgs, mnus, mcr, bins, ig_nums=ig_nums)
-                temp = fmc + 20
+                temp = fmc + 30
                 if fmcl > temp:
                     left = (mc + mcl) / 2.
                     change = 1
@@ -615,84 +615,6 @@ class Fourier_Quad:
                 iters += 1
                 if iters > 12:
                     break
-            # same = 0
-            # iters = 0
-            # # m1 chi square & left & left chi square & right & right chi square
-            # records = numpy.zeros((15, 5))
-            # while True:
-            #     templ = left
-            #     tempr = right
-            #     m1 = (left + right) / 2.
-            #     m2 = (m1 + left) / 2.
-            #     m3 = (m1 + right) / 2.
-            #     fL = self.G_bin2d(mgs, mnus, left, bins, ig_nums=ig_nums)
-            #     fm2 = self.G_bin2d(mgs, mnus, m2, bins, ig_nums=ig_nums)
-            #     fm1 = self.G_bin2d(mgs, mnus, m1, bins, ig_nums=ig_nums)
-            #     fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
-            #     fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
-            #     values = [fL, fm2, fm1, fm3, fR]
-            #     records[iters, ] = fm1, left, fL, right, fR
-            #     if max(values) - min(values) < 30:
-            #         # print("BREAK ", iters, left, right, abs(left - right))
-            #         break
-            #     if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
-            #         if fm1 == fm2:
-            #             left = m2
-            #             right = m1
-            #         elif fm1 == fm3:
-            #             left = m1
-            #             right = m3
-            #         elif fm2 == fm3:
-            #             left = m2
-            #             right = m3
-            #         elif fm1 < fm2 and fm1 < fm3:
-            #             left = m2
-            #             right = m3
-            #         elif fm2 < fm1 and fm2 < fm3:
-            #             right = m1
-            #         elif fm3 < fm1 and fm3 < fm2:
-            #             left = m1
-            #     elif fR > fm3 >= fL:
-            #         if fL == fm3:
-            #             right = m3
-            #         elif fL == fm1:
-            #             right = m1
-            #         elif fL == fm2:
-            #             right = m2
-            #         elif fm1 == fm2:
-            #             right = right
-            #         elif fm1 < fm2 and fm1 < fL:
-            #             left = m2
-            #             right = m3
-            #         elif fm2 < fL and fm2 < fm1:
-            #             right = m1
-            #         elif fL < fm1 and fL < fm2:
-            #             right = m2
-            #     elif fL > fm2 >= fR:
-            #         if fR == fm2:
-            #             left = m2
-            #         elif fR == fm1:
-            #             left = m1
-            #         elif fR == fm3:
-            #             left = m3
-            #         elif fm1 < fR and fm1 < fm3:
-            #             left = m2
-            #             right = m3
-            #         elif fm3 < fm1 and fm3 < fR:
-            #             left = m1
-            #         elif fR < fm1 and fR < fm3:
-            #             left = m3
-            #         elif fm1 == fm3:
-            #             left = m1
-            #             right = m3
-            #
-            #     if abs(left-right) < 1.e-5:
-            #         break
-            #     iters += 1
-            #     if left == templ and right == tempr:
-            #         same += 1
-            #     if iters > 12 and same > 2 or iters > 14:
-            #         break
             fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
@@ -708,14 +630,19 @@ class Fourier_Quad:
         return -g_corr, corr_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
-        # nu = N + U for g1
-        # nu = N - U for g2
-        # temp_data = numpy.sort(numpy.abs(g))[:int(len(g)*0.99)]
-        # bin_size = len(temp_data)/bin_num*2
-        # bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
-        # bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        # bound = numpy.max(numpy.abs(g)) * 100.
-        # bins = numpy.append(-bound, numpy.append(bins, bound))
+        """
+        G1 (G2): the shear estimator for g1 (g2),
+        N: shear estimator corresponding to the PSF correction
+        U: the term for PDF-SYM
+        V: the term for transformation
+        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
+        :param nu: N+U: for g1, N-U: for g2
+        :param bin_num:
+        :param ig_num:
+        :param pic_path:
+        :param left, right: the initial guess of shear
+        :return: estimated shear and sigma
+        """
         bins = self.set_bin(g, bin_num)
         same = 0
         iters = 0
@@ -817,41 +744,37 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        g_range = numpy.linspace(left, right, 60)
-        xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
+        fit_range = numpy.linspace(left, right, 60)
+        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
-        gg4 = numpy.sum(g_range ** 4)
-        gg3 = numpy.sum(g_range ** 3)
-        gg2 = numpy.sum(g_range ** 2)
-        gg1 = numpy.sum(g_range)
-        xigg2 = numpy.sum(xi2 * (g_range ** 2))
-        xigg1 = numpy.sum(xi2 * g_range)
-        xigg0 = numpy.sum(xi2)
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-
+        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
-            plt.scatter(g_range, xi2)
-            plt.plot(g_range, paras[0]*g_range**2+paras[1]*g_range+paras[2])
-            s = str(round(paras[0],3)) + " " + str(round(paras[1],3)) + " " + str(round(paras[2],3))
+            plt.scatter(fit_range, chi_sq)
+            plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+            s = str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
             plt.title(s)
             plt.savefig(pic_path)
             plt.close()
-
-        g_sig = numpy.sqrt(1 / 2. / paras[0])
-        g_h = -paras[1] / 2 / paras[0]
+        g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        g_h = -coeff[1] / 2. / coeff[2]
 
         return g_h, g_sig
 
+
     def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
-        # nu = N + U for g1
-        # nu = N - U for g2
-        # temp_data = numpy.sort(numpy.abs(g))#[:int(len(g)*0.99)]
-        # bin_size = len(temp_data)/bin_num*2
-        # bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
-        # bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-        # bound = numpy.max(numpy.abs(g)) * 100.
-        # bins = numpy.append(-bound, numpy.append(bins, bound))
+        """
+        G1 (G2): the shear estimator for g1 (g2),
+        N: shear estimator corresponding to the PSF correction 
+        U: the term for PDF-SYM
+        V: the term for transformation
+        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
+        :param nu: N+U: for g1, N-U: for g2
+        :param bin_num:
+        :param ig_num:
+        :param pic_path:
+        :param left, right: the initial guess of shear
+        :return: estimated shear and sigma
+        """
         bins = self.set_bin(g,bin_num)
         iters = 0
         change = 1
@@ -873,29 +796,20 @@ class Fourier_Quad:
             iters += 1
             if iters > 12:
                 break
-        g_range = numpy.linspace(left, right, 60)
-        xi2 = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
+        fit_range = numpy.linspace(left, right, 60)
+        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in g_range])
 
-        gg4 = numpy.sum(g_range ** 4)
-        gg3 = numpy.sum(g_range ** 3)
-        gg2 = numpy.sum(g_range ** 2)
-        gg1 = numpy.sum(g_range)
-        xigg2 = numpy.sum(xi2 * (g_range ** 2))
-        xigg1 = numpy.sum(xi2 * g_range)
-        xigg0 = numpy.sum(xi2)
-        cov = numpy.linalg.inv(numpy.array([[gg4, gg3, gg2], [gg3, gg2, gg1], [gg2, gg1, len(g_range)]]))
-        paras = numpy.dot(cov, numpy.array([xigg2, xigg1, xigg0]))
-
+        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
-            plt.scatter(g_range, xi2)
-            plt.plot(g_range, paras[0] * g_range ** 2 + paras[1] * g_range + paras[2])
-            s = str(round(paras[0], 3)) + " " + str(round(paras[1], 3)) + " " + str(round(paras[2], 3))
+            plt.scatter(fit_range, chi_sq)
+            plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+            s = str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
             plt.title(s)
             plt.savefig(pic_path)
             plt.close()
+        g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        g_h = -coeff[1] / 2. / coeff[2]
 
-        g_sig = numpy.sqrt(1 / 2. / paras[0])
-        g_h = -paras[1] / 2 / paras[0]
         return g_h, g_sig
 
 
