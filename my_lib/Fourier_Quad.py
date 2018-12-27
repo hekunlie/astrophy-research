@@ -560,7 +560,7 @@ class Fourier_Quad:
 
         return chi_sq/resample
 
-    def fmin_g2d(self, mgs, mnus, bin_num, direct=True, ig_nums=0, left=-0.002, right=0.002,pic_path=False):
+    def fmin_g2d(self, mgs, mnus, bin_num, direct=True, ig_nums=0, left=-0.0015, right=0.0015,pic_path=False):
         r"""
         to find the true correlation between two sets of galaxies
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
@@ -569,7 +569,7 @@ class Fourier_Quad:
                     shear estimators of Fourier quad (N,U), N + U for g1, N - U for g2
         :param bin_num: [num1, num2] for [mg1, mg2]
         :param direct: if true: fitting on a range of correlation guess,
-                                it's for the large sample,
+                                it's a test for the large sample,
                                 e.g. the CFHTLenS, too many pairs to do it in the traditional way.
         :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
                         of each bin to be neglected
@@ -582,7 +582,18 @@ class Fourier_Quad:
         if direct:
             # the initial guess of correlation value, 0.002, is quite large for weak lensing
             # so, it is safe
-            fit_range = numpy.linspace(left,right, 100)
+            fit_num = 6
+            interval = (right - left) / 2
+            # it's safe to fit a curve when the right -left < 0.0004
+            while not interval < 0.0002:
+                fit_range = numpy.linspace(left, right, fit_num+1)
+                chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(fit_num+1)]
+                cor_min = fit_range[chi_sq.index(min(chi_sq))]
+                interval = (right - left) / 2
+                left = max(left, cor_min - interval / 2)
+                right = min(right, cor_min + interval / 2)
+            fit_range = numpy.linspace(left, right, 21)
+
         else:
             iters = 0
             change = 1
@@ -682,16 +693,17 @@ class Fourier_Quad:
             #         same += 1
             #     if iters > 12 and same > 2 or iters > 14:
             #         break
-            fit_range = numpy.linspace(left, right, 20)
+            fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
         if pic_path:
             plt.scatter(fit_range,chi_sq)
-            plt.title("$10^{4}$CORR: %.4f (%.6f)"%(g_corr*10000, corr_sig*10000))
+            plt.title("$10^{4}$CORR: %.2f (%.4f)"%(g_corr*10000, corr_sig*10000))
             plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
             plt.xlim(left - 0.1*(right-left), right + 0.1*(right-left))
+            plt.savefig(pic_path)
             plt.show()
         return -g_corr, corr_sig
 

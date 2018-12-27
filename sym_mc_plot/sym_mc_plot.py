@@ -158,12 +158,12 @@ detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area":
 
 for tag, cut_s in enumerate(select[cut][1]):
     idx = select[cut][0] >= cut_s
-    num = len(MG1[detected_label[cut]&idx])
+    num = len(MG1[detected_label[cut]&idx&sex_idx])
 
-    nm1 = MG1[detected_label[cut]&idx]
-    de1 = DE1[detected_label[cut]&idx]
-    nm2 = MG2[detected_label[cut]&idx]
-    de2 = DE2[detected_label[cut]&idx]
+    nm1 = MG1[detected_label[cut]&idx&sex_idx]
+    de1 = DE1[detected_label[cut]&idx&sex_idx]
+    nm2 = MG2[detected_label[cut]&idx&sex_idx]
+    de2 = DE2[detected_label[cut]&idx&sex_idx]
 
     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)

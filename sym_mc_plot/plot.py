@@ -16,7 +16,7 @@ xy_lb_size = 16
 lenged_size = fonts - 10
 axis_linewidth = 1.2
 
-total_path = "E:/cuts/sym/"
+total_path = "F:/cuts/sym/"
 total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto","snr_auto"]
