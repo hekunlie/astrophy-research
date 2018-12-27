@@ -80,6 +80,7 @@ The brighter, the larger. So as the cutoff threshold increasing, the effects of 
 
 <img src="m_2sig_faint.png" width = 100% height = 100% div align=center\>
 
+3 million, \\(48 \times 48 \\), scale radius \\( 0.3 \sim 0.8 \\), mag: \\( 23 \sim 24.8\\)
 
 ## <center> smooth
 <img src="m_1.5sig_s.png" width = 100% height = 100% div align=center\>

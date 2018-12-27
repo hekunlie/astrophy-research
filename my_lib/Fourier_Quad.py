@@ -537,15 +537,15 @@ class Fourier_Quad:
         """
         # half of the bin number
         ny, nx = int((len(bins[0]) - 1)/2), int((len(bins[1]) - 1)/2)
-        # print("ny, nx:", ny,nx)
         chi_sq = 0
-        mu = [0,0]
-        cov = [[abs(2*g_corr),g_corr],[g_corr,abs(2*g_corr)]]
+        mu = [0, 0]
+        cov = [[abs(2*g_corr), g_corr],
+               [g_corr, abs(2*g_corr)]]
         data_len = len(mgs[0])
         for i in range(resample):
-            t1 = time.time()
+
             g_distri = numpy.random.multivariate_normal(mu,cov,data_len)
-            t2 = time.time()
+
             mg1 = mgs[0] - mnus[0]*g_distri[:,0]
             mg2 = mgs[1] - mnus[1]*g_distri[:,1]
             num_arr = numpy.histogram2d(mg1, mg2, bins)[0]
@@ -557,11 +557,10 @@ class Fourier_Quad:
             arr_3 = num_arr[ny:2*ny, 0:nx][range(ny-1,-1,-1)][:,range(nx-1,-1,-1)]
             arr_4 = num_arr[ny:2*ny, nx:2*nx][range(ny-1,-1,-1)]
             chi_sq += 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
-            t3 = time.time()
-            # print("%d resample %d %.2f %.2f" %(self.counter,i, t2-t1, t3-t2))
-        return chi_sq/resample#, arr_1, arr_2, arr_3, arr_4
 
-    def fmin_g2d(self, mgs, mnus, bin_num, ig_nums=0, left=-0.001, right=0.001,pic_path=False):
+        return chi_sq/resample
+
+    def fmin_g2d(self, mgs, mnus, bin_num, direct=True, ig_nums=0, left=-0.002, right=0.002,pic_path=False):
         r"""
         to find the true correlation between two sets of galaxies
         :param mgs: a two components list, two 1-D numpy arrays, contains two sets of
@@ -569,107 +568,131 @@ class Fourier_Quad:
         :param mnus: a two components list, two 1-D numpy arrays, contains two sets of
                     shear estimators of Fourier quad (N,U), N + U for g1, N - U for g2
         :param bin_num: [num1, num2] for [mg1, mg2]
+        :param direct: if true: fitting on a range of correlation guess,
+                                it's for the large sample,
+                                e.g. the CFHTLenS, too many pairs to do it in the traditional way.
         :param ig_nums: a two components list, [num1, num2], the numbers of the inner grid
                         of each bin to be neglected
         :param pic_path: the path for saving the chi square picture
-        :param left: initial guess of the correlation
-        :param right: initial guess of the correlation
+        :param left, right: initial guess of the correlation,
+                            0.002 is quite large (safe) for weak lensing
         :return: the correlation between mg1 and mg2
         """
         bins = [self.set_bin(mgs[0], bin_num), self.set_bin(mgs[1], bin_num)]
-        same = 0
-        iters = 0
-        # m1 chi square & left & left chi square & right & right chi square
-        records = numpy.zeros((15, 5))
-        while True:
-            templ = left
-            tempr = right
-            m1 = (left + right) / 2.
-            m2 = (m1 + left) / 2.
-            m3 = (m1 + right) / 2.
-            fL = self.G_bin2d(mgs, mnus, left, bins, ig_nums=ig_nums)
-            fm2 = self.G_bin2d(mgs, mnus, m2, bins, ig_nums=ig_nums)
-            fm1 = self.G_bin2d(mgs, mnus, m1, bins, ig_nums=ig_nums)
-            fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
-            fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
-            values = [fL, fm2, fm1, fm3, fR]
-            # print("iteration \n",iters,values,"\n", left, m2, m1, m3, right)
-            records[iters, ] = fm1, left, fL, right, fR
-            if max(values) - min(values) < 20:
-                # print("BREAK ", iters, left, right, abs(left - right))
-                break
-            if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
-                if fm1 == fm2:
-                    left = m2
-                    right = m1
-                elif fm1 == fm3:
-                    left = m1
-                    right = m3
-                elif fm2 == fm3:
-                    left = m2
-                    right = m3
-                elif fm1 < fm2 and fm1 < fm3:
-                    left = m2
-                    right = m3
-                elif fm2 < fm1 and fm2 < fm3:
-                    right = m1
-                elif fm3 < fm1 and fm3 < fm2:
-                    left = m1
-            elif fR > fm3 >= fL:
-                if fL == fm3:
-                    right = m3
-                elif fL == fm1:
-                    right = m1
-                elif fL == fm2:
-                    right = m2
-                elif fm1 == fm2:
-                    right = right
-                elif fm1 < fm2 and fm1 < fL:
-                    left = m2
-                    right = m3
-                elif fm2 < fL and fm2 < fm1:
-                    right = m1
-                elif fL < fm1 and fL < fm2:
-                    right = m2
-            elif fL > fm2 >= fR:
-                if fR == fm2:
-                    left = m2
-                elif fR == fm1:
-                    left = m1
-                elif fR == fm3:
-                    left = m3
-                elif fm1 < fR and fm1 < fm3:
-                    left = m2
-                    right = m3
-                elif fm3 < fm1 and fm3 < fR:
-                    left = m1
-                elif fR < fm1 and fR < fm3:
-                    left = m3
-                elif fm1 == fm3:
-                    left = m1
-                    right = m3
-
-            if abs(left-right) < 1.e-5:
-                g_h = (left+right)/2.
-                # print("BREAK ",iters, left, right, abs(left - right))
-                break
-            iters += 1
-            if left == templ and right == tempr:
-                same += 1
-            if iters > 12 and same > 2 or iters > 14:
-                g_h = (left+right)/2.
-                # print("BREAK ",iters,left, right, abs(left - right))
-                break
-
-        fit_range = numpy.linspace(left, right, 20)
+        if direct:
+            # the initial guess of correlation value, 0.002, is quite large for weak lensing
+            # so, it is safe
+            fit_range = numpy.linspace(left,right, 100)
+        else:
+            iters = 0
+            change = 1
+            while change == 1:
+                change = 0
+                mc = (left + right) / 2.
+                mcl = (mc + left) / 2.
+                mcr = (mc + right) / 2.
+                fmc = self.G_bin2d(mgs, mnus, mc, bins, ig_nums=ig_nums)
+                fmcl = self.G_bin2d(mgs, mnus, mcl, bins, ig_nums=ig_nums)
+                fmcr = self.G_bin2d(mgs, mnus, mcr, bins, ig_nums=ig_nums)
+                temp = fmc + 20
+                if fmcl > temp:
+                    left = (mc + mcl) / 2.
+                    change = 1
+                if fmcr > temp:
+                    right = (mc + mcr) / 2.
+                    change = 1
+                iters += 1
+                if iters > 12:
+                    break
+            # same = 0
+            # iters = 0
+            # # m1 chi square & left & left chi square & right & right chi square
+            # records = numpy.zeros((15, 5))
+            # while True:
+            #     templ = left
+            #     tempr = right
+            #     m1 = (left + right) / 2.
+            #     m2 = (m1 + left) / 2.
+            #     m3 = (m1 + right) / 2.
+            #     fL = self.G_bin2d(mgs, mnus, left, bins, ig_nums=ig_nums)
+            #     fm2 = self.G_bin2d(mgs, mnus, m2, bins, ig_nums=ig_nums)
+            #     fm1 = self.G_bin2d(mgs, mnus, m1, bins, ig_nums=ig_nums)
+            #     fm3 = self.G_bin2d(mgs, mnus, m3, bins, ig_nums=ig_nums)
+            #     fR = self.G_bin2d(mgs, mnus, right, bins, ig_nums=ig_nums)
+            #     values = [fL, fm2, fm1, fm3, fR]
+            #     records[iters, ] = fm1, left, fL, right, fR
+            #     if max(values) - min(values) < 30:
+            #         # print("BREAK ", iters, left, right, abs(left - right))
+            #         break
+            #     if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
+            #         if fm1 == fm2:
+            #             left = m2
+            #             right = m1
+            #         elif fm1 == fm3:
+            #             left = m1
+            #             right = m3
+            #         elif fm2 == fm3:
+            #             left = m2
+            #             right = m3
+            #         elif fm1 < fm2 and fm1 < fm3:
+            #             left = m2
+            #             right = m3
+            #         elif fm2 < fm1 and fm2 < fm3:
+            #             right = m1
+            #         elif fm3 < fm1 and fm3 < fm2:
+            #             left = m1
+            #     elif fR > fm3 >= fL:
+            #         if fL == fm3:
+            #             right = m3
+            #         elif fL == fm1:
+            #             right = m1
+            #         elif fL == fm2:
+            #             right = m2
+            #         elif fm1 == fm2:
+            #             right = right
+            #         elif fm1 < fm2 and fm1 < fL:
+            #             left = m2
+            #             right = m3
+            #         elif fm2 < fL and fm2 < fm1:
+            #             right = m1
+            #         elif fL < fm1 and fL < fm2:
+            #             right = m2
+            #     elif fL > fm2 >= fR:
+            #         if fR == fm2:
+            #             left = m2
+            #         elif fR == fm1:
+            #             left = m1
+            #         elif fR == fm3:
+            #             left = m3
+            #         elif fm1 < fR and fm1 < fm3:
+            #             left = m2
+            #             right = m3
+            #         elif fm3 < fm1 and fm3 < fR:
+            #             left = m1
+            #         elif fR < fm1 and fR < fm3:
+            #             left = m3
+            #         elif fm1 == fm3:
+            #             left = m1
+            #             right = m3
+            #
+            #     if abs(left-right) < 1.e-5:
+            #         break
+            #     iters += 1
+            #     if left == templ and right == tempr:
+            #         same += 1
+            #     if iters > 12 and same > 2 or iters > 14:
+            #         break
+            fit_range = numpy.linspace(left, right, 20)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
-        # print("Fitting finish", left, right,g_corr, corr_sig)
-        # plt.scatter(fit_range,chi_sq)
-        # plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-        # plt.show()
+        if pic_path:
+            plt.scatter(fit_range,chi_sq)
+            plt.title("$10^{4}$CORR: %.4f (%.6f)"%(g_corr*10000, corr_sig*10000))
+            plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+            plt.xlim(left - 0.1*(right-left), right + 0.1*(right-left))
+            plt.show()
         return -g_corr, corr_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
