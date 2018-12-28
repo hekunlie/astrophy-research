@@ -585,7 +585,7 @@ class Fourier_Quad:
             fit_num = 6
             interval = (right - left) / 2
             # it's safe to fit a curve when the right -left < 0.0004
-            while not interval < 0.0002:
+            while not interval < 0.0003:
                 fit_range = numpy.linspace(left, right, fit_num+1)
                 chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(fit_num+1)]
                 cor_min = fit_range[chi_sq.index(min(chi_sq))]
@@ -626,7 +626,8 @@ class Fourier_Quad:
             plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
             plt.xlim(left - 0.1*(right-left), right + 0.1*(right-left))
             plt.savefig(pic_path)
-            plt.show()
+            plt.close()
+            # plt.show()
         return -g_corr, corr_sig
 
     def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!

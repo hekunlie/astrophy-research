@@ -60,9 +60,11 @@ if rank < int(shear_num/2):
     mn1_2 = data_2[:,4] + data_2[:,5]
     mg2_2 = data_2[:,3]
     mn2_2 = data_2[:,4] - data_2[:,5]
+    pic_path = "/home/hkli/work/correlation/pic/corr1_%d.png"%rank
 
-    g1_corr, g1_corr_err = fq.fmin_g2d([mg1_1, mg1_2], [mn1_1, mn1_2],8)
-    g2_corr, g2_corr_err = fq.fmin_g2d([mg2_1, mg2_2], [mn2_1, mn2_2],8)
+    g1_corr, g1_corr_err = fq.fmin_g2d([mg1_1, mg1_2], [mn1_1, mn1_2],8,pic_path=pic_path)
+    pic_path = "/home/hkli/work/correlation/pic/corr2_%d.png" % rank
+    g2_corr, g2_corr_err = fq.fmin_g2d([mg2_1, mg2_2], [mn2_1, mn2_2],8, pic_path=pic_path)
     print("RNAK: %d: chi_11: %8.6f ( %10.8f ), chi_22: %8.6f (% 10.8f )\n"
           "TRUE:    chi_11: %8.6f           , chi_22: %8.6f             "
           %(rank, g1_corr, g1_corr_err, g2_corr, g2_corr_err, cov12 + rank*0.0001,-cov12 - rank * 0.0001))
