@@ -3,10 +3,10 @@ import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 import numpy
 
-num = 64
+num = 120
 a = numpy.zeros((num, 1))
 
-sources = ["dimmer"]
+sources = ["dimmerm3"]
 
 for source in sources:
     while True:
@@ -16,6 +16,10 @@ for source in sources:
             if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
                 a[i, 0] = 1
     print("Run measurement")
-    cmd = "mpiexec -n 14 %s/work/cpp/measure_%s"%(my_home, source)
+    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_1.5"%(my_home, source)
+    run = Popen(cmd, shell=True)
+    run.wait()
+
+    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_2"%(my_home, source)
     run = Popen(cmd, shell=True)
     run.wait()

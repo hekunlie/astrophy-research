@@ -2,12 +2,12 @@ from subprocess import Popen
 
 # sources = ["dimmerm3", "dimmer", "pts", "ptsb"]
 # resolution_factor = [0.7, 0.7, 0.33, 0.33]
-sources = ["debug"]#, "pts", "ptsb"]
+sources = ["dimmerm3"]#, "pts", "ptsb"]
 resolution_factor = [0.7]#, 0.33, 0.33]
 
 
-filter_name = ["sex2_1.5", "sex2_2"]#,"sex3_1.5","sex3_2", "sex4_1.5","sex4_2"]
-cuts = ["flux2", "flux_alt"]#, "mag_auto", "snr_auto", 'sex_snr']
+filter_name = ["sex2_1.5", "sex2_2","sex3_1.5","sex3_2", "sex4_1.5","sex4_2"]
+cuts = ["flux2", "flux_alt", "mag_auto", "snr_auto", 'sex_snr']
 for s, source in enumerate(sources):
     for f in range(len(filter_name)):
         for i in range(len(cuts)):
