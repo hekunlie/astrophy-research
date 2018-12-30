@@ -36,6 +36,7 @@ void read_para(const std::string path, const std::string name, int &para)
 			break;
 		}
 	}
+	infile.close();
 	if (f == 0)
 	{	
 		str.clear();
@@ -71,6 +72,7 @@ void read_para(const std::string path, const std::string name, double &para)
 			break;
 		}
 	}
+	infile.close();
 	if (f == 0)
 	{
 		str.clear();
@@ -106,6 +108,7 @@ void read_para(const std::string path, const std::string name, float &para)
 			break;
 		}
 	}
+	infile.close();
 	if (f == 0)
 	{
 		str.clear();
@@ -113,6 +116,42 @@ void read_para(const std::string path, const std::string name, float &para)
 		std::cout << str << std::endl;
 		exit(0);
 	}
+}
+
+void read_text(const std::string path, double *arr, const int read_lines)
+{
+	std::ifstream infile;
+	int i = 0;
+	infile.open(path);
+	while (i<read_lines && infile>>arr[i])
+	{
+		i++;
+	}	
+	infile.close();
+}
+
+void read_text(const std::string path, float *arr, const int read_lines)
+{
+	std::ifstream infile;
+	int i = 0;
+	infile.open(path);
+	while (i<read_lines && infile >> arr[i])
+	{
+		i++;
+	}
+	infile.close();
+}
+
+void read_text(const std::string path, int *arr, const int read_lines)
+{
+	std::ifstream infile;
+	int i = 0;
+	infile.open(path);
+	while (i<read_lines && infile >> arr[i])
+	{
+		i++;
+	}
+	infile.close();
 }
 
 void write_log(char*filename,  char *inform)

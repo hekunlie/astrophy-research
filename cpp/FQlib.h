@@ -89,6 +89,11 @@ void read_para(const std::string path, const std::string name, int &para);
 void read_para(const std::string path, const std::string name, double &para);
 void read_para(const std::string path, const std::string name, float &para);
 
+void read_text(const std::string path, double *arr, const int read_lines);
+void read_text(const std::string path, float *arr, const int read_lines);
+void read_text(const std::string path, int *arr, const int read_lines);
+/* read data from txt file which should be just one column. */
+
 void read_h5(char *filename, char *set_name1, double *matrix1, char*set_name2, double *matrix2, char*set_name3, double*matrix3);
 /* read hdf5 file 
 	set_name and matrix should be used in pair (developing)
