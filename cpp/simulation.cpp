@@ -6,7 +6,7 @@
 #include "mpi.h"
 #include "FQlib.h"
 #include<hdf5.h>
-#include<stdio.h>
+#include<cstdio>
 #include<string>
 
 int main(int argc, char*argv[])
@@ -24,20 +24,37 @@ int main(int argc, char*argv[])
 		std::ifstream fin;
 		std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 		char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
-		char buffer[200], log_inform[250], set_1[50], set_2[50];
+		char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 		
 		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");
 		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/";
 		std::string str_paraf_path = str_data_path + "parameters/para.ini";
 		std::string str_shear_path = str_data_path + "parameters/shear.dat";
 		sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
-
+		
 		int num_p = 100, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 		int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 7;		
 		int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2;
 		double max_radius=8, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
 		int i, j, k, sss1, sss2;
 		double g1, g2, ts, te, t1, t2;
+
+		if (0 == myid)
+		{
+			for (i = 0; i < numprocs; i++)
+			{
+				sprintf(finish_path, "/home/hkli/work/test/job/pts/finish_%d.dat", i);
+				if (remove(finish_path))
+				{
+					std::cout << "REMOVE: " << finish_path << std::endl;
+				}
+				else
+				{
+					std::cout << "FAILURE REMOVE: " << finish_path << std::endl;
+				}
+			}
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		read_para(str_paraf_path, str_stampsize, size);
 		read_para(str_paraf_path, str_total_num, total_chips);
@@ -73,7 +90,7 @@ int main(int argc, char*argv[])
 		double *noise = new double[size*size]();
 		double *pnoise = new double[size*size]();
 		double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-		double *shear1 = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
+
 		// the shear estimators data matrix  
 		double *data = new double[data_row*shear_esti_data_cols]();
 		// the snr parameters data matrix 
@@ -87,12 +104,8 @@ int main(int argc, char*argv[])
 			recvbuf_s = new double[total_chips*stamp_num*snr_para_data_cols];
 		}
 
-		read_text(str_shear_path, shear1, 2*shear_pairs);
+		read_text(str_shear_path, shear, 2*shear_pairs);
 	
-		#ifndef PRECISION
-		DATA_TYPE *cp = new DATA_TYPE[stamp_nx*stamp_nx*size*size]();
-		#endif		
-
 		//PSF
 		create_psf(psf, psf_scale, size, psf_type);
 		pow_spec(psf, ppsf, size, size);
@@ -193,13 +206,6 @@ int main(int argc, char*argv[])
 				}
 				gsl_rng_free();
 
-#ifdef PRECISION
-				write_img(big_img, size*stamp_nx, size*stamp_nx, chip_path);
-#else
-				copy(big_img, big_img + stamp_nx * stamp_nx*size*size, cp);
-				write_img(cp, size*stamp_nx, size*stamp_nx, chip_path);
-#endif	
-
 				t2 = clock();
 				sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %04d, done in %.2f s.", myid, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
 				write_log(log_path, log_inform);
@@ -234,6 +240,8 @@ int main(int argc, char*argv[])
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
+		sprintf(log_path, "/home/hkli/work/test/job/finish_%d.dat", myid);
+		write_log(log_path, log_path);
 
 		if (0 == myid)
 		{
@@ -252,7 +260,6 @@ int main(int argc, char*argv[])
 		delete[] data;
 		delete[] data_s;
 		delete[] shear;
-		delete[] shear1;
 		delete[] flux;
 		delete[] mag;		
 		MPI_Finalize();

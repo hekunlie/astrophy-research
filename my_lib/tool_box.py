@@ -16,7 +16,9 @@ import time
 # the detection methods
 ################################################################
 
+
 def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
+    """not suggested"""
     if mask[ini_y, ini_x] > 0:
         signal.append((ini_y, ini_x))
         signal_val.append(mask[ini_y, ini_x])
@@ -165,6 +167,34 @@ def source_detector(img_arr, area_thresh, noise_level, cross=True):
     return objects
 
 
+def edge_extend(mask, ysize, xsize, obj_list, extend_step):
+    """
+    extend the edge of a source by 1 each time
+    :param mask: (ysize, xsize) numpy array
+    :param obj_list: list of tuples, [...., (y_i, x_i), ..]
+                    coordinates of source
+    :param extend_step: iterations
+    :return: (ysize, xsize) numpy array, the mask
+    """
+    num_0 = 0
+    obj = copy.deepcopy(obj_list)
+    for iters in range(extend_step):
+        sub_mask = iters + 2
+        num_new = len(obj) - num_0
+        num_0 = len(obj)
+        for i in range(num_0 - num_new, num_0):
+            y, x = obj[i]
+            for m in range(-1, 2):
+                iy = y + m
+                if 0 <= iy < ysize:
+                    for n in range(-1, 2):
+                        ix = x + n
+                        if (0 <= ix < xsize) and mask[iy, ix] == 0:
+                            obj.append((iy, ix))
+                            mask[iy, ix] = sub_mask
+    return mask
+
+
 def get_hlr(image, scale, size, thres=None):
     # get the source object, to avoid the overflow of the stack
     mask = copy.copy(image)
@@ -284,9 +314,9 @@ def mirror_arr(image):
 # the fitting methods
 ################################################################
 
-def gauss_profile(size,sigma,yc,xc):
+def gauss_profile(size,sigma,yc,xc,ey=1, ex=1):
     my, mx = numpy.mgrid[0:size, 0:size]
-    return numpy.exp(-((my-yc)**2+(mx-xc)**2)/2/sigma/sigma)
+    return numpy.exp(-(((my-yc)/ey)**2+((mx-xc)/ex)**2)/2/sigma/sigma)/2/numpy.pi/sigma/sigma
 
 def exp_fun(x, ampli, sig, mu):
     # for fitting
