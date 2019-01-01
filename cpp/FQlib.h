@@ -39,8 +39,11 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thres = 0.0001;
 
 	int gal_size, gal_hsize, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux;
+	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux7;
 	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig, gal_flux2_new;
+	double gal_size_ext[5];
+	double gal_flux_ext[5];
+	double gal_flux2_ext[5];
 
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2, t3, t4;
@@ -73,7 +76,6 @@ struct para
 };
 
 
-//using namespace std;
 const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
@@ -146,20 +148,34 @@ void get_psf_radius(const double *psf_pow, para*para, const double scale);
 int source_detector(double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
-	source_img: the inputted array where to find the source galaxies
+	source_img: the inputted array in where to find the source galaxies
 	source_x, _y:  the array to store the coordinates of sources detected
 	source_paras: the array to store the parameters of sources detected,
 						   8 elemets for each source, [....,area, peak_y, peak_x, peak_val, half_light_area, total_flux, half_light_flux, flux_sq,...]
 	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
 							False for detecion on the nearest eight pixels, "x" and "+"  
-	return : int, the total number of detection */
+	return : int, the total number of detection 
+*/
 
 
 int galaxy_finder(double *stamp_arr, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
-	*/
+*/
+
+void edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
+/*	"stamp_size" in the structure paras will be used !!! 
+
+	extend the border of a source galaxy by 1 pixel each time
+	the coordinates source_x(y), will be copied to a new array.
+
+	mask: array, on which the source and extendion edge will be labeled, 1 means source pixel
+	source_y(x): array of source coordinates from source_detector(), may be more than one source
+	source_len : the length of the target source
+	source_id : the start of the source coordinates in the source_y(x), because there may be more than one source.
+	iters:  iterations, each time will extend the edge by one pixel.
+*/
 
 void addnoise(double *image, int pixel_num, double sigma); 
 /* add Gaussian noise to an array */

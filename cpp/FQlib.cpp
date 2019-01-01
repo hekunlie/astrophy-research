@@ -1,7 +1,5 @@
-﻿
-#include "FQlib.h"
+﻿#include "FQlib.h"
 
-//using namespace std;
 const gsl_rng_type *T;
 gsl_rng *rng;
 std::ofstream loggers;
@@ -775,10 +773,10 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 						{
 							for (iy = -1; iy < 2; iy++)
 							{
+								ty = temp_y[k] + iy;
 								for (ix = -1; ix < 2; ix++)
 								{
-									tx = temp_x[k] + ix;
-									ty = temp_y[k] + iy;
+									tx = temp_x[k] + ix;									
 									if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
 									{
 										temp_x[len] = tx;
@@ -849,6 +847,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
+	double *mask = new double[pix_num] {};
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
 	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
 
@@ -864,6 +863,8 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 			}
 		}
 	}
+
+
 	//if (detect == -1) 
 	//{/* -1 means the no source peaks at the place away from the center within 6 pixels.
 	//	then the biggest source that one of its pixel locates near the center within 3 pixels */ 
@@ -884,6 +885,23 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	//}
 	if (detect > -1)
 	{
+		double temp_flux;
+		for (i = 0;  i < 5; i++)
+		{
+			temp_flux = 0;
+			initialize_arr(mask, pix_num);
+			edge_extend(mask, source_y, source_x, area, detect, paras, 2*i+1);
+			for (j = 0; j < pix_num; j++)
+			{
+				if (mask[j] > 0)
+				{
+					temp_flux += stamp_arr[j];
+				}
+			}
+			paras->gal_flux_ext[i] = temp_flux;
+		}
+		
+		
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
@@ -894,7 +912,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 
 		paras->gal_hlr = sqrt(area / Pi);
 		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-		paras->gal_osnr = source_para[detect * 7 + 5] / sqrt(area) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
 	}
 	else
 	{
@@ -903,7 +921,61 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	delete[] source_x;
 	delete[] source_y;
 	delete[] source_para;
+	delete[] mask;
 	return detect;
+}
+
+void edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
+{
+	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub;
+	int *cp_y = new int[size*size]{};
+	int *cp_x = new int[size*size]{};
+	for (i = 0; i < source_len; i++)
+	{
+		// copy of source coordinates 
+		cp_y[i] = source_y[i + source_id];
+		cp_x[i] = source_x[i + source_id];
+		// label the source pixel on the mask
+		mask[source_y[i + source_id] * size + source_x[i + source_id]] = 1;
+	}
+	
+	pix_len_0 = 0;
+	pix_len = source_len;
+	for (i = 0; i < iters; i++)
+	{
+		sub = i + 2;
+		// count the newly added pixels
+		pix_new = pix_len - pix_len_0;
+		// label the source length at the biginning
+		pix_len_0 = pix_len;
+		// each time search around the newly added pixels
+		for (j = pix_len_0 - pix_new; j < pix_len_0; j++)
+		{
+			for (m = -1; m < 2; m++)
+			{
+				iy = cp_y[j] + m;
+				if (iy >= 0 && iy < size)
+				{
+					for (n = -1; n < 2; n++)
+					{
+						ix = cp_x[j] + n;
+						if (ix >= 0 && ix < size && mask[iy*size + ix] == 0)
+						{	
+							mask[iy*size + ix] = sub;
+							// add the newly found pixels to source list
+							// and increase the pixel counts
+							cp_y[pix_len] = iy;
+							cp_x[pix_len] = ix;
+							pix_len++;
+						}
+					}
+				}
+			}
+		}
+	}
+	paras->gal_size_ext[iters] = pix_len;
+	delete[] cp_y;
+	delete[] cp_x;
 }
 
 void addnoise(double *image, int pixel_num, double sigma)
@@ -978,7 +1050,11 @@ void snr_est(const double *image, para *paras, int fit)
 	}
 	noise = n*0.25 / ((size - edge)*edge);
 	paras->gal_flux2 = sqrt(image[xc*size + xc] / noise);
-	paras->gal_flux2_new = paras->gal_total_flux / sqrt(noise);
+	for (i = 0; i < 5; i++)
+	{
+		paras->gal_flux2_ext[i] = fabs(paras->gal_flux_ext[i]) / sqrt(noise);
+	}
+	//paras->gal_flux2_new = paras->gal_total_flux / sqrt(noise);
 
 	if (fit == 2)
 	{
