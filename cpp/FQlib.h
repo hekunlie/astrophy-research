@@ -39,7 +39,7 @@ struct para
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thres = 0.0001;
 
 	int gal_size, gal_hsize, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux7;
+	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux;
 	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig, gal_flux2_new;
 	double gal_size_ext[5];
 	double gal_flux_ext[5];
@@ -164,7 +164,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross);
 	return: int, "-1" means no detection
 */
 
-void edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
+int edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
 /*	"stamp_size" in the structure paras will be used !!! 
 
 	extend the border of a source galaxy by 1 pixel each time
@@ -175,6 +175,7 @@ void edge_extend(double *mask, const int *source_y, const int* source_x, const i
 	source_len : the length of the target source
 	source_id : the start of the source coordinates in the source_y(x), because there may be more than one source.
 	iters:  iterations, each time will extend the edge by one pixel.
+	return: the area of the extended source
 */
 
 void addnoise(double *image, int pixel_num, double sigma); 

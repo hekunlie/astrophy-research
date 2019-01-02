@@ -31,45 +31,37 @@ def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
     return signal, signal_val, sflag
 
 
-def stamp_detector(image, thres, y_size, x_size, ra=10):
+def stamp_detector(image, xsize, ysize, area_thres, radius, noise_level):
     # get the source object
-    image_c = copy.copy(image)
-    img_idx = image_c < thres
-    image_c[img_idx] = 0.
+    objs = source_detector(image, xsize, ysize, area_thres, noise_level)
 
-    center = image_c[int(y_size/2-ra):int(y_size/2+ra), int(x_size/2-ra):int(x_size/2+ra)]
-    y, x = numpy.where(center > 0)
-    y_sour = y + int(y_size/2 - ra)
-    x_sour = x + int(x_size/2 - ra)
+    if len(objs) > 0:
+        peaks = []
+        areas = []
+        targets = []
+        for tag, obj in enumerate(objs):
+            peak = 0
+            xp, yp = 0, 0
+            for xy in obj:
+                if image[xy[0], xy[1]] >= peak:
+                    peak = image[xy[0], xy[1]]
+                    yp, xp = xy[0], xy[1]
+            r_sq = (xp-xsize*0.5)*(xp-xsize*0.5) + (yp-ysize*0.5)*(yp-ysize*0.5)
+            if r_sq <= radius*radius:
+                peaks.append(peak)
+                areas.append(len(obj))
+                targets.append(obj)
 
-    final_obj = []
-    final_flux = []
-    flag = 0
-    for m in range(len(x_sour)):
-        sour_pool = []
-        sour_flux = []
-        yp = y_sour[m]
-        xp = x_sour[m]
-
-        if image_c[yp, xp] > 0:
-            sour_pool, sour_flux, flag = detect(image_c, yp, xp, sour_pool, sour_flux, y_size, x_size, flag)
-
-        if len(sour_pool) > len(final_obj):
-            final_obj = sour_pool
-            final_flux = sour_flux
-        elif len(sour_pool) == len(final_obj):
-            if numpy.max(final_flux) < numpy.max(sour_flux):
-                final_obj = sour_pool
-                final_flux = sour_flux
-    if len(final_flux) == 0:
-        peak = 0
+        seq = areas.index(max(areas))
+        mask = numpy.zeros_like(image)
+        for xy in targets[seq]:
+            mask[xy[0], xy[1]] = 1
+        return mask, targets[seq]
     else:
-        peak = numpy.max(final_flux)
-    return final_obj, numpy.sum(final_flux), numpy.sum((numpy.array(final_flux))**2), peak, flag
-
+        return None
 
 def find_binary(image, ysize, xsize, sig):
-    my, mx = numpy.mgrid[0:5,0:5]
+    my, mx = numpy.mgrid[0:5, 0:5]
     w = 3
     gauss = 1./2/numpy.pi/w/w*numpy.exp(-((my-2.5)**2+(mx-2.5)**2)/2/w**2)
     # the padding is to avoid the boundary crossing in the local peak searching
@@ -112,10 +104,11 @@ def find_binary(image, ysize, xsize, sig):
     return objects, peaks, image_c, mask_0
 
 
-def source_detector(img_arr, area_thresh, noise_level, cross=True):
+def source_detector(image, ysize, xsize, area_thresh, noise_level, cross=True):
     """
     to find the sources in the 2-D image
-    :param img_arr: the 2-D numpy array, image
+    :param image: the 2-D numpy array, image
+    :param y(x)size: shape of image array
     :param area_thresh: the threshold for a source detection
     :param noise_level: the threshold of source value above which the pixel will be regarded as source
     :param cross: If True, the algorithm will check the nearest 4 pixels of the pixels of source
@@ -123,8 +116,7 @@ def source_detector(img_arr, area_thresh, noise_level, cross=True):
     :return: list of source coordinates [[..., (y_i, x_i),..], ..., [...]], each sublist contains tuples of the
             x- and y- coordinates
     """
-    ysize, xsize = img_arr.shape
-    mask = img_arr.copy()
+    mask = image.copy()
     idx = mask < noise_level
     mask[idx] = 0
     objects = []

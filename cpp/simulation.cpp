@@ -34,7 +34,7 @@ int main(int argc, char*argv[])
 		
 		int num_p = 100, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 		int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 7;		
-		int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2;
+		int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2, temp_s=myid;
 		double max_radius=8, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
 		int i, j, k, sss1, sss2;
 		double g1, g2, ts, te, t1, t2;
@@ -140,9 +140,9 @@ int main(int argc, char*argv[])
 			for (i = chip_id_s; i < chip_id_e; i++)
 			{
 				t1 = clock();
-				sss1 = 2430;
-				sss2 = 130;
-				seed = myid * sss1 + sss2 + i + shear_id;
+
+				seed = myid * i + shear_id + 1+i+temp_s;
+				temp_s++;
 				gsl_rng_initialize(seed + i);
 
 				sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
@@ -179,7 +179,7 @@ int main(int argc, char*argv[])
 
 					pow_spec(gal, pgal, size, size);
 
-					snr_est(pgal, &all_paras, 1);
+					snr_est(pgal, &all_paras, 2);
 
 					addnoise(noise, size*size, gal_noise_sig);
 					pow_spec(noise, pnoise, size, size);

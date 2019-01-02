@@ -15,17 +15,12 @@ size = int(argv[1])
 psf_r = float(argv[2])
 e = float(argv[3])
 btr = float(argv[4])
-ktr = float(argv[5])
-ra = float(argv[6])
-# seed = int(argv[6])
-
+ra = float(argv[5])
+step = int(argv[6])
 
 seed = numpy.random.randint(0,100000,1)[0]
 num = 17
 pixel_scale = 0.187
-markers = ['p', 'x', 's', '8']
-colors = ['red', 'orange', 'green', 'deepskyblue', 'b', 'k']
-
 
 flux = numpy.array([tool_box.mag_to_flux(20),tool_box.mag_to_flux(22.2),
                     tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24),
@@ -48,11 +43,11 @@ for k in range(len(flux)):
 
     pool = []
     rng = galsim.BaseDeviate(12300000)
-    knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
+    #knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
     bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
     disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
-    gal = bulge * btr + disk * (1 - btr - ktr) + ktr*knot
-    gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
+    gal = bulge * btr + disk * (1 - btr) #+ ktr*knot
+    gal = gal.shear(e1=-e*1.414/2, e2=-e*1.414/2)#beta=0.*galsim.degrees)
     gal_f = gal.withFlux(flux[k])
 
     # rng = galsim.BaseDeviate(12300000)
@@ -78,6 +73,6 @@ for k in range(len(flux)):
         path = img_path + "gal_%d_%d.fits"%(k,i)
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
-title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d"%(size, psf_r, e, btr, ra, seed)
-cmd = "python SNR_change_plot.py %d %d %s %d"%(size, num, title, len(flux))
+title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d\\step_%d"%(size, psf_r, e, btr, ra, seed, step)
+cmd = "python SNR_change_plot.py %d %d %s %d %d"%(size, num, title, len(flux),step)
 os.system(cmd)

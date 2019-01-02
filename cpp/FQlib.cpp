@@ -864,33 +864,15 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 		}
 	}
 
-
-	//if (detect == -1) 
-	//{/* -1 means the no source peaks at the place away from the center within 6 pixels.
-	//	then the biggest source that one of its pixel locates near the center within 3 pixels */ 
-	//	area = 0;
-	//	for ( i = 0; i < source_num; i++)
-	//	{
-	//		tag_e = tag_s + source_para[8 * i];
-	//		for (j= tag_s; j < tag_e; j++)
-	//		{
-	//			if (((source_x[j] - xc) < 3) && ((source_y[j] - yc) < 3) && source_para[8*i]>area)
-	//			{
-	//				area = source_para[8 * i];
-	//				detect = i;
-	//			}
-	//		}
-	//		tag_s = tag_e;
-	//	}
-	//}
 	if (detect > -1)
 	{
 		double temp_flux;
+		int area_ext;
 		for (i = 0;  i < 5; i++)
 		{
 			temp_flux = 0;
 			initialize_arr(mask, pix_num);
-			edge_extend(mask, source_y, source_x, area, detect, paras, 2*i+1);
+			area_ext = edge_extend(mask, source_y, source_x, area, detect, paras, 2*i+1);
 			for (j = 0; j < pix_num; j++)
 			{
 				if (mask[j] > 0)
@@ -899,6 +881,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 				}
 			}
 			paras->gal_flux_ext[i] = temp_flux;
+			paras->gal_size_ext[i] = area_ext;
 		}
 		
 		
@@ -925,7 +908,7 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	return detect;
 }
 
-void edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
+int edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
 {
 	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub;
 	int *cp_y = new int[size*size]{};
@@ -973,9 +956,10 @@ void edge_extend(double *mask, const int *source_y, const int* source_x, const i
 			}
 		}
 	}
-	paras->gal_size_ext[iters] = pix_len;
+	
 	delete[] cp_y;
 	delete[] cp_x;
+	return pix_len;
 }
 
 void addnoise(double *image, int pixel_num, double sigma)
