@@ -29,7 +29,7 @@ int main(int argc, char*argv[])
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 21;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
+	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
 	int cmd = 1;
 
@@ -119,7 +119,7 @@ int main(int argc, char*argv[])
 		std::cout << "PSF THRES: " << all_paras.psf_pow_thres << std::endl << all_paras.psf_hlr << std::endl;
 	}
 
-	for (shear_id = 8; shear_id < 10; shear_id++)
+	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{
 		ts = clock();
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d, total chips: %d (%d cpus)", myid, shear_id, chip_id_s, chip_id_e, total_chips, numprocs);
@@ -196,31 +196,31 @@ int main(int argc, char*argv[])
 					data[row + j * shear_esti_data_cols + 6] = all_paras.dv;
 				}
 
-				data_s[row + j * snr_para_data_cols + 0] = all_paras.gal_flux2;
-				data_s[row + j * snr_para_data_cols + 1] = all_paras.gal_flux_alt;
-				data_s[row + j * snr_para_data_cols + 2] = all_paras.gal_flux;
-				data_s[row + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
+				data_s[row_s + j * snr_para_data_cols + 0] = all_paras.gal_flux2;
+				data_s[row_s + j * snr_para_data_cols + 1] = all_paras.gal_flux_alt;
+				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
+				data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
 
-				data_s[row + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];
-				data_s[row + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
-				data_s[row + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];
-				data_s[row + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
-				data_s[row + j * snr_para_data_cols + 8] = all_paras.gal_flux2_ext[4];
+				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];
+				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
+				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];
+				data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
+				data_s[row_s + j * snr_para_data_cols + 8] = all_paras.gal_flux2_ext[4];
 
-				data_s[row + j * snr_para_data_cols + 9] = all_paras.gal_flux_ext[0];
-				data_s[row + j * snr_para_data_cols + 10] = all_paras.gal_flux_ext[1];
-				data_s[row + j * snr_para_data_cols + 11] = all_paras.gal_flux_ext[2];
-				data_s[row + j * snr_para_data_cols + 12] = all_paras.gal_flux_ext[3];
-				data_s[row + j * snr_para_data_cols + 13] = all_paras.gal_flux_ext[4];
+				data_s[row_s + j * snr_para_data_cols + 9] = all_paras.gal_flux_ext[0];
+				data_s[row_s + j * snr_para_data_cols + 10] = all_paras.gal_flux_ext[1];
+				data_s[row_s + j * snr_para_data_cols + 11] = all_paras.gal_flux_ext[2];
+				data_s[row_s + j * snr_para_data_cols + 12] = all_paras.gal_flux_ext[3];
+				data_s[row_s + j * snr_para_data_cols + 13] = all_paras.gal_flux_ext[4];
 
-				data_s[row + j * snr_para_data_cols + 14] = all_paras.gal_flux_ext[0] / sqrt(all_paras.gal_size_ext[0])/gal_noise_sig;
-				data_s[row + j * snr_para_data_cols + 15] = all_paras.gal_flux_ext[1] / sqrt(all_paras.gal_size_ext[1]) / gal_noise_sig;
-				data_s[row + j * snr_para_data_cols + 16] = all_paras.gal_flux_ext[2] / sqrt(all_paras.gal_size_ext[2]) / gal_noise_sig;
-				data_s[row + j * snr_para_data_cols + 17] = all_paras.gal_flux_ext[3] / sqrt(all_paras.gal_size_ext[3]) / gal_noise_sig;
-				data_s[row + j * snr_para_data_cols + 18] = all_paras.gal_flux_ext[4] / sqrt(all_paras.gal_size_ext[4]) / gal_noise_sig;
+				data_s[row_s + j * snr_para_data_cols + 14] = all_paras.gal_size_ext[0];
+				data_s[row_s + j * snr_para_data_cols + 15] = all_paras.gal_size_ext[1];
+				data_s[row_s + j * snr_para_data_cols + 16] = all_paras.gal_size_ext[2];
+				data_s[row_s + j * snr_para_data_cols + 17] = all_paras.gal_size_ext[3];
+				data_s[row_s + j * snr_para_data_cols + 18] = all_paras.gal_size_ext[4];
 
-				data_s[row + j * snr_para_data_cols + 19] = mag[i*stamp_num + j];
-				data_s[row + j * snr_para_data_cols + 20] = detect_label;
+				data_s[row_s + j * snr_para_data_cols + 19] = mag[i*stamp_num + j];
+				data_s[row_s + j * snr_para_data_cols + 20] = detect_label;
 				if (all_paras.gal_flux == 0)
 				{
 					k++;

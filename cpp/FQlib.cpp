@@ -899,6 +899,12 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 	}
 	else
 	{
+		for (i = 0; i < 5; i++)
+		{
+			paras->gal_flux_ext[i] = 0;
+			paras->gal_size_ext[i] = 0;
+			paras->gal_flux2_ext[i] = 0;
+		}
 		initialize_para(paras); // set the relative parameters to zero
 	}
 	delete[] source_x;
@@ -1032,11 +1038,11 @@ void snr_est(const double *image, para *paras, int fit)
 			}
 		}
 	}
-	noise = n*0.25 / ((size - edge)*edge);
+	noise = sqrt(n*0.25 / ((size - edge)*edge));
 	paras->gal_flux2 = sqrt(image[xc*size + xc] / noise);
 	for (i = 0; i < 5; i++)
 	{
-		paras->gal_flux2_ext[i] = fabs(paras->gal_flux_ext[i]) / sqrt(noise);
+		paras->gal_flux2_ext[i] = fabs(paras->gal_flux_ext[i]) / noise;
 	}
 	//paras->gal_flux2_new = paras->gal_total_flux / sqrt(noise);
 
