@@ -278,16 +278,19 @@ else:
     for s in cutoff_scalar:
         ax3.plot([s,s],[ys[0],ys[1]],c="grey",linestyle="--")
     ax3.set_ylim(ys[0], ys[1])
-    ax3.set_xlim(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
-    print(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
+    ax3.set_xlim(xs[0], 1.5*cutoff_scalar[-1]-0.5*cutoff_scalar[-2])
 
     ax4 = fig.add_subplot(224)
-    ax4.scatter(mag_true[detected], cut_data[detected], s=0.2)
-
-    namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
-    plt.suptitle(cut)
-    plt.savefig(namep)
-    plt.close()
+    try:
+        ch = [int(3*i+2) for i in range(30000)]
+        ax4.scatter(mag_true[detected][ch], cut_data[detected][ch], s=0.1)
+    except:
+        print("PLOT FAILED")
+    finally:
+        namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
+        plt.suptitle(cut)
+        plt.savefig(namep)
+        plt.close()
 
 t2 = time.clock()
 if rank == 0:

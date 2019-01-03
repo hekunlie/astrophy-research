@@ -170,7 +170,7 @@ int main(int argc, char*argv[])
 				segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 				pow_spec(gal, pgal, size, size);
 
-				detect_label = galaxy_finder(gal, &all_paras, false);
+				detect_label = galaxy_finder(gal, &all_paras, true);
 
 				snr_est(pgal, &all_paras, 2);
 
