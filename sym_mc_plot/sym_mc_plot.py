@@ -35,6 +35,10 @@ fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
+para_h5_path = para_path + "para_%d.hdf5"%rank
+para_h5 = h5py.File(para_h5_path,"r")
+mag_true = para_h5["/mag"].value
+para_h5.close()
 # rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
 
 if rank == 0:
@@ -48,7 +52,7 @@ shear_esti_data = shear_esti_file["/data"].value
 shear_esti_file.close()
 
 fq = Fourier_Quad(60, 152356)
-noise_sig = 65
+noise_sig = 60
 
 MG1 = shear_esti_data[:, 2]
 MG2 = shear_esti_data[:, 3]
@@ -101,7 +105,8 @@ elif cut in sex_idx:
 cut_data_sort = numpy.sort(cut_data[detected])
 cut_data_step = int(len(cut_data_sort) / cuts_num)
 cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
-
+# gathering for check
+cutoff_scalar_total = comm.gather(cutoff_scalar, root=0)
 res_arr = numpy.zeros((6, len(cutoff_scalar)))
 # # flux2
 # flux2 = fq_snr_data[:, 0]
@@ -197,7 +202,7 @@ else:
         recvs = numpy.empty((6, len(cutoff_scalar)), dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
         res_arr = numpy.column_stack((res_arr, recvs))
-
+    numpy.savez(result_path+"cuts/cache_%s.npz"%cut, res_arr, cutoff_scalar_total)
     mc1 = []
     mc2 = []
     for tag, cut_s in enumerate(cutoff_scalar):
@@ -254,7 +259,6 @@ else:
     ax1.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax1.set_xlabel("Cutoff")
     ax1.legend()
-    # ax1.set_xscale('log')
     ax1.set_ylabel("m")
 
     ax2 = fig.add_subplot(222)
@@ -265,7 +269,6 @@ else:
     ax2.yaxis.get_major_formatter().set_powerlimits((1, 2))
     ax2.set_xlabel("Cutoff")
     ax2.legend()
-    # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
     ax3 = fig.add_subplot(223)
@@ -275,14 +278,16 @@ else:
     for s in cutoff_scalar:
         ax3.plot([s,s],[ys[0],ys[1]],c="grey",linestyle="--")
     ax3.set_ylim(ys[0], ys[1])
-    ax3.set_xlim(xs[0], 1.3*cutoff_scalar[-1]-cutoff_scalar[-2])
+    ax3.set_xlim(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
+    print(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
+
+    ax4 = fig.add_subplot(224)
+    ax4.scatter(mag_true[detected], cut_data[detected], s=0.2)
 
     namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
     plt.suptitle(cut)
     plt.savefig(namep)
     plt.close()
-
-
 
 t2 = time.clock()
 if rank == 0:
