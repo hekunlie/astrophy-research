@@ -17,7 +17,11 @@ total_path, result_path, para_path, log_path = path_items
 
 
 sex_filters = ["sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
-cut_nm = ["mag_auto", "sex_snr", "flux2", "flux_alt", "snr_auto"]
+cut_nm = ["mag_auto", "sex_snr", "flux2", "flux_alt", "snr_auto", "flux", "snr",
+          "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5",
+          "flux_ex1", "flux_ex2", "flux_ex3", "flux_ex4", "flux_ex5",
+          "snr_ex1", "snr_ex2", "snr_ex3", "snr_ex4", "snr_ex5"]
+
 if cmd == "cut":
     cut_path = result_path + "cuts/"
     if os.path.exists(cut_path):

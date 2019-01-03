@@ -47,12 +47,6 @@ shear_esti_file = h5py.File(shear_esti_h5path, "r")
 shear_esti_data = shear_esti_file["/data"].value
 shear_esti_file.close()
 
-fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
-fq_snr_file = h5py.File(fq_snr_h5path, "r")
-set_name = list(fq_snr_file.keys())[0]
-fq_snr_data = fq_snr_file[set_name].value
-fq_snr_file.close()
-
 fq = Fourier_Quad(60, 152356)
 noise_sig = 65
 
@@ -67,104 +61,124 @@ MV = shear_esti_data[:, 6]
 DE1 = MN + MU
 DE2 = MN - MU
 
-detect_ = fq_snr_data[:, 0]
-detected = detect_ > 0
-
 cuts_num = 10
 
-# snr
-snr = fq_snr_data[:, 0]
-snr_sort = numpy.sort(snr[detected])
-snr_step = int(len(snr_sort)/cuts_num)
-snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
+fourier_idx = ["flux2", "flux_alt", "flux", "snr",
+               "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5",
+               "flux_ex1", "flux_ex2", "flux_ex3", "flux_ex4", "flux_ex5",
+               "snr_ex1", "snr_ex2", "snr_ex3", "snr_ex4", "snr_ex5"]
+sex_idx = ["sex_snr", "sex_area", "snr_auto",  "mag_auto"]
+if cut in fourier_idx:
 
-# flux
-flux = fq_snr_data[:, 1]/noise_sig
-flux_sort = numpy.sort(flux[detected])
-flux_step = int(len(flux_sort)/cuts_num)
-flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
-
-# flux_alt
-flux_alt = fq_snr_data[:, 2]
-flux_alt_sort = numpy.sort(flux_alt[detected])
-flux_alt_step = int(len(flux_alt_sort)/cuts_num)
-flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
-
-# flux2
-flux2 = fq_snr_data[:, 3]
-flux2_sort = numpy.sort(flux2[detected])
-flux2_step = int(len(flux2_sort)/cuts_num)
-flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
-
-# great3 snr
-gsnr = fq_snr_data[:, 4]
-gsnr_sort = numpy.sort(gsnr[detected])
-gsnr_step = int(len(gsnr_sort)/cuts_num)
-gsnr_cut = [gsnr_sort[i*gsnr_step] for i in range(cuts_num)]
-
-# area
-area = fq_snr_data[:, 5]
-area_sort = numpy.sort(area[detected])
-area_step = int(len(area_sort)/cuts_num)
-area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
+    fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
+    fq_snr_file = h5py.File(fq_snr_h5path, "r")
+    fq_snr_data = fq_snr_file["/data"].value
+    fq_snr_file.close()
+    # it should be
+    detected = fq_snr_data[:, 20] > -1
+    if "snr_ex" in cut:
+        flux_data = fq_snr_data[:, fourier_idx.index(cut)-5]
+        area_data = fq_snr_data[:, fourier_idx.index(cut)]
+        idx = area_data == 0
+        area_data[idx] = 1
+        cut_data = flux_data/numpy.sqrt(area_data)/noise_sig
+    else:
+        cut_data = fq_snr_data[:, fourier_idx.index(cut)]
 
 
-sex_data = numpy.load(sex_path)["arr_0"]
+elif cut in sex_idx:
+    sex_data = numpy.load(sex_path)["arr_0"]
+    detected = sex_data[:, 0] > 0
+    if "snr_auto" in cut:
+        flux_auto = sex_data[:, 1]
+        flux_err = sex_data[:, 2]
+        err_idx = flux_err == 0
+        flux_err[err_idx] = 1
+        cut_data = flux_auto / flux_err
+    else:
+        cut_data = sex_data[:, sex_idx.index(cut)]
 
-sex_snr = sex_data[:, 0]
-sex_idx = sex_snr > 0
-sex_snr_sort = numpy.sort(sex_snr[sex_idx])
-sex_snr_step = int(len(sex_snr_sort)/cuts_num)
-sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
+cut_data_sort = numpy.sort(cut_data[detected])
+cut_data_step = int(len(cut_data_sort) / cuts_num)
+cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
 
-flux_auto = sex_data[:, 1]
-flux_err = sex_data[:, 2]
-err_idx = flux_err == 0
-sex_undetect = sex_snr == 0
-if rank == 0:
-    print(sig,err_idx.sum()-sex_undetect.sum())
-flux_err[err_idx] = 1
-snr_auto = flux_auto/flux_err
-snr_auto_sort = numpy.sort(snr_auto[sex_idx])
-snr_auto_step = int(len(snr_auto_sort)/cuts_num)
-snr_auto_cut = [snr_auto_sort[i*snr_auto_step] for i in range(cuts_num)]
+res_arr = numpy.zeros((6, len(cutoff_scalar)))
+# # flux2
+# flux2 = fq_snr_data[:, 0]
+# flux2_sort = numpy.sort(flux2[detected])
+# flux2_step = int(len(flux2_sort)/cuts_num)
+# flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
+#
+# # flux_alt
+# flux_alt = fq_snr_data[:, 1]
+# flux_alt_sort = numpy.sort(flux_alt[detected])
+# flux_alt_step = int(len(flux_alt_sort)/cuts_num)
+# flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
+#
+# # flux
+# flux = fq_snr_data[:, 2]/noise_sig
+# flux_sort = numpy.sort(flux[detected])
+# flux_step = int(len(flux_sort)/cuts_num)
+# flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
+#
+# # snr
+# snr = fq_snr_data[:, 3]
+# snr_sort = numpy.sort(snr[detected])
+# snr_step = int(len(snr_sort)/cuts_num)
+# snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
+#
+# # great3 snr
+# gsnr = fq_snr_data[:, 4]
+# gsnr_sort = numpy.sort(gsnr[detected])
+# gsnr_step = int(len(gsnr_sort)/cuts_num)
+# gsnr_cut = [gsnr_sort[i*gsnr_step] for i in range(cuts_num)]
+#
+# # area
+# area = fq_snr_data[:, 5]
+# area_sort = numpy.sort(area[detected])
+# area_step = int(len(area_sort)/cuts_num)
+# area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
 
-mag_auto = sex_data[:, 3]
-mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
-mag_auto_step = int(len(mag_auto_sort)/cuts_num)
-mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
-
-sex_area = sex_data[:, 4]
-sex_area_sort = numpy.sort(sex_area[sex_idx])
-sex_area_step = int(len(sex_area_sort)/cuts_num)
-sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
+# sex_data = numpy.load(sex_path)["arr_0"]
+#
+# sex_snr = sex_data[:, 0]
+# sex_idx = sex_snr > 0
+# sex_snr_sort = numpy.sort(sex_snr[sex_idx])
+# sex_snr_step = int(len(sex_snr_sort)/cuts_num)
+# sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
+#
+# flux_auto = sex_data[:, 1]
+# flux_err = sex_data[:, 2]
+# err_idx = flux_err == 0
+# sex_undetect = sex_snr == 0
+#
+# flux_err[err_idx] = 1
+# snr_auto = flux_auto/flux_err
+# snr_auto_sort = numpy.sort(snr_auto[sex_idx])
+# snr_auto_step = int(len(snr_auto_sort)/cuts_num)
+# snr_auto_cut = [snr_auto_sort[i*snr_auto_step] for i in range(cuts_num)]
+#
+# mag_auto = sex_data[:, 3]
+# mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
+# mag_auto_step = int(len(mag_auto_sort)/cuts_num)
+# mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
+#
+# sex_area = sex_data[:, 4]
+# sex_area_sort = numpy.sort(sex_area[sex_idx])
+# sex_area_step = int(len(sex_area_sort)/cuts_num)
+# sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
 
 # # Resolution factor
 # rfactor = numpy.load(rfactor_path)["arr_0"][:,0] # [:,0] to avoid memory error
 # idx_rf = rfactor >= r_thresh
+for tag, cut_s in enumerate(cutoff_scalar):
+    idx = cut_data >= cut_s
 
-select = {"snr":     (snr, snr_cut),          "flux":     (flux, flux_cut),
-          "area":    (area, area_cut),        "flux2":   (flux2, flux2_cut),
-          "flux_alt": (flux_alt, flux_alt_cut),
-          "sex_snr": (sex_snr, sex_snr_cut),  "sex_area": (sex_area, sex_area_cut),
-          "snr_auto": (snr_auto, snr_auto_cut),  "mag_auto": (-mag_auto, mag_auto_cut)}
-
-res_arr = numpy.zeros((6, len(select[cut][1])))
-
-
-detected_label = {"flux": detected, "hflux": detected, "peak": detected, "area": detected, "harea": detected,
-                  "snr": detected, "flux2": detected, "flux_alt": detected, "sex_snr": sex_idx, "sex_area": sex_idx,
-                  "snr_auto": sex_idx, "mag_auto": sex_idx}
-
-for tag, cut_s in enumerate(select[cut][1]):
-    idx = select[cut][0] >= cut_s
-    num = len(MG1[detected_label[cut]&idx])
-
-    nm1 = MG1[detected_label[cut]&idx]
-    de1 = DE1[detected_label[cut]&idx]
-    nm2 = MG2[detected_label[cut]&idx]
-    de2 = DE2[detected_label[cut]&idx]
-
+    nm1 = MG1[detected&idx]
+    de1 = DE1[detected&idx]
+    nm2 = MG2[detected&idx]
+    de2 = DE2[detected&idx]
+    num = len(nm1)
     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
 
@@ -177,21 +191,19 @@ for tag, cut_s in enumerate(select[cut][1]):
     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
 
 if rank > 0:
-    # pass
     comm.Send(res_arr, dest=0, tag=rank)
-
 else:
     for procs in range(1, cpus):
-        recvs = numpy.empty((6, len(select[cut][1])), dtype=numpy.float64)
+        recvs = numpy.empty((6, len(cutoff_scalar)), dtype=numpy.float64)
         comm.Recv(recvs, source=procs, tag=procs)
         res_arr = numpy.column_stack((res_arr, recvs))
 
     mc1 = []
     mc2 = []
-    for tag, cut_s in enumerate(select[cut][1]):
+    for tag, cut_s in enumerate(cutoff_scalar):
         arr = res_arr[:, tag]
         for i in range(1, cpus):
-            arr = numpy.column_stack((arr, res_arr[:, i*len(select[cut][1])+tag]))
+            arr = numpy.column_stack((arr, res_arr[:, i*len(cutoff_scalar)+tag]))
 
         e1mc = tool_box.data_fit(fg1, arr[0], arr[1])
         mc1.append(e1mc)
@@ -232,9 +244,9 @@ else:
     x2 = 1
     x_coord = [i * 1./cuts_num for i in range(cuts_num)]
 
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(10, 10))
 
-    ax1 = fig.add_subplot(121)
+    ax1 = fig.add_subplot(221)
     ax1.errorbar(x_coord, mc1[0] - 1, mc1[1], c='coral', capsize=3, label='m1')
     ax1.errorbar(x_coord, mc2[0] - 1, mc2[1], c='royalblue', capsize=3, label='m2')
     ax1.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
@@ -245,7 +257,7 @@ else:
     # ax1.set_xscale('log')
     ax1.set_ylabel("m")
 
-    ax2 = fig.add_subplot(122)
+    ax2 = fig.add_subplot(222)
     ax2.errorbar(x_coord, mc1[2], mc1[3], c='coral', capsize=3, label='c1')
     ax2.errorbar(x_coord, mc2[2], mc2[3], c='royalblue', capsize=3, label='c2')
     ax2.plot([x1 - 0.05 * (x2 - x1), x2 + 0.05 * (x2 - x1)], [0, 0], c='green')
@@ -256,10 +268,21 @@ else:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
+    ax3 = fig.add_subplot(223)
+    ax3.hist(cut_data[detected], 100)
+    ys = ax3.set_ylim()
+    xs = ax3.set_xlim()
+    for s in cutoff_scalar:
+        ax3.plot([s,s],[ys[0],ys[1]],c="grey",linestyle="--")
+    ax3.set_ylim(ys[0], ys[1])
+    ax3.set_xlim(xs[0], 1.3*cutoff_scalar[-1]-cutoff_scalar[-2])
+
     namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
     plt.suptitle(cut)
     plt.savefig(namep)
     plt.close()
+
+
 
 t2 = time.clock()
 if rank == 0:
