@@ -221,10 +221,7 @@ int main(int argc, char*argv[])
 
 				data_s[row_s + j * snr_para_data_cols + 19] = mag[i*stamp_num + j];
 				data_s[row_s + j * snr_para_data_cols + 20] = detect_label;
-				if (all_paras.gal_flux == 0)
-				{
-					k++;
-				}
+
 			 }
 
 			t2 = clock();
@@ -236,14 +233,7 @@ int main(int argc, char*argv[])
 			}
 			gsl_rng_free();
 		}
-		for (h = 0; h < numprocs; h++)
-		{
-			if (h == myid)
-			{
-				std::cout << myid << " " << k << std::endl;
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
+		
 		sprintf(set_name, "/data");
 		// the shear estimators
 		if (0 == cmd)

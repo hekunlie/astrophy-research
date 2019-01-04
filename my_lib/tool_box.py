@@ -497,7 +497,7 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, ybloc
     return fit_paras
 
 def data_fit(x_data, y_data, y_err):
-    r"""
+    """
     Y = A*X ,   y = m*x+c
     Y = [y1,y2,y3,...].T  the measured data
     A = [[1,1,1,1,...]
@@ -553,7 +553,7 @@ def rand_gauss2(x_range, y_range, num, cov):
 
 
 def rand_gauss2n(num, means, cov, xy_range=None):
-    r"""
+    """
     basing on numpy, to generate two sets of correlated data in (2,n) numpy array
     :param xy_range: list of the bound of the two sets [x_start, x_end, y_start, y_end]
     :param num: number
