@@ -34,6 +34,7 @@ shear = numpy.load(shear_path)
 fg1 = shear["arr_0"]
 fg2 = shear["arr_1"]
 
+
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
 para_h5_path = para_path + "para_%d.hdf5"%rank
 para_h5 = h5py.File(para_h5_path,"r")
@@ -105,104 +106,40 @@ elif cut in sex_idx:
 cut_data_sort = numpy.sort(cut_data[detected])
 cut_data_step = int(len(cut_data_sort) / cuts_num)
 cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
-# gathering for check
-cutoff_scalar_total = comm.gather(cutoff_scalar, root=0)
-res_arr = numpy.zeros((6, len(cutoff_scalar)))
-# # flux2
-# flux2 = fq_snr_data[:, 0]
-# flux2_sort = numpy.sort(flux2[detected])
-# flux2_step = int(len(flux2_sort)/cuts_num)
-# flux2_cut = [flux2_sort[i*flux2_step] for i in range(cuts_num)]
-#
-# # flux_alt
-# flux_alt = fq_snr_data[:, 1]
-# flux_alt_sort = numpy.sort(flux_alt[detected])
-# flux_alt_step = int(len(flux_alt_sort)/cuts_num)
-# flux_alt_cut = [flux_alt_sort[i*flux_alt_step] for i in range(cuts_num)]
-#
-# # flux
-# flux = fq_snr_data[:, 2]/noise_sig
-# flux_sort = numpy.sort(flux[detected])
-# flux_step = int(len(flux_sort)/cuts_num)
-# flux_cut = [flux_sort[i*flux_step] for i in range(cuts_num)]
-#
-# # snr
-# snr = fq_snr_data[:, 3]
-# snr_sort = numpy.sort(snr[detected])
-# snr_step = int(len(snr_sort)/cuts_num)
-# snr_cut = [snr_sort[i*snr_step] for i in range(cuts_num)]
-#
-# # great3 snr
-# gsnr = fq_snr_data[:, 4]
-# gsnr_sort = numpy.sort(gsnr[detected])
-# gsnr_step = int(len(gsnr_sort)/cuts_num)
-# gsnr_cut = [gsnr_sort[i*gsnr_step] for i in range(cuts_num)]
-#
-# # area
-# area = fq_snr_data[:, 5]
-# area_sort = numpy.sort(area[detected])
-# area_step = int(len(area_sort)/cuts_num)
-# area_cut = [area_sort[i*area_step] for i in range(cuts_num)]
+# # gathering for check
+# cutoff_scalar_total = comm.gather(cutoff_scalar, root=0)
+# res_arr = numpy.zeros((6, len(cutoff_scalar)))
 
-# sex_data = numpy.load(sex_path)["arr_0"]
+# for tag, cut_s in enumerate(cutoff_scalar):
+#     idx = cut_data >= cut_s
 #
-# sex_snr = sex_data[:, 0]
-# sex_idx = sex_snr > 0
-# sex_snr_sort = numpy.sort(sex_snr[sex_idx])
-# sex_snr_step = int(len(sex_snr_sort)/cuts_num)
-# sex_snr_cut = [sex_snr_sort[i*sex_snr_step] for i in range(cuts_num)]
+#     nm1 = MG1[detected&idx]
+#     de1 = DE1[detected&idx]
+#     nm2 = MG2[detected&idx]
+#     de2 = DE2[detected&idx]
+#     num = len(nm1)
+#     g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
+#     g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
 #
-# flux_auto = sex_data[:, 1]
-# flux_err = sex_data[:, 2]
-# err_idx = flux_err == 0
-# sex_undetect = sex_snr == 0
+#     # weight = select[cut][0][idx]
+#     # g1_h = numpy.mean(mg1[idx] / weight) / numpy.mean(mn[idx] / weight)
+#     # g1_sig = numpy.sqrt(numpy.mean((mg1[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
+#     # g2_h = numpy.mean(mg2[idx] / weight) / numpy.mean(mn[idx] / weight)
+#     # g2_sig = numpy.sqrt(numpy.mean((mg2[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
 #
-# flux_err[err_idx] = 1
-# snr_auto = flux_auto/flux_err
-# snr_auto_sort = numpy.sort(snr_auto[sex_idx])
-# snr_auto_step = int(len(snr_auto_sort)/cuts_num)
-# snr_auto_cut = [snr_auto_sort[i*snr_auto_step] for i in range(cuts_num)]
+#     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
 #
-# mag_auto = sex_data[:, 3]
-# mag_auto_sort = numpy.sort(-mag_auto[sex_idx])
-# mag_auto_step = int(len(mag_auto_sort)/cuts_num)
-# mag_auto_cut = [mag_auto_sort[i*mag_auto_step] for i in range(cuts_num)]
-#
-# sex_area = sex_data[:, 4]
-# sex_area_sort = numpy.sort(sex_area[sex_idx])
-# sex_area_step = int(len(sex_area_sort)/cuts_num)
-# sex_area_cut = [sex_area_sort[i*sex_area_step] for i in range(cuts_num)]
+# if rank > 0:
+#     comm.Send(res_arr, dest=0, tag=rank)
+# else:
+#     for procs in range(1, cpus):
+#         recvs = numpy.empty((6, len(cutoff_scalar)), dtype=numpy.float64)
+#         comm.Recv(recvs, source=procs, tag=procs)
+#         res_arr = numpy.column_stack((res_arr, recvs))
 
-# # Resolution factor
-# rfactor = numpy.load(rfactor_path)["arr_0"][:,0] # [:,0] to avoid memory error
-# idx_rf = rfactor >= r_thresh
-for tag, cut_s in enumerate(cutoff_scalar):
-    idx = cut_data >= cut_s
-
-    nm1 = MG1[detected&idx]
-    de1 = DE1[detected&idx]
-    nm2 = MG2[detected&idx]
-    de2 = DE2[detected&idx]
-    num = len(nm1)
-    g1_h, g1_sig = fq.fmin_g_new(nm1, de1, bin_num=8)
-    g2_h, g2_sig = fq.fmin_g_new(nm2, de2, bin_num=8)
-
-    # weight = select[cut][0][idx]
-    # g1_h = numpy.mean(mg1[idx] / weight) / numpy.mean(mn[idx] / weight)
-    # g1_sig = numpy.sqrt(numpy.mean((mg1[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
-    # g2_h = numpy.mean(mg2[idx] / weight) / numpy.mean(mn[idx] / weight)
-    # g2_sig = numpy.sqrt(numpy.mean((mg2[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
-
-    res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
-
-if rank > 0:
-    comm.Send(res_arr, dest=0, tag=rank)
-else:
-    for procs in range(1, cpus):
-        recvs = numpy.empty((6, len(cutoff_scalar)), dtype=numpy.float64)
-        comm.Recv(recvs, source=procs, tag=procs)
-        res_arr = numpy.column_stack((res_arr, recvs))
-    numpy.savez(result_path+"cuts/cache_%s.npz"%cut, res_arr, cutoff_scalar_total)
+if rank == 0:
+    # numpy.savez(result_path+"cuts/cache_%s.npz"%cut, res_arr, cutoff_scalar_total)
+    res_arr = numpy.load(result_path+"cuts/cache_%s.npz"%cut)["arr_0"]
     mc1 = []
     mc2 = []
     for tag, cut_s in enumerate(cutoff_scalar):
@@ -216,7 +153,7 @@ else:
         mc2.append(e2mc)
 
         mc = numpy.array([e1mc, e2mc])
-        data_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4))+".npz"
+        data_path = result_path + "cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4))+".npz"
         numpy.savez(data_path, arr, mc)
 
         mc_title = ['0', '0', '0', '0']
@@ -233,14 +170,17 @@ else:
                 mc_title[ii + 2] = "_c" + str(ii+1)
         pic_mc = "".join(mc_title)
 
-        pic_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4)) + pic_mc + ".eps"
-        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', [-0.03,0.03,-0.03,0.03],pic_path)
-        pic_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4)) + pic_mc + ".png"
-        tool_box.mcplot(fg1, arr[0:3, :], fg2, arr[3:6, :], e1mc, e2mc, str(round(cut_s,4)), 'max',[-0.03,0.03,-0.03,0.03],pic_path)
+        g1_extr = [fg1.min(), fg1.max()]
+        g2_extr = [fg2.min(), fg2.max()]
+        g1_plt_s, g1_plt_e = fg1.min() - (fg1.max() - fg1.min())*0.2, fg1.max() + (fg1.max() - fg1.min())*0.2
+        g2_plt_s, g2_plt_e = fg2.min() - (fg2.max() - fg2.min()) * 0.2, fg2.max() + (fg2.max() - fg2.min()) * 0.2
+        plt_range = [g1_plt_s, g1_plt_e, g2_plt_s, g2_plt_e]
+        pic_path = result_path + "cuts/sym/%s/"%filter_name + cut + "/" + str(round(cut_s,4)) + pic_mc + ".pdf"
+        tool_box.mcplot(fg1, arr[0:3,:], fg2, arr[3:6,:], e1mc, e2mc, str(round(cut_s,4)), 'max', plt_range,pic_path)
 
     mc1 = numpy.array(mc1).T
     mc2 = numpy.array(mc2).T
-    mc_path = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.npz"
+    mc_path = result_path + "cuts/sym/%s/"%filter_name + cut + "/total.npz"
     numpy.savez(mc_path, mc1, mc2)
     # mc1 = numpy.load(mc_path)['arr_0']
     # mc2 = numpy.load(mc_path)['arr_1']
@@ -278,15 +218,14 @@ else:
     for s in cutoff_scalar:
         ax3.plot([s,s],[ys[0],ys[1]],c="grey",linestyle="--")
     ax3.set_ylim(ys[0], ys[1])
-    ax3.set_xlim(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
-    print(xs[0], 1.3*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
+    ax3.set_xlim(xs[0], 2*cutoff_scalar[-1]-0.3*cutoff_scalar[-2])
 
     ax4 = fig.add_subplot(224)
-    ax4.scatter(mag_true[detected], cut_data[detected], s=0.2)
+    ax4.scatter(mag_true[detected], cut_data[detected], s=0.1)
 
-    namep = total_path + "result/cuts/sym/%s/"%filter_name + cut + "/total.eps"
+    namep = result_path + "cuts/sym/%s/"%filter_name + cut + "/total.pdf"
     plt.suptitle(cut)
-    plt.savefig(namep)
+    plt.savefig(namep,bbox_inches='tight')
     plt.close()
 
 t2 = time.clock()
