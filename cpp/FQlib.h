@@ -158,7 +158,7 @@ int source_detector(double *source_img, int *soucrce_x, int*source_y, double *so
 */
 
 
-int galaxy_finder(double *stamp_arr, para *paras, bool cross);
+int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection

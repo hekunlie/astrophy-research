@@ -838,7 +838,7 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 	return s_num;
 }
 
-int galaxy_finder(double *stamp_arr, para *paras, bool cross)
+int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross)
 {	
 	int elem_unit = 8; // the number of parameters for each source detected 
 	int source_num, area=0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
@@ -878,6 +878,10 @@ int galaxy_finder(double *stamp_arr, para *paras, bool cross)
 				if (mask[j] > 0)
 				{
 					temp_flux += stamp_arr[j];
+				}
+				if (i == 4)
+				{
+					check_mask[j] = mask[j];
 				}
 			}
 			paras->gal_flux_ext[i] = fabs(temp_flux);
