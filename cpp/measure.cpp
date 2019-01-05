@@ -97,7 +97,7 @@ int main(int argc, char*argv[])
 	//read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
 
 	sprintf(chip_path, "%spsf.fits", data_path);
-	read_img(psf, chip_path);
+	read_fits(psf, chip_path);
 	pow_spec(psf, ppsf, size, size);
 
 	seed = 12300;
@@ -154,7 +154,7 @@ int main(int argc, char*argv[])
 
 			sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
-			read_img(big_img, chip_path);
+			read_fits(big_img, chip_path);
 
 			row = (i - chip_id_s) *stamp_num*shear_esti_data_cols;
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;

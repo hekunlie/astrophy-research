@@ -106,16 +106,21 @@ void write_h5(char *filename, char *set_name, int row, int column, double*d_matr
 	only one of "d_matrix" and "i_matrix" should be inputted each time
 */
 
-void read_img(DATA_TYPE *arr, char *path);
+void read_fits(double *arr, char *path);
+void read_fits(float *arr, char *path);
+void read_fits(int *arr, char *path);
 /* read fits file, the preciseion dependences on the DATA_TYPE */
 
-void write_img(DATA_TYPE *img, int ysize, int xsize, char *filename);
+void write_fits(double *img, int ysize, int xsize, char *filename);
+void write_fits(float *img, int ysize, int xsize, char *filename);
+void write_fits(int *img, int ysize, int xsize, char *filename);
 /* write the array to  fits file, the preciseion dependences on the DATA_TYPE 
 	the size of each axises should be inputted，ARR(y, x)
 */
 
 void stack(double *big_arr, double *stamp, int tag, int size, int row, int col); 
-/* from stamps to a integrate image 
+/* 
+    from stamps to a integrate image 
 	big_arr:   the big image that will contain all the stamps
 	stamps: the small array that will be stacked into the big image
 	tag: the location label of stamps in tha big image, 

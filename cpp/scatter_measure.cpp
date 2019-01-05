@@ -1,4 +1,6 @@
 ﻿#include"FQlib.h"
+#include "mpi.h"
+#include<hdf5.h>
 
 int main(int argc, char*argv[])
 {
@@ -10,13 +12,16 @@ int main(int argc, char*argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 	para all_paras;
-	int size = 48, data_col = 21, chip_num_total =10, nx=100, stamp_num=10000, chip_num, detect_label;
-	int chip_num = chip_num_total / numprocs;
+	int size = 48, data_col = 20, chip_num_total =10, nx=100, stamp_num=10000, chip_num, detect_label;
+	chip_num = chip_num_total / numprocs;
 	int data_row = chip_num*stamp_num, row_s;
 	int data_row_t = chip_num_total*stamp_num;
+	int chip_id_s, chip_id_e;
 	int i, j, k;
+	std::cout << sizeof(int) << std::endl;
 
 	double noise_sig = 60, sig_level=1.5;
+
 	double *gal = new double[size*size]{};
 	double *pgal = new double[size*size]{};
 	double *mask = new double[size*size]{};
@@ -25,26 +30,7 @@ int main(int argc, char*argv[])
 	double *data = new double[data_row*data_col]{};
 	double *data_t = new double[data_row_t*data_col]{};
 
-	int *source_x = new int[pix_num] {};
-	int *source_y = new int[pix_num] {};
-	double *mask = new double[pix_num] {};
-	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
-
-	for (i = 0; i < source_num; i++)
-	{
-		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
-		if (radius <= max_distance) // if it peaks within 8 pixels from the stamp center, it will be indentified as a galaxy
-		{
-			if (source_para[i * elem_unit] > area)
-			{
-				area = source_para[i * elem_unit];
-				detect = i;
-			}
-		}
-	}
-
-	char img_path[150], data_path[150];
+	char img_path[150], data_path[150], set_name[20];
 
 	all_paras.gal_noise_sig = noise_sig;
 	all_paras.psf_noise_sig = 0;
@@ -59,14 +45,14 @@ int main(int argc, char*argv[])
 	chip_id_s = chip_num * myid;
 	chip_id_e = chip_num * (myid + 1);
 
-	for (i = 0; i < chip_num; i++)
+	for (i = chip_id_s; i < chip_id_e; i++)
 	{	
 		initialize_arr(img, size*size*stamp_num);
 		initialize_arr(mask_img, size*size*stamp_num);
 		sprintf(img_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/%d.fits", i);
-		read_img(img, img_path);
+		read_fits(img, img_path);
 
-		row_s = i*stamp_num;
+		row_s = (i - chip_id_s)*stamp_num*data_col;
 
 		for (j = 0; j < stamp_num; j++)
 		{
@@ -103,15 +89,28 @@ int main(int argc, char*argv[])
 			data[row_s + j * data_col + 17] = all_paras.gal_size_ext[3];
 			data[row_s + j * data_col + 18] = all_paras.gal_size_ext[4];
 
-			data[row_s + j * data_col + 19 = detect_label;
-		}
+			data[row_s + j * data_col + 19] = detect_label;
+		
+}
 
+		sprintf(img_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/%d_mask.fits", i);
+		write_fits(mask_img, nx*size, nx*size, img_path);
+
+	}
+	sprintf(set_name, "/data");
+	MPI_Gather(data, data_row*data_col, MPI_DOUBLE, data_t, data_row*data_col, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	if (0 == myid)
+	{
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/result.hdf5");
+		write_h5(data_path, set_name, data_row_t, data_col, data_t, NULL);
 	}
 
 
 	delete[] gal;
 	delete[] pgal;
+	delete[] mask;
 	delete[] img;
+	delete[] mask_img;
 	delete[] data;
 	delete[] data_t;
 	return 0;
