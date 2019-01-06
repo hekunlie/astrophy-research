@@ -17,19 +17,19 @@ int main(int argc, char*argv[])
 	int data_row = chip_num*stamp_num, row_s;
 	int data_row_t = chip_num_total*stamp_num;
 	int chip_id_s, chip_id_e;
-	int i, j, k;
+	int i, j, k,m,n;
 	std::cout << sizeof(int) << std::endl;
 
 	double noise_sig = 60, sig_level=1.5;
 
 	double *gal = new double[size*size]{};
 	double *pgal = new double[size*size]{};
-	double *mask = new double[size*size]{};
+	int *mask = new int[size*size]{};
 	double *img = new double[size*size * stamp_num]{};
-	double *mask_img = new double[size*size*stamp_num]{};
+	int *mask_img = new int[size*size*stamp_num]{};
 	double *data = new double[data_row*data_col]{};
 	double *data_t = new double[data_row_t*data_col]{};
-
+	std::cout << sizeof(mask[0]) << std::endl;
 	char img_path[150], data_path[150], set_name[20];
 
 	all_paras.gal_noise_sig = noise_sig;
@@ -44,7 +44,7 @@ int main(int argc, char*argv[])
 
 	chip_id_s = chip_num * myid;
 	chip_id_e = chip_num * (myid + 1);
-
+	
 	for (i = chip_id_s; i < chip_id_e; i++)
 	{	
 		initialize_arr(img, size*size*stamp_num);
@@ -63,6 +63,23 @@ int main(int argc, char*argv[])
 			segment(img, gal, j, size, nx, nx);
 			pow_spec(gal, pgal, size, size);
 			detect_label = galaxy_finder(gal, mask, &all_paras, false);
+			if (0 == myid && i == 0 & j == 10)
+			{
+				sprintf(img_path, "!/mnt/ddnfs/data_users/hkli/simu_test/scatter/mask.fits");
+				write_fits(mask, size, size, img_path);
+				for (m = 0; m < size; m++)
+				{
+					for (n = 0; n < size; n++)
+					{
+
+						std::cout << mask[m*size + n] << " ";
+						if (n == size - 1)
+						{
+							std::cout << std::endl;
+						}						
+					}					
+				}				
+			}
 			stack(mask_img, mask, j, size, nx, nx);
 			snr_est(pgal, &all_paras, 2);
 
@@ -91,12 +108,13 @@ int main(int argc, char*argv[])
 
 			data[row_s + j * data_col + 19] = detect_label;
 		
-}
+		}
 
-		sprintf(img_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/%d_mask.fits", i);
+		sprintf(img_path, "!/mnt/ddnfs/data_users/hkli/simu_test/scatter/%d_mask.fits", i);
 		write_fits(mask_img, nx*size, nx*size, img_path);
 
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 	sprintf(set_name, "/data");
 	MPI_Gather(data, data_row*data_col, MPI_DOUBLE, data_t, data_row*data_col, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	if (0 == myid)

@@ -109,16 +109,17 @@ void write_h5(char *filename, char *set_name, int row, int column, double*d_matr
 void read_fits(double *arr, char *path);
 void read_fits(float *arr, char *path);
 void read_fits(int *arr, char *path);
-/* read fits file, the preciseion dependences on the DATA_TYPE */
-
 void write_fits(double *img, int ysize, int xsize, char *filename);
 void write_fits(float *img, int ysize, int xsize, char *filename);
 void write_fits(int *img, int ysize, int xsize, char *filename);
-/* write the array to  fits file, the preciseion dependences on the DATA_TYPE 
+/* read and write the array to  fits file, 
+	be careful with the datetype "TINT" and "LONG_IMG"!!! 
 	the size of each axises should be inputted，ARR(y, x)
 */
 
-void stack(double *big_arr, double *stamp, int tag, int size, int row, int col); 
+void stack(double *big_arr, const double *stamp, const int tag, const int size, const int row, const int col);
+void stack(float *big_arr, const float *stamp, const int tag, const int size, const int row, const int col);
+void stack(int *big_arr, const int *stamp, const int tag, const int size, const int row, const int col);
 /* 
     from stamps to a integrate image 
 	big_arr:   the big image that will contain all the stamps
@@ -131,7 +132,9 @@ void stack(double *big_arr, double *stamp, int tag, int size, int row, int col);
 	row and col:  how many stamps in row and column
 */
 
-void segment(double *big_arr, double *stamp, int tag, int size, int row, int col);
+void segment(const double *big_arr, double *stamp, const int tag, const int size, const int row, const int col);
+void segment(const float *big_arr, float *stamp, const int tag, const int size, const int row, const int col);
+void segment(const int *big_arr, int *stamp, const int tag, const int size, const int row, const int col);
 /* to cut the specific square area in the big_arr
 	see the annotation of stack()	
 */
@@ -150,7 +153,7 @@ void get_psf_radius(const double *psf_pow, para*para, const double scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
-int source_detector(double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
+int source_detector(const double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -163,13 +166,13 @@ int source_detector(double *source_img, int *soucrce_x, int*source_y, double *so
 */
 
 
-int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross);
+int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
 */
 
-int edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
 /*	"stamp_size" in the structure paras will be used !!! 
 
 	extend the border of a source galaxy by 1 pixel each time
@@ -187,6 +190,8 @@ void addnoise(double *image, int pixel_num, double sigma);
 /* add Gaussian noise to an array */
 
 void initialize_arr(double *array, int size);
+void initialize_arr(float *array, int size);
+void initialize_arr(int *array, int size);
 /* set every elements to zero*/
 
 void normalize_arr(double *arr, int size);

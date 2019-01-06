@@ -233,7 +233,7 @@ int main(int argc, char*argv[])
 			}
 			gsl_rng_free();
 		}
-		
+		MPI_Barrier(MPI_COMM_WORLD);
 		sprintf(set_name, "/data");
 		// the shear estimators
 		if (0 == cmd)

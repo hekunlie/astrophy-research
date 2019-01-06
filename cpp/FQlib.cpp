@@ -222,6 +222,7 @@ void write_h5(char *filename, char *set_name, int row, int column, double*d_matr
 	status = H5Fclose(file_id);
 }
 
+
 void read_fits(double *arr, char *path)
 {
 	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
@@ -267,7 +268,7 @@ void read_fits(int *arr, char *path)
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
 	int *buffer = new int[npixels];	/* create a new array */
-	fits_read_img(fptr, TLONG, fpixel, npixels, &nullval, buffer, &anynull, &status);
+	fits_read_img(fptr, TINT, fpixel, npixels, &nullval, buffer, &anynull, &status);
 	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
 	delete[] buffer;		/* (have to) delete the array */
 	fits_close_file(fptr, &status);
@@ -312,7 +313,7 @@ void write_fits(int *img, int ysize, int xsize, char *filename)
 {
 	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
-	long fpixel = 1, naxis = 2, nelements, exposure;
+	long fpixel = 1, naxis = 2, nelements;
 	long naxes[2];		/* x, y */
 	naxes[0] = xsize;
 	naxes[1] = ysize; 	/* the same as numpy array */
@@ -320,12 +321,13 @@ void write_fits(int *img, int ysize, int xsize, char *filename)
 	fits_create_file(&fptr, filename, &status);		/* create new file */
 	fits_create_img(fptr, LONG_IMG, naxis, naxes, &status);	 /* Create the primary array image (16-bit short integer pixels */
 	nelements = xsize * ysize;         /* number of pixels to write */
-	fits_write_img(fptr, TLONG, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+	fits_write_img(fptr, TINT, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
 	fits_close_file(fptr, &status);              /* close the file */
 	fits_report_error(stderr, status);      /* print out any error messages */
 }
 
-void stack(double *container, double *stamp, int tag, int size, int row, int col)
+
+void stack(double *container, const double *stamp, const int tag, const int size, const int row, const int col)
 {
 	int i, j, m;
 	/* 'container' is the container of 'row'*'col' stamps which is array with 'size'*'size' pixels.
@@ -341,7 +343,39 @@ void stack(double *container, double *stamp, int tag, int size, int row, int col
 	}
 }
 
-void segment(double *chip, double *stamp, int tag, int size, int row, int col)
+void stack(float *container, const float *stamp, const int tag, const int size, const int row, const int col)
+{
+	int i, j, m;
+	/* 'container' is the container of 'row'*'col' stamps which is array with 'size'*'size' pixels.
+	'tag' is the tag of the stamp in all stamps.
+	the (i,j)'th pixel of stamp will loacte at '(tag - tag%col)/col*size*col*size + i*n*size + tag%col8size + j' */
+	m = (tag - tag % col)*size*size + tag % col*size;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			container[m + i * col*size + j] = stamp[i*size + j];
+		}
+	}
+}
+
+void stack(int *container, const int *stamp, const int tag, const int size, const int row, const int col)
+{
+	int i, j, m;
+	/* 'container' is the container of 'row'*'col' stamps which is array with 'size'*'size' pixels.
+	'tag' is the tag of the stamp in all stamps.
+	the (i,j)'th pixel of stamp will loacte at '(tag - tag%col)/col*size*col*size + i*n*size + tag%col8size + j' */
+	m = (tag - tag % col)*size*size + tag % col*size;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			container[m + i * col*size + j] = stamp[i*size + j];
+		}
+	}
+}
+
+void segment(const double *chip, double *stamp, const int tag, const int size, const int row, const int col)
 {
 	int i, j, m;
 	m = (tag - tag%col)*size*size + tag%col*size;
@@ -350,6 +384,32 @@ void segment(double *chip, double *stamp, int tag, int size, int row, int col)
 		for (j = 0; j < size; j++)
 		{
 			stamp[i*size + j] = chip[m + i*col*size + j];
+		}
+	}
+}
+
+void segment(const float *chip, float *stamp, const int tag, const int size, const int row, const int col)
+{
+	int i, j, m;
+	m = (tag - tag % col)*size*size + tag % col*size;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			stamp[i*size + j] = chip[m + i * col*size + j];
+		}
+	}
+}
+
+void segment(const int *chip, int *stamp, const int tag, const int size, const int row, const int col)
+{
+	int i, j, m;
+	m = (tag - tag % col)*size*size + tag % col*size;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			stamp[i*size + j] = chip[m + i * col*size + j];
 		}
 	}
 }
@@ -749,7 +809,7 @@ void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 
 }
 
-int source_detector(double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
+int source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -894,7 +954,7 @@ int source_detector(double *source_img, int *source_x, int*source_y, double*sour
 	return s_num;
 }
 
-int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross)
+int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross)
 {	
 	int elem_unit = 8; // the number of parameters for each source detected 
 	int source_num, area=0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
@@ -903,7 +963,7 @@ int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross
 	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
-	double *mask = new double[pix_num] {};
+	int *mask = new int[pix_num] {};
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
 	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
 
@@ -974,9 +1034,9 @@ int galaxy_finder(double *stamp_arr, double *check_mask, para *paras, bool cross
 	return detect;
 }
 
-int edge_extend(double *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
 {
-	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub;
+	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
 	int *cp_y = new int[size*size]{};
 	int *cp_x = new int[size*size]{};
 	for (i = 0; i < source_len; i++)
@@ -992,7 +1052,7 @@ int edge_extend(double *mask, const int *source_y, const int* source_x, const in
 	pix_len = source_len;
 	for (i = 0; i < iters; i++)
 	{
-		sub = i + 2;
+	
 		// count the newly added pixels
 		pix_new = pix_len - pix_len_0;
 		// label the source length at the biginning
@@ -1021,6 +1081,7 @@ int edge_extend(double *mask, const int *source_y, const int* source_x, const in
 				}
 			}
 		}
+		sub++;
 	}
 	
 	delete[] cp_y;
@@ -1041,6 +1102,22 @@ void initialize_arr(double *in_img, int length)
 	for (int i = 0; i < length; i++)
 	{
 		in_img[i] = 0.;
+	}
+}
+
+void initialize_arr(float *in_img, int length)
+{/* will set all the elements to zero */
+	for (int i = 0; i < length; i++)
+	{
+		in_img[i] = 0.;
+	}
+}
+
+void initialize_arr(int *in_img, int length)
+{/* will set all the elements to zero */
+	for (int i = 0; i < length; i++)
+	{
+		in_img[i] = 0;
 	}
 }
 
