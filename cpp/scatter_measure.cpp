@@ -18,7 +18,6 @@ int main(int argc, char*argv[])
 	int data_row_t = chip_num_total*stamp_num;
 	int chip_id_s, chip_id_e;
 	int i, j, k,m,n;
-	std::cout << sizeof(int) << std::endl;
 
 	double noise_sig = 60, sig_level=1.5;
 
@@ -29,7 +28,6 @@ int main(int argc, char*argv[])
 	int *mask_img = new int[size*size*stamp_num]{};
 	double *data = new double[data_row*data_col]{};
 	double *data_t = new double[data_row_t*data_col]{};
-	std::cout << sizeof(mask[0]) << std::endl;
 	char img_path[150], data_path[150], set_name[20];
 
 	all_paras.gal_noise_sig = noise_sig;
@@ -44,7 +42,21 @@ int main(int argc, char*argv[])
 
 	chip_id_s = chip_num * myid;
 	chip_id_e = chip_num * (myid + 1);
-	
+
+	//sprintf(img_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/%d.fits", 6);
+	//read_fits(img, img_path);
+	//initialize_arr(gal, size*size);
+	//initialize_arr(pgal, size*size);
+	//initialize_arr(mask, size*size);
+
+	//segment(img, gal, 0, size, nx, nx);
+	//detect_label = galaxy_finder(gal, mask, &all_paras, false);
+	//std::cout << detect_label << std::endl;
+	//sprintf(img_path, "!/mnt/ddnfs/data_users/hkli/simu_test/scatter/mask.fits");
+	//write_fits(mask, size, size, img_path);
+	//sprintf(img_path, "!/mnt/ddnfs/data_users/hkli/simu_test/scatter/gal.fits");
+	//write_fits(gal, size, size, img_path);
+
 	for (i = chip_id_s; i < chip_id_e; i++)
 	{	
 		initialize_arr(img, size*size*stamp_num);
@@ -114,16 +126,21 @@ int main(int argc, char*argv[])
 		write_fits(mask_img, nx*size, nx*size, img_path);
 
 	}
+
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	sprintf(set_name, "/data");
+
 	MPI_Gather(data, data_row*data_col, MPI_DOUBLE, data_t, data_row*data_col, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 	if (0 == myid)
 	{
 		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/scatter/result.hdf5");
 		write_h5(data_path, set_name, data_row_t, data_col, data_t, NULL);
+		std::cout << "HDF5" << std::endl;
 	}
 
-
+	MPI_Barrier(MPI_COMM_WORLD);
 	delete[] gal;
 	delete[] pgal;
 	delete[] mask;

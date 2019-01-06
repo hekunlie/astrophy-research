@@ -966,29 +966,58 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	int *mask = new int[pix_num] {};
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
 	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
-
+	//std::cout << source_num << std::endl;
 	for ( i = 0; i < source_num; i++)
-	{
+	{	
+		// start point of source_y(x) of i'th source
+		if (i > 0)
+		{
+			tag_s += source_para[(i-1)*elem_unit];
+		}
+		else
+		{
+			tag_s = 0;
+		}
+		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
+		{
+			if (source_y[j] == yc &&  source_x[j] == xc)
+			{
+				if (source_para[i * elem_unit] > area)
+				{
+					area = source_para[i * elem_unit];
+					detect = i;
+					//std::cout << detect << std::endl;
+				}
+			}
+		}
 		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
-		if (radius <= max_distance) // if it peaks within 8 pixels from the stamp center, it will be indentified as a galaxy
+		//std::cout << "PARA  "<<source_para[i * elem_unit + 1]<<" "<< source_para[i * elem_unit + 2]<<" "<< source_para[i*elem_unit] <<" "<<max_distance<< std::endl;
+		if (radius <= max_distance) // if it peaks within 5.5 pixels from the stamp center, it will be indentified as a galaxy
 		{
 			if (source_para[i * elem_unit] > area)
 			{
 				area = source_para[i * elem_unit];
 				detect = i;
+				//std::cout << i << " " << source_para[i * elem_unit] << " " << detect << " " << i << std::endl;
 			}
 		}
 	}
-
+	tag_s = 0;
+	for (i = 0; i < detect; i++)
+	{
+		tag_s += source_para[i*elem_unit];
+	}
+	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
 	if (detect > -1)
 	{
 		double temp_flux;
 		int area_ext;
+
 		for (i = 0;  i < 5; i++)
 		{
 			temp_flux = 0;
 			initialize_arr(mask, pix_num);
-			area_ext = edge_extend(mask, source_y, source_x, area, detect, paras, 2*i+1);
+			area_ext = edge_extend(mask, source_y, source_x, tag_s, area, paras, 2*i+1);
 			for (j = 0; j < pix_num; j++)
 			{
 				if (mask[j] > 0)
@@ -1034,25 +1063,26 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	return detect;
 }
 
-int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters)
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters)
 {
 	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
 	int *cp_y = new int[size*size]{};
 	int *cp_x = new int[size*size]{};
-	for (i = 0; i < source_len; i++)
+	char buffer[150];
+	for (i = source_id; i < source_len+ source_id; i++)
 	{
 		// copy of source coordinates 
-		cp_y[i] = source_y[i + source_id];
-		cp_x[i] = source_x[i + source_id];
+		cp_y[i - source_id] = source_y[i];
+		cp_x[i - source_id] = source_x[i];
 		// label the source pixel on the mask
-		mask[source_y[i + source_id] * size + source_x[i + source_id]] = 1;
+		mask[source_y[i] * size + source_x[i]] = 1;
 	}
 	
 	pix_len_0 = 0;
 	pix_len = source_len;
+
 	for (i = 0; i < iters; i++)
-	{
-	
+	{	
 		// count the newly added pixels
 		pix_new = pix_len - pix_len_0;
 		// label the source length at the biginning
@@ -1075,6 +1105,8 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 							// and increase the pixel counts
 							cp_y[pix_len] = iy;
 							cp_x[pix_len] = ix;
+							//sprintf(buffer, "%d, (%d, %d) --> (%d, %d), %d", j, cp_y[j], cp_x[j], iy, ix, pix_len);
+							//std::cout << buffer << std::endl;
 							pix_len++;
 						}
 					}

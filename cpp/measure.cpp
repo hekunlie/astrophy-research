@@ -29,7 +29,7 @@ int main(int argc, char*argv[])
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 21;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
+	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
 	int cmd = 1;
 
@@ -75,7 +75,8 @@ int main(int argc, char*argv[])
 	double *ppsf = new double[size*size]();
 	double *ppsf_cp = new double[size*size]();
 	double *big_img = new double[size*size*stamp_num]();
-	//double *check_img = new double[size*size*stamp_num]();
+	int *check_img = new int[size*size*stamp_num]();
+	int *mask = new int[size*size]{};
 	double *gal = new double[size*size]();
 	double *pgal = new double[size*size]();
 	double *noise = new double[size*size]();
@@ -154,6 +155,8 @@ int main(int argc, char*argv[])
 
 			sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
+			initialize_arr(check_img, stamp_nx*stamp_nx*size*size);
+
 			read_fits(big_img, chip_path);
 
 			row = (i - chip_id_s) *stamp_num*shear_esti_data_cols;
@@ -166,12 +169,16 @@ int main(int argc, char*argv[])
 				initialize_arr(gal, size*size);
 				initialize_arr(pgal, size*size);
 				initialize_para(&all_paras);
+				initialize_arr(mask, size*size);
 
 				segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 				pow_spec(gal, pgal, size, size);
 
-				detect_label = galaxy_finder(gal, &all_paras, false);
-
+				detect_label = galaxy_finder(gal, mask, &all_paras, false);
+				if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
+				{
+					stack(check_img, mask, j, size, stamp_nx, stamp_nx);
+				}
 				snr_est(pgal, &all_paras, 2);
 
 				if (cmd == 0)
@@ -180,10 +187,7 @@ int main(int argc, char*argv[])
 					pow_spec(noise, pnoise, size, size);
 					//smooth(pnoise, ppsf, coeff, &all_paras);
 					//smooth(pgal, ppsf, coeff, &all_paras);
-					//if (chip_id_s == i && 0 == myid && 0 == shear_id)
-					//{
-					//	stack(check_img, pgal, j, size, stamp_nx, stamp_nx);
-					//}
+					
 					noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
 					shear_est(pgal, ppsf, &all_paras);
 
@@ -223,6 +227,12 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 20] = detect_label;
 
 			 }
+			if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
+			{
+				sprintf(chip_path, "!%s%d_%04d_mask_%.2fsig.fits", data_path, shear_id, i, sig_level);
+				write_fits(check_img, stamp_nx*size, stamp_nx*size, chip_path);
+			}
+			
 
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip finish in %.2f sec", myid, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
@@ -273,6 +283,7 @@ int main(int argc, char*argv[])
 	delete[] ppsf;
 	delete[] ppsf_cp;
 	delete[] big_img;
+	delete[] mask;
 	delete[] gal;
 	delete[] pgal;
 	delete[] noise;
@@ -281,7 +292,7 @@ int main(int argc, char*argv[])
 	delete[] data_s;
 	delete[] mag;
 	//delete[] coeff;
-	//delete[] check_img;
+	delete[] check_img;
 	MPI_Finalize();
 	return 0;
 }

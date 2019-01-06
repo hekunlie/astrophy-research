@@ -114,7 +114,10 @@ void write_fits(float *img, int ysize, int xsize, char *filename);
 void write_fits(int *img, int ysize, int xsize, char *filename);
 /* read and write the array to  fits file, 
 	be careful with the datetype "TINT" and "LONG_IMG"!!! 
-	the size of each axises should be inputted，ARR(y, x)
+	the length of INT may be different in different platform,
+	however, the "TINT32BIT" doesn't work with "LONG_IMG".
+
+	the size of each axises should be inputted，ARRAY(y, x)
 */
 
 void stack(double *big_arr, const double *stamp, const int tag, const int size, const int row, const int col);
@@ -172,7 +175,7 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	return: int, "-1" means no detection
 */
 
-int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_len, const int source_id, para *paras, const int iters);
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters);
 /*	"stamp_size" in the structure paras will be used !!! 
 
 	extend the border of a source galaxy by 1 pixel each time

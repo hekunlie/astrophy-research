@@ -32,8 +32,8 @@ noise_sig = 60
 pixel_scale = 0.187
 stamp_num = 10000
 
-mag = 21
-ra = 0.8
+mag = 24
+ra = 0.4
 btr = 0.4
 e1 = 0.6
 e2 = -0.7
