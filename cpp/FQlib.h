@@ -90,28 +90,29 @@ void write_log(char *filename, char *inform);
 void read_para(const std::string path, const std::string name, int &para);
 void read_para(const std::string path, const std::string name, double &para);
 void read_para(const std::string path, const std::string name, float &para);
+/* read the parameters ("name") value from parameter file */
 
 void read_text(const std::string path, double *arr, const int read_lines);
 void read_text(const std::string path, float *arr, const int read_lines);
 void read_text(const std::string path, int *arr, const int read_lines);
-/* read data from txt file which should be just one column. */
-
-void read_h5(char *filename, char *set_name1, double *matrix1, char*set_name2, double *matrix2, char*set_name3, double*matrix3);
-/* read hdf5 file 
-	set_name and matrix should be used in pair (developing)
+/* read data from txt file which should be just one column.
+	the read_lines limits the maximum lines to read
 */
 
-void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix, int *i_matrix);
-/* write to hdf5 file with double or integer matrix 
-	only one of "d_matrix" and "i_matrix" should be inputted each time
-*/
+void read_h5(const char *filename, const char *set_name, double *arr);
+void read_h5(const char *filename, const char *set_name, float *arr);
+void read_h5(const char *filename, const char *set_name, int *arr);
+void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);
+void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
+void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);
+/* read and write the hdf5 file */
 
-void read_fits(double *arr, char *path);
-void read_fits(float *arr, char *path);
-void read_fits(int *arr, char *path);
-void write_fits(double *img, int ysize, int xsize, char *filename);
-void write_fits(float *img, int ysize, int xsize, char *filename);
-void write_fits(int *img, int ysize, int xsize, char *filename);
+void read_fits(const char *filename, double *arr);
+void read_fits(const char *filename, float *arr);
+void read_fits(const char *filename, int *arr);
+void write_fits(const char *filename, double *img, const int ysize, const int xsize);
+void write_fits(const char *filename, float *img, const int ysize, const int xsize);
+void write_fits(const char *filename, int *img, const int ysize, const int xsize);
 /* read and write the array to  fits file, 
 	be careful with the datetype "TINT" and "LONG_IMG"!!! 
 	the length of INT may be different in different platform,
@@ -149,14 +150,18 @@ void create_points(double *point, int num_p, double radius);
 void create_epoints(double *point, int num_p, double ellip);
 void create_psf(double*in_img, double scale, int size, int psf);
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
-void pow_spec(double *in_img, double *out_img, int column, int row);
+
+void pow_spec(const double *in_img, double *out_img, const int column, const int row);
+void pow_spec(const float *in_img, float *out_img, const int column, const int row);
 
 void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
 void get_psf_radius(const double *psf_pow, para*para, const double scale);
+void get_psf_radius(const float *psf_pow, para*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
 int source_detector(const double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
+int source_detector(const float *source_img, int *soucrce_x, int*source_y, float *source_paras, para* paras, bool cross);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -170,6 +175,7 @@ int source_detector(const double *source_img, int *soucrce_x, int*source_y, doub
 
 
 int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross);
+int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
@@ -189,17 +195,20 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 	return: the area of the extended source
 */
 
-void addnoise(double *image, int pixel_num, double sigma); 
+void addnoise(double *image, const int pixel_num, const double sigma);
+void addnoise(float *image, const int pixel_num, const float sigma);
 /* add Gaussian noise to an array */
 
-void initialize_arr(double *array, int size);
-void initialize_arr(float *array, int size);
-void initialize_arr(int *array, int size);
+void initialize_arr(double *array, const int size);
+void initialize_arr(float *array, const int size);
+void initialize_arr(int *array, const int size);
 /* set every elements to zero*/
 
-void normalize_arr(double *arr, int size);
+void normalize_arr(double *arr, const int size);
+void normalize_arr(float *arr, const int size);
 /* normalize the PSF power spectrum,
-	divide each pixel by the peak */
+	divide each pixel by the peak 
+*/
 
 /********************************************************************************************************************************************/
 /* Fourier Quad */
@@ -220,7 +229,8 @@ void smooth(double *image, const double *coeffs, para *paras);
 void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);
 /* the image will be repalced by the smoothed one. 
 	the psf_pow and the paras->psf_thres_pow are the mask and  threshold to label the region where to be smoothed
-	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
+	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  
+*/
 
 void smooth_real(double*image, const double *coeffs, para *paras);
 /* smooth the image by fitting a polynomial */
@@ -246,18 +256,19 @@ void histogram2d(const double *data_y, const double*data_x, const double *bin_y,
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num);
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num);
 
+
 void sort_double(double *arr, int size, int order);
-/* sort the double array according to the order, order =1 for ascend, else for descend*/
 void sort_float(float *arr, int size, int order);
 void sort_int(int *arr, int size, int order);
+/* sort the double array according to the order, order =1 for ascend, else for descend*/
 
 int com_double_ascend(const double a, const double b);
-/* the compare function for the qsort() method */
 int com_float_ascend(const float a, const float b);
 int com_int_ascend(const int a, const int b);
 int com_double_descend(const  double a, const double b);
 int com_float_descend(const float a, const float b);
 int com_int_descend(const int a, const int b);
+/* the compare function for the qsort() method */
 
 void get_time(char *str_time, int length);
 /* get the current time.

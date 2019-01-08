@@ -21,8 +21,8 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
+	sprintf(data_path, "/mnt/perc/hklee/simu_test/");
+	std::string str_data_path = "/mnt/perc/hklee/simu_test/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
@@ -31,7 +31,7 @@ int main(int argc, char*argv[])
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
 	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
 
-	int cmd = 1;
+	int cmd = 0;
 
 	read_para(str_paraf_path, str_stampsize, size);
 	read_para(str_paraf_path, str_total_num, total_chips);
@@ -56,6 +56,7 @@ int main(int argc, char*argv[])
 		if (1 == cmd)
 		{
 			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << std::endl;
+			std::cout << "Total chip: " << total_chips << " Stamp size: " << size << std::endl;
 		}
 		sprintf(log_inform, "RANK: %03d,  thread: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
 		write_log(log_path, log_inform);
@@ -98,7 +99,7 @@ int main(int argc, char*argv[])
 	//read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
 
 	sprintf(chip_path, "%spsf.fits", data_path);
-	read_fits(psf, chip_path);
+	read_fits(chip_path, psf);
 	pow_spec(psf, ppsf, size, size);
 
 	seed = 12300;
@@ -128,7 +129,7 @@ int main(int argc, char*argv[])
 		
 		sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_name, "/mag");
-		read_h5(para_path, set_name, mag, NULL, NULL, NULL, NULL);
+		read_h5(para_path, set_name, mag);
 		
 		if (0 == myid)
 		{
@@ -157,7 +158,7 @@ int main(int argc, char*argv[])
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
 			initialize_arr(check_img, stamp_nx*stamp_nx*size*size);
 
-			read_fits(big_img, chip_path);
+			read_fits(chip_path, big_img);
 
 			row = (i - chip_id_s) *stamp_num*shear_esti_data_cols;
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;
@@ -203,7 +204,7 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 0] = all_paras.gal_flux2;
 				data_s[row_s + j * snr_para_data_cols + 1] = all_paras.gal_flux_alt;
 				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
-				data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
+				data_s[row_s + j * snr_para_data_cols + 3] = pgal[size/2+size*size/2];//all_paras.gal_osnr;
 
 				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];
 				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
@@ -230,7 +231,7 @@ int main(int argc, char*argv[])
 			if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
 			{
 				sprintf(chip_path, "!%s%d_%04d_mask_%.2fsig.fits", data_path, shear_id, i, sig_level);
-				write_fits(check_img, stamp_nx*size, stamp_nx*size, chip_path);
+				write_fits(chip_path, check_img, stamp_nx*size, stamp_nx*size);
 			}
 			
 
@@ -252,7 +253,7 @@ int main(int argc, char*argv[])
 			if (0 == myid)
 			{
 				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
-				write_h5(h5_path, set_name, total_data_row, shear_esti_data_cols, recvbuf, NULL);
+				write_h5(h5_path, set_name, recvbuf, total_data_row, shear_esti_data_cols);
 			}
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -261,7 +262,7 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
-			write_h5(snr_h5_path, set_name, total_data_row, snr_para_data_cols, recvbuf_s, NULL);
+			write_h5(snr_h5_path, set_name, recvbuf_s, total_data_row, snr_para_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 

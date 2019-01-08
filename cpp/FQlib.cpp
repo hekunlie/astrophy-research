@@ -8,6 +8,16 @@ char buffer[1000], exception_name[50];
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
+void write_log(char*filename, char *inform)
+{
+	char time_now[40];
+	get_time(time_now, 40);
+	loggers.open(filename, std::ios::out | std::ios::app);
+	loggers << time_now << " ---- " << inform << std::endl;
+	loggers.close();
+}
+
+
 void read_para(const std::string path, const std::string name, int &para)
 {
 	std::ifstream infile;
@@ -116,6 +126,7 @@ void read_para(const std::string path, const std::string name, float &para)
 	}
 }
 
+
 void read_text(const std::string path, double *arr, const int read_lines)
 {
 	std::ifstream infile;
@@ -152,52 +163,49 @@ void read_text(const std::string path, int *arr, const int read_lines)
 	infile.close();
 }
 
-void write_log(char*filename,  char *inform)
-{	
-	char time_now[40];
-	get_time(time_now, 40);
-	loggers.open(filename,std::ios::out|std::ios::app);
-	loggers <<time_now<<" ---- "<< inform<< std::endl;
-	loggers.close();
-}
 
-void read_h5(char *filename, char *set_name1, double *matrix1,char*set_name2, double *matrix2, char*set_name3, double*matrix3)
+void read_h5(const char *filename, const char *set_name, double *arr)
 {
 	hid_t file_id;
 	herr_t status;
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-	if (set_name1 && matrix1)
-	{
-		hid_t dataset_id;
-		dataset_id = H5Dopen(file_id, set_name1, H5P_DEFAULT);
-		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix1);
-		status = H5Dclose(dataset_id);
-	}
-	if (set_name2 && matrix2)
-	{
-		hid_t dataset_id;
-		dataset_id = H5Dopen(file_id, set_name2, H5P_DEFAULT);
-		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix2);
-		status = H5Dclose(dataset_id);
-	}
-	if (set_name3 && matrix3)
-	{
-		hid_t dataset_id;
-		dataset_id = H5Dopen(file_id, set_name3, H5P_DEFAULT);
-		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, matrix3);
-		status = H5Dclose(dataset_id);
-	}
-	//status = H5Sclose(dataspace_id);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
 	status = H5Fclose(file_id);
 }
 
-void write_h5(char *filename, char *set_name, int row, int column, double*d_matrix , int *i_matrix )
+void read_h5(const char *filename, const char *set_name, float *arr)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
+void read_h5(const char *filename, const char *set_name, int *arr)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
+void write_h5(const char *filename, const char *set_name, const double*arr, const int row, const int column)
 {
 	hid_t file_id;
 	herr_t status;
 	remove(filename);
-	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-	
+	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);	
 	unsigned rank = 2;
 	hsize_t dims[2];
 	dims[0] = row;
@@ -205,32 +213,62 @@ void write_h5(char *filename, char *set_name, int row, int column, double*d_matr
 	hid_t dataspace_id;  
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
 	hid_t dataset_id;    
+	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Sclose(dataspace_id);
+	status = H5Fclose(file_id);
+ }
 
-	if (i_matrix)
-	{
-		dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, i_matrix);
-	}
-	if (d_matrix)
-	{
-		dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-		status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d_matrix);
-	}
+void write_h5(const char *filename, const char *set_name, const float*arr, const int row, const int column)
+{
+	hid_t file_id;
+	herr_t status;
+	remove(filename);
+	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	unsigned rank = 2;
+	hsize_t dims[2];
+	dims[0] = row;
+	dims[1] = column;
+	hid_t dataspace_id;
+	dataspace_id = H5Screate_simple(rank, dims, NULL);
+	hid_t dataset_id;
+	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Sclose(dataspace_id);
+	status = H5Fclose(file_id);
+}
 
+void write_h5(const char *filename, const char *set_name, const int*arr, const int row, const int column)
+{
+	hid_t file_id;
+	herr_t status;
+	remove(filename);
+	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	unsigned rank = 2;
+	hsize_t dims[2];
+	dims[0] = row;
+	dims[1] = column;
+	hid_t dataspace_id;
+	dataspace_id = H5Screate_simple(rank, dims, NULL);
+	hid_t dataset_id;
+	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
 	status = H5Fclose(file_id);
 }
 
 
-void read_fits(double *arr, char *path)
+void read_fits(const char *filename, double *arr)
 {
 	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
 	int status = 0, nfound, anynull;
 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, path, READONLY, &status);
+	fits_open_file(&fptr, filename, READONLY, &status);
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
 	double *buffer = new double[npixels];										/* create a new array */
@@ -240,14 +278,14 @@ void read_fits(double *arr, char *path)
 	fits_close_file(fptr, &status);
 }
 
-void read_fits(float *arr, char *path)
+void read_fits(const char *filename, float *arr)
 {
 	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
 	int status = 0, nfound, anynull;
 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, path, READONLY, &status);
+	fits_open_file(&fptr, filename, READONLY, &status);
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
 	float *buffer = new float[npixels];	/* create a new array */
@@ -257,14 +295,14 @@ void read_fits(float *arr, char *path)
 	fits_close_file(fptr, &status);
 }
 
-void read_fits(int *arr, char *path)
+void read_fits(const char *filename, int *arr)
 {
 	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
 	int status = 0, nfound, anynull;
 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, path, READONLY, &status);
+	fits_open_file(&fptr, filename, READONLY, &status);
 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
 	int *buffer = new int[npixels];	/* create a new array */
@@ -274,7 +312,7 @@ void read_fits(int *arr, char *path)
 	fits_close_file(fptr, &status);
 }
 
-void write_fits(double *img, int ysize, int xsize, char *filename)
+void write_fits(const char *filename, double *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;		/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -292,7 +330,7 @@ void write_fits(double *img, int ysize, int xsize, char *filename)
 	fits_report_error(stderr, status);      /* print out any error messages */	
 }
 
-void write_fits(float *img, int ysize, int xsize, char *filename)
+void write_fits(const char *filename, float *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;				/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -309,7 +347,7 @@ void write_fits(float *img, int ysize, int xsize, char *filename)
 	fits_report_error(stderr, status);      /* print out any error messages */
 }
 
-void write_fits(int *img, int ysize, int xsize, char *filename)
+void write_fits(const char *filename, int *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -553,13 +591,13 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 	delete[] points_r;
 }
 
-void pow_spec(double *in_img, double *out_img, int column, int row)
+
+void pow_spec(const double *in_img, double *out_img, const int column, const int row)
 {   /* will not change the inputted array */
 	/* in_img is the inputted array and the out_img is the container of the outputted image */
 	fftwl_complex *in, *out;
 	fftwl_plan p;
 	long int i, j, m, n;
-
 
 	in = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
 	for (i = 0; i < (row*column); i++)
@@ -603,6 +641,56 @@ void pow_spec(double *in_img, double *out_img, int column, int row)
 	fftwl_free(out);
 }
 
+void pow_spec(const float *in_img, float *out_img, const int column, const int row)
+{   /* will not change the inputted array */
+	/* in_img is the inputted array and the out_img is the container of the outputted image */
+	fftwf_complex *in, *out;
+	fftwf_plan p;
+	long int i, j, m, n;
+
+	in = (fftwf_complex*)fftwl_malloc(sizeof(fftwf_complex) *(row*column));
+	for (i = 0; i < (row*column); i++)
+	{
+		in[i][1] = 0;
+		in[i][0] = in_img[i];
+	}
+
+	out = (fftwf_complex*)fftwl_malloc(sizeof(fftwf_complex) *(row*column));
+	p = fftwf_plan_dft_2d(row, column, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftwf_execute(p);															 /* repeat as needed */
+
+	 /* shift the signal to the center */
+	for (i = 0; i < row; i++)
+	{
+		for (j = 0; j < column; j++)
+		{
+			m = i * column + j;
+			if (i < row / 2)
+			{
+				if (j < column / 2)
+					n = (i + row / 2)*column + j + column / 2;
+				else
+					n = (i + row / 2)*column + j - column / 2;
+			}
+			else
+			{
+				if (j < column / 2)
+					n = (i - row / 2)*column + j + column / 2;
+				else
+					n = (i - row / 2)*column + j - column / 2;
+			}
+
+			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+		}
+	}
+	/* shift the signal to the center */
+
+	fftwf_destroy_plan(p);
+	fftwf_free(in);
+	fftwf_free(out);
+}
+
+
 void get_radius(double *in_img, para *paras, double scale, int type, double sig_level)
 {	 /* will not change the inputted array */
 	/* the image should be larger than 12*12 */
@@ -610,7 +698,9 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 
 	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p = 1, size = paras->stamp_size;
 	double max = 0, flux = 0, flux_sq=0.;	
-
+	double *cp_img = new double[size*size]();
+	int *col = new int[size*size];
+	int *row = new int[size*size];
 	/* find the maximun */
 	for (y = size / 2 - 5; y < size / 2 +5; y++)
 	{
@@ -625,7 +715,6 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 		}
 	}
 	/* copy the image and wrap out the value smaller than the specific one */
-	double *cp_img = new double[size*size]();
 	for (x = 0; x < size*size; x++)
 	{	
 		if (in_img[x] > max / scale && in_img[x] > 1.5 * sig_level)
@@ -633,9 +722,6 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 			cp_img[x] = in_img[x];
 		}
 	}
-	
-	int *col = new int[size*size];
-	int *row = new int[size*size];
 	row[0] = yp;
 	col[0] = xp;
 	flux = max;
@@ -731,11 +817,14 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 	delete[] cp_img;
 }
 
+
 void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 {
 	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
 	double max = 0;
-
+	double *cp_img = new double[size*size]();
+	int *col = new int[size*size];
+	int *row = new int[size*size];
 	/* find the maximun, but power of k=0 may be not the maximun, be careful!!!! */
 	for (y = size / 2 - 5; y < size / 2 + 5; y++)
 	{
@@ -750,8 +839,7 @@ void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 		}
 	}
 	paras->psf_pow_thres = max / 10000.;
-	/* copy the image and wrap out the value smaller than the specific one */
-	double *cp_img = new double[size*size]();
+	/* copy the image and wrap out the value smaller than the specific one */	
 	for (x = 0; x < size*size; x++)
 	{
 		if (psf_pow[x] > max / scale)
@@ -759,9 +847,6 @@ void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 			cp_img[x] = psf_pow[x];
 		}
 	}
-
-	int *col = new int[size*size];
-	int *row = new int[size*size];
 	row[0] = yp;
 	col[0] = xp;
 	p = 1;
@@ -806,8 +891,90 @@ void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 		num = p;
 	}
 	paras->psf_hlr = sqrt(p / Pi);
-
+	delete[] cp_img;
+	delete[] col;
+	delete[] row;
 }
+
+void get_psf_radius(const float *psf_pow, para*paras, const float scale)
+{
+	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
+	float max = 0;
+	float *cp_img = new float[size*size]();
+	int *col = new int[size*size];
+	int *row = new int[size*size];
+	/* find the maximun, but power of k=0 may be not the maximun, be careful!!!! */
+	for (y = size / 2 - 5; y < size / 2 + 5; y++)
+	{
+		for (x = size / 2 - 5; x < size / 2 + 5; x++)
+		{
+			if (psf_pow[y*size + x] > max)
+			{
+				max = psf_pow[y*size + x];
+				xp = x;
+				yp = y;
+			}
+		}
+	}
+	paras->psf_pow_thres = max / 10000.;
+	/* copy the image and wrap out the value smaller than the specific one */	
+	for (x = 0; x < size*size; x++)
+	{
+		if (psf_pow[x] > max / scale)
+		{
+			cp_img[x] = psf_pow[x];
+		}
+	}
+
+	row[0] = yp;
+	col[0] = xp;
+	p = 1;
+	/* the peak coordinates have been put in the coordinate lists */
+	cp_img[yp*size + xp] = 0.;
+
+	while (num0 != num)
+	{
+		nump = num - num0;
+		num0 = p;
+		for (x = num0 - nump; x < num0; x++)
+		{
+			if ((row[x] - 1) > -1 && fabs(cp_img[col[x] + (row[x] - 1) * size]) > 0)
+			{
+				cp_img[col[x] + (row[x] - 1) * size] = 0.;
+				row[p] = row[x] - 1;
+				col[p] = col[x];
+				p++;
+			}
+			if ((row[x] + 1) < size && fabs(cp_img[col[x] + (row[x] + 1) * size]) > 0)
+			{
+				cp_img[col[x] + (row[x] + 1) * size] = 0.;
+				row[p] = row[x] + 1;
+				col[p] = col[x];
+				p++;
+			}
+			if ((col[x] - 1) > -1 && fabs(cp_img[col[x] - 1 + row[x] * size]) > 0)
+			{
+				cp_img[col[x] - 1 + row[x] * size] = 0.;
+				row[p] = row[x];
+				col[p] = col[x] - 1;
+				p++;
+			}
+			if ((col[x] + 1) < size && fabs(cp_img[col[x] + 1 + row[x] * size]) > 0)
+			{
+				cp_img[col[x] + 1 + row[x] * size] = 0.;
+				row[p] = row[x];
+				col[p] = col[x] + 1;
+				p++;
+			}
+		}
+		num = p;
+	}
+	paras->psf_hlr = sqrt(p / Pi);
+	delete[] cp_img;
+	delete[] col;
+	delete[] row;
+}
+
 
 int source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
 {	/* remember to add the peak detection! to locate the source */
@@ -954,6 +1121,152 @@ int source_detector(const double *source_img, int *source_x, int*source_y, doubl
 	return s_num;
 }
 
+int source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, para*paras, bool cross)
+{	/* remember to add the peak detection! to locate the source */
+	/* it will not change the inputted array */
+	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
+	int s = y_size * x_size;
+	int peak = 0, yp, xp, area = 0, half_light_area = 0;
+	float flux = 0, flux_sq = 0, half_light_flux = 0;
+	int  len0 = 0, len = 0, s_num = 0, num0, num, num_new;
+	float detect_thres = paras->detect_thres;
+	float *cp_img = new float[s] {};
+	int *temp_x = new int[s] {};
+	int *temp_y = new int[s] {};
+	int cross_x[4]{ -1,1,0,0 };
+	int cross_y[4]{ 0,0,-1,1 };
+
+	/* copy and mask the candidates pixels */
+	for (i = 0; i < s; i++)
+	{
+		if (source_img[i] >= detect_thres)
+		{
+			cp_img[i] = source_img[i];
+		}
+	}
+
+	/* search the source by FoF */
+	for (i = 0; i < y_size; i++)
+	{
+		for (j = 0; j < x_size; j++)
+		{
+			if (cp_img[i*x_size + j] > 0)
+			{
+				peak = cp_img[i*x_size + j];
+				half_light_area = 0;
+				half_light_flux = 0;
+				flux = cp_img[i*x_size + j];
+				flux_sq += flux * flux;
+
+				len = 0;
+				num0 = 0;
+				num = 1;
+				/* the temp_x, _y are the temporal array to store the coordinates of the source detected*/
+				temp_x[len] = j;
+				temp_y[len] = i;
+				len = 1;
+				cp_img[i*x_size + j] = 0;
+				while (num0 != num)
+				{
+					num_new = num - num0;
+					num0 = len;
+					for (k = num0 - num_new; k < num0; k++)
+					{
+						if (cross)/* search the nearest four pixels */
+						{
+							for (c = 0; c < 4; c++)
+							{
+								tx = temp_x[k] + cross_x[c];
+								ty = temp_y[k] + cross_y[c];
+								if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+								{
+									temp_x[len] = tx;
+									temp_y[len] = ty;
+									if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+									{
+										peak = cp_img[ty*x_size + tx];
+										yp = ty;
+										xp = tx;
+									}
+									flux = flux + cp_img[ty*x_size + tx];
+									flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+									cp_img[ty*x_size + tx] = 0; /* mask each pixel after detection */
+
+									len++;
+								}
+							}
+						}
+
+						else /* search the nearest nine pixels */
+						{
+							for (iy = -1; iy < 2; iy++)
+							{
+								ty = temp_y[k] + iy;
+								for (ix = -1; ix < 2; ix++)
+								{
+									tx = temp_x[k] + ix;
+									if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+									{
+										temp_x[len] = tx;
+										temp_y[len] = ty;
+										if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+										{
+											peak = cp_img[ty*x_size + tx];
+											yp = ty;
+											xp = tx;
+										}
+										flux = flux + cp_img[ty*x_size + tx];
+										flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+										cp_img[ty*x_size + tx] = 0;
+										len++;
+									}
+								}
+							}
+						}
+					}
+					num = len;
+				}
+
+				if (len >= paras->area_thres)
+				{
+					if (s_num >= paras->max_source)
+					{
+						std::cout << "Too many source!" << std::endl;
+						break;
+					}
+					for (m = 0; m < len; m++)
+					{
+
+						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak * 0.5) /* to calculate the half light radius */
+						{
+							half_light_area++;
+							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
+						}
+						source_x[len0 + m] = temp_x[m];
+						source_y[len0 + m] = temp_y[m];
+					}
+
+					source_paras[8 * s_num] = len; /* length of source */
+					source_paras[8 * s_num + 1] = yp; /* 'y' of peak of source */
+					source_paras[8 * s_num + 2] = xp; /* 'x' of peak of source */
+					source_paras[8 * s_num + 3] = peak; /* peak value of source */
+					source_paras[8 * s_num + 4] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
+					source_paras[8 * s_num + 5] = flux; /* total flux of source */
+					source_paras[8 * s_num + 6] = half_light_flux; /* half light flux */
+					source_paras[8 * s_num + 7] = flux_sq; /* sum of square of flux of each source pixel */
+					len0 += len;
+					s_num++;
+				}
+			}
+		}
+	}
+	delete[] cp_img;
+	delete[] temp_x;
+	delete[] temp_y;
+	return s_num;
+}
+
+
 int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross)
 {	
 	int elem_unit = 8; // the number of parameters for each source detected 
@@ -1063,6 +1376,115 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	return detect;
 }
 
+int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross)
+{
+	int elem_unit = 8; // the number of parameters for each source detected 
+	int source_num, area = 0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
+	int detect = -1, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
+	int tag_s = 0, tag_e, i, j;
+	float hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
+	int *source_x = new int[pix_num] {};
+	int *source_y = new int[pix_num] {};
+	int *mask = new int[pix_num] {};
+	float *source_para = new float[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
+	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
+	//std::cout << source_num << std::endl;
+	for (i = 0; i < source_num; i++)
+	{
+		// start point of source_y(x) of i'th source
+		if (i > 0)
+		{
+			tag_s += source_para[(i - 1)*elem_unit];
+		}
+		else
+		{
+			tag_s = 0;
+		}
+		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
+		{
+			if (source_y[j] == yc && source_x[j] == xc)
+			{
+				if (source_para[i * elem_unit] > area)
+				{
+					area = source_para[i * elem_unit];
+					detect = i;
+					//std::cout << detect << std::endl;
+				}
+			}
+		}
+		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
+		//std::cout << "PARA  "<<source_para[i * elem_unit + 1]<<" "<< source_para[i * elem_unit + 2]<<" "<< source_para[i*elem_unit] <<" "<<max_distance<< std::endl;
+		if (radius <= max_distance) // if it peaks within 5.5 pixels from the stamp center, it will be indentified as a galaxy
+		{
+			if (source_para[i * elem_unit] > area)
+			{
+				area = source_para[i * elem_unit];
+				detect = i;
+				//std::cout << i << " " << source_para[i * elem_unit] << " " << detect << " " << i << std::endl;
+			}
+		}
+	}
+	tag_s = 0;
+	for (i = 0; i < detect; i++)
+	{
+		tag_s += source_para[i*elem_unit];
+	}
+	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
+	if (detect > -1)
+	{
+		float temp_flux;
+		int area_ext;
+
+		for (i = 0; i < 5; i++)
+		{
+			temp_flux = 0;
+			initialize_arr(mask, pix_num);
+			area_ext = edge_extend(mask, source_y, source_x, tag_s, area, paras, 2 * i + 1);
+			for (j = 0; j < pix_num; j++)
+			{
+				if (mask[j] > 0)
+				{
+					temp_flux += stamp_arr[j];
+				}
+				if (i == 4)
+				{
+					check_mask[j] = mask[j];
+				}
+			}
+			paras->gal_flux_ext[i] = fabs(temp_flux);
+			paras->gal_size_ext[i] = area_ext;
+		}
+
+
+		paras->gal_size = area;
+		paras->gal_py = source_para[detect * elem_unit + 1];
+		paras->gal_px = source_para[detect * elem_unit + 2];
+		paras->gal_peak = source_para[detect * elem_unit + 3];
+		paras->gal_hsize = source_para[detect * elem_unit + 4];
+		paras->gal_flux = source_para[detect * elem_unit + 5];
+		paras->gal_hflux = source_para[detect * elem_unit + 6];
+
+		paras->gal_hlr = sqrt(area / Pi);
+		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
+	}
+	else
+	{
+		for (i = 0; i < 5; i++)
+		{
+			paras->gal_flux_ext[i] = 0;
+			paras->gal_size_ext[i] = 0;
+			paras->gal_flux2_ext[i] = 0;
+		}
+		initialize_para(paras); // set the relative parameters to zero
+	}
+	delete[] source_x;
+	delete[] source_y;
+	delete[] source_para;
+	delete[] mask;
+	return detect;
+}
+
 int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters)
 {
 	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
@@ -1121,7 +1543,8 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 	return pix_len;
 }
 
-void addnoise(double *image, int pixel_num, double sigma)
+
+void addnoise(double *image, const int pixel_num, const double sigma)
 {
 	for (int i = 0; i < pixel_num; i++)
 	{
@@ -1129,7 +1552,16 @@ void addnoise(double *image, int pixel_num, double sigma)
 	}
 }
 
-void initialize_arr(double *in_img, int length)
+void addnoise(float *image, const int pixel_num, const float sigma)
+{
+	for (int i = 0; i < pixel_num; i++)
+	{
+		image[i] = image[i] + gsl_ran_gaussian(rng, sigma);
+	}
+}
+
+
+void initialize_arr(double *in_img, const int length)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
@@ -1137,7 +1569,7 @@ void initialize_arr(double *in_img, int length)
 	}
 }
 
-void initialize_arr(float *in_img, int length)
+void initialize_arr(float *in_img, const int length)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
@@ -1145,7 +1577,7 @@ void initialize_arr(float *in_img, int length)
 	}
 }
 
-void initialize_arr(int *in_img, int length)
+void initialize_arr(int *in_img, const int length)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
@@ -1153,10 +1585,36 @@ void initialize_arr(int *in_img, int length)
 	}
 }
 
-void normalize_arr(double * arr, int size)
+
+void normalize_arr(double * arr,const int size)
 {
 	int i;
 	double peak=0;
+	for (i = 0; i < size*size; i++)
+	{
+		if (arr[i] > peak)
+		{
+			peak = arr[i];
+		}
+	}
+	if (peak != 0)
+	{
+		for (i = 0; i < size*size; i++)
+		{
+			arr[i] = arr[i] / peak;
+		}
+	}
+	else
+	{
+		std::cout << "Divided by ZERO!!!" << std::endl;
+		exit(0);
+	}
+}
+
+void normalize_arr(float * arr, const int size)
+{
+	int i;
+	float peak = 0;
 	for (i = 0; i < size*size; i++)
 	{
 		if (arr[i] > peak)

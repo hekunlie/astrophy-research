@@ -87,6 +87,10 @@ if cut in fourier_idx:
         idx = area_data == 0
         area_data[idx] = 1
         cut_data = flux_data/numpy.sqrt(area_data)/noise_sig
+    elif "flux2" in cut:
+        cut_data = numpy.max(fq_snr_data[:, 0:2], 1)
+    elif "flux_alt" in cut:
+        cut_data = numpy.min(fq_snr_data[:, 0:2], 1)
     else:
         cut_data = fq_snr_data[:, fourier_idx.index(cut)]
 
