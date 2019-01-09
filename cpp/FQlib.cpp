@@ -18,41 +18,6 @@ void write_log(char*filename, char *inform)
 }
 
 
-void read_para(const std::string path, const std::string name, int &para)
-{
-	std::ifstream infile;
-	std::string str, str1, str2, str3;
-	std::stringstream strs;
-	infile.open(path);
-	int f = 0;
-	while (!infile.eof())
-	{
-		str.clear();
-		str1.clear();
-		str2.clear();
-		str3.clear();
-		strs.clear();
-
-		getline(infile, str);
-		strs << str;
-		strs >> str1 >> str2 >> str3;
-
-		if (str1 == name)
-		{
-			para = std::stoi(str3);
-			f = 1;
-			break;
-		}
-	}
-	infile.close();
-	if (f == 0)
-	{	
-		str.clear();
-		str = name + "can not be found!!";
-		std::cout << str << std::endl;
-		exit(0);
-	}
-}
 
 void read_para(const std::string path, const std::string name, double &para)
 {
@@ -84,7 +49,7 @@ void read_para(const std::string path, const std::string name, double &para)
 	if (f == 0)
 	{
 		str.clear();
-		str = name + "can not be found!!";
+		str = name + " can not be found!!";
 		std::cout << str << std::endl;
 		exit(0);
 	}
@@ -120,7 +85,43 @@ void read_para(const std::string path, const std::string name, float &para)
 	if (f == 0)
 	{
 		str.clear();
-		str = name + "can not be found!!";
+		str = name + " can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
+	}
+}
+
+void read_para(const std::string path, const std::string name, int &para)
+{
+	std::ifstream infile;
+	std::string str, str1, str2, str3;
+	std::stringstream strs;
+	infile.open(path);
+	int f = 0;
+	while (!infile.eof())
+	{
+		str.clear();
+		str1.clear();
+		str2.clear();
+		str3.clear();
+		strs.clear();
+
+		getline(infile, str);
+		strs << str;
+		strs >> str1 >> str2 >> str3;
+
+		if (str1 == name)
+		{
+			para = std::stoi(str3);
+			f = 1;
+			break;
+		}
+	}
+	infile.close();
+	if (f == 0)
+	{
+		str.clear();
+		str = name + " can not be found!!";
 		std::cout << str << std::endl;
 		exit(0);
 	}
@@ -312,7 +313,7 @@ void read_fits(const char *filename, int *arr)
 	fits_close_file(fptr, &status);
 }
 
-void write_fits(const char *filename, double *img, const int ysize, const int xsize)
+void write_fits(const char *filename, const double *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;		/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -330,7 +331,7 @@ void write_fits(const char *filename, double *img, const int ysize, const int xs
 	fits_report_error(stderr, status);      /* print out any error messages */	
 }
 
-void write_fits(const char *filename, float *img, const int ysize, const int xsize)
+void write_fits(const char *filename, const float *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;				/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -347,7 +348,7 @@ void write_fits(const char *filename, float *img, const int ysize, const int xsi
 	fits_report_error(stderr, status);      /* print out any error messages */
 }
 
-void write_fits(const char *filename, int *img, const int ysize, const int xsize)
+void write_fits(const char *filename, const int *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -456,7 +457,7 @@ void segment(const int *chip, int *stamp, const int tag, const int size, const i
 /********************************************************************************************************************************************/
 /* operations on the image */
 /********************************************************************************************************************************************/
-void create_points(double *point, int num_p, double radius)
+void create_points(double *point, const int num_p, const double radius)
 {	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
 	int i;
 	double x = 0., y = 0., xm = 0., ym = 0., theta, step;
@@ -484,7 +485,7 @@ void create_points(double *point, int num_p, double radius)
 	}
 }
 
-void create_epoints(double *point, int num_p, double ellip)
+void create_epoints(double *point, const int num_p, const double ellip)
 {
 	int i = 0;
 	double theta, beta, radius, r1, r2, b, y, x;
@@ -506,7 +507,7 @@ void create_epoints(double *point, int num_p, double ellip)
 	}
 }
 
-void create_psf(double*in_img, double scale, int size, int psf)
+void create_psf(double*in_img, const double scale, const int size, const int psf)
 {
 	int i, j;
 	double rs, r1, val, flux_g, flux_m, rd;
@@ -1315,38 +1316,14 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 			}
 		}
 	}
-	tag_s = 0;
-	for (i = 0; i < detect; i++)
-	{
-		tag_s += source_para[i*elem_unit];
-	}
+	//tag_s = 0;
+	//for (i = 0; i < detect; i++)
+	//{
+	//	tag_s += source_para[i*elem_unit];
+	//}
 	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
 	if (detect > -1)
-	{
-		double temp_flux;
-		int area_ext;
-
-		for (i = 0;  i < 5; i++)
-		{
-			temp_flux = 0;
-			initialize_arr(mask, pix_num);
-			area_ext = edge_extend(mask, source_y, source_x, tag_s, area, paras, 2*i+1);
-			for (j = 0; j < pix_num; j++)
-			{
-				if (mask[j] > 0)
-				{
-					temp_flux += stamp_arr[j];
-				}
-				if (i == 4)
-				{
-					check_mask[j] = mask[j];
-				}
-			}
-			paras->gal_flux_ext[i] = fabs(temp_flux);
-			paras->gal_size_ext[i] = area_ext;
-		}
-		
-		
+	{		
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
@@ -1361,12 +1338,6 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	}
 	else
 	{
-		for (i = 0; i < 5; i++)
-		{
-			paras->gal_flux_ext[i] = 0;
-			paras->gal_size_ext[i] = 0;
-			paras->gal_flux2_ext[i] = 0;
-		}
 		initialize_para(paras); // set the relative parameters to zero
 	}
 	delete[] source_x;
@@ -1424,38 +1395,14 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 			}
 		}
 	}
-	tag_s = 0;
-	for (i = 0; i < detect; i++)
-	{
-		tag_s += source_para[i*elem_unit];
-	}
+	//tag_s = 0;
+	//for (i = 0; i < detect; i++)
+	//{
+	//	tag_s += source_para[i*elem_unit];
+	//}
 	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
 	if (detect > -1)
 	{
-		float temp_flux;
-		int area_ext;
-
-		for (i = 0; i < 5; i++)
-		{
-			temp_flux = 0;
-			initialize_arr(mask, pix_num);
-			area_ext = edge_extend(mask, source_y, source_x, tag_s, area, paras, 2 * i + 1);
-			for (j = 0; j < pix_num; j++)
-			{
-				if (mask[j] > 0)
-				{
-					temp_flux += stamp_arr[j];
-				}
-				if (i == 4)
-				{
-					check_mask[j] = mask[j];
-				}
-			}
-			paras->gal_flux_ext[i] = fabs(temp_flux);
-			paras->gal_size_ext[i] = area_ext;
-		}
-
-
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
@@ -1470,12 +1417,6 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 	}
 	else
 	{
-		for (i = 0; i < 5; i++)
-		{
-			paras->gal_flux_ext[i] = 0;
-			paras->gal_size_ext[i] = 0;
-			paras->gal_flux2_ext[i] = 0;
-		}
 		initialize_para(paras); // set the relative parameters to zero
 	}
 	delete[] source_x;
@@ -1490,7 +1431,6 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
 	int *cp_y = new int[size*size]{};
 	int *cp_x = new int[size*size]{};
-	char buffer[150];
 	for (i = source_id; i < source_len+ source_id; i++)
 	{
 		// copy of source coordinates 
@@ -1667,10 +1607,7 @@ void snr_est(const double *image, para *paras, int fit)
 	}
 	noise = sqrt(n*0.25 / ((size - edge)*edge));
 	paras->gal_flux2 = sqrt(image[xc*size + xc]) / noise;
-	for (i = 0; i < 5; i++)
-	{
-		paras->gal_flux2_ext[i] = paras->gal_flux_ext[i] / noise;
-	}
+	paras->gal_flux2_ext[0] = sqrt(image[xc*size + xc]);
 
 	if (fit == 2)
 	{
@@ -1680,6 +1617,9 @@ void snr_est(const double *image, para *paras, int fit)
 		}
 		hyperfit_5(fz, fit_paras, paras);
 		paras->gal_flux_alt = sqrt(pow(10, fit_paras[0]))/ noise;
+		paras->gal_flux2_ext[1] = sqrt(pow(10, fit_paras[0]));
+		paras->gal_flux2_ext[2] = std::max(sqrt(pow(10, fit_paras[0])),paras->gal_flux2_ext[0]);
+		paras->gal_flux2_ext[3] = std::min(sqrt(pow(10, fit_paras[0])), paras->gal_flux2_ext[0]);
 	}
 }
 
@@ -2019,7 +1959,7 @@ void smooth_real(double *image, const double *coeffs, para*paras)//be careful of
 	delete[] temp;
 }
 
-void hyperfit_5(double *data, double *fit_paras, para *paras)
+void hyperfit_5(const double *data, double *fit_paras, para *paras)
 {
 	double temp = 0;
 
@@ -2054,6 +1994,7 @@ void initialize_para(para *paras)
 	paras->gal_snr = 0;
 	paras->gal_osnr = 0;
 }
+
 
 void set_bin(const double *data, const int data_num, double * bins, const int bin_num)
 {
@@ -2114,6 +2055,7 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num)
 	}
 	delete[] data_cp;
 }
+
 
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num)
 {
@@ -2235,6 +2177,7 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 	}
 }
 
+
 void sort_double(double* arr, int size, int order=1)
 {
 	if (order == 1)
@@ -2271,35 +2214,6 @@ void sort_int(int *arr, int size, int order=1)
 	}
 }
 
-int com_double_ascend(const double a, const double b)
-{
-	return a < b;
-}
-
-int com_float_ascend(const float a, const float b)
-{
-	return a<b;
-}
-
-int com_int_ascend(const int a, const int b)
-{
-	return a<b;
-}
-
-int com_double_descend(const double a, const double b)
-{
-	return a>b;
-}
-
-int com_float_descend(const float a, const float b)
-{
-	return a>b;
-}
-
-int com_int_descend(const int a, const int b)
-{
-	return a>b;
-}
 
 void get_time(char *str_time, int length)
 {	

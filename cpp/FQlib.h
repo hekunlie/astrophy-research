@@ -18,7 +18,7 @@
 #include<gsl/gsl_cblas.h>
 #include<hdf5.h>
 #include<stdlib.h>
-#include<algorithm> // sort()
+#include<algorithm> // sort(), std::max()
 #include<functional> // std::less, std::greater..
 
 //#include<mkl.h>
@@ -110,9 +110,9 @@ void write_h5(const char *filename, const char *set_name, const int *arr, const 
 void read_fits(const char *filename, double *arr);
 void read_fits(const char *filename, float *arr);
 void read_fits(const char *filename, int *arr);
-void write_fits(const char *filename, double *img, const int ysize, const int xsize);
-void write_fits(const char *filename, float *img, const int ysize, const int xsize);
-void write_fits(const char *filename, int *img, const int ysize, const int xsize);
+void write_fits(const char *filename, const double *img, const int ysize, const int xsize);
+void write_fits(const char *filename, const float *img, const int ysize, const int xsize);
+void write_fits(const char *filename, const int *img, const int ysize, const int xsize);
 /* read and write the array to  fits file, 
 	be careful with the datetype "TINT" and "LONG_IMG"!!! 
 	the length of INT may be different in different platform,
@@ -146,9 +146,9 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 /********************************************************************************************************************************************/
 /* operations on the image */
 /********************************************************************************************************************************************/
-void create_points(double *point, int num_p, double radius);
-void create_epoints(double *point, int num_p, double ellip);
-void create_psf(double*in_img, double scale, int size, int psf);
+void create_points(double *point, const int num_p, const double radius);
+void create_epoints(double *point, const int num_p, const double ellip);
+void create_psf(double*in_img, const double scale, const int size, const int psf);
 void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
@@ -235,7 +235,7 @@ void smooth(double *image, const double *psf_pow, const double *coeffs, para *pa
 void smooth_real(double*image, const double *coeffs, para *paras);
 /* smooth the image by fitting a polynomial */
 
-void hyperfit_5(double *data, double*fit_para, para *paras);
+void hyperfit_5(const double *data, double*fit_para, para *paras);
 
 
 /********************************************************************************************************************************************/
@@ -262,13 +262,6 @@ void sort_float(float *arr, int size, int order);
 void sort_int(int *arr, int size, int order);
 /* sort the double array according to the order, order =1 for ascend, else for descend*/
 
-int com_double_ascend(const double a, const double b);
-int com_float_ascend(const float a, const float b);
-int com_int_ascend(const int a, const int b);
-int com_double_descend(const  double a, const double b);
-int com_float_descend(const float a, const float b);
-int com_int_descend(const int a, const int b);
-/* the compare function for the qsort() method */
 
 void get_time(char *str_time, int length);
 /* get the current time.

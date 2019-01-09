@@ -31,8 +31,8 @@ path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', 
 total_path, result_path, para_path = path_items
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
-fg1 = shear["arr_0"]
-fg2 = shear["arr_1"]
+fg1 = shear["arr_0"][:,0]
+fg2 = shear["arr_1"][:,0]
 
 
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)
@@ -80,17 +80,17 @@ if cut in fourier_idx:
     fq_snr_data = fq_snr_file["/data"].value
     fq_snr_file.close()
     # it should be
-    detected = fq_snr_data[:, 20] > -1
+    detected = fq_snr_data[:, -1] > -1
     if "snr_ex" in cut:
         flux_data = fq_snr_data[:, fourier_idx.index(cut)-5]
         area_data = fq_snr_data[:, fourier_idx.index(cut)]
         idx = area_data == 0
         area_data[idx] = 1
         cut_data = flux_data/numpy.sqrt(area_data)/noise_sig
-    elif "flux2" in cut:
-        cut_data = numpy.max(fq_snr_data[:, 0:2], 1)
-    elif "flux_alt" in cut:
-        cut_data = numpy.min(fq_snr_data[:, 0:2], 1)
+    # elif "flux2_ex2" in cut:
+    #     cut_data = numpy.max(fq_snr_data[:, 0:2], 1)
+    # elif "flux2_ex1" in cut:
+    #     cut_data = numpy.min(fq_snr_data[:, 0:2], 1)
     else:
         cut_data = fq_snr_data[:, fourier_idx.index(cut)]
 

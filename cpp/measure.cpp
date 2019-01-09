@@ -27,11 +27,11 @@ int main(int argc, char*argv[])
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
-	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 21;
+	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 11;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak=0;
+	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
 
-	int cmd = 0;
+	int cmd = 1;
 
 	read_para(str_paraf_path, str_stampsize, size);
 	read_para(str_paraf_path, str_total_num, total_chips);
@@ -200,40 +200,25 @@ int main(int argc, char*argv[])
 					data[row + j * shear_esti_data_cols + 5] = all_paras.du;
 					data[row + j * shear_esti_data_cols + 6] = all_paras.dv;
 				}
-
+				temp_flux = 0;
+				for (k = 0; k < size*size; k++)
+				{
+					temp_flux += gal[i];
+				}
 				data_s[row_s + j * snr_para_data_cols + 0] = all_paras.gal_flux2;
 				data_s[row_s + j * snr_para_data_cols + 1] = all_paras.gal_flux_alt;
 				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
-				data_s[row_s + j * snr_para_data_cols + 3] = pgal[size/2+size*size/2];//all_paras.gal_osnr;
+				data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
 
 				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];
 				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
 				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];
 				data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
-				data_s[row_s + j * snr_para_data_cols + 8] = all_paras.gal_flux2_ext[4];
+				data_s[row_s + j * snr_para_data_cols + 8] = fabs(temp_flux);
+				data_s[row_s + j * snr_para_data_cols + 9] = -mag[i*stamp_num + j];
+				data_s[row_s + j * snr_para_data_cols + 10] = detect_label;
 
-				data_s[row_s + j * snr_para_data_cols + 9] = all_paras.gal_flux_ext[0];
-				data_s[row_s + j * snr_para_data_cols + 10] = all_paras.gal_flux_ext[1];
-				data_s[row_s + j * snr_para_data_cols + 11] = all_paras.gal_flux_ext[2];
-				data_s[row_s + j * snr_para_data_cols + 12] = all_paras.gal_flux_ext[3];
-				data_s[row_s + j * snr_para_data_cols + 13] = all_paras.gal_flux_ext[4];
-
-				data_s[row_s + j * snr_para_data_cols + 14] = all_paras.gal_size_ext[0];
-				data_s[row_s + j * snr_para_data_cols + 15] = all_paras.gal_size_ext[1];
-				data_s[row_s + j * snr_para_data_cols + 16] = all_paras.gal_size_ext[2];
-				data_s[row_s + j * snr_para_data_cols + 17] = all_paras.gal_size_ext[3];
-				data_s[row_s + j * snr_para_data_cols + 18] = all_paras.gal_size_ext[4];
-
-				data_s[row_s + j * snr_para_data_cols + 19] = mag[i*stamp_num + j];
-				data_s[row_s + j * snr_para_data_cols + 20] = detect_label;
-
-			 }
-			if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
-			{
-				sprintf(chip_path, "!%s%d_%04d_mask_%.2fsig.fits", data_path, shear_id, i, sig_level);
-				write_fits(chip_path, check_img, stamp_nx*size, stamp_nx*size);
-			}
-			
+			 }		
 
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip finish in %.2f sec", myid, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
