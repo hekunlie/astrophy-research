@@ -110,9 +110,9 @@ void write_h5(const char *filename, const char *set_name, const int *arr, const 
 void read_fits(const char *filename, double *arr);
 void read_fits(const char *filename, float *arr);
 void read_fits(const char *filename, int *arr);
-void write_fits(const char *filename, const double *img, const int ysize, const int xsize);
-void write_fits(const char *filename, const float *img, const int ysize, const int xsize);
-void write_fits(const char *filename, const int *img, const int ysize, const int xsize);
+void write_fits(const char *filename, double *img, const int ysize, const int xsize);
+void write_fits(const char *filename, float *img, const int ysize, const int xsize);
+void write_fits(const char *filename, int *img, const int ysize, const int xsize);
 /* read and write the array to  fits file, 
 	be careful with the datetype "TINT" and "LONG_IMG"!!! 
 	the length of INT may be different in different platform,

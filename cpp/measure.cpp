@@ -21,15 +21,15 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/perc/hklee/simu_test/");
-	std::string str_data_path = "/mnt/perc/hklee/simu_test/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test_64/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test_64/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
-	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 11;
+	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 2, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
+	double psf_thres_scale = 2., sig_level = 2.0, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
 
 	int cmd = 1;
 
@@ -47,17 +47,18 @@ int main(int argc, char*argv[])
 	chip_id_e = chip_num * (myid + 1);
 
 	if (0 == myid)
-	{
+	{	
+		std::cout<<data_path<<std::endl;
 		if (0 == cmd)
-		{
+		{	
 			std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << std::endl;
-			std::cout << "Total chip: " << total_chips <<" Stamp size: "<<size <<std::endl;
+			
 		}
 		if (1 == cmd)
-		{
+		{	
 			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << std::endl;
-			std::cout << "Total chip: " << total_chips << " Stamp size: " << size << std::endl;
 		}
+		std::cout << "Total chip: " << total_chips<<"Total cpus: "<<numprocs <<" Stamp size: "<<size <<std::endl;
 		sprintf(log_inform, "RANK: %03d,  thread: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
 		write_log(log_path, log_inform);
 	}
@@ -200,11 +201,7 @@ int main(int argc, char*argv[])
 					data[row + j * shear_esti_data_cols + 5] = all_paras.du;
 					data[row + j * shear_esti_data_cols + 6] = all_paras.dv;
 				}
-				temp_flux = 0;
-				for (k = 0; k < size*size; k++)
-				{
-					temp_flux += gal[i];
-				}
+
 				data_s[row_s + j * snr_para_data_cols + 0] = all_paras.gal_flux2;
 				data_s[row_s + j * snr_para_data_cols + 1] = all_paras.gal_flux_alt;
 				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
@@ -214,9 +211,8 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
 				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];
 				data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
-				data_s[row_s + j * snr_para_data_cols + 8] = fabs(temp_flux);
-				data_s[row_s + j * snr_para_data_cols + 9] = -mag[i*stamp_num + j];
-				data_s[row_s + j * snr_para_data_cols + 10] = detect_label;
+				data_s[row_s + j * snr_para_data_cols + 8] = -mag[i*stamp_num + j];
+				data_s[row_s + j * snr_para_data_cols + 9] = detect_label;
 
 			 }		
 

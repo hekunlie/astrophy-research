@@ -31,8 +31,12 @@ path_items = tool_box.config(env_path, ['get','get','get'], [['selection_bias', 
 total_path, result_path, para_path = path_items
 shear_path = para_path + "shear.npz"
 shear = numpy.load(shear_path)
-fg1 = shear["arr_0"][:,0]
-fg2 = shear["arr_1"][:,0]
+fg1 = shear["arr_0"]
+if len(fg1.shape) == 2:
+    fg1 = fg1[:,0]
+    fg2 = shear["arr_1"][:,0]
+else:
+    fg2 = shear["arr_1"]
 
 
 sex_path = total_path + "result/data/%s/sex_%d.npz"%(filter_name,rank)

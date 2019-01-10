@@ -8,7 +8,7 @@ resolution_factor = [0.7]#, 0.33, 0.33]
 # cuts = ["flux2", "flux_alt", "mag_auto", "snr_auto", 'sex_snr']
 
 filter_name = ["sex2_1.5", "sex2_2"]
-cuts = ["flux2", "flux_alt", "flux2_ex1"]
+cuts = ["flux2", "flux_alt", "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4","flux2_ex5"]
 #cuts = ["flux2_ex2", "flux2_ex3", "flux2_ex4"]
 #cuts = ["flux2_ex5", "flux_ex1"]#, "flux2_ex4"]
 # cuts = ["flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]

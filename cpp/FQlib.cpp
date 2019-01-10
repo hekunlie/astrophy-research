@@ -313,7 +313,7 @@ void read_fits(const char *filename, int *arr)
 	fits_close_file(fptr, &status);
 }
 
-void write_fits(const char *filename, const double *img, const int ysize, const int xsize)
+void write_fits(const char *filename, double *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;		/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -331,7 +331,7 @@ void write_fits(const char *filename, const double *img, const int ysize, const 
 	fits_report_error(stderr, status);      /* print out any error messages */	
 }
 
-void write_fits(const char *filename, const float *img, const int ysize, const int xsize)
+void write_fits(const char *filename, float *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;				/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -348,7 +348,7 @@ void write_fits(const char *filename, const float *img, const int ysize, const i
 	fits_report_error(stderr, status);      /* print out any error messages */
 }
 
-void write_fits(const char *filename, const int *img, const int ysize, const int xsize)
+void write_fits(const char *filename, int *img, const int ysize, const int xsize)
 {
 	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
 	int status, ii, jj;
@@ -1618,8 +1618,8 @@ void snr_est(const double *image, para *paras, int fit)
 		hyperfit_5(fz, fit_paras, paras);
 		paras->gal_flux_alt = sqrt(pow(10, fit_paras[0]))/ noise;
 		paras->gal_flux2_ext[1] = sqrt(pow(10, fit_paras[0]));
-		paras->gal_flux2_ext[2] = std::max(sqrt(pow(10, fit_paras[0])),paras->gal_flux2_ext[0]);
-		paras->gal_flux2_ext[3] = std::min(sqrt(pow(10, fit_paras[0])), paras->gal_flux2_ext[0]);
+		paras->gal_flux2_ext[2] = std::max(paras->gal_flux2_ext[1],paras->gal_flux2_ext[0]);
+		paras->gal_flux2_ext[3] = std::max(paras->gal_flux2, paras->gal_flux_alt);
 	}
 }
 
