@@ -1079,6 +1079,14 @@ def ellip_plot(ellip, coordi, lent, width, title, mode=1,path=None,show=True):
 ################################################################
 # the general methods
 ################################################################
+def plt_lines(plt_line):
+    """
+    :param plt_line: int
+    :return: the linestyle for matplotlib
+    """
+    linestyles = [(0, ()),  (0, (1, 1)),  (0, (5, 1)), (0, (3, 1, 1, 1)), (0, (5, 3, 3, 3))]
+    return linestyles[divmod(plt_line, len(linestyles))[1]]
+
 def allot(allot_list, fractions):
     """
     allot the "target mission list" to CPUs

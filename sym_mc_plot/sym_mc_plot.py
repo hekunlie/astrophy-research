@@ -44,6 +44,7 @@ para_h5_path = para_path + "para_%d.hdf5"%rank
 para_h5 = h5py.File(para_h5_path,"r")
 mag_true = para_h5["/mag"].value
 para_h5.close()
+
 # rfactor_path = result_path + "data/resolution_factor_%d.npz"%rank
 
 if rank == 0:
@@ -73,10 +74,9 @@ DE2 = MN - MU
 cuts_num = 10
 
 fourier_idx = ["flux2", "flux_alt", "flux", "snr",
-               "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5",
-               "flux_ex1", "flux_ex2", "flux_ex3", "flux_ex4", "flux_ex5",
-               "snr_ex1", "snr_ex2", "snr_ex3", "snr_ex4", "snr_ex5"]
+               "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
 sex_idx = ["sex_snr", "sex_area", "snr_auto",  "mag_auto"]
+
 if cut in fourier_idx:
 
     fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
@@ -229,11 +229,11 @@ else:
 
     ax4 = fig.add_subplot(224)
     try:
-        detect_num = detected.sum()
-        ch = numpy.random.choice([i for i in range(detect_num)], 10000, replace=False)
-        ax4.scatter(mag_true[detected][ch], cut_data[detected][ch], s=0.1)
-        ax4.set_xlabel("TRUE MAG")
-        ax4.set_ylabel(cut)
+        # detect_num = detected.sum()
+        # ch = numpy.random.choice([i for i in range(detect_num)], 10000, replace=False)
+        num, bins = ax4.hist(mag_true, 100, alpha=0.8, label="True MAG")[:2]
+        ax4.hist(mag_true[detected], bins, alpha=0.8, label="Detected")
+        ax4.legend()
     except:
         print("PLOT FAILED")
     finally:

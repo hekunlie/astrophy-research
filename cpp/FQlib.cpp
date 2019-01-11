@@ -1618,7 +1618,7 @@ void snr_est(const double *image, para *paras, int fit)
 		hyperfit_5(fz, fit_paras, paras);
 		paras->gal_flux_alt = sqrt(pow(10, fit_paras[0]))/ noise;
 		paras->gal_flux2_ext[1] = sqrt(pow(10, fit_paras[0]));
-		paras->gal_flux2_ext[2] = std::max(paras->gal_flux2_ext[1],paras->gal_flux2_ext[0]);
+		paras->gal_flux2_ext[2] = std::max(paras->gal_flux2_ext[1], paras->gal_flux2_ext[0]);
 		paras->gal_flux2_ext[3] = std::max(paras->gal_flux2, paras->gal_flux_alt);
 	}
 }
