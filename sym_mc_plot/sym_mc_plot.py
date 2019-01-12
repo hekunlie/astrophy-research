@@ -91,10 +91,6 @@ if cut in fourier_idx:
         idx = area_data == 0
         area_data[idx] = 1
         cut_data = flux_data/numpy.sqrt(area_data)/noise_sig
-    # elif "flux2_ex2" in cut:
-    #     cut_data = numpy.max(fq_snr_data[:, 0:2], 1)
-    # elif "flux2_ex1" in cut:
-    #     cut_data = numpy.min(fq_snr_data[:, 0:2], 1)
     else:
         cut_data = fq_snr_data[:, fourier_idx.index(cut)]
 
@@ -110,6 +106,8 @@ elif cut in sex_idx:
         cut_data = flux_auto / flux_err
     else:
         cut_data = sex_data[:, sex_idx.index(cut)]
+    if "mag" in cut:
+        cut_data = -cut_data
 
 cut_data_sort = numpy.sort(cut_data[detected])
 cut_data_step = int(len(cut_data_sort) / cuts_num)
