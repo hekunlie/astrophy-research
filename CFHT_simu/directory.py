@@ -27,9 +27,13 @@ if cmd == "cut":
     for sub_filter in sex_filters:
         for sub_nm in cut_nm:
             sub_path = cut_path + "sym/%s/%s/"%(sub_filter, sub_nm)
-            if "sex2_" in sub_filter or ("flux2_ex" not in sub_nm):
+            if "sex2_" in sub_filter:
                 os.makedirs(sub_path)
                 print("Build: %s"%sub_path)
+            else:
+                if "mag" in sub_nm or "sex" in sub_nm or "snr_" in sub_nm:
+                    os.makedirs(sub_path)
+                    print("Build: %s" % sub_path)
 
 
 if cmd == "sex":

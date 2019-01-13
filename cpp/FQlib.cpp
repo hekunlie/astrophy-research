@@ -18,7 +18,6 @@ void write_log(char*filename, char *inform)
 }
 
 
-
 void read_para(const std::string path, const std::string name, double &para)
 {
 	std::ifstream infile;
@@ -1742,6 +1741,54 @@ void shear_est(double *gal_img, double *psf_img, para *paras)
 
 
 /********************************************************************************************************************************************/
+/* random */
+/********************************************************************************************************************************************/
+
+double rand_gauss(double sigma, double mean)
+{
+	double gauss_vars;
+	gauss_vars = gsl_ran_gaussian(rng, sigma) + mean;
+	return gauss_vars;
+}
+
+double rand_uniform(double start, double end)
+{
+	double unif_vars;
+	unif_vars = gsl_ran_flat(rng, start, end);
+	return unif_vars;
+}
+
+void rand_shuffle(double *seq, int length)
+{
+	int rand_i;
+	for (int i = 0; i < length-1; i++)
+	{	
+		rand_i = int(rand_uniform(0, length));
+		std::swap(seq[i], seq[rand_i]);
+	}
+}
+
+void rand_shuffle(float *seq, int length)
+{
+	int rand_i;
+	for (int i = 0; i < length-1; i++)
+	{
+		rand_i = int(rand_uniform(0, length));
+		std::swap(seq[i], seq[rand_i]);
+	}
+}
+
+void rand_shuffle(int *seq, int length)
+{
+	int rand_i;
+	for (int i = 0; i < length-1; i++)
+	{
+		rand_i = int(rand_uniform(0, length));
+		std::swap(seq[i], seq[rand_i]);
+	}
+}
+
+/********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
 void smooth(double *image,  const double *coeffs, para*paras)//be careful of the memset()
@@ -1972,6 +2019,36 @@ void hyperfit_5(const double *data, double *fit_paras, para *paras)
 		}
 		fit_paras[i] = temp;
 	}
+}
+
+void poly_fit1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
+{
+	double chi, c0, c1, cov00, cov01, cov11;
+	if (1 == weight)
+	{
+		double *inv_cov = new double[data_num];
+		for (int i = 0; i < data_num; i++)
+		{
+			if (0 == fx_err[i])
+			{
+				inv_cov[i] = 1;
+			}
+			else
+			{
+				inv_cov[i] = 1. / fx_err[i] / fx_err[i];
+			}
+		}
+		gsl_fit_wlinear(x, 1, inv_cov,1,fx,1,data_num,&c0,&c1,&cov00,&cov01,&cov11,&chi);
+		delete[] inv_cov;
+	}
+	else
+	{
+		gsl_fit_linear(x, 1, fx, 1, data_num, &c0, &c1, &cov00, &cov01, &cov11, &chi);
+	}
+	coeffs[0] = c0;
+	coeffs[1] = cov00;
+	coeffs[0] = c1;
+	coeffs[1] = cov11;
 }
 
 

@@ -506,9 +506,9 @@ def data_fit(x_data, y_data, y_err):
     C = diag[sig1^2, sig2^2, sig3^2, .....]
     the inverse of C is used as weight of data
     X = [A.T*C^(-1)*A]^(-1) * [A.T*C^(-1) *Y]
-    :param x_data:
-    :param y_data:
-    :param y_err:
+    :param x_data:(n,) or (n,1) numpy array
+    :param y_data:(n,) or (n,1) numpy array
+    :param y_err:(n,) or (n,1) numpy array
     :return:
     """
     A1 = numpy.column_stack((numpy.ones_like(x_data.T), x_data.T))

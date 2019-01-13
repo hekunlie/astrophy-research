@@ -1,4 +1,6 @@
-﻿#ifndef FQLIB_H
+﻿// please complie it with C++11 standard(2011)
+
+#ifndef FQLIB_H
 #define FQLIB_H
 
 #pragma once
@@ -16,23 +18,13 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
+#include<gsl/gsl_fit.h>
 #include<hdf5.h>
 #include<stdlib.h>
 #include<algorithm> // sort(), std::max()
 #include<functional> // std::less, std::greater..
 
-//#include<mkl.h>
 
-#define PRECISION
-#ifdef  PRECISION
-typedef double DATA_TYPE;
-#define  IMG_PRE DOUBLE_IMG
-#define  T_IMG TDOUBLE
-#else
-typedef float DATA_TYPE;
-#define IMG_PRE FLOAT_IMG
-#define T_IMG TFLOAT
-#endif 
 struct para
 {
 	int psf_size, psf_px, psf_py;
@@ -222,6 +214,38 @@ void snr_est(const double *image, para *paras, int fit);
 */
 
 /********************************************************************************************************************************************/
+/* random */
+/********************************************************************************************************************************************/
+
+double rand_gauss(double sigma, double mean);
+/* return a double from the normal distribution with sigma and mean. 
+*/
+
+double rand_uniform(double start, double end);
+/* return a double, [ start, end ), with a unifrom distribution.
+*/
+
+void rand_shuffle(double *seq, int length);
+void rand_shuffle(float *seq, int length);
+void rand_shuffle(int *seq, int length);
+/* 	shuffle the value of the elements for choosing elements without repeating.
+	then one can choose arbitrary elements from the disordered array.
+	
+	seq: array
+	length: the length of the array
+	
+	i.e.  seq contains value in [a,b], then one can shuffle it with this method,
+		  and choose n-elements from it as the random-chosen labels of other array.
+		  
+		  rand_shuffle(seq, length);
+		  for(i=0;i<..;i++)
+		  {	....
+			some_method(array[seq[i]]);
+			....
+		  }
+*/
+
+/********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
 void smooth(double *image, const double *coeffs, para *paras);
@@ -237,6 +261,26 @@ void smooth_real(double*image, const double *coeffs, para *paras);
 
 void hyperfit_5(const double *data, double*fit_para, para *paras);
 
+void poly_fit1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
+void poly_fit1d(const float *x, const float *fx, const float *fx_err, const int data_num, float *coeffs, int weight);
+/* polynomial fitting by GSL
+	Y = c + m*X
+	x: array, coordinates
+	fx: array, measured values
+	fx_err: array, uncertainties, of which the reciprocal will be the weights of data points.
+	data_num: the number of data points
+	coeffs: array[4], [c, sig_c, m, sig_m]. 
+	weight: 1 for weighted version, others for fitting directly without weigths
+*/
+
+void poly_fit2d(const double *x, const double *y, const double *fxy, const int data_num, double *coeffs);
+void poly_fit2d(const float *x, const float *y, const float *fxy, const int data_num, float *coeffs);
+/* polynomial fitting 
+*/
+
+void background_fit(const double *arr, const int size_x, const int size_y);
+/* fit the stand deviation of background noise of the a chip
+*/
 
 /********************************************************************************************************************************************/
 /* general methods */
