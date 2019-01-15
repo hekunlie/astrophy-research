@@ -207,9 +207,9 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
 				data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
 
-				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];
-				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];
-				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];
+				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0]/size/gal_noise_sig;//P(k=0)
+				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1]/size/gal_noise_sig;//P(k=0)_fit
+				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2]/size/gal_noise_sig;//MAX(P(k=0), P(k=0)_fit)
 				data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
 				data_s[row_s + j * snr_para_data_cols + 8] = -mag[i*stamp_num + j];
 				data_s[row_s + j * snr_para_data_cols + 9] = detect_label;

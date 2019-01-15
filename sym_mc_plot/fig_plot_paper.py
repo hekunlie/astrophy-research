@@ -15,37 +15,87 @@ fonts = 20
 xy_lb_size = 18
 legend_size = fonts - 4
 axis_linewidth = 1.2
-
+plt_line_width = 2
+cap_size = 5
 xticks = mtick.FormatStrFormatter(fmt)
-
-mag = tool_box.mag_generator(5000, 19, 25)
-radii = tool_box.radii_from_mags(mag, 0, 5)
-
 fig = plt.figure(figsize=figs)
 ax = fig.add_subplot(111)
 ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
 for axis in ["bottom", "left", "top", "right"]:
+    # the line width of the frame
     ax.spines[axis].set_linewidth(axis_linewidth)
-ax.xaxis.set_tick_params(which="both",direction="in",length=8, width=axis_linewidth)
-ax.yaxis.set_tick_params(which="major",direction="in",length=8, width=axis_linewidth)
-ax.yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linewidth)
+ax.xaxis.set_tick_params(which="both",direction="in",length=6, width=axis_linewidth)
+data_path = "E:\works\selection_bias\data_for_paper\galsim\\faint_23-24.8_64x64_galsim_2\sym/sex2_1.5/"
+data_path = data_path.replace("\\","/")
+names = ["P${(k=0)}$", "MAG_AUTO", "MAG$_{true}$", "SNR", "SNR_AUTO"]
+files = ["flux2_ex1","mag_auto", "flux2_ex5","sex_snr","snr_auto"]
 
+ch_num = 7
+cuts_num = 10
+x_coord = [i * cuts_num for i in range(ch_num)]
+ch = [i for i in range(ch_num)]
 
-ax.scatter(mag,radii, s=3, color="black")
-ax.set_ylim(0.05, 3)
-x1, x2 = ax.set_xlim(18.9,25.1)
-ax.plot([x1,x2],[0.187, 0.187], color="red",linestyle="--")
-
-ax.set_yscale("log")
-formattor = ScalarFormatter()
-formattor.set_scientific(False)
-ax.set_yticks([0.1, 1])
-ax.set_yticklabels([r"0.1", r"1"])
-ax.yaxis.set_major_formatter(formattor)
-ax.set_xlabel("Magnitude",fontsize=xy_lb_size)
-ax.set_ylabel("Scale length (arcsec)",fontsize=xy_lb_size)
-plt.savefig("E:/works/PICS/mag_radius.png",bbox_inches='tight')
+for i in range(len(files)):
+    data = numpy.load(data_path+files[i]+"/total.npz")
+    mc1 = data['arr_0'][:, ch]
+    mc2 = data['arr_1'][:, ch]
+    if i == 2:
+        line_style ="-"
+    else:
+        line_style = "-"
+    # m1
+    ax.errorbar(x_coord, 100*(mc1[0] - 1), 100*mc1[1], c="C%d"%i,linewidth=plt_line_width,
+                capsize=cap_size, label=names[i], marker="s")
+    # m2
+    # ax.errorbar(x_coord, 100*(mc2[0] - 1), 100*mc2[1], c="C%d"%i,linewidth=plt_line_width,
+    #             capsize=cap_size, label=names[i], marker="s")
+    # c1
+    # ax.errorbar(x_coord, 10000*mc1[2], 10000*mc1[3], c="C%d"%i,linewidth=plt_line_width,
+    #             capsize=cap_size, label=names[i], marker="s", linestyle=line_style)
+    # c2
+    # ax.errorbar(x_coord, 10000*mc2[2], 10000*mc2[3], c="C%d"%i,linewidth=plt_line_width,
+    #             capsize=cap_size, label=names[i], marker="s")
+xs = ax.set_xlim()
+ys = ax.set_ylim()
+ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
+ax.set_xlim(xs[0], xs[1])
+ax.set_ylim(-2.3, ys[1]+0.1)
+ax.xaxis.set_major_formatter(xticks)
+ax.legend(ncol=2,fontsize=legend_size-2)
+ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)
+ax.set_ylabel("m$_1 \\times 10^2$",fontsize=xy_lb_size)
+plt.savefig(data_path+"m1_galsim.pdf",bbox_inches='tight')
 plt.show()
+
+# # mag vs radius
+# mag = tool_box.mag_generator(5000, 19, 25)
+# radii = tool_box.radii_from_mags(mag, 0, 5)
+#
+# fig = plt.figure(figsize=figs)
+# ax = fig.add_subplot(111)
+# ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+# for axis in ["bottom", "left", "top", "right"]:
+#     ax.spines[axis].set_linewidth(axis_linewidth)
+# ax.xaxis.set_tick_params(which="both",direction="in",length=8, width=axis_linewidth)
+# ax.yaxis.set_tick_params(which="major",direction="in",length=8, width=axis_linewidth)
+# ax.yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linewidth)
+#
+#
+# ax.scatter(mag,radii, s=3, color="black")
+# ax.set_ylim(0.05, 3)
+# x1, x2 = ax.set_xlim(18.9,25.1)
+# ax.plot([x1,x2],[0.187, 0.187], color="red",linestyle="--")
+#
+# ax.set_yscale("log")
+# formattor = ScalarFormatter()
+# formattor.set_scientific(False)
+# ax.set_yticks([0.1, 1])
+# ax.set_yticklabels([r"0.1", r"1"])
+# ax.yaxis.set_major_formatter(formattor)
+# ax.set_xlabel("Magnitude",fontsize=xy_lb_size)
+# ax.set_ylabel("Scale length (arcsec)",fontsize=xy_lb_size)
+# plt.savefig("E:/works/PICS/mag_radius.png",bbox_inches='tight')
+# plt.show()
 
 
 
