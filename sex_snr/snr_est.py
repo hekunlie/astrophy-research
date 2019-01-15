@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use('Agg')
 import os
-my_home = os.popen("echo $HOME").readlines()[0][:-1]
+my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
 path.append('%s/work/fourier_quad/'%my_home)
 from subprocess import Popen

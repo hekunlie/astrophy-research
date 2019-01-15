@@ -145,7 +145,7 @@ int main(int argc, char*argv[])
 			{
 				t1 = clock();
 
-				seed = myid * i + shear_id + 90000+i+temp_s;
+				seed = myid * i + shear_id + 190000+i+temp_s;
 				temp_s++;
 				gsl_rng_initialize(seed + i);
 
