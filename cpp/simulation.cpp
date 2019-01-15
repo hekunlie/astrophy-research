@@ -26,14 +26,14 @@ int main(int argc, char*argv[])
 		char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 		char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 		
-		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");
-		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/";
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64_bright/");
+		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64_bright/";
 		std::string str_paraf_path = str_data_path + "parameters/para.ini";
 		std::string str_shear_path = str_data_path + "parameters/shear.dat";
 		sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 		
-		int num_p = 100, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
-		int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 11;		
+		int num_p = 50, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
+		int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;		
 		int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2, temp_s=myid, detect_label;
 		double max_radius=9, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
 		int i, j, k, sss1, sss2;
@@ -43,7 +43,7 @@ int main(int argc, char*argv[])
 		{
 			for (i = 0; i < numprocs; i++)
 			{
-				sprintf(finish_path, "/home/hkli/work/test/job/pts/finish_%d.dat", i);
+				sprintf(finish_path, "/home/hkli/work/test/job/ptsb/finish_%d.dat", i);
 				if (remove(finish_path))
 				{
 					std::cout << "REMOVE: " << finish_path << std::endl;
@@ -250,7 +250,7 @@ int main(int argc, char*argv[])
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		sprintf(log_path, "/home/hkli/work/test/pts/job/finish_%d.dat", myid);
+		sprintf(log_path, "/home/hkli/work/test/ptsb/job/finish_%d.dat", myid);
 		write_log(log_path, log_path);
 
 		if (0 == myid)

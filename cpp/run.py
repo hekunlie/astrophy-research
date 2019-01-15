@@ -3,10 +3,10 @@ import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 import numpy
 
-num = 120
+num = 50
 a = numpy.zeros((num, 1))
 
-sources = ["dimmerm3"]
+sources = ["ptsb"]
 
 for source in sources:
     while True:
@@ -20,6 +20,8 @@ for source in sources:
     run = Popen(cmd, shell=True)
     run.wait()
 
-    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_2"%(my_home, source)
+    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_2.0"%(my_home, source)
     run = Popen(cmd, shell=True)
     run.wait()
+
+numpy.savetxt("/home/hkli/work/selection_bias/sym_mc_plot/finish.dat",a)
