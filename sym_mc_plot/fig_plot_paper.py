@@ -25,7 +25,7 @@ for axis in ["bottom", "left", "top", "right"]:
     # the line width of the frame
     ax.spines[axis].set_linewidth(axis_linewidth)
 ax.xaxis.set_tick_params(which="both",direction="in",length=6, width=axis_linewidth)
-data_path = "E:\works\selection_bias\data_for_paper\galsim\\faint_23-24.8_64x64_galsim_2\sym/sex2_1.5/"
+data_path = "E:\works\selection_bias\data_for_paper\point\\100_points_1\sym/sex2_1.5/"
 data_path = data_path.replace("\\","/")
 names = ["P${(k=0)}$", "MAG_AUTO", "MAG$_{true}$", "SNR", "SNR_AUTO"]
 files = ["flux2_ex1","mag_auto", "flux2_ex5","sex_snr","snr_auto"]
@@ -44,14 +44,14 @@ for i in range(len(files)):
     else:
         line_style = "-"
     # m1
-    ax.errorbar(x_coord, 100*(mc1[0] - 1), 100*mc1[1], c="C%d"%i,linewidth=plt_line_width,
-                capsize=cap_size, label=names[i], marker="s")
+    # ax.errorbar(x_coord, 100*(mc1[0] - 1), 100*mc1[1], c="C%d"%i,linewidth=plt_line_width,
+    #             capsize=cap_size, label=names[i], marker="s")
     # m2
     # ax.errorbar(x_coord, 100*(mc2[0] - 1), 100*mc2[1], c="C%d"%i,linewidth=plt_line_width,
     #             capsize=cap_size, label=names[i], marker="s")
     # c1
-    # ax.errorbar(x_coord, 10000*mc1[2], 10000*mc1[3], c="C%d"%i,linewidth=plt_line_width,
-    #             capsize=cap_size, label=names[i], marker="s", linestyle=line_style)
+    ax.errorbar(x_coord, 10000*mc1[2], 10000*mc1[3], c="C%d"%i,linewidth=plt_line_width,
+                capsize=cap_size, label=names[i], marker="s", linestyle=line_style)
     # c2
     # ax.errorbar(x_coord, 10000*mc2[2], 10000*mc2[3], c="C%d"%i,linewidth=plt_line_width,
     #             capsize=cap_size, label=names[i], marker="s")
@@ -59,12 +59,12 @@ xs = ax.set_xlim()
 ys = ax.set_ylim()
 ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
 ax.set_xlim(xs[0], xs[1])
-ax.set_ylim(-2.3, ys[1]+0.1)
+ax.set_ylim(-1.5, ys[1]+0.1)
 ax.xaxis.set_major_formatter(xticks)
 ax.legend(ncol=2,fontsize=legend_size-2)
 ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)
-ax.set_ylabel("m$_1 \\times 10^2$",fontsize=xy_lb_size)
-plt.savefig(data_path+"m1_galsim.pdf",bbox_inches='tight')
+ax.set_ylabel("c$_1 \\times 10^4$",fontsize=xy_lb_size)
+plt.savefig(data_path+"c1_pts.pdf",bbox_inches='tight')
 plt.show()
 
 # # mag vs radius

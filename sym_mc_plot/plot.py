@@ -17,7 +17,7 @@ lenged_size = fonts - 10
 axis_linewidth = 1.2
 cap_size = 5
 line_w = 2
-total_path = "E:\works\selection_bias\data_for_paper\galsim\\bright_20-23.5_48x48_galsim/sym/"
+total_path = "E:\works\selection_bias\data_for_paper\point\cuts/sym/"
 total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto","snr_auto"]
@@ -89,7 +89,7 @@ y_ticks = [numpy.arange(-0.004, 0.0021, 0.002),
            numpy.arange(-0.004, 0.0021, 0.002)]
 
 sig = "2"
-mc_plot = 'm'
+mc_plot = 'c'
 lim = 0
 if mc_plot == "m":
     plot_tag = 0
