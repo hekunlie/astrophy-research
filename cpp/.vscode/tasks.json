@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": 
+    [
+        {
+            "label": "build",//任务名，和lanuch.json中的"preLaunchTask":"build"一致
+            "type": "shell",
+            "command": "g++",
+            "args":["-g","${workspaceRoot}/${fileBasenameNoExtension}.cpp","-o","${fileBasenameNoExtension}.out"],//要编译的文件mian_test.cpp,${workspaceRoot}表示vscode所打开的工作目录
+            "problemMatcher":
+            {
+                "owner":"cpp",
+                "fileLocation":["relative","${workspaceRoot}"],
+                "pattern":
+                {
+                    "regexp": "^([^\\\\s].*)\\\\((\\\\d+,\\\\d+)\\\\):\\\\s*(.*)$",
+                    "file": 1,
+                    "line":2,
+                    "column":3,
+                    "severity": 4,
+                    "location": 2,
+                    "message": 5
+                }
+            }
+        }
+ 
+    ]
+
+}
