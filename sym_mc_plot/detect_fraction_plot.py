@@ -63,9 +63,24 @@ scale_s = numpy.load(total_path+"result/cuts/cache_sex_snr.npz")["arr_1"][0]
 mag = s_data[:, 3]
 scale_m = numpy.load(total_path+"result/cuts/cache_mag_auto.npz")["arr_1"][0]
 
+selections = [[pk0, scale_p], [snr_auto, scale_sa], [snr, scale_s], [mag, scale_m]]
+
+
 num, bins = ax.hist(mag_t, 60, label="TOTAL SAMPLE")[:2]
 ax.hist(mag_t[detect_f], bins, label="Fourier Quad")
 ax.hist(mag_t[detect_s], bins, label="SExtractor")
+xs = ax.set_xlim()
+ys = ax.set_ylim()
 
+for i in range(len(selections)):
+    if i == 0:
+        idx = detect_f
+    else:
+        idx = detect_s
+    for j in range(2):
+        cut_s = selections[i][1][4+j*3]
+        tag = numpy.where(cut_s == selections[i][0][idx])[0]
+        mag_refer = mag_t[idx][tag]
+        ax.plot()
 
 
