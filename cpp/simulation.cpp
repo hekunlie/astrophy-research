@@ -250,7 +250,7 @@ int main(int argc, char*argv[])
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		sprintf(log_path, "/home/hkli/work/test/ptsb/job/finish_%d.dat", myid);
+		sprintf(log_path, "/home/hkli/work/test/job/ptsb/finish_%d.dat", myid);
 		write_log(log_path, log_path);
 
 		if (0 == myid)
