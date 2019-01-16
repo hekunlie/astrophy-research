@@ -82,17 +82,20 @@ for i in range(len(cut_data)):
     else:
         idx = detect_s
     if i == 3:
-        cut_data_sort = numpy.sort(-cut_data[idx])
+        cut_data_sort = numpy.sort(-cut_data[i][idx])
+        cut_data_step = int(len(cut_data_sort) / cuts_num)
+        cutoff_scalar = [-cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
     else:
-        cut_data_sort = numpy.sort(cut_data[idx])
-    cut_data_step = int(len(cut_data_sort) / cuts_num)
-    cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
-
+        cut_data_sort = numpy.sort(cut_data[i][idx])
+        cut_data_step = int(len(cut_data_sort) / cuts_num)
+        cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
+    print(labels[i], cutoff_scalar)
     for j in range(2):
-        cut_s = selections_scales[i][4+j*3]
-        tag = numpy.where(cut_s == selections[i][idx])
+        cut_s = cutoff_scalar[4+j*3]
+        tag = numpy.where(cut_s == cut_data[i][idx])
         # mag_refer = mag_t[idx][tag]
-        print(labels[i], cut_s, tag)
+
+        # print(labels[i], cut_s, tag)
         # if j == 0:
         #     lines = "-"
         #     lb = labels[i] + " 30%"
