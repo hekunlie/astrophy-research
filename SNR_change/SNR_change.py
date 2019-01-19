@@ -47,7 +47,7 @@ for k in range(len(flux)):
     bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
     disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
     gal = bulge * btr + disk * (1 - btr) #+ ktr*knot
-    gal = gal.shear(e1=-e*1.414/2, e2=-e*1.414/2)#beta=0.*galsim.degrees)
+    gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
     gal_f = gal.withFlux(flux[k])
 
     # rng = galsim.BaseDeviate(12300000)

@@ -6,7 +6,7 @@ import time
 
 
 
-fig_x = 12
+fig_x = 16
 fig_y = fig_x*4/6
 figs = (fig_x*2, fig_x*4/3)
 fig = plt.figure(figsize=figs)
@@ -17,7 +17,7 @@ lenged_size = fonts - 10
 axis_linewidth = 1.2
 cap_size = 5
 line_w = 2
-total_path = "E:\works\selection_bias\data_for_paper\point\cuts/sym/"
+total_path = "F:\works\selection_bias\galsim\\normal_20_24.8_64x64_galsim_3\sym/"
 total_path = total_path.replace("\\","/")
 filter_names = ["sex2_", "sex3_", "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto","snr_auto"]

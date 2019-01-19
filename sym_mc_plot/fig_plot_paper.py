@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.ticker import ScalarFormatter
 from sys import path
-path.append('E:/Github/astrophy-research/my_lib')
+path.append('D:/Github/astrophy-research/my_lib')
 import tool_box
 import h5py
 
