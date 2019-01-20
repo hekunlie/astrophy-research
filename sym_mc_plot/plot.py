@@ -17,71 +17,19 @@ lenged_size = fonts - 10
 axis_linewidth = 1.2
 cap_size = 5
 line_w = 2
-total_path = "F:\works\selection_bias\galsim\\normal_20_24.8_64x64_galsim_3\sym/"
+total_path = "F:\works\selection_bias\point\cuts\sym/"
 total_path = total_path.replace("\\","/")
-filter_names = ["sex2_", "sex3_", "sex4_"]
+filter_names = ["sex2_","sex3_",  "sex4_"]
 select = ["flux2", "sex_snr", "mag_auto","snr_auto"]
 lbs = ["SNR$_F$", "SNR$_S$", "MAG","SNR$_A$"]
-ex_lbs = ["P$_{k=0}$", "P$_{k=0,fit}$", "MAX(P$_{k=0}$, P$_{k=0,fit}$","MAX(SNR$_F$, SNR$_F$-fit", "MAG$_{true}$"]
+ex_lbs = ["P$_{k0}$", "P$_{k0,fit}$", "MAX(P$_{k0}$, P$_{k0,fit}$","MAX(SNR$_F$, SNR$_F$-fit", "MAG$_{true}$"]
 gauss_filter = ["gauss_2.0", "gauss_3.0", "gauss_4.0"]
 xfmt = '%2.f%%'
 xticks = mtick.FormatStrFormatter(xfmt)
 ch = numpy.arange(10)
 
 
-# dimmer c/m
-# xy_lim = [[-0.00005, -0.00005, -0.00005], [0.00005, 0.00005, 0.00005]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002)]
-# xy_lim = [[-0.0045, -0.012, -0.0045], [0.0025, 0.002, 0.0035]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.004, 0.0021, 0.002),
-#            numpy.arange(-0.009, 0.002, 0.003),
-#            numpy.arange(-0.004, 0.0021, 0.002)]
 
-# dimmerm3 c / m
-# xy_lim = [[-0.00006, -0.00006, -0.00006], [0.00005, 0.00005, 0.00005]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002)]
-# xy_lim = [[-0.0045, -0.013, -0.0055], [0.005, 0.0024, 0.006]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.004, 0.0041, 0.002),
-#            numpy.arange(-0.01, 0.002, 0.0025),
-#            numpy.arange(-0.005, 0.0051, 0.0025)]
-# pts 64 m / c
-# xy_lim = [[-0.023, -0.045, -0.035], [0.012, 0.01, 0.023]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.02, 0.011, 0.01),
-#            numpy.arange(-0.04, 0.01, 0.01),
-#            numpy.arange(-0.03, 0.016, 0.015)]
-# xy_lim = [[-0.00022, -0.00022, -0.00022], [0.00015, 0.00015, 0.00015]]
-# text_y = [-0.004,-0.009, -0.004]
-# y_ticks = [numpy.arange(-0.0002, 0.00015, 0.0001),
-#            numpy.arange(-0.0002, 0.00015, 0.0001),
-#            numpy.arange(-0.0002, 0.00015, 0.0001)]
-
-# pts 64_bright m / c
-# xy_lim = [[-0.018, -0.04, -0.018], [0.012, 0.005, 0.012]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.016, 0.011, 0.008),
-#            numpy.arange(-0.03, 0.01, 0.01),
-#            numpy.arange(-0.016, 0.011, 0.008)]
-
-# xy_lim = [[-0.00014, -0.00014, -0.00014], [0.00012, 0.00012, 0.00012]]
-# text_y = [-0.004,-0.009, -0.004]
-# y_ticks = [numpy.arange(-0.0001, 0.00015, 0.00005),
-#            numpy.arange(-0.0001, 0.00015, 0.00005),
-#            numpy.arange(-0.0001, 0.00015, 0.00005)]
-
-# xy_lim = [[-0.00005, -0.00005, -0.00005], [0.00005, 0.00005, 0.00005]]
-# text_y = [-0.004,-0.009,-0.004]
-# y_ticks = [numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002),
-#            numpy.arange(-0.00004, 0.00005, 0.00002)]
 xy_lim = [[-0.008, -0.015, -0.01], [0.0025, 0.002, 0.0035]]
 text_y = [-0.004,-0.009,-0.004]
 y_ticks = [numpy.arange(-0.004, 0.0021, 0.002),
@@ -163,14 +111,14 @@ for row in range(fig_rows):
 
     elif row == 1:
         mcs = [[],[]]
-        for i in range(3):
+        for i in range(len(filter_names)):
             data_path = total_path + filter_names[i] + "%s/%s/total.npz" % (sig,select[row])
             data = numpy.load(data_path)
             mcs[0].append(data['arr_0'])
             mcs[1].append(data['arr_1'])
         for col in range(2):
             ax = fig.add_subplot(fig_rows, 2, 2*row+col+1)
-            for ii in range(3):
+            for ii in range(len(filter_names)):
                 lb = "SNR$_S$: $%s_%d$, %s" % (mc_plot,col+1, gauss_filter[ii])
                 pts_show = mcs[col][ii][:,ch][plot_tag] - stand
                 pts_err = mcs[col][ii][:,ch][plot_tag+1]
@@ -196,14 +144,14 @@ for row in range(fig_rows):
             ax.xaxis.set_tick_params(which="both", direction="in", length=4, width=axis_linewidth)
     elif row == 2:
         mcs = [[],[]]
-        for i in range(3):
+        for i in range(len(filter_names)):
             data_path = total_path + filter_names[i] + "%s/%s/total.npz" % (sig, select[row])
             data = numpy.load(data_path)
             mcs[0].append(data['arr_0'])
             mcs[1].append(data['arr_1'])
         for col in range(2):
             ax = fig.add_subplot(fig_rows, 2, 2*row+col+1)
-            for ii in range(3):
+            for ii in range(len(filter_names)):
                 lb = "MAG: $%s_%d$, %s" % (mc_plot,col+1, gauss_filter[ii])
                 pts_show = mcs[col][ii][:, ch][plot_tag] - stand
                 pts_err = mcs[col][ii][:, ch][plot_tag + 1]
@@ -230,14 +178,14 @@ for row in range(fig_rows):
             ax.set_xticklabels([])
     elif row == 3:
         mcs = [[],[]]
-        for i in range(3):
+        for i in range(len(filter_names)):
             data_path = total_path + filter_names[i] + "%s/%s/total.npz" % (sig, select[row])
             data = numpy.load(data_path)
             mcs[0].append(data['arr_0'])
             mcs[1].append(data['arr_1'])
         for col in range(2):
             ax = fig.add_subplot(fig_rows, 2, 2*row+col+1)
-            for ii in range(3):
+            for ii in range(len(filter_names)):
                 lb = "SNR$_A$: $%s_%d$, %s" % (mc_plot,col+1, gauss_filter[ii])
                 pts_show = mcs[col][ii][:, ch][plot_tag] - stand
                 pts_err = mcs[col][ii][:, ch][plot_tag + 1]

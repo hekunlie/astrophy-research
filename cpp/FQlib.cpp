@@ -1741,7 +1741,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras)
 
 void ellip_est(const double *gal_img, const int size, para*paras)
 {
-	int i, j, sizeh = size/2;
+	int i, j, sizeh = size*0.5;
 	double x, y, y2, xg, q11 =0, q12=0, q22=0;
 	for (i = 0; i < size; i++)
 	{	

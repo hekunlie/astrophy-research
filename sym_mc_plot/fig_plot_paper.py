@@ -25,16 +25,21 @@ for axis in ["bottom", "left", "top", "right"]:
     # the line width of the frame
     ax.spines[axis].set_linewidth(axis_linewidth)
 ax.xaxis.set_tick_params(which="both",direction="in",length=6, width=axis_linewidth)
-data_path = "E:\works\selection_bias\data_for_paper\point\\100_points_1\sym/sex2_1.5/"
+data_path = "F:\works\selection_bias\point\\100_point_20-25\sym\sex2_1.5/"
 data_path = data_path.replace("\\","/")
-names = ["P${(k=0)}$", "MAG_AUTO", "MAG$_{true}$", "SNR", "SNR_AUTO"]
+names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR", "SNR_AUTO"]
 files = ["flux2_ex1","mag_auto", "flux2_ex5","sex_snr","snr_auto"]
 
-ch_num = 7
+ch_num = 9
 cuts_num = 10
 x_coord = [i * cuts_num for i in range(ch_num)]
 ch = [i for i in range(ch_num)]
 
+plt_item = 3
+ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$",
+           "c$_1 \\times 10^4$", "c$_2 \\times 10^4$"]
+mc_item = ["m1", "m2", "c1", "c2"]
+pic_name = mc_item[plt_item] + "_pts_b.pdf"
 for i in range(len(files)):
     data = numpy.load(data_path+files[i]+"/total.npz")
     mc1 = data['arr_0'][:, ch]
@@ -43,28 +48,33 @@ for i in range(len(files)):
         line_style ="-"
     else:
         line_style = "-"
-    # m1
-    # ax.errorbar(x_coord, 100*(mc1[0] - 1), 100*mc1[1], c="C%d"%i,linewidth=plt_line_width,
-    #             capsize=cap_size, label=names[i], marker="s")
-    # m2
-    # ax.errorbar(x_coord, 100*(mc2[0] - 1), 100*mc2[1], c="C%d"%i,linewidth=plt_line_width,
-    #             capsize=cap_size, label=names[i], marker="s")
-    # c1
-    ax.errorbar(x_coord, 10000*mc1[2], 10000*mc1[3], c="C%d"%i,linewidth=plt_line_width,
-                capsize=cap_size, label=names[i], marker="s", linestyle=line_style)
-    # c2
-    # ax.errorbar(x_coord, 10000*mc2[2], 10000*mc2[3], c="C%d"%i,linewidth=plt_line_width,
-    #             capsize=cap_size, label=names[i], marker="s")
+    if plt_item == 0:
+        # m1
+        ax.errorbar(x_coord, 100*(mc1[0] - 1), 100*mc1[1], c="C%d"%i,linewidth=plt_line_width,
+                    capsize=cap_size, label=names[i], marker="s")
+    elif plt_item == 1:
+        # m2
+        ax.errorbar(x_coord, 100*(mc2[0] - 1), 100*mc2[1], c="C%d"%i,linewidth=plt_line_width,
+                    capsize=cap_size, label=names[i], marker="s")
+    elif plt_item == 2:
+        # c1
+        ax.errorbar(x_coord, 10000*mc1[2], 10000*mc1[3], c="C%d"%i,linewidth=plt_line_width,
+                    capsize=cap_size, label=names[i], marker="s", linestyle=line_style)
+    else:
+        # c2
+        ax.errorbar(x_coord, 10000*mc2[2], 10000*mc2[3], c="C%d"%i,linewidth=plt_line_width,
+                    capsize=cap_size, label=names[i], marker="s")
 xs = ax.set_xlim()
 ys = ax.set_ylim()
 ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
 ax.set_xlim(xs[0], xs[1])
-ax.set_ylim(-1.5, ys[1]+0.1)
+ax.set_ylim(ys[0], ys[1]+0.3)
 ax.xaxis.set_major_formatter(xticks)
 ax.legend(ncol=2,fontsize=legend_size-2)
 ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)
-ax.set_ylabel("c$_1 \\times 10^4$",fontsize=xy_lb_size)
-plt.savefig(data_path+"c1_pts.pdf",bbox_inches='tight')
+
+ax.set_ylabel(ylabels[plt_item],fontsize=xy_lb_size)
+plt.savefig(data_path+pic_name,bbox_inches='tight')
 plt.show()
 
 # # mag vs radius

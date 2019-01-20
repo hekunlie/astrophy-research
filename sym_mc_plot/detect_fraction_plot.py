@@ -115,11 +115,6 @@ plt_ys = [0,0]
 plt_xs = [0,0]
 for i in range(4):
     ax = fig.add_subplot(141 + i)
-    ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
-    for axis in ["bottom", "left", "top", "right"]:
-        # the line width of the frame
-        ax.spines[axis].set_linewidth(axis_linewidth)
-    ax.xaxis.set_tick_params(which="both", direction="in", length=6, width=axis_linewidth)
     axs.append(ax)
 
 for i in range(4):
@@ -196,8 +191,15 @@ for i in range(4):
 for i in range(4):
     axs[i].plot([plt_xs[0],plt_xs[1]], [0,0], linestyle="--", c="grey")
     axs[i].set_ylim(plt_ys[0], plt_ys[1])
-    # if i > 0:
-    #     axs[i].set_yticks([])
-plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
+    if i > 0:
+        axs[i].set_yticklabels([])
+    axs[i].tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+    for axis in ["bottom", "left", "top", "right"]:
+        # the line width of the frame
+        axs[i].spines[axis].set_linewidth(axis_linewidth)
+    axs[i].xaxis.set_tick_params(which="both",direction="in",length=8, width=axis_linewidth)
+    axs[i].yaxis.set_tick_params(which="major",direction="in",length=8, width=axis_linewidth)
+    axs[i].yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linewidth)
+# plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
 plt.subplots_adjust(wspace=0)
 plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s_chisq.png"%(argv[1],argv[2], argv[3]),bbox_inches='tight')
