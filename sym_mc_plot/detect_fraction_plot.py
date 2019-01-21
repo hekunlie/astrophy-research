@@ -29,7 +29,7 @@ for axis in ["bottom", "left", "top", "right"]:
     ax.spines[axis].set_linewidth(axis_linewidth)
 ax.xaxis.set_tick_params(which="both",direction="in",length=6, width=axis_linewidth)
 
-total_path = "/mnt/ddnfs/data_users/hkli/simu_test/"
+total_path = "/mnt/ddnfs/data_users/hkli/simu_test1/"
 
 para_path = total_path + "parameters/para_0.hdf5"
 para_h5 = h5py.File(para_path, "r")
