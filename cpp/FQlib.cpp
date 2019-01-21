@@ -533,7 +533,7 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	}
 }
 
-void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf)
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, para *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -587,6 +587,10 @@ void convolve(double *in_img, double * points, double flux, int size, int num_p,
 				}
 			}
 		}
+	}
+	if (0 == flag)
+	{
+		ellip_est(in_img, size, paras);
 	}
 	delete[] points_r;
 }

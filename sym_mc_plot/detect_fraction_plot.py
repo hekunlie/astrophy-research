@@ -43,7 +43,7 @@ def set_bin(data, bin_num, bound_scale):
     return bins
 
 fmt='%2.f%%'
-fig_x = 6
+fig_x = 7
 fig_y = fig_x*4/6
 figs = (fig_x*4, fig_y)
 fonts = 20
@@ -58,7 +58,7 @@ fig = plt.figure(figsize=figs)
 
 source = int(argv[1])
 
-total_path = "/mnt/ddnfs/data_users/hkli/simu_test1/"
+total_path = "/mnt/ddnfs/data_users/hkli/simu_test/"
 
 shear_cata = total_path + "parameters/shear.npz"
 shear = numpy.load(shear_cata)
@@ -87,7 +87,7 @@ detect_f = f_data[:, -1] > -1
 detect_s = s_data[:, 0] > 0
 
 # P(k=0)
-pk0 = f_data[:, 4]
+pk0 = f_data[:, 4]/60/64
 
 # snr_auto
 flux_auto = s_data[:, 1]
@@ -103,9 +103,9 @@ snr = s_data[:, 0]
 mag = s_data[:, 3]
 
 
-cut_data = [pk0, snr_auto, snr, -mag, -mag_t, -mag_t]
+cut_data = [pk0, snr, snr_auto, -mag, -mag_t, -mag_t]
 
-labels = ["P(k=0)", "SNR_AUTO", "SNR", "MAG_AUTO", "MAG_TRUE_f", "MAG_TRUE_s"]
+labels = ["P$_{k0}$", "SNR", "SNR_AUTO", "MAG_AUTO", "MAG_TRUE_f", "MAG_TRUE_s"]
 cuts_num = 10
 # rng = numpy.random.RandomState(123)
 #
@@ -120,17 +120,17 @@ for i in range(4):
 for i in range(4):
 
     xi_st, xi_t = G_bin(e1, bins)
-    axs[i].errorbar(range(len(xi_t)),xi_t, marker="s", label="TOTAL SAMPLE")
+    axs[i].errorbar(range(len(xi_t)),xi_t, marker="s", label="Total")
     if i == 0 or i == 4:
         idx = detect_f
         # ax.hist(e1[detect_f], bins, alpha=0.8, label="Fourier Quad")
         xi_s, xi = G_bin(e1[detect_f], bins)
-        axs[i].errorbar(range(len(xi)), xi, marker="s", label="Fourier Quad")
+        axs[i].errorbar(range(len(xi)), xi, marker="s", label="Detected")
     else:
         idx = detect_s
         # ax.hist(e1[detect_s], bins, alpha=0.8, label="SExtractor")
         xi_s, xi = G_bin(e1[detect_s], bins)
-        axs[i].errorbar(range(len(xi)), xi,  marker="s",label="SExtractor")
+        axs[i].errorbar(range(len(xi)), xi,  marker="s",label="Detected")
 
 
     # ax.scatter(e1[idx][ch], cut_data[i][idx][ch], s=0.05)
@@ -151,13 +151,13 @@ for i in range(4):
     cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
     for j in range(2):
         # continue
+        cut_s = cutoff_scalar[3+j*4]
         if j == 0:
             lines = "-"
-            lb = labels[i] + " 30%"
+            lb = labels[i] + "$\geq$ %.2f (30%%)"%cut_s
         else:
             lines = "--"
-            lb = labels[i] + " 60%"
-        cut_s = cutoff_scalar[3+j*3]
+            lb = labels[i] + "$\geq$ %.2f (70%%)"%cut_s
         idx_scale = cut_data[i] >= cut_s
         xi_s, xi = G_bin(e1[idx&idx_scale], bins)
         print(lb, xi_s)
@@ -186,20 +186,23 @@ for i in range(4):
         plt_xs[1] = xs[1]
     if xs[0] < plt_xs[0]:
         plt_xs[0] = xs[0]
-    axs[i].legend()
+    axs[i].legend(loc="upper left", fontsize=legend_size)
 # ax.set_ylim(ys[0], ys[1])
 for i in range(4):
     axs[i].plot([plt_xs[0],plt_xs[1]], [0,0], linestyle="--", c="grey")
     axs[i].set_ylim(plt_ys[0], plt_ys[1])
     if i > 0:
         axs[i].set_yticklabels([])
+    else:
+        axs[i].set_ylabel("$\chi^2$ of %s"%argv[2], fontsize=fonts)
+    axs[i].set_xlabel("Bin label", fontsize=fonts)
     axs[i].tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
     for axis in ["bottom", "left", "top", "right"]:
         # the line width of the frame
         axs[i].spines[axis].set_linewidth(axis_linewidth)
-    axs[i].xaxis.set_tick_params(which="both",direction="in",length=8, width=axis_linewidth)
-    axs[i].yaxis.set_tick_params(which="major",direction="in",length=8, width=axis_linewidth)
-    axs[i].yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linewidth)
-# plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
+    axs[i].xaxis.set_tick_params(which="both",direction="in",length=5, width=axis_linewidth)
+    axs[i].yaxis.set_tick_params(which="major",direction="in",length=5, width=axis_linewidth)
+    axs[i].yaxis.set_tick_params(which="minor",direction="in",length=5, width=axis_linewidth)
+plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
 plt.subplots_adjust(wspace=0)
 plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s_chisq.png"%(argv[1],argv[2], argv[3]),bbox_inches='tight')

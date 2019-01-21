@@ -142,7 +142,7 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 void create_points(double *point, const int num_p, const double radius);
 void create_epoints(double *point, const int num_p, const double ellip);
 void create_psf(double*in_img, const double scale, const int size, const int psf);
-void convolve(double *in_img, double * points, double flux, int size, int num_p, int rotate, double scale, double g1, double g2, int psf);
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, para *paras);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);
