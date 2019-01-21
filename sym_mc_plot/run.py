@@ -1,10 +1,13 @@
 from subprocess import Popen
 import time
 from sys import argv
+import os
 
-sources = ["pts"]#, "pts", "ptsb"]
-resolution_factor = [0.7]#, 0.33, 0.33]
-
+sources = ["pts"]
+resolution_factor = [0.7]
+while True:
+    if os.path.exists("finish.dat"):
+        break
 if argv[1] == "sex":
     filter_name = ["sex2_1.5", "sex2_2","sex3_1.5","sex3_2", "sex4_1.5","sex4_2"]
     cuts = ["mag_auto", "snr_auto", 'sex_snr']

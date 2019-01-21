@@ -37,6 +37,7 @@ struct para
 	double gal_flux_ext[5];
 	double gal_flux2_ext[5];
 
+	double gal_e1, gal_e2;
 	double n1, n2, dn, du, dv, dp1, dp2;
 	double t1, t2, t3, t4;
 
@@ -205,13 +206,14 @@ void normalize_arr(float *arr, const int size);
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
+void snr_est(const double *image, para *paras, int fit);
+/* if fit=2 for both flux2 and flux_alt estimations
+	else just estimate the flux2
+*/
 void possion_subtraction(double *image_pow, para *paras, int edge);
 void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);
 void shear_est(double *gal_img, double *psf_img, para *paras);
-void snr_est(const double *image, para *paras, int fit);
-/* if fit=2 for both flux2 and flux_alt estimations 
-	else just estimate the flux2 
-*/
+void ellip_est(const double *gal_img, const int size, para*paras);
 
 /********************************************************************************************************************************************/
 /* random */

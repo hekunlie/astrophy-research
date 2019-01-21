@@ -963,12 +963,12 @@ def check_in(interval):
     else:
         return False
 
-def set_bin(data, bin_num):
+def set_bin(data, bin_num, bound_scale):
     temp_data = numpy.sort(data[data>0])[:int(len(data[data>0])*0.99)]
     bin_size = len(temp_data)/bin_num*2
     bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
     bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-    bound = numpy.max(numpy.abs(data)) * 10000.
+    bound = numpy.max(numpy.abs(data)) * bound_scale
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
