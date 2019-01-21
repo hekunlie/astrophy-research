@@ -174,7 +174,7 @@ int main(int argc, char*argv[])
 					create_points(point, num_p, max_radius);
 					flux_i = flux[i*stamp_num + j] / num_p;
 					// for measuring the intrinsic ellipticity
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 0, &all_paras);
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
 
 					initialize_arr(gal, size*size);
 					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);

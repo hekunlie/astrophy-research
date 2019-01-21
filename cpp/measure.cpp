@@ -21,15 +21,15 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m3/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
+	double psf_thres_scale = 2., sig_level = 2.0, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
 
 	int cmd = 1;
 
@@ -71,7 +71,7 @@ int main(int argc, char*argv[])
 	all_paras.detect_thres = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
-	all_paras.max_distance = 5.5; // because the max half light radius of the galsim source is 5.5 pixels
+	all_paras.max_distance = 9; // because the max half light radius of the galsim source is 5.5 pixels
 
 	double *psf = new double[size*size]();
 	double *ppsf = new double[size*size]();

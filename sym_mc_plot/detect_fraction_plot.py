@@ -30,7 +30,7 @@ def G_bin(G_h, bins, ig_num=0):  # checked 2017-7-9!!!
     delta = n1 - n2
     idx = delta < 0
     xi[idx] = -xi[idx]
-    print(num, n1, n2)
+    # print(num, n1, n2)
     return numpy.sum(xi[:len(xi) - ig_num]) * 0.5, xi
 
 def set_bin(data, bin_num, bound_scale):
@@ -48,7 +48,7 @@ fig_y = fig_x*4/6
 figs = (fig_x*4, fig_y)
 fonts = 20
 xy_lb_size = 18
-legend_size = fonts - 4
+legend_size = fonts - 5
 axis_linewidth = 1.2
 plt_line_width = 2
 cap_size = 5
@@ -74,7 +74,7 @@ e1 = para_h5["/%s"%argv[2]].value
 para_h5.close()
 bins = tool_box.set_bin(e1, int(argv[3]), 1.02)
 # bins = numpy.linspace(-0.81,0.81, int(argv[1]))
-print(bins)
+# print(bins)
 fourier_path = total_path + "result/data/data_1.5sig/data_%d.hdf5"%source
 f_h5 = h5py.File(fourier_path, "r")
 f_data = f_h5["/data"].value
@@ -160,7 +160,7 @@ for i in range(4):
             lb = labels[i] + "$\geq$ %.2f (70%%)"%cut_s
         idx_scale = cut_data[i] >= cut_s
         xi_s, xi = G_bin(e1[idx&idx_scale], bins)
-        print(lb, xi_s)
+        # print(lb, xi_s)
         axs[i].errorbar(range(len(xi)), xi,  marker="s", label=lb)
         # tag = numpy.where(cut_s == cut_data[i][idx])
         # mag_t_ch = mag_t[idx][:,0][tag[0].tolist()]
@@ -186,15 +186,19 @@ for i in range(4):
         plt_xs[1] = xs[1]
     if xs[0] < plt_xs[0]:
         plt_xs[0] = xs[0]
-    axs[i].legend(loc="upper left", fontsize=legend_size)
+    axs[i].legend(loc="lower left", fontsize=legend_size)
 # ax.set_ylim(ys[0], ys[1])
 for i in range(4):
     axs[i].plot([plt_xs[0],plt_xs[1]], [0,0], linestyle="--", c="grey")
-    axs[i].set_ylim(plt_ys[0], plt_ys[1])
+    axs[i].set_ylim(plt_ys[0]-3, plt_ys[1]+2)
     if i > 0:
         axs[i].set_yticklabels([])
     else:
-        axs[i].set_ylabel("$\chi^2$ of %s"%argv[2], fontsize=fonts)
+        if "e1" == argv[2]:
+            e_label = "$\chi^2_{e_1}$"
+        else:
+            e_label = "$\chi^2_{e_2}$"
+        axs[i].set_ylabel(e_label, fontsize=fonts)
     axs[i].set_xlabel("Bin label", fontsize=fonts)
     axs[i].tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
     for axis in ["bottom", "left", "top", "right"]:
@@ -203,6 +207,7 @@ for i in range(4):
     axs[i].xaxis.set_tick_params(which="both",direction="in",length=5, width=axis_linewidth)
     axs[i].yaxis.set_tick_params(which="major",direction="in",length=5, width=axis_linewidth)
     axs[i].yaxis.set_tick_params(which="minor",direction="in",length=5, width=axis_linewidth)
-plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
+# plt.suptitle("g1:%1.4f, g2:%1.4f"%(g1, g2))
 plt.subplots_adjust(wspace=0)
-plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s_chisq.png"%(argv[1],argv[2], argv[3]),bbox_inches='tight')
+plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s_chisq.pdf"%(argv[1],argv[2], argv[3]),bbox_inches='tight')
+print(g1, g2)
