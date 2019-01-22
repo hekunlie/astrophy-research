@@ -22,8 +22,7 @@ seed = numpy.random.randint(0,100000,1)[0]
 num = 11
 pixel_scale = 0.187
 
-flux = numpy.array([tool_box.mag_to_flux(21.5),tool_box.mag_to_flux(22.2),
-                    tool_box.mag_to_flux(24), tool_box.mag_to_flux(24.5)])
+flux = numpy.array([tool_box.mag_to_flux(21.5),tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
 sig = 60
 print(sig)
 
