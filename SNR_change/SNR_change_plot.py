@@ -107,7 +107,7 @@ for i in range(flux_num):
             for select in range(4):
                 lb = "%s (%.2f)"%(lbs[select], snr_tradi_0)
                 axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[select], ms=6, label=lb,
-                         marker=markers[i],fillstyle='none',linestyle=' ')
+                         marker=markers[select],fillstyle='none',linestyle=' ')
 
 ys = [0,0]
 for i in range(4):
