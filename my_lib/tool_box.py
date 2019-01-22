@@ -32,7 +32,16 @@ def detect(mask, ini_y, ini_x, signal, signal_val, y_size, x_size, sflag):
 
 
 def stamp_detector(image, xsize, ysize, area_thres, radius, noise_level):
-    # get the source object
+    """
+    get the source in the stamp, the biggest one within radius from center
+    :param image:
+    :param xsize:
+    :param ysize:
+    :param area_thres: pixel number threshold
+    :param radius: the maximum distance of peak from center
+    :param noise_level: pixel value for a detection
+    :return:
+    """
     objs = source_detector(image, xsize, ysize, area_thres, noise_level)
 
     if len(objs) > 0:

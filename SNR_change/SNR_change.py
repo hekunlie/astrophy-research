@@ -1,7 +1,7 @@
 import matplotlib
 matplotlib.use("Agg")
 import os
-my_home = os.popen("echo $HOME").readlines()[0][:-1]
+my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/fourier_quad/' % my_home)
 from astropy.io import fits
@@ -16,17 +16,14 @@ psf_r = float(argv[2])
 e = float(argv[3])
 btr = float(argv[4])
 ra = float(argv[5])
-step = int(argv[6])
+
 
 seed = numpy.random.randint(0,100000,1)[0]
-num = 17
+num = 11
 pixel_scale = 0.187
 
-flux = numpy.array([tool_box.mag_to_flux(20),tool_box.mag_to_flux(22.2),
-                    tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24),
-                    tool_box.mag_to_flux(24.2),tool_box.mag_to_flux(24.4),
-                   tool_box.mag_to_flux(24.5), tool_box.mag_to_flux(24.7),
-                    tool_box.mag_to_flux(24.9),tool_box.mag_to_flux(25.1)])
+flux = numpy.array([tool_box.mag_to_flux(21.5),tool_box.mag_to_flux(22.2),
+                    tool_box.mag_to_flux(24), tool_box.mag_to_flux(24.5)])
 sig = 60
 print(sig)
 
@@ -73,6 +70,6 @@ for k in range(len(flux)):
         path = img_path + "gal_%d_%d.fits"%(k,i)
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
-title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d\\step_%d"%(size, psf_r, e, btr, ra, seed, step)
-cmd = "python SNR_change_plot.py %d %d %s %d %d"%(size, num, title, len(flux),step)
+title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d"%(size, psf_r, e, btr, ra, seed)
+cmd = "python SNR_change_plot.py %d %d %s %d"%(size, num, title, len(flux))
 os.system(cmd)
