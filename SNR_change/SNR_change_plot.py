@@ -22,7 +22,7 @@ fmt='%2.f%%'
 fig_x = 7
 fig_y = fig_x*4/6
 figs = (fig_x*4, fig_y)
-fonts = 15
+fonts = 20
 xy_lb_size = 18
 legend_size = fonts - 5
 axis_linewidth = 1.2
@@ -106,8 +106,8 @@ for i in range(flux_num):
             lbs = ["P$_k0$", "MAG_AUTO", "SNR", "SNR_AUTO"]
             for select in range(4):
                 lb = "%s (%.2f)"%(lbs[select], snr_tradi_0)
-                axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[select], ms=6, label=lb,
-                         marker=markers[select],fillstyle='none',linestyle=' ')
+                axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=6, label=lb,
+                         marker=markers[i],fillstyle='none',linestyle=' ')
 
 ys = [0,0]
 for i in range(4):
