@@ -70,7 +70,7 @@ ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
 ax.set_xlim(xs[0], xs[1])
 ax.set_ylim(ys[0], ys[1]+0.3)
 ax.xaxis.set_major_formatter(xticks)
-ax.legend(ncol=2,fontsize=legend_size-2)
+ax.legend(ncol=2,fontsize=xy_lb_size)
 ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)
 
 ax.set_ylabel(ylabels[plt_item],fontsize=xy_lb_size)
