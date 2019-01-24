@@ -35,10 +35,14 @@ psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
 shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
 img_path = os.getcwd() + "/imgs/"
+
+pool = []
+
+rand_pts = fq.ran_pos(100, 9)
+
 for k in range(len(flux)):
 
-    pool = []
-    rng = galsim.BaseDeviate(12300000)
+    # rng = galsim.BaseDeviate(12300000)
     #knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
     # bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
     # disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
@@ -56,14 +60,13 @@ for k in range(len(flux)):
     # gal_c.drawImage(image=img_0, scale=pixel_scale)
     # gal_img = img_0.array + noise
 
-    rand_pts = fq.ran_pos(100, 9)
     img_0 = fq.convolve_psf(rand_pts, 4, flux[k]/100, "Moffat")
 
     gal_img = img_0 + noise
     path = img_path + "gal0_%d.fits" %k
     hdu = fits.PrimaryHDU(gal_img)
     hdu.writeto(path, overwrite=True)
-
+    pool.append(gal_img)
     for i in range(num):
 
         # gal_s = gal_f.shear(g1=input_g[i], g2=0)#beta=shear_beta[i]*galsim.radians)
@@ -75,11 +78,14 @@ for k in range(len(flux)):
         rand_pts_s = fq.shear(rand_pts, g1=input_g[i], g2=0)
         img_s = fq.convolve_psf(rand_pts_s, 4, flux[k]/100, "Moffat")
         gal_s_img = img_s + noise
-
+        pool.append(gal_s_img)
         path = img_path + "gal_%d_%d.fits"%(k,i)
         hdu = fits.PrimaryHDU(gal_s_img)
         hdu.writeto(path, overwrite=True)
 
+big_img = fq.stack(pool,num+1)
+hdu = fits.PrimaryHDU(big_img)
+hdu.writeto(img_path+"total_img.fits",overwrite=True)
 time.sleep(10)
 title = "S_%d\\PR_%.2f\\e1_%.2f\\BTR_%.2f\\GR_%.2f\\seed_%d"%(size, psf_r, e, btr, ra, seed)
 cmd = "python SNR_change_plot.py %d %d %s %d"%(size, num, title, len(flux))
