@@ -107,7 +107,19 @@ class Fourier_Quad:
         w_temp = numpy.exp(-(self.mx**2 + self.my**2)/radius**2)
         return w_temp, 1./radius
 
-    def ran_pos(self, num, radius, g=None):
+    def ran_pts(self, num, radius, ellip=0, alpha=0, g=None):
+        """
+        create random points within a ellipse
+        :param num: point number
+        :param radius: max radius for a point from the center
+        :param ellip: ellipticity
+        :param alpha: radian, the angle between the major-axis and x-axis
+        :param g: shear, tuple or list or something can indexed by g[0] and g[1]
+        :return: (2,num) numpy array, the points
+        """
+        r2 = radius ** 2
+        b2 = (1 - ellip) / (1 + ellip)
+        cov1, cov2 = numpy.cos(alpha), numpy.sin(alpha)
         xy_coord = numpy.zeros((2, num))
         theta = self.rng.uniform(0., 2 * numpy.pi, num)
         xn = numpy.cos(theta)
@@ -117,11 +129,11 @@ class Fourier_Quad:
         for n in range(num):
             x += xn[n]
             y += yn[n]
-            if x * x + y * y > radius ** 2:
+            if x ** 2 + y ** 2 / b2 > r2:
                 x = xn[n]
                 y = yn[n]
-            xy_coord[0, n] = x
-            xy_coord[1, n] = y
+            xy_coord[0, n] = x * cov1 - y * cov2
+            xy_coord[1, n] = x * cov2 + y * cov1
 
         xy_coord[0] = xy_coord[0] - numpy.mean(xy_coord[0])
         xy_coord[1] = xy_coord[1] - numpy.mean(xy_coord[1])

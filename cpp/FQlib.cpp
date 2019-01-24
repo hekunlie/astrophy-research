@@ -2097,7 +2097,7 @@ void initialize_para(para *paras)
 }
 
 
-void set_bin(const double *data, const int data_num, double * bins, const int bin_num)
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale)
 {
 	double *data_cp = new double[data_num];
 	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
@@ -2105,9 +2105,9 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 	{
 		data_cp[i] = fabs(data[i]);
 	}
-	sort_double(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * 100;
-	bins[bin_num] = data_cp[data_num - 1] * 100;
+	sort_arr(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * max_scale;// make the boundary big enough to enclose all the data
+	bins[bin_num] = data_cp[data_num - 1] * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -2117,7 +2117,7 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 	delete[] data_cp;
 }
 
-void set_bin(const float *data, const int data_num, float * bins, const int bin_num)
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale)
 {
 	float *data_cp = new float[data_num];
 	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
@@ -2125,9 +2125,9 @@ void set_bin(const float *data, const int data_num, float * bins, const int bin_
 	{
 		data_cp[i] = fabs(data[i]);
 	}
-	sort_float(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * 100.;
-	bins[bin_num] = data_cp[data_num - 1] * 100.;
+	sort_arr(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * max_scale;// make the boundary big enough to enclose all the data
+	bins[bin_num] = data_cp[data_num - 1] * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -2137,7 +2137,7 @@ void set_bin(const float *data, const int data_num, float * bins, const int bin_
 	delete[] data_cp;
 }
 
-void set_bin(const int *data, const int data_num, int * bins, const int bin_num)
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale)
 {
 	int *data_cp = new int[data_num];
 	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
@@ -2145,9 +2145,9 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num)
 	{
 		data_cp[i] = fabs(data[i]);
 	}
-	sort_int(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * 100;
-	bins[bin_num] = data_cp[data_num - 1] * 100;
+	sort_arr(data_cp, data_num, 1);
+	bins[0] = -data_cp[data_num - 1] * max_scale; // make the boundary big enough to enclose all the data
+	bins[bin_num] = data_cp[data_num - 1] * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -2279,7 +2279,7 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 }
 
 
-void sort_double(double* arr, int size, int order=1)
+void sort_arr(double* arr, int size, int order=1)
 {
 	if (order == 1)
 	{
@@ -2291,7 +2291,7 @@ void sort_double(double* arr, int size, int order=1)
 	}
 }
 
-void sort_float(float *arr, int size, int order=1)
+void sort_arr(float *arr, int size, int order=1)
 {
 	if (order == 1)
 	{
@@ -2303,7 +2303,7 @@ void sort_float(float *arr, int size, int order=1)
 	}
 }
 
-void sort_int(int *arr, int size, int order=1)
+void sort_arr(int *arr, int size, int order=1)
 {
 	if (order == 1)
 	{

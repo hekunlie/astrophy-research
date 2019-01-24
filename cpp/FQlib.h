@@ -215,6 +215,7 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 void shear_est(double *gal_img, double *psf_img, para *paras);
 void ellip_est(const double *gal_img, const int size, para*paras);
 
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
@@ -288,12 +289,14 @@ void background_fit(const double *arr, const int size_x, const int size_y);
 /* general methods */
 /********************************************************************************************************************************************/
 void initialize_para(para *paras);
-/* set the "gal_: parameters zero */
+/* set the "gal_" parameters zero */
 
-void set_bin(const double *data, const int data_num, double * bins, const int bin_num);
-void set_bin(const float *data, const int data_num, float * bins, const int bin_num);
-void set_bin(const int *data, const int data_num, int * bins, const int bin_num);
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale); //checked
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale);//checked
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale);//checked
+/* operate on the copy of data, involving sort_arr().
 
+*/
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num);
 void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num);
 void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num);
@@ -303,11 +306,12 @@ void histogram2d(const float *data_y, const float*data_x, const float *bin_y, co
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num);
 
 
-void sort_double(double *arr, int size, int order);
-void sort_float(float *arr, int size, int order);
-void sort_int(int *arr, int size, int order);
-/* sort the double array according to the order, order =1 for ascend, else for descend*/
-
+void sort_arr(double *arr, int size, int order);//checked
+void sort_arr(float *arr, int size, int order);//checked
+void sort_arr(int *arr, int size, int order);//checked
+/* sort the double array according to the "order", 
+    order =1 for ascend, else for descend
+*/
 
 void get_time(char *str_time, int length);
 /* get the current time.
