@@ -19,6 +19,8 @@
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
 #include<gsl/gsl_fit.h>
+#include <gsl/gsl_multifit.h>
+#include <gsl/gsl_matrix.h>
 #include<hdf5.h>
 #include<stdlib.h>
 #include<algorithm> // sort(), std::max()
@@ -264,21 +266,19 @@ void smooth_real(double*image, const double *coeffs, para *paras);
 
 void hyperfit_5(const double *data, double*fit_para, para *paras);
 
-void poly_fit1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
-void poly_fit1d(const float *x, const float *fx, const float *fx_err, const int data_num, float *coeffs, int weight);
+void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
 /* polynomial fitting by GSL
-	Y = c + m*X
+	FX = c + m*X
 	x: array, coordinates
 	fx: array, measured values
-	fx_err: array, uncertainties, of which the reciprocal will be the weights of data points.
+	fx_err: array, uncertainty (\sigma), of which the reciprocal will be the weights of data points.
 	data_num: the number of data points
 	coeffs: array[4], [c, sig_c, m, sig_m]. 
 	weight: 1 for weighted version, others for fitting directly without weigths
 */
 
-void poly_fit2d(const double *x, const double *y, const double *fxy, const int data_num, double *coeffs);
-void poly_fit2d(const float *x, const float *y, const float *fxy, const int data_num, float *coeffs);
-/* polynomial fitting 
+void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs);
+/* fit 2d polynomial to n order for background removing
 */
 
 void background_fit(const double *arr, const int size_x, const int size_y);
@@ -295,16 +295,30 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale);//checked
 void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale);//checked
 /* operate on the copy of data, involving sort_arr().
-
+	the length of bins is bin_num+1
+	data: array
+	data_num: length of data
+	bins: array with length = bin_num+1
+	max_scale: the scale (times the outer boundary of bins) of the bins boundary,
+					  to make it big enough to contain all the data, even when the data
+					  have been shifted.
 */
-void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num);
-void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num);
-void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num);
 
+void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num);//checked
+void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num);//checked
+void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num);//checked
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const  int xbin_num);
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num);
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num);
-
+/* data (data_x, data_y): array
+	bins (bin_x, bin_y): array, boundary of bins with length=bin_num+1
+	num: 1d-array, the counts of the number of the data fall into each bin,
+			 for the 2d histogram, the layout of the num-array is the same as the usual 2d array
+			 |(0,0)     (x,0)       |
+			 |(y,0)					|
+			 |							|
+	bin_num, y(x)bin_num: array
+*/
 
 void sort_arr(double *arr, int size, int order);//checked
 void sort_arr(float *arr, int size, int order);//checked

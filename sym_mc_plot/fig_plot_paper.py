@@ -109,39 +109,7 @@ plt.show()
 
 
 
-# # the relation between SNR_F and magnitude
-# f = h5py.File("F:/works/selection_bias/data/galsim/dimmerm3/para_0.hdf5")
-# mag = f["mag"].value
-# f.close()
-#
-# f = h5py.File("F:/works/selection_bias/data/galsim/dimmerm3/data_0_0.hdf5")
-# fsnr = f["data"].value[:,3]
-# flux = f["data"].value[:,2]
-# idx = flux > 0
-# fsnr = fsnr[idx]
-# f.close()
-# mag = mag[idx]
-# labels = numpy.random.choice(numpy.array([i for i in range(len(mag))]), 50000, replace=False).tolist()
-# mag_s = numpy.load("F:/works/selection_bias/data/galsim/dimmerm3/sex_0.npz")["arr_0"][:,2]
-#
-# fig = plt.figure(figsize=figs)
-# ax = fig.add_subplot(111)
-# ax.tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
-# for axis in ["bottom", "left", "top", "right"]:
-#     ax.spines[axis].set_linewidth(axis_linewidth)
-# ax.xaxis.set_tick_params(which="both",direction="in",length=8, width=axis_linewidth)
-# ax.yaxis.set_tick_params(which="major",direction="in",length=8, width=axis_linewidth)
-# ax.yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linewidth)
-#
-#
-# ax.scatter(mag[labels], fsnr[labels], s=0.2, color="black")
-# ax.set_ylim(0.005, 1000)
-#
-# ax.set_yscale("log")
-# ax.set_xlabel("Magnitude",fontsize=xy_lb_size)
-# ax.set_ylabel("SNR$_F$",fontsize=xy_lb_size)
-# plt.savefig("F:/works/figs/mag_snrf.pdf",bbox_inches='tight')
-# plt.show()
+
 
 # # the relation between SNR_F and magnitude
 # f = h5py.File("F:/works/selection_bias/data/galsim/dimmerm3/para_0.hdf5")

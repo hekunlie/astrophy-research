@@ -34,7 +34,7 @@ def G_bin(G_h, bins, ig_num=0):  # checked 2017-7-9!!!
     return numpy.sum(xi[:len(xi) - ig_num]) * 0.5, xi
 
 def set_bin(data, bin_num, bound_scale):
-    temp_data = numpy.sort(numpy.sort(data))
+    temp_data = numpy.sort(numpy.abs(data))
     bin_size = len(temp_data)/bin_num*2
     bins = numpy.array([temp_data[int(i*bin_size)] for i in range(1, int(bin_num / 2))])
     bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))

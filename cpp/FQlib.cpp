@@ -2045,7 +2045,7 @@ void hyperfit_5(const double *data, double *fit_paras, para *paras)
 	}
 }
 
-void poly_fit1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
+void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
 {
 	double chi, c0, c1, cov00, cov01, cov11;
 	if (1 == weight)
@@ -2073,6 +2073,34 @@ void poly_fit1d(const double *x, const double *fx, const double *fx_err, const i
 	coeffs[1] = cov00;
 	coeffs[0] = c1;
 	coeffs[1] = cov11;
+}
+
+void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs)
+{
+	// order >= 1
+	int turns = (order + 1)*(order + 2) / 2;
+	int i, j, k, m, n;
+
+	// the powers of x and y of each turn
+	int *pow_x = new int[turns] {};
+	int *pow_y = new int[turns] {};
+	k = 0;
+	for (i = 0; i < order + 1; i++)
+	{
+		for (j = 0; j < i + 1; j++)
+		{
+			pow_x[k] = i - j;
+			pow_y[k] = j;
+			k++;
+		}
+	}
+
+
+	double *cov = new double[data_num*turns] {};
+
+	delete[] cov;
+	delete[] pow_x;
+	delete[] pow_y;
 }
 
 
