@@ -1,4 +1,4 @@
-﻿// please complie it with C++11 standard(2011)
+﻿// please compile it with C++11 standard(2011)
 
 #ifndef FQLIB_H
 #define FQLIB_H
@@ -75,6 +75,51 @@ const double Pi = 3.1415926535897932384626433832795;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 extern std::ofstream loggers;
+
+/********************************************************************************************************************************************/
+/* array operation by Fortran*/
+/********************************************************************************************************************************************/
+extern "C"
+{	
+	// the addresses of the variables, array or int or float..., should be passed to the subroutines in Fortran
+	void arr_pow_d_(double *arr_in,double *arr_out, int *size, double *alpha, double *beta, double *pows);
+	void arr_pow_f_(float *arr_in, float *arr_out, int *size, float *alpha, float *beta, float *pows);
+	void arr_base_d_(double *arr_in, double *arr_out, int *size, double *alpha, double *beta, double *base);
+	void arr_base_f_(float *arr_in, float *arr_out, int *size, float *alpha, float *beta, float *base);
+	/* 
+		calculate (alpha*arr_in +beta)^pows and base^(alpha*arr_in + beta)
+		results will be stored in arr_out
+		except for the array, all the variables are passed by address, "&var"
+		arr_in: array
+		arr_out: array, the result
+		size: int, the length of array
+		alpha, beta, pows: double or float, 
+	*/
+
+	void arr_exp_d_(double *arr_in, double *arr_out, int *size, double *alpha, double *beta);
+	void arr_exp_f_(float *arr_in, float *arr_out, int *size, float *alpha, float *beta);
+	/*
+		calculate EXP(alpha*arr_in +beta),
+		results will be stored in arr_out
+		except for the array, all the variables are passed by address, "&var"
+		arr_in: array
+		arr_out: array, the result
+		size: int, the length of array
+		alpha, beta: double or float,
+	*/
+
+	void arr_sum_d_(double *arr_in, double *total, int *size, double *alpha, double *beta);
+	void arr_sum_f_(float *arr_in,  float *total, int *size, float *alpha, float *beta);
+	/*
+		calculate SUM(alpha*arr_in +beta),
+		results will be stored in result
+		except for the array, all the variables are passed by address, "&var"
+		arr_in: array
+		total: float or double, the sum
+		size: int, the length of array
+		alpha, beta: double or float,
+	*/
+}
 
 /********************************************************************************************************************************************/
 /* file reading and writting*/
