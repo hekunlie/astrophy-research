@@ -421,10 +421,10 @@ def fit_2d(x, y, fun_val, order):
     :return: (n,1) numpy array, coefficients of the target polynomial
     """
     x, y = x * 1.0, y * 1.0
-    turns = int((order + 1) * (order + 2) / 2)
+    terms = int((order + 1) * (order + 2) / 2)
     pows = [(i-j, j) for i in range(order+1) for j in range(i+1)]
-    fxy = [[numpy.sum(fun_val * (x ** pows[i][0]) * (y ** pows[i][1]))] for i in range(turns)]
-    cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(turns)] for j in range(turns)]
+    fxy = [[numpy.sum(fun_val * (x ** pows[i][0]) * (y ** pows[i][1]))] for i in range(terms)]
+    cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(terms)] for j in range(terms)]
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res, pows
 

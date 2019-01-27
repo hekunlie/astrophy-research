@@ -330,6 +330,8 @@ void background_fit(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
 
+void sum_arr(const double *arr, const int size, const int start, const int end, double &total);
+void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/

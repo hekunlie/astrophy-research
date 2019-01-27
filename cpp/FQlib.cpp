@@ -2078,12 +2078,24 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs)
 {
 	// order >= 1
-	int turns = (order + 1)*(order + 2) / 2;
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+
+	int terms = (order + 1)*(order + 2) / 2;
 	int i, j, k, m, n;
 
-	// the powers of x and y of each turn
-	int *pow_x = new int[turns] {};
-	int *pow_y = new int[turns] {};
+	// the powers of x and y of each turn in the polynomial
+	int *pow_y = new int[terms] {};
+	//	int *y_pow_mask = new int[order]{};
+	int *pow_x = new int[terms] {};
+	int *xy_pow_mask = new int[terms*terms*terms*terms]{};
+		// the i'th row is the x^(i+1) ( y^(i+1))
+	double *ys = new double[order*order*data_num]{};
+	double *xs = new double[order*order*data_num]{};
+
 	k = 0;
 	for (i = 0; i < order + 1; i++)
 	{
@@ -2095,12 +2107,127 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 		}
 	}
 
+	// calculate each order of x and y,
+	// to x^(order*order), y^(order*order)
+	for (i = 1; i < order*order+1; i++)
+	{
+		m =(i - 1) * data_num;		
+		if (0 == m) // the first order
+		{
+			for (k = 0; k < data_num; k++)
+			{
+				ys[k] = y[k];
+				xs[k] = x[k];
+			}
+		}
+		else // the higher order  
+		{
+			n = (i - 2)*data_num;
+			for (k = 0; k < data_num; k++)
+			{
+				ys[m + k] = ys[n + k] * y[k];
+				xs[m + k] = xs[n + k] * x[k];
+			}
+		}
+	}
 
-	double *cov = new double[data_num*turns] {};
+	// if order > 1, the "x^n*y^m" exists
+	if (order > 1)
+	{
+		double *xys = new double[(order - 1)*order / 2 * data_num]{};
+		for (i = 1; i < order; i++)
+		{
+			if (1 == i)// the "xy"
+			{
+				for (k = 0; k < data_num; k++)
+				{
+					xys[k] = x[k] * y[k];
+				}
+			}
+			else
+			{
+				for (j = order-1; j >= 1; j--)
+				{
+					// j is the power of x
+					m = (j - 1)*data_num;
+					// order-j is the power of y
+					n = (order - j - 1)*data_num;
+					for (k = 0; k < data_num; k++)
+					{
+						xys[i*data_num + k] = xs[m + k] * ys[n + k];
+					}
+				}
+			}
+		}
 
+		delete[] xys;
+	}
+	else
+	{
+		;
+	}
+
+
+	double *cov = new double[terms*terms] {};
 	delete[] cov;
 	delete[] pow_x;
 	delete[] pow_y;
+	delete[] xy_pow_mask;
+	delete[] ys;
+	delete[] xs;
+}
+
+void sum_arr(const double *arr, const int size, const int start, const int end, double &total)
+{
+	total = 0;
+	if (end > size)
+	{
+		std::cout << "Cross the boundary of array!!!" << std::endl;
+		exit(0);
+	}
+	for (int i = start; i < end; i++)
+	{
+		total += arr[i];
+	}
+}
+
+void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power)
+{	
+	int i;
+	if (1 == alpha)
+	{
+		if (0 == beta)
+		{
+			for ( i = 0; i < size; i++)
+			{
+				arr_out[i] = pow(arr[i], power);
+			}
+		}
+		else
+		{
+			for ( i = 0; i < size; i++)
+			{
+				arr_out[i] = pow(arr[i]+beta, power);
+			}
+		}
+	}
+	else
+	{
+		if (0 == beta)
+		{
+			for (i = 0; i < size; i++)
+			{
+				arr_out[i] = pow(arr[i]*alpha, power);
+			}
+		}
+		else
+		{
+			for (i = 0; i < size; i++)
+			{
+				arr_out[i] = pow(arr[i]*alpha + beta, power);
+			}
+		}
+	}
 }
 
 
