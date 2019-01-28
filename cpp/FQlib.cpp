@@ -2087,14 +2087,41 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	int terms = (order + 1)*(order + 2) / 2;
 	int i, j, k, m, n;
 
+	double *cov_matrix = new double[terms*terms]{};
+	cov_martix_2d(x, y, data_num, order, cov_matrix);
+
+	delete[] cov_matrix;
+	
+}
+
+void cov_martix_2d(const double *x, const double *y, const int data_num, const int order, double *cov_matrix)
+{
+	// order >= 1;
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+	int terms = (order + 1)*(order + 2) / 2;
+	int size = order * order * data_num, mask_size = 4 * order* order;
+	int xys_size = (4 * order - 1)*(order + 1)*order / 6 * data_num, xy_seq;
+	int i, j, k, m, n, y_odr, x_odr, xy_count = 0;
+	double dn_sum = 0;
 	// the powers of x and y of each turn in the polynomial
 	int *pow_y = new int[terms] {};
-	//	int *y_pow_mask = new int[order]{};
 	int *pow_x = new int[terms] {};
-	int *xy_pow_mask = new int[terms*terms*terms*terms]{};
-		// the i'th row is the x^(i+1) ( y^(i+1))
-	double *ys = new double[order*order*data_num]{};
-	double *xs = new double[order*order*data_num]{};
+	double *ys = new double[size] {};
+	double *xs = new double[size] {};
+
+	// xy_pow_mask stores the location of "x^n*y^m" in the array "xys"
+// xy_pow_mask is used as 2 dimessional array , (y order, x order)
+	int *xy_pow_mask = new int[mask_size] {};
+	double *xys = new double[xys_size] {};
+	for (i = 0; i < mask_size; i++)
+	{
+		xy_pow_mask[i] = -1;
+	}
+
 
 	k = 0;
 	for (i = 0; i < order + 1; i++)
@@ -2107,11 +2134,11 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 		}
 	}
 
-	// calculate each order of x and y,
+	// calculate each order of x and y for the covariance matrix
 	// to x^(order*order), y^(order*order)
-	for (i = 1; i < order*order+1; i++)
+	for (i = 1; i < order*order + 1; i++)
 	{
-		m =(i - 1) * data_num;		
+		m = (i - 1) * data_num;
 		if (0 == m) // the first order
 		{
 			for (k = 0; k < data_num; k++)
@@ -2131,61 +2158,96 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 		}
 	}
 
-	// if order > 1, the "x^n*y^m" exists
-	if (order > 1)
+	// calculate the covariance matrix		
+	//row
+	for (i = 0; i < terms; i++)
 	{
-		double *xys = new double[(order - 1)*order / 2 * data_num]{};
-		for (i = 1; i < order; i++)
+		//column
+		for (j = 0; j < terms; j++)
 		{
-			if (1 == i)// the "xy"
+			y_odr = pow_y[j] + pow_y[i];
+			x_odr = pow_x[j] + pow_x[i];
+
+			std::cout << x_odr << " " << y_odr << ", ";
+			if (j == terms - 1)
 			{
-				for (k = 0; k < data_num; k++)
+				std::cout << std::endl;
+			}
+			// the terms without x^n
+			if (0 == x_odr)
+			{
+				//the cov[0,0] = number of data points
+				if (0 == y_odr)
 				{
-					xys[k] = x[k] * y[k];
+					dn_sum = data_num;
+				}
+				// the y^n terms
+				else
+				{
+					sum_arr(ys, size, (y_odr - 1)*data_num, y_odr*data_num, dn_sum);
 				}
 			}
+			// the terms with x^n
 			else
 			{
-				for (j = order-1; j >= 1; j--)
+				// the x^n terms
+				if (0 == y_odr)
 				{
-					// j is the power of x
-					m = (j - 1)*data_num;
-					// order-j is the power of y
-					n = (order - j - 1)*data_num;
-					for (k = 0; k < data_num; k++)
+					sum_arr(xs, size, (x_odr - 1)*data_num, x_odr*data_num, dn_sum);
+				}
+				// the x^n*y^m terms
+				else
+				{
+					// if this term has been gotten
+					if (xy_pow_mask[y_odr*(order + 1) + x_odr] > -1)
 					{
-						xys[i*data_num + k] = xs[m + k] * ys[n + k];
+
+						xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
+						sum_arr(xys, xys_size, xy_seq*data_num, (xy_seq + 1)*data_num, dn_sum);
+					}
+					// if not
+					else
+					{
+						xy_pow_mask[y_odr*(order + 1) + x_odr] = xy_count;
+						for (k = 0; k < data_num; k++)
+						{
+							xys[xy_count*data_num + k] = xs[(x_odr - 1)*data_num + k] * ys[(y_odr - 1)*data_num + k];
+						}
+						sum_arr(xys, xys_size, xy_count*data_num, (xy_count + 1)*data_num, dn_sum);
+						xy_count++;
 					}
 				}
 			}
+			cov_matrix[i*terms + j] = dn_sum;
 		}
-
-		delete[] xys;
 	}
-	else
-	{
-		;
-	}
+	//cout <<"beign"<<terms<< endl;
+	//for (i = 0; i < terms; i++)
+	//{
+	//	for (j = 0; j < terms; j++)
+	//	{
+	//		std::cout << cov_matrix[i*terms + j]<<", ";
+	//	}
+	//	std::cout << std::endl;
+	//}
 
-
-	double *cov = new double[terms*terms] {};
-	delete[] cov;
+	delete[] xys;
 	delete[] pow_x;
 	delete[] pow_y;
-	delete[] xy_pow_mask;
 	delete[] ys;
 	delete[] xs;
+	delete[] xy_pow_mask;
 }
 
-void sum_arr(const double *arr, const int size, const int start, const int end, double &total)
+void sum_arr(const double *arr, const int size, const int start_t, const int stop_t, double &total)
 {
 	total = 0;
-	if (end > size)
+	if (stop_t > size)
 	{
 		std::cout << "Cross the boundary of array!!!" << std::endl;
 		exit(0);
 	}
-	for (int i = start; i < end; i++)
+	for (int i = start_t; i < stop_t; i++)
 	{
 		total += arr[i];
 	}

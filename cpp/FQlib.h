@@ -329,6 +329,7 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 void background_fit(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
+void cov_martix_2d(const double *x, const double *y, const int data_num, const int order, double *cov_matrix);
 
 void sum_arr(const double *arr, const int size, const int start, const int end, double &total);
 void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
