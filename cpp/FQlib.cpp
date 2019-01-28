@@ -2085,16 +2085,32 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	}
 
 	int terms = (order + 1)*(order + 2) / 2;
-	int i, j, k, m, n;
+	int i, s;
 
 	double *cov_matrix = new double[terms*terms]{};
-	cov_martix_2d(x, y, data_num, order, cov_matrix);
+	double *f_vector = new double[terms] {};
+	cov_martix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
+
+	gsl_matrix_view mat = gsl_matrix_view_array (cov_matrix, terms, terms);
+	gsl_vector_view vect_b = gsl_vector_view_array (f_vector, terms);
+	gsl_vector *pamer = gsl_vector_alloc (terms);
+	gsl_permutation *permu = gsl_permutation_alloc (terms);
+	gsl_linalg_LU_decomp (&mat.matrix, permu, &s);
+	gsl_linalg_LU_solve (&mat.matrix, permu, &vect_b.vector, pamer);
+
+	for (i = 0; i < terms; i++)
+	{
+		coeffs[i] = gsl_vector_get(pamer, i);
+	}
+
+	gsl_permutation_free(permu);
+	gsl_vector_free(pamer);
 
 	delete[] cov_matrix;
-	
+	delete[] f_vector;
 }
 
-void cov_martix_2d(const double *x, const double *y, const int data_num, const int order, double *cov_matrix)
+void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vector)
 {
 	// order >= 1;
 	if (order < 1)
