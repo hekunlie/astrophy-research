@@ -2128,16 +2128,14 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 	int *pow_x = new int[terms] {};
 	double *ys = new double[size] {};
 	double *xs = new double[size] {};
-
 	// xy_pow_mask stores the location of "x^n*y^m" in the array "xys"
-// xy_pow_mask is used as 2 dimessional array , (y order, x order)
+	// xy_pow_mask is used as 2 dimessional array , (y order, x order)
 	int *xy_pow_mask = new int[mask_size] {};
 	double *xys = new double[xys_size] {};
 	for (i = 0; i < mask_size; i++)
 	{
 		xy_pow_mask[i] = -1;
 	}
-
 
 	k = 0;
 	for (i = 0; i < order + 1; i++)
@@ -2200,6 +2198,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 				// the y^n terms
 				else
 				{
+
 					sum_arr(ys, size, (y_odr - 1)*data_num, y_odr*data_num, dn_sum);
 				}
 			}
@@ -2237,6 +2236,52 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 			cov_matrix[i*terms + j] = dn_sum;
 		}
 	}
+
+	// the vector of the right side
+	for (i = 0; i < terms; i++)
+	{
+		dn_sum = 0;
+		y_odr = pow_y[i];
+		x_odr = pow_x[i];
+
+		std::cout << x_odr << " " << y_odr << ", ";
+		// the terms without x^n
+		if (0 == x_odr)
+		{
+			if (0 == y_odr)
+			{
+				sum_arr(fxy, data_num, 0, data_num, dn_sum);
+			}
+			// the f(x,y)*y^n terms
+			else
+			{
+				for (j = 0; j < data_num; j++)
+				{
+					dn_sum += fxy[i] * ys[(y_odr - 1)*data_num + j];
+				}
+			}
+		}
+		// the terms with x^n
+		else
+		{
+			// the f(x,y)*x^n terms
+			if (0 == y_odr)
+			{
+				for (j = 0; j < data_num; j++)
+				{
+					dn_sum += fxy[i] * xs[(x_odr - 1)*data_num + j];
+				}
+			}
+			// the f(x,y)* x^n*y^m terms
+			else
+			{
+				xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
+				dn_sum += fxy[j] * xys[xy_seq*data_num + j];		
+			}
+		}
+		f_vector[j] = dn_sum;
+	}
+
 	//cout <<"beign"<<terms<< endl;
 	//for (i = 0; i < terms; i++)
 	//{

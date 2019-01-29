@@ -324,15 +324,42 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 */
 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs);
-/* fit 2d polynomial to n order for background removing
+/* involves the method cov_matrix_2d().
+	fit 2d polynomial f(x,y) to n order for background removing.
+	
+	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
+	
+	x(y) : array, coordinates
+	fxy: array, the measured value at (x,y)
+	data_num : int, the length of data
+	order : the highest order of the target polynomial
+	coeffs: array, the results, stores the target parameters, with length (order + 1)*(order + 2) / 2
 */
 
 void background_fit(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
 void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);
+/*	 calculate the matrix "A" and "Y" of matrix equation A*P = F which comes from the least square method ( not the eaquations A*X = Y)
+	A is the target covariance matrix which will be obtained by this method.
+	P is the vector of coefficients ( this method has nothing to do with it)
+	F is the target vector which contains the terms like f(x,y)*x^n*y^m and will be obtain by this method.
+	
+	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
 
-void sum_arr(const double *arr, const int size, const int start, const int end, double &total);
+	x(y) : array, coordinates
+	fxy: array, the measured value at (x,y)
+	data_num : int, the length of data
+	order : the highest order of the target polynomial
+	cov_matrix : array, with length of  ((order + 1)*(order + 2) / 2)^2, to store the matrix "A" of A*P = F
+	f_vector: array, the right of the A*P = F	
+*/
+
+void sum_arr(const double *arr, const int size, const int start_t, const int end_t, double &total);
+/* sum the array from "start_t" to "end_t"(excluded) and assign to the "total"
+	"total" will be set to be zero in the begin of the method for safety.
+*/
+
 void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
 /********************************************************************************************************************************************/
 /* general methods */
