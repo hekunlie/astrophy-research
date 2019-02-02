@@ -22,6 +22,7 @@
 #include <gsl/gsl_multifit.h>
 #include <gsl/gsl_matrix.h>
 #include<gsl/gsl_linalg.h>
+#include <gsl/gsl_blas.h>
 #include<hdf5.h>
 #include<stdlib.h>
 #include<algorithm> // sort(), std::max()
@@ -336,7 +337,7 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	coeffs: array, the results, stores the target parameters, with length (order + 1)*(order + 2) / 2
 */
 
-void background_fit(const double *arr, const int size_x, const int size_y);
+void background_remove(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
 void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);
@@ -361,9 +362,20 @@ void sum_arr(const double *arr, const int size, const int start_t, const int end
 */
 
 void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
+
+void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result);
+/* C = A*B
+	arr_left: array, size_1 x size_2
+	arr_right: array, size_2 x size_3
+	result: array, size_1 x size_3, the result
+*/
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+
+void show_arr(const double*arr, const int size_1, const int size_2);
+/* print the elements on the screen
+*/
 void initialize_para(para *paras);
 /* set the "gal_" parameters zero */
 

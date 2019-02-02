@@ -426,7 +426,7 @@ def fit_2d(x, y, fun_val, order):
     fxy = [[numpy.sum(fun_val * (x ** pows[i][0]) * (y ** pows[i][1]))] for i in range(terms)]
     cov = [[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(terms)] for j in range(terms)]
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
-    return res, pows
+    return res, pows, cov, fxy
 
 
 def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, yblock=1, xblock=1, order=1, sort=True, ax=None):

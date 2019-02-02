@@ -2085,29 +2085,122 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	}
 
 	int terms = (order + 1)*(order + 2) / 2;
-	int i, s;
+	int i, s, j, k;
 
 	double *cov_matrix = new double[terms*terms]{};
 	double *f_vector = new double[terms] {};
+	double *norms = new double[terms] {};
+	double *check = new double[terms*terms]{};
+	double *invs = new double[terms*terms]{};
 	cov_martix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
+	
+	//std::cout << std::endl;
+	//std::cout << "beign vector:   " << terms << std::endl;
+	//show_arr(f_vector, 1, terms);
+	//std::cout << std::endl;
+
+	//std::cout << "beign cov:   " << terms << std::endl;
+	//show_arr(cov_matrix, terms, terms);
+	//std::cout << std::endl;
+
+	//for (j = 0; j < terms; j++)
+	//{
+	//	norms[ j] = cov_matrix[j*terms + 1];
+	//}
+	//std::cout << "beign norms:   " << terms << std::endl;
+	//show_arr(norms, 1, terms);
+	//std::cout << std::endl;
+
+	//for(i=0;i<terms;i++)
+	//{
+	//	
+	//	for (j = 0; j < terms; j++)
+	//	{
+	//		cov_matrix[i*terms + j] = cov_matrix[i*terms + j]/ norms[i];
+	//	}
+	//	f_vector[i] = f_vector[i] / norms[i];
+	//}
+
+	//std::cout << std::endl;
+	//std::cout << "beign vector:   " << terms << std::endl;
+	//show_arr(f_vector, 1, terms);
+	//std::cout << std::endl;
+
+	//std::cout << "beign cov:   " << terms << std::endl;
+	//show_arr(cov_matrix, terms, terms);
+	//std::cout << std::endl;
+
 
 	gsl_matrix_view mat = gsl_matrix_view_array (cov_matrix, terms, terms);
-	gsl_vector_view vect_b = gsl_vector_view_array (f_vector, terms);
-	gsl_vector *pamer = gsl_vector_alloc (terms);
-	gsl_permutation *permu = gsl_permutation_alloc (terms);
+	gsl_vector_view vect_b = gsl_vector_view_array(f_vector, terms);
+	//gsl_matrix *mat = gsl_matrix_alloc(terms, terms);
+	//gsl_vector *vect_b = gsl_vector_alloc(terms);
+	gsl_matrix *mat_inv = gsl_matrix_alloc(terms, terms);
+	gsl_vector *pamer = gsl_vector_alloc(terms);
+	gsl_permutation *permu = gsl_permutation_alloc(terms);
+
+	/*std::cout << std::endl;
+	std::cout << "beign vector:   " << terms << std::endl;
+	for (j = 0; j < terms; j++)
+	{
+		std::cout << gsl_vector_get(&vect_b.vector, j) << ", ";
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;
+	std::cout << "beign cov:   " << terms << std::endl;
+	for (i = 0; i < terms; i++)
+	{
+		for (j = 0; j < terms; j++)
+		{
+			std::cout << gsl_matrix_get(&mat.matrix, i, j) << ", ";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << std::endl;
+	std::cout << std::endl;*/
+
+
 	gsl_linalg_LU_decomp (&mat.matrix, permu, &s);
+	gsl_linalg_LU_invert(&mat.matrix, permu, mat_inv);
+	for (i = 0; i < terms; i++)
+	{
+
+		for (j = 0; j < terms; j++)
+		{
+			invs[i*terms + j] = gsl_matrix_get(mat_inv, i, j);
+		}
+	}
+	matrix_product(cov_matrix, terms, terms, terms, invs, check);
+	std::cout << "check" << std::endl;
+	show_arr(check, terms, terms);
+	std::cout << "check" << std::endl;
+	//std::cout << "beign cov_inv:   " << terms << std::endl;
+	//for (i = 0; i < terms; i++)
+	//{
+	//	for (j = 0; j < terms; j++)
+	//	{
+	//		std::cout << gsl_matrix_get(mat_inv, i, j) << ", ";
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//std::cout << std::endl;
+	//std::cout << std::endl;
+
 	gsl_linalg_LU_solve (&mat.matrix, permu, &vect_b.vector, pamer);
 
 	for (i = 0; i < terms; i++)
 	{
 		coeffs[i] = gsl_vector_get(pamer, i);
 	}
-
+	
+	gsl_matrix_free(mat_inv);
 	gsl_permutation_free(permu);
 	gsl_vector_free(pamer);
-
+	
 	delete[] cov_matrix;
 	delete[] f_vector;
+	delete[] norms;
+	delete[] check;
 }
 
 void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vector)
@@ -2119,7 +2212,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 		exit(0);
 	}
 	int terms = (order + 1)*(order + 2) / 2;
-	int size = order * order * data_num, mask_size = 4 * order* order;
+	int size = 2*order * data_num, mask_size = 4 * order* order;
 	int xys_size = (4 * order - 1)*(order + 1)*order / 6 * data_num, xy_seq;
 	int i, j, k, m, n, y_odr, x_odr, xy_count = 0;
 	double dn_sum = 0;
@@ -2150,10 +2243,10 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 
 	// calculate each order of x and y for the covariance matrix
 	// to x^(order*order), y^(order*order)
-	for (i = 1; i < order*order + 1; i++)
+	for (i = 0; i < 2*order; i++)
 	{
-		m = (i - 1) * data_num;
-		if (0 == m) // the first order
+		
+		if (0 == i) // the first order
 		{
 			for (k = 0; k < data_num; k++)
 			{
@@ -2163,7 +2256,8 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 		}
 		else // the higher order  
 		{
-			n = (i - 2)*data_num;
+			m = i*data_num;
+			n = (i - 1)*data_num;
 			for (k = 0; k < data_num; k++)
 			{
 				ys[m + k] = ys[n + k] * y[k];
@@ -2182,11 +2276,12 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 			y_odr = pow_y[j] + pow_y[i];
 			x_odr = pow_x[j] + pow_x[i];
 
-			std::cout << x_odr << " " << y_odr << ", ";
-			if (j == terms - 1)
-			{
-				std::cout << std::endl;
-			}
+			//std::cout << x_odr << " " << y_odr << ", ";
+			//if (j == terms - 1)
+			//{
+			//	std::cout << std::endl;
+			//}
+
 			// the terms without x^n
 			if (0 == x_odr)
 			{
@@ -2198,7 +2293,6 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 				// the y^n terms
 				else
 				{
-
 					sum_arr(ys, size, (y_odr - 1)*data_num, y_odr*data_num, dn_sum);
 				}
 			}
@@ -2216,7 +2310,6 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 					// if this term has been gotten
 					if (xy_pow_mask[y_odr*(order + 1) + x_odr] > -1)
 					{
-
 						xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
 						sum_arr(xys, xys_size, xy_seq*data_num, (xy_seq + 1)*data_num, dn_sum);
 					}
@@ -2244,7 +2337,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 		y_odr = pow_y[i];
 		x_odr = pow_x[i];
 
-		std::cout << x_odr << " " << y_odr << ", ";
+		//std::cout << x_odr << " " << y_odr << ", ";
 		// the terms without x^n
 		if (0 == x_odr)
 		{
@@ -2257,7 +2350,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 			{
 				for (j = 0; j < data_num; j++)
 				{
-					dn_sum += fxy[i] * ys[(y_odr - 1)*data_num + j];
+					dn_sum += fxy[j] * ys[(y_odr - 1)*data_num + j];
 				}
 			}
 		}
@@ -2269,20 +2362,23 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 			{
 				for (j = 0; j < data_num; j++)
 				{
-					dn_sum += fxy[i] * xs[(x_odr - 1)*data_num + j];
+					dn_sum += fxy[j] * xs[(x_odr - 1)*data_num + j];
 				}
 			}
 			// the f(x,y)* x^n*y^m terms
 			else
 			{
 				xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
-				dn_sum += fxy[j] * xys[xy_seq*data_num + j];		
+				for (j = 0; j < data_num; j++)
+				{
+					dn_sum += fxy[j] * xys[xy_seq*data_num + j];
+				}
 			}
 		}
-		f_vector[j] = dn_sum;
+		f_vector[i] = dn_sum;
 	}
 
-	//cout <<"beign"<<terms<< endl;
+	//std::cout <<"beign cov:   "<<terms<< std::endl;
 	//for (i = 0; i < terms; i++)
 	//{
 	//	for (j = 0; j < terms; j++)
@@ -2291,6 +2387,12 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 	//	}
 	//	std::cout << std::endl;
 	//}
+	//std::cout << "beign vector:   " << terms << std::endl;
+	//for (j = 0; j < terms; j++)
+	//{
+	//	std::cout << f_vector[j] << ", ";
+	//}
+	//std::cout << std::endl;
 
 	delete[] xys;
 	delete[] pow_x;
@@ -2304,8 +2406,8 @@ void sum_arr(const double *arr, const int size, const int start_t, const int sto
 {
 	total = 0;
 	if (stop_t > size)
-	{
-		std::cout << "Cross the boundary of array!!!" << std::endl;
+	{	
+		std::cout << "Cross the boundary of array!!! Stop_t: " <<stop_t<<",   Size: "<<size<< std::endl;
 		exit(0);
 	}
 	for (int i = start_t; i < stop_t; i++)
@@ -2353,10 +2455,77 @@ void arr_pow(const double *arr, double *arr_out, const int size, const int alpha
 	}
 }
 
+void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result)
+{
+	gsl_matrix *a = gsl_matrix_alloc(size_1, size_2);
+	gsl_matrix *b = gsl_matrix_alloc(size_2, size_3);
+	gsl_matrix *c = gsl_matrix_alloc(size_1, size_3);
+
+	int i, j;
+
+	for (i = 0; i < size_1; i++)
+	{
+		for (j = 0; j < size_2; j++)
+		{
+			gsl_matrix_set(a, i, j, arr_left[i*size_2 + j]);
+		}
+	}
+	for (i = 0; i < size_2; i++)
+	{
+		for (j = 0; j < size_3; j++)
+		{
+			gsl_matrix_set(b, i, j, arr_right[i*size_3 + j]);
+		}
+	}
+	for (i = 0; i < size_1; i++)
+	{
+		for (j = 0; j < size_3; j++)
+		{
+			gsl_matrix_set(c, i, j, 0);
+		}
+	}
+
+	gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,1.0, a, b, 0.0, c);
+
+	for (i = 0; i < size_1; i++)
+	{
+		for (j = 0; j < size_3; j++)
+		{
+			result[i*size_3+j] = gsl_matrix_get(c, i, j);
+
+		}
+	}
+
+	gsl_matrix_free(a);
+	gsl_matrix_free(b);
+	gsl_matrix_free(c);
+}
 
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+
+void show_arr(const double*arr, const int size_1, const int size_2)
+{
+	int i, j;
+	if (size_1 >= 1)
+	{
+		for (i = 0; i < size_1; i++)
+		{
+			for (j = 0; j < size_2; j++)
+			{
+				std::cout << arr[i*size_1 + j] << ", ";
+			}
+			std::cout << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "size_1 must >= 1 !!!" << std::endl;
+		exit(0);
+	}
+}
+
 void initialize_para(para *paras)
 {	
 	paras->gal_size = 0;
@@ -2603,47 +2772,6 @@ void get_time(char *str_time, int length)
 }
 
 
-
-/*double quick_exp(double x, double precision, para* paras)
-{
-	int i, j, m, mm;
-	double temp=1, expo = 0, n;
-	if (x >1 or x<-1)
-	{
-		m = (int)x;
-		n = x - m;
-	}
-	else
-	{
-		m = 0;
-		n = x;
-	}
-	for (i = 0; temp >= precision; i++)
-	{
-		temp *= n / i;
-		expo += temp;
-	}
-
-	if(m>0)
-	{
-		expo *= paras->exp_val[m-1];
-	}
-	else if (m < 0)
-	{	
-		m = abs(m);
-
-		if (m >= -15)
-		{
-			expo /= paras->exp_val[abs(m + 1)];
-		}
-		else
-		{
-
-		}
-	}
-
-	return expo;
-}*/
 
 /********************************************************************************************************************************************/
 /* GSL library */
