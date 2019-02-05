@@ -37,7 +37,7 @@ y_ticks = [numpy.arange(-0.004, 0.0021, 0.002),
            numpy.arange(-0.004, 0.0021, 0.002)]
 
 sig = "1.5"
-mc_plot = 'c'
+mc_plot = 'm'
 lim = 0
 if mc_plot == "m":
     plot_tag = 0

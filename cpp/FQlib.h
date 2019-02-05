@@ -330,6 +330,10 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	
 	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
 	
+	!!! one should be very careful with problem of the precision that comes from the larger power gap between
+	!!! the maximum and minimum in the matrix A (the square matrix from least square). So, one should shift and rescale the "x" and "y" before fiiting.
+	!!! if the coordinates have been shifted and scaled, the orignal f(x,y) should be calculated at new (x,y)
+
 	x(y) : array, coordinates
 	fxy: array, the measured value at (x,y)
 	data_num : int, the length of data
@@ -337,15 +341,24 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	coeffs: array, the results, stores the target parameters, with length (order + 1)*(order + 2) / 2
 */
 
+double fval_at_xy(const double x, const double y, const int order, const double *coeffs );
+/* calculate the f(x,y) when given the "order" and "coefficients".
+	the polynomial f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 ..... 
+*/
+
 void background_remove(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
+
 void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);
-/*	 calculate the matrix "A" and "Y" of matrix equation A*P = F which comes from the least square method ( not the eaquations A*X = Y)
+/*	 solve the matrix equation A*P = F which comes from the least square method ( not the eaquations A*X = Y)
 	A is the target covariance matrix which will be obtained by this method.
 	P is the vector of coefficients ( this method has nothing to do with it)
 	F is the target vector which contains the terms like f(x,y)*x^n*y^m and will be obtain by this method.
 	
+	!!! one should be very careful with problem of the precision that comes from the larger power gap between
+	!!! the maximum and minimum in the matrix A. So, one should shift and rescale the "x" and "y" before fiiting.
+
 	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
 
 	x(y) : array, coordinates
@@ -362,13 +375,25 @@ void sum_arr(const double *arr, const int size, const int start_t, const int end
 */
 
 void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
+/* arr_out = (alpha*arr+beta )^power
+*/
+
+void arr_rescale(double *x, const double dx, const double scale, const int num);
+/* rescale the array. x= scale*(x+dx)
+	"num" is the length of array
+*/
 
 void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result);
-/* C = A*B
+/* C = A*B, calculated by GSL
 	arr_left: array, size_1 x size_2
 	arr_right: array, size_2 x size_3
 	result: array, size_1 x size_3, the result
 */
+
+void matrix_inv(const double *arr, const int size, double *arr_inv);
+/* square matrix
+*/
+
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/

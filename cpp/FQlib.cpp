@@ -2045,6 +2045,34 @@ void hyperfit_5(const double *data, double *fit_paras, para *paras)
 	}
 }
 
+double fval_at_xy(const double x, const double y, const int order, const double *coeffs)
+{		
+	int terms = (order + 1)*(order + 2) / 2;
+	int i, j, k;
+	int *pow_y = new int[terms] {};
+	int *pow_x = new int[terms] {};
+	k = 0;
+	for (i = 0; i < order + 1; i++)
+	{
+		for (j = 0; j < i + 1; j++)
+		{
+			pow_x[k] = i - j;
+			pow_y[k] = j;
+			k++;
+		}
+	}
+
+	double fvals = 0;
+	for (i = 0; i < terms; i++)
+	{
+		fvals += coeffs[i] * pow(x, pow_x[i])*pow(y, pow_y[i]);
+	}
+	
+	delete[] pow_y;
+	delete[] pow_x;
+	return fvals;
+}
+
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
 {
 	double chi, c0, c1, cov00, cov01, cov11;
@@ -2086,120 +2114,50 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 
 	int terms = (order + 1)*(order + 2) / 2;
 	int i, s, j, k;
+	double temp_scale = 1;
 
 	double *cov_matrix = new double[terms*terms]{};
 	double *f_vector = new double[terms] {};
-	double *norms = new double[terms] {};
 	double *check = new double[terms*terms]{};
-	double *invs = new double[terms*terms]{};
-	cov_martix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
 	
-	//std::cout << std::endl;
-	//std::cout << "beign vector:   " << terms << std::endl;
-	//show_arr(f_vector, 1, terms);
-	//std::cout << std::endl;
+	cov_martix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
 
-	//std::cout << "beign cov:   " << terms << std::endl;
-	//show_arr(cov_matrix, terms, terms);
-	//std::cout << std::endl;
-
-	//for (j = 0; j < terms; j++)
-	//{
-	//	norms[ j] = cov_matrix[j*terms + 1];
-	//}
-	//std::cout << "beign norms:   " << terms << std::endl;
-	//show_arr(norms, 1, terms);
-	//std::cout << std::endl;
-
-	//for(i=0;i<terms;i++)
-	//{
-	//	
-	//	for (j = 0; j < terms; j++)
-	//	{
-	//		cov_matrix[i*terms + j] = cov_matrix[i*terms + j]/ norms[i];
-	//	}
-	//	f_vector[i] = f_vector[i] / norms[i];
-	//}
-
-	//std::cout << std::endl;
-	//std::cout << "beign vector:   " << terms << std::endl;
-	//show_arr(f_vector, 1, terms);
-	//std::cout << std::endl;
-
-	//std::cout << "beign cov:   " << terms << std::endl;
-	//show_arr(cov_matrix, terms, terms);
-	//std::cout << std::endl;
-
-
-	gsl_matrix_view mat = gsl_matrix_view_array (cov_matrix, terms, terms);
-	gsl_vector_view vect_b = gsl_vector_view_array(f_vector, terms);
-	//gsl_matrix *mat = gsl_matrix_alloc(terms, terms);
-	//gsl_vector *vect_b = gsl_vector_alloc(terms);
-	gsl_matrix *mat_inv = gsl_matrix_alloc(terms, terms);
-	gsl_vector *pamer = gsl_vector_alloc(terms);
+	gsl_matrix *cov_mat = gsl_matrix_alloc( terms, terms);
+	gsl_vector * vect_b = gsl_vector_alloc(terms);
+	gsl_matrix *mat_inv = gsl_matrix_alloc( terms, terms);
 	gsl_permutation *permu = gsl_permutation_alloc(terms);
+	gsl_vector *pamer = gsl_vector_alloc(terms);	
 
-	/*std::cout << std::endl;
-	std::cout << "beign vector:   " << terms << std::endl;
 	for (j = 0; j < terms; j++)
 	{
-		std::cout << gsl_vector_get(&vect_b.vector, j) << ", ";
+		gsl_vector_set(vect_b, j, f_vector[j]/temp_scale);
 	}
-	std::cout << std::endl;
-	std::cout << std::endl;
-	std::cout << "beign cov:   " << terms << std::endl;
+
 	for (i = 0; i < terms; i++)
 	{
 		for (j = 0; j < terms; j++)
 		{
-			std::cout << gsl_matrix_get(&mat.matrix, i, j) << ", ";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << std::endl;
-	std::cout << std::endl;*/
-
-
-	gsl_linalg_LU_decomp (&mat.matrix, permu, &s);
-	gsl_linalg_LU_invert(&mat.matrix, permu, mat_inv);
-	for (i = 0; i < terms; i++)
-	{
-
-		for (j = 0; j < terms; j++)
-		{
-			invs[i*terms + j] = gsl_matrix_get(mat_inv, i, j);
+			gsl_matrix_set(cov_mat, i, j, cov_matrix[i*terms + j]/temp_scale);
 		}
 	}
-	matrix_product(cov_matrix, terms, terms, terms, invs, check);
-	std::cout << "check" << std::endl;
-	show_arr(check, terms, terms);
-	std::cout << "check" << std::endl;
-	//std::cout << "beign cov_inv:   " << terms << std::endl;
-	//for (i = 0; i < terms; i++)
-	//{
-	//	for (j = 0; j < terms; j++)
-	//	{
-	//		std::cout << gsl_matrix_get(mat_inv, i, j) << ", ";
-	//	}
-	//	std::cout << std::endl;
-	//}
-	//std::cout << std::endl;
-	//std::cout << std::endl;
 
-	gsl_linalg_LU_solve (&mat.matrix, permu, &vect_b.vector, pamer);
+	gsl_linalg_LU_decomp (cov_mat, permu, &s);
+	gsl_linalg_LU_invert (cov_mat, permu, mat_inv);	
+	gsl_linalg_LU_solve (cov_mat, permu, vect_b, pamer);
 
 	for (i = 0; i < terms; i++)
 	{
 		coeffs[i] = gsl_vector_get(pamer, i);
 	}
-	
+
+	gsl_matrix_free(cov_mat);
+	gsl_vector_free(vect_b);
 	gsl_matrix_free(mat_inv);
-	gsl_permutation_free(permu);
 	gsl_vector_free(pamer);
-	
+	gsl_permutation_free(permu);	
+
 	delete[] cov_matrix;
 	delete[] f_vector;
-	delete[] norms;
 	delete[] check;
 }
 
@@ -2211,20 +2169,29 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 		std::cout << "Order < 1 !!!" << std::endl;
 		exit(0);
 	}
+
 	int terms = (order + 1)*(order + 2) / 2;
-	int size = 2*order * data_num, mask_size = 4 * order* order;
-	int xys_size = (4 * order - 1)*(order + 1)*order / 6 * data_num, xy_seq;
-	int i, j, k, m, n, y_odr, x_odr, xy_count = 0;
+	// rows * data number, "row+1" represent the power of x(y)
+	int size = 2 * order * data_num;
+	// the length of the square matrix of powers of x and y
+	int mask_size = (2 * order + 1)*(2 * order + 1);
+	// the number of possible "x^n*y^m" term
+	int xys_size = (2 * order - 1)*order * data_num, xy_seq;
+	int i, j, k, m, n;
+	int y_odr, x_odr, xy_count = 0;
 	double dn_sum = 0;
+
 	// the powers of x and y of each turn in the polynomial
 	int *pow_y = new int[terms] {};
 	int *pow_x = new int[terms] {};
 	double *ys = new double[size] {};
 	double *xs = new double[size] {};
+
 	// xy_pow_mask stores the location of "x^n*y^m" in the array "xys"
 	// xy_pow_mask is used as 2 dimessional array , (y order, x order)
 	int *xy_pow_mask = new int[mask_size] {};
 	double *xys = new double[xys_size] {};
+
 	for (i = 0; i < mask_size; i++)
 	{
 		xy_pow_mask[i] = -1;
@@ -2308,15 +2275,15 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 				else
 				{
 					// if this term has been gotten
-					if (xy_pow_mask[y_odr*(order + 1) + x_odr] > -1)
+					if (xy_pow_mask[y_odr*(2*order + 1) + x_odr] > -1)
 					{
-						xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
+						xy_seq = xy_pow_mask[y_odr*(2*order + 1) + x_odr];
 						sum_arr(xys, xys_size, xy_seq*data_num, (xy_seq + 1)*data_num, dn_sum);
 					}
 					// if not
 					else
 					{
-						xy_pow_mask[y_odr*(order + 1) + x_odr] = xy_count;
+						xy_pow_mask[y_odr*(2*order + 1) + x_odr] = xy_count;
 						for (k = 0; k < data_num; k++)
 						{
 							xys[xy_count*data_num + k] = xs[(x_odr - 1)*data_num + k] * ys[(y_odr - 1)*data_num + k];
@@ -2368,7 +2335,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 			// the f(x,y)* x^n*y^m terms
 			else
 			{
-				xy_seq = xy_pow_mask[y_odr*(order + 1) + x_odr];
+				xy_seq = xy_pow_mask[y_odr*(2*order + 1) + x_odr];
 				for (j = 0; j < data_num; j++)
 				{
 					dn_sum += fxy[j] * xys[xy_seq*data_num + j];
@@ -2377,22 +2344,6 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 		}
 		f_vector[i] = dn_sum;
 	}
-
-	//std::cout <<"beign cov:   "<<terms<< std::endl;
-	//for (i = 0; i < terms; i++)
-	//{
-	//	for (j = 0; j < terms; j++)
-	//	{
-	//		std::cout << cov_matrix[i*terms + j]<<", ";
-	//	}
-	//	std::cout << std::endl;
-	//}
-	//std::cout << "beign vector:   " << terms << std::endl;
-	//for (j = 0; j < terms; j++)
-	//{
-	//	std::cout << f_vector[j] << ", ";
-	//}
-	//std::cout << std::endl;
 
 	delete[] xys;
 	delete[] pow_x;
@@ -2455,6 +2406,14 @@ void arr_pow(const double *arr, double *arr_out, const int size, const int alpha
 	}
 }
 
+void arr_rescale(double *x, const double dx, const double scale, const int num)
+{
+	for (int i = 0; i < num; i++)
+	{
+		x[i] = scale * (x[i] + dx);
+	}
+}
+
 void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result)
 {
 	gsl_matrix *a = gsl_matrix_alloc(size_1, size_2);
@@ -2501,6 +2460,33 @@ void matrix_product(const double*arr_left, const int size_1, const int size_2, c
 	gsl_matrix_free(c);
 }
 
+void matrix_inv(const double *arr, const int size, double *arr_inv)
+{
+	gsl_matrix *gsl_arr = gsl_matrix_alloc(size, size);
+	gsl_matrix *gsl_arr_inv = gsl_matrix_alloc(size, size);
+	gsl_permutation *permu = gsl_permutation_alloc(size);
+	int i, j, s;
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			gsl_matrix_set(gsl_arr, i, j, arr[i*size + j]);
+		}
+	}
+	gsl_linalg_LU_decomp(gsl_arr, permu, &s);
+	gsl_linalg_LU_invert(gsl_arr, permu, gsl_arr_inv);
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < size; j++)
+		{
+			arr_inv[i*size + j] = gsl_matrix_get(gsl_arr_inv, i, j);
+		}
+	}
+
+	gsl_matrix_free(gsl_arr);
+	gsl_matrix_free(gsl_arr_inv);
+	gsl_permutation_free(permu);
+}
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/

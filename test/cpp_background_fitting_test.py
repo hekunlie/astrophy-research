@@ -11,61 +11,99 @@ import h5py
 import tool_box
 import matplotlib.pyplot as plt
 
+
+def fun_xy(xi, yi, params, xypows):
+    vals = 0
+    for i in range(terms):
+        vals += params[i]*xi**(xypows[i][0])*yi**(xypows[i][1])
+    return vals
+
+
 order = int(argv[1])
 terms = int((order + 1) * (order + 2) / 2)
-
+img_num = int(argv[2])
+rng = numpy.random.RandomState(123)
 num = 200
-x, y = numpy.mgrid[-num/2:num/2, -num/2:num/2]/10
+x, y = numpy.mgrid[0:num, 0:num]
 xf, yf = x.reshape((int(num*num),)), y.reshape((int(num*num),))
+
+ch_num = int(argv[3])
+ch = rng.choice(numpy.arange(0,len(xf)), int(ch_num), replace=False)
+# x, y = numpy.linspace(0, 20,int(num*num)), numpy.linspace(-10, 10, int(num*num))
+# xf, yf = x, y
+# powers of each terms
 pows = [(i-j, j) for i in range(order+1) for j in range(i+1)]
+
+# the coefficients
 coeffs = [3000., 1., -1.]
 fxy_ori = 0.
 if terms - 2 > 1:
     for i in range(1,terms - 2):
-        coeffs.append(numpy.random.uniform(-5,5,1)[0]/i/2)
+        coeffs.append(numpy.random.uniform(-3, 3, 1)[0]/i/2)
+
+# the f(x,y)
 for i in range(terms):
     fxy_ori += coeffs[i]*x**(pows[i][0])*y**(pows[i][1])
+
 cof = ""
 for k in range(terms):
     cof += "%g, " % coeffs[k]
 print("The true coeff: ", cof)
-for i in range(int(argv[2])):
 
-    noise = numpy.random.normal(0, 10, int(num*num)).reshape((num, num))
+print(fun_xy(0,0, coeffs, pows), fun_xy(55,20, coeffs, pows))
+dx = 0
+scales = 1
+yscale = 1
+for i in range(img_num):
+
+    noise = numpy.random.normal(0, 20, int(num*num)).reshape((num, num))
 
     fxy = fxy_ori + noise
 
     fxyf = fxy.reshape((int(num*num),))
 
     h5f = h5py.File("/home/hkli/work/cpp/test/data/%d.hdf5"%i,"w")
-    h5f["/x"] = xf
-    h5f['/y'] = yf
-    h5f['/fxy'] = fxyf
-    h5f.close()
+    # xf = numpy.arange(0, 10)
+    # yf = xf + 0.5
+    # fxyf = xf - 5
+    paras, pows, cov, fv = tool_box.fit_2d((xf[ch]+dx)*scales, (yf[ch]+dx)*scales, fxyf[ch]*yscale, order)
 
-    paras, pows, cov, fv = tool_box.fit_2d(xf, yf, fxyf, order)
-    cov_inv = numpy.linalg.inv(numpy.array(cov))
+    print("The esimated: ",fun_xy((dx+0)*scales, (dx+0)*scales, paras, pows)/yscale,
+          fun_xy((dx+55)*scales,(dx+20)*scales, paras, pows)/yscale)
+    cov = numpy.array(cov)
+    fv = numpy.array(fv)
+
+    h5f["/x"] = xf[ch]
+    h5f['/y'] = yf[ch]
+    h5f['/fxy'] = fxyf[ch]
+    h5f["/cov"] = cov
+    h5f["/vect"] = fv
+    h5f.close()
+    cov_inv = numpy.linalg.inv(cov)
     if i >= 0:
 
         print(xf.sum(), yf.sum())
         a = ""
+        print("Right")
         for j in range(terms):
             a += "%g, " % fv[j][0]
         print(a)
 
-        #print("\n")
+        print("\n")
+        print("COV")
         for j in range(terms):
             s = ""
             for k in range(terms):
                 s += "%g, " % cov[j][k]
-            #print(s)
+            print(s)
 
-        #print("\n")
+        print("\n")
+        print("COV_INV")
         for j in range(terms):
             s = ""
             for k in range(terms):
                 s += "%g, " % cov_inv[j][k]
-            #print(s)
+            print(s)
         #print("\n")
     fit_fxy = 0
     for j in range(terms):
@@ -81,12 +119,14 @@ for i in range(int(argv[2])):
     plt.figure(figsize=(12,12))
     plt.subplot(221)
     plt.imshow(fxy)
+    plt.colorbar()
     plt.subplot(222)
     plt.imshow(fit_fxy)
+    plt.colorbar()
     plt.subplot(223)
     plt.imshow(residuals)
     plt.colorbar()
     plt.subplot(224)
-    plt.hist(residuals.reshape(40000, ), 30)
+    plt.hist(residuals.reshape(int(num*num), ), 30)
     plt.savefig("/home/hkli/work/cpp/test/pic/%d.png"%i)
     plt.close()
