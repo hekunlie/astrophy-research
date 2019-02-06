@@ -832,7 +832,7 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     nxy = [(iy, ix) for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
     # the distance of each block corner from this point
     # the 3'th of each row is the max distance of the block from the point
-    dr_n = (block_boundy[needs] - pts_y) ** 2 + (block_boundx[needs] - pts_x) ** 2
+    dr_n = (block_boundy[needs] - pts_y) ** 2 + (block_boundx[needs] - pts_x) ** 2 # may be not safe !!!
     dr_n.sort()
 
     blocks_found = []
@@ -841,7 +841,7 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
         if dr_n[tag][3] < rs or (dr_n[tag][0] > re and iy != ny and ix != nx):
             # if maximum distance (minimum distance) of the block from the point is
             # larger (smaller) than rs (re), this block will be neglected.
-            # but be careful with the block in cross center on this point.
+            # but be careful with the block in cross centers on this point.
             continue
         else:
             if iy > ny or (iy == ny and ix >= nx):

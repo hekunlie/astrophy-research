@@ -27,8 +27,9 @@
 #include<stdlib.h>
 #include<algorithm> // sort(), std::max()
 #include<functional> // std::less, std::greater..
+#include<ciso646> // for "and, not, or, ..."
 
-
+// something relates to the shear measurement and source dection
 struct para
 {
 	int psf_size, psf_px, psf_py;
@@ -70,6 +71,17 @@ struct para
 
 	/* for calculating the exponential exp() quickly */
 	double exp_val[15] = { exp(1.), exp(2.), exp(3.), exp(4.), exp(5.), exp(6.), exp(7.), exp(8.), exp(9.),  exp(10.), exp(11.), exp(12.), exp(13.), exp(14.), exp(15.), };
+};
+
+// something relates to the correlation function calculation
+struct pts_info
+{
+	int idy, idx; // block id of the point
+	double y, x; // the coordinates of the point
+
+	double scale; // the length of the side of the square blocks
+	int ny, nx; // the number of blocks along each axis 
+	int blocks_num; // the numbers of total blocks
 };
 
 
@@ -264,6 +276,7 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 void shear_est(double *gal_img, double *psf_img, para *paras);
 void ellip_est(const double *gal_img, const int size, para*paras);
 
+//void find_block(const int ny, const int nx, const double y, const double x, const double scale, const int num_y , const int num_x,)
 
 /********************************************************************************************************************************************/
 /* random */
@@ -344,6 +357,7 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 double fval_at_xy(const double x, const double y, const int order, const double *coeffs );
 /* calculate the f(x,y) when given the "order" and "coefficients".
 	the polynomial f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 ..... 
+	coeffs:array, [a1,a2,a3...]
 */
 
 void background_remove(const double *arr, const int size_x, const int size_y);
