@@ -365,7 +365,7 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 	coeffs:array, [a1,a2,a3...]
 */
 
-void background_remove(const double *arr, const int size_x, const int size_y);
+//void background_remove(const double *arr, const int size_x, const int size_y);
 /* fit the stand deviation of background noise of the a chip
 */
 
@@ -468,8 +468,8 @@ void get_time(char *str_time, int length);
 /********************************************************************************************************************************************/
 /* GSL library */
 /********************************************************************************************************************************************/
-void gsl_rng_initialize(int seed);
-void gsl_rng_free();
+void gsl_initialize(int seed);
+void gsl_free();
 
 #endif // !FQLIB_H
 

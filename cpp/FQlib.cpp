@@ -2865,7 +2865,7 @@ void get_time(char *str_time, int length)
 /********************************************************************************************************************************************/
 /* GSL library */
 /********************************************************************************************************************************************/
-void gsl_rng_initialize(int seed)
+void gsl_initialize(int seed)
 {
 	gsl_rng_env_setup();
 	//gsl_rng_default_seed = seed;
@@ -2875,7 +2875,7 @@ void gsl_rng_initialize(int seed)
 	gsl_rng_set(rng, seed);
 }
 
-void gsl_rng_free()
+void gsl_free()
 {
 	gsl_rng_free(rng);
 }
