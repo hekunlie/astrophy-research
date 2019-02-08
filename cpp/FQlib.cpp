@@ -1764,6 +1764,109 @@ void ellip_est(const double *gal_img, const int size, para*paras)
 	paras->gal_e2 = 2 * q12 / (q11 + q22);
 }
 
+void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x)
+{
+	int i, j, k;
+	for (i = 0; i < ny; i++)
+	{
+		for (j = 0; j < nx; j++)
+		{
+			// the sequence of the vertexes of the blocks：
+			// | (y1,x1), (y1,x2) |
+			// | (y2,x1), (y2,x2) |
+			bound_y[4 * (i * nx + j)] = i * scale;
+			bound_y[4 * (i * nx + j) + 1] = i * scale;
+			bound_y[4 * (i * nx + j) + 2] = (i + 1) * scale;
+			bound_y[4 * (i * nx + j) + 3] = (i + 1) * scale;
+
+			bound_x[4 * (i * nx + j)] = j * scale;
+			bound_x[4 * (i * nx + j) + 1] = (j + 1) * scale;
+			bound_x[4 * (i * nx + j) + 2] = j * scale;
+			bound_x[4 * (i * nx + j) + 3] = (j + 1) * scale;
+		}
+	}
+}
+
+void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask)
+{
+	int i, j, k, lb, lby, lb_d, lb_d_, seq = 0;
+	int idy = infos->idy;// block id of the point
+	int idx = infos->idx;
+	double y = infos->y;// the coordinates of the point
+	double x = infos->x;
+	double scale = infos->scale;// the length of the side of the square blocks
+	int ny = infos->ny; // the number of blocks along each axis 
+	int nx = infos->nx;
+	int num = infos->blocks_num;// the numbers of total blocks
+
+	int nx_left, nx_right, ny_up; // the max blocks number in each direction
+												// away from the point within radius_e
+	int nx_s, nx_e, ny_e;
+
+	double rs_sq = radius_s * radius_s;
+	double re_sq = radius_e * radius_e;
+	double dx, dy;
+	double distance[4];
+	// "distance" stores the distance of the four vertexes of each block,
+	// the sequence of the vertexes：
+	// | (y1,x1), (y1,x2) |
+	// | (y2,x1), (y2,x2) |
+
+	// find the minimum square that contains the target blocks
+	nx_left = (int)((radius_e - x) / scale) + idx + 1;
+	nx_right = (int)((radius_e + x) / scale) - idx;
+	ny_up = (int)((radius_e + y) / scale) - idy;
+
+	nx_s = std::max(idx - nx_left, 0);
+	nx_e = std::min(idx + nx_right + 1, nx);
+	ny_e = std::min(idy + ny_up + 1, ny);
+
+	// initialiize the mask
+	for (i = 0; i < num; i++)
+	{
+		block_mask[i] = -1;
+	}
+
+	for (i = idy; i < ny_e; i++)
+	{
+		lby = i * nx; // for speed
+		for (j = nx_s; j < nx_e; j++)
+		{
+			lb = lby + j; // label of the block
+			lb_d = lb * 4;
+			for (k = 0; k < 4; k++)
+			{
+				lb_d_ = lb_d + k;
+				dy = bound_y[lb_d_] - y;
+				dx = bound_x[lb_d_] - x;
+				distance[k] = dy * dy + dx * dx;
+			}
+			sort_arr(distance, 4, 1); // ascending order
+			if (distance[3] < rs_sq or (distance[0] > re_sq and i not_eq idy and j not_eq idx))
+			{
+				//"distance[3] < rs_sq": 
+				// if the max distance between the vertex and the point is smaller than radius_s,
+				//	it is not the target block.
+				//	"distance[0] > re_sq and i not_eq idy and j not_eq idx":  
+				//  if the minimum distance between the vertexes of a block ,
+				//	which is not on the cross centers on  (idy, idx) , is larger 
+				//	than radius_e, it is not the target one. 
+				//	The blocks on the cross centers on  (idy, idx) are the 
+				//	targets.
+				continue;
+			}
+			else
+			{
+				if (i > idy or (i == idy and j >= idx))
+				{
+					block_mask[seq] = lb;
+					seq++;
+				}
+			}
+		}
+	}
+}
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/

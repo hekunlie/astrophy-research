@@ -6,8 +6,8 @@ import numpy
 import matplotlib.pyplot as plt
 
 scale = 5
-ny,nx = 20,20
-radius_s, radius_e = 13, 27.5
+ny,nx = 10,10
+radius_s, radius_e = 7.5, 38.7
 
 # grid
 my,mx = numpy.mgrid[0:ny+1,0:nx+1]*scale
@@ -32,9 +32,9 @@ for iy in range(ny):
             plt.plot([0, nx * scale], [i * scale, i * scale], c="black", linewidth=0.5)
             for j in range(nx + 1):
                 plt.plot([j * scale, j * scale], [0, ny * scale], c="black", linewidth=0.5)
-        dec = iy * scale + numpy.random.rand() * scale
-        ra = ix * scale + numpy.random.rand() * scale
-
+        # dec = iy * scale + numpy.random.rand() * scale
+        # ra = ix * scale + numpy.random.rand() * scale
+        dec, ra = 4.68487, 4.31511
         plt.scatter(ra,dec,s=1)
         plt.title("%.4f,%.4f"%(dec - iy*scale, ra-ix*scale))
         target_blocks = tool_box.find_block(scale, radius_s, radius_e, iy, ix, dec, ra,

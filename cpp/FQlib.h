@@ -276,7 +276,12 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 void shear_est(double *gal_img, double *psf_img, para *paras);
 void ellip_est(const double *gal_img, const int size, para*paras);
 
-//void find_block(const int ny, const int nx, const double y, const double x, const double scale, const int num_y , const int num_x,)
+void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);
+/* find the target blocks for a specific point for the calculation of correlation function.
+	
+*/
+
+void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);
 
 /********************************************************************************************************************************************/
 /* random */
