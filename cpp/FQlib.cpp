@@ -2593,6 +2593,24 @@ void matrix_inv(const double *arr, const int size, double *arr_inv)
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+void task_alloc(const int *label_list, const int total_task_num, const int portion, const int portion_label, int *allocated_list)
+{
+	int i, j, k, m, n;
+	m = total_task_num / portion;
+	n = total_task_num % portion;
+	for (i = 0; i < total_task_num; i++)
+	{
+		allocated_list[i] = -1;
+	}
+	for (i = 0; i < m; i++)
+	{
+		allocated_list[i] = label_list[m*portion_label + i];
+	}
+	if (portion_label< n)
+	{
+		allocated_list[m] = label_list[m*portion + portion_label];
+	}
+}
 
 void show_arr(const double*arr, const int size_1, const int size_2)
 {

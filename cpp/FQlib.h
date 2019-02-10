@@ -416,6 +416,18 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+void task_alloc(const int *label_list, const int total_task_num, const int portion,  const int portion_label, int *allocated_list );
+/* 
+	distribute the tasks
+	-1 is used to label the end of the tasks list
+	please keep the lengths of "label_list" and "allocated_list" the same
+
+	label_list: array, contains the labels of each task, 1,2,3... or something, non-negative,
+	total_task_num: int, number of total tasks
+	portion: int, how many portions the total task will be divided into
+	portion_label: int, "0" means the first part, which portion to be returned
+	allocated_list: array, the labels of the returned tasks	
+*/
 
 void show_arr(const double*arr, const int size_1, const int size_2);
 /* print the elements on the screen
