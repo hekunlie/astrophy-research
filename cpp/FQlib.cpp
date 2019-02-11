@@ -1867,9 +1867,39 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	}
 }
 
+
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
+double multi_gauss(const double*cov, const double *mu, const int num, double *result)
+{	
+	int i, j;
+	gsl_matrix *covs = gsl_matrix_alloc(num, num);
+	gsl_vector *mus = gsl_vector_alloc(num);
+	gsl_vector *res = gsl_vector_alloc(num);
+
+	for (i = 0; i < num; i++)
+	{
+		gsl_vector_set(mus, i, mu[i]);
+		for (j = 0; j < num; j++)
+		{
+			gsl_matrix_set(covs, i, j, cov[i*num + j]);
+		}
+	}
+
+	gsl_linalg_cholesky_decomp(covs);
+	gsl_ran_multivariate_gaussian(rng, mus, covs, res);
+
+	for (i = 0; i < num; i++)
+	{
+		result[i] = gsl_vector_get(res, i);
+	}
+
+	gsl_matrix_free(covs);
+	gsl_vector_free(mus);
+	gsl_vector_free(res);
+}
 
 double rand_gauss(double sigma, double mean)
 {
@@ -1914,6 +1944,8 @@ void rand_shuffle(int *seq, int length)
 		std::swap(seq[i], seq[rand_i]);
 	}
 }
+
+
 
 /********************************************************************************************************************************************/
 /* fitting */
@@ -2590,9 +2622,27 @@ void matrix_inv(const double *arr, const int size, double *arr_inv)
 	gsl_matrix_free(gsl_arr_inv);
 	gsl_permutation_free(permu);
 }
+
+
+
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+
+void check_buffer(double *target_arr, double *buffer, const int start_t, const int buffer_size, int & count, int count_line)
+{
+	if (count > count_line)
+	{
+		int i;
+		for (i = 0; i < buffer_size; i++)
+		{
+			target_arr[start_t + i] += buffer[i];
+			buffer[i] = 0;
+		}
+		count = 0; //re-count
+	}
+}
+
 void task_alloc(const int *label_list, const int total_task_num, const int portion, const int portion_label, int *allocated_list)
 {
 	int i, j, k, m, n;
@@ -2621,7 +2671,7 @@ void show_arr(const double*arr, const int size_1, const int size_2)
 		{
 			for (j = 0; j < size_2; j++)
 			{
-				std::cout << arr[i*size_1 + j] << ", ";
+				std::cout << arr[i*size_2 + j] << ", ";
 			}
 			std::cout << std::endl;
 		}

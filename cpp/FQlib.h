@@ -16,6 +16,7 @@
 #include <fftw3.h>
 #include <ctime>
 #include <gsl/gsl_randist.h>
+#include<gsl/gsl_cdf.h>
 #include <gsl/gsl_rng.h>
 #include<gsl/gsl_cblas.h>
 #include<gsl/gsl_fit.h>
@@ -291,6 +292,15 @@ double rand_gauss(double sigma, double mean);
 /* return a double from the normal distribution with sigma and mean. 
 */
 
+double multi_gauss(const double*cov, const double *mu, const int num, double *result);
+/* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
+
+	cov: array, the covariance matrix
+	mu: array, the means
+	num: int, the dimensions k
+	result: array, the k numbers
+*/
+
 double rand_uniform(double start, double end);
 /* return a double, [ start, end ), with a unifrom distribution.
 */
@@ -416,6 +426,22 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+
+void check_buffer(double *target_arr, double *buffer, const int start_t, const int buffer_size, int & count, int count_line);
+/* if the count > count_line, the data in buffer will be added to the target_arr and be cleared then.
+	call it anywhere you want, if count>count_line, it will work.
+
+	it is designed for the large number.
+	it may be useless if one add a small numer to a very large number because of the finite significant digits 
+
+	target_arr: array, a big container
+	buffer: array, a temp container
+	start_t: int, the start element in the targer_arr where the buffer will be added to
+	buffer_size: int, the size of buffer
+	count: int, the count, it will be 
+	count_line: int, the upper bound for count
+*/
+
 void task_alloc(const int *label_list, const int total_task_num, const int portion,  const int portion_label, int *allocated_list );
 /* 
 	distribute the tasks
@@ -429,7 +455,7 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	allocated_list: array, the labels of the returned tasks	
 */
 
-void show_arr(const double*arr, const int size_1, const int size_2);
+void show_arr(const double*arr, const int size_1, const int size_2);//checked
 /* print the elements on the screen
 */
 void initialize_para(para *paras);
