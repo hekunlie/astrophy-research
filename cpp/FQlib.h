@@ -154,9 +154,10 @@ void read_text(const std::string path, int *arr, const int read_lines);
 	the read_lines limits the maximum lines to read
 */
 
-void read_h5(const char *filename, const char *set_name, double *arr);
+void read_h5(const char *filename, const char *set_name, double *arr);//checked
 void read_h5(const char *filename, const char *set_name, float *arr);
-void read_h5(const char *filename, const char *set_name, int *arr);
+void read_h5(const char *filename, const char *set_name, int *arr);//checked
+void read_h5(const char *filename, const char *set_name, long *arr);//checked
 void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);
@@ -284,6 +285,13 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 
 void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);
 
+double chisq_2d(const double *hist_arr, const int size);//checked
+double chisq_2d(const long *hist_arr, const int size);//checked
+double chisq_2d(const int *hist_arr, const int size);//checked
+/* 2d chi square for correlation calculation
+	hist_arr: the 2d histogram of G1, G1~ 
+*/
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
@@ -292,7 +300,7 @@ double rand_gauss(double sigma, double mean);
 /* return a double from the normal distribution with sigma and mean. 
 */
 
-double multi_gauss(const double*cov, const double *mu, const int num, double *result);
+double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);
 /* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
 
 	cov: array, the covariance matrix

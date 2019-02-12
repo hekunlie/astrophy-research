@@ -1,64 +1,134 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-double chisq_2d(const double *hist_arr, const int size)
-{	
-	int h = size / 2, i, j, s1, s2=size*size;
-	double chi=0, n,m;
-	for (i = 0; i < h; i++)
-	{	
-		s1 = i * size;
-		for (j = 0; j < h; j++)
-		{
-			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
-			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
-			chi += m * m / n;
-		}
-	}
-	return chi * 0.5;
-}
-
 int main(int argc, char *argv[])
 {
-	int myid, numprocs;
+	int rank, numprocs;
 	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
-	int size = 5, psize = 30;
-	int i, j,  m,n,count = 0, turns=1000000;
-	double *pool = new double[psize]{};
-	double *buffer = new double[size]{};
+	gsl_initialize(123);
 
+	std::string str_shear_num = "shear_num", str_total_num = "total_num";
+	char data_path[100], log_inform[250], set_1[50];
+	char data_path_1[200], data_path_2[200];
 
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/correlation/simu/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/correlation/simu/";
+	std::string str_paraf_path = str_data_path + "parameters/para.ini";
+	int total_chips, shear_pairs, shear_num;
+	read_para(str_paraf_path, str_total_num, total_chips);
+	read_para(str_paraf_path, str_shear_num, shear_num);
+	shear_pairs = shear_num / 2;
 
-	for (i = 0; i < turns; i++)
+	int i, j, k;
+	sprintf(data_path_1, "%sresult/data/data_%d.hdf5", data_path, rank);
+	sprintf(data_path_2, "%sresult/data/data_%d.hdf5", data_path, rank+shear_pairs);
+	sprintf(set_1, "/data");
+	if (rank < shear_pairs)
 	{	
-		for (j = 0; j < size; j++)
+		// for multi_gaussian()
+		int fit_num = 40, data_num = total_chips*10000, bin_num = 6;
+		double cov11;
+		double *covs = new double[4]{};
+		double *cor_gs = new double[2]{};
+		double *mus = new double[2]{};
+		double st1, st2, st3;
+
+		double *data_1 = new double[data_num * 7]{};
+		double *data_2 = new double[data_num * 7]{};
+
+		double *gch11 = new double[data_num]{};
+		double *gch12 = new double[data_num]{};
+
+		double *gch21 = new double[data_num]{};
+		double *gch22 = new double[data_num]{};
+
+		double *chisqs = new double[fit_num*2]{};
+
+		double *bins = new double[bin_num + 1]{};
+		int *nums_1 = new int[bin_num*bin_num]{};
+		int *nums_2 = new int[bin_num*bin_num]{};
+
+		read_h5(data_path_1, set_1, data_1);
+		read_h5(data_path_2, set_1, data_2);
+
+		if (rank == 0)
 		{
-			buffer[j] ++;
-			count++;
-			check_buffer(pool, buffer, size, size, count, 50000);
-			if (i == turns - 1)
+			std::cout << numprocs << ", " << data_num << std::endl;
+		}
+
+		// set bins for histogram
+		for (i = 0; i < data_num; i++)
+		{
+			gch11[i] = data_1[i * 7 + 2];
+		}
+		set_bin(gch11, data_num, bins, bin_num, 10.);
+
+		if (rank == 0)
+		{
+			std::cout << numprocs<<", "<< data_num << std::endl;
+		}
+
+		for (i = 0; i < fit_num; i++)
+		{	
+			
+			// covariance 
+			cov11 = i * 0.00005 - 0.001;
+			covs[0] = fabs(2 * cov11);
+			covs[1] = cov11;
+			covs[2] = cov11;
+			covs[3] = fabs(2 * cov11);
+
+			st1 = clock();
+
+			for (j = 0; j < data_num; j++)
 			{
-				count = 50001;
-				check_buffer(pool, buffer, size, size, count, 50000);
+				rand_multi_gauss(covs, mus, 2, cor_gs); // check agnist numpy 
+
+				// correlation for g1
+				gch11[j] = data_1[j * 7 + 2] - cor_gs[0] * (data_1[j * 7 + 4] + data_1[j * 7 + 5]);
+				gch12[j] = data_2[j * 7 + 2] - cor_gs[1] * (data_2[j * 7 + 4] + data_2[j * 7 + 5]);
+				// correlation for g2
+				gch21[j] = data_1[j * 7 + 3] - cor_gs[0] * (data_1[j * 7 + 4] - data_1[j * 7 + 5]);
+				gch22[j] = data_2[j * 7 + 3] - cor_gs[1] * (data_2[j * 7 + 4] - data_2[j * 7 + 5]);
 			}
-			if (count == 0)
+			st2 = clock();
+
+			histogram2d(gch11, gch12, bins, bins, nums_1, data_num, bin_num, bin_num);
+			histogram2d(gch21, gch22, bins, bins, nums_2, data_num, bin_num, bin_num);
+
+			chisqs[i] = chisq_2d(nums_1, bin_num);
+			chisqs[i+fit_num] = chisq_2d(nums_2, bin_num);
+
+			st3 = clock();
+			if (rank == 0)
 			{
-				std::cout << "Re-count: " << i << ", " << j <<", "<<count<< std::endl;
-				show_arr(pool, 6, 5);
-				std::cout << std::endl;
-				show_arr(buffer, 1, 5);
+				std::cout <<i<<", "<< (st2 - st1) / CLOCKS_PER_SEC<<", "<<(st3 - st2) / CLOCKS_PER_SEC << std::endl;
 			}
 
 		}
+		sprintf(data_path_1, "%schisq_%d.hdf5", data_path, rank);
+		write_h5(data_path_1, set_1, chisqs, 2, fit_num);
+
+		delete[] data_1;
+		delete[] data_2;
+
+		delete[] gch11;
+		delete[] gch12;
+		delete[] gch21;
+		delete[] gch22;
+		delete[] chisqs;
+		delete[] bins;
+		delete[] nums_1;
+		delete[] nums_2;
+		delete[] covs;
+		delete[] mus;
+		delete[] cor_gs;
 	}
-	
 
-
-	delete[] pool;
-	delete[] buffer;
+	gsl_free();
 	MPI_Finalize();
 	return 0;
 }

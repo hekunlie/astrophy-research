@@ -200,6 +200,18 @@ void read_h5(const char *filename, const char *set_name, int *arr)
 	status = H5Fclose(file_id);
 }
 
+void read_h5(const char *filename, const char *set_name, long *arr)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
 void write_h5(const char *filename, const char *set_name, const double*arr, const int row, const int column)
 {
 	hid_t file_id;
@@ -1867,12 +1879,63 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	}
 }
 
+double chisq_2d(const double *hist_arr, const int size)
+{
+	int h = size / 2, i, j, s1, s2 = size * size;
+	double chi = 0, n, m;
+	for (i = 0; i < h; i++)
+	{
+		s1 = i * size;
+		for (j = 0; j < h; j++)
+		{
+			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
+			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			chi += m * m / n;
+		}
+	}
+	return chi * 0.5;
+}
 
+double chisq_2d(const long *hist_arr, const int size)
+{
+	int h = size / 2, i, j, s1, s2 = size * size;
+	double chi = 0, n, m;
+
+	for (i = 0; i < h; i++)
+	{
+		s1 = i * size;
+		for (j = 0; j < h; j++)
+		{
+			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
+			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			chi += m * m / n;
+		}
+	}
+	return chi * 0.5;
+}
+
+double chisq_2d(const int *hist_arr, const int size)
+{
+	int h = size / 2, i, j, s1, s2 = size * size;
+	double chi = 0, n, m;
+
+	for (i = 0; i < h; i++)
+	{
+		s1 = i * size;
+		for (j = 0; j < h; j++)
+		{
+			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
+			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			chi += m * m / n;
+		}
+	}
+	return chi * 0.5;
+}
 
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
-double multi_gauss(const double*cov, const double *mu, const int num, double *result)
+double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result)
 {	
 	int i, j;
 	gsl_matrix *covs = gsl_matrix_alloc(num, num);
@@ -1885,7 +1948,9 @@ double multi_gauss(const double*cov, const double *mu, const int num, double *re
 		for (j = 0; j < num; j++)
 		{
 			gsl_matrix_set(covs, i, j, cov[i*num + j]);
+			//std::cout << gsl_matrix_get(covs, i, j) << ", ";
 		}
+		//std::cout << std::endl;
 	}
 
 	gsl_linalg_cholesky_decomp(covs);
