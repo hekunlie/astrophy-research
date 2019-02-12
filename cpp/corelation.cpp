@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	gsl_initialize(123);
 
 	std::string str_shear_num = "shear_num", str_total_num = "total_num";
-	char data_path[100], log_inform[250], set_1[50];
+	char data_path[100], log_inform[250], set_1[50], npy_data_path[200];
 	char data_path_1[200], data_path_2[200];
 
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/correlation/simu/");
@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 	int i, j, k;
 	sprintf(data_path_1, "%sresult/data/data_%d.hdf5", data_path, rank);
 	sprintf(data_path_2, "%sresult/data/data_%d.hdf5", data_path, rank+shear_pairs);
+	sprintf(npy_data_path, "%smgauss_%d.hdf5", data_path, rank);
 	sprintf(set_1, "/data");
 	if (rank < shear_pairs)
 	{	
@@ -38,6 +39,8 @@ int main(int argc, char *argv[])
 
 		double *data_1 = new double[data_num * 7]{};
 		double *data_2 = new double[data_num * 7]{};
+
+		double *cor_gs_npy = new double[fit_num*data_num * 2];
 
 		double *gch11 = new double[data_num]{};
 		double *gch12 = new double[data_num]{};
@@ -53,6 +56,7 @@ int main(int argc, char *argv[])
 
 		read_h5(data_path_1, set_1, data_1);
 		read_h5(data_path_2, set_1, data_2);
+		read_h5(npy_data_path, set_1, cor_gs_npy);
 
 		if (rank == 0)
 		{
@@ -85,8 +89,9 @@ int main(int argc, char *argv[])
 
 			for (j = 0; j < data_num; j++)
 			{
-				rand_multi_gauss(covs, mus, 2, cor_gs); // check agnist numpy 
-
+				//rand_multi_gauss(covs, mus, 2, cor_gs); // check agnist numpy 
+				cor_gs[0] = cor_gs_npy[i*data_num * 2 + j * 2];
+				cor_gs[1] = cor_gs_npy[i*data_num * 2 + j * 2 + 1];
 				// correlation for g1
 				gch11[j] = data_1[j * 7 + 2] - cor_gs[0] * (data_1[j * 7 + 4] + data_1[j * 7 + 5]);
 				gch12[j] = data_2[j * 7 + 2] - cor_gs[1] * (data_2[j * 7 + 4] + data_2[j * 7 + 5]);
@@ -126,6 +131,7 @@ int main(int argc, char *argv[])
 		delete[] covs;
 		delete[] mus;
 		delete[] cor_gs;
+		delete[] cor_gs_npy;
 	}
 
 	gsl_free();
