@@ -464,6 +464,7 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 */
 
 void show_arr(const double*arr, const int rows, const int cols);//checked
+void show_arr(const int*arr, const int rows, const int cols);//checked
 /* print the elements on the screen
 */
 void initialize_para(para *paras);
