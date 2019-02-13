@@ -2727,23 +2727,23 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	}
 }
 
-void show_arr(const double*arr, const int size_1, const int size_2)
+void show_arr(const double*arr, const int rows, const int cols)
 {
 	int i, j;
-	if (size_1 >= 1)
+	if (rows >= 1)
 	{
-		for (i = 0; i < size_1; i++)
+		for (i = 0; i < rows; i++)
 		{
-			for (j = 0; j < size_2; j++)
+			for (j = 0; j < cols; j++)
 			{
-				std::cout << arr[i*size_2 + j] << ", ";
+				std::cout << arr[i*cols + j] << ", ";
 			}
 			std::cout << std::endl;
 		}
 	}
 	else
 	{
-		std::cout << "size_1 must >= 1 !!!" << std::endl;
+		std::cout << "rows must >= 1 !!!" << std::endl;
 		exit(0);
 	}
 }

@@ -463,7 +463,7 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	allocated_list: array, the labels of the returned tasks	
 */
 
-void show_arr(const double*arr, const int size_1, const int size_2);//checked
+void show_arr(const double*arr, const int rows, const int cols);//checked
 /* print the elements on the screen
 */
 void initialize_para(para *paras);

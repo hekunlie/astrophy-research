@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
 		if (rank == 0)
 		{
 			std::cout << numprocs<<", "<< data_num << std::endl;
+			show_arr(bins, 1, bin_num + 1);
 		}
 
 		for (i = 0; i < fit_num; i++)
