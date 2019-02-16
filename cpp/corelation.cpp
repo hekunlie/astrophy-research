@@ -10,130 +10,52 @@ int main(int argc, char *argv[])
 
 	gsl_initialize(123);
 
-	std::string str_shear_num = "shear_num", str_total_num = "total_num";
-	char data_path[100], log_inform[250], set_1[50], npy_data_path[200];
-	char data_path_1[200], data_path_2[200];
-
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/correlation/simu/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/correlation/simu/";
-	std::string str_paraf_path = str_data_path + "parameters/para.ini";
-	int total_chips, shear_pairs, shear_num;
-	read_para(str_paraf_path, str_total_num, total_chips);
-	read_para(str_paraf_path, str_shear_num, shear_num);
-	shear_pairs = shear_num / 2;
 
 	int i, j, k;
-	sprintf(data_path_1, "%sresult/data/data_%d.hdf5", data_path, rank);
-	sprintf(data_path_2, "%sresult/data/data_%d.hdf5", data_path, rank+shear_pairs);
-	sprintf(npy_data_path, "%smgauss_%d.hdf5", data_path, rank);
-	sprintf(set_1, "/data");
-	if (rank < shear_pairs)
-	{	
-		// for multi_gaussian()
-		int fit_num = 40, data_num = total_chips*10000, bin_num = 6;
-		double cov11;
-		double *covs = new double[4]{};
-		double *cor_gs = new double[2]{};
-		double *mus = new double[2]{};
-		double st1, st2, st3;
+	int sky_areas;
 
-		double *data_1 = new double[data_num * 7]{};
-		double *data_2 = new double[data_num * 7]{};
+	char data_path[100], log_inform[250], set_name[50], attrs_name[50];
+	char data_set_path[100];
 
-		double *cor_gs_npy = new double[fit_num*data_num * 2];
+	sprintf(data_path, "/home/hkli/work/cpp/check.hdf5");
 
-		double *gch11 = new double[data_num]{};
-		double *gch12 = new double[data_num]{};
-
-		double *gch21 = new double[data_num]{};
-		double *gch22 = new double[data_num]{};
-
-		double *chisqs = new double[fit_num*2]{};
-
-		double *bins = new double[bin_num + 1]{};
-		int *nums_1 = new int[bin_num*bin_num]{};
-		int *nums_2 = new int[bin_num*bin_num]{};
-
-		read_h5(data_path_1, set_1, data_1);
-		read_h5(data_path_2, set_1, data_2);
-		read_h5(npy_data_path, set_1, cor_gs_npy);
-
-		if (rank == 0)
-		{
-			std::cout << numprocs << ", " << data_num << std::endl;
-		}
-
-		// set bins for histogram
-		for (i = 0; i < data_num; i++)
-		{
-			gch11[i] = data_1[i * 7 + 2];
-		}
-		set_bin(gch11, data_num, bins, bin_num, 10.);
-
-		if (rank == 0)
-		{
-			std::cout << numprocs<<", "<< data_num << std::endl;
-			show_arr(bins, 1, bin_num + 1);
-		}
-
-		for (i = 0; i < fit_num; i++)
-		{	
-			
-			// covariance 
-			cov11 = i * 0.00005 - 0.001;
-			covs[0] = fabs(2 * cov11);
-			covs[1] = cov11;
-			covs[2] = cov11;
-			covs[3] = fabs(2 * cov11);
-
-			st1 = clock();
-
-			for (j = 0; j < data_num; j++)
-			{
-				//rand_multi_gauss(covs, mus, 2, cor_gs); // check agnist numpy 
-				cor_gs[0] = cor_gs_npy[i*data_num * 2 + j * 2];
-				cor_gs[1] = cor_gs_npy[i*data_num * 2 + j * 2 + 1];
-				// correlation for g1
-				gch11[j] = data_1[j * 7 + 2] - cor_gs[0] * (data_1[j * 7 + 4] + data_1[j * 7 + 5]);
-				gch12[j] = data_2[j * 7 + 2] - cor_gs[1] * (data_2[j * 7 + 4] + data_2[j * 7 + 5]);
-				// correlation for g2
-				gch21[j] = data_1[j * 7 + 3] - cor_gs[0] * (data_1[j * 7 + 4] - data_1[j * 7 + 5]);
-				gch22[j] = data_2[j * 7 + 3] - cor_gs[1] * (data_2[j * 7 + 4] - data_2[j * 7 + 5]);
-			}
-			st2 = clock();
-
-			histogram2d(gch11, gch12, bins, bins, nums_1, data_num, bin_num, bin_num);
-			histogram2d(gch21, gch22, bins, bins, nums_2, data_num, bin_num, bin_num);
-
-			chisqs[i] = chisq_2d(nums_1, bin_num);
-			chisqs[i+fit_num] = chisq_2d(nums_2, bin_num);
-
-			st3 = clock();
-			if (rank == 0)
-			{
-				std::cout <<i<<", "<< (st2 - st1) / CLOCKS_PER_SEC<<", "<<(st3 - st2) / CLOCKS_PER_SEC << std::endl;
-			}
-
-		}
-		sprintf(data_path_1, "%schisq_%d.hdf5", data_path, rank);
-		write_h5(data_path_1, set_1, chisqs, 2, fit_num);
-
-		delete[] data_1;
-		delete[] data_2;
-
-		delete[] gch11;
-		delete[] gch12;
-		delete[] gch21;
-		delete[] gch22;
-		delete[] chisqs;
-		delete[] bins;
-		delete[] nums_1;
-		delete[] nums_2;
-		delete[] covs;
-		delete[] mus;
-		delete[] cor_gs;
-		delete[] cor_gs_npy;
+	int attrs_len = 2;
+	double dshape[2]{};
+	float fshape[2]{};
+	int ishape[2]{};
+	//sprintf(set_name, "/data");
+	//read_h5(data_path, set_name, dshape);
+	//std::cout << dshape[0] << ", " << dshape[1] << std::endl;
+	sprintf(attrs_name, "double");
+	printf(set_name, "/");
+	read_h5_attrs(data_path, set_name, attrs_name, dshape);
+	for (i = 0; i < attrs_len; i++)
+	{
+		std::cout << dshape[i] << std::endl;
 	}
+
+	/*sprintf(attrs_name, "float");
+	read_h5_attrs(data_path, set_name, attrs_name, fshape);
+	for (i = 0; i < attrs_len; i++)
+	{
+		std::cout << fshape[i] << std::endl;
+	}
+
+	sprintf(attrs_name, "int");
+	read_h5_attrs(data_path, set_name, attrs_name, ishape);
+	for (i = 0; i < attrs_len; i++)
+	{
+		std::cout << ishape[i] << std::endl;
+	}*/
+	// loop the sky areas
+	for (i = 0; i < 1; i++)
+	{
+		;
+
+
+	}
+
+
 
 	gsl_free();
 	MPI_Finalize();

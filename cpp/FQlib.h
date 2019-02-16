@@ -158,6 +158,13 @@ void read_h5(const char *filename, const char *set_name, double *arr);//checked
 void read_h5(const char *filename, const char *set_name, float *arr);
 void read_h5(const char *filename, const char *set_name, int *arr);//checked
 void read_h5(const char *filename, const char *set_name, long *arr);//checked
+
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff);//checked
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff);//checked
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff);//checked
+/* the attributes must not be attached to the root directory "/".
+*/
+
 void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);

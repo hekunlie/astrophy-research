@@ -212,6 +212,51 @@ void read_h5(const char *filename, const char *set_name, long *arr)
 	status = H5Fclose(file_id);
 }
 
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff)
+{
+	hid_t file_id;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	hid_t attr;
+	herr_t status;
+	attr = H5Aopen_name(dataset_id, attrs_name);
+	status = H5Aread(attr, H5T_NATIVE_DOUBLE, buff);
+	status = H5Aclose(attr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff)
+{
+	hid_t file_id;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	hid_t attr;
+	herr_t status;
+	attr = H5Aopen_name(dataset_id, attrs_name);
+	status = H5Aread(attr, H5T_NATIVE_FLOAT, buff);
+	status = H5Aclose(attr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff)
+{
+	hid_t file_id;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	hid_t dataset_id;
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	hid_t attr;
+	herr_t status;
+	attr = H5Aopen_name(dataset_id, attrs_name);
+	status = H5Aread(attr, H5T_NATIVE_INT, buff);
+	status = H5Aclose(attr);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
 void write_h5(const char *filename, const char *set_name, const double*arr, const int row, const int column)
 {
 	hid_t file_id;
