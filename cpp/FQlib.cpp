@@ -1561,27 +1561,27 @@ void addnoise(float *image, const int pixel_num, const float sigma)
 }
 
 
-void initialize_arr(double *in_img, const int length)
+void initialize_arr(double *arr, const int length, const double x)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
-		in_img[i] = 0.;
+		arr[i] = x;
 	}
 }
 
-void initialize_arr(float *in_img, const int length)
+void initialize_arr(float *arr, const int length, const float x)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
-		in_img[i] = 0.;
+		arr[i] = x;
 	}
 }
 
-void initialize_arr(int *in_img, const int length)
+void initialize_arr(int *arr, const int length, const int x)
 {/* will set all the elements to zero */
 	for (int i = 0; i < length; i++)
 	{
-		in_img[i] = 0;
+		arr[i] = x;
 	}
 }
 

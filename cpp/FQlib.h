@@ -158,7 +158,9 @@ void read_h5(const char *filename, const char *set_name, double *arr);//checked
 void read_h5(const char *filename, const char *set_name, float *arr);
 void read_h5(const char *filename, const char *set_name, int *arr);//checked
 void read_h5(const char *filename, const char *set_name, long *arr);//checked
-
+/* if the length of arr is longer than the data, the rest element  of "arr" will not be changed 
+	initializing the arr befero each reading is highly recommended.
+*/
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff);//checked
@@ -262,9 +264,9 @@ void addnoise(double *image, const int pixel_num, const double sigma);
 void addnoise(float *image, const int pixel_num, const float sigma);
 /* add Gaussian noise to an array */
 
-void initialize_arr(double *array, const int size);
-void initialize_arr(float *array, const int size);
-void initialize_arr(int *array, const int size);
+void initialize_arr(double *arr, const int length, const double x);
+void initialize_arr(float *arr, const int length, const float x);
+void initialize_arr(int *arr, const int length, const int x);
 /* set every elements to zero*/
 
 void normalize_arr(double *arr, const int size);
