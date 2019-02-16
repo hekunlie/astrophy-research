@@ -14,9 +14,7 @@ int main(int argc, char *argv[])
 
 	// read the parameters of the data structure	
 	int max_area[1]{}; //how many sky areas
-	int max_buffer[1]{}; // the maximum data number of all sky areas (for convenience)
-	int max_block_length[1]{}; // the maximum data number of all blocks
-	int max_grid_length[1]{}; // the maximum grid number of all sky areas
+	int max_block_length[1]{}; // the maximum data number of all blocks in one sky area
 	int grid_info[2]{}; // the grid shape to be read of each area
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
 
@@ -40,16 +38,18 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < max_area[0]; i++)
 	{
+		// read the shape of the grid "w_i"
+		sprintf(set_name, "/grid/w_%d", i);
 		sprintf(attrs_name, "max_blcok_length");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_length);
-		sprintf(attrs_name, "max_grid_length");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_grid_length);
-		sprintf(attrs_name, "max_buffer");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_buffer);
-
+		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_length);		
+		sprintf(attrs_name, "grid_info");
+		read_h5_attrs(h5f_path, set_name, attrs_name, grid_info);
+		grid_ny = grid_info[0];
+		grid_nx = grid_info[1];
+		grid_num = grid_ny * grid_nx;
 
 		// the shared buffer in the memory
-		int arr_len = data_col * max_buffer[0];
+		int arr_len = data_col * max_block_length[0];
 		MPI_Win win, win_err;
 		MPI_Aint size, size_err;
 		double *buffer_ptr;
@@ -76,14 +76,6 @@ int main(int argc, char *argv[])
 		{
 			err_ptr[0] = 1;
 		}
-
-		// read the shape of the grid "w_i"
-		sprintf(set_name, "/grid/w_%d",i);
-		sprintf(attrs_name, "grid_info");
-		read_h5_attrs(h5f_path, set_name, attrs_name, grid_info);
-		grid_ny = grid_info[0];
-		grid_nx = grid_info[1];
-		grid_num = grid_ny * grid_nx;		
 
 		// initialize the data in the buffer for all threads
 		if (0 == rank)
@@ -124,7 +116,7 @@ int main(int argc, char *argv[])
 						err_ptr[0] = 0;
 						break;
 					}
-					if (-1. != temp[num_in_block])
+					if (fabs( temp[num_in_block] + 1)>0.00001)
 					{
 						sprintf(log_inform, "Something may be wrong!!! The first elemet, %g, after the target elements is not zero!!", temp[num_in_block]);
 						std::cout << log_inform << std::endl;
@@ -191,10 +183,11 @@ int main(int argc, char *argv[])
 		delete[] task_list;
 		delete[] my_tasks;
 
+		MPI_Win_free(&win);
+		MPI_Win_free(&win_err);
+
 	}
 
-	MPI_Win_free(&win);
-	MPI_Win_free(&win_err);
 	// free the GSL
 	gsl_free();
 	MPI_Finalize();
