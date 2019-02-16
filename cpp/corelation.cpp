@@ -12,17 +12,25 @@ int main(int argc, char *argv[])
 	int seed;
 	gsl_initialize(123);
 
+	pts_info pts_data;
+
+	int i, j, k;
+	int ix, iy, ik, ir, ib, ib_;
+	int label, label_, tag;
+
 	// read the parameters of the data structure	
 	int max_area[1]{}; //how many sky areas
 	int max_block_length[1]{}; // the maximum data number of all blocks in one sky area
 	int grid_info[2]{}; // the grid shape to be read of each area
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
+	double block_scale[1]{};
 
-	int data_col = 7; // columns of data 
+	int data_col = 7, block_size; // columns of data 
 	// the column of each quantity in the data array
 	int ra_idx = 0, dec_idx = 1;
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5, mv_idx = 6;
-
+	double ra, dec, distance;
+	int radius_num[1];
 	char h5f_path[150], set_name[50], attrs_name[50];
 	char log_inform[200];
 
@@ -31,51 +39,84 @@ int main(int argc, char *argv[])
 	sprintf(set_name, "/grid");
 	sprintf(attrs_name, "max_area");
 	read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
+	// the radian scales of correlation function
+	sprintf(set_name, "/radius");
+	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
+	// the bins for radius
+	double *radius = new double[radius_num[0]+1] {};
+	read_h5(h5f_path, set_name, radius);
+	
 
 	// loop the areas
-	int i, j, k;
-	int ix, iy;
-
 	for (i = 0; i < max_area[0]; i++)
 	{
 		// read the shape of the grid "w_i"
 		sprintf(set_name, "/grid/w_%d", i);
 		sprintf(attrs_name, "max_blcok_length");
 		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_length);		
+		sprintf(attrs_name, "block_scale");
+		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale);
 		sprintf(attrs_name, "grid_info");
 		read_h5_attrs(h5f_path, set_name, attrs_name, grid_info);
 		grid_ny = grid_info[0];
 		grid_nx = grid_info[1];
 		grid_num = grid_ny * grid_nx;
+		block_size = data_col * max_block_length[0];
+	
+		// mask for non-repeating calculation
+		int *mask = new int[max_block_length[0]]{};
+
+		// the bounds of each block
+		double *boundy = new double[grid_num * 4]{};
+		double *boundx = new double[grid_num * 4]{};
+		block_bound(block_scale[0], grid_ny, grid_nx, boundy, boundx);
+
+		// each thread gets its own targets blocks in my_tasks
+		int *task_list = new int[grid_num] {};
+		int *my_tasks = new int[grid_num] {};
+		int *search_blocks = new int[grid_num] {};
+
+		// initialize the information of pts_info
+		pts_data.scale = block_scale[0];
+		pts_data.ny = grid_ny;
+		pts_data.nx = grid_nx;
+		pts_data.blocks_num = grid_num;
 
 		// the shared buffer in the memory
-		int arr_len = data_col * max_block_length[0];
-		MPI_Win win, win_err;
-		MPI_Aint size, size_err;
+		int arr_len = block_size *grid_num;
+		MPI_Win win, win_num, win_err;
+		MPI_Aint size, size_num, size_err;
 		double *buffer_ptr;
+		int *num_ptr;
 		int *err_ptr;
 		if (rank == 0)
 		{
-			size = arr_len * sizeof(double);
-			size_err = sizeof(int);
+			size = arr_len * sizeof(double);	
 			MPI_Win_allocate_shared(size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &buffer_ptr, &win);
+			size_num = grid_num * sizeof(int);
+			MPI_Win_allocate_shared(size_num, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &num_ptr, &win_num);
+			size_err = sizeof(int);
 			MPI_Win_allocate_shared(size_err, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &err_ptr, &win_err);
 		}
 		else
 		{
-			int disp_unit, disp_init_err;
+			int disp_unit, disp_unit_num, disp_unit_err;
 
 			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &buffer_ptr, &win);
 			MPI_Win_shared_query(win, 0, &size, &disp_unit, &buffer_ptr);
 
+			MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &num_ptr, &win_num);
+			MPI_Win_shared_query(win_num, 0, &size_num, &disp_unit_num, &num_ptr);
+
 			MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &err_ptr, &win_err);
-			MPI_Win_shared_query(win_err, 0, &size_err, &disp_init_err, &err_ptr);		
+			MPI_Win_shared_query(win_err, 0, &size_err, &disp_unit_err, &err_ptr);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		if (0 == rank)
 		{
 			err_ptr[0] = 1;
 		}
+
 
 		// initialize the data in the buffer for all threads
 		if (0 == rank)
@@ -89,6 +130,11 @@ int main(int argc, char *argv[])
 			std::cout << log_inform << std::endl;
 			sprintf(log_inform, "the biggest blcok: %d x %d", max_block_length[0] , data_col);
 			std::cout << log_inform << std::endl;
+
+			// read the number of points in each block
+			sprintf(set_name, "/grid/w_%d/num_in_block", i);
+			read_h5(h5f_path, set_name, num_ptr);
+
 			for (iy = 0; iy < grid_ny; iy++)
 			{
 				if (0 == err_ptr[0])
@@ -140,23 +186,8 @@ int main(int argc, char *argv[])
 		{
 			exit(0);
 		}
-
-		// mask for non-repeating calculation
-		int *mask = new int[max_block_length[0]]{};
-		initialize_arr(mask, max_block_length[0] , 1);
-
-		// the bounds of each block
-		int *boundy = new int[grid_num * 4]{};
-		int *boundx = new int[grid_num * 4]{};
-
-		sprintf(set_name, "/grid/w_%d/boundy", i);
-		read_h5(h5f_path, set_name, boundy);
-		sprintf(set_name, "/grid/w_%d/boundx", i);
-		read_h5(h5f_path, set_name, boundx);
-
-		// each thread gets its own targets blocks
-		int *task_list = new int[grid_num] {};
-		int *my_tasks = new int[grid_num] {};
+			
+			   
 		for (k = 0; k < grid_num; k++)
 		{
 			task_list[k] = k;
@@ -167,12 +198,46 @@ int main(int argc, char *argv[])
 		// loop the target blocks 
 		for (k = 0; k < grid_num; k++)
 		{
+			// initialize the mask for non-repeating calculation
+			initialize_arr(mask, max_block_length[0], 1);
 			if (my_tasks[k] > -1)
 			{
 				// the block (iy, ix) of area "w_i"
 				iy = my_tasks[k] / grid_nx;
 				ix = my_tasks[k] % grid_ny;
-				!!!
+				label_ = my_tasks[k] * block_size;
+
+				// loop the point in the block
+				for (ik = 0; ik < block_size; ik++)
+				{
+					// remember 8 parameters in pts_data must be initialized
+					pts_data.idy = iy;
+					pts_data.idx = ix;
+					label = label_ + ik * data_col;
+					pts_data.y = buffer_ptr[label + dec_idx];
+					pts_data.x = buffer_ptr[label + ra_idx];
+
+					// loop the radius scales 
+					for (ir = 0; ir < radius_num[0]; ir++)
+					{
+						find_block(&pts_data, radius[ir], radius[ir + 1], boundy, boundx, search_blocks);
+						
+						// find the pairs in the searched blocks
+						for (ib = 0; ib < grid_num; ib++)
+						{
+							if (search_blocks[ib] > -1)
+							{
+								for (ib_ = 0; ib_ < num_ptr[search_blocks[ib]]; ib_++)
+								{
+									tag = search_blocks[ib] * block_size + ib_ * data_col;
+									distance = 
+								}
+							}
+						}
+
+					}
+
+				}
 
 			}
 		}
@@ -182,12 +247,15 @@ int main(int argc, char *argv[])
 		delete[] boundx;
 		delete[] task_list;
 		delete[] my_tasks;
+		delete[] search_blocks;
 
 		MPI_Win_free(&win);
+		MPI_Win_free(&win_num);
 		MPI_Win_free(&win_err);
 
 	}
 
+	delete[] radius;
 	// free the GSL
 	gsl_free();
 	MPI_Finalize();

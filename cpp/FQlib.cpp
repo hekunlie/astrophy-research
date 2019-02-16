@@ -2896,7 +2896,7 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num)
 {
 	// initialize
-	initialize_arr(num, bin_num);
+	initialize_arr(num, bin_num, 0);
 	for (int i = 0; i < data_num; i++)
 	{
 		for ( int j = 0; j < bin_num; j++)
@@ -2913,7 +2913,7 @@ void histogram(const double *data, const double *bins, int *num, const int data_
 void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num)
 {	
 	// initialize
-	initialize_arr(num, bin_num);
+	initialize_arr(num, bin_num, 0);
 	for (int i = 0; i < data_num; i++)
 	{
 		for (int j = 0; j < bin_num; j++)
@@ -2930,7 +2930,7 @@ void histogram(const float *data, const float *bins, int *num, const int data_nu
 void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num)
 {
 	// initialize
-	initialize_arr(num, bin_num);
+	initialize_arr(num, bin_num,0);
 	for (int i = 0; i < data_num; i++)
 	{
 		for (int j = 0; j < bin_num; j++)
@@ -2947,7 +2947,7 @@ void histogram(const int *data, const  int *bins, int *num, const  int data_num,
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
 {
 	// initialize
-	initialize_arr(num, ybin_num*xbin_num);
+	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
 	for (int k = 0; k < data_num; k++)
 	{
@@ -2974,7 +2974,7 @@ void histogram2d(const double *data_y, const double*data_x, const double *bin_y,
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num)
 {
 	// initialize
-	initialize_arr(num, ybin_num*xbin_num);
+	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
 	for (int k = 0; k < data_num; k++)
 	{
@@ -3001,7 +3001,7 @@ void histogram2d(const float *data_y, const float*data_x, const float *bin_y, co
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
 {
 	// initialize
-	initialize_arr(num, ybin_num*xbin_num);
+	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
 	for (int k = 0; k < data_num; k++)
 	{
