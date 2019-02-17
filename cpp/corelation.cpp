@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-	
+
 	// initialize GSL
 	int seed;
 	gsl_initialize(123);
@@ -19,53 +19,62 @@ int main(int argc, char *argv[])
 	int label, label_, tag;
 
 	// read the parameters of the data structure	
-	int max_area[1]{}; //how many sky areas
-	int max_block_length[1]{}; // the maximum data number of all blocks in one sky area
+
+	int max_area[1]{}; // sky areas
+	int radius_num[1]; // bin number 
+
 	int grid_info[2]{}; // the grid shape to be read of each area
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
-	double block_scale[1]{};
-	int radius_num[1];
+	int max_block_length[2]{}; // [row, col] the maximum data number of all blocks in one sky area
+	double block_scale[1]{}; // the length of the block side
 
-	int data_col = 7, block_size; // columns of data 
-	
+	int data_col, block_size; // columns of data & size of array of the biggest block
+
 	// the column of each quantity in the data array
 	int ra_idx = 0, dec_idx = 1;
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5, mv_idx = 6;
 
-	double ra, dec, distance_sq;	
-	
+	double ra, dec, distance_sq;
+
 	char h5f_path[150], set_name[50], attrs_name[50];
 	char log_inform[200];
 
 	sprintf(h5f_path, "......hdf5");
-	// of the grid
+	// read the number of the sky areas
 	sprintf(set_name, "/grid");
 	sprintf(attrs_name, "max_area");
 	read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
-	// the radian scales of correlation function
+	// the bin number
 	sprintf(set_name, "/radius");
 	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
-	// the bins for radius
-	double *radius = new double[radius_num[0]+1] {};
+	// the bins of radian for correlation function
+	double *radius = new double[radius_num[0] + 1]{};
 	read_h5(h5f_path, set_name, radius);
-	
+
 
 	// loop the areas
 	for (i = 0; i < max_area[0]; i++)
-	{
-		// read the shape of the grid "w_i"
+	{		
 		sprintf(set_name, "/grid/w_%d", i);
-		sprintf(attrs_name, "max_blcok_length");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_length);		
-		sprintf(attrs_name, "block_scale");
-		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale);
+
+		// read the shape of the grid "w_i"
 		sprintf(attrs_name, "grid_info");
 		read_h5_attrs(h5f_path, set_name, attrs_name, grid_info);
 		grid_ny = grid_info[0];
 		grid_nx = grid_info[1];
 		grid_num = grid_ny * grid_nx;
-		block_size = data_col * max_block_length[0];
+
+		// of the single block
+		sprintf(attrs_name, "max_block_length");
+		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_length);
+		data_col = max_block_length[1];
+		// the maximum block size. row * col
+		block_size = max_block_length[0] * max_block_length[1];
+
+		sprintf(attrs_name, "block_scale");
+		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale);
+
 	
 		// mask for non-repeating calculation
 		int *mask = new int[max_block_length[0]]{};
@@ -73,6 +82,7 @@ int main(int argc, char *argv[])
 		// the bounds of each block
 		double *boundy = new double[grid_num * 4]{};
 		double *boundx = new double[grid_num * 4]{};
+		// the origin of the coordinates is the first cross of the grid (array)
 		block_bound(block_scale[0], grid_ny, grid_nx, boundy, boundx);
 
 		// each thread gets its own targets blocks in my_tasks
@@ -119,6 +129,8 @@ int main(int argc, char *argv[])
 		if (0 == rank)
 		{
 			err_ptr[0] = 1;
+			sprintf(log_inform, "Create the shared buffer for program. %d", err_ptr[0]);
+			std::cout << log_inform << std::endl;
 		}
 
 
