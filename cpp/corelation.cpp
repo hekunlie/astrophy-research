@@ -24,13 +24,16 @@ int main(int argc, char *argv[])
 	int grid_info[2]{}; // the grid shape to be read of each area
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
 	double block_scale[1]{};
+	int radius_num[1];
 
 	int data_col = 7, block_size; // columns of data 
+	
 	// the column of each quantity in the data array
 	int ra_idx = 0, dec_idx = 1;
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5, mv_idx = 6;
-	double ra, dec, distance;
-	int radius_num[1];
+
+	double ra, dec, distance_sq;	
+	
 	char h5f_path[150], set_name[50], attrs_name[50];
 	char log_inform[200];
 
@@ -41,6 +44,7 @@ int main(int argc, char *argv[])
 	read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
 	// the radian scales of correlation function
 	sprintf(set_name, "/radius");
+	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
 	// the bins for radius
 	double *radius = new double[radius_num[0]+1] {};
