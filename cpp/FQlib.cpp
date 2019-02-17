@@ -2896,10 +2896,11 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num)
 {
 	// initialize
+	int i, j;
 	initialize_arr(num, bin_num, 0);
-	for (int i = 0; i < data_num; i++)
+	for ( i = 0; i < data_num; i++)
 	{
-		for ( int j = 0; j < bin_num; j++)
+		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
@@ -2913,10 +2914,11 @@ void histogram(const double *data, const double *bins, int *num, const int data_
 void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num)
 {	
 	// initialize
+	int i, j;
 	initialize_arr(num, bin_num, 0);
-	for (int i = 0; i < data_num; i++)
+	for ( i = 0; i < data_num; i++)
 	{
-		for (int j = 0; j < bin_num; j++)
+		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
@@ -2930,10 +2932,11 @@ void histogram(const float *data, const float *bins, int *num, const int data_nu
 void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num)
 {
 	// initialize
+	int i, j;
 	initialize_arr(num, bin_num,0);
-	for (int i = 0; i < data_num; i++)
+	for ( i = 0; i < data_num; i++)
 	{
-		for (int j = 0; j < bin_num; j++)
+		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
@@ -2946,18 +2949,19 @@ void histogram(const int *data, const  int *bins, int *num, const  int data_num,
 
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
 {
+	int i, j, k;
 	// initialize
 	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
-	for (int k = 0; k < data_num; k++)
+	for ( k = 0; k < data_num; k++)
 	{
 		// loop y-bins
-		for (int i = 0; i < ybin_num; i++)
+		for ( i = 0; i < ybin_num; i++)
 		{
 			if (data_y[k] < bin_y[i + 1] && data_y[k] >= bin_y[i])
 			{
 				// loop x-bins
-				for (int j = 0; j < xbin_num; j++)
+				for ( j = 0; j < xbin_num; j++)
 				{
 					if (data_x[k] < bin_x[j + 1] && data_x[k] >= bin_x[j])
 					{
@@ -2973,18 +2977,19 @@ void histogram2d(const double *data_y, const double*data_x, const double *bin_y,
 
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num)
 {
+	int i, j, k;
 	// initialize
 	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
-	for (int k = 0; k < data_num; k++)
+	for ( k = 0; k < data_num; k++)
 	{
 		// loop y-bins
-		for (int i = 0; i < ybin_num; i++)
+		for ( i = 0; i < ybin_num; i++)
 		{
 			if (data_y[k] < bin_y[i + 1] && data_y[k] >= bin_y[i])
 			{
 				// loop x-bins
-				for (int j = 0; j < xbin_num; j++)
+				for ( j = 0; j < xbin_num; j++)
 				{
 					if (data_x[k] < bin_x[j + 1] && data_x[k] >= bin_x[j])
 					{
@@ -3001,17 +3006,18 @@ void histogram2d(const float *data_y, const float*data_x, const float *bin_y, co
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
 {
 	// initialize
+	int i, j, k;
 	initialize_arr(num, ybin_num*xbin_num, 0);
 	// bin_num = len(bins) - 1
-	for (int k = 0; k < data_num; k++)
+	for ( k = 0; k < data_num; k++)
 	{
 		// loop y-bins
-		for (int i = 0; i < ybin_num; i++)
+		for ( i = 0; i < ybin_num; i++)
 		{
 			if (data_y[k] < bin_y[i + 1] && data_y[k] >= bin_y[i])
 			{
 				// loop x-bins
-				for (int j = 0; j < xbin_num; j++)
+				for ( j = 0; j < xbin_num; j++)
 				{
 					if (data_x[k] < bin_x[j + 1] && data_x[k] >= bin_x[j])
 					{
@@ -3025,6 +3031,28 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 	}
 }
 
+int histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num)
+{
+	int block_label, i, j;
+	// loop y-bins
+	for ( i = 0; i < ybin_num; i++)
+	{
+		if (data_y < bin_y[i + 1] && data_y >= bin_y[i])
+		{
+			// loop x-bins
+			for ( j = 0; j < xbin_num; j++)
+			{
+				if (data_x < bin_x[j + 1] && data_x >= bin_x[j])
+				{
+					block_label = i * xbin_num + j;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	return block_label;
+}
 
 void sort_arr(double* arr, int size, int order=1)
 {
