@@ -10,63 +10,82 @@ int main(int argc, char *argv[])
 
 	// initialize GSL
 	int seed;
-	gsl_initialize(123);
+
 
 	pts_info pts_data;
 	
+	char h5f_path[150], set_name[50], attrs_name[50], cache_path[150], data_path[150];
+	char log_inform[200], chi_path[200], chi_set_name[30];
+
 	int i, j, k;
 	int area_id;
 	int ix, iy, ik, ir, ir_1, ig, in, icg;
-	int label, label_, label_g1[2], label_g2[2], tag, tag_, tag_g1[2], tag_g2[2];
+	int label, label_, tag, tag_, tags[5];
 	int gg_hist_label;
-
-	// read the parameters of the data structure	
-
-	int max_area[1]{}; // sky areas
-	int radius_num[1]; // bin number 
-
-	int grid_info[2]{}; // the grid shape to be read of each area
-	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
-	int max_block_length[2]{}; // [row, col] the maximum data number of all blocks in one sky area
-	double block_scale[1]{}; // the length of the block side
-	int mg_bin_num[1]{};
-
-	int data_col, block_size; // columns of data & size of array of the biggest block
 
 	// the column of each quantity in the data array
 	int ra_idx = 0, dec_idx = 1;
-	int mg1_idx = 2, mg2_idx = 3, mnpu_idx = 4, mnmu_idx = 5, mv_idx = 6;
+	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5, mv_idx = 6;
+	double dy, dx, distance_sq;
+	double sin2a, cos2a, sin4a, cos4a, gamma, gamma2;
+	double mg1_r, mg2_r, mnu1_r, mnu2_r, mu_r;
+	double mg1, mg2, mnu1, mnu2;
 
-	// for correlation <g1g1`> && <g2g2`>
-	double g11, g12;
-	double g21, g22;
+	// the parameters of the data structure	
+	int max_area[1]{}; // sky areas
+	int radius_num[1]; // bin number 
+	double *radius, *radius_sq;
 
-	double *mg_bins;
+	// for the correlation bins
+	int g_hat_num[1]{};
+	double *gg_hats;
+	double *gg_hats_cov;
 
-	int chi_block_size;
-	double *chi_1; 
-	double *chi_2;
+	// the variables for shared memory buffer
+	double *buffer_ptr;
+	int *num_ptr, *err_ptr;
+	int arr_len;
+	int disp_unit, disp_unit_num, disp_unit_err;
+	MPI_Win win, win_num, win_err;
+	MPI_Aint buffer_size, size_num, size_err;
 
-	int *mask;
 
+	int grid_info[2]{}; // the grid shape to be read of each area
+	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
+	
+	int max_block_length[2]{}; // [row, col] the maximum data number of all blocks in one sky area
+	int data_col, block_size; // columns of data & size of array of the biggest block
+	
+	double block_scale[1]{}; // the length of the block side
+	
 	// the bounds of each block
 	double *boundy;
 	double *boundx;
 
+	int mg_bin_num[1]{};
+	double *mg_bins;
+
+	int chi_block_size, chi_label;
+	long *chi_1;
+	long *chi_2;
+
+	// for correlation <g1g1`> && <g2g2`>
+	double mg11, mg12;
+	double mg21, mg22;
+	double covs[4]{};
+	double mus[2]{};
+	double corre_gs[2]{};
+
+
+	int *mask;
 	int *task_list;
 	int *my_tasks;
 	int *search_blocks;
 
-	double covs[4]{};
-	double mus[2]{};
-	double corre_gs[2]{};
-	int g_hat_num[1]{};
-
-	double ra, de;
-	double dy, dx, distance_sq;
-
-	char h5f_path[150], set_name[50], attrs_name[50], cache_path[150], data_path[150];
-	char log_inform[200];
+	// for rank 0 to initialize the buffer
+	double *temp;
+	int block_shape[2]{}, num_in_block;
+	int block_id;
 
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/");
 	sprintf(h5f_path, "%scata.hdf5", data_path);
@@ -74,38 +93,35 @@ int main(int argc, char *argv[])
 	sprintf(set_name, "/grid");
 	sprintf(attrs_name, "max_area");
 	read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
+
+
 	// the bin number
 	sprintf(set_name, "/radius");
 	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
+
 	// the bins of radian for correlation function
-	double *radius = new double[radius_num[0] + 1]{};
-	double *radius_sq = new double[radius_num[0] + 1]{};
+	radius = new double[radius_num[0] + 1]{};
+	radius_sq = new double[radius_num[0] + 1]{};
 	read_h5(h5f_path, set_name, radius);
 	for (i = 0; i < radius_num[0] + 1; i++)
 	{
 		radius_sq[i] = radius[i] * radius[i];
 	}
 
-	// for the correlated shear 
+	// the correlation bins 
 	sprintf(set_name, "/g_hat_bins");
 	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num);
-	double *gg_hats = new double[g_hat_num[0]]{};
-	double *gg_hats_cov = new double[g_hat_num[0]]{};
+	gg_hats = new double[g_hat_num[0]]{};
+	gg_hats_cov = new double[g_hat_num[0]]{};
 	read_h5(h5f_path, set_name, gg_hats);
 	for (i = 0; i < g_hat_num[0]; i++)
 	{
 		gg_hats_cov[i] = fabs(gg_hats[i] * 2);
 	}
 
-	double *buffer_ptr;
-	int *num_ptr;
-	int *err_ptr;
-	int arr_len;
-	int disp_unit, disp_unit_num, disp_unit_err;
-	MPI_Win win, win_num, win_err;
-	MPI_Aint buffer_size, size_num, size_err;
+
 	// loop the areas
 	for (area_id = 0; area_id < max_area[0]; area_id++)
 	{		
@@ -135,8 +151,8 @@ int main(int argc, char *argv[])
 		read_h5(h5f_path, set_name, mg_bins);
 		
 		chi_block_size = mg_bin_num[0] * mg_bin_num[0];
-		chi_1 = new double[chi_block_size* g_hat_num[0]]{};
-		chi_2 = new double[chi_block_size * g_hat_num[0]]{};
+		chi_1 = new long[chi_block_size* g_hat_num[0]]{};
+		chi_2 = new long[chi_block_size * g_hat_num[0]]{};
 
 		// mask for non-repeating calculation
 		mask = new int[max_block_length[0]]{};
@@ -160,8 +176,6 @@ int main(int argc, char *argv[])
 
 		// the shared buffer in the memory
 		arr_len = block_size *grid_num;
-
-
 		if (rank == 0)
 		{
 			buffer_size = arr_len * sizeof(double);
@@ -183,26 +197,19 @@ int main(int argc, char *argv[])
 			MPI_Win_shared_query(win_err, 0, &size_err, &disp_unit_err, &err_ptr);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
-		if (0 == rank)
-		{
-			err_ptr[0] = 1;
-			sprintf(log_inform, "Create the shared buffer for program. %d", err_ptr[0]);
-			std::cout << log_inform << std::endl;
-		}
-
 
 		// initialize the data in the buffer for all threads
 		if (0 == rank)
 		{	
-			int block_shape[2]{}, num_in_block;
-			int block_id;
-			double *temp = new double[block_size];
+			sprintf(log_inform, "Created the shared buffer for program.");
+			std::cout << log_inform << std::endl;			
 
 			sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: ", area_id);
 			std::cout << log_inform << std::endl;
 			sprintf(log_inform, "the biggest blcok: %d x %d", max_block_length[0] , max_block_length[1]);
 			std::cout << log_inform << std::endl;
 
+			temp = new double[block_size];
 			// read the number of points in each block
 			initialize_arr(num_ptr, size_num, 0.);
 			sprintf(set_name, "/grid/w_%d/num_in_block", area_id);
@@ -252,22 +259,24 @@ int main(int argc, char *argv[])
 
 			
 		// tasks distribution
+		// each thread gets its own task, the blocks to loop, in the "my_tasks".
 		for (k = 0; k < grid_num; k++)
 		{
 			task_list[k] = k;
-		}
-		// each thread gets its own task, the blocks to loop, in the "my_tasks".
-		// -1 labels the end
+		}		
+		// -1 denotes the end
 		task_alloc(task_list, grid_num, numprocs, rank, my_tasks);
 
 		// loop the target blocks 
 		for (k = 0; k < grid_num; k++)
 		{
-			// initialize the mask for non-repeating calculation
-			initialize_arr(mask, max_block_length[0], 1);
-
 			if (my_tasks[k] > -1)
 			{
+				// initialize the mask for non-repeating calculation
+				initialize_arr(mask, max_block_length[0], 1);
+
+				seed = (rank + 1);
+				gsl_initialize(seed);
 				// the block (iy, ix) of area "w_i"
 				iy = my_tasks[k] / grid_nx;
 				ix = my_tasks[k] % grid_ny;
@@ -290,10 +299,13 @@ int main(int argc, char *argv[])
 					pts_data.y = buffer_ptr[label + dec_idx];
 					pts_data.x = buffer_ptr[label + ra_idx];
 
-					label_g1[0] = label + mg1_idx;
-					label_g1[1] = label + mnmu_idx;
-					label_g2[0] = label + mg2_idx;
-					label_g2[1] = label + mnpu_idx;
+					mg1 = buffer_ptr[label + mg1_idx];
+					mg2 = buffer_ptr[label + mg2_idx];
+					// mnu1 = mn - mu, mnu2 = mn + mu for the quantity from the pipeline
+					// while, the signs of mn, mu, which are different from that in paper, 
+					//  have been corrected by Python.
+					mnu1 = buffer_ptr[label + mn_idx] + buffer_ptr[label + mu_idx];
+					mnu2 = buffer_ptr[label + mn_idx] - buffer_ptr[label + mu_idx];
 
 					// loop the radius scales 
 					for (ir = 0; ir < radius_num[0]; ir++)
@@ -317,19 +329,37 @@ int main(int argc, char *argv[])
 									{
 										if (mask[in] == 1)
 										{
-											tag = tag_ + in * data_col;
-											dy = buffer_ptr[tag + dec_idx] - pts_data.y;
-											dx = buffer_ptr[tag + ra_idx] - pts_data.x;
-											distance_sq = dy * dy + dx * dx;
-
-											tag_g1[0] = tag + mg1_idx;
-											tag_g1[1] = tag + mnmu_idx;
-											tag_g2[0] = tag + mg2_idx;
-											tag_g2[1] = tag + mnpu_idx;
-
 											if (distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 											{
+												mask[in] = 0;
 
+												tag = tag_ + in * data_col;
+												dy = buffer_ptr[tag + dec_idx] - pts_data.y;
+												dx = buffer_ptr[tag + ra_idx] - pts_data.x;
+												distance_sq = dy * dy + dx * dx;
+
+												// for the rotation
+												gamma = dx / dy;
+												gamma2 = gamma * gamma;
+												// for mg1, mg2
+												cos2a = (gamma2 - 1) / (gamma2 + 1);
+												sin2a = 2 * gamma / (gamma2 + 1);
+												// for mu, mv
+												cos4a = (cos2a + sin2a)*(cos2a - sin2a);
+												sin4a = 2 * cos2a*sin2a;
+
+												tags[0] = tag + mg1_idx; // for saving computational cost
+												tags[1] = tag + mg2_idx;
+												tags[2] = tag + mn_idx;
+												tags[3] = tag + mu_idx;
+												tags[4] = tag + mv_idx;
+
+												mg1_r = buffer_ptr[tags[0]] * cos2a - buffer_ptr[tags[1]] * sin2a;
+												mg2_r = buffer_ptr[tags[0]] * sin2a + buffer_ptr[tags[1]] * cos2a;
+												mu_r = buffer_ptr[tags[3]] * cos4a - buffer_ptr[tags[4]] * sin4a;
+												mnu1_r = buffer_ptr[tags[2]] + mu_r;
+												mnu2_r = buffer_ptr[tags[2]] - mu_r;
+				
 												for (icg = 0; icg < g_hat_num[0]; icg++)
 												{
 													covs[0] = gg_hats_cov[icg];
@@ -337,16 +367,18 @@ int main(int argc, char *argv[])
 													covs[2] = gg_hats[icg];
 													covs[3] = gg_hats_cov[icg];
 													rand_multi_gauss(covs, mus, 2, corre_gs);
-													// rotation ...
-													g11 = buffer_ptr[label_g1[0]] - corre_gs[0]* buffer_ptr[label_g1[1]];
-													g12 = buffer_ptr[tag_g1[0]] - corre_gs[1] * buffer_ptr[tag_g1[1]];
-													gg_hist_label = histogram2d_s(g11, g12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
+
+													mg11 = mg1 - corre_gs[0]* mnu1;
+													mg12 = mg1_r - corre_gs[1] * mnu1_r;
+
+													gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
 													chi_1[gg_hist_label + chi_block_size * icg] += 1;
-													rand_multi_gauss(covs, mus, 2, corre_gs);
-													// rotation ...
-													g21 = buffer_ptr[label_g2[0]] - corre_gs[0] * buffer_ptr[label_g2[1]];
-													g22 = buffer_ptr[tag_g2[0]] - corre_gs[1] * buffer_ptr[tag_g1[1]];
-													gg_hist_label = histogram2d_s(g21, g22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
+
+													//rand_multi_gauss(covs, mus, 2, corre_gs);
+
+													mg21 = mg2 - corre_gs[0] *mnu2;
+													mg22 = mg2_r - corre_gs[1] * mnu2_r;
+													gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
 													chi_2[gg_hist_label + chi_block_size * icg] += 1;
 												}
 											}
@@ -357,36 +389,55 @@ int main(int argc, char *argv[])
 								{									
 									for (in = 0; in < num_ptr[search_blocks[ig]]; in++)
 									{
-										tag = tag_ + in * data_col;
-										dy = buffer_ptr[tag + dec_idx] - pts_data.y;
-										dx = buffer_ptr[tag + ra_idx] - pts_data.x;
-										distance_sq = dy * dy + dx * dx;
-
-										tag_g1[0] = tag + mg1_idx;
-										tag_g1[1] = tag + mnmu_idx;
-										tag_g2[0] = tag + mg2_idx;
-										tag_g2[1] = tag + mnpu_idx;
-
 										if (distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
+											tag = tag_ + in * data_col;
+											dy = buffer_ptr[tag + dec_idx] - pts_data.y;
+											dx = buffer_ptr[tag + ra_idx] - pts_data.x;
+											distance_sq = dy * dy + dx * dx;
+
+											// for the rotation
+											gamma = dx / dy;
+											gamma2 = gamma * gamma;
+											// for mg1, mg2
+											cos2a = (gamma2 - 1) / (gamma2 + 1);
+											sin2a = 2 * gamma / (gamma2 + 1);
+											// for mu, mv
+											cos4a = (cos2a + sin2a)*(cos2a - sin2a);
+											sin4a = 2 * cos2a*sin2a;
+
+											tags[0] = tag + mg1_idx; // for saving computational cost
+											tags[1] = tag + mg2_idx;
+											tags[2] = tag + mn_idx;
+											tags[3] = tag + mu_idx;
+											tags[4] = tag + mv_idx;
+
+											mg1_r = buffer_ptr[tags[0]] * cos2a - buffer_ptr[tags[1]] * sin2a;
+											mg2_r = buffer_ptr[tags[0]] * sin2a + buffer_ptr[tags[1]] * cos2a;
+											mu_r = buffer_ptr[tags[3]] * cos4a - buffer_ptr[tags[4]] * sin4a;
+											mnu1_r = buffer_ptr[tags[2]] + mu_r;
+											mnu2_r = buffer_ptr[tags[2]] - mu_r;
+
 											for (icg = 0; icg < g_hat_num[0]; icg++)
 											{
 												covs[0] = gg_hats_cov[icg];
 												covs[1] = gg_hats[icg];
 												covs[2] = gg_hats[icg];
 												covs[3] = gg_hats_cov[icg];
-
 												rand_multi_gauss(covs, mus, 2, corre_gs);
-												g11 = buffer_ptr[label_g1[0]] - corre_gs[0] * buffer_ptr[label_g1[1]];
-												g12 = buffer_ptr[tag_g1[0]] - corre_gs[1] * buffer_ptr[tag_g1[1]];
-												gg_hist_label = histogram2d_s(g11, g12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
 
-												rand_multi_gauss(covs, mus, 2, corre_gs);
-												// rotation ...
-												g21 = buffer_ptr[label_g2[0]] - corre_gs[0] * buffer_ptr[label_g2[1]];
-												g22 = buffer_ptr[tag_g2[0]] - corre_gs[1] * buffer_ptr[tag_g1[1]];
-												gg_hist_label = histogram2d_s(g21, g22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
+												mg11 = mg1 - corre_gs[0] * mnu1;
+												mg12 = mg1_r - corre_gs[1] * mnu1_r;
 
+												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
+												chi_1[gg_hist_label + chi_block_size * icg] += 1;
+
+												//rand_multi_gauss(covs, mus, 2, corre_gs);
+
+												mg21 = mg2 - corre_gs[0] * mnu2;
+												mg22 = mg2_r - corre_gs[1] * mnu2_r;
+												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
+												chi_2[gg_hist_label + chi_block_size * icg] += 1;
 											}
 										}
 									}
@@ -397,19 +448,28 @@ int main(int argc, char *argv[])
 					}
 
 				}
-
+			// free the GSL
+			gsl_free();
 			}
+
 		}
+		// save the chi array
+		sprintf(chi_path, "%scache/chi_1_%d.hdf5", area_id);
+		sprintf(chi_set_name, "/data");
+		write_h5(chi_path, chi_set_name, chi_1, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]);
+
+		sprintf(chi_path, "%scache/chi_2_%d.hdf5", area_id);
+		write_h5(chi_path, chi_set_name, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]);
+
+		delete[] boundy;
+		delete[] boundx;
+		delete[] mg_bins;
 		delete[] chi_1;
 		delete[] chi_2;
 		delete[] mask;
-		delete[] boundy;
-		delete[] boundx;
 		delete[] task_list;
 		delete[] my_tasks;
 		delete[] search_blocks;
-		delete[] mg_bins;
-
 
 		MPI_Win_free(&win);
 		MPI_Win_free(&win_num);
@@ -419,10 +479,9 @@ int main(int argc, char *argv[])
 
 	delete[] radius;
 	delete[] radius_sq;
-	delete[] gg_hats_cov;
 	delete[] gg_hats;
-	// free the GSL
-	gsl_free();
+	delete[] gg_hats_cov;
+
 	MPI_Finalize();
 	return 0;
 }

@@ -170,6 +170,7 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);
+void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column);
 /* read and write the hdf5 file */
 
 void read_fits(const char *filename, double *arr);

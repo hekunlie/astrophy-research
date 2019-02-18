@@ -168,7 +168,7 @@ void read_h5(const char *filename, const char *set_name, double *arr)
 {
 	hid_t file_id;
 	herr_t status;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
@@ -180,7 +180,7 @@ void read_h5(const char *filename, const char *set_name, float *arr)
 {
 	hid_t file_id;
 	herr_t status;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	status = H5Dread(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
@@ -192,7 +192,7 @@ void read_h5(const char *filename, const char *set_name, int *arr)
 {
 	hid_t file_id;
 	herr_t status;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
@@ -204,10 +204,10 @@ void read_h5(const char *filename, const char *set_name, long *arr)
 {
 	hid_t file_id;
 	herr_t status;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
-	status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dread(dataset_id, H5T_NATIVE_LONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
 	status = H5Dclose(dataset_id);
 	status = H5Fclose(file_id);
 }
@@ -215,7 +215,7 @@ void read_h5(const char *filename, const char *set_name, long *arr)
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff)
 {
 	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	hid_t attr;
@@ -230,7 +230,7 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff)
 {
 	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	hid_t attr;
@@ -245,7 +245,7 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff)
 {
 	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
 	hid_t dataset_id;
 	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
 	hid_t attr;
@@ -261,7 +261,7 @@ void write_h5(const char *filename, const char *set_name, const double*arr, cons
 {
 	hid_t file_id;
 	herr_t status;
-	remove(filename);
+	//remove(filename);
 	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);	
 	unsigned rank = 2;
 	hsize_t dims[2];
@@ -281,7 +281,6 @@ void write_h5(const char *filename, const char *set_name, const float*arr, const
 {
 	hid_t file_id;
 	herr_t status;
-	remove(filename);
 	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	unsigned rank = 2;
 	hsize_t dims[2];
@@ -301,7 +300,6 @@ void write_h5(const char *filename, const char *set_name, const int*arr, const i
 {
 	hid_t file_id;
 	herr_t status;
-	remove(filename);
 	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 	unsigned rank = 2;
 	hsize_t dims[2];
@@ -312,6 +310,25 @@ void write_h5(const char *filename, const char *set_name, const int*arr, const i
 	hid_t dataset_id;
 	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	status = H5Dclose(dataset_id);
+	status = H5Sclose(dataspace_id);
+	status = H5Fclose(file_id);
+}
+
+void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column)
+{
+	hid_t file_id;
+	herr_t status;
+	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	unsigned rank = 2;
+	hsize_t dims[2];
+	dims[0] = row;
+	dims[1] = column;
+	hid_t dataspace_id;
+	dataspace_id = H5Screate_simple(rank, dims, NULL);
+	hid_t dataset_id;
+	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_LONG, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_LONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
 	status = H5Fclose(file_id);
