@@ -167,10 +167,10 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
 */
 
-void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);
+void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);//checked
 void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
-void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);
-void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column);
+void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);//checked
+void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column);//checked
 /* read and write the hdf5 file */
 
 void read_fits(const char *filename, double *arr);

@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 	int i, j, k;
 	int area_id;
 	int ix, iy, ik, ir, ir_1, ig, in, icg;
-	int label, label_, tag, tag_, tags[5];
+	int pts_label, pts_label_, pts_s_tag, pts_s_tag_, pts_s_tags[5];
 	int gg_hist_label;
 
 	// the column of each quantity in the data array
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	int mg_bin_num[1]{};
 	double *mg_bins;
 
-	int chi_block_size, chi_label;
+	int chi_block_size, chi_block_size_ir, chi_label;
 	long *chi_1;
 	long *chi_2;
 
@@ -82,10 +82,6 @@ int main(int argc, char *argv[])
 	int *my_tasks;
 	int *search_blocks;
 
-	// for rank 0 to initialize the buffer
-	double *temp;
-	int block_shape[2]{}, num_in_block;
-	int block_id;
 
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/");
 	sprintf(h5f_path, "%scata.hdf5", data_path);
@@ -99,7 +95,6 @@ int main(int argc, char *argv[])
 	sprintf(set_name, "/radius");
 	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
-
 	// the bins of radian for correlation function
 	radius = new double[radius_num[0] + 1]{};
 	radius_sq = new double[radius_num[0] + 1]{};
@@ -110,7 +105,7 @@ int main(int argc, char *argv[])
 	}
 
 	// the correlation bins 
-	sprintf(set_name, "/g_hat_bins");
+	sprintf(set_name, "/g_hat_bin");
 	sprintf(attrs_name, "bin_num");
 	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num);
 	gg_hats = new double[g_hat_num[0]]{};
@@ -151,8 +146,9 @@ int main(int argc, char *argv[])
 		read_h5(h5f_path, set_name, mg_bins);
 		
 		chi_block_size = mg_bin_num[0] * mg_bin_num[0];
-		chi_1 = new long[chi_block_size* g_hat_num[0]]{};
-		chi_2 = new long[chi_block_size * g_hat_num[0]]{};
+		chi_block_size_ir = chi_block_size * g_hat_num[0];
+		chi_1 = new long[chi_block_size_ir* radius_num[0]]{};
+		chi_2 = new long[chi_block_size_ir * radius_num[0]]{};
 
 		// mask for non-repeating calculation
 		mask = new int[max_block_length[0]]{};
@@ -209,44 +205,17 @@ int main(int argc, char *argv[])
 			sprintf(log_inform, "the biggest blcok: %d x %d", max_block_length[0] , max_block_length[1]);
 			std::cout << log_inform << std::endl;
 
-			temp = new double[block_size];
 			// read the number of points in each block
-			initialize_arr(num_ptr, size_num, 0.);
+			initialize_arr(num_ptr, size_num, 0);
 			sprintf(set_name, "/grid/w_%d/num_in_block", area_id);
 			read_h5(h5f_path, set_name, num_ptr);
-
 			// check & cache
 			sprintf(cache_path, "%scache/num.fits",data_path);
 			write_fits(cache_path, num_ptr, grid_ny, grid_nx);
 
 			initialize_arr(buffer_ptr, buffer_size, 0.);
-			for (iy = 0; iy < grid_ny; iy++)
-			{
-				for (ix = 0; ix < grid_nx; ix++)
-				{
-					// initialize temp
-					initialize_arr(temp, block_size,0.);
-
-					sprintf(set_name, "/grid/w_%d/%d/%d", area_id, iy, ix);
-
-					sprintf(attrs_name, "shape");
-					read_h5_attrs(h5f_path, set_name, attrs_name, block_shape);
-					num_in_block = block_shape[0] * block_shape[1];
-
-					read_h5(h5f_path, set_name, temp);					
-
-					sprintf(log_inform, "Initialzie the block [%d, %d]. The true shape (%d, %d)", iy, ix, block_shape[0], block_shape[1]);
-					std::cout << log_inform << std::endl;
-
-					block_id = iy * grid_nx + ix;
-					for (k = 0; k < num_in_block; k++)
-					{
-						buffer_ptr[block_id*block_size + k] = temp[k];
-					}
-				}
-			}
-			delete[] temp;
-
+			sprintf(set_name, "/grid/w_%d/data", area_id);
+			read_h5(h5f_path, set_name, buffer_ptr);
 			// check & cache
 			sprintf(cache_path, "%scache/shared_buffer.hdf5", data_path);
 			sprintf(set_name, "/data");
@@ -280,7 +249,7 @@ int main(int argc, char *argv[])
 				// the block (iy, ix) of area "w_i"
 				iy = my_tasks[k] / grid_nx;
 				ix = my_tasks[k] % grid_ny;
-				label_ = my_tasks[k] * block_size;
+				pts_label_ = my_tasks[k] * block_size;
 
 				// loop the points in the block
 				// the point number has been stored in num_ptr[my_tasks[k]]
@@ -294,50 +263,50 @@ int main(int argc, char *argv[])
 					pts_data.idy = iy;
 					pts_data.idx = ix;
 
-					label = label_ + ik * data_col;
+					pts_label = pts_label_ + ik * data_col;
 					// coordinate of point: y (dec), x (ra) 
-					pts_data.y = buffer_ptr[label + dec_idx];
-					pts_data.x = buffer_ptr[label + ra_idx];
+					pts_data.y = buffer_ptr[pts_label + dec_idx];
+					pts_data.x = buffer_ptr[pts_label + ra_idx];
 
-					mg1 = buffer_ptr[label + mg1_idx];
-					mg2 = buffer_ptr[label + mg2_idx];
+					mg1 = buffer_ptr[pts_label + mg1_idx];
+					mg2 = buffer_ptr[pts_label + mg2_idx];
 					// mnu1 = mn - mu, mnu2 = mn + mu for the quantity from the pipeline
 					// while, the signs of mn, mu, which are different from that in paper, 
 					//  have been corrected by Python.
-					mnu1 = buffer_ptr[label + mn_idx] + buffer_ptr[label + mu_idx];
-					mnu2 = buffer_ptr[label + mn_idx] - buffer_ptr[label + mu_idx];
+					mnu1 = buffer_ptr[pts_label + mn_idx] + buffer_ptr[pts_label + mu_idx];
+					mnu2 = buffer_ptr[pts_label + mn_idx] - buffer_ptr[pts_label + mu_idx];
 
 					// loop the radius scales 
 					for (ir = 0; ir < radius_num[0]; ir++)
 					{
-						ir_1 = ir + 1; // save computational cost
+						// save computational cost
+						ir_1 = ir + 1; 
 						// find the target blocks
 						initialize_arr(search_blocks, grid_num, -1);
 						find_block(&pts_data, radius[ir], radius[ir_1], boundy, boundx, search_blocks);
-						
+						chi_label = chi_block_size_ir * ir;
+
 						// find the pairs in the searched blocks
 						for (ig = 0; ig < grid_num; ig++)
 						{
 							if (search_blocks[ig] > -1)
 							{
-								tag_ = search_blocks[ig] * block_size;
+								pts_s_tag_ = search_blocks[ig] * block_size;
 
 								// if the target block is the block where the point belongs to
 								if (search_blocks[ig] == my_tasks[k])
 								{
 									for (in = 0; in < num_ptr[search_blocks[ig]]; in++)
 									{
+										pts_s_tag = pts_s_tag_ + in * data_col;
+										dy = buffer_ptr[pts_s_tag + dec_idx] - pts_data.y;
+										dx = buffer_ptr[pts_s_tag + ra_idx] - pts_data.x;
+										distance_sq = dy * dy + dx * dx;
+
 										if (mask[in] == 1)
 										{
 											if (distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 											{
-												mask[in] = 0;
-
-												tag = tag_ + in * data_col;
-												dy = buffer_ptr[tag + dec_idx] - pts_data.y;
-												dx = buffer_ptr[tag + ra_idx] - pts_data.x;
-												distance_sq = dy * dy + dx * dx;
-
 												// for the rotation
 												gamma = dx / dy;
 												gamma2 = gamma * gamma;
@@ -348,17 +317,18 @@ int main(int argc, char *argv[])
 												cos4a = (cos2a + sin2a)*(cos2a - sin2a);
 												sin4a = 2 * cos2a*sin2a;
 
-												tags[0] = tag + mg1_idx; // for saving computational cost
-												tags[1] = tag + mg2_idx;
-												tags[2] = tag + mn_idx;
-												tags[3] = tag + mu_idx;
-												tags[4] = tag + mv_idx;
+												// for saving computational cost
+												pts_s_tags[0] = pts_s_tag + mg1_idx;
+												pts_s_tags[1] = pts_s_tag + mg2_idx;
+												pts_s_tags[2] = pts_s_tag + mn_idx;
+												pts_s_tags[3] = pts_s_tag + mu_idx;
+												pts_s_tags[4] = pts_s_tag + mv_idx;
 
-												mg1_r = buffer_ptr[tags[0]] * cos2a - buffer_ptr[tags[1]] * sin2a;
-												mg2_r = buffer_ptr[tags[0]] * sin2a + buffer_ptr[tags[1]] * cos2a;
-												mu_r = buffer_ptr[tags[3]] * cos4a - buffer_ptr[tags[4]] * sin4a;
-												mnu1_r = buffer_ptr[tags[2]] + mu_r;
-												mnu2_r = buffer_ptr[tags[2]] - mu_r;
+												mg1_r = buffer_ptr[pts_s_tags[0]] * cos2a - buffer_ptr[pts_s_tags[1]] * sin2a;
+												mg2_r = buffer_ptr[pts_s_tags[0]] * sin2a + buffer_ptr[pts_s_tags[1]] * cos2a;
+												mu_r = buffer_ptr[pts_s_tags[3]] * cos4a - buffer_ptr[pts_s_tags[4]] * sin4a;
+												mnu1_r = buffer_ptr[pts_s_tags[2]] + mu_r;
+												mnu2_r = buffer_ptr[pts_s_tags[2]] - mu_r;
 				
 												for (icg = 0; icg < g_hat_num[0]; icg++)
 												{
@@ -372,14 +342,14 @@ int main(int argc, char *argv[])
 													mg12 = mg1_r - corre_gs[1] * mnu1_r;
 
 													gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
-													chi_1[gg_hist_label + chi_block_size * icg] += 1;
+													chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 
 													//rand_multi_gauss(covs, mus, 2, corre_gs);
 
 													mg21 = mg2 - corre_gs[0] *mnu2;
 													mg22 = mg2_r - corre_gs[1] * mnu2_r;
 													gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
-													chi_2[gg_hist_label + chi_block_size * icg] += 1;
+													chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 												}
 											}
 										}
@@ -389,12 +359,13 @@ int main(int argc, char *argv[])
 								{									
 									for (in = 0; in < num_ptr[search_blocks[ig]]; in++)
 									{
+										pts_s_tag = pts_s_tag_ + in * data_col;
+										dy = buffer_ptr[pts_s_tag + dec_idx] - pts_data.y;
+										dx = buffer_ptr[pts_s_tag + ra_idx] - pts_data.x;
+										distance_sq = dy * dy + dx * dx;
+
 										if (distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
-											tag = tag_ + in * data_col;
-											dy = buffer_ptr[tag + dec_idx] - pts_data.y;
-											dx = buffer_ptr[tag + ra_idx] - pts_data.x;
-											distance_sq = dy * dy + dx * dx;
 
 											// for the rotation
 											gamma = dx / dy;
@@ -406,17 +377,18 @@ int main(int argc, char *argv[])
 											cos4a = (cos2a + sin2a)*(cos2a - sin2a);
 											sin4a = 2 * cos2a*sin2a;
 
-											tags[0] = tag + mg1_idx; // for saving computational cost
-											tags[1] = tag + mg2_idx;
-											tags[2] = tag + mn_idx;
-											tags[3] = tag + mu_idx;
-											tags[4] = tag + mv_idx;
+											// for saving computational cost
+											pts_s_tags[0] = pts_s_tag + mg1_idx;
+											pts_s_tags[1] = pts_s_tag + mg2_idx;
+											pts_s_tags[2] = pts_s_tag + mn_idx;
+											pts_s_tags[3] = pts_s_tag + mu_idx;
+											pts_s_tags[4] = pts_s_tag + mv_idx;
 
-											mg1_r = buffer_ptr[tags[0]] * cos2a - buffer_ptr[tags[1]] * sin2a;
-											mg2_r = buffer_ptr[tags[0]] * sin2a + buffer_ptr[tags[1]] * cos2a;
-											mu_r = buffer_ptr[tags[3]] * cos4a - buffer_ptr[tags[4]] * sin4a;
-											mnu1_r = buffer_ptr[tags[2]] + mu_r;
-											mnu2_r = buffer_ptr[tags[2]] - mu_r;
+											mg1_r = buffer_ptr[pts_s_tags[0]] * cos2a - buffer_ptr[pts_s_tags[1]] * sin2a;
+											mg2_r = buffer_ptr[pts_s_tags[0]] * sin2a + buffer_ptr[pts_s_tags[1]] * cos2a;
+											mu_r = buffer_ptr[pts_s_tags[3]] * cos4a - buffer_ptr[pts_s_tags[4]] * sin4a;
+											mnu1_r = buffer_ptr[pts_s_tags[2]] + mu_r;
+											mnu2_r = buffer_ptr[pts_s_tags[2]] - mu_r;
 
 											for (icg = 0; icg < g_hat_num[0]; icg++)
 											{
@@ -430,14 +402,14 @@ int main(int argc, char *argv[])
 												mg12 = mg1_r - corre_gs[1] * mnu1_r;
 
 												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
-												chi_1[gg_hist_label + chi_block_size * icg] += 1;
+												chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 
 												//rand_multi_gauss(covs, mus, 2, corre_gs);
 
 												mg21 = mg2 - corre_gs[0] * mnu2;
 												mg22 = mg2_r - corre_gs[1] * mnu2_r;
 												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
-												chi_2[gg_hist_label + chi_block_size * icg] += 1;
+												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 											}
 										}
 									}
@@ -456,10 +428,10 @@ int main(int argc, char *argv[])
 		// save the chi array
 		sprintf(chi_path, "%scache/chi_1_%d.hdf5", area_id);
 		sprintf(chi_set_name, "/data");
-		write_h5(chi_path, chi_set_name, chi_1, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]);
+		write_h5(chi_path, chi_set_name, chi_1, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]*radius_num[0]);
 
 		sprintf(chi_path, "%scache/chi_2_%d.hdf5", area_id);
-		write_h5(chi_path, chi_set_name, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]);
+		write_h5(chi_path, chi_set_name, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0]*radius_num[0]);
 
 		delete[] boundy;
 		delete[] boundx;

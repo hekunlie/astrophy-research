@@ -19,11 +19,33 @@ int main(int argc, char *argv[])
 	int disp_unit, disp_unit_num, disp_unit_err;
 	MPI_Win win, win_num, win_err;
 	MPI_Aint buffer_size, size_num, size_err;
+
+	char data_path[100], set_name[30];
+	char informs[200];
+
+	sprintf(data_path, "/home/hkli/work/cpp/test/test.hdf5");
+	sprintf(set_name, "/data");
+	double *writedat = new double[arr_len] {};
+	initialize_arr(writedat, arr_len, 1);
+	write_h5(data_path, set_name, writedat, arr_len, 1);
+
+	long *long_test_w = new long[arr_len] {};
+	long *long_test_r = new long[arr_len] {};
+	long long_temp = 0;
+	for (i = 0; i < arr_len; i++)
+	{
+		long_test_w[i] = 1;
+	}
+	sprintf(data_path, "/home/hkli/work/cpp/test/long_test.hdf5");
+	sprintf(set_name, "/data");
+	write_h5(data_path, set_name, long_test_w, arr_len, 1);
+
 	for (i = 0; i < 10; i++)
 	{
 		mask = new double[arr_len]{};
 		temp = 0;
 		temp_ = 0;
+		long_temp = 0;
 		if (rank == 0)
 		{
 			buffer_size = arr_len * sizeof(double);
@@ -45,6 +67,33 @@ int main(int argc, char *argv[])
 			MPI_Win_shared_query(win_err, 0, &size_err, &disp_unit_err, &err_ptr);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
+		
+		// check: read the hdf5 by the buffer itself
+		sprintf(data_path, "/home/hkli/work/cpp/test/test.hdf5");
+		read_h5(data_path, set_name, buffer_ptr);
+		sprintf(data_path, "/home/hkli/work/cpp/test/long_test.hdf5");
+		read_h5(data_path, set_name, long_test_r);
+		for (j = 0; j < arr_len; j++)
+		{
+			temp += buffer_ptr[j];
+			long_temp += long_test_r[i];
+			if (long_test_r[i] != 1)
+			{
+				std::cout << "Wrong " << long_test_r << std::endl;
+			}
+		}
+		for (j = 0; j < numprocs; j++)
+		{
+			if (j == rank)
+			{
+				sprintf(informs, "%d reads hdf5 & accumulates: %g (%d), Long: %d", rank, temp, arr_len, long_temp);
+				std::cout << informs<< std::endl;
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+		temp = 0;
+		
+		
 		if (rank == 0)
 		{
 			for (j = 0; j < arr_len; j++)
@@ -89,7 +138,12 @@ int main(int argc, char *argv[])
 		MPI_Win_free(&win_num);
 		MPI_Win_free(&win_err);
 		delete[] mask;
+		
 	}
+
+	delete[] writedat;
+	delete[] long_test_w;
+	delete[] long_test_r;
 	return 0;
 
 }
