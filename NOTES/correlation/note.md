@@ -2,22 +2,22 @@
 
 The shear eastimator: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \\(V\\).
 
-Spin-0:
-
-$$ N \rightarrow N$$
-
-Spin-2:
-
-$$\begin{aligned} G_1^{\prime}+iG_2^{\prime} &= (G_1+iG_2)\exp(2i\theta) \\\\
+<table border="0">
+ <tr>
+    <td>Spin-0</b></td>
+    <td>Spin-2</b></td>
+    <td>Spin-4</b></td>
+ </tr>
+ <tr>
+ <td>$$N \rightarrow N$$</td>
+    <td>$$\begin{aligned} G_1^{\prime}+iG_2^{\prime} &= (G_1+iG_2)\exp(2i\theta) \\\\
    G_1^{\prime} &= G_1\cos(2\theta)  - G_2\sin(2\theta) \\\\
-   G_2^{\prime} &= G_1\sin(2\theta)  + G_2\cos(2\theta) \end{aligned}$$
-
-Spin-4:
-
-$$\begin{aligned} U^{\prime}+iV^{\prime} &= (U+iV)\exp(4i\theta) \\\\
+   G_2^{\prime} &= G_1\sin(2\theta)  + G_2\cos(2\theta) \end{aligned}$$</td>
+    <td>$$\begin{aligned} U^{\prime}+iV^{\prime} &= (U+iV)\exp(4i\theta) \\\\
    U^{\prime} &= U\cos(4\theta)  - V\sin(4\theta) \\\\
-   V^{\prime} &= U\sin(4\theta)  + V\cos(4\theta) \end{aligned}$$
-
+   V^{\prime} &= U\sin(4\theta)  + V\cos(4\theta) \end{aligned}$$</td>
+ </tr>
+</table>
 
 Two points: (\\(\alpha_1, \beta_1\\)), (\\(\alpha_2, \beta_2\\)).
 

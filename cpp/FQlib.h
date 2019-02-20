@@ -139,15 +139,15 @@ extern "C"
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
-void write_log(char *filename, char *inform); 
+void write_log(char *filename, char *inform); //checked
 /* write char to log file */
 
-void read_para(const std::string path, const std::string name, int &para);
+void read_para(const std::string path, const std::string name, int &para);//checked
 void read_para(const std::string path, const std::string name, double &para);
 void read_para(const std::string path, const std::string name, float &para);
 /* read the parameters ("name") value from parameter file */
 
-void read_text(const std::string path, double *arr, const int read_lines);
+void read_text(const std::string path, double *arr, const int read_lines);//checked
 void read_text(const std::string path, float *arr, const int read_lines);
 void read_text(const std::string path, int *arr, const int read_lines);
 /* read data from txt file which should be just one column.
@@ -173,12 +173,12 @@ void write_h5(const char *filename, const char *set_name, const int *arr, const 
 void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column);//checked
 /* read and write the hdf5 file */
 
-void read_fits(const char *filename, double *arr);
+void read_fits(const char *filename, double *arr);//checked
 void read_fits(const char *filename, float *arr);
-void read_fits(const char *filename, int *arr);
-void write_fits(const char *filename, double *img, const int ysize, const int xsize);
+void read_fits(const char *filename, int *arr);//checked
+void write_fits(const char *filename, double *img, const int ysize, const int xsize);//checked
 void write_fits(const char *filename, float *img, const int ysize, const int xsize);
-void write_fits(const char *filename, int *img, const int ysize, const int xsize);
+void write_fits(const char *filename, int *img, const int ysize, const int xsize);//checked
 /* read and write the array to  fits file, 
 	be careful with the datetype "TINT" and "LONG_IMG"!!! 
 	the length of INT may be different in different platform,
@@ -187,9 +187,9 @@ void write_fits(const char *filename, int *img, const int ysize, const int xsize
 	the size of each axises should be inputted，ARRAY(y, x)
 */
 
-void stack(double *big_arr, const double *stamp, const int tag, const int size, const int row, const int col);
-void stack(float *big_arr, const float *stamp, const int tag, const int size, const int row, const int col);
-void stack(int *big_arr, const int *stamp, const int tag, const int size, const int row, const int col);
+void stack(double *big_arr, const double *stamp, const int tag, const int size, const int row, const int col);//checked
+void stack(float *big_arr, const float *stamp, const int tag, const int size, const int row, const int col);//checked
+void stack(int *big_arr, const int *stamp, const int tag, const int size, const int row, const int col);//checked
 /* 
     from stamps to a integrate image 
 	big_arr:   the big image that will contain all the stamps
@@ -202,9 +202,9 @@ void stack(int *big_arr, const int *stamp, const int tag, const int size, const 
 	row and col:  how many stamps in row and column
 */
 
-void segment(const double *big_arr, double *stamp, const int tag, const int size, const int row, const int col);
-void segment(const float *big_arr, float *stamp, const int tag, const int size, const int row, const int col);
-void segment(const int *big_arr, int *stamp, const int tag, const int size, const int row, const int col);
+void segment(const double *big_arr, double *stamp, const int tag, const int size, const int row, const int col);//checked
+void segment(const float *big_arr, float *stamp, const int tag, const int size, const int row, const int col);//checked
+void segment(const int *big_arr, int *stamp, const int tag, const int size, const int row, const int col);//checked
 /* to cut the specific square area in the big_arr
 	see the annotation of stack()	
 */
@@ -261,17 +261,17 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 	return: the area of the extended source
 */
 
-void addnoise(double *image, const int pixel_num, const double sigma);
-void addnoise(float *image, const int pixel_num, const float sigma);
+void addnoise(double *image, const int pixel_num, const double sigma);//checked
+void addnoise(float *image, const int pixel_num, const float sigma);//checked
 /* add Gaussian noise to an array */
 
-void initialize_arr(double *arr, const int length, const double x);
-void initialize_arr(float *arr, const int length, const float x);
-void initialize_arr(int *arr, const int length, const int x);
+void initialize_arr(double *arr, const int length, const double x);//checked
+void initialize_arr(float *arr, const int length, const float x);//checked
+void initialize_arr(int *arr, const int length, const int x);//checked
 /* set every elements to zero*/
 
-void normalize_arr(double *arr, const int size);
-void normalize_arr(float *arr, const int size);
+void normalize_arr(double *arr, const int size);//checked
+void normalize_arr(float *arr, const int size);//checked
 /* normalize the PSF power spectrum,
 	divide each pixel by the peak 
 */
@@ -279,21 +279,21 @@ void normalize_arr(float *arr, const int size);
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
-void snr_est(const double *image, para *paras, int fit);
+void snr_est(const double *image, para *paras, int fit);//checked
 /* if fit=2 for both flux2 and flux_alt estimations
 	else just estimate the flux2
 */
-void possion_subtraction(double *image_pow, para *paras, int edge);
-void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);
-void shear_est(double *gal_img, double *psf_img, para *paras);
+void possion_subtraction(double *image_pow, para *paras, int edge);//checked
+void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);//checked
+void shear_est(double *gal_img, double *psf_img, para *paras);//checked
 void ellip_est(const double *gal_img, const int size, para*paras);
 
-void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);
+void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
 /* find the target blocks for a specific point for the calculation of correlation function.
 	
 */
 
-void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);
+void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);//checked
 
 double chisq_2d(const double *hist_arr, const int size);//checked
 double chisq_2d(const long *hist_arr, const int size);//checked
@@ -306,11 +306,11 @@ double chisq_2d(const int *hist_arr, const int size);//checked
 /* random */
 /********************************************************************************************************************************************/
 
-double rand_gauss(double sigma, double mean);
+double rand_gauss(double sigma, double mean);//checked
 /* return a double from the normal distribution with sigma and mean. 
 */
 
-double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);
+double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);//checked
 /* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
 
 	cov: array, the covariance matrix
@@ -323,9 +323,9 @@ double rand_uniform(double start, double end);
 /* return a double, [ start, end ), with a unifrom distribution.
 */
 
-void rand_shuffle(double *seq, int length);
-void rand_shuffle(float *seq, int length);
-void rand_shuffle(int *seq, int length);
+void rand_shuffle(double *seq, int length);//checked
+void rand_shuffle(float *seq, int length);//checked
+void rand_shuffle(int *seq, int length);//checked
 /* 	shuffle the value of the elements for choosing elements without repeating.
 	then one can choose arbitrary elements from the disordered array.
 	
@@ -346,9 +346,9 @@ void rand_shuffle(int *seq, int length);
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
-void smooth(double *image, const double *coeffs, para *paras);
+void smooth(double *image, const double *coeffs, para *paras);//checked
 /* smooth all the region */
-void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);
+void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);//checked
 /* the image will be repalced by the smoothed one. 
 	the psf_pow and the paras->psf_thres_pow are the mask and  threshold to label the region where to be smoothed
 	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  
@@ -357,7 +357,7 @@ void smooth(double *image, const double *psf_pow, const double *coeffs, para *pa
 void smooth_real(double*image, const double *coeffs, para *paras);
 /* smooth the image by fitting a polynomial */
 
-void hyperfit_5(const double *data, double*fit_para, para *paras);
+void hyperfit_5(const double *data, double*fit_para, para *paras);//checked
 
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
 /* polynomial fitting by GSL
@@ -370,7 +370,7 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 	weight: 1 for weighted version, others for fitting directly without weigths
 */
 
-void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs);
+void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs);//checked
 /* involves the method cov_matrix_2d().
 	fit 2d polynomial f(x,y) to n order for background removing.
 	
@@ -387,7 +387,7 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	coeffs: array, the results, stores the target parameters, with length (order + 1)*(order + 2) / 2
 */
 
-double fval_at_xy(const double x, const double y, const int order, const double *coeffs );
+double fval_at_xy(const double x, const double y, const int order, const double *coeffs );//checked
 /* calculate the f(x,y) when given the "order" and "coefficients".
 	the polynomial f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 ..... 
 	coeffs:array, [a1,a2,a3...]
@@ -397,7 +397,7 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 /* fit the stand deviation of background noise of the a chip
 */
 
-void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);
+void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);//checked
 /*	 solve the matrix equation A*P = F which comes from the least square method ( not the eaquations A*X = Y)
 	A is the target covariance matrix which will be obtained by this method.
 	P is the vector of coefficients ( this method has nothing to do with it)
@@ -416,28 +416,28 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 	f_vector: array, the right of the A*P = F	
 */
 
-void sum_arr(const double *arr, const int size, const int start_t, const int end_t, double &total);
+void sum_arr(const double *arr, const int size, const int start_t, const int end_t, double &total);//checked
 /* sum the array from "start_t" to "end_t"(excluded) and assign to the "total"
 	"total" will be set to be zero in the begin of the method for safety.
 */
 
-void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);
+void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power);//checked
 /* arr_out = (alpha*arr+beta )^power
 */
 
-void arr_rescale(double *x, const double dx, const double scale, const int num);
+void arr_rescale(double *x, const double dx, const double scale, const int num);//checked
 /* rescale the array. x= scale*(x+dx)
 	"num" is the length of array
 */
 
-void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result);
+void matrix_product(const double*arr_left, const int size_1, const int size_2, const int size_3, const double *arr_right, double *result);//checked
 /* C = A*B, calculated by GSL
 	arr_left: array, size_1 x size_2
 	arr_right: array, size_2 x size_3
 	result: array, size_1 x size_3, the result
 */
 
-void matrix_inv(const double *arr, const int size, double *arr_inv);
+void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /* square matrix
 */
 
@@ -460,7 +460,7 @@ void check_buffer(double *target_arr, double *buffer, const int start_t, const i
 	count_line: int, the upper bound for count
 */
 
-void task_alloc(const int *label_list, const int total_task_num, const int portion,  const int portion_label, int *allocated_list );
+void task_alloc(const int *label_list, const int total_task_num, const int portion,  const int portion_label, int *allocated_list );//checked
 /* 
 	distribute the tasks
 	-1 is used to label the end of the tasks list

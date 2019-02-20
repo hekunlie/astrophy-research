@@ -18,6 +18,7 @@ int main(int argc, char *argv[])
 	char log_inform[200], chi_path[200], chi_set_name[30];
 
 	int i, j, k;
+	int task_num;
 	int area_id;
 	int ix, iy, ik, ir, ir_1, ig, in, icg;
 	int pts_label, pts_label_, pts_s_tag, pts_s_tag_, pts_s_tags[5];
@@ -213,6 +214,7 @@ int main(int argc, char *argv[])
 			sprintf(cache_path, "%scache/num.fits",data_path);
 			write_fits(cache_path, num_ptr, grid_ny, grid_nx);
 
+			//read the data
 			initialize_arr(buffer_ptr, buffer_size, 0.);
 			sprintf(set_name, "/grid/w_%d/data", area_id);
 			read_h5(h5f_path, set_name, buffer_ptr);
@@ -229,23 +231,36 @@ int main(int argc, char *argv[])
 			
 		// tasks distribution
 		// each thread gets its own task, the blocks to loop, in the "my_tasks".
+		task_num = 0;
 		for (k = 0; k < grid_num; k++)
 		{
-			task_list[k] = k;
-		}		
+			// skip the blocks contains nothing
+			// because the observation areas are irregular
+			// but our blocks are square
+			if (num_ptr[k] > 0)
+			{
+				task_list[task_num] = k;
+				task_num++;
+			}
+		}
+		if (task_num == 0)
+		{
+			std::cout << "Something went wrong in task_num!!!" <<std::endl;
+			exit(0);
+		}
 		// -1 denotes the end
-		task_alloc(task_list, grid_num, numprocs, rank, my_tasks);
+		task_alloc(task_list, task_num, numprocs, rank, my_tasks);
 
 		// loop the target blocks 
 		for (k = 0; k < grid_num; k++)
 		{
 			if (my_tasks[k] > -1)
 			{
+				seed = (rank + 1)*1000000+ rank* my_tasks[k]*10;
+				gsl_initialize(seed);
+
 				// initialize the mask for non-repeating calculation
 				initialize_arr(mask, max_block_length[0], 1);
-
-				seed = (rank + 1);
-				gsl_initialize(seed);
 				// the block (iy, ix) of area "w_i"
 				iy = my_tasks[k] / grid_nx;
 				ix = my_tasks[k] % grid_ny;
