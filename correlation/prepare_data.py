@@ -36,68 +36,46 @@ path_items = tool_box.config(envs_path, ["get", "get"], gets_item)
 
 cata_path, data_path = path_items
 
-gets_item = [["fresh_para_idx", "nstar", "0"], ["fresh_para_idx", "ra", "0"],
-             ["fresh_para_idx", "dec", "0"], ["fresh_para_idx", "gf1", "0"],
-             ["fresh_para_idx", "gf2", "0"], ["fresh_para_idx", "g1", "0"],
-             ["fresh_para_idx", "g2", "0"], ["fresh_para_idx", "de", "0"],
-             ["fresh_para_idx", "h1", "0"], ["fresh_para_idx", "h2", "0"],
-             ["fresh_para_idx", "flux_alt", "0"]]
-gets = ["get" for i in range(len(gets_item))]
-para_items = tool_box.config(envs_path, gets, gets_item)
-
-nstar_lb = int(para_items[0])
-
-ra_lb = int(para_items[1])
-dec_lb = int(para_items[2])
-
-field_g1_lb = int(para_items[3])
-field_g2_lb = int(para_items[4])
-
-mg1_lb = int(para_items[5])
-mg2_lb = int(para_items[6])
-mn_lb = int(para_items[7])
-mu_lb = int(para_items[8])
-mv_lb = int(para_items[9])
-
-flux_alt_lb = int(para_items[10])
-
-
-flux_alt_thresh = 4
-nstar_thresh = 12
-field_g1_bound = 0.005
-field_g2_bound = 0.0075
-
 # data collection
 if cmd == "collect":
     t1 = time.time()
     dicts, fields = tool_box.field_dict(cata_path+"nname.dat")
+
+    if rank == 0:
+        h5f_path = data_path + "cata_%s.hdf5" % result_source
+        h5f = h5py.File(h5f_path, "w")
+        h5f.close()
+    # loop the areas,
+    # the catalog of each area will be stored in "w_i"
     for i in range(area_num):
         if rank == 0:
             field_tar = []
             for field in fields:
                 if "w%d"%(i+1) in field:
                     field_tar.append(field)
+            # the allot() returns a list of lists
             field_pool = tool_box.allot(field_tar, cpus)
         else:
             field_pool = None
-
+        # distribution the files
         field_pool = comm.scatter(field_pool, root=0)
 
         field_count = 0
         for field_name in field_pool:
-            field_cat_path = data_path + "%s/%s/%s_shear.dat"%(field_name,result_source, field_name)
+            field_cat_path = cata_path + "%s/%s/%s_shear.dat"%(field_name, result_source, field_name)
             if os.path.exists(field_cat_path):
                 try:
                     cat_arr = numpy.loadtxt(field_cat_path)
                     if field_count == 0:
-                        cat_data = cat_arr.copy()
+                        cata_data = cat_arr
                     else:
-                        cat_data = numpy.row_stack((cat_data, cat_arr))
+                        cata_data = numpy.row_stack((cata_data, cat_arr))
                     field_count += 1
                 except:
                     print(rank, "%s.dat doesn't exist"%field_name)
-        data_sp = cat_data.shape
+        data_sp = cata_data.shape
         data_sps = comm.gather(data_sp, root=0)
+        numpy.savez(data_path+"rank_%d.npz"%rank, cata_data)
 
         if rank == 0:
             data_sps = numpy.array(data_sps)
@@ -114,10 +92,9 @@ if cmd == "collect":
             recv_buffer = None
         count = comm.bcast(count, root=0)
         displ = comm.bcast(displ, root=0)
-        comm.Gatherv(cat_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
+        comm.Gatherv(cata_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
         if rank == 0:
-            h5f_path = data_path + "cata_%s.hdf5"%result_source
-            h5f = h5py.File(h5f_path, "w")
+            h5f = h5py.File(h5f_path)
             h5f["/w_%d"%i] = recv_buffer
             h5f.close()
 
@@ -128,9 +105,38 @@ if cmd == "collect":
 # make grid
 if cmd == "grid":
 
+    fq = Fourier_Quad(12, 1123)
+
     t1 = time.time()
 
-    fq = Fourier_Quad(12,1123)
+    gets_item = [["fresh_para_idx", "nstar", "0"], ["fresh_para_idx", "flux_alt", "0"],
+                 ["fresh_para_idx", "ra", "0"], ["fresh_para_idx", "dec", "0"],
+                 ["fresh_para_idx", "gf1", "0"], ["fresh_para_idx", "gf2", "0"],
+                 ["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
+                 ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
+                 ["fresh_para_idx", "h2", "0"]]
+    gets = ["get" for i in range(len(gets_item))]
+    para_items = tool_box.config(envs_path, gets, gets_item)
+
+    nstar_lb = int(para_items[0])
+    flux_alt_lb = int(para_items[1])
+
+    ra_lb = int(para_items[2])
+    dec_lb = int(para_items[3])
+
+    field_g1_lb = int(para_items[4])
+    field_g2_lb = int(para_items[5])
+
+    mg1_lb = int(para_items[6])
+    mg2_lb = int(para_items[7])
+    mn_lb = int(para_items[8])
+    mu_lb = int(para_items[9])
+    mv_lb = int(para_items[10])
+
+    flux_alt_thresh = 4
+    nstar_thresh = 12
+    field_g1_bound = 0.005
+    field_g2_bound = 0.0075
 
     data_col = 7
     mg_bin_num = 8
@@ -138,10 +144,12 @@ if cmd == "grid":
     margin = 0.1 * block_scale
 
     radius_scale_bin_num = 21
-    radius_scale = numpy.array([1+10 ** (0.1 * i) for i in range(radius_scale_bin_num)])
+    radius_scale = numpy.zeros((radius_scale_bin_num+1,), dtype=numpy.double)
+    for i in range(1,radius_scale_bin_num+1):
+        radius_scale[i] = 1+10 ** (0.1 * i)
 
     g_hat_bin_num = 60
-    g_hat_bin = numpy.arange(-0.0011, 0.001, g_hat_bin_num)
+    g_hat_bin = numpy.arange(-0.0011, 0.0011, g_hat_bin_num)
 
     cf_cata_data_path = data_path + "cf_cata_%s.hdf5"%result_source
 
@@ -150,7 +158,7 @@ if cmd == "grid":
 
         # the radius bin for correlation function calculation
         h5f["/radius_bin"] = radius_scale
-        h5f["/radius_bin"].attrs["shape"] = radius_scale_bin_num
+        h5f["/radius_bin"].attrs["shape"] = radius_scale_bin_num+1
 
         # the guess of gg correlation for the algorithm
         h5f["/g_hat_bin"] = g_hat_bin
@@ -175,21 +183,26 @@ if cmd == "grid":
         flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
         nstar_idx = ori_cat_data[:, nstar_lb] >= nstar_thresh
 
+        fg1 = numpy.abs(ori_cat_data[:, field_g1_lb])
+        fg2 = numpy.abs(ori_cat_data[:, field_g2_lb])
+
+        fg1_idx = fg1 <= field_g1_bound
+        fg2_idx = fg2 <= field_g2_bound
+
         # the esitmators
-        mg1 = ori_cat_data[:, mg1_lb][flux_alt_idx & nstar_idx]
-        mg2 = ori_cat_data[:, mg2_lb][flux_alt_idx & nstar_idx]
-        mn = ori_cat_data[:, mn_lb][flux_alt_idx & nstar_idx]
-        mu = ori_cat_data[:, mu_lb][flux_alt_idx & nstar_idx]
-        mv = ori_cat_data[:, mv_lb][flux_alt_idx & nstar_idx]
-        !!! be careful with the sign of mn, mu, mv
+        mg1 = ori_cat_data[:, mg1_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        mg2 = ori_cat_data[:, mg2_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        mn = ori_cat_data[:, mn_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        mu = ori_cat_data[:, mu_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        mv = ori_cat_data[:, mv_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        # !!! be careful with the sign of mn, mu, mv
 
         # ra dec mg1 mg2 mn mu mv
         buffer = numpy.zeros((len(mg1), data_col))
 
-        # the field distortion
-        field_g1 = ori_cat_data[:, field_g1_lb][flux_alt_idx & nstar_idx]
-        field_g2 = ori_cat_data[:, field_g2_lb][flux_alt_idx & nstar_idx]
-        # correct the field distortion
+        # correct the field distortion & the "c" and "m" !!!!
+        field_g1 = ori_cat_data[:, field_g1_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        field_g2 = ori_cat_data[:, field_g2_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
         buffer[:, 2] = mg1 - field_g1 * (mn + mu) - field_g2 * mv
         buffer[:, 3] = mg2 - field_g2 * (mn - mu) - field_g1 * mv
         buffer[:, 4] = mn
@@ -201,8 +214,8 @@ if cmd == "grid":
         mg2_bin = fq.set_bin(buffer[:, 3], mg_bin_num)
 
         # the Ra & Dec, convert degree to arcmin
-        ra = ori_cat_data[:, ra_lb][flux_alt_idx & nstar_idx] * 60
-        dec = ori_cat_data[:, dec_lb][flux_alt_idx & nstar_idx] * 60
+        ra = ori_cat_data[:, ra_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx] * 60
+        dec = ori_cat_data[:, dec_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx] * 60
         buffer[:, 0] = ra
         buffer[:, 1] = dec
 
@@ -247,10 +260,19 @@ if cmd == "grid":
                 boundx.append([x1, x2, x1, x2])
 
                 # scatters for checking
-                ax.scatter(block[:,0], block[:,1], s=0.3)
+                if block_sp[0]>0:
+                    # x: Ra   y: Dec
+                    ax.scatter(block[:,0], block[:,1], s=0.3)
 
         max_sp = numpy.array([max(num_in_block), data_col],dtype=numpy.intc)
+
         num_in_block = numpy.array(num_in_block, dtype=numpy.intc)
+        block_start = numpy.zeros((grid_num,), dtype=numpy.intc)
+        block_end = numpy.zeros((grid_num,), dtype=numpy.intc)
+        # for the memory saving
+        block_start_s = numpy.zeros((grid_num,), dtype=numpy.intc)
+        block_end_s = numpy.zeros((grid_num,), dtype=numpy.intc)
+
         boundy = numpy.array(boundy, dtype=numpy.double)
         boundx = numpy.array(boundx, dtype=numpy.double)
 
@@ -266,64 +288,124 @@ if cmd == "grid":
         plt.close()
 
         final_data = numpy.zeros((max_sp[0]*grid_num, data_col),dtype=numpy.double)
+        count = 0
         for i in range(grid_num):
+            block_start[i] = i*max_sp[0]
+            block_end[i] = (i+1)*max_sp[0]
+            # for the memory saving
+            if i == 0:
+                block_start_s[i] = 0
+            else:
+                block_start_s[i] = sum(num_in_block[:i])
+            block_end_s[i] = block_start_s[i] + num_in_block[i]
+
             if num_in_block[i] != 0:
                 final_data[i*max_sp[0]:, i*max_sp[0]+num_in_block[i]] = block_list[i]
+                # for the memory saving
+                if count == 0:
+                    final_data_s = block_list[i]
+                else:
+                    final_data_s = numpy.row_stack((final_data_s, block_list[i]))
+                count += 1
 
 
-        ra = final_data[:, 0]
-        dec = final_data[:, 1]
-        mg1 = final_data[:, 2]
-        mg2 = final_data[:, 3]
-        mn = final_data[:, 4]
-        mu = final_data[:, 5]
-        mv = final_data[:, 6]
+        final_ra = final_data[:, 0]
+        final_dec = final_data[:, 1]
+        final_mg1 = final_data[:, 2]
+        final_mg2 = final_data[:, 3]
+        final_mn = final_data[:, 4]
+        final_mu = final_data[:, 5]
+        final_mv = final_data[:, 6]
+        num = ra.shape
+
+        # for the memory saving
+        final_ra_s = final_data_s[:, 0]
+        final_dec_s = final_data_s[:, 1]
+        final_mg1_s = final_data_s[:, 2]
+        final_mg2_s = final_data_s[:, 3]
+        final_mn_s = final_data_s[:, 4]
+        final_mu_s = final_data_s[:, 5]
+        final_mv_s = final_data_s[:, 6]
+        compact_len = len(final_ra_s)
 
         for i in range(area_num):
             if i == rank:
                 h5f = h5py.File(cf_cata_data_path, "w")
 
-                h5f["/grid/w_%d"%i].attrs["grid_info"] = grid_shape
-                h5f["/grid/w_%d"%i].attrs["max_block_length"] = max_sp
+                h5f["/grid/w_%d"%i].attrs["grid_shape"] = grid_shape
+                h5f["/grid/w_%d"%i].attrs["max_block_size"] = max_sp
                 h5f["/grid/w_%d"%i].attrs["block_scale"] = block_scale
 
                 h5f["/grid/w_%d/boundy" % i] = boundy
+                h5f["/grid/w_%d/boundy" % i].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
                 h5f["/grid/w_%d/boundx" % i] = boundx
+                h5f["/grid/w_%d/boundx" % i].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
 
                 h5f["/grid/w_%d/num_in_block" % i] = num_in_block
-                h5f["/grid/w_%d/block_start" % i] =
-                h5f["/grid/w_%d/block_end" % i] =
+                h5f["/grid/w_%d/num_in_block" % i].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+                h5f["/grid/w_%d/block_start" % i] = block_start
+                h5f["/grid/w_%d/block_start" % i].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+                h5f["/grid/w_%d/block_end" % i] = block_end
+                h5f["/grid/w_%d/block_end" % i].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+                # for the memory saving
+                h5f["/grid/w_%d/block_start_s" % i] = block_start_s
+                h5f["/grid/w_%d/block_start_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+                h5f["/grid/w_%d/block_end_s" % i] = block_end_s
+                h5f["/grid/w_%d/block_end_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
 
                 h5f["/grid/w_%d/G1_bin" % i] = mg1_bin
                 h5f["/grid/w_%d/G1_bin" % i].attrs["shape"] = numpy.array([mg_bin_num], dtype=numpy.intc)
                 h5f["/grid/w_%d/G2_bin" % i] = mg2_bin
                 h5f["/grid/w_%d/G2_bin" % i].attrs["shape"] = numpy.array([mg_bin_num], dtype=numpy.intc)
 
-                num = ra.shape
-                h5f["/grid/w_%d/data/ra" % i] = ra
+
+                h5f["/grid/w_%d/data/ra" % i] = final_ra
                 h5f["/grid/w_%d/data/ra" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/dec" % i] = dec
+                h5f["/grid/w_%d/data/dec" % i] = final_dec
                 h5f["/grid/w_%d/data/dec" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/G1" % i] = mg1
+                h5f["/grid/w_%d/data/G1" % i] = final_mg1
                 h5f["/grid/w_%d/data/G1" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/G2" % i] = mg2
+                h5f["/grid/w_%d/data/G2" % i] = final_mg2
                 h5f["/grid/w_%d/data/G2" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/N" % i] = mn
+                h5f["/grid/w_%d/data/N" % i] = final_mn
                 h5f["/grid/w_%d/data/N" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/U" % i] = mu
+                h5f["/grid/w_%d/data/U" % i] = final_mu
                 h5f["/grid/w_%d/data/U" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/V" % i] = mv
+                h5f["/grid/w_%d/data/V" % i] = final_mv
                 h5f["/grid/w_%d/data/V" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
+
+                # for the memory saving
+                h5f["/grid/w_%d/data/ra_s" % i] = final_ra_s
+                h5f["/grid/w_%d/data/ra_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/dec_s" % i] = final_dec_s
+                h5f["/grid/w_%d/data/dec_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/G1_s" % i] = final_mg1_s
+                h5f["/grid/w_%d/data/G1_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/G2_s" % i] = final_mg2_s
+                h5f["/grid/w_%d/data/G2_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/N_s" % i] = final_mn_s
+                h5f["/grid/w_%d/data/N_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/U_s" % i] = final_mu_s
+                h5f["/grid/w_%d/data/U_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+
+                h5f["/grid/w_%d/data/V_s" % i] = final_mv_s
+                h5f["/grid/w_%d/data/V_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
 
                 for ig in range(grid_num):
                     h5f.create_group(block_names[ig])
                     if num_in_block[ig] != 0:
+
                         num = max_sp[0]
                         h5f[block_names[ig] + "/ra" ] = block_list[:, 0]
                         h5f[block_names[ig] + "/ra"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
@@ -345,6 +427,7 @@ if cmd == "grid":
 
                         h5f[block_names[ig] + "/V"] = block_list[:, 6]
                         h5f[block_names[ig] + "/V"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
+
                 h5f.close()
             comm.Barrier()
 
