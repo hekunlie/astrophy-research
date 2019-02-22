@@ -272,9 +272,9 @@ if cmd == "grid":
             # ax.plot([x1, x2..],[y1, y2,..])
             # the horizontal line
             ax.plot([ra_min, ra_min+cols * block_scale], [dec_min+i*block_scale, dec_min+i*block_scale], c="black", linewidth=1)
-            for j in range(cols + 1):
-                # the vertical line
-                ax.plot([ra_min+j*block_scale, ra_min+j*block_scale], [dec_min, dec_min+rows * block_scale], c="black", linewidth=1)
+        for j in range(cols + 1):
+            # the vertical line
+            ax.plot([ra_min+j*block_scale, ra_min+j*block_scale], [dec_min, dec_min+rows * block_scale], c="black", linewidth=1)
         ax.set_ylabel("DEC.")
         ax.set_xlabel("R.A.")
         pic_nm = data_path + "w%d_ra_dec.png" %rank
@@ -292,8 +292,6 @@ if cmd == "grid":
 
         boundy = numpy.array(boundy, dtype=numpy.double)
         boundx = numpy.array(boundx, dtype=numpy.double)
-
-
 
         final_data = numpy.zeros((max_sp[0]*grid_num, data_col),dtype=numpy.double)
         count = 0
@@ -415,25 +413,25 @@ if cmd == "grid":
                     if num_in_block[ig] != 0:
 
                         num = max_sp[0]
-                        h5f[block_names[ig] + "/RA" ] = block_list[:, 0]
+                        h5f[block_names[ig] + "/RA"] = block_list[ig][:, 0]
                         h5f[block_names[ig] + "/RA"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/DEC"] = block_list[:, 1]
+                        h5f[block_names[ig] + "/DEC"] = block_list[ig][:, 1]
                         h5f[block_names[ig] + "/DEC"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/G1"] = block_list[:, 2]
+                        h5f[block_names[ig] + "/G1"] = block_list[ig][:, 2]
                         h5f[block_names[ig] + "/G1"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/G2"] = block_list[:, 3]
+                        h5f[block_names[ig] + "/G2"] = block_list[ig][:, 3]
                         h5f[block_names[ig] + "/G2"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/N"] = block_list[:, 4]
+                        h5f[block_names[ig] + "/N"] = block_list[ig][:, 4]
                         h5f[block_names[ig] + "/N"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/U"] = block_list[:, 5]
+                        h5f[block_names[ig] + "/U"] = block_list[ig][:, 5]
                         h5f[block_names[ig] + "/U"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/V"] = block_list[:, 6]
+                        h5f[block_names[ig] + "/V"] = block_list[ig][:, 6]
                         h5f[block_names[ig] + "/V"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
                 h5f.close()
