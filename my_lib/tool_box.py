@@ -1096,24 +1096,28 @@ def plt_lines(plt_line):
     linestyles = [(0, ()),  (0, (1, 1)),  (0, (5, 1)), (0, (3, 1, 1, 1)), (0, (5, 3, 3, 3))]
     return linestyles[divmod(plt_line, len(linestyles))[1]]
 
-def allot(allot_list, fractions):
+def allot(allot_list, portions, method="mean"):
     """
     allot the "target mission list" to CPUs
     :param allot_list: list of any thing
-    :param fractions: INT, the number of sub-list
+    :param portions: INT, the number of sub-list
     :return: list of some sub-list
     """
     num = len(allot_list)
-    m, n = divmod(num, fractions)
+    m, n = divmod(num, portions)
     pool = []
-    for i in range(fractions):
+    for i in range(portions):
         temp = []
         for j in range(m*i, m*(i+1)):
             temp.append(allot_list[j])
-        if n > 0:
-            temp.append(allot_list[m*fractions+n-1])
-            n -= 1
         pool.append(temp)
+    # the rest < portions
+    if n > 0:
+        if method == "mean":
+            for i in range(n):
+                pool[i].append(allot_list[m*portions+i])
+        else:
+            pool[-1].extend(allot_list[m*portions:m*portions+n])
     return pool
 
 def file_name(path):

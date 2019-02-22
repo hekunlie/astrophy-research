@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	if (rank < shear_pairs)
 	{	
 		// for multi_gaussian()
-		int fit_num = 40, data_num = total_chips*10000, bin_num = 6;
+		int fit_num = 60, data_num = total_chips*10000, bin_num = 6;
 		double cov11;
 		double *covs = new double[4]{};
 		double *cor_gs = new double[2]{};
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 		for (i =0; i < fit_num; i++)
 		{	
 			// covariance 
-			cov11 = i * 0.000051 - 0.0011;
+			cov11 = i * 3.728814/100000 - 0.0011;
 
 			// if this quantity is too larger (10 times cov11 .. )
 			// the chi square will more noisy.  2x is recommended

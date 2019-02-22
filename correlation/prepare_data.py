@@ -75,7 +75,8 @@ if cmd == "collect":
                     print(rank, "%s.dat doesn't exist"%field_name)
         data_sp = cata_data.shape
         data_sps = comm.gather(data_sp, root=0)
-        numpy.savez(data_path+"rank_%d.npz"%rank, cata_data)
+        npz_name = data_path+"rank_%d_%d.npz"%(i,rank)
+        numpy.savez(npz_name, cata_data)
 
         if rank == 0:
             data_sps = numpy.array(data_sps)
@@ -140,7 +141,7 @@ if cmd == "grid":
 
     data_col = 7
     mg_bin_num = 8
-    block_scale = 3  # arcsec
+    block_scale = 4  # arcsec
     margin = 0.1 * block_scale
 
     radius_scale_bin_num = 21
@@ -149,7 +150,7 @@ if cmd == "grid":
         radius_scale[i] = 1+10 ** (0.1 * i)
 
     g_hat_bin_num = 60
-    g_hat_bin = numpy.arange(-0.0011, 0.0011, g_hat_bin_num)
+    g_hat_bin = numpy.linspace(-0.0011, 0.0011, g_hat_bin_num)
 
     cf_cata_data_path = data_path + "cf_cata_%s.hdf5"%result_source
 
@@ -165,6 +166,7 @@ if cmd == "grid":
         h5f["/g_hat_bin"].attrs["shape"] = g_hat_bin_num
 
         # the number of the sky area
+        h5f.create_group("/grid")
         h5f["/grid"].attrs["max_area"] = area_num
 
         h5f.close()
@@ -175,7 +177,7 @@ if cmd == "grid":
 
     if rank < area_num:
 
-        h5f = h5py.File(cata_data_path,"r")
+        h5f = h5py.File(cata_data_path, "r")
         ori_cat_data = h5f["/w_%d"%rank].value
         h5f.close()
 
@@ -224,7 +226,7 @@ if cmd == "grid":
         dec_min, dec_max = dec.min() - margin, dec.max() + margin
 
         rows = int( (dec_max - dec_min)/block_scale + 1 )
-        cols = int( (ra_max - dec_min)/block_scale + 1 )
+        cols = int( (ra_max - ra_min)/block_scale + 1 )
         grid_num = rows*cols
         grid_shape = numpy.array([rows, cols], dtype=numpy.intc)
 
@@ -233,21 +235,23 @@ if cmd == "grid":
         block_names = []
         boundy = []
         boundx = []
+
         # find each block
-        fig = plt.figure(figsize=(rows*1.0/cols*12,12))
+        fig = plt.figure(figsize=(int(cols*1.0/rows*14), 14))
         ax = fig.add_subplot(111)
         for row in range(rows):
+
+            y1 = dec_min + row * block_scale
+            y2 = dec_min + (row + 1) * block_scale
+            ir1 = dec >= y1
+            ir2 = dec < y2
+
             for col in range(cols):
 
-                y1 = dec_min + row*block_scale
-                y2 = dec_min + (row+1)*block_scale
                 x1 = ra_min + col*block_scale
                 x2 = ra_min + (col+1)*block_scale
-
                 ic1 = ra >= x1
                 ic2 = ra < x2
-                ir1 = dec >= y1
-                ir2 = dec < y2
 
                 block = buffer[ir1&ir2&ic1&ic2]
                 block_sp = block.shape
@@ -260,9 +264,22 @@ if cmd == "grid":
                 boundx.append([x1, x2, x1, x2])
 
                 # scatters for checking
-                if block_sp[0]>0:
+                if block_sp[0] > 0:
                     # x: Ra   y: Dec
                     ax.scatter(block[:,0], block[:,1], s=0.3)
+        print(rank, ra_min, ra_max, dec_min, dec_max)
+        for i in range(rows + 1):
+            # ax.plot([x1, x2..],[y1, y2,..])
+            # the horizontal line
+            ax.plot([ra_min, ra_min+cols * block_scale], [dec_min+i*block_scale, dec_min+i*block_scale], c="black", linewidth=1)
+            for j in range(cols + 1):
+                # the vertical line
+                ax.plot([ra_min+j*block_scale, ra_min+j*block_scale], [dec_min, dec_min+rows * block_scale], c="black", linewidth=1)
+        ax.set_ylabel("DEC.")
+        ax.set_xlabel("R.A.")
+        pic_nm = data_path + "w%d_ra_dec.png" %rank
+        plt.savefig(pic_nm)
+        plt.close()
 
         max_sp = numpy.array([max(num_in_block), data_col],dtype=numpy.intc)
 
@@ -276,16 +293,7 @@ if cmd == "grid":
         boundy = numpy.array(boundy, dtype=numpy.double)
         boundx = numpy.array(boundx, dtype=numpy.double)
 
-        for i in range(rows + 1):
-            # ax.plot([x1, x2..],[y1, y2,..])
-            ax.plot([0, cols * block_scale], [i * block_scale, i * block_scale], c="black", linewidth=1)
-            for j in range(cols + 1):
-                ax.plot([j * block_scale, j * block_scale], [0, rows * block_scale], c="black", linewidth=1)
-        ax.set_xlabel("R.A.")
-        ax.set_ylabel("Dec.")
-        pic_nm = data_path + "w%d_ra_dec.png" %rank
-        plt.savefig(pic_nm)
-        plt.close()
+
 
         final_data = numpy.zeros((max_sp[0]*grid_num, data_col),dtype=numpy.double)
         count = 0
@@ -300,14 +308,13 @@ if cmd == "grid":
             block_end_s[i] = block_start_s[i] + num_in_block[i]
 
             if num_in_block[i] != 0:
-                final_data[i*max_sp[0]:, i*max_sp[0]+num_in_block[i]] = block_list[i]
+                final_data[i*max_sp[0]:i*max_sp[0]+num_in_block[i]] = block_list[i]
                 # for the memory saving
                 if count == 0:
                     final_data_s = block_list[i]
                 else:
                     final_data_s = numpy.row_stack((final_data_s, block_list[i]))
                 count += 1
-
 
         final_ra = final_data[:, 0]
         final_dec = final_data[:, 1]
@@ -330,8 +337,9 @@ if cmd == "grid":
 
         for i in range(area_num):
             if i == rank:
-                h5f = h5py.File(cf_cata_data_path, "w")
+                h5f = h5py.File(cf_cata_data_path)
 
+                h5f.create_group("/grid/w_%d"%i)
                 h5f["/grid/w_%d"%i].attrs["grid_shape"] = grid_shape
                 h5f["/grid/w_%d"%i].attrs["max_block_size"] = max_sp
                 h5f["/grid/w_%d"%i].attrs["block_scale"] = block_scale
@@ -343,6 +351,7 @@ if cmd == "grid":
 
                 h5f["/grid/w_%d/num_in_block" % i] = num_in_block
                 h5f["/grid/w_%d/num_in_block" % i].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+
                 h5f["/grid/w_%d/block_start" % i] = block_start
                 h5f["/grid/w_%d/block_start" % i].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
                 h5f["/grid/w_%d/block_end" % i] = block_end
@@ -358,12 +367,11 @@ if cmd == "grid":
                 h5f["/grid/w_%d/G2_bin" % i] = mg2_bin
                 h5f["/grid/w_%d/G2_bin" % i].attrs["shape"] = numpy.array([mg_bin_num], dtype=numpy.intc)
 
+                h5f["/grid/w_%d/data/RA" % i] = final_ra
+                h5f["/grid/w_%d/data/RA" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/ra" % i] = final_ra
-                h5f["/grid/w_%d/data/ra" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
-
-                h5f["/grid/w_%d/data/dec" % i] = final_dec
-                h5f["/grid/w_%d/data/dec" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
+                h5f["/grid/w_%d/data/DEC" % i] = final_dec
+                h5f["/grid/w_%d/data/DEC" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
                 h5f["/grid/w_%d/data/G1" % i] = final_mg1
                 h5f["/grid/w_%d/data/G1" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
@@ -381,11 +389,11 @@ if cmd == "grid":
                 h5f["/grid/w_%d/data/V" % i].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
                 # for the memory saving
-                h5f["/grid/w_%d/data/ra_s" % i] = final_ra_s
-                h5f["/grid/w_%d/data/ra_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+                h5f["/grid/w_%d/data/RA_s" % i] = final_ra_s
+                h5f["/grid/w_%d/data/RA_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
 
-                h5f["/grid/w_%d/data/dec_s" % i] = final_dec_s
-                h5f["/grid/w_%d/data/dec_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
+                h5f["/grid/w_%d/data/DEC_s" % i] = final_dec_s
+                h5f["/grid/w_%d/data/DEC_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
 
                 h5f["/grid/w_%d/data/G1_s" % i] = final_mg1_s
                 h5f["/grid/w_%d/data/G1_s" % i].attrs["shape"] = numpy.array([compact_len], dtype=numpy.intc)
@@ -407,11 +415,11 @@ if cmd == "grid":
                     if num_in_block[ig] != 0:
 
                         num = max_sp[0]
-                        h5f[block_names[ig] + "/ra" ] = block_list[:, 0]
-                        h5f[block_names[ig] + "/ra"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
+                        h5f[block_names[ig] + "/RA" ] = block_list[:, 0]
+                        h5f[block_names[ig] + "/RA"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
-                        h5f[block_names[ig] + "/dec"] = block_list[:, 1]
-                        h5f[block_names[ig] + "/dec"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
+                        h5f[block_names[ig] + "/DEC"] = block_list[:, 1]
+                        h5f[block_names[ig] + "/DEC"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
 
                         h5f[block_names[ig] + "/G1"] = block_list[:, 2]
                         h5f[block_names[ig] + "/G1"].attrs["shape"] = numpy.array([num], dtype=numpy.intc)
