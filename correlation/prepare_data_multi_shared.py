@@ -391,9 +391,9 @@ if cmd == "grid":
                 recvs = numpy.empty(stack_block_sps[procs], dtype=numpy.double)
                 comm.Recv(recvs, source=procs, tag=procs)
                 if procs == 1:
-                    final_data = numpy.column_stack((sub_block_stack, recvs))
+                    final_data = numpy.row_stack((sub_block_stack, recvs))
                 else:
-                    final_data = numpy.column_stack((final_data, recvs))
+                    final_data = numpy.row_stack((final_data, recvs))
                 # all the blocks have been stacked into "final_data"
             logger.info("Rank: %d receive all the stacked block" % rank)
             # the sub_num_in_block_g is a list of lists,

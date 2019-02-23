@@ -38,6 +38,21 @@ cata_path, data_path = path_items
 
 # data collection
 if cmd == "collect":
+
+    gets_item = [["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
+                 ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
+                 ["fresh_para_idx", "h2", "0"]]
+    gets = ["get" for i in range(len(gets_item))]
+    para_items = tool_box.config(envs_path, gets, gets_item)
+
+    logger = tool_box.get_logger("./logs_/%d_logs.dat" % rank)
+
+    mg1_lb = int(para_items[0])
+    mg2_lb = int(para_items[1])
+    mn_lb = int(para_items[2])
+    mu_lb = int(para_items[3])
+    mv_lb = int(para_items[4])
+
     t1 = time.time()
     dicts, fields = tool_box.field_dict(cata_path+"nname.dat")
 
@@ -45,6 +60,7 @@ if cmd == "collect":
         h5f_path = data_path + "cata_%s.hdf5" % result_source
         h5f = h5py.File(h5f_path, "w")
         h5f.close()
+        buffer = []
     # loop the areas,
     # the catalog of each area will be stored in "w_i"
     for i in range(area_num):
@@ -96,7 +112,25 @@ if cmd == "collect":
         comm.Gatherv(cata_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
         if rank == 0:
             h5f = h5py.File(h5f_path)
-            h5f["/w_%d"%i] = recv_buffer
+
+            # each shear estimator is 2 times the one in the paper,
+            # Zhang et al. 2017 ApJ 834,
+            # G1 = 2*G1_paper, G2 = 2*G2_paper
+            # And N = -2N_paper, U = -2U_paper, V = -2V_paper
+            recv_buffer[:,mg1_lb] = recv_buffer[:,mg1_lb] / 2
+            recv_buffer[:,mg2_lb] = recv_buffer[:,mg2_lb] / 2
+            recv_buffer[:,mn_lb] = -recv_buffer[:,mn_lb] / 2
+            recv_buffer[:,mu_lb] = -recv_buffer[:,mu_lb] / 2
+            recv_buffer[:,mv_lb] = -recv_buffer[:,mv_lb] / 2
+
+            h5f["/w_%d" % i] = recv_buffer
+            # stack the sub-catalogs from each area
+            if i == 0:
+                data = recv_buffer
+            else:
+                data = numpy.row_stack((data, recv_buffer))
+            if i == area_num - 1:
+                h5f["/total"] = data
             h5f.close()
 
     t2 = time.time()
@@ -191,6 +225,11 @@ if cmd == "grid":
 
         buffer[:,0] = ra
         buffer[:,1] = dec
+        # each shear estimator is 2 times the one in the paper,
+        # Zhang et al. 2017 ApJ 834,
+        # G1 = 2*G1, G2 = 2*G2
+        # And N = -2N, U = -2U, V = -2V
+        # the sign has been corrected in the "collect" process
         buffer[:,2] = mg1
         buffer[:,3] = mg2
         buffer[:,4] = mn
@@ -227,47 +266,47 @@ if cmd == "grid":
 
                 boundy[grid_id] = y1, y1, y2, y2
                 boundx[grid_id] = x1, x2, x1, x2
+        if rank == 0:
+            if area_id == 0:
+                # each time the program starts the file will be truncated
+                h5f = h5py.File(cf_cata_data_path, "w")
+                # the radius bin for correlation function calculation
+                radius_scale_bin_num = 21
+                radius_scale = numpy.zeros((radius_scale_bin_num + 1,), dtype=numpy.double)
+                for i in range(1, radius_scale_bin_num + 1):
+                    radius_scale[i] = 1 + 10 ** (0.1 * i)
+                h5f["/radius_bin"] = radius_scale
+                h5f["/radius_bin"].attrs["shape"] = radius_scale_bin_num + 1
 
-        if area_id == 0:
-            # each time the program starts the file will be truncated
-            h5f = h5py.File(cf_cata_data_path, "w")
-            # the radius bin for correlation function calculation
-            radius_scale_bin_num = 21
-            radius_scale = numpy.zeros((radius_scale_bin_num + 1,), dtype=numpy.double)
-            for i in range(1, radius_scale_bin_num + 1):
-                radius_scale[i] = 1 + 10 ** (0.1 * i)
-            h5f["/radius_bin"] = radius_scale
-            h5f["/radius_bin"].attrs["shape"] = radius_scale_bin_num + 1
+                # the guess of gg correlation for the algorithm
+                g_hat_bin_num = 60
+                g_hat_bin = numpy.linspace(-0.0011, 0.0011, g_hat_bin_num)
+                h5f["/g_hat_bin"] = g_hat_bin
+                h5f["/g_hat_bin"].attrs["shape"] = g_hat_bin_num
 
-            # the guess of gg correlation for the algorithm
-            g_hat_bin_num = 60
-            g_hat_bin = numpy.linspace(-0.0011, 0.0011, g_hat_bin_num)
-            h5f["/g_hat_bin"] = g_hat_bin
-            h5f["/g_hat_bin"].attrs["shape"] = g_hat_bin_num
+                # the number of the sky area
+                h5f.create_group("/grid")
+                h5f["/grid"].attrs["max_area"] = area_num
+            else:
+                h5f = h5py.File(cf_cata_data_path, "r+")
 
-            # the number of the sky area
-            h5f.create_group("/grid")
-            h5f["/grid"].attrs["max_area"] = area_num
-        else:
-            h5f = h5py.File(cf_cata_data_path, "r+")
+            logger.info("Open the hdf5: %s" % cf_cata_data_path)
 
-        logger.info("Open the hdf5: %s" % cf_cata_data_path)
+            h5f.create_group("/grid/w_%d"%area_id)
+            h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows,grid_cols], dtype=numpy.intc)
+            h5f["/grid/w_%d" % area_id].attrs["block_scale"] = numpy.array([block_scale], dtype=numpy.double)
 
-        h5f.create_group("/grid/w_%d"%area_id)
-        h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows,grid_cols], dtype=numpy.intc)
-        h5f["/grid/w_%d" % area_id].attrs["block_scale"] = numpy.array([block_scale], dtype=numpy.double)
+            h5f["/grid/w_%d/boundy"%area_id] = boundy
+            h5f["/grid/w_%d/boundy"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
+            h5f["/grid/w_%d/boundx"%area_id] = boundx
+            h5f["/grid/w_%d/boundx"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
 
-        h5f["/grid/w_%d/boundy"%area_id] = boundy
-        h5f["/grid/w_%d/boundy"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
-        h5f["/grid/w_%d/boundx"%area_id] = boundx
-        h5f["/grid/w_%d/boundx"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
+            h5f["/grid/w_%d/G1_bin"%area_id] = mg1_bin
+            h5f["/grid/w_%d/G1_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
+            h5f["/grid/w_%d/G2_bin"%area_id] = mg2_bin
+            h5f["/grid/w_%d/G2_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
 
-        h5f["/grid/w_%d/G1_bin"%area_id] = mg1_bin
-        h5f["/grid/w_%d/G1_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
-        h5f["/grid/w_%d/G2_bin"%area_id] = mg2_bin
-        h5f["/grid/w_%d/G2_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
-
-        h5f.close()
+            h5f.close()
         logger.info("Close the hdf5: %s"%cf_cata_data_path)
 
         grid_num = grid_rows*grid_cols
@@ -294,7 +333,7 @@ if cmd == "grid":
         # find each block
         for grid_id in my_tasks:
 
-            col, row = divmod(grid_id, grid_cols)
+            row, col = divmod(grid_id, grid_cols)
 
             x1 = ra_min + col * block_scale
             x2 = ra_min + (col + 1) * block_scale
@@ -337,6 +376,8 @@ if cmd == "grid":
         sub_stack_block_size = sum(sub_num_in_block)
         sub_sp = (sub_stack_block_size, data_col)
         sub_block_stack = numpy.zeros(sub_sp, dtype=numpy.double)
+        # for checking
+        start_end_pool = []
         for ir in range(len(my_tasks)):
             if ir == 0:
                 std_idx = 0
@@ -344,6 +385,14 @@ if cmd == "grid":
                 std_idx = sum(sub_num_in_block[:ir])
             if sub_num_in_block[ir] > 0:
                 sub_block_stack[std_idx: std_idx+sub_num_in_block[ir]] = sub_block_list[ir]
+                std_idx_ = (std_idx, std_idx+sub_num_in_block[ir])
+                if std_idx_ in start_end_pool:
+                    # the start & end idx of a block in the stacked array is unique
+                    # if not, something goes wrong
+                    print("Rank: %d Area: %d. Something went wrong in stack process"%(rank, area_id))
+                    exit()
+                else:
+                    start_end_pool.append(std_idx_)
         # send the sub_stack_block to rank 0
         # the sequence of the sub-list follows the the rank sequence
         stack_block_sps = comm.gather(sub_sp, root=0)
@@ -356,9 +405,9 @@ if cmd == "grid":
                 recvs = numpy.empty(stack_block_sps[procs], dtype=numpy.double)
                 comm.Recv(recvs, source=procs, tag=procs)
                 if procs == 1:
-                    final_data = numpy.column_stack((sub_block_stack, recvs))
+                    final_data = numpy.row_stack((sub_block_stack, recvs))
                 else:
-                    final_data = numpy.column_stack((final_data, recvs))
+                    final_data = numpy.row_stack((final_data, recvs))
                 # all the blocks have been stacked into "final_data"
             logger.info("Rank: %d receive all the stacked block" % rank)
             # the sub_num_in_block_g is a list of lists,
@@ -395,8 +444,9 @@ if cmd == "grid":
 
             for ig in range(grid_num):
                 # x: Ra   y: Dec
-                ax.scatter(final_data[block_start[ig]:block_end[ig], 0],
-                           final_data[block_start[ig]:block_end[ig], 1], s=0.3)
+                if num_in_block[ig] > 0:
+                    ax.scatter(final_data[block_start[ig]:block_end[ig], 0],
+                               final_data[block_start[ig]:block_end[ig], 1], s=0.3)
             ax.set_ylabel("DEC.")
             ax.set_xlabel("R.A.")
             pic_nm = data_path + "w%d_ra_dec_.png"%area_id

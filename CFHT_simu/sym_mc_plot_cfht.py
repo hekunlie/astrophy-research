@@ -4,7 +4,7 @@ import numpy
 import matplotlib.pyplot as plt
 import os
 from sys import path
-my_home = os.popen("echo $HOME").readlines()[0][:-1]
+my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 path.append('%s/work/fourier_quad/'%my_home)
 import time
 from Fourier_Quad import Fourier_Quad
@@ -14,7 +14,7 @@ import tool_box
 import h5py
 
 
-select_cri, star_thres, area_thres = argv[1], int(argv[2]), int(argv[3])
+select_cri, nstar_thres, area_thres, result_source = argv[1], int(argv[2]), int(argv[3]), argv[4]
 
 ts = time.time()
 
@@ -23,9 +23,16 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 envs_path = "%s/work/envs/envs.dat" % my_home
-get_contents = [['cfht', "cfht_path_result", '1'],['cfht', "cfht_path_cut", '1']]
-path_items = tool_box.config(envs_path, ['get',"get"], get_contents)
-result_path, cut_path = path_items
+fresh = "fresh_para_idx"
+get_contents = [['cfht', "cfht_path_result", '1'],['cfht', "cfht_path_data", '1'],['cfht', "cfht_path_cut", '1'],
+                ["%s" % fresh, "nstar", "1"], ["%s" % fresh, "total_area", "1"],
+                ["%s" % fresh, "flux2", '1'], ["%s" % fresh, "flux_alt", '1']]
+gets = ["get" for i in range(len(get_contents))]
+path_items = tool_box.config(envs_path, gets, get_contents)
+
+result_path, data_path, cut_path = path_items[0:3]
+nstar_lb, total_area_lb = int(path_items[3]), int(path_items[4])
+flux2_lb, flux_alt_lb = int(path_items[5]), int(path_items[6])
 
 para_path = "./para.ini"
 get_contents = [['field', "g1_num", '1'], ['field', "g2_num", '1'], ['field', "g1_s", '1'],
@@ -41,6 +48,7 @@ g1_e = float(path_items[3])
 g2_s = float(path_items[4])
 g2_e = float(path_items[5])
 
+
 fg1 = numpy.linspace(g1_s, g1_e, g1_num)
 fg2 = numpy.linspace(g2_s, g2_e, g2_num)
 dfg1 = (fg1[1] - fg1[0])/2
@@ -48,14 +56,14 @@ dfg2 = (fg2[1] - fg2[0])/2
 fgs = [fg1, fg2]
 dfgs = [dfg1, dfg2]
 gnums = [g1_num, g2_num]
-cut_num = 10
+cut_num = 20
 
-# nstar total_area flux2 flux2_alt gf1 gf2 g1 g2 de h1 h2
-# 0     1          2     3         4   5   6  7  8  9  10
-select_idx_dict = {"flux2": 2, "flux_alt": 3}
+# nstar total_area flux2 flux_alt gf1 gf2 g1(G1) g2(G2) de(N) h1(U) h2(V)
+# 0     1          2     3         4   5   6      7      8    9     10
+select_idx = {"flux2": 2, "flux_alt": 3}
 
 # the column in original catalog
-scale_idx_dict = {"flux2": 10, "flux_alt": 11}
+ori_data_labels = {"flux2": flux2_lb, "flux_alt": flux_alt_lb}
 
 fq = Fourier_Quad(48, 123)
 
@@ -77,65 +85,105 @@ buf1, itemsize = win1.Shared_query(0)
 buf2, itemsize = win2.Shared_query(0)
 buf3, itemsize = win3.Shared_query(0)
 
-# [[measured g]
-#  [sigma]
-#  [number]    ]
+# [[measured g] -- cut_num rows
+#  [sigma]      -- cut_num rows
+#  [number]     -- cut_num rows   ]
+# the layout of the result array in results
+#       g1_1  g1_2  ... g1_i ..
+# cut_1
+# cut_2
+# .
+# .
+# .
 results = [numpy.ndarray(buffer=buf1, dtype='d', shape=(int(3*cut_num), g1_num)),
            numpy.ndarray(buffer=buf2, dtype='d', shape=(int(3*cut_num), g2_num))]
 
+# rank 0 calculates the cutoff thresholds
+# and saves they in temp file for all threads
+# the select_scale can be seen by every threads
 select_scale = numpy.ndarray(buffer=buf3, dtype='d', shape=(cut_num,))
-
 if rank == 0:
-    data_path = result_path + "cata.hdf5"
-    h5f = h5py.File(data_path,"r")
-    data = h5f["/data"].value
+    # read the original catalog
+    ori_data_path = data_path + "cata_%s.hdf5"%result_source
+    h5f = h5py.File(ori_data_path, "r")
+    ori_data = h5f["/total"].value
     h5f.close()
-    select_data = data[:, scale_idx_dict[select_cri]]
+
+    # choose the needed data by nstar- and total_area-cutoff
+    nstar = ori_data[:,nstar_lb]
+    total_area = ori_data[:, total_area_lb]
+    idx_1 = nstar >= nstar_thres
+    idx_2 = total_area >= area_thres
+
+    select_data = ori_data[:, ori_data_labels[select_cri]][idx_1&idx_2]
+
+    fig = plt.figure(figsize=(8,8))
+    ax = fig.add_subplot(111)
+    ax.hist(select_data[select_data<80], 100)
+    ys = ax.set_ylim()
+    xs = ax.set_xlim()
+    # calculate the cutoff threshold
     select_data_sort = numpy.sort(select_data)
-    select_data_step = int(len(select_data_sort) / cut_num)
+    data_num = len(select_data)
+    select_data_step = int(data_num/ cut_num)
     for i in range(cut_num):
         select_scale[i] = select_data_sort[i * select_data_step]
-    numpy.savez(cut_path + "%s/cut_scale.npz"%select_cri, select_scale)
+        # plot the cutoff threshold on the histogram
+        ax.plot([select_data_sort[i * select_data_step],select_data_sort[i * select_data_step]],
+                [ys[0], ys[1]], linestyle="--",c="grey",linewidth=1)
+    numpy.savez(cut_path + "%s/cut_threshold.npz"%select_cri, select_scale)
+    ax.set_xlim(xs[0], xs[1]+5)
+    plt.savefig(cut_path + "%s/%s.pdf"%(select_cri,select_cri))
+    plt.close()
+
     print("%7d, %8.4f, %8.4f, %7d, %8.4f, %8.4f"%(g1_num, g1_s, g1_e, g2_num, g2_s, g2_e))
     print(select_cri, select_scale)
 comm.Barrier()
 
+# start cutoff
 mcs = [[], []]
-for i in range(2): # fg1 & fg2
-    data_path = result_path + "cata_segment_g%d.hdf5"%(i+1)
+# fg1 & fg2
+for i in range(2):
+    cat_data_path = data_path + "cata_%s_g%d.hdf5"%(result_source, i+1)
 
     # tasks distribution
-    # if cpus <= total tasks, each core will get at least one task, labeled by the NO.
-    # if cpus > total tasks, some cores will get one task, and the other will get nothing,
-    # a empty task list '[]'.
+    # if cpus <= total tasks, each core will get at least one task,
+    # labeled by a number (0 ~ total_task)
+    # if cpus > total tasks, some cores will get one task,
+    # and the other will get nothing, a empty task list '[]'.
     tasks = tool_box.allot([i for i in range(gnums[i])], cpus)[rank]
     if len(tasks) != 0:
         for ig in tasks:
+            # read the data
             set_name = "/fg%d_%d" % (i + 1, ig)
-            h5f = h5py.File(data_path, "r")
+            h5f = h5py.File(cat_data_path, "r")
             data = h5f[set_name].value
+            h5f.close()
 
             nstar = data[:, 0]
-            idx_s = nstar >= star_thres
+            idx_s = nstar >= nstar_thres
             area = data[:, 1]
             idx_a = area >= area_thres
 
-            mn = data[:, 8]
-            mu = data[:, 9]
-            #h2 = data[:, 10]
+            selected_data = data[idx_s & idx_a]
+
             if i == 0:
-                mg = data[:, 6]
-                nu = mn - mu
+                # g1
+                mg = selected_data[:, 6]
+                nu = selected_data[:, 8] + selected_data[:, 9]
             else:
-                mg = data[:, 7]
-                nu = mn + mu
+                # g2
+                mg = selected_data[:, 7]
+                nu = selected_data[:, 8] - selected_data[:, 9]
+
             for ic in range(cut_num):
-                select_data = data[:, select_idx_dict[select_cri]]
-                idx = select_data >= select_scale[ic]
-                mgs = mg[idx_s & idx_a & idx]
-                nus = nu[idx_s & idx_a & idx]
+                # the cutoff
+                idx = selected_data[:, select_idx[select_cri]] >= select_scale[ic]
+
+                mgs = mg[idx]
+                nus = nu[idx]
                 source_num = len(mgs)
-                g_h, g_sig = fq.fmin_g_new(mgs, nus, bin_num=10)
+                g_h, g_sig = fq.fmin_g_new(mgs, nus, bin_num=8)
 
                 results[i][ic*3, ig] = g_h
                 results[i][ic*3+1, ig] = g_sig
@@ -143,24 +191,34 @@ for i in range(2): # fg1 & fg2
 
     comm.Barrier()
     if rank == 0:
-        ch1 = [i*3 for i in range(cut_num)]
-        ch2 = [i*3 + 1 for i in range(cut_num)]
-        ch3 = [i*3 + 2 for i in range(cut_num)]
+        # measured g
+        ch1 = [i * 3 for i in range(cut_num)]
         all_measured_fg = results[i][ch1]
+        # sigma
+        ch2 = [i * 3 + 1 for i in range(cut_num)]
         all_sigma_fg = results[i][ch2]
+        # number
+        ch3 = [i * 3 + 2 for i in range(cut_num)]
         all_source_num = results[i][ch3]
+        x = numpy.linspace(-0.02, 0.02, 100)
         for ic in range(cut_num):
+            # mc = (1+m, sig_, c, sig_c)
             mc = tool_box.data_fit(fgs[i], all_measured_fg[ic], all_sigma_fg[ic])
             mcs[i].append(mc)
-            fig = plt.figure(figsize=(6,6))
+
+            # plot the result
+            fig = plt.figure(figsize=(8,8))
             ax = fig.add_subplot(111)
-            lb = "fg_%d: %d \n$10^2$m: %.2f (%.2f), \n$10^5$c: %.2f (%.2f)"\
-                 %(i+1,all_source_num[ic].sum(), 100*(mc[0]-1), 100*mc[1], 10**5*mc[2], 10**5*mc[3])
+
+            lb = "fg_%d: %d \n$10^2$m: %.2f (%.2f), \n$10^4$c: %.2f (%.2f)"\
+                 %(i+1,all_source_num[ic].sum(), 100*(mc[0]-1), 100*mc[1], 10**4*mc[2], 10**4*mc[3])
             ax.errorbar(fgs[i], all_measured_fg[ic], all_sigma_fg[ic], c='red',alpha=0.8, capsize=3, label=lb)
+            ax.plot(mc[0]*x+mc[2], c='blue', linestyle="-.", linewidth=1)
             x1, x2 = fgs[i][0], fgs[i][-1]
-            ax.plot([x1,x2],[x1,x2], c='black',linestyle="--")
+            ax.plot([x1,x2],[x1,x2], c='black', linewidth=1)
             ax.set_xlim(x1 - 0.3 * (x2 - x1), x2 + 0.3 * (x2 - x1))
             ax.set_ylim(x1 - 0.3 * (x2 - x1), x2 + 0.3 * (x2 - x1))
+
             ax.legend()
             pic_path = cut_path + "%s/g%d_%.2f.png"%(select_cri, i+1, select_scale[ic])
             plt.savefig(pic_path)
@@ -205,7 +263,7 @@ if rank == 0:
     # ax2.set_xscale('log')
     ax2.set_ylabel("c")
 
-    namep = cut_path + "%s/total.eps"%select_cri
+    namep = cut_path + "%s/total.pdf"%select_cri
     plt.savefig(namep)
     plt.close()
 
