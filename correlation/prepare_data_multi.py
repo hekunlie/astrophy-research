@@ -344,7 +344,7 @@ if cmd == "grid":
 
                 # the number of the sky area
                 h5f.create_group("/grid")
-                h5f["/grid"].attrs["max_area"] = area_num
+                h5f["/grid"].attrs["max_area"] = numpy.array([area_num], dtype=numpy.intc)
             else:
                 h5f = h5py.File(cf_cata_data_path, "r+")
 

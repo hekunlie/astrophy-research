@@ -217,48 +217,84 @@ void read_h5(const char *filename, const char *set_name, long *arr)
 	status = H5Fclose(file_id);
 }
 
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff)
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff, std::string flag)
 {
-	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	hid_t dataset_id;
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
-	hid_t attr;
+	hid_t file_id, dataset_id, attr;
 	herr_t status;
-	attr = H5Aopen_name(dataset_id, attrs_name);
-	status = H5Aread(attr, H5T_NATIVE_DOUBLE, buff);
-	status = H5Aclose(attr);
-	status = H5Dclose(dataset_id);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+	if (flag == "d")
+	{
+		dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_DOUBLE, buff);
+		status = H5Aclose(attr);
+		status = H5Dclose(dataset_id);
+	}
+	else
+	{
+		dataset_id = H5Gopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_DOUBLE, buff);
+		status = H5Aclose(attr);
+		status = H5Gclose(dataset_id);
+	}
+
+
 	status = H5Fclose(file_id);
 }
 
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff)
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff, std::string flag)
 {
-	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	hid_t dataset_id;
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
-	hid_t attr;
+	hid_t file_id, dataset_id, attr;
 	herr_t status;
-	attr = H5Aopen_name(dataset_id, attrs_name);
-	status = H5Aread(attr, H5T_NATIVE_FLOAT, buff);
-	status = H5Aclose(attr);
-	status = H5Dclose(dataset_id);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+	if (flag == "d")
+	{
+		dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_FLOAT, buff);
+		status = H5Aclose(attr);
+		status = H5Dclose(dataset_id);
+	}
+	else
+	{
+		dataset_id = H5Gopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_FLOAT, buff);
+		status = H5Aclose(attr);
+		status = H5Gclose(dataset_id);
+	}
+
+
 	status = H5Fclose(file_id);
 }
 
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff)
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff, std::string flag)
 {
-	hid_t file_id;
-	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	hid_t dataset_id;
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
-	hid_t attr;
+	hid_t file_id, dataset_id, attr;
 	herr_t status;
-	attr = H5Aopen_name(dataset_id, attrs_name);
-	status = H5Aread(attr, H5T_NATIVE_INT, buff);
-	status = H5Aclose(attr);
-	status = H5Dclose(dataset_id);
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+
+	if (flag == "d")
+	{
+		dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_INT, buff);
+		status = H5Aclose(attr);
+		status = H5Dclose(dataset_id);
+	}
+	else
+	{
+		dataset_id = H5Gopen(file_id, set_name, H5P_DEFAULT);
+		attr = H5Aopen_name(dataset_id, attrs_name);
+		status = H5Aread(attr, H5T_NATIVE_INT, buff);
+		status = H5Aclose(attr);
+		status = H5Gclose(dataset_id);
+	}
+	
+	
 	status = H5Fclose(file_id);
 }
 

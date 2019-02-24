@@ -165,9 +165,9 @@ void read_h5(const char *filename, const char *set_name, long *arr);//checked
 /* if the length of arr is longer than the data, the rest element  of "arr" will not be changed 
 	initializing the arr befero each reading is highly recommended.
 */
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff);//checked
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff);//checked
-void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff);//checked
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff, std::string flag);//checked
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff, std::string flag);//checked
+void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff, std::string flag);//checked
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
 */
 void creat_h5_group(const char *filename, const char *set_name, const bool trunc);

@@ -15,16 +15,18 @@ int main(int argc, char *argv[])
 	pts_info pts_data;
 	
 	char h5f_path[150], set_name[50], attrs_name[50], cache_path[150], data_path[150];
-	char log_inform[200], chi_path[200], chi_set_name[30];
+	char log_inform[200], log_path[200],chi_path[200], chi_set_name[30];
 
 	int i, j, k;
 	int task_num;
 	int area_id, block_id, block_id_s;
 	int data_num;
 	int ix, iy, ik, ir, ir_1, ig, in, icg;
-	int pts_label, pts_label_, pts_s_tag, pts_s_tag_, pts_s_tags[5];
+	//int pts_label, pts_label_, pts_s_tag, pts_s_tag_, pts_s_tags[5];
 	int gg_hist_label;
+	double st1, st2, st3, st4, st5, t_block_s, t_block_e, t_area_s, t_area_e;
 
+	st1 = clock();
 	// the column of each quantity in the data array
 	int ra_idx = 0, dec_idx = 1;
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5, mv_idx = 6;
@@ -85,19 +87,20 @@ int main(int argc, char *argv[])
 	int *my_tasks;
 	int *search_blocks;
 
+	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/logs/log_%d.dat", rank);
 
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/");
-	sprintf(h5f_path, "%scata.hdf5", data_path);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/data/");
+	sprintf(h5f_path, "%scf_cata_result_int.hdf5", data_path);
 	// read the number of the sky areas
 	sprintf(set_name, "/grid");
 	sprintf(attrs_name, "max_area");
-	read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
-
+	//read_h5_attrs(h5f_path, set_name, attrs_name, max_area);
+	max_area[0] = 4;
 
 	// the bin number
 	sprintf(set_name, "/radius_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num);
+	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num,"d");
 	radius_bin_num = radius_num[0] - 1;
 	// the bins of radian for correlation function
 	radius = new double[radius_num[0]]{};
@@ -111,7 +114,7 @@ int main(int argc, char *argv[])
 	// the correlation bins 
 	sprintf(set_name, "/g_hat_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num);
+	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num, "d");
 	gg_hats = new double[g_hat_num[0]]{};
 	gg_hats_cov = new double[g_hat_num[0]]{};
 	read_h5(h5f_path, set_name, gg_hats);
@@ -119,33 +122,45 @@ int main(int argc, char *argv[])
 	{
 		gg_hats_cov[i] = fabs(gg_hats[i] * 2);
 	}
-
+	if (rank == 0)
+	{
+		sprintf(log_inform, "Begins to loop area %d", rank, area_id);
+		std::cout << log_inform << std::endl;
+	}
+	sprintf(log_inform, "RANK: %d begins to loop areas", rank);
+	write_log(log_path, log_inform);
 
 	// loop the areas
-	for (area_id = 0; area_id < max_area[0]; area_id++)
-	{		
+	for (area_id = 1; area_id < max_area[0]+1; area_id++)
+	{	
+		t_area_s = clock();
+
+		sprintf(log_inform, "RANK: %d begins to loop area %d", rank, area_id);
+		write_log(log_path, log_inform);
+
 		sprintf(set_name, "/grid/w_%d", area_id);
 
 		// read the shape of the grid "w_i"
 		sprintf(attrs_name, "grid_shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, grid_shape);
+		read_h5_attrs(h5f_path, set_name, attrs_name, grid_shape,"g");
 		grid_ny = grid_shape[0];
 		grid_nx = grid_shape[1];
 		grid_num = grid_ny * grid_nx;
 
 		// of the single block
 		sprintf(attrs_name, "max_block_size");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_size);
+		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_size,"g");
 		data_col = max_block_size[1];
 		// the maximum block size. row * col
 		block_size = max_block_size[0] * max_block_size[1];
 
 		sprintf(attrs_name, "block_scale");
-		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale);
+		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale,"g");
 
-		sprintf(set_name, "/grid/w_%d/G1_bins", area_id);
-		sprintf(attrs_name, "bin_num");
-		read_h5_attrs(h5f_path, set_name, attrs_name, mg_bin_num);
+		sprintf(set_name, "/grid/w_%d/G1_bin", area_id);
+		sprintf(attrs_name, "shape");
+		read_h5_attrs(h5f_path, set_name, attrs_name, mg_bin_num, "d");
+
 		mg_bins = new double[mg_bin_num[0] + 1]{};
 		read_h5(h5f_path, set_name, mg_bins);
 		
@@ -183,7 +198,7 @@ int main(int argc, char *argv[])
 		// the shared buffer in the memory
 		sprintf(set_name, "/grid/w_%d/data/G1", area_id);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, data_shape);
+		read_h5_attrs(h5f_path, set_name, attrs_name, data_shape, "d");
 		data_num = data_shape[0];
 
 		// read the number of points in each block
@@ -201,6 +216,9 @@ int main(int argc, char *argv[])
 		initialize_arr(block_end, grid_num, 0);
 		sprintf(set_name, "/grid/w_%d/block_end", area_id);
 		read_h5(h5f_path, set_name, block_end);
+
+		sprintf(log_inform, "RANK: %d read the parameters in area %d", rank, area_id);
+		write_log(log_path, log_inform);
 
 		if (rank == 0)
 		{
@@ -291,8 +309,9 @@ int main(int argc, char *argv[])
 			std::cout << log_inform << std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
+		sprintf(log_inform, "RANK: %d shared buffer created in area %d", rank, area_id);
+		write_log(log_path, log_inform);
 
-			
 		// tasks distribution
 		// each thread gets its own task, the blocks to loop, in the "my_tasks".
 		task_num = 0;
@@ -315,7 +334,7 @@ int main(int argc, char *argv[])
 
 		// -1 denotes the end
 		task_alloc(task_list, task_num, numprocs, rank, my_tasks);
-		for (k = 0; k < numprocs; k++)
+		/*for (k = 0; k < numprocs; k++)
 		{
 			if (k == rank)
 			{	
@@ -330,14 +349,20 @@ int main(int argc, char *argv[])
 				std::cout << std::endl;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
-		}
+		}*/
+		sprintf(log_inform, "RANK: %d begin to loop the task blocks in area %d", rank, area_id);
+		write_log(log_path, log_inform);
 
 		// loop the target blocks 
 		for (k = 0; k < grid_num; k++)
 		{
 			block_id = my_tasks[k];
+
 			if (block_id > -1)
 			{
+				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d", rank, block_id, area_id);
+				write_log(log_path, log_inform);
+
 				seed = (rank + 1)*1000000+ rank* block_id*10;
 				gsl_initialize(seed);
 
@@ -347,8 +372,9 @@ int main(int argc, char *argv[])
 				
 				iy = block_id / grid_nx;
 				ix = block_id % grid_ny;
-				pts_label_ = block_id * block_size;
+				//pts_label_ = block_id * block_size;
 
+				t_block_s = clock();
 				// loop the points in the block
 				// the point number has been stored in num_ptr[my_tasks[k]]
 				for (ik = block_start[block_id]; ik < block_end[block_id]; ik++)
@@ -373,6 +399,7 @@ int main(int argc, char *argv[])
 					mn1_1 = MN[ik];
 					mu1_1 = MU[ik];
 					mv1_1 = MV[ik];
+
 
 					// loop the radius scales 
 					for (ir = 0; ir < radius_bin_num; ir++)
@@ -511,8 +538,16 @@ int main(int argc, char *argv[])
 					}
 
 				}
-			// free the GSL
-			gsl_free();
+
+				t_block_e = clock();
+				sprintf(log_inform, "RANK: %d finish %d 'th block in area %d in %.2f sec", rank, block_id, area_id, (t_block_e-t_block_s)/CLOCKS_PER_SEC);
+				write_log(log_path, log_inform);
+				if (0 == rank)
+				{
+					std::cout << log_inform << std::endl;
+				}
+				// free the GSL
+				gsl_free();
 			}
 
 		}
@@ -524,19 +559,24 @@ int main(int argc, char *argv[])
 
 		sprintf(chi_path, "%scache/w_%d_chi_1_%d.hdf5", area_id, rank);
 		sprintf(chi_set_name, "/data");
-		write_h5(chi_path, chi_set_name, TRUE, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
 
 		sprintf(chi_path, "%scache/w_%d_chi_2_%d.hdf5", area_id, rank);
-		write_h5(chi_path, chi_set_name, TRUE, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
 
 		MPI_Barrier(MPI_COMM_WORLD);
+		t_area_e = clock();
+		sprintf(log_inform, "RANK: %d  finish the aread %d in %.2f sec", rank, area_id,(t_area_e- t_area_s)/CLOCKS_PER_SEC);
+		write_log(log_path, log_inform);
+
 		if (0 == rank)
 		{
+			std::cout << log_inform << std::endl;
 			sprintf(chi_path, "%scache/total_chi_1_%d.hdf5", area_id);
-			write_h5(chi_path, chi_set_name, TRUE, chi_1_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name,  chi_1_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 
 			sprintf(chi_path, "%scache/total_chi_2_%d.hdf5", area_id);
-			write_h5(chi_path, chi_set_name, TRUE, chi_2_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name,  chi_2_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
