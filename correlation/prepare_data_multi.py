@@ -68,12 +68,17 @@ if cmd == "collect":
     num = []
     for area_id in range(1,area_num+1):
 
+        read_err = 0
+
         # distribution the files
         field_tar = []
-        print(field_tar)
         for field in fields:
             if "w%d" % area_id in field:
                 field_tar.append(field)
+        # make sure that each thread gets 1 field to read at least
+        # if len(field_tar) < cpus:
+        #     print("Too many threads. %d at most"%(len(field_tar)))
+        #     exit()
         field_pool = tool_box.allot(field_tar, cpus)[rank]
 
         # check
@@ -83,9 +88,9 @@ if cmd == "collect":
                 if ext_field in field_name:
                     print("WRONG",rank, area_id, field_name)
                     exit()
-        # print(area_id,rank,field_pool)
 
         field_count = 0
+        cata_data = None
         for field_name in field_pool:
             field_cat_path = cata_path + "%s/%s/%s_shear.dat"%(field_name, result_source, field_name)
             if os.path.exists(field_cat_path):
@@ -98,40 +103,56 @@ if cmd == "collect":
                     field_count += 1
                 except:
                     print(rank, "%s.dat doesn't exist"%field_name)
-        data_sp = cata_data.shape
+        # in case of that some thread gets nothing from the file (non-existed)
+        if cata_data is not None:
+            data_sp = cata_data.shape
+        else:
+            cata_data = numpy.array([[1]])
+            data_sp = cata_data.shape
+
         data_sps = comm.gather(data_sp, root=0)
         num.append(data_sp)
         # npz_name = data_path+"rank_%d_%d.npz"%(i, rank)
         # numpy.savez(npz_name, cata_data)
-        #
-        # if rank > 0:
-        #     comm.Send(cata_data, dest=0, tag=rank)
-        # else:
-        #     for procs in range(1, cpus):
-        #         recvs = numpy.empty(data_sps[procs], dtype=numpy.double)
-        #         comm.Recv(recvs, source=procs, tag=procs)
-        #         if procs == 1:
-        #             recv_buffer = numpy.row_stack((cata_data, recvs))
-        #         else:
-        #             recv_buffer = numpy.row_stack((recv_buffer, recvs))
 
-        if rank == 0:
-            data_sps = numpy.array(data_sps)
-            rows, cols = data_sps[:, 0], data_sps[:, 1]
-            displ = []
-            count = rows*cols
-            for j in range(cpus):
-                displ.append(count[0:j].sum())
-            count = count.tolist()
-            recv_buffer = numpy.empty((rows.sum(), cols[0]))
+        if rank > 0:
+            comm.Send(cata_data, dest=0, tag=rank)
         else:
-            count = None
-            displ = None
-            recv_buffer = None
-        count = comm.bcast(count, root=0)
-        displ = comm.bcast(displ, root=0)
-        comm.Gatherv(cata_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
-        if rank == 0:
+            if data_sp[0] > 1 and data_sp[1] > 1:
+                stack_pool = [cata_data]
+            else:
+                stack_pool = []
+
+            for procs in range(1, cpus):
+                recvs = numpy.empty(data_sps[procs], dtype=numpy.double)
+                comm.Recv(recvs, source=procs, tag=procs)
+                if data_sps[procs][0] > 1 and data_sps[procs][1] > 1:
+                    stack_pool.append(recvs)
+
+            for stack_count, arr in enumerate(stack_pool):
+                if stack_count == 0:
+                    recv_buffer = arr
+                else:
+                    recv_buffer = numpy.row_stack((recv_buffer, arr))
+
+        # not safe because some threads will not get data
+        # if rank == 0:
+        #     data_sps = numpy.array(data_sps)
+        #     rows, cols = data_sps[:, 0], data_sps[:, 1]
+        #     displ = []
+        #     count = rows*cols
+        #     for j in range(cpus):
+        #         displ.append(count[0:j].sum())
+        #     count = count.tolist()
+        #     recv_buffer = numpy.empty((rows.sum(), cols[0]))
+        # else:
+        #     count = None
+        #     displ = None
+        #     recv_buffer = None
+        # count = comm.bcast(count, root=0)
+        # displ = comm.bcast(displ, root=0)
+        # comm.Gatherv(cata_data, [recv_buffer, count, displ, MPI.DOUBLE], root=0)
+
             h5f = h5py.File(h5f_path)
 
             # each shear estimator is 2 times the one in the paper,
@@ -164,7 +185,7 @@ if cmd == "collect":
                 data = temp
             else:
                 data = numpy.row_stack((data, temp))
-        plt.savefig(data_path + "w.png" % area_id)
+        plt.savefig(data_path + "w.png")
         plt.close()
         h5f["/total"] = data
         h5f.close()
