@@ -26,6 +26,7 @@
 #include <gsl/gsl_blas.h>
 #include<hdf5.h>
 #include<stdlib.h>
+#include<sys/stat.h> // for stat()
 #include<algorithm> // sort(), std::max()
 #include<functional> // std::less, std::greater..
 #include<ciso646> // for "and, not, or, ..."
@@ -139,6 +140,9 @@ extern "C"
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
+bool file_exist(const char *filename);
+/* check the existence of a file */
+
 void write_log(char *filename, char *inform); //checked
 /* write char to log file */
 
@@ -166,12 +170,16 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff);//checked
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
 */
-
+void creat_h5_group(const char *filename, const char *set_name, const bool trunc);
+/* the set_name must be shorter than 150 */
 void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);//checked
 void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
 void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);//checked
-void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column);//checked
-/* read and write the hdf5 file */
+void write_h5(const char *filename, const char *set_name,  const long *arr, const int row, const int column);//checked
+/* write the hdf5 file
+	if trunc == TRUE, the file will be truncated and then data are writed into the file
+	else, write directly
+*/
 
 void read_fits(const char *filename, double *arr);//checked
 void read_fits(const char *filename, float *arr);

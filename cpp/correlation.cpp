@@ -524,19 +524,19 @@ int main(int argc, char *argv[])
 
 		sprintf(chi_path, "%scache/w_%d_chi_1_%d.hdf5", area_id, rank);
 		sprintf(chi_set_name, "/data");
-		write_h5(chi_path, chi_set_name, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name, TRUE, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
 
 		sprintf(chi_path, "%scache/w_%d_chi_2_%d.hdf5", area_id, rank);
-		write_h5(chi_path, chi_set_name, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name, TRUE, chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
 
 		MPI_Barrier(MPI_COMM_WORLD);
 		if (0 == rank)
 		{
 			sprintf(chi_path, "%scache/total_chi_1_%d.hdf5", area_id);
-			write_h5(chi_path, chi_set_name, chi_1_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name, TRUE, chi_1_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 
 			sprintf(chi_path, "%scache/total_chi_2_%d.hdf5", area_id);
-			write_h5(chi_path, chi_set_name, chi_2_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name, TRUE, chi_2_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 

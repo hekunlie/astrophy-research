@@ -36,45 +36,54 @@ path_items = tool_box.config(envs_path, ["get", "get"], gets_item)
 
 cata_path, data_path = path_items
 
+# cata_path = "/mw/w1234/original/"
+# data_path = "/lmc/"
+
+gets_item = [["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
+             ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
+             ["fresh_para_idx", "h2", "0"]]
+gets = ["get" for i in range(len(gets_item))]
+para_items = tool_box.config(envs_path, gets, gets_item)
+
+mg1_lb = int(para_items[0])
+mg2_lb = int(para_items[1])
+mn_lb = int(para_items[2])
+mu_lb = int(para_items[3])
+mv_lb = int(para_items[4])
+
 # data collection
 if cmd == "collect":
 
-    gets_item = [["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
-                 ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
-                 ["fresh_para_idx", "h2", "0"]]
-    gets = ["get" for i in range(len(gets_item))]
-    para_items = tool_box.config(envs_path, gets, gets_item)
-
-    logger = tool_box.get_logger("./logs_/%d_logs.dat" % rank)
-
-    mg1_lb = int(para_items[0])
-    mg2_lb = int(para_items[1])
-    mn_lb = int(para_items[2])
-    mu_lb = int(para_items[3])
-    mv_lb = int(para_items[4])
-
     t1 = time.time()
     dicts, fields = tool_box.field_dict(cata_path+"nname.dat")
+    h5f_path = data_path + "cata_%s.hdf5" % result_source
 
     if rank == 0:
-        h5f_path = data_path + "cata_%s.hdf5" % result_source
         h5f = h5py.File(h5f_path, "w")
         h5f.close()
         buffer = []
+
     # loop the areas,
     # the catalog of each area will be stored in "w_i"
-    for i in range(area_num):
-        if rank == 0:
-            field_tar = []
-            for field in fields:
-                if "w%d"%(i+1) in field:
-                    field_tar.append(field)
-            # the allot() returns a list of lists
-            field_pool = tool_box.allot(field_tar, cpus)
-        else:
-            field_pool = None
+    num = []
+    for area_id in range(1,area_num+1):
+
         # distribution the files
-        field_pool = comm.scatter(field_pool, root=0)
+        field_tar = []
+        print(field_tar)
+        for field in fields:
+            if "w%d" % area_id in field:
+                field_tar.append(field)
+        field_pool = tool_box.allot(field_tar, cpus)[rank]
+
+        # check
+        anothers = ["w%d"%i for i in range(1,area_num+1) if i != area_id]
+        for field_name in field_pool:
+            for ext_field in anothers:
+                if ext_field in field_name:
+                    print("WRONG",rank, area_id, field_name)
+                    exit()
+        # print(area_id,rank,field_pool)
 
         field_count = 0
         for field_name in field_pool:
@@ -91,8 +100,20 @@ if cmd == "collect":
                     print(rank, "%s.dat doesn't exist"%field_name)
         data_sp = cata_data.shape
         data_sps = comm.gather(data_sp, root=0)
+        num.append(data_sp)
         # npz_name = data_path+"rank_%d_%d.npz"%(i, rank)
         # numpy.savez(npz_name, cata_data)
+        #
+        # if rank > 0:
+        #     comm.Send(cata_data, dest=0, tag=rank)
+        # else:
+        #     for procs in range(1, cpus):
+        #         recvs = numpy.empty(data_sps[procs], dtype=numpy.double)
+        #         comm.Recv(recvs, source=procs, tag=procs)
+        #         if procs == 1:
+        #             recv_buffer = numpy.row_stack((cata_data, recvs))
+        #         else:
+        #             recv_buffer = numpy.row_stack((recv_buffer, recvs))
 
         if rank == 0:
             data_sps = numpy.array(data_sps)
@@ -119,20 +140,34 @@ if cmd == "collect":
             # And N = -2N_paper, U = -2U_paper, V = -2V_paper
             recv_buffer[:,mg1_lb] = recv_buffer[:,mg1_lb] / 2
             recv_buffer[:,mg2_lb] = recv_buffer[:,mg2_lb] / 2
-            recv_buffer[:,mn_lb] = -recv_buffer[:,mn_lb] / 2
+            recv_buffer[:,mn_lb] = recv_buffer[:,mn_lb] / 2
             recv_buffer[:,mu_lb] = -recv_buffer[:,mu_lb] / 2
             recv_buffer[:,mv_lb] = -recv_buffer[:,mv_lb] / 2
 
-            h5f["/w_%d" % i] = recv_buffer
-            # stack the sub-catalogs from each area
-            if i == 0:
-                data = recv_buffer
-            else:
-                data = numpy.row_stack((data, recv_buffer))
-            if i == area_num - 1:
-                h5f["/total"] = data
+            h5f["/w_%d" % area_id] = recv_buffer
             h5f.close()
+            print("RECV: ", recv_buffer.shape)
+    print(rank, num)
+    # stack the sub-catalogs from each area
+    if rank == 0:
+        fig = plt.figure(figsize=(14, 14))
+        h5f = h5py.File(h5f_path)
+        for area_id in range(1,area_num+1):
+            temp = h5f["/w_%d" % area_id].value
 
+            print(area_id, temp.shape,temp[:,12].min()*60, temp[:,12].max()*60,
+                  temp[:,13].min()*60, temp[:,13].max()*60)
+
+            ax = fig.add_subplot(220 + area_id)
+            ax.scatter(temp[:,12]*60, temp[:,13]*60, s=0.3)
+            if area_id == 1:
+                data = temp
+            else:
+                data = numpy.row_stack((data, temp))
+        plt.savefig(data_path + "w.png" % area_id)
+        plt.close()
+        h5f["/total"] = data
+        h5f.close()
     t2 = time.time()
     if rank == 0:
         print(t2-t1)
@@ -180,7 +215,7 @@ if cmd == "grid":
 
     cf_cata_data_path = data_path + "cf_cata_%s_multi_.hdf5" % result_source
     logger.info("Start....")
-    for area_id in range(area_num):
+    for area_id in range(1,2):#area_num):
 
         logger.info("Start area: %d"%area_id)
 
@@ -239,7 +274,7 @@ if cmd == "grid":
         # the grid: x-axis--ra, y-axis--dec
         ra_min, ra_max = ra.min() - margin, ra.max() + margin
         dec_min, dec_max = dec.min() - margin, dec.max() + margin
-
+        logger.info("R.A.: %.4f ~ %.4f  DEC: %.4f ~ %.4f" % (ra_min, ra_max, dec_min, dec_max))
         # the bin for mg's
         mg1_bin = fq.set_bin(buffer[:, 2], mg_bin_num)
         mg2_bin = fq.set_bin(buffer[:, 3], mg_bin_num)
@@ -267,6 +302,7 @@ if cmd == "grid":
                 boundy[grid_id] = y1, y1, y2, y2
                 boundx[grid_id] = x1, x2, x1, x2
         if rank == 0:
+
             if area_id == 0:
                 # each time the program starts the file will be truncated
                 h5f = h5py.File(cf_cata_data_path, "w")
@@ -291,8 +327,9 @@ if cmd == "grid":
                 h5f = h5py.File(cf_cata_data_path, "r+")
 
             logger.info("Open the hdf5: %s" % cf_cata_data_path)
-
+            h5f.__delitem__("/grid/w_%d" % area_id)
             h5f.create_group("/grid/w_%d"%area_id)
+
             h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows,grid_cols], dtype=numpy.intc)
             h5f["/grid/w_%d" % area_id].attrs["block_scale"] = numpy.array([block_scale], dtype=numpy.double)
 
