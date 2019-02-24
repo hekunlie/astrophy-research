@@ -236,7 +236,7 @@ if cmd == "grid":
 
     cf_cata_data_path = data_path + "cf_cata_%s_multi_.hdf5" % result_source
     logger.info("Start....")
-    for area_id in range(1,2):#area_num):
+    for area_id in range(1,area_num+1):
 
         logger.info("Start area: %d"%area_id)
 
@@ -244,6 +244,7 @@ if cmd == "grid":
 
         logger.info("Prepare the data")
 
+        # open the original data
         cata_data_path = data_path + "cata_%s.hdf5" % result_source
         h5f = h5py.File(cata_data_path, "r")
         ori_cat_data = h5f["/w_%d"%area_id].value
@@ -324,7 +325,7 @@ if cmd == "grid":
                 boundx[grid_id] = x1, x2, x1, x2
         if rank == 0:
 
-            if area_id == 0:
+            if area_id == 1:
                 # each time the program starts the file will be truncated
                 h5f = h5py.File(cf_cata_data_path, "w")
                 # the radius bin for correlation function calculation
@@ -348,7 +349,6 @@ if cmd == "grid":
                 h5f = h5py.File(cf_cata_data_path, "r+")
 
             logger.info("Open the hdf5: %s" % cf_cata_data_path)
-            h5f.__delitem__("/grid/w_%d" % area_id)
             h5f.create_group("/grid/w_%d"%area_id)
 
             h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows,grid_cols], dtype=numpy.intc)
