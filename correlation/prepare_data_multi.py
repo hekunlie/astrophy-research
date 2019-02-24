@@ -185,7 +185,7 @@ if cmd == "collect":
                 data = temp
             else:
                 data = numpy.row_stack((data, temp))
-        plt.savefig(data_path + "w.png")
+        plt.savefig(data_path + "W_ra_dec.png")
         plt.close()
         h5f["/total"] = data
         h5f.close()
@@ -207,7 +207,7 @@ if cmd == "grid":
     gets = ["get" for i in range(len(gets_item))]
     para_items = tool_box.config(envs_path, gets, gets_item)
 
-    logger = tool_box.get_logger("./logs_/%d_logs.dat"%rank)
+    logger = tool_box.get_logger("./logs/%d_logs.dat"%rank)
 
     nstar_lb = int(para_items[0])
     flux_alt_lb = int(para_items[1])
@@ -234,7 +234,7 @@ if cmd == "grid":
     block_scale = 4  # arcsec
     margin = 0.1 * block_scale
 
-    cf_cata_data_path = data_path + "cf_cata_%s_multi_.hdf5" % result_source
+    cf_cata_data_path = data_path + "cf_cata_%s.hdf5" % result_source
     logger.info("Start....")
     for area_id in range(1,area_num+1):
 
@@ -507,7 +507,7 @@ if cmd == "grid":
                                final_data[block_start[ig]:block_end[ig], 1], s=0.3)
             ax.set_ylabel("DEC.")
             ax.set_xlabel("R.A.")
-            pic_nm = data_path + "w%d_ra_dec_.png"%area_id
+            pic_nm = data_path + "w%d_ra_dec.png"%area_id
             plt.savefig(pic_nm)
             plt.close()
 
