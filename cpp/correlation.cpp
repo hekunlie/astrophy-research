@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
 
 	pts_info pts_data;
-	
+
 	char h5f_path[150], set_name[50], attrs_name[50], cache_path[150], data_path[150];
 	char log_inform[200], log_path[200],chi_path[200], chi_set_name[30];
 
@@ -36,9 +36,9 @@ int main(int argc, char *argv[])
 	double mg1_1r, mg2_1r, mnu1_1r, mnu2_1r, mu2_1r;
 	double mg1_1, mg2_1, mn1_1, mu1_1, mv1_1;
 
-	// the parameters of the data structure	
+	// the parameters of the data structure
 	int max_area[1]{}; // sky areas
-	int radius_num[1]; 
+	int radius_num[1];
 	int radius_bin_num;// bin number = radius_num - 1
 	double *radius, *radius_sq;
 
@@ -54,16 +54,16 @@ int main(int argc, char *argv[])
 	int data_shape[1]{};
 	//MPI_Aint size_pts;
 
-	int *num_in_block, *block_start, *block_end;		
-	
+	int *num_in_block, *block_start, *block_end;
+
 	int grid_shape[2]{}; // the grid shape to be read of each area
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
-	
+
 	int max_block_size[2]{}; // [row, col] the maximum data number of all blocks in one sky area
 	int data_col, block_size; // columns of data & size of array of the biggest block
-	
+
 	double block_scale[1]{}; // the length of the block side
-	
+
 	// the bounds of each block
 	double *boundy;
 	double *boundx;
@@ -110,8 +110,16 @@ int main(int argc, char *argv[])
 	{
 		radius_sq[i] = radius[i] * radius[i];
 	}
-
-	// the correlation bins 
+	//for (k = 0; k < numprocs; k++)
+	//{
+	//	if (k == rank)
+	//	{
+	//		std::cout << rank <<" "<< max_area[0] << std::endl;
+	//	}
+	//	MPI_Barrier(MPI_COMM_WORLD);
+	//}
+	//exit(0);
+	// the correlation bins
 	sprintf(set_name, "/g_hat_bin");
 	sprintf(attrs_name, "shape");
 	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num, "d");
@@ -132,7 +140,7 @@ int main(int argc, char *argv[])
 
 	// loop the areas
 	for (area_id = 1; area_id < max_area[0]+1; area_id++)
-	{	
+	{
 		t_area_s = clock();
 
 		sprintf(log_inform, "RANK: %d read the parameters in area %d", rank, area_id);
@@ -163,7 +171,7 @@ int main(int argc, char *argv[])
 
 		mg_bins = new double[mg_bin_num[0] + 1]{};
 		read_h5(h5f_path, set_name, mg_bins);
-		
+
 		chi_block_size = mg_bin_num[0] * mg_bin_num[0];
 		chi_block_size_ir = chi_block_size * g_hat_num[0];
 		chi_1 = new long[chi_block_size_ir* radius_bin_num]{};
@@ -241,7 +249,7 @@ int main(int argc, char *argv[])
 
 		}
 		else
-		{		
+		{
 			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG1, &win_mg1);
 			MPI_Win_shared_query(win_mg1, 0, &size_pts, &disp_mg1, &MG1);
 
@@ -267,9 +275,9 @@ int main(int argc, char *argv[])
 
 		// initialize the data in the buffer for all threads
 		if (0 == rank)
-		{	
+		{
 			sprintf(log_inform, "Created the shared buffer for program.");
-			std::cout << log_inform << std::endl;			
+			std::cout << log_inform << std::endl;
 
 			sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: ", area_id);
 			std::cout << log_inform << std::endl;
@@ -354,16 +362,16 @@ int main(int argc, char *argv[])
 		read_h5(h5f_path, set_name, MU);
 
 		initialize_arr(MV, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/U", area_id);
+		sprintf(set_name, "/grid/w_%d/data/V", area_id);
 		read_h5(h5f_path, set_name, MV);
 
-		initialize_arr(RA, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/RA", area_id);
+		/*initialize_arr(RA, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/RA", area_id); something wrong!!!!
 		read_h5(h5f_path, set_name, RA);
 
 		initialize_arr(DEC, data_num, 0.);
 		sprintf(set_name, "/grid/w_%d/data/DEC", area_id);
-		read_h5(h5f_path, set_name, DEC);
+		read_h5(h5f_path, set_name, DEC);*/
 
 		sprintf(log_inform, "FINISH BUFFER INITIALZIATION");
 		write_log(log_path, log_inform);
@@ -393,15 +401,19 @@ int main(int argc, char *argv[])
 		}
 
 		// -1 denotes the end
+        for (k=0; k<grid_num; k++)
+        {
+            my_tasks[k] = -1;
+        }
 		task_alloc(task_list, task_num, numprocs, rank, my_tasks);
 		/*for (k = 0; k < numprocs; k++)
 		{
 			if (k == rank)
-			{	
-				std::cout << rank << " My tasks:  ";
+			{
+				std::cout << rank << " My tasks:  "<<task_num<<"  ";
 				for (ik = 0; ik < grid_num; ik++)
-				{	
-					if (my_tasks[ik] > -1)
+				{
+					if (my_tasks[ik] > -2)
 					{
 						std::cout << my_tasks[ik] << ", ";
 					}
@@ -409,11 +421,13 @@ int main(int argc, char *argv[])
 				std::cout << std::endl;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
-		}*/
+		}
+		exit(0);*/
+
 		sprintf(log_inform, "RANK: %d begin to loop the task blocks in area %d", rank, area_id);
 		write_log(log_path, log_inform);
 
-		// loop the target blocks 
+		// loop the target blocks
 		for (k = 0; k < grid_num; k++)
 		{
 			block_id = my_tasks[k];
@@ -422,14 +436,17 @@ int main(int argc, char *argv[])
 			{
 				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d", rank, block_id, area_id);
 				write_log(log_path, log_inform);
-
+				if (0 == rank)
+				{
+					std::cout << log_inform << std::endl;
+				}
 				seed = (rank + 1)*1000000+ rank* block_id*10;
 				gsl_initialize(seed);
 
 				// initialize the mask for non-repeating calculation
 				initialize_arr(mask, max_block_size[0], 1);
 				// the block (iy, ix) of area "w_i"
-				
+
 				iy = block_id / grid_nx;
 				ix = block_id % grid_ny;
 				//pts_label_ = block_id * block_size;
@@ -447,25 +464,25 @@ int main(int argc, char *argv[])
 					pts_data.idy = iy;
 					pts_data.idx = ix;
 
-					// coordinate of point: y (dec), x (ra) 
+					// coordinate of point: y (dec), x (ra)
 					pts_data.y = DEC[ik];
 					pts_data.x = RA[ik];
 
 					mg1_1 = MG1[ik];
 					mg2_1 = MG2[ik];
 					// mnu1 = mn - mu, mnu2 = mn + mu for the quantity from the pipeline
-					// while, the signs of mn, mu, which are different from that in paper, 
+					// while, the signs of mn, mu, which are different from that in paper,
 					//  have been corrected by Python.
 					mn1_1 = MN[ik];
 					mu1_1 = MU[ik];
 					mv1_1 = MV[ik];
 
 
-					// loop the radius scales 
+					// loop the radius scales
 					for (ir = 0; ir < radius_bin_num; ir++)
 					{
 						// save computational cost
-						ir_1 = ir + 1; 
+						ir_1 = ir + 1;
 						// find the target blocks
 						initialize_arr(search_blocks, grid_num, -1);
 						find_block(&pts_data, radius[ir], radius[ir_1], boundy, boundx, search_blocks);
@@ -473,7 +490,7 @@ int main(int argc, char *argv[])
 
 						// find the pairs in the searched blocks
 						for (ig = 0; ig < grid_num; ig++)
-						{	
+						{
 							block_id_s = search_blocks[ig];
 							if (block_id_s > -1)
 							{
@@ -509,7 +526,7 @@ int main(int argc, char *argv[])
 											mu2_2r = MU[in] * cos4a - MV[in] * sin4a;
 											mnu1_2r = MN[in] + mu2_2r;
 											mnu2_2r = MN[in] - mu2_2r;
-				
+
 											for (icg = 0; icg < g_hat_num[0]; icg++)
 											{
 												covs[0] = gg_hats_cov[icg];
@@ -531,12 +548,12 @@ int main(int argc, char *argv[])
 												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num[0], mg_bin_num[0]);
 												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 											}
-											
+
 										}
 									}
 								}
 								else
-								{									
+								{
 									for (in = block_start[block_id_s]; in < block_end[block_id_s]; in++)
 									{
 										dy = DEC[in] - pts_data.y;
@@ -611,19 +628,48 @@ int main(int argc, char *argv[])
 			}
 
 		}
+
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Gather(chi_1, chi_block_size_ir * radius_bin_num, MPI_LONG, chi_1_total, chi_block_size_ir * radius_bin_num, MPI_LONG, 0, MPI_COMM_WORLD);
 
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Gather(chi_2, chi_block_size_ir * radius_bin_num, MPI_LONG, chi_2_total, chi_block_size_ir * radius_bin_num, MPI_LONG, 0, MPI_COMM_WORLD);
+		for (k = 0; k < numprocs; k++)
+		{
+			if (k == rank)
+			{
+				std::cout << rank << " SYNC finish" << std::endl;
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
 
-		sprintf(chi_path, "%scache/w_%d_chi_1_%d.hdf5", area_id, rank);
+		sprintf(chi_path, "%scache/w_%d_chi_1_%d.hdf5", data_path, area_id, rank);
 		sprintf(chi_set_name, "/data");
+		//creat_h5_group(chi_path, set_name, TRUE);
+		write_h5(chi_path, chi_set_name,  chi_1, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
+
+		for (k = 0; k < numprocs; k++)
+		{
+			if (k == rank)
+			{
+				std::cout << rank << " chi_1 finish" << std::endl;
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+		sprintf(chi_set_name, "/data");		
+		//creat_h5_group(chi_path, set_name, TRUE);
+		sprintf(chi_path, "%scache/w_%d_chi_2_%d.hdf5", data_path, area_id, rank);
 		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
 
-		sprintf(chi_path, "%scache/w_%d_chi_2_%d.hdf5", area_id, rank);
-		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num);
-
+		for (k = 0; k < numprocs; k++)
+		{
+			if (k == rank)
+			{
+				std::cout << rank << " chi_2 finish" << std::endl;
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		t_area_e = clock();
 		sprintf(log_inform, "RANK: %d  finish the aread %d in %.2f sec", rank, area_id,(t_area_e- t_area_s)/CLOCKS_PER_SEC);
@@ -632,10 +678,10 @@ int main(int argc, char *argv[])
 		if (0 == rank)
 		{
 			std::cout << log_inform << std::endl;
-			sprintf(chi_path, "%scache/total_chi_1_%d.hdf5", area_id);
+			sprintf(chi_path, "%scache/total_chi_1_%d.hdf5", data_path, area_id);
 			write_h5(chi_path, chi_set_name,  chi_1_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 
-			sprintf(chi_path, "%scache/total_chi_2_%d.hdf5", area_id);
+			sprintf(chi_path, "%scache/total_chi_2_%d.hdf5", data_path, area_id);
 			write_h5(chi_path, chi_set_name,  chi_2_total, mg_bin_num[0], mg_bin_num[0] * g_hat_num[0] * radius_bin_num*numprocs);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -654,7 +700,15 @@ int main(int argc, char *argv[])
 		delete[] num_in_block;
 		delete[] block_start;
 		delete[] block_end;
-		
+
+		delete[] RA ;
+		delete[] DEC ;
+
+		delete[] MG1;
+		delete[] MG2;
+		delete[] MN ;
+		delete[] MU;
+		delete[] MV ;
 		//MPI_Win_free(&win_mg1);
 		//MPI_Win_free(&win_mg2);
 		//MPI_Win_free(&win_mn);

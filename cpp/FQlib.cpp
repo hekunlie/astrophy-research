@@ -2035,9 +2035,9 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	// | (y2,x1), (y2,x2) |
 
 	// find the minimum square that contains the target blocks
-	nx_left = (int)((radius_e - x) / scale) + idx + 1;
-	nx_right = (int)((radius_e + x) / scale) - idx;
-	ny_up = (int)((radius_e + y) / scale) - idy;
+	nx_left = (int)((radius_e - x + bound_x[0]) / scale) + idx + 1;
+	nx_right = (int)((radius_e + x - bound_x[0]) / scale) - idx;
+	ny_up = (int)((radius_e + y - bound_y[0]) / scale) - idy;
 
 	nx_s = std::max(idx - nx_left, 0);
 	nx_e = std::min(idx + nx_right + 1, nx);
@@ -2927,10 +2927,12 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	{
 		allocated_list[i] = -1;
 	}
+	
 	for (i = 0; i < m; i++)
 	{
 		allocated_list[i] = label_list[m*portion_label + i];
 	}
+	
 	if (portion_label< n)
 	{
 		allocated_list[m] = label_list[m*portion + portion_label];

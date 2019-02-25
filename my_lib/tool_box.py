@@ -821,13 +821,15 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     """
     # the squared radius of the annulus
     rs, re = radius_s ** 2, radius_e ** 2
+    y_origin, x_origin = block_boundy[0,0], block_boundx[0,0]
     # find the minimum square area contains the annulus
-    nx_left = int((radius_e - pts_x) / scale + nx) + 1
-    nx_right = int((radius_e + pts_x) / scale - nx)
-    ny_up = int((radius_e + pts_y) / scale - ny)
+    nx_left = int((radius_e - pts_x+x_origin) / scale + nx) + 1
+    nx_right = int((radius_e + pts_x-x_origin) / scale - nx)
+    ny_up = int((radius_e + pts_y-y_origin) / scale - ny)
 
     nx_s, nx_e = max(nx - nx_left, 0), min(nx + nx_right + 1, block_nx)
     ny_e = min(ny + ny_up + 1, block_ny)
+    print(nx_left, nx_right, ny_up, nx_s, nx_e, ny_e)
     needs = [iy * block_nx + ix for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
     nxy = [(iy, ix) for iy in range(ny, ny_e) for ix in range(nx_s, nx_e)]
     # the distance of each block corner from this point
