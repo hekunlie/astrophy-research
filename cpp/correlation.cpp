@@ -48,11 +48,11 @@ int main(int argc, char *argv[])
 	double *gg_hats_cov;
 
 	// the variables for shared memory buffer
-	MPI_Win win_mg1, win_mg2, win_mn, win_mu, win_mv, win_ra, win_dec;
-	int disp_mg1, disp_mg2, disp_mn, disp_mu, disp_mv, disp_ra, disp_dec;
+	//MPI_Win win_mg1, win_mg2, win_mn, win_mu, win_mv, win_ra, win_dec;
+	//int disp_mg1, disp_mg2, disp_mn, disp_mu, disp_mv, disp_ra, disp_dec;
 	double *MG1, *MG2, *MN, *MU, *MV, *RA, *DEC;
 	int data_shape[1]{};
-	MPI_Aint size_pts;
+	//MPI_Aint size_pts;
 
 	int *num_in_block, *block_start, *block_end;		
 	
@@ -122,20 +122,20 @@ int main(int argc, char *argv[])
 	{
 		gg_hats_cov[i] = fabs(gg_hats[i] * 2);
 	}
-	if (rank == 0)
-	{
-		sprintf(log_inform, "Begins to loop area %d", rank, area_id);
-		std::cout << log_inform << std::endl;
-	}
+
 	sprintf(log_inform, "RANK: %d begins to loop areas", rank);
 	write_log(log_path, log_inform);
+	if (rank == 0)
+	{
+		std::cout << log_inform << std::endl;
+	}
 
 	// loop the areas
 	for (area_id = 1; area_id < max_area[0]+1; area_id++)
 	{	
 		t_area_s = clock();
 
-		sprintf(log_inform, "RANK: %d begins to loop area %d", rank, area_id);
+		sprintf(log_inform, "RANK: %d read the parameters in area %d", rank, area_id);
 		write_log(log_path, log_inform);
 
 		sprintf(set_name, "/grid/w_%d", area_id);
@@ -201,6 +201,15 @@ int main(int argc, char *argv[])
 		read_h5_attrs(h5f_path, set_name, attrs_name, data_shape, "d");
 		data_num = data_shape[0];
 
+		RA = new double[data_num] {};
+		DEC = new double[data_num] {};
+
+		MG1 = new double[data_num] {};
+		MG2 = new double[data_num] {};
+		MN = new double[data_num] {};
+		MU = new double[data_num] {};
+		MV = new double[data_num] {};
+
 		// read the number of points in each block
 		num_in_block = new int[grid_num] {};
 		block_start = new int[grid_num] {};
@@ -217,10 +226,9 @@ int main(int argc, char *argv[])
 		sprintf(set_name, "/grid/w_%d/block_end", area_id);
 		read_h5(h5f_path, set_name, block_end);
 
-		sprintf(log_inform, "RANK: %d read the parameters in area %d", rank, area_id);
-		write_log(log_path, log_inform);
 
-		if (rank == 0)
+
+	/*	if (rank == 0)
 		{
 			size_pts = data_num * sizeof(double);
 			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG1, &win_mg1);
@@ -310,7 +318,59 @@ int main(int argc, char *argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		sprintf(log_inform, "RANK: %d shared buffer created in area %d", rank, area_id);
+		write_log(log_path, log_inform);*/
+
+
+
+		sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: the biggest blcok: %d x %d", area_id, max_block_size[0], max_block_size[1]);
 		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+			// check & cache
+			sprintf(cache_path, "!%scache/num_%d.fits", data_path, area_id);
+			write_fits(cache_path, num_in_block, grid_ny, grid_nx);
+			sprintf(cache_path, "!%scache/block_start_%d.fits", data_path, area_id);
+			write_fits(cache_path, block_start, grid_ny, grid_nx);
+			sprintf(cache_path, "!%scache/block_end_%d.fits", data_path, area_id);
+			write_fits(cache_path, block_end, grid_ny, grid_nx);
+		}
+
+		//read the data
+		initialize_arr(MG1, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/G1", area_id);
+		read_h5(h5f_path, set_name, MG1);
+
+		initialize_arr(MG2, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/G2", area_id);
+		read_h5(h5f_path, set_name, MG2);
+
+		initialize_arr(MN, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/N", area_id);
+		read_h5(h5f_path, set_name, MN);
+
+		initialize_arr(MU, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/U", area_id);
+		read_h5(h5f_path, set_name, MU);
+
+		initialize_arr(MV, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/U", area_id);
+		read_h5(h5f_path, set_name, MV);
+
+		initialize_arr(RA, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/RA", area_id);
+		read_h5(h5f_path, set_name, RA);
+
+		initialize_arr(DEC, data_num, 0.);
+		sprintf(set_name, "/grid/w_%d/data/DEC", area_id);
+		read_h5(h5f_path, set_name, DEC);
+
+		sprintf(log_inform, "FINISH BUFFER INITIALZIATION");
+		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
 
 		// tasks distribution
 		// each thread gets its own task, the blocks to loop, in the "my_tasks".
@@ -595,13 +655,13 @@ int main(int argc, char *argv[])
 		delete[] block_start;
 		delete[] block_end;
 		
-		MPI_Win_free(&win_mg1);
-		MPI_Win_free(&win_mg2);
-		MPI_Win_free(&win_mn);
-		MPI_Win_free(&win_mu);
-		MPI_Win_free(&win_mv);
-		MPI_Win_free(&win_ra);
-		MPI_Win_free(&win_dec);
+		//MPI_Win_free(&win_mg1);
+		//MPI_Win_free(&win_mg2);
+		//MPI_Win_free(&win_mn);
+		//MPI_Win_free(&win_mu);
+		//MPI_Win_free(&win_mv);
+		//MPI_Win_free(&win_ra);
+		//MPI_Win_free(&win_dec);
 	}
 
 	delete[] radius;

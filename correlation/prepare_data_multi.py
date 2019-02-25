@@ -203,7 +203,7 @@ if cmd == "grid":
                  ["fresh_para_idx", "gf1", "0"], ["fresh_para_idx", "gf2", "0"],
                  ["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
                  ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
-                 ["fresh_para_idx", "h2", "0"]]
+                 ["fresh_para_idx", "h2", "0"], ["fresh_para_idx", "total_area", "0"]]
     gets = ["get" for i in range(len(gets_item))]
     para_items = tool_box.config(envs_path, gets, gets_item)
 
@@ -211,6 +211,7 @@ if cmd == "grid":
 
     nstar_lb = int(para_items[0])
     flux_alt_lb = int(para_items[1])
+    total_area_lb = int(para_items[11])
 
     ra_lb = int(para_items[2])
     dec_lb = int(para_items[3])
@@ -224,8 +225,9 @@ if cmd == "grid":
     mu_lb = int(para_items[9])
     mv_lb = int(para_items[10])
 
-    flux_alt_thresh = 4
-    nstar_thresh = 12
+    flux_alt_thresh = 4.79
+    nstar_thresh = 14
+    total_area_thresh = 7
     field_g1_bound = 0.005
     field_g2_bound = 0.0075
 
@@ -253,19 +255,20 @@ if cmd == "grid":
         # cut off
         flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
         nstar_idx = ori_cat_data[:, nstar_lb] >= nstar_thresh
+        total_area_idx = ori_cat_data[:, total_area_lb] >= total_area_thresh
 
         fg1 = numpy.abs(ori_cat_data[:, field_g1_lb])
         fg2 = numpy.abs(ori_cat_data[:, field_g2_lb])
 
         fg1_idx = fg1 <= field_g1_bound
         fg2_idx = fg2 <= field_g2_bound
-
+        cut_idx =flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx
         # the esitmators
-        mg1 = ori_cat_data[:, mg1_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
-        mg2 = ori_cat_data[:, mg2_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
-        mn = ori_cat_data[:, mn_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
-        mu = ori_cat_data[:, mu_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
-        mv = ori_cat_data[:, mv_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        mg1 = ori_cat_data[:, mg1_lb][cut_idx]
+        mg2 = ori_cat_data[:, mg2_lb][cut_idx]
+        mn = ori_cat_data[:, mn_lb][cut_idx]
+        mu = ori_cat_data[:, mu_lb][cut_idx]
+        mv = ori_cat_data[:, mv_lb][cut_idx]
         # !!! be careful with the sign of mn, mu, mv
 
         # ra dec mg1 mg2 mn mu mv
@@ -273,12 +276,12 @@ if cmd == "grid":
         buffer = numpy.zeros((data_row, data_col), dtype=numpy.double)
 
         # correct the field distortion & the "c" and "m" !!!!
-        field_g1 = ori_cat_data[:, field_g1_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
-        field_g2 = ori_cat_data[:, field_g2_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx]
+        field_g1 = ori_cat_data[:, field_g1_lb][cut_idx]
+        field_g2 = ori_cat_data[:, field_g2_lb][cut_idx]
 
         # the Ra & Dec, convert degree to arcmin
-        ra = ori_cat_data[:, ra_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx] * 60
-        dec = ori_cat_data[:, dec_lb][flux_alt_idx & nstar_idx & fg1_idx & fg2_idx] * 60
+        ra = ori_cat_data[:, ra_lb][cut_idx] * 60
+        dec = ori_cat_data[:, dec_lb][cut_idx]* 60
 
         buffer[:,0] = ra
         buffer[:,1] = dec
@@ -287,8 +290,11 @@ if cmd == "grid":
         # G1 = 2*G1, G2 = 2*G2
         # And N = -2N, U = -2U, V = -2V
         # the sign has been corrected in the "collect" process
+        # correction: flux_alt>= 4.79, nstar>= 14, area>=7
+        # c2 ~ 0.000292
+        c2_correction = 0.000292
         buffer[:,2] = mg1
-        buffer[:,3] = mg2
+        buffer[:,3] = mg2 - c2_correction*(mn - mu)
         buffer[:,4] = mn
         buffer[:,5] = mu
         buffer[:,6] = mv
