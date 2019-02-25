@@ -17,8 +17,9 @@ e = float(argv[3])
 btr = float(argv[4])
 ra = float(argv[5])
 
+pts_galsim = 0
 
-seed = numpy.random.randint(0,100000,1)[0]
+seed = 52405# numpy.random.randint(0,100000,1)[0]
 num = 11
 pixel_scale = 0.187
 
@@ -38,46 +39,48 @@ img_path = os.getcwd() + "/imgs/"
 
 pool = []
 
-rand_pts = fq.ran_pos(100, 9)
+rand_pts = fq.ran_pts(100, 9)
 
 for k in range(len(flux)):
 
-    # rng = galsim.BaseDeviate(12300000)
-    #knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
-    # bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
-    # disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
-    # gal = bulge * btr + disk * (1 - btr) #+ ktr*knot
-    # gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
-    # gal_f = gal.withFlux(flux[k])
+    if pts_galsim == 0:
+        # rng = galsim.BaseDeviate(12300000)
+        # knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
+        bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
+        disk = galsim.Sersic(scale_radius=ra, n=1, trunc=4.5 * ra)  # be careful
+        gal = bulge * btr + disk * (1 - btr) #+ ktr*knot
+        gal = gal.shear(e1=e, e2=0)#beta=0.*galsim.degrees)
+        gal_f = gal.withFlux(flux[k])
+        #
+        # rng = galsim.BaseDeviate(12300000)
+        # gal = galsim.randwalk.RandomWalk(npoints=200, half_light_radius=ra, flux=flux[k], rng=rng)
+        # gal_f = gal.shear(e1=e, e2=0)
 
-    # rng = galsim.BaseDeviate(12300000)
-    # gal = galsim.randwalk.RandomWalk(npoints=200, half_light_radius=ra, flux=flux[k], rng=rng)
-    # gal_f = gal.shear(e1=e, e2=0)
+        gal_c = galsim.Convolve([gal_f, psf])
+        img_0 = galsim.ImageD(size, size)
+        gal_c.drawImage(image=img_0, scale=pixel_scale)
+        gal_img = img_0.array + noise
+    else:
+        img_0 = fq.convolve_psf(rand_pts, 4, flux[k]/100, "Moffat")
+        gal_img = img_0 + noise
 
-
-    # gal_c = galsim.Convolve([gal_f, psf])
-    # img_0 = galsim.ImageD(size, size)
-    # gal_c.drawImage(image=img_0, scale=pixel_scale)
-    # gal_img = img_0.array + noise
-
-    img_0 = fq.convolve_psf(rand_pts, 4, flux[k]/100, "Moffat")
-
-    gal_img = img_0 + noise
     path = img_path + "gal0_%d.fits" %k
     hdu = fits.PrimaryHDU(gal_img)
     hdu.writeto(path, overwrite=True)
     pool.append(gal_img)
     for i in range(num):
 
-        # gal_s = gal_f.shear(g1=input_g[i], g2=0)#beta=shear_beta[i]*galsim.radians)
-        # gal_s_c = galsim.Convolve([gal_s, psf])
-        # img_s = galsim.ImageD(size, size)
-        # gal_s_c.drawImage(image=img_s, scale=pixel_scale)
-        # gal_s_img = img_s.array + noise
+        if pts_galsim == 0:
+            gal_s = gal_f.shear(g1=input_g[i], g2=0)#beta=shear_beta[i]*galsim.radians)
+            gal_s_c = galsim.Convolve([gal_s, psf])
+            img_s = galsim.ImageD(size, size)
+            gal_s_c.drawImage(image=img_s, scale=pixel_scale)
+            gal_s_img = img_s.array + noise
+        else:
+            rand_pts_s = fq.shear(rand_pts, g1=input_g[i], g2=0)
+            img_s = fq.convolve_psf(rand_pts_s, 4, flux[k]/100, "Moffat")
+            gal_s_img = img_s + noise
 
-        rand_pts_s = fq.shear(rand_pts, g1=input_g[i], g2=0)
-        img_s = fq.convolve_psf(rand_pts_s, 4, flux[k]/100, "Moffat")
-        gal_s_img = img_s + noise
         pool.append(gal_s_img)
         path = img_path + "gal_%d_%d.fits"%(k,i)
         hdu = fits.PrimaryHDU(gal_s_img)

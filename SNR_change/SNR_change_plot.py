@@ -19,7 +19,7 @@ markers = ['o','v','p','h','d','s',"4","*","X","^",">","+"]
 colors = ["C%d"%i for i in range(10)]
 
 fmt='%2.f%%'
-fig_x = 7
+fig_x = 8
 fig_y = fig_x*4/6
 figs = (fig_x*4, fig_y)
 fonts = 20
@@ -103,11 +103,11 @@ for i in range(flux_num):
             snr_delta = (data[i*4+3] - snr_0) / snr_0
 
             deltas = [snr_delta, sex_mag_delta, sex_snr_delta, snr_auto_delta]
-            lbs = ["P$_k0$", "MAG_AUTO", "SNR", "SNR_AUTO"]
+            lbs = ["P$_{k0}$", "MAG_AUTO", "SNR", "SNR_AUTO"]
             for select in range(4):
                 lb = "%s (%.2f)"%(lbs[select], snr_tradi_0)
-                axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=6, label=lb,
-                         marker=markers[i],fillstyle='none',linestyle=' ')
+                axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=8, label=lb,
+                         marker=markers[i],linestyle=' ')#fillstyle='none',
 
 ys = [0,0]
 for i in range(4):
@@ -119,7 +119,7 @@ for i in range(4):
 dy = ys[1] - ys[0]
 x_ticks = numpy.linspace(-0.06, 0.06, 5)
 for i in range(4):
-    axs[i].set_ylim(ys[0] - dy*0.05, ys[1]+dy*0.05)
+    axs[i].set_ylim(-0.042, 0.032)
     axs[i].set_xlim(-0.075,0.075)
     axs[i].set_xticks(x_ticks)
     axs[i].set_xlabel("g1",fontsize=xy_lb_size)
