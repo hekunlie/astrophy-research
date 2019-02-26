@@ -36,9 +36,6 @@ path_items = tool_box.config(envs_path, ["get", "get"], gets_item)
 
 cata_path, data_path = path_items
 
-# cata_path = "/mw/w1234/original/"
-# data_path = "/lmc/"
-
 gets_item = [["fresh_para_idx", "g1", "0"], ["fresh_para_idx", "g2", "0"],
              ["fresh_para_idx", "de", "0"], ["fresh_para_idx", "h1", "0"],
              ["fresh_para_idx", "h2", "0"]]
