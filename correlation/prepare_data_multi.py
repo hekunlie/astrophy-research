@@ -308,7 +308,6 @@ if cmd == "grid":
         grid_rows = int((dec_max - dec_min) / block_scale + 1)
         grid_cols = int((ra_max - ra_min) / block_scale + 1)
         grid_num = grid_rows * grid_cols
-        grid_shape = numpy.array([grid_rows, grid_cols], dtype=numpy.intc)
 
         logger.info("Grid: %d x %d"%(grid_rows, grid_cols))
 
@@ -337,25 +336,25 @@ if cmd == "grid":
                 for i in range(1, radius_scale_bin_num + 1):
                     radius_scale[i] = 1 + 10 ** (0.1 * i)
                 h5f["/radius_bin"] = radius_scale
-                h5f["/radius_bin"].attrs["shape"] = radius_scale_bin_num + 1
+                h5f["/radius_bin"].attrs["shape"] = numpy.array([radius_scale_bin_num + 1, 1], dtype=numpy.intc)
 
                 # the guess of gg correlation for the algorithm
                 g_hat_bin_num = 60
                 g_hat_bin = numpy.linspace(-0.0011, 0.0011, g_hat_bin_num)
                 h5f["/g_hat_bin"] = g_hat_bin
-                h5f["/g_hat_bin"].attrs["shape"] = g_hat_bin_num
+                h5f["/g_hat_bin"].attrs["shape"] = numpy.array([g_hat_bin_num, 1], dtype=numpy.intc)
 
                 # the number of the sky area
                 h5f.create_group("/grid")
-                h5f["/grid"].attrs["max_area"] = numpy.array([area_num], dtype=numpy.intc)
+                h5f["/grid"].attrs["max_area"] = numpy.array([area_num, 1], dtype=numpy.intc)
             else:
                 h5f = h5py.File(cf_cata_data_path, "r+")
 
             logger.info("Open the hdf5: %s" % cf_cata_data_path)
             h5f.create_group("/grid/w_%d"%area_id)
 
-            h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows,grid_cols], dtype=numpy.intc)
-            h5f["/grid/w_%d" % area_id].attrs["block_scale"] = numpy.array([block_scale], dtype=numpy.double)
+            h5f["/grid/w_%d" % area_id].attrs["grid_shape"] = numpy.array([grid_rows, grid_cols], dtype=numpy.intc)
+            h5f["/grid/w_%d" % area_id].attrs["block_scale"] = numpy.array([block_scale, 1], dtype=numpy.double)
 
             h5f["/grid/w_%d/boundy"%area_id] = boundy
             h5f["/grid/w_%d/boundy"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
@@ -363,9 +362,9 @@ if cmd == "grid":
             h5f["/grid/w_%d/boundx"%area_id].attrs["shape"] = numpy.array([grid_num, 4], dtype=numpy.intc)
 
             h5f["/grid/w_%d/G1_bin"%area_id] = mg1_bin
-            h5f["/grid/w_%d/G1_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
+            h5f["/grid/w_%d/G1_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1, 1], dtype=numpy.intc)
             h5f["/grid/w_%d/G2_bin"%area_id] = mg2_bin
-            h5f["/grid/w_%d/G2_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1], dtype=numpy.intc)
+            h5f["/grid/w_%d/G2_bin"%area_id].attrs["shape"] = numpy.array([mg_bin_num+1, 1], dtype=numpy.intc)
 
             h5f.close()
         logger.info("Close the hdf5: %s"%cf_cata_data_path)
@@ -427,7 +426,7 @@ if cmd == "grid":
                             h5f[set_nm] = sub_block_list[ir][:, inm]
                         else:
                             h5f.create_group(set_nm)
-                        h5f[set_nm].attrs["shape"] = numpy.array([sub_num_in_block[ir]],dtype=numpy.intc)
+                        h5f[set_nm].attrs["shape"] = numpy.array([sub_num_in_block[ir], 1],dtype=numpy.intc)
                 h5f.close()
             comm.Barrier()
         logger.info("Rank: %d write the blocks into hdf5 %s." % (rank, cf_cata_data_path))
@@ -522,19 +521,19 @@ if cmd == "grid":
             h5f["/grid/w_%d"%area_id].attrs["max_block_size"] = numpy.array([num_in_block.max(),data_col],dtype=numpy.intc)
 
             h5f["/grid/w_%d/num_in_block" % area_id] = num_in_block
-            h5f["/grid/w_%d/num_in_block" % area_id].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+            h5f["/grid/w_%d/num_in_block" % area_id].attrs["shape"] = numpy.array([grid_num, 1], dtype=numpy.intc)
 
             h5f["/grid/w_%d/block_start" % area_id] = block_start
-            h5f["/grid/w_%d/block_start" % area_id].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+            h5f["/grid/w_%d/block_start" % area_id].attrs["shape"] = numpy.array([grid_num, 1], dtype=numpy.intc)
 
             h5f["/grid/w_%d/block_end" % area_id] = block_end
-            h5f["/grid/w_%d/block_end" % area_id].attrs["shape"] = numpy.array([grid_num], dtype=numpy.intc)
+            h5f["/grid/w_%d/block_end" % area_id].attrs["shape"] = numpy.array([grid_num, 1], dtype=numpy.intc)
 
             esti_nm = ["/RA", "/DEC", "/G1", "/G2", "/N", "/U", "/V"]
             for ie, enm in enumerate(esti_nm):
                 set_name = "/grid/w_%d/data/%s" % (area_id, enm)
                 h5f[set_name] = final_data[:, ie]
-                h5f[set_name].attrs["shape"] = numpy.array([f_row], dtype=numpy.intc)
+                h5f[set_name].attrs["shape"] = numpy.array([f_row, 1], dtype=numpy.intc)
             h5f.close()
 
         logger.info("Rank: %d finish" % rank)

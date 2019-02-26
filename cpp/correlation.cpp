@@ -16,15 +16,15 @@ int main(int argc, char *argv[])
 
 	char h5f_path[200], set_name[50], attrs_name[50], cache_path[200], data_path[200];
 	char log_inform[200], log_path[200],chi_path[200], chi_set_name[30];
+	char temp[200];
 
-	int i, j, k;
-	int task_num;
+	int i, j, k, i_t;
+	
 	int area_id, block_id, block_id_s;
-	int data_num;
-	int ix, iy, ik, ir, ir_1, ig, in, icg;
-	//int pts_label, pts_label_, pts_s_tag, pts_s_tag_, pts_s_tags[5];
-	int gg_hist_label;
+	int ix, iy, ik, ir, ir_1, ig, in, icg;	
 	double st1, st2, st3, st4, st5, t_block_s, t_block_e, t_area_s, t_area_e;
+	int int_attrs[2]{};
+	double double_attrs[2]{};
 
 	st1 = clock();
 	// the column of each quantity in the data array
@@ -37,32 +37,31 @@ int main(int argc, char *argv[])
 	double mg1_1, mg2_1, mn1_1, mu1_1, mv1_1;
 
 	// the parameters of the data structure
-	int max_area[1]{}; // sky areas
-	int radius_num[1];
+	int max_area; // sky areas
 	int radius_bin_num;// bin number = radius_num - 1
 	double *radius, *radius_sq;
 
 	// for the correlation bins
-	int g_hat_num[1]{};
+	int g_hat_num;
+	int gg_hist_label;
 	double *gg_hats;
 	double *gg_hats_cov;
 
 	// the variables for shared memory buffer
 	//MPI_Win win_mg1, win_mg2, win_mn, win_mu, win_mv, win_ra, win_dec;
 	//int disp_mg1, disp_mg2, disp_mn, disp_mu, disp_mv, disp_ra, disp_dec;
+		//MPI_Aint size_pts;
 	double *MG1, *MG2, *MN, *MU, *MV, *RA, *DEC;
-	int data_shape[1]{};
-	//MPI_Aint size_pts;
+	int data_num;
+
 
 	int *num_in_block, *block_start, *block_end;
-
-	int grid_shape[2]{}; // the grid shape to be read of each area
+	int task_num;
 	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
 
-	int max_block_size[2]{}; // [row, col] the maximum data number of all blocks in one sky area
-	int data_col, block_size; // columns of data & size of array of the biggest block
+	int block_row, block_col, block_size; // columns of data & size of array of the biggest block
 
-	double block_scale[1]{}; // the length of the block side
+	double block_scale; // the length of the block side
 
 	// the bounds of each block
 	double *boundy;
@@ -88,29 +87,29 @@ int main(int argc, char *argv[])
 	int *my_tasks;
 	int *search_blocks;
 
-	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/logs/log_%d.dat", rank);
-	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/data/");
+	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/correlation/logs/log_%d.dat", rank);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/data/");
 
-	sprintf(log_path, "/mnt/perc/hklee/CFHT/correlation/logs/log_%d.dat", rank);
-	sprintf(data_path, "/mnt/perc/hklee/CFHT/data/");
+	//sprintf(log_path, "/mnt/perc/hklee/CFHT/correlation/logs/log_%d.dat", rank);
+	//sprintf(data_path, "/mnt/perc/hklee/CFHT/data/");
 
 	sprintf(h5f_path, "%scf_cata_result_int.hdf5", data_path);
 	// read the number of the sky areas
 	sprintf(set_name, "/grid");
 	sprintf(attrs_name, "max_area");
-	read_h5_attrs(h5f_path, set_name, attrs_name, max_area,"g");
-	//max_area[0] = 4;
+	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
+	max_area = int_attrs[0];
 
 	// the bin number
 	sprintf(set_name, "/radius_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, radius_num,"d");
-	radius_bin_num = radius_num[0] - 1;
+	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"d");
+	radius_bin_num = int_attrs[0] - 1;
 	// the bins of radian for correlation function
-	radius = new double[radius_num[0]]{};
-	radius_sq = new double[radius_num[0]]{};
+	radius = new double[int_attrs[0]]{};
+	radius_sq = new double[int_attrs[0]]{};
 	read_h5(h5f_path, set_name, radius);
-	for (i = 0; i < radius_num[0]; i++)
+	for (i = 0; i < int_attrs[0]; i++)
 	{
 		radius_sq[i] = radius[i] * radius[i];
 	}
@@ -118,11 +117,12 @@ int main(int argc, char *argv[])
 	// the correlation bins
 	sprintf(set_name, "/g_hat_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, g_hat_num, "d");
-	gg_hats = new double[g_hat_num[0]]{};
-	gg_hats_cov = new double[g_hat_num[0]]{};
+	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
+	g_hat_num = int_attrs[0];
+	gg_hats = new double[g_hat_num]{};
+	gg_hats_cov = new double[g_hat_num]{};
 	read_h5(h5f_path, set_name, gg_hats);
-	for (i = 0; i < g_hat_num[0]; i++)
+	for (i = 0; i < g_hat_num; i++)
 	{
 		gg_hats_cov[i] = fabs(gg_hats[i] * 2);
 	}
@@ -135,10 +135,8 @@ int main(int argc, char *argv[])
 	}
 
 
-//exit(0);
-
 	// loop the areas
-	for (area_id = 1; area_id < max_area[0]+1; area_id++)
+	for (area_id = 1; area_id < max_area+1; area_id++)
 	{
 		t_area_s = clock();
 
@@ -149,38 +147,38 @@ int main(int argc, char *argv[])
 
 		// read the shape of the grid "w_i"
 		sprintf(attrs_name, "grid_shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, grid_shape,"g");
-		grid_ny = grid_shape[0];
-		grid_nx = grid_shape[1];
+		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
+		grid_ny = int_attrs[0];
+		grid_nx = int_attrs[1];
 		grid_num = grid_ny * grid_nx;
 
 		// of the single block
 		sprintf(attrs_name, "max_block_size");
-		read_h5_attrs(h5f_path, set_name, attrs_name, max_block_size,"g");
-		data_col = max_block_size[1];
+		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
+		block_row = int_attrs[0];
+		block_col = int_attrs[1];
 		// the maximum block size. row * col
-		block_size = max_block_size[0] * max_block_size[1];
+		block_size = int_attrs[0] * int_attrs[1];
+		// mask for non-repeating calculation
+		mask = new int[block_row]{};
 
 		sprintf(attrs_name, "block_scale");
-		read_h5_attrs(h5f_path, set_name, attrs_name, block_scale,"g");
+		read_h5_attrs(h5f_path, set_name, attrs_name, double_attrs,"g");
+		block_scale = double_attrs[0];
 
 		sprintf(set_name, "/grid/w_%d/G1_bin", area_id);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, mg_bin_len, "d");
-
-		mg_bins = new double[mg_bin_len[0]]{};
-		mg_bin_num = mg_bin_len[0] - 1;
+		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
+		mg_bins = new double[int_attrs[0]]{};
+		mg_bin_num = int_attrs[0] - 1;
 		read_h5(h5f_path, set_name, mg_bins);
 
 		chi_block_size = mg_bin_num* mg_bin_num;
-		chi_block_size_ir = chi_block_size * g_hat_num[0];
+		chi_block_size_ir = chi_block_size * g_hat_num;
 		chi_1 = new long[chi_block_size_ir* radius_bin_num]{};
 		chi_2 = new long[chi_block_size_ir * radius_bin_num]{};
 		chi_1_total = new long[chi_block_size_ir* radius_bin_num*numprocs]{};
 		chi_2_total = new long[chi_block_size_ir* radius_bin_num*numprocs]{};
-
-		// mask for non-repeating calculation
-		mask = new int[max_block_size[0]]{};
 
 		// the bounds of each block
 		boundy = new double[grid_num * 4]{};
@@ -198,7 +196,7 @@ int main(int argc, char *argv[])
 		search_blocks = new int[grid_num] {};
 
 		// initialize the information of pts_info
-		pts_data.scale = block_scale[0];
+		pts_data.scale = block_scale;
 		pts_data.ny = grid_ny;
 		pts_data.nx = grid_nx;
 		pts_data.blocks_num = grid_num;
@@ -206,8 +204,8 @@ int main(int argc, char *argv[])
 		// the shared buffer in the memory
 		sprintf(set_name, "/grid/w_%d/data/G1", area_id);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, data_shape, "d");
-		data_num = data_shape[0];
+		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
+		data_num = int_attrs[0];
 
 		RA = new double[data_num] {};
 		DEC = new double[data_num] {};
@@ -238,9 +236,9 @@ int main(int argc, char *argv[])
 		{
 			if (k == rank)
 			{	
-				sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area[0], radius_bin_num, g_hat_num[0], grid_ny, grid_nx, grid_num);
+				sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area, radius_bin_num, g_hat_num, grid_ny, grid_nx, grid_num);
 				std::cout <<log_inform<< std::endl;
-				sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, data_num: %d ", rank,block_scale[0], mg_bin_num, data_num);
+				sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, data_num: %d ", rank, block_scale, mg_bin_num, data_num);
 				std::cout << log_inform << std::endl;
 				std::cout << std::endl;
 			}			
@@ -341,7 +339,7 @@ int main(int argc, char *argv[])
 
 
 
-		sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: the biggest blcok: %d x %d", area_id, max_block_size[0], max_block_size[1]);
+		sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: the biggest blcok: %d x %d", area_id, block_row, block_col);
 		write_log(log_path, log_inform);
 		if (rank == 0)
 		{
@@ -444,30 +442,23 @@ int main(int argc, char *argv[])
 
 			if (block_id > -1)
 			{
-				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d", rank, block_id, area_id);
+				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d. ", rank, block_id, area_id);
 				write_log(log_path, log_inform);
 
-
-				seed = (rank + 1)*1000000+ rank* block_id*10;
+				seed = (rank + 1)*100000+ rank* block_id*2;
 				gsl_initialize(seed);
 
 				// initialize the mask for non-repeating calculation
 				//initialize_arr(mask, max_block_size[0], 1);
 				// the block (iy, ix) of area "w_i"
-
 				iy = block_id / grid_nx;
-				ix = block_id % grid_ny;
-				//pts_label_ = block_id * block_size;
-				if (0 == rank)
-				{
-					std::cout << log_inform << std::endl;
-				}
+				ix = block_id % grid_nx;
 
 				t_block_s = clock();
 				// loop the points in the block
 				// the point number has been stored in num_ptr[my_tasks[k]]
 				for (ik = block_start[block_id]; ik < block_end[block_id]; ik++)
-				{
+				{	
 					// used
 					mask[ik - block_start[block_id]] = 0;
 
@@ -489,7 +480,6 @@ int main(int argc, char *argv[])
 					mu1_1 = MU[ik];
 					mv1_1 = MV[ik];
 
-
 					// loop the radius scales
 					for (ir = 0; ir < radius_bin_num; ir++)
 					{
@@ -499,6 +489,15 @@ int main(int argc, char *argv[])
 						initialize_arr(search_blocks, grid_num, -1);
 						find_block(&pts_data, radius[ir], radius[ir_1], boundy, boundx, search_blocks);
 						chi_label = chi_block_size_ir * ir;
+						
+						for (i_t = 0; i_t < grid_num; i_t++)
+						{
+							if (search_blocks[i_t] >= grid_num)
+							{
+								std::cout << "CROSS: " << i_t<<", "<< search_blocks[i_t]<<", "<<rank << std::endl;
+								exit(0);
+							}
+						}
 
 						// find the pairs in the searched blocks
 						for (ig = 0; ig < grid_num; ig++)
@@ -514,8 +513,8 @@ int main(int argc, char *argv[])
 										dy = DEC[in] - pts_data.y;
 										dx = RA[in] - pts_data.x;
 										distance_sq = dy * dy + dx * dx;
-
-										if (mask[in] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
+										
+										if (mask[in- block_start[block_id_s]] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
 											// for the rotation
 											gamma = dx / dy;
@@ -526,7 +525,7 @@ int main(int argc, char *argv[])
 											// for mu, mv
 											cos4a = (cos2a + sin2a)*(cos2a - sin2a);
 											sin4a = 2 * cos2a*sin2a;
-
+						
 											mg1_1r = mg1_1 * cos2a - mg2_1 * sin2a;
 											mg2_1r = mg1_1 * sin2a + mg2_1 * cos2a;
 											mu2_1r = mu1_1 * cos4a - mv1_1 * sin4a;
@@ -539,7 +538,7 @@ int main(int argc, char *argv[])
 											mnu1_2r = MN[in] + mu2_2r;
 											mnu2_2r = MN[in] - mu2_2r;
 
-											for (icg = 0; icg < g_hat_num[0]; icg++)
+											for (icg = 0; icg < g_hat_num; icg++)
 											{
 												covs[0] = gg_hats_cov[icg];
 												covs[1] = gg_hats[icg];
@@ -551,6 +550,10 @@ int main(int argc, char *argv[])
 												mg12 = mg1_2r - corre_gs[1] * mnu1_2r;
 
 												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												//if (gg_hist_label >= chi_block_size)
+												//{
+												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//}
 												chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 
 												//rand_multi_gauss(covs, mus, 2, corre_gs);
@@ -558,7 +561,12 @@ int main(int argc, char *argv[])
 												mg21 = mg2_1r - corre_gs[0] * mnu2_1r;
 												mg22 = mg2_2r - corre_gs[1] * mnu2_2r;
 												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												//if (gg_hist_label >= chi_block_size)
+												//{
+												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//}
 												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
+
 											}
 
 										}
@@ -571,8 +579,8 @@ int main(int argc, char *argv[])
 										dy = DEC[in] - pts_data.y;
 										dx = RA[in] - pts_data.x;
 										distance_sq = dy * dy + dx * dx;
-
-										if (mask[in] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
+										
+										if (mask[in - block_start[block_id_s]] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
 											// for the rotation
 											gamma = dx / dy;
@@ -583,7 +591,7 @@ int main(int argc, char *argv[])
 											// for mu, mv
 											cos4a = (cos2a + sin2a)*(cos2a - sin2a);
 											sin4a = 2 * cos2a*sin2a;
-
+						
 											mg1_1r = mg1_1 * cos2a - mg2_1 * sin2a;
 											mg2_1r = mg1_1 * sin2a + mg2_1 * cos2a;
 											mu2_1r = mu1_1 * cos4a - mv1_1 * sin4a;
@@ -596,7 +604,7 @@ int main(int argc, char *argv[])
 											mnu1_2r = MN[in] + mu2_2r;
 											mnu2_2r = MN[in] - mu2_2r;
 
-											for (icg = 0; icg < g_hat_num[0]; icg++)
+											for (icg = 0; icg < g_hat_num; icg++)
 											{
 												covs[0] = gg_hats_cov[icg];
 												covs[1] = gg_hats[icg];
@@ -608,6 +616,10 @@ int main(int argc, char *argv[])
 												mg12 = mg1_2r - corre_gs[1] * mnu1_2r;
 
 												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												//if (gg_hist_label >= chi_block_size)
+												//{
+												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//}
 												chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 
 												//rand_multi_gauss(covs, mus, 2, corre_gs);
@@ -615,6 +627,10 @@ int main(int argc, char *argv[])
 												mg21 = mg2_1r - corre_gs[0] * mnu2_1r;
 												mg22 = mg2_2r - corre_gs[1] * mnu2_2r;
 												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												//if (gg_hist_label >= chi_block_size)
+												//{
+												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//}
 												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
 											}
 
@@ -658,7 +674,7 @@ int main(int argc, char *argv[])
 		sprintf(chi_path, "%scache/w_%d_chi_1_%d.hdf5", data_path, area_id, rank);
 		sprintf(chi_set_name, "/data");
 		//creat_h5_group(chi_path, set_name, TRUE);
-		write_h5(chi_path, chi_set_name,  chi_1, mg_bin_num, mg_bin_num * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name,  chi_1, mg_bin_num, mg_bin_num * g_hat_num * radius_bin_num);
 
 		for (k = 0; k < numprocs; k++)
 		{
@@ -672,7 +688,7 @@ int main(int argc, char *argv[])
 		sprintf(chi_set_name, "/data");		
 		//creat_h5_group(chi_path, set_name, TRUE);
 		sprintf(chi_path, "%scache/w_%d_chi_2_%d.hdf5", data_path, area_id, rank);
-		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num, mg_bin_num * g_hat_num[0] * radius_bin_num);
+		write_h5(chi_path, chi_set_name,  chi_2, mg_bin_num, mg_bin_num * g_hat_num * radius_bin_num);
 
 		for (k = 0; k < numprocs; k++)
 		{
@@ -691,10 +707,10 @@ int main(int argc, char *argv[])
 		{
 			std::cout << log_inform << std::endl;
 			sprintf(chi_path, "%scache/total_chi_1_%d.hdf5", data_path, area_id);
-			write_h5(chi_path, chi_set_name,  chi_1_total, mg_bin_num, mg_bin_num * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name,  chi_1_total, mg_bin_num, mg_bin_num * g_hat_num * radius_bin_num*numprocs);
 
 			sprintf(chi_path, "%scache/total_chi_2_%d.hdf5", data_path, area_id);
-			write_h5(chi_path, chi_set_name,  chi_2_total, mg_bin_num, mg_bin_num * g_hat_num[0] * radius_bin_num*numprocs);
+			write_h5(chi_path, chi_set_name,  chi_2_total, mg_bin_num, mg_bin_num * g_hat_num * radius_bin_num*numprocs);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
