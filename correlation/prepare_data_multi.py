@@ -331,7 +331,7 @@ if cmd == "grid":
                 # each time the program starts the file will be truncated
                 h5f = h5py.File(cf_cata_data_path, "w")
                 # the radius bin for correlation function calculation
-                radius_scale_bin_num = 21
+                radius_scale_bin_num = 19
                 radius_scale = numpy.zeros((radius_scale_bin_num + 1,), dtype=numpy.double)
                 for i in range(1, radius_scale_bin_num + 1):
                     radius_scale[i] = 1 + 10 ** (0.1 * i)
@@ -339,9 +339,9 @@ if cmd == "grid":
                 h5f["/radius_bin"].attrs["shape"] = numpy.array([radius_scale_bin_num + 1, 1], dtype=numpy.intc)
 
                 # the guess of gg correlation for the algorithm
-                g_hat_bin_num = 60
-                g_hat_bin = numpy.linspace(-0.0011, 0.0011, g_hat_bin_num)
-                h5f["/g_hat_bin"] = g_hat_bin
+                g_hat_bin_num = 100
+                g_hat_bin = numpy.linspace(0, 0.00015, g_hat_bin_num)
+                h5f["/g_hat_bin"] = - g_hat_bin
                 h5f["/g_hat_bin"].attrs["shape"] = numpy.array([g_hat_bin_num, 1], dtype=numpy.intc)
 
                 # the number of the sky area
@@ -434,41 +434,63 @@ if cmd == "grid":
         # stack the find blocks into a entirety,
         # and it will be merged into the final catalog
         sub_stack_block_size = sum(sub_num_in_block)
-        sub_sp = (sub_stack_block_size, data_col)
-        sub_block_stack = numpy.zeros(sub_sp, dtype=numpy.double)
-        # for checking
-        start_end_pool = []
-        for ir in range(len(my_tasks)):
-            if ir == 0:
-                std_idx = 0
-            else:
-                std_idx = sum(sub_num_in_block[:ir])
-            if sub_num_in_block[ir] > 0:
-                sub_block_stack[std_idx: std_idx+sub_num_in_block[ir]] = sub_block_list[ir]
-                std_idx_ = (std_idx, std_idx+sub_num_in_block[ir])
-                if std_idx_ in start_end_pool:
-                    # the start & end idx of a block in the stacked array is unique
-                    # if not, something goes wrong
-                    print("Rank: %d Area: %d. Something went wrong in stack process"%(rank, area_id))
-                    exit()
+
+        # in case of that some threads may get nothing
+        if sub_stack_block_size > 0:
+            sub_sp = (sub_stack_block_size, data_col)
+            sub_block_stack = numpy.zeros(sub_sp, dtype=numpy.double)
+            # for checking
+            start_end_pool = []
+            for ir in range(len(my_tasks)):
+                if ir == 0:
+                    std_idx = 0
                 else:
-                    start_end_pool.append(std_idx_)
+                    std_idx = sum(sub_num_in_block[:ir])
+                if sub_num_in_block[ir] > 0:
+                    sub_block_stack[std_idx: std_idx+sub_num_in_block[ir]] = sub_block_list[ir]
+                    std_idx_ = (std_idx, std_idx+sub_num_in_block[ir])
+                    if std_idx_ in start_end_pool:
+                        # the start & end idx of a block in the stacked array is unique
+                        # if not, something goes wrong
+                        print("Rank: %d Area: %d. Something went wrong in stack process"%(rank, area_id))
+                        exit()
+                    else:
+                        start_end_pool.append(std_idx_)
+        else:
+            # if the thread gets nothing
+            sub_sp = (1, 1)
+            sub_block_stack = numpy.zeros(sub_sp, dtype=numpy.double)
+
         # send the sub_stack_block to rank 0
         # the sequence of the sub-list follows the the rank sequence
         stack_block_sps = comm.gather(sub_sp, root=0)
         sub_num_in_block_g = comm.gather(sub_num_in_block, root=0)
         logger.info("Rank: %d start to send stacked block"%rank)
+
         if rank > 0:
             comm.Send(sub_block_stack, dest=0, tag=rank)
         else:
+            # rank 0 creates a buffer
+            if sub_stack_block_size > 0:
+                data_pool = [sub_block_stack]
+            else:
+                data_pool = []
+
+            # receive the data from the others and put them into the buffer
             for procs in range(1, cpus):
                 recvs = numpy.empty(stack_block_sps[procs], dtype=numpy.double)
                 comm.Recv(recvs, source=procs, tag=procs)
-                if procs == 1:
-                    final_data = numpy.row_stack((sub_block_stack, recvs))
+                if stack_block_sps[procs][1] > 1:
+                    data_pool.append(recvs)
+
+            # stack the data in the buffer
+            for tag, data_arr in enumerate(data_pool):
+                if tag == 0:
+                    final_data = data_arr
                 else:
-                    final_data = numpy.row_stack((final_data, recvs))
+                    final_data = numpy.row_stack((final_data, data_arr))
                 # all the blocks have been stacked into "final_data"
+
             logger.info("Rank: %d receive all the stacked block" % rank)
             # the sub_num_in_block_g is a list of lists,
             # a list of "sub_num_in_block"(list) from each thread
