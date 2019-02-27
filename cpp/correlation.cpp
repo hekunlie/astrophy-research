@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 	//}
 	//exit(0);
 	// the correlation bins
-	sprintf(set_name, "/g_hat_bin");
+	sprintf(set_name, "/g1_hat_bin");
 	sprintf(attrs_name, "shape");
 	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
 	g_hat_num = int_attrs[0];
@@ -239,15 +239,7 @@ int main(int argc, char *argv[])
 
 		//for (k = 0; k < numprocs; k++)
 		//{
-			if (0 == rank)
-			{	
-				sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area, radius_bin_num, g_hat_num, grid_ny, grid_nx, grid_num);
-				std::cout <<log_inform<< std::endl;
-				sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, data_num: %d ", rank, block_scale, mg_bin_num, data_num);
-				std::cout << log_inform << std::endl;
-				std::cout << std::endl;
-			}			
-			MPI_Barrier(MPI_COMM_WORLD);
+
 		//}
 
 	/*	if (rank == 0)
@@ -413,6 +405,16 @@ int main(int argc, char *argv[])
 			std::cout << "Something went wrong in task_num!!!" <<std::endl;
 			exit(0);
 		}
+
+		if (0 == rank)
+		{
+			sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area, radius_bin_num, g_hat_num, grid_ny, grid_nx, grid_num);
+			std::cout << log_inform << std::endl;
+			sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, galaxy: %d, task_grid: %d", rank, block_scale, mg_bin_num, data_num, task_num);
+			std::cout << log_inform << std::endl;
+			std::cout << std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		// -1 denotes the end
         for (k=0; k<grid_num; k++)

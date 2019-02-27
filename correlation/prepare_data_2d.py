@@ -340,7 +340,7 @@ if cmd == "grid":
 
                 # the guess of gg correlation for the algorithm
                 g_hat_bin_num = 100
-                g_hat_bin = numpy.linspace(0, 0.00015, g_hat_bin_num)
+                g_hat_bin = numpy.linspace(10**(-7), 0.00014, g_hat_bin_num)
                 h5f["/g_hat_bin"] = - g_hat_bin
                 h5f["/g_hat_bin"].attrs["shape"] = numpy.array([g_hat_bin_num, 1], dtype=numpy.intc)
 
