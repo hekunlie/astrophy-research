@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 
 	// for the correlation bins
 	int g_hat_num;
-	int gg_hist_label;
+	int gg_temp,gg_hist_label;
 	double *gg_hats;
 	double *gg_hats_cov;
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	double *mg_bins; //  the boundary of each bin
 
 	int chi_block_size, chi_block_size_ir, chi_label;
-	long *chi_1, *chi_2;
+	long *chi_1, *chi_2, chi_check;;
 	long *chi_1_total, *chi_2_total;
 	// for correlation <g1g1`> && <g2g2`>
 	double mg11, mg12;
@@ -113,7 +113,12 @@ int main(int argc, char *argv[])
 	{
 		radius_sq[i] = radius[i] * radius[i];
 	}
-
+	//if (rank == 0)
+	//{
+	//	show_arr(radius, 1, int_attrs[0]);
+	//	show_arr(radius_sq, 1, int_attrs[0]);
+	//}
+	//exit(0);
 	// the correlation bins
 	sprintf(set_name, "/g_hat_bin");
 	sprintf(attrs_name, "shape");
@@ -232,9 +237,9 @@ int main(int argc, char *argv[])
 		sprintf(set_name, "/grid/w_%d/block_end", area_id);
 		read_h5(h5f_path, set_name, block_end);
 
-		for (k = 0; k < numprocs; k++)
-		{
-			if (k == rank)
+		//for (k = 0; k < numprocs; k++)
+		//{
+			if (0 == rank)
 			{	
 				sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area, radius_bin_num, g_hat_num, grid_ny, grid_nx, grid_num);
 				std::cout <<log_inform<< std::endl;
@@ -243,7 +248,7 @@ int main(int argc, char *argv[])
 				std::cout << std::endl;
 			}			
 			MPI_Barrier(MPI_COMM_WORLD);
-		}
+		//}
 
 	/*	if (rank == 0)
 		{
@@ -345,12 +350,12 @@ int main(int argc, char *argv[])
 		{
 			std::cout << log_inform << std::endl;
 			// check & cache
-			sprintf(cache_path, "!%scache/num_%d.fits", data_path, area_id);
-			write_fits(cache_path, num_in_block, grid_ny, grid_nx);
-			sprintf(cache_path, "!%scache/block_start_%d.fits", data_path, area_id);
-			write_fits(cache_path, block_start, grid_ny, grid_nx);
-			sprintf(cache_path, "!%scache/block_end_%d.fits", data_path, area_id);
-			write_fits(cache_path, block_end, grid_ny, grid_nx);
+			//sprintf(cache_path, "!%scache/num_%d.fits", data_path, area_id);
+			//write_fits(cache_path, num_in_block, grid_ny, grid_nx);
+			//sprintf(cache_path, "!%scache/block_start_%d.fits", data_path, area_id);
+			//write_fits(cache_path, block_start, grid_ny, grid_nx);
+			//sprintf(cache_path, "!%scache/block_end_%d.fits", data_path, area_id);
+			//write_fits(cache_path, block_end, grid_ny, grid_nx);
 		}
 
 		//read the data
@@ -434,7 +439,11 @@ int main(int argc, char *argv[])
 	
 		sprintf(log_inform, "RANK: %d begin to loop the task blocks in area %d", rank, area_id);
 		write_log(log_path, log_inform);
-	
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 		// loop the target blocks
 		for (k = 0; k < grid_num; k++)
 		{
@@ -442,11 +451,17 @@ int main(int argc, char *argv[])
 
 			if (block_id > -1)
 			{
-				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d. ", rank, block_id, area_id);
+				sprintf(log_inform, "RANK: %d begin to loop the %d 'th block in area %d ", rank, block_id, area_id);
 				write_log(log_path, log_inform);
-
+				if (rank == 0)
+				{
+					std::cout << log_inform << std::endl;
+				}
 				seed = (rank + 1)*100000+ rank* block_id*2;
 				gsl_initialize(seed);
+
+				// initialize the mask when it begins to loop a block
+				initialize_arr(mask, block_row, 1);
 
 				// initialize the mask for non-repeating calculation
 				//initialize_arr(mask, max_block_size[0], 1);
@@ -490,17 +505,17 @@ int main(int argc, char *argv[])
 						find_block(&pts_data, radius[ir], radius[ir_1], boundy, boundx, search_blocks);
 						chi_label = chi_block_size_ir * ir;
 						
-						for (i_t = 0; i_t < grid_num; i_t++)
-						{
-							if (search_blocks[i_t] >= grid_num)
-							{
-								std::cout << "CROSS: " << i_t<<", "<< search_blocks[i_t]<<", "<<rank << std::endl;
-								exit(0);
-							}
-						}
-
+						//for (i_t = 0; i_t < grid_num; i_t++)
+						//{
+						//	if (search_blocks[i_t] >= grid_num)
+						//	{
+						//		std::cout << "CROSS: " << i_t<<", "<< search_blocks[i_t]<<", "<<rank << std::endl;
+						//		exit(0);
+						//	}
+						//}
+												
 						// find the pairs in the searched blocks
-						for (ig = 0; ig < grid_num; ig++)
+						for (ig = 0; ig < grid_num; ig++)						
 						{
 							block_id_s = search_blocks[ig];
 							if (block_id_s > -1)
@@ -513,9 +528,10 @@ int main(int argc, char *argv[])
 										dy = DEC[in] - pts_data.y;
 										dx = RA[in] - pts_data.x;
 										distance_sq = dy * dy + dx * dx;
-										
+
 										if (mask[in- block_start[block_id_s]] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
+											
 											// for the rotation
 											gamma = dx / dy;
 											gamma2 = gamma * gamma;
@@ -540,6 +556,8 @@ int main(int argc, char *argv[])
 
 											for (icg = 0; icg < g_hat_num; icg++)
 											{
+												gg_temp = chi_label + chi_block_size * icg;
+
 												covs[0] = gg_hats_cov[icg];
 												covs[1] = gg_hats[icg];
 												covs[2] = gg_hats[icg];
@@ -549,24 +567,26 @@ int main(int argc, char *argv[])
 												mg11 = mg1_1r - corre_gs[0]* mnu1_1r;
 												mg12 = mg1_2r - corre_gs[1] * mnu1_2r;
 
-												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num, gg_hist_label);
 												//if (gg_hist_label >= chi_block_size)
 												//{
-												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//	std::cout << "CROSS, "<< gg_hist_label << std::endl;
+												//	exit(0);
 												//}
-												chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
+												chi_1[gg_temp + gg_hist_label] += 1;
 
 												//rand_multi_gauss(covs, mus, 2, corre_gs);
 
 												mg21 = mg2_1r - corre_gs[0] * mnu2_1r;
 												mg22 = mg2_2r - corre_gs[1] * mnu2_2r;
-												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+
+												histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num, gg_hist_label);
 												//if (gg_hist_label >= chi_block_size)
 												//{
-												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//	std::cout << "CROSS, " << gg_hist_label << std::endl;
+												//	exit(0);
 												//}
-												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
-
+												chi_2[gg_temp + gg_hist_label] += 1;
 											}
 
 										}
@@ -579,9 +599,10 @@ int main(int argc, char *argv[])
 										dy = DEC[in] - pts_data.y;
 										dx = RA[in] - pts_data.x;
 										distance_sq = dy * dy + dx * dx;
-										
-										if (mask[in - block_start[block_id_s]] == 1 and distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
+
+										if (distance_sq >= radius_sq[ir] and distance_sq < radius_sq[ir_1])
 										{
+											
 											// for the rotation
 											gamma = dx / dy;
 											gamma2 = gamma * gamma;
@@ -606,6 +627,8 @@ int main(int argc, char *argv[])
 
 											for (icg = 0; icg < g_hat_num; icg++)
 											{
+												gg_temp = chi_label + chi_block_size * icg;
+
 												covs[0] = gg_hats_cov[icg];
 												covs[1] = gg_hats[icg];
 												covs[2] = gg_hats[icg];
@@ -615,23 +638,26 @@ int main(int argc, char *argv[])
 												mg11 = mg1_1r - corre_gs[0] * mnu1_1r;
 												mg12 = mg1_2r - corre_gs[1] * mnu1_2r;
 
-												gg_hist_label = histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+												histogram2d_s(mg11, mg12, mg_bins, mg_bins, mg_bin_num, mg_bin_num, gg_hist_label);
 												//if (gg_hist_label >= chi_block_size)
 												//{
-												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//	std::cout << "CROSS, " << gg_hist_label << std::endl;
+												//	exit(0);
 												//}
-												chi_1[chi_label + chi_block_size * icg + gg_hist_label] += 1;
-
+												chi_1[gg_temp + gg_hist_label] += 1;
+												
 												//rand_multi_gauss(covs, mus, 2, corre_gs);
 
 												mg21 = mg2_1r - corre_gs[0] * mnu2_1r;
 												mg22 = mg2_2r - corre_gs[1] * mnu2_2r;
-												gg_hist_label = histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num);
+
+												histogram2d_s(mg21, mg22, mg_bins, mg_bins, mg_bin_num, mg_bin_num, gg_hist_label);
 												//if (gg_hist_label >= chi_block_size)
 												//{
-												//	std::cout << "CROSS " << gg_hist_label << std::endl;
+												//	std::cout << "CROSS, " << gg_hist_label << std::endl;
+												//	exit(0);
 												//}
-												chi_2[chi_label + chi_block_size * icg + gg_hist_label] += 1;
+												chi_2[gg_temp + gg_hist_label] += 1;
 											}
 
 										}
@@ -639,11 +665,10 @@ int main(int argc, char *argv[])
 								}
 							}
 						}
-
 					}
 
 				}
-
+				
 				t_block_e = clock();
 				sprintf(log_inform, "RANK: %d finish %d 'th block in area %d in %.2f sec", rank, block_id, area_id, (t_block_e-t_block_s)/CLOCKS_PER_SEC);
 				write_log(log_path, log_inform);
@@ -656,7 +681,18 @@ int main(int argc, char *argv[])
 			}
 
 		}
-
+		
+		chi_check = 0;
+		for (k = 0; k < chi_block_size_ir * radius_bin_num; k++)
+		{
+			chi_check += chi_1[k];
+		}
+		if (chi_check == 0)
+		{
+			sprintf(log_inform, "RANK: %d. Area: %d. The CHI array is empty", rank, area_id);
+			std::cout << log_inform << std::endl;
+			exit(0);
+		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Gather(chi_1, chi_block_size_ir * radius_bin_num, MPI_LONG, chi_1_total, chi_block_size_ir * radius_bin_num, MPI_LONG, 0, MPI_COMM_WORLD);
 

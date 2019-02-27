@@ -3198,27 +3198,28 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 	}
 }
 
-int histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num)
+void histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num, int &bin_label)
 {
-	int block_label, i, j;
+	int i, j;
 	// loop y-bins
+
 	for ( i = 0; i < ybin_num; i++)
 	{
-		if (data_y < bin_y[i + 1] && data_y >= bin_y[i])
+		if (data_y >= bin_y[i] and data_y < bin_y[i + 1])
 		{
 			// loop x-bins
 			for ( j = 0; j < xbin_num; j++)
 			{
-				if (data_x < bin_x[j + 1] && data_x >= bin_x[j])
+				if (data_x >= bin_x[j] and data_x < bin_x[j + 1])
 				{
-					block_label = i * xbin_num + j;
+					bin_label = i * xbin_num + j;
 					break;
 				}
 			}
 			break;
 		}
 	}
-	return block_label;
+
 }
 
 void sort_arr(double* arr, int size, int order=1)

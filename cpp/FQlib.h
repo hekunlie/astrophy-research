@@ -516,7 +516,7 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 			 |							|
 	bin_num, y(x)bin_num: array
 */
-int histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num);
+void histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num, int &bin_label);
 
 
 void sort_arr(double *arr, int size, int order);//checked
