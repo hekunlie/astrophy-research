@@ -34,29 +34,29 @@ result_path, data_path, cut_path = path_items[0:3]
 nstar_lb, total_area_lb = int(path_items[3]), int(path_items[4])
 flux2_lb, flux_alt_lb = int(path_items[5]), int(path_items[6])
 
-para_path = "./para.ini"
-get_contents = [['field', "g1_num", '1'], ['field', "g2_num", '1'], ['field', "g1_s", '1'],
-                ['field', "g1_e", '1'], ['field', "g2_s", '1'], ['field', "g2_e", '1']]
+get_contents = [["%s"%fresh, "g1_num", '1'], ["%s"%fresh, "g2_num", '1'],
+                ["%s"%fresh, "g1_e", '1'], ["%s"%fresh, "g2_e", '1']]
 gets = ["get" for i in range(len(get_contents))]
-path_items = tool_box.config(para_path, gets, get_contents)
+path_items = tool_box.config(envs_path, gets, get_contents)
 
 # parameters for segment
-g1_num = int(path_items[0])
-g2_num = int(path_items[1])
-g1_s = float(path_items[2])
-g1_e = float(path_items[3])
-g2_s = float(path_items[4])
-g2_e = float(path_items[5])
+g1_num = int(path_items[0])-1
+g2_num = int(path_items[1])-1
+g1_e = float(path_items[2])
+g2_e = float(path_items[3])
 
 
-fg1 = numpy.linspace(g1_s, g1_e, g1_num)
-fg2 = numpy.linspace(g2_s, g2_e, g2_num)
+fg1 = numpy.linspace(-g1_e, g1_e, g1_num+1)
+fg2 = numpy.linspace(-g2_e, g2_e, g2_num+1)
 dfg1 = (fg1[1] - fg1[0])/2
 dfg2 = (fg2[1] - fg2[0])/2
-fgs = [fg1, fg2]
-dfgs = [dfg1, dfg2]
+fgs = [(fg1+dfg1)[:g1_num], (fg2+dfg2)[:g2_num]]
 gnums = [g1_num, g2_num]
 cut_num = 20
+
+if rank == 0:
+    print(fgs[0])
+    print(fgs[1])
 
 # nstar total_area flux2 flux_alt gf1 gf2 g1(G1) g2(G2) de(N) h1(U) h2(V)
 # 0     1          2     3         4   5   6      7      8    9     10
@@ -125,7 +125,7 @@ if rank == 0:
     # calculate the cutoff threshold
     select_data_sort = numpy.sort(select_data)
     data_num = len(select_data)
-    select_data_step = int(data_num/ cut_num)
+    select_data_step = int(data_num / cut_num)
     for i in range(cut_num):
         select_scale[i] = select_data_sort[i * select_data_step]
         # plot the cutoff threshold on the histogram
@@ -136,7 +136,7 @@ if rank == 0:
     plt.savefig(cut_path + "%s/%s.pdf"%(select_cri,select_cri))
     plt.close()
 
-    print("%7d, %8.4f, %8.4f, %7d, %8.4f, %8.4f"%(g1_num, g1_s, g1_e, g2_num, g2_s, g2_e))
+    print("%7d, %8.4f, %8.4f, %7d, %8.4f, %8.4f"%(g1_num+1, -g1_e, g1_e, g2_num+1, -g2_e, g2_e))
     print(select_cri, select_scale)
 comm.Barrier()
 
