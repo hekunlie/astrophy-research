@@ -80,6 +80,10 @@ mg_bin_num = 8
 block_scale = 3  # arcsec
 margin = 0.1 * block_scale
 
+# redshift bin the same as the CFHTLenS paper
+z_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3], dtype=numpy.double)
+z_bin_num = len(z_bin) - 1
+
 # data collection
 if cmd == "collect":
 
@@ -215,6 +219,18 @@ if cmd == "collect":
             recv_buffer[:,mv_lb] = -recv_buffer[:,mv_lb] / 2
 
             h5f["/w_%d" % area_id] = recv_buffer
+            # redshift bins, 0.2 < z < 1.3
+            for iz in range(z_bin_num):
+                if iz == 0:
+                    idx_1 = recv_buffer[:, z_lb] > z_bin[iz]
+                else:
+                    idx_1 = recv_buffer[:, z_lb] >= z_bin[iz]
+                if iz == z_bin_num-1:
+                    idx_2 = recv_buffer[:, z_lb] < z_bin[iz+1]
+                else:
+                    idx_2 = recv_buffer[:, z_lb] <= z_bin[iz + 1]
+                h5f["/redshift/w_%d/z_%d"%(area_id, iz)] = recv_buffer[idx_1&idx_2]
+
             h5f.close()
             print("RECV: ", recv_buffer.shape)
     print(rank, num)
@@ -259,6 +275,7 @@ if cmd == "collect":
         fig3.savefig(data_path + "Mag_%s.png"%result_source)
         plt.close()
         h5f["/total"] = data
+
         h5f.close()
     t2 = time.time()
     if rank == 0:
@@ -275,9 +292,6 @@ if cmd == "grid":
 
     cf_cata_data_path = data_path + "cf_cata_%s_3d.hdf5" % result_source
 
-    # redshift bin the same as the CFHTLenS paper
-    z_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3], dtype=numpy.double)
-    z_bin_num = len(z_bin) - 1
     # angular bin the same as the CFHTLenS paper
     theta_bin_num = 6
     theta = numpy.logspace(numpy.log10(1.5), numpy.log10(35), theta_bin_num)
@@ -310,28 +324,27 @@ if cmd == "grid":
         t1 = time.time()
 
         logger.info("Prepare the data")
-
-        # open the original data
-        cata_data_path = data_path + "cata_%s.hdf5" % result_source
-        h5f = h5py.File(cata_data_path, "r")
-        ori_cat_data = h5f["/w_%d"%area_id].value
-        h5f.close()
-
-        # cut off
-        flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
-        nstar_idx = ori_cat_data[:, nstar_lb] >= nstar_thresh
-        total_area_idx = ori_cat_data[:, total_area_lb] >= total_area_thresh
-
-        fg1 = numpy.abs(ori_cat_data[:, field_g1_lb])
-        fg2 = numpy.abs(ori_cat_data[:, field_g2_lb])
-
-        fg1_idx = fg1 <= field_g1_bound
-        fg2_idx = fg2 <= field_g2_bound
-
-        cut_ = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx
-        # the dataset will be divided into several bins according to the redshift bins
-        # /grid/w_i/z_i...
         for zb in range(z_bin_num):
+            # open the original data
+            cata_data_path = data_path + "cata_%s.hdf5" % result_source
+            h5f = h5py.File(cata_data_path, "r")
+            ori_cat_data = h5f["/redshift/w_%d/z_%d"%(area_id, zb)].value
+            h5f.close()
+
+            # cut off
+            flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
+            nstar_idx = ori_cat_data[:, nstar_lb] >= nstar_thresh
+            total_area_idx = ori_cat_data[:, total_area_lb] >= total_area_thresh
+
+            fg1 = numpy.abs(ori_cat_data[:, field_g1_lb])
+            fg2 = numpy.abs(ori_cat_data[:, field_g2_lb])
+
+            fg1_idx = fg1 <= field_g1_bound
+            fg2_idx = fg2 <= field_g2_bound
+
+            cut_ = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx
+            # the dataset will be divided into several bins according to the redshift bins
+            # /grid/w_i/z_i...
 
             logger.info("Start the area: w_%d, redshift bin: z_%d" % (area_id, zb+1))
 
