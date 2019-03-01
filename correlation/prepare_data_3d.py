@@ -19,7 +19,7 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 cmd = argv[1]
-cmds = ["collect","grid"]
+cmds = ["collect","grid","redshift"]
 if cmd not in cmds:
     if rank == 0:
         print("parameter must be one of ", cmds)
@@ -71,7 +71,7 @@ nstar_thresh = 14
 total_area_thresh = 1
 field_g1_bound = 0.005
 field_g2_bound = 0.0075
-
+z_min, z_max = 0.2, 1.3
 c1_correction = -0.000287
 c2_correction = 0.000609
 
@@ -219,34 +219,25 @@ if cmd == "collect":
             recv_buffer[:,mv_lb] = -recv_buffer[:,mv_lb] / 2
 
             h5f["/w_%d" % area_id] = recv_buffer
-            # redshift bins, 0.2 < z < 1.3
-            for iz in range(z_bin_num):
-                if iz == 0:
-                    idx_1 = recv_buffer[:, z_lb] > z_bin[iz]
-                else:
-                    idx_1 = recv_buffer[:, z_lb] >= z_bin[iz]
-                if iz == z_bin_num-1:
-                    idx_2 = recv_buffer[:, z_lb] < z_bin[iz+1]
-                else:
-                    idx_2 = recv_buffer[:, z_lb] <= z_bin[iz + 1]
-                h5f["/redshift/w_%d/z_%d"%(area_id, iz)] = recv_buffer[idx_1&idx_2]
-
             h5f.close()
             print("RECV: ", recv_buffer.shape)
+
     print(rank, num)
     # stack the sub-catalogs from each area
-    if rank == 0:
+    if rank < 0:
         fig1 = plt.figure(figsize=(14, 14))
         fig2 = plt.figure(figsize=(14, 14))
         fig3 = plt.figure(figsize=(14, 14))
-        h5f = h5py.File(h5f_path)
+
+        h5f = h5py.File(h5f_path,"r+")
+
         for area_id in range(1,area_num+1):
             temp = h5f["/w_%d" % area_id].value
 
             # select the data as CFTHLenS
             red_z = temp[:, -3]
-            idxz_1 = red_z < 1.3
-            idxz_2 = red_z > 0.2
+            idxz_1 = red_z < z_max
+            idxz_2 = red_z > z_min
             temp_s = temp[idxz_1&idxz_2]
 
             # show the range of RA & DEC
@@ -257,14 +248,14 @@ if cmd == "collect":
 
             # histogram of redshift
             ax2 = fig2.add_subplot(220 + area_id)
-            ax2.hist(red_z, 80)
+            ax2.hist(red_z, 50)
 
             # of magnitude
             mag = temp_s[:, -2]
             idxm_1 = mag > 0
             idxm_2 = mag < 30
             ax3 = fig3.add_subplot(220 + area_id)
-            ax3.hist(mag[idxm_1&idxm_2], 80)
+            ax3.hist(mag[idxm_1&idxm_2], 50)
 
             if area_id == 1:
                 data = temp_s
@@ -280,6 +271,32 @@ if cmd == "collect":
     t2 = time.time()
     if rank == 0:
         print(t2-t1)
+
+if cmd == "redshift":
+    t1 = time.time()
+    total_taks = area_num * z_bin_num
+    comm.Barrier()
+    if rank < total_taks:
+        ts = time.time()
+        my_area, my_z = divmod(rank, z_bin_num)
+
+        h5f_path = data_path + "cata_%s.hdf5" % result_source
+        h5f = h5py.File(h5f_path, "r")
+        temp = h5f["/w_%d" % (my_area + 1)].value
+        h5f.close()
+
+        red_z = temp[:, -3]
+        if my_z == 0:
+            idx_1 = red_z > z_bin[my_z]
+        else:
+            idx_1 = red_z >= z_bin[my_z]
+
+        idx_2 = red_z < z_bin[my_z + 1]
+        te = time.time()
+        numpy.savez(data_path + "temp/w_%d_z_%d" % (my_area + 1, my_z + 1),temp[idx_1 & idx_2])
+
+    t2 = time.time()
+    print(rank, t2-t1)
 
 # make grid
 if cmd == "grid":
@@ -324,12 +341,94 @@ if cmd == "grid":
         t1 = time.time()
 
         logger.info("Prepare the data")
-        for zb in range(z_bin_num):
-            # open the original data
+        if rank == 0:
             cata_data_path = data_path + "cata_%s.hdf5" % result_source
             h5f = h5py.File(cata_data_path, "r")
-            ori_cat_data = h5f["/redshift/w_%d/z_%d"%(area_id, zb)].value
+            ori_cat_data = h5f["/w_%d"%area_id].value
             h5f.close()
+
+            # cut off
+            flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
+            nstar_idx = ori_cat_data[:, nstar_lb] >= nstar_thresh
+            total_area_idx = ori_cat_data[:, total_area_lb] >= total_area_thresh
+
+            fg1 = numpy.abs(ori_cat_data[:, field_g1_lb])
+            fg2 = numpy.abs(ori_cat_data[:, field_g2_lb])
+
+            fg1_idx = fg1 <= field_g1_bound
+            fg2_idx = fg2 <= field_g2_bound
+
+            z1_idx = ori_cat_data[:, z_lb] > z_min
+            z2_idx = ori_cat_data[:, z_lb] < z_max
+
+            cut_idx = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx & z1_idx & z2_idx
+
+            # the bin for mg's
+            mg1 = ori_cat_data[:, mg1_lb][cut_idx]
+            mg2 = ori_cat_data[:, mg2_lb][cut_idx]
+            mg1_bin = fq.set_bin(mg1, mg_bin_num)
+            mg2_bin = fq.set_bin(mg2, mg_bin_num)
+
+            ra = ori_cat_data[:, ra_lb][cut_idx] * 60
+            dec = ori_cat_data[:, dec_lb][cut_idx] * 60
+
+            # the grid: x-axis--ra, y-axis--dec
+            ra_min, ra_max = ra.min() - margin, ra.max() + margin
+            dec_min, dec_max = dec.min() - margin, dec.max() + margin
+
+            # the grid
+            grid_rows = int((dec_max - dec_min) / block_scale + 1)
+            grid_cols = int((ra_max - ra_min) / block_scale + 1)
+            grid_num = grid_rows * grid_cols
+            grid_sp = [grid_rows, grid_cols, grid_num]
+            area_range = [ra_min, ra_max, dec_min, dec_max]
+
+            logger.info("Area: w_%d, .R.A.: %.4f ~ %.4f  DEC: %.4f ~ %.4f, Grid: %d x %d (%d)" %
+                    (area_id, ra_min, ra_max, dec_min, dec_max, grid_rows, grid_cols, grid_num))
+
+            boundy = numpy.zeros((grid_num, 4), dtype=numpy.double)
+            boundx = numpy.zeros((grid_num, 4), dtype=numpy.double)
+            for row in range(grid_rows):
+                for col in range(grid_cols):
+                    grid_id = row * grid_cols + col
+
+                    x1 = ra_min + col * block_scale
+                    x2 = ra_min + (col + 1) * block_scale
+                    y1 = dec_min + row * block_scale
+                    y2 = dec_min + (row + 1) * block_scale
+
+                    boundy[grid_id] = y1, y1, y2, y2
+                    boundx[grid_id] = x1, x2, x1, x2
+        else:
+            grid_sp = None
+            area_range = None
+
+        grid_sp = comm.bcast(grid_sp, root=0)
+        area_range = comm.bcast(area_range, root=0)
+
+        if rank > 0:
+            grid_rows, grid_cols, grid_num = grid_sp
+            ra_min, ra_max, dec_min, dec_max = area_range
+            logger.info("Area: w_%d, .R.A.: %.4f ~ %.4f  DEC: %.4f ~ %.4f, Grid: %d x %d (%d)" %
+                    (area_id, ra_min, ra_max, dec_min, dec_max, grid_rows, grid_cols, grid_num))
+            boundy = numpy.empty((grid_num, 4), dtype=numpy.double)
+            boundx = numpy.empty((grid_num, 4), dtype=numpy.double)
+            mg1_bin = numpy.empty((mg_bin_num + 1, ), dtype=numpy.double)
+            mg2_bin = numpy.empty((mg_bin_num + 1, ), dtype=numpy.double)
+
+        comm.Bcast(boundy, root=0)
+        comm.Bcast(boundx, root=0)
+        comm.Bcast(mg1_bin, root=0)
+        comm.Bcast(mg2_bin, root=0)
+
+        for zb in range(z_bin_num):
+            # open the original data
+            logger.info("Start the area: w_%d, redshift bin: z_%d" % (area_id, zb + 1))
+
+            #cata_data_path = data_path + "cata_%s.hdf5" % result_source
+            #h5f = h5py.File(cata_data_path, "r")
+            ori_cat_data = numpy.load(data_path + 'temp/w_%d_z_%d.npz'% (area_id+1, zb+1))["arr_0"]#h5f["/redshift/w_%d/z_%d" % (area_id, zb)].value
+            # h5f.close()
 
             # cut off
             flux_alt_idx = ori_cat_data[:, flux_alt_lb] >= flux_alt_thresh
@@ -345,8 +444,6 @@ if cmd == "grid":
             cut_ = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx
             # the dataset will be divided into several bins according to the redshift bins
             # /grid/w_i/z_i...
-
-            logger.info("Start the area: w_%d, redshift bin: z_%d" % (area_id, zb+1))
 
             z1_idx = ori_cat_data[:, z_lb] > z_bin[zb]
             z2_idx = ori_cat_data[:, z_lb] < z_bin[zb+1]
@@ -402,32 +499,8 @@ if cmd == "grid":
             mg1_bin = fq.set_bin(buffer[:, 2], mg_bin_num)
             mg2_bin = fq.set_bin(buffer[:, 3], mg_bin_num)
 
-            # the grid
-            grid_rows = int((dec_max - dec_min) / block_scale + 1)
-            grid_cols = int((ra_max - ra_min) / block_scale + 1)
-            grid_num = grid_rows * grid_cols
-
-            logger.info("Area: w_%d, redshift bin: z_%d (%.2f ~ %.2f). Grid: %d x %d"%
-                        (area_id, zb+1, z_bin[zb], z_bin[zb+1], grid_rows, grid_cols))
-
-            boundy = numpy.zeros((grid_num, 4), dtype=numpy.double)
-            boundx = numpy.zeros((grid_num, 4), dtype=numpy.double)
-            for row in range(grid_rows):
-                for col in range(grid_cols):
-
-                    grid_id = row*grid_cols + col
-
-                    x1 = ra_min + col * block_scale
-                    x2 = ra_min + (col + 1) * block_scale
-                    y1 = dec_min + row * block_scale
-                    y2 = dec_min + (row + 1) * block_scale
-
-                    boundy[grid_id] = y1, y1, y2, y2
-                    boundx[grid_id] = x1, x2, x1, x2
-
             if rank == 0:
-                logger.info("Area: w_%d, redshift bin: z_%d (%.2f ~ %.2f). Open the hdf5: %s" %
-                            (area_id, zb+1, z_bin[zb],z_bin[zb+1],cf_cata_data_path))
+                logger.info("Open the hdf5: %s" %cf_cata_data_path)
                 h5f = h5py.File(cf_cata_data_path, "r+")
 
                 h5f.create_group("/grid/w_%d/z_%d"%(area_id, zb+1))
@@ -447,8 +520,7 @@ if cmd == "grid":
 
                 h5f.close()
 
-                logger.info("Area: w_%d, redshift bin: z_%d (%.2f ~ %.2f). Close the hdf5: %s" %
-                            (area_id, zb+1, z_bin[zb],z_bin[zb+1],cf_cata_data_path))
+                logger.info("Close the hdf5: %s" %cf_cata_data_path)
 
             # then, distribute the grids to threads
             tasks_list = [i for i in range(grid_num)]

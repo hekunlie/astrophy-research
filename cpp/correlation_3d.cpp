@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 
 	pts_info pts_data;
 
-	char h5f_path[200], set_name[50], attrs_name[50], cache_path[200], data_path[200];
+	char h5f_path[200], set_name_1[50], set_name_2[50], attrs_name[50], cache_path[200], data_path[200];
 	char log_inform[200], log_path[200],chi_path[200], chi_set_name[30];
 	char temp[200];
 
@@ -61,17 +61,16 @@ int main(int argc, char *argv[])
 	int *num_in_block_1, *block_start_1, *block_end_1;
 	int *num_in_block_2, *block_start_2, *block_end_2;
 	int task_num;
-	int grid_ny_1, grid_nx_1, grid_num_1; // number of blocks of each area along each axis
-	int grid_ny_2, grid_nx_2, grid_num_2; // number of blocks of each area along each axis
+	int grid_ny, grid_nx, grid_num; // number of blocks of each area along each axis
 
-	int block_row_1, block_col_1, block_size_1; // columns of data & size of array of the biggest block
-	int block_row_2, block_col_2, block_size_2; // columns of data & size of array of the biggest block
 
+	int block_row, block_col, block_size; // columns of data & size of array of the biggest block
+	
 	double block_scale; // the length of the block side
 
 	// the bounds of each block
-	double *boundy_1, *boundx_1;
-	double *boundy_2, *boundx_2;
+	double *boundy, *boundx;
+
 
 	int mg_bin_len[1]{};// number of the boundary of bins, bin_num+1
 	int mg_bin_num; // bin number
@@ -101,20 +100,20 @@ int main(int argc, char *argv[])
 
 	sprintf(h5f_path, "%scf_cata_result_ext_3d.hdf5", data_path);
 	// read the number of the sky areas
-	sprintf(set_name, "/grid");
+	sprintf(set_name_1, "/grid");
 	sprintf(attrs_name, "max_area");
-	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
+	read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs,"g");
 	max_area = int_attrs[0];
 
 	// the bin number
-	sprintf(set_name, "/radius_bin");
+	sprintf(set_name_1, "/radius_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"d");
+	read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs,"d");
 	radius_bin_num = int_attrs[0] - 1;
 	// the bins of radian for correlation function
 	radius = new double[int_attrs[0]]{};
 	radius_sq = new double[int_attrs[0]]{};
-	read_h5(h5f_path, set_name, radius);
+	read_h5(h5f_path, set_name_1, radius);
 	for (i = 0; i < int_attrs[0]; i++)
 	{
 		radius_sq[i] = radius[i] * radius[i];
@@ -126,13 +125,13 @@ int main(int argc, char *argv[])
 	//}
 	//exit(0);
 	// the correlation bins
-	sprintf(set_name, "/g1_hat_bin");
+	sprintf(set_name_1, "/g_hat_bin");
 	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
+	read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs, "d");
 	g_hat_num = int_attrs[0];
 	gg_hats = new double[g_hat_num]{};
 	gg_hats_cov = new double[g_hat_num]{};
-	read_h5(h5f_path, set_name, gg_hats);
+	read_h5(h5f_path, set_name_1, gg_hats);
 	for (i = 0; i < g_hat_num; i++)
 	{
 		gg_hats_cov[i] = fabs(gg_hats[i] * 2);
@@ -154,35 +153,35 @@ int main(int argc, char *argv[])
 		sprintf(log_inform, "RANK: %d read the parameters in area %d", rank, area_id);
 		write_log(log_path, log_inform);
 
-		sprintf(set_name, "/grid/w_%d/z_%d", area_id, z1);
-
+		sprintf(set_name_1, "/grid/w_%d/z_%d", area_id, z1);
+		
 		// read the shape of the grid "w_i"
 		sprintf(attrs_name, "grid_shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
-		grid_ny_1 = int_attrs[0];
-		grid_nx_1 = int_attrs[1];
-		grid_num_1 = grid_ny_1 * grid_nx_1;
+		read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs,"g");
+		grid_ny = int_attrs[0];
+		grid_nx = int_attrs[1];
+		grid_num = grid_ny * grid_nx;
 
 		// of the single block
 		sprintf(attrs_name, "max_block_size");
-		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs,"g");
-		block_row_1 = int_attrs[0];
-		block_col_1 = int_attrs[1];
+		read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs,"g");
+		block_row = int_attrs[0];
+		block_col = int_attrs[1];
 		// the maximum block size. row * col
-		block_size_1 = int_attrs[0] * int_attrs[1];
+		block_size = int_attrs[0] * int_attrs[1];
 		// mask for non-repeating calculation
-		mask = new int[block_row_1]{};
+		mask = new int[block_row]{};
 
 		sprintf(attrs_name, "block_scale");
-		read_h5_attrs(h5f_path, set_name, attrs_name, double_attrs,"g");
+		read_h5_attrs(h5f_path, set_name_1, attrs_name, double_attrs,"g");
 		block_scale = double_attrs[0];
 
-		sprintf(set_name, "/grid/w_%d/z_%d/G1_bin", area_id, z1);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/G1_bin", area_id, z1);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
+		read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs, "d");
 		mg_bins = new double[int_attrs[0]]{};
 		mg_bin_num = int_attrs[0] - 1;
-		read_h5(h5f_path, set_name, mg_bins);
+		read_h5(h5f_path, set_name_1, mg_bins);
 
 		chi_block_size = mg_bin_num* mg_bin_num;
 		chi_block_size_ir = chi_block_size * g_hat_num;
@@ -195,10 +194,10 @@ int main(int argc, char *argv[])
 		boundy = new double[grid_num * 4]{};
 		boundx = new double[grid_num * 4]{};
 		// the origin of the coordinates is the first cross of the grid (array)
-		sprintf(set_name, "/grid/w_%d/boundy", area_id);
-		read_h5(h5f_path, set_name, boundy);
-		sprintf(set_name, "/grid/w_%d/boundx", area_id);
-		read_h5(h5f_path, set_name, boundx);
+		sprintf(set_name_1, "/grid/w_%d/boundy", area_id);
+		read_h5(h5f_path, set_name_1, boundy);
+		sprintf(set_name_1, "/grid/w_%d/boundx", area_id);
+		read_h5(h5f_path, set_name_1, boundx);
 		//block_bound(block_scale[0], grid_ny, grid_nx, boundy, boundx);
 
 		// each thread gets its own targets blocks in my_tasks
@@ -212,134 +211,126 @@ int main(int argc, char *argv[])
 		pts_data.nx = grid_nx;
 		pts_data.blocks_num = grid_num;
 
-		// the shared buffer in the memory
-		sprintf(set_name, "/grid/w_%d/data/G1", area_id);
+		/////////////////////////////////////////////////////////
+		//////////// read the data of redshift bin 1///////////
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/G1", area_id, z1);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, int_attrs, "d");
-		data_num = int_attrs[0];
+		read_h5_attrs(h5f_path, set_name_1, attrs_name, int_attrs, "d");
+		data_num_1 = int_attrs[0];
 
-		RA = new double[data_num] {};
-		DEC = new double[data_num] {};
+		RA_1 = new double[data_num_1] {};
+		DEC_1 = new double[data_num_1] {};
 
-		MG1 = new double[data_num] {};
-		MG2 = new double[data_num] {};
-		MN = new double[data_num] {};
-		MU = new double[data_num] {};
-		MV = new double[data_num] {};
+		MG1_1 = new double[data_num_1] {};
+		MG2_1 = new double[data_num_1] {};
+		MN_1 = new double[data_num_1] {};
+		MU_1 = new double[data_num_1] {};
+		MV_1 = new double[data_num_1] {};
+		//read the data
+		initialize_arr(MG1_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/G1", area_id, z1);
+		read_h5(h5f_path, set_name_1, MG1_1);
+
+		initialize_arr(MG2_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/G2", area_id, z1);
+		read_h5(h5f_path, set_name_1, MG2_1);
+
+		initialize_arr(MN_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/N", area_id, z1);
+		read_h5(h5f_path, set_name_1, MN_1);
+
+		initialize_arr(MU_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/U", area_id, z1);
+		read_h5(h5f_path, set_name_1, MU_1);
+
+		initialize_arr(MV_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/V", area_id, z1);
+		read_h5(h5f_path, set_name_1, MV_1);
+
+		initialize_arr(RA_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/RA", area_id, z1);
+		read_h5(h5f_path, set_name_1, RA_1);
+
+		initialize_arr(DEC_1, data_num_1, 0.);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/data/DEC", area_id, z1);
+		read_h5(h5f_path, set_name_1, DEC_1);
 
 		// read the number of points in each block
-		num_in_block = new int[grid_num] {};
-		block_start = new int[grid_num] {};
-		block_end = new int[grid_num] {};
-		initialize_arr(num_in_block, grid_num, 0);
-		sprintf(set_name, "/grid/w_%d/num_in_block", area_id);
-		read_h5(h5f_path, set_name, num_in_block);
+		num_in_block_1 = new int[grid_num] {};
+		block_start_1 = new int[grid_num] {};
+		block_end_1 = new int[grid_num] {};
+		initialize_arr(num_in_block_1, grid_num, 0);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/num_in_block", area_id, z1);
+		read_h5(h5f_path, set_name_1, num_in_block_1);
 
-		initialize_arr(block_start, grid_num, 0);
-		sprintf(set_name, "/grid/w_%d/block_start", area_id);
-		read_h5(h5f_path, set_name, block_start);
+		initialize_arr(block_start_1, grid_num, 0);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/block_start", area_id, z1);
+		read_h5(h5f_path, set_name_1, block_start_1);
 
-		initialize_arr(block_end, grid_num, 0);
-		sprintf(set_name, "/grid/w_%d/block_end", area_id);
-		read_h5(h5f_path, set_name, block_end);
+		initialize_arr(block_end_1, grid_num, 0);
+		sprintf(set_name_1, "/grid/w_%d/z_%d/block_end", area_id, z1);
+		read_h5(h5f_path, set_name_1, block_end_1);
 
-		//for (k = 0; k < numprocs; k++)
-		//{
 
-		//}
+		/////////////////////////////////////////////////////////
+		//////////// read the data of redshift bin 2///////////
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/G1", area_id, z2);
+		sprintf(attrs_name, "shape");
+		read_h5_attrs(h5f_path, set_name_2, attrs_name, int_attrs, "d");
+		data_num_2 = int_attrs[0];
 
-	/*	if (rank == 0)
-		{
-			size_pts = data_num * sizeof(double);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG1, &win_mg1);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG2, &win_mg2);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MN, &win_mn);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MU, &win_mu);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MV, &win_mv);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &RA, &win_ra);
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &DEC, &win_dec);
+		RA_2 = new double[data_num_2] {};
+		DEC_2 = new double[data_num_2] {};
 
-		}
-		else
-		{
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG1, &win_mg1);
-			MPI_Win_shared_query(win_mg1, 0, &size_pts, &disp_mg1, &MG1);
+		MG1_2 = new double[data_num_2] {};
+		MG2_2 = new double[data_num_2] {};
+		MN_2 = new double[data_num_2] {};
+		MU_2 = new double[data_num_2] {};
+		MV_2 = new double[data_num_2] {};
 
-			MPI_Win_allocate_shared(size_pts, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MG2, &win_mg2);
-			MPI_Win_shared_query(win_mg2, 0, &size_pts, &disp_mg2, &MG2);
+		initialize_arr(MG1_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/G1", area_id, z2);
+		read_h5(h5f_path, set_name_2, MG1_2);
 
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MN, &win_mn);
-			MPI_Win_shared_query(win_mn, 0, &size_pts, &disp_mn, &MN);
+		initialize_arr(MG2_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/G2", area_id, z2);
+		read_h5(h5f_path, set_name_2, MG2_2);
 
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MU, &win_mu);
-			MPI_Win_shared_query(win_mu, 0, &size_pts, &disp_mu, &MU);
+		initialize_arr(MN_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/N", area_id, z2);
+		read_h5(h5f_path, set_name_2, MN_2);
 
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &MV, &win_mv);
-			MPI_Win_shared_query(win_mv, 0, &size_pts, &disp_mv, &MV);
+		initialize_arr(MU_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/U", area_id, z2);
+		read_h5(h5f_path, set_name_2, MU_2);
 
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &RA, &win_ra);
-			MPI_Win_shared_query(win_ra, 0, &size_pts, &disp_ra, &RA);
+		initialize_arr(MV_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/V", area_id, z2);
+		read_h5(h5f_path, set_name_2, MV_2);
 
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &DEC, &win_dec);
-			MPI_Win_shared_query(win_dec, 0, &size_pts, &disp_dec, &DEC);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
+		initialize_arr(RA_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/RA", area_id, z2);
+		read_h5(h5f_path, set_name_2, RA_2);
 
-		// initialize the data in the buffer for all threads
-		if (0 == rank)
-		{
-			sprintf(log_inform, "Created the shared buffer for program.");
-			std::cout << log_inform << std::endl;
+		initialize_arr(DEC_2, data_num_2, 0.);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/data/DEC", area_id, z2);
+		read_h5(h5f_path, set_name_2, DEC_2);
 
-			sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: ", area_id);
-			std::cout << log_inform << std::endl;
-			sprintf(log_inform, "the biggest blcok: %d x %d", max_block_size[0] , max_block_size[1]);
-			std::cout << log_inform << std::endl;
+		// read the number of points in each block
+		num_in_block_2 = new int[grid_num] {};
+		block_start_2 = new int[grid_num] {};
+		block_end_2 = new int[grid_num] {};
+		initialize_arr(num_in_block_2, grid_num, 0);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/num_in_block", area_id, z2);
+		read_h5(h5f_path, set_name_2, num_in_block_2);
 
-			// check & cache
-			sprintf(cache_path, "%scache/num_%d.fits",data_path,area_id);
-			write_fits(cache_path, num_in_block, grid_ny, grid_nx);
-			sprintf(cache_path, "%scache/block_start_%d.fits", data_path, area_id);
-			write_fits(cache_path, block_start, grid_ny, grid_nx);
-			sprintf(cache_path, "%scache/block_end_%d.fits", data_path, area_id);
-			write_fits(cache_path, block_end, grid_ny, grid_nx);
+		initialize_arr(block_start_2, grid_num, 0);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/block_start", area_id, z2);
+		read_h5(h5f_path, set_name_2, block_start_2);
 
-			//read the data
-			initialize_arr(MG1, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/G1", area_id);
-			read_h5(h5f_path, set_name, MG1);
-
-			initialize_arr(MG2, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/G2", area_id);
-			read_h5(h5f_path, set_name, MG2);
-
-			initialize_arr(MN, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/N", area_id);
-			read_h5(h5f_path, set_name, MN);
-
-			initialize_arr(MU, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/U", area_id);
-			read_h5(h5f_path, set_name, MU);
-
-			initialize_arr(MV, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/U", area_id);
-			read_h5(h5f_path, set_name, MV);
-
-			initialize_arr(RA, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/RA", area_id);
-			read_h5(h5f_path, set_name, RA);
-
-			initialize_arr(DEC, data_num, 0.);
-			sprintf(set_name, "/grid/w_%d/data/DEC", area_id);
-			read_h5(h5f_path, set_name, DEC);
-
-			sprintf(log_inform, "FINISH BUFFER INITIALZIATION");
-			std::cout << log_inform << std::endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-		sprintf(log_inform, "RANK: %d shared buffer created in area %d", rank, area_id);
-		write_log(log_path, log_inform);*/
-
+		initialize_arr(block_end_2, grid_num, 0);
+		sprintf(set_name_2, "/grid/w_%d/z_%d/block_end", area_id, z2);
+		read_h5(h5f_path, set_name_2, block_end_2);
 
 
 		sprintf(log_inform, "INITIALIZE THE BIG BUFFER FOR W_%d: the biggest blcok: %d x %d", area_id, block_row, block_col);
@@ -356,34 +347,7 @@ int main(int argc, char *argv[])
 			//write_fits(cache_path, block_end, grid_ny, grid_nx);
 		}
 
-		//read the data
-		initialize_arr(MG1, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/G1", area_id);
-		read_h5(h5f_path, set_name, MG1);
 
-		initialize_arr(MG2, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/G2", area_id);
-		read_h5(h5f_path, set_name, MG2);
-
-		initialize_arr(MN, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/N", area_id);
-		read_h5(h5f_path, set_name, MN);
-
-		initialize_arr(MU, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/U", area_id);
-		read_h5(h5f_path, set_name, MU);
-
-		initialize_arr(MV, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/V", area_id);
-		read_h5(h5f_path, set_name, MV);
-
-		initialize_arr(RA, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/RA", area_id); 
-		read_h5(h5f_path, set_name, RA);
-
-		initialize_arr(DEC, data_num, 0.);
-		sprintf(set_name, "/grid/w_%d/data/DEC", area_id);
-		read_h5(h5f_path, set_name, DEC);
 
 		sprintf(log_inform, "FINISH BUFFER INITIALZIATION");
 		write_log(log_path, log_inform);
@@ -400,7 +364,7 @@ int main(int argc, char *argv[])
 			// skip the blocks contains nothing
 			// because the observation areas are irregular
 			// but our blocks are square
-			if (num_in_block[k] > 0)
+			if (num_in_block_1[k] > 0)
 			{
 				task_list[task_num] = k;
 				task_num++;
@@ -416,7 +380,7 @@ int main(int argc, char *argv[])
 		{
 			sprintf(log_inform, "rank: %d, area: %d, radius_num: %d, g_num: %d, grid: %d x %d\(%d)", rank, max_area, radius_bin_num, g_hat_num, grid_ny, grid_nx, grid_num);
 			std::cout << log_inform << std::endl;
-			sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, galaxy: %d, task_grid: %d", rank, block_scale, mg_bin_num, data_num, task_num);
+			sprintf(log_inform, "rank: %d, block scale: %.1f, G_bins: %d, galaxy: %d, task_grid: %d", rank, block_scale, mg_bin_num, data_num_1, task_num);
 			std::cout << log_inform << std::endl;
 			std::cout << std::endl;
 		}
