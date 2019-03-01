@@ -320,8 +320,8 @@ void creat_h5_group(const char *filename, const char *set_name, const bool trunc
 			break;
 		}
 	}
-	slash = new int[count];
-	name = new char[count + 1];
+	slash = new int[count] {};
+	name = new char[count + 1]{};
 
 	// find the position of "/"
 	for (i = 0; i < count; i++)
@@ -334,7 +334,6 @@ void creat_h5_group(const char *filename, const char *set_name, const bool trunc
 	}
 	// the position of '\0', the end
 	slash[s_count] = count;
-
 	if (trunc == TRUE)// trucate it
 	{
 		file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
@@ -408,14 +407,19 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 	{
 		name[i] = set_name[i];
 	}
-	name[slash[s_count - 1] + 1] = '\0';
+	name[slash[s_count - 1] ] = '\0';
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
-	// try to create /a/b if it doesn't exist 
+	std::cout << set_name << std::endl;
+	std::cout << name << std::endl;
+	std::cout << new_name << std::endl;
+	show_arr(slash, 1, count);
+	std::cout << std::endl;
+	// try to create /a/b
 	creat_h5_group(filename, name, trunc);
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
@@ -476,13 +480,18 @@ void write_h5(const char *filename, const char *set_name, const float*data, cons
 	{
 		name[i] = set_name[i];
 	}
-	name[slash[s_count - 1] + 1] = '\0';
+	name[slash[s_count - 1]] = '\0';
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	std::cout << set_name << std::endl;
+	std::cout << name << std::endl;
+	std::cout << new_name << std::endl;
+	show_arr(slash, 1, count);
+	std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
 	creat_h5_group(filename, name, trunc);
 
@@ -544,13 +553,18 @@ void write_h5(const char *filename, const char *set_name, const int*data, const 
 	{
 		name[i] = set_name[i];
 	}
-	name[slash[s_count - 1] + 1] = '\0';
+	name[slash[s_count - 1]] = '\0';
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	std::cout << set_name << std::endl;
+	std::cout << name << std::endl;
+	std::cout << new_name << std::endl;
+	show_arr(slash, 1, count);
+	std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
 	creat_h5_group(filename, name, trunc);
 
@@ -605,6 +619,7 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 	}
 	// label the end of the set_name
 	slash[s_count] = count;
+	
 	// the set_name is something like /a/b/c
 	// the dataset will be under c,while /a/b must be created before
 	// the "c" is in the "new_names",  "/a/b" in "names"
@@ -612,13 +627,18 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 	{
 		name[i] = set_name[i];
 	}
-	name[slash[s_count - 1] + 1] = '\0';
+	name[slash[s_count - 1]] = '\0';
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	std::cout << set_name << std::endl;
+	std::cout << name << std::endl;
+	std::cout << new_name << std::endl;
+	show_arr(slash, 1, count);
+	std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
 	creat_h5_group(filename, name, trunc);
 
