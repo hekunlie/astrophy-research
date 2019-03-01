@@ -158,10 +158,10 @@ void read_text(const std::string path, int *arr, const int read_lines);
 	the read_lines limits the maximum lines to read
 */
 
-void read_h5(const char *filename, const char *set_name, double *arr);//checked
-void read_h5(const char *filename, const char *set_name, float *arr);
-void read_h5(const char *filename, const char *set_name, int *arr);//checked
-void read_h5(const char *filename, const char *set_name, long *arr);//checked
+void read_h5(const char *filename, const char *set_name, double *data);//checked
+void read_h5(const char *filename, const char *set_name, float *data);
+void read_h5(const char *filename, const char *set_name, int *data);//checked
+void read_h5(const char *filename, const char *set_name, long *data);//checked
 /* if the length of arr is longer than the data, the rest element  of "arr" will not be changed 
 	initializing the arr befero each reading is highly recommended.
 */
@@ -169,15 +169,17 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff, std::string flag);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff, std::string flag);//checked
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
+	flag: "d" for data set, "g" for data group
 */
 void creat_h5_group(const char *filename, const char *set_name, const bool trunc);
-/* the set_name must be shorter than 150 */
-void write_h5(const char *filename, const char *set_name, const double *arr, const int row, const int column);//checked
-void write_h5(const char *filename, const char *set_name, const float *arr, const int row, const int column);
-void write_h5(const char *filename, const char *set_name, const int *arr, const int row, const int column);//checked
-void write_h5(const char *filename, const char *set_name,  const long *arr, const int row, const int column);//checked
+/* create the data group 
+*/
+void write_h5(const char *filename, const char *set_name, const double *data, const int row, const int column, const bool trunc);//checked
+void write_h5(const char *filename, const char *set_name, const float *data, const int row, const int column, const bool trunc);
+void write_h5(const char *filename, const char *set_name, const int *data, const int row, const int column, const bool trunc);//checked
+void write_h5(const char *filename, const char *set_name,  const long *data, const int row, const int column, const bool trunc);//checked
 /* write the hdf5 file
-	if trunc == TRUE, the file will be truncated and then data are writed into the file
+	if trunc == TRUE, the file will be truncated before data are writed into the file
 	else, write directly
 */
 

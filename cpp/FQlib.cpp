@@ -299,32 +299,18 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 }
 
 void creat_h5_group(const char *filename, const char *set_name, const bool trunc)
-{	
-	int i, j, m, count=0, s_count=0;
+{
+	int i, j, m, count = 0, s_count = 0;
 
 	int *slash;
-	char *names;
+	char *name;
 
 	hid_t file_id, group_id;
 	herr_t status;
-
-	if (file_exist(filename))
-	{
-		if (trunc == TRUE)
-		{
-			remove(filename);
-		}
-		else
-		{
-			file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
-		}
-		std::cout << "FOUND" << std::endl;
-	}
-	else
-	{
-		file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-		std::cout << "NOT FOUND" << std::endl;
-	}
+	unsigned rank = 2;
+	hsize_t dims[2];
+	hid_t dataspace_id;
+	hid_t dataset_id;
 
 	// the length of the "set_name"
 	for (count = 0; ; count++)
@@ -334,11 +320,10 @@ void creat_h5_group(const char *filename, const char *set_name, const bool trunc
 			break;
 		}
 	}
-
 	slash = new int[count];
-	names = new char[count+1];
+	name = new char[count + 1];
 
-
+	// find the position of "/"
 	for (i = 0; i < count; i++)
 	{
 		if (set_name[i] == '/')
@@ -347,139 +332,317 @@ void creat_h5_group(const char *filename, const char *set_name, const bool trunc
 			s_count++;
 		}
 	}
+	// the position of '\0', the end
 	slash[s_count] = count;
 
-	for (i = 0; i < s_count; i++)
-	{	
-		
-		for (j = 0; j < slash[i + 1]; j++)
+	if (trunc == TRUE)// trucate it
+	{
+		file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	}
+	else
+	{
+		if (file_exist(filename))
 		{
-			names[j] = set_name[j];
+			file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 		}
-		// label the end
-		names[j] = '\0';
-
-		status = H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-		status = H5Lget_info(file_id, names, NULL, H5P_DEFAULT);
-		std::cout << names <<" "<<status << std::endl;
-		// if the group doesn't exist, create it
-		if (status != 0)
-		{
-			if (i == 0)
-			{
-				group_id = H5Gcreate(file_id, names, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-			}
-			else
-			{
-				group_id = H5Gcreate(group_id, names, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-			}			
-			std::cout << "creat_group " << names << std::endl;
-		}
-		// if it exist, open it
 		else
 		{
-			if (i == 0)
-			{
-				group_id = H5Gopen(file_id, names, H5P_DEFAULT);
-			}
-			else
-			{
-				group_id = H5Gopen(group_id, names, H5P_DEFAULT);
-			}
+			file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 		}
 	}
-	status = H5Gclose(group_id);
 
+	for (i = 0; i < s_count; i++)
+	{
+		for (j = 0; j < slash[i + 1]; j++)
+		{
+			name[j] = set_name[j];
+		}
+		name[j] = '\0';// label the end
+		status = H5Eset_auto(H5E_DEFAULT, NULL, NULL);
+		status = H5Lget_info(file_id, name, NULL, H5P_DEFAULT);
+		if (status != 0)// doesn't exist
+		{
+			group_id = H5Gcreate(file_id, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+			status = H5Gclose(group_id);
+		}
+	}
 	status = H5Eset_auto(H5E_DEFAULT, (H5E_auto2_t)H5Eprint2, stderr);
 	status = H5Fclose(file_id);
 	delete[] slash;
-	delete[] names;
+	delete[] name;
+
 }
 
-void write_h5(const char *filename, const char *set_name, const double*arr, const int row, const int column)
+void write_h5(const char *filename, const char *set_name, const double*data, const int row, const int column, const bool trunc)
 {
-	hid_t file_id;
+	int i, count, s_count;
+	int *slash;
+	char *name, *new_name;
+	// the length of the set_name
+	for (count = 0; ; count++)
+	{
+		if (set_name[count] == '\0')
+		{
+			break;
+		}
+	}
+	slash = new int[count] {};
+	name = new char[count + 1];
+	new_name = new char[count + 1];
+	// find the slashes in the set_name
+	s_count = 0;
+	for (i = 0; i < count; i++)
+	{
+		if (set_name[i] == '/')
+		{
+			slash[s_count] = i;
+			s_count++;
+		}
+	}
+	// label the end of the set_name
+	slash[s_count] = count;
+	// the set_name is something like /a/b/c
+	// the dataset will be under c,while /a/b must be created before
+	// the "c" is in the "new_names",  "/a/b" in "names"
+	for (i = 0; i < slash[s_count - 1]; i++)
+	{
+		name[i] = set_name[i];
+	}
+	name[slash[s_count - 1] + 1] = '\0';
+
+	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
+	{
+		new_name[i - slash[s_count - 1] - 1] = set_name[i];
+	}
+	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	// try to create /a/b if it doesn't exist 
+	creat_h5_group(filename, name, trunc);
+
+	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
-	//remove(filename);
-
-	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-	unsigned rank = 2;
 	hsize_t dims[2];
+	unsigned rank = 2;
 	dims[0] = row;
 	dims[1] = column;
-	hid_t dataspace_id;  
+
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	group_id = H5Gopen1(file_id, name);
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
-	hid_t dataset_id;
-	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
-
+	status = H5Gclose(group_id);
 	status = H5Fclose(file_id);
- }
 
-void write_h5(const char *filename, const char *set_name, const float*arr, const int row, const int column)
-{
-	hid_t file_id;
-	herr_t status;
-
-	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-	unsigned rank = 2;
-	hsize_t dims[2];
-	dims[0] = row;
-	dims[1] = column;
-	hid_t dataspace_id;
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
-	hid_t dataset_id;
-	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
-	status = H5Dclose(dataset_id);
-	status = H5Sclose(dataspace_id);
-	status = H5Fclose(file_id);
+	delete[] slash;
+	delete[] name;
+	delete[] new_name;
 }
 
-void write_h5(const char *filename, const char *set_name, const int*arr, const int row, const int column)
+void write_h5(const char *filename, const char *set_name, const float*data, const int row, const int column, const bool trunc)
 {
-	hid_t file_id;
+	int i, count, s_count;
+	int *slash;
+	char *name, *new_name;
+	// the length of the set_name
+	for (count = 0; ; count++)
+	{
+		if (set_name[count] == '\0')
+		{
+			break;
+		}
+	}
+	slash = new int[count] {};
+	name = new char[count + 1];
+	new_name = new char[count + 1];
+	// find the slashes in the set_name
+	s_count = 0;
+	for (i = 0; i < count; i++)
+	{
+		if (set_name[i] == '/')
+		{
+			slash[s_count] = i;
+			s_count++;
+		}
+	}
+	// label the end of the set_name
+	slash[s_count] = count;
+	// the set_name is something like /a/b/c
+	// the dataset will be under c,while /a/b must be created before
+	// the "c" is in the "new_names",  "/a/b" in "names"
+	for (i = 0; i < slash[s_count - 1]; i++)
+	{
+		name[i] = set_name[i];
+	}
+	name[slash[s_count - 1] + 1] = '\0';
+
+	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
+	{
+		new_name[i - slash[s_count - 1] - 1] = set_name[i];
+	}
+	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	// try to create /a/b if it doesn't exist 
+	creat_h5_group(filename, name, trunc);
+
+	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
-
-	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-	unsigned rank = 2;
 	hsize_t dims[2];
+	unsigned rank = 2;
 	dims[0] = row;
 	dims[1] = column;
-	hid_t dataspace_id;
+
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	group_id = H5Gopen1(file_id, name);
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
-	hid_t dataset_id;
-	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
+	status = H5Gclose(group_id);
 	status = H5Fclose(file_id);
+
+	delete[] slash;
+	delete[] name;
+	delete[] new_name;
 }
 
-void write_h5(const char *filename, const char *set_name, const long *arr, const int row, const int column)
+void write_h5(const char *filename, const char *set_name, const int*data, const int row, const int column, const bool trunc)
 {
-	hid_t file_id;
+	int i, count, s_count;
+	int *slash;
+	char *name, *new_name;
+	// the length of the set_name
+	for (count = 0; ; count++)
+	{
+		if (set_name[count] == '\0')
+		{
+			break;
+		}
+	}
+	slash = new int[count] {};
+	name = new char[count + 1];
+	new_name = new char[count + 1];
+	// find the slashes in the set_name
+	s_count = 0;
+	for (i = 0; i < count; i++)
+	{
+		if (set_name[i] == '/')
+		{
+			slash[s_count] = i;
+			s_count++;
+		}
+	}
+	// label the end of the set_name
+	slash[s_count] = count;
+	// the set_name is something like /a/b/c
+	// the dataset will be under c,while /a/b must be created before
+	// the "c" is in the "new_names",  "/a/b" in "names"
+	for (i = 0; i < slash[s_count - 1]; i++)
+	{
+		name[i] = set_name[i];
+	}
+	name[slash[s_count - 1] + 1] = '\0';
+
+	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
+	{
+		new_name[i - slash[s_count - 1] - 1] = set_name[i];
+	}
+	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	// try to create /a/b if it doesn't exist 
+	creat_h5_group(filename, name, trunc);
+
+	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
-
-	file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-	unsigned rank = 2;
 	hsize_t dims[2];
+	unsigned rank = 2;
 	dims[0] = row;
 	dims[1] = column;
-	hid_t dataspace_id;
+
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	group_id = H5Gopen1(file_id, name);
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
-	hid_t dataset_id;
-	dataset_id = H5Dcreate(file_id, set_name, H5T_NATIVE_LONG, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-	status = H5Dwrite(dataset_id, H5T_NATIVE_LONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, arr);
+	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
 	status = H5Dclose(dataset_id);
 	status = H5Sclose(dataspace_id);
+	status = H5Gclose(group_id);
 	status = H5Fclose(file_id);
+
+	delete[] slash;
+	delete[] name;
+	delete[] new_name;
+}
+
+void write_h5(const char *filename, const char *set_name, const long *data, const int row, const int column, const bool trunc)
+{
+	int i, count, s_count;
+	int *slash;
+	char *name, *new_name;
+	// the length of the set_name
+	for (count = 0; ; count++)
+	{
+		if (set_name[count] == '\0')
+		{
+			break;
+		}
+	}
+	slash = new int[count] {};
+	name = new char[count + 1];
+	new_name = new char[count + 1];
+	// find the slashes in the set_name
+	s_count = 0;
+	for (i = 0; i < count; i++)
+	{
+		if (set_name[i] == '/')
+		{
+			slash[s_count] = i;
+			s_count++;
+		}
+	}
+	// label the end of the set_name
+	slash[s_count] = count;
+	// the set_name is something like /a/b/c
+	// the dataset will be under c,while /a/b must be created before
+	// the "c" is in the "new_names",  "/a/b" in "names"
+	for (i = 0; i < slash[s_count - 1]; i++)
+	{
+		name[i] = set_name[i];
+	}
+	name[slash[s_count - 1] + 1] = '\0';
+
+	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
+	{
+		new_name[i - slash[s_count - 1] - 1] = set_name[i];
+	}
+	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
+	// try to create /a/b if it doesn't exist 
+	creat_h5_group(filename, name, trunc);
+
+	hid_t file_id, group_id, dataset_id, dataspace_id;
+	herr_t status;
+	hsize_t dims[2];
+	unsigned rank = 2;
+	dims[0] = row;
+	dims[1] = column;
+
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+	group_id = H5Gopen1(file_id, name);
+	dataspace_id = H5Screate_simple(rank, dims, NULL);
+	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_LONG, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	status = H5Dwrite(dataset_id, H5T_NATIVE_LONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
+	status = H5Dclose(dataset_id);
+	status = H5Sclose(dataspace_id);
+	status = H5Gclose(group_id);
+	status = H5Fclose(file_id);
+
+	delete[] slash;
+	delete[] name;
+	delete[] new_name;
 }
 
 
