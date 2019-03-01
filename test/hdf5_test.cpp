@@ -1,10 +1,10 @@
 #include<FQlib.h>
-void creat_h5_group_(const char *filename, const char *set_name, const bool trunc, int row, int col)
+void creat_h5_group_(const char *filename, const char *set_name, const bool trunc)
 {
 	int i, j, m, count = 0, s_count = 0;
 
 	int *slash;
-	char *names;
+	char *name;
 
 	hid_t file_id, group_id;
 	herr_t status;
@@ -13,11 +13,37 @@ void creat_h5_group_(const char *filename, const char *set_name, const bool trun
 	hid_t dataspace_id;
 	hid_t dataset_id;
 
+	// the length of the "set_name"
+	for (count = 0; ; count++)
+	{
+		if (set_name[count] == '\0')
+		{
+			break;
+		}
+	}
+	slash = new int[count];
+	name = new char[count + 1];
+
+	// find the position of "/"
+	for (i = 0; i < count; i++)
+	{
+		if (set_name[i] == '/')
+		{
+			slash[s_count] = i;
+			s_count++;
+		}
+	}
+	// the position of '\0', the end
+	slash[s_count] = count;
+
 	if (file_exist(filename))
 	{
+		// trucate it
 		if (trunc == TRUE)
 		{
 			remove(filename);
+			std::cout << "REMOVE" << std::endl;
+			file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 		}
 		else
 		{
@@ -29,84 +55,36 @@ void creat_h5_group_(const char *filename, const char *set_name, const bool trun
 	{
 		file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 		std::cout << "NOT FOUND" << std::endl;
-	}
-
-	// the length of the "set_name"
-	for (count = 0; ; count++)
-	{
-		if (set_name[count] == '\0')
-		{
-			break;
-		}
-	}
-
-	slash = new int[count];
-	names = new char[count + 1];
-
-
-	for (i = 0; i < count; i++)
-	{
-		if (set_name[i] == '/')
-		{
-			slash[s_count] = i;
-			s_count++;
-		}
-	}
-	slash[s_count] = count;
+	}	
 
 	for (i = 0; i < s_count; i++)
 	{
 
 		for (j = 0; j < slash[i + 1]; j++)
 		{
-			names[j] = set_name[j];
+			name[j] = set_name[j];
 		}
-		// label the end
-		names[j] = '\0';
-
+		name[j] = '\0';// label the end
 		status = H5Eset_auto(H5E_DEFAULT, NULL, NULL);
-		status = H5Lget_info(file_id, names, NULL, H5P_DEFAULT);
-		std::cout << names << " " << status << std::endl;
-		// if the group doesn't exist, create it
+		status = H5Lget_info(file_id, name, NULL, H5P_DEFAULT);
 		if (status != 0)
 		{
-			if (i == 0)
-			{
-				group_id = H5Gcreate(file_id, names, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-			}
-			else
-			{
-				group_id = H5Gcreate(group_id, names, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-			}
-			std::cout << "creat_group " << names << std::endl;
+			group_id = H5Gcreate(file_id, name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+			status = H5Gclose(group_id);
+			std::cout << "creat_group " << name << std::endl;
 		}
-		// if it exist, open it
 		else
 		{
-			if (i == 0)
-			{
-				group_id = H5Gopen(file_id, names, H5P_DEFAULT);
-			}
-			else
-			{
-				group_id = H5Gopen(group_id, names, H5P_DEFAULT);
-			}
+			std::cout << "group exit " << name << std::endl;
+			continue;
 		}
-
 	}
-
-	dims[0] = row;
-	dims[1] = col;
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
-
-	status = H5Sclose(dataspace_id);
-
-	status = H5Gclose(group_id);
 
 	status = H5Eset_auto(H5E_DEFAULT, (H5E_auto2_t)H5Eprint2, stderr);
 	status = H5Fclose(file_id);
 	delete[] slash;
-	delete[] names;
+	delete[] name;
+
 }
 void write_h5_(const char *filename, const char *set_name,const double*arr, const int row, const int column)
 {
@@ -184,19 +162,34 @@ void write_h5_(const char *filename, const char *set_name,const double*arr, cons
 
 int main(int argc, char *argv[])
 {
+	hid_t file_id, group_id_1, group_id_2;
+	herr_t status;
 	char name[100], set_name[100];
 	sprintf(name, "test.hdf5");
+	sprintf(set_name, "/a/b/c");
+	creat_h5_group_(name, set_name, FALSE);
+	sprintf(set_name, "/a/b/c/d/e/f");
+	creat_h5_group_(name, set_name, FALSE);
+	//file_id = H5Fcreate(name, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+	//group_id_1 = H5Gcreate(file_id, set_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	//status = H5Gclose(group_id_1);
+	//std::cout << "CREATE /a" << std::endl;
+	//sprintf(set_name, "/a/b");
+	//group_id_1 = H5Gcreate(file_id, set_name, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+	//status = H5Gclose(group_id_1);
+	//status = H5Fclose(file_id);
+	//std::cout << "CREATE /a/b" << std::endl;
 	//sprintf(set_name, "/a11/b2/c3");
 	//creat_h5_group(name, set_name, TRUE,5,1);
 	//sprintf(set_name, "/a/b/c/d/e");
 	//creat_h5_group(name, set_name, FALSE);
-	sprintf(set_name, "/a11/b2/c3/dddd");
+	//sprintf(set_name, "/a11/b2/c3/dddd");
 	//creat_h5_group(name, set_name, FALSE);
 	double data[5]{};
-	write_h5_( name, set_name, data, 5, 1);
-	sprintf(set_name, "/a11/b2/c3/ffff");
+	//write_h5_( name, set_name, data, 5, 1);
+	//sprintf(set_name, "/a11/b2/c3/ffff");
 	//creat_h5_group(name, set_name, FALSE);
-	write_h5_(name, set_name, data, 5, 1);
+	//write_h5_(name, set_name, data, 5, 1);
 
 	return 0;
 }
