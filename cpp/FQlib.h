@@ -168,14 +168,17 @@ void read_h5(const char *filename, const char *set_name, long *data);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff, std::string flag);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff, std::string flag);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, int *buff, std::string flag);//checked
+
+void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const double *attrs_buffer, const int buffer_len, std::string flag);
+void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const int *attrs_buffer, const int buffer_len, std::string flag);
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
 	flag: "d" for data set, "g" for data group
 */
-void creat_h5_group(const char *filename, const char *set_name, const bool trunc);
+void creat_h5_group(const char *filename, const char *set_name, const bool trunc);//checked
 /* create the data group 
 */
 void write_h5(const char *filename, const char *set_name, const double *data, const int row, const int column, const bool trunc);//checked
-void write_h5(const char *filename, const char *set_name, const float *data, const int row, const int column, const bool trunc);
+void write_h5(const char *filename, const char *set_name, const float *data, const int row, const int column, const bool trunc);//checked
 void write_h5(const char *filename, const char *set_name, const int *data, const int row, const int column, const bool trunc);//checked
 void write_h5(const char *filename, const char *set_name,  const long *data, const int row, const int column, const bool trunc);//checked
 /* write the hdf5 file

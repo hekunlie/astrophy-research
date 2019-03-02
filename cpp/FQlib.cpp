@@ -298,6 +298,66 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 	status = H5Fclose(file_id);
 }
 
+void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const double *attrs_buffer, const int buffer_len, std::string flag)
+{
+	hid_t file_id, dataset_id, dataspace_id, attrs_id;
+	herr_t status;
+	hsize_t num = buffer_len;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+
+	if (flag == "d")
+	{
+		dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+		dataspace_id = H5Screate_simple(1, &num, NULL);
+		attrs_id = H5Acreate2(dataset_id, attrs_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Awrite(attrs_id, H5T_NATIVE_DOUBLE, attrs_buffer);
+		status = H5Aclose(attrs_id);
+		status = H5Sclose(dataspace_id);
+		status = H5Dclose(dataset_id);
+	}
+	else
+	{
+		dataset_id = H5Gopen(file_id, set_name, H5P_DEFAULT);
+		dataspace_id = H5Screate_simple(1, &num, NULL);
+		attrs_id = H5Acreate2(dataset_id, attrs_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Awrite(attrs_id, H5T_NATIVE_DOUBLE, attrs_buffer);
+		status = H5Aclose(attrs_id);
+		status = H5Sclose(dataspace_id);
+		status = H5Dclose(dataset_id);
+	}
+	status = H5Fclose(file_id);
+}
+
+void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const int *attrs_buffer, const int buffer_len, std::string flag)
+{
+	hid_t file_id, dataset_id, dataspace_id, attrs_id;
+	herr_t status;
+	hsize_t num = buffer_len;
+	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
+
+	if (flag == "d")
+	{
+		dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+		dataspace_id = H5Screate_simple(1, &num, NULL);
+		attrs_id = H5Acreate2(dataset_id, attrs_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Awrite(attrs_id, H5T_NATIVE_INT, attrs_buffer);
+		status = H5Aclose(attrs_id);
+		status = H5Sclose(dataspace_id);
+		status = H5Dclose(dataset_id);
+	}
+	else
+	{
+		dataset_id = H5Gopen(file_id, set_name, H5P_DEFAULT);
+		dataspace_id = H5Screate_simple(1, &num, NULL);
+		attrs_id = H5Acreate2(dataset_id, attrs_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT);
+		status = H5Awrite(attrs_id, H5T_NATIVE_INT, attrs_buffer);
+		status = H5Aclose(attrs_id);
+		status = H5Sclose(dataspace_id);
+		status = H5Dclose(dataset_id);
+	}
+	status = H5Fclose(file_id);
+}
+
 void creat_h5_group(const char *filename, const char *set_name, const bool trunc)
 {
 	int i, j, m, count = 0, s_count = 0;
