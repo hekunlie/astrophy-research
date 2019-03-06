@@ -71,25 +71,26 @@ ax.yaxis.set_tick_params(which="minor",direction="in",length=4, width=axis_linew
 # ax.set_xlabel("Magnitude",fontsize=xy_lb_size)
 # ax.set_ylabel("P$_{k0}$",fontsize=xy_lb_size)
 # ax.legend(loc="best", bbox_to_anchor=(0.98, 0.98))
-# plt.savefig("F:/works/figs/pk_scatter.pdf",bbox_inches='tight')
+# plt.savefig("F:/pk_scatter.pdf",bbox_inches='tight')
 # plt.show()
 
 
-data_path = "F:\works\selection_bias\galsim\\bright_20-23.5_48x48_galsim\sym\sex2_1.5/"
+data_path = "G:\galsim\\normal_20_24.8_64x64_galsim_3\sym\sex2_1.5/"
 data_path = data_path.replace("\\", "/")
-names = ["P$_{k0}$", "P$_{k0}$-fit", "MAX(P$_{k0}$,P$_{k0}$-fit)","MAG$_{true}$"]
-files = ["flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex5"]
+names = ["P$_{k0}$", "P$_{k0}$-fit", "MAX(P$_{k0}$,P$_{k0}$-fit)","MAG$_{true}$", "MAG_AUTO"]
+files = ["flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex5", "mag_auto"]
 
 ch_num = 9
 cuts_num = 10
 x_coord = [i * cuts_num for i in range(ch_num)]
 ch = [i for i in range(ch_num)]
 
-plt_item = 1
+plt_item = 0
+
 ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$",
            "c$_1 \\times 10^4$", "c$_2 \\times 10^4$"]
 mc_item = ["m1", "m2", "c1", "c2"]
-pic_name = "F:/works/figs/pk_comp.pdf"
+pic_name = data_path + "pk_comp_%s.pdf"%mc_item[plt_item]
 for i in range(len(files)):
     npz_path = data_path+files[i]+"/total.npz"
     print(os.path.exists(npz_path))
@@ -120,7 +121,7 @@ xs = ax.set_xlim()
 ys = ax.set_ylim()
 ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
 ax.set_xlim(xs[0], xs[1])
-ax.set_ylim(ys[0], ys[1]+0.3)
+ax.set_ylim(ys[0], ys[1]+0.5)
 ax.xaxis.set_major_formatter(xticks)
 ax.legend(ncol=2,fontsize=xy_lb_size)
 ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)

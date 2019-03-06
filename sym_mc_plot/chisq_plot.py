@@ -1,6 +1,6 @@
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
-from sys import path, argv
+from sys import path
 path.append('%s/work/fourier_quad/' % my_home)
 import numpy
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ for i in range(8):
     ax = fig.add_subplot(241 + i)
     axs.append(ax)
 
-sources = [5,6]
+sources = [int(argv[2]), int(argv[3])]
 bin_num = 12
 
 total_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/"
@@ -70,23 +70,13 @@ shear_cata = total_path + "parameters/shear.npz"
 shear = numpy.load(shear_cata)
 
 
-
-# para_path = total_path + "parameters/para_%d.hdf5"%source
-# para_h5 = h5py.File(para_path, "r")
-# mag_t = para_h5["/mag"].value
-# # e1 = para_h5["/e1"].value
-# e1 = para_h5["/%s"%argv[2]].value
-# para_h5.close()
-# bins = tool_box.set_bin(e1, int(argv[3]), 1.02)
-# bins = numpy.linspace(-0.81,0.81, int(argv[1]))
-# print(bins)
-
 locs = ["upper left", "lower left"]
 for m in range(2):
     source = sources[m]
     g1 = shear["arr_0"][source]
     g2 = shear["arr_1"][source]
 
+    # point source
     fourier_path = total_path + "result/data/data_%d.hdf5"%source
     f_h5 = h5py.File(fourier_path, "r")
     es_data = f_h5["/data"].value
@@ -96,8 +86,9 @@ for m in range(2):
     else:
         idx = 1
     e1 = es_data[:,idx]
-    ch = numpy.random.choice(range(len(e1)), 10000, replace=False)
+    # ch = numpy.random.choice(range(len(e1)), 10000, replace=False)
 
+    # galsim
     # para_path = total_path + "parameters/para_%d.hdf5"%source
     # para_h5 = h5py.File(para_path, "r")
     # mag_t = para_h5["/mag"].value
@@ -139,9 +130,6 @@ for m in range(2):
 
     labels = ["P$_{k0}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO", "MAG_TRUE_f", "MAG_TRUE_s"]
     cuts_num = 10
-    # rng = numpy.random.RandomState(123)
-    #
-    # ch = rng.choice(range(4000000), 30000, replace=False)
 
     plt_ys = [0, 0]
     plt_xs = [0, 0]
@@ -160,21 +148,6 @@ for m in range(2):
             # ax.hist(e1[detect_s], bins, alpha=0.8, label="SExtractor")
             xi_s, xi = G_bin(e1[detect_s], bins)
             axs[ax_tag].errorbar(range(1,len(xi)+1), xi,  marker="s",label="Detected")
-
-
-        # ax.scatter(e1[idx][ch], cut_data[i][idx][ch], s=0.05)
-        # ax.set_xlabel("e2")
-        # xs = ax.set_xlim()
-        # ys = ax.set_ylim()
-        # if i < 4:
-        #     y_span = ys[0] + (cutoff_scalar[6] - ys[0])*1.3
-        #     for j in range(1,4):
-        #         cut_line = cutoff_scalar[j*2]
-        #         ax.plot([xs[0], xs[1]],[cut_line, cut_line],linestyle="--",label="%d0%%"%(j*2))
-        #     ax.legend(ncol=4)
-            # ax.set_ylim(ys[0],y_span)
-        # print(labels[i], cutoff_scalar)
-
         cut_data_sort = numpy.sort(cut_data[i][idx])
         cut_data_step = int(len(cut_data_sort) / cuts_num)
         cutoff_scalar = [cut_data_sort[i * cut_data_step] for i in range(cuts_num)]
@@ -194,22 +167,7 @@ for m in range(2):
 
             idx_scale = cut_data[i] >= cut_s
             xi_s, xi = G_bin(e1[idx&idx_scale], bins)
-            # print(lb, xi_s)
             axs[ax_tag].errorbar(range(1,len(xi)+1), xi,  marker="s", label=lb)
-            # tag = numpy.where(cut_s == cut_data[i][idx])
-            # mag_t_ch = mag_t[idx][:,0][tag[0].tolist()]
-            # mag_t_max, mag_t_min = mag_t_ch.max(), mag_t_ch.min()
-            # mag_refer = mag_t[idx][tag]
-
-            # print(labels[i], cut_s, tag)
-            # print(labels[i], mag_t_max, mag_t_min)
-
-            # if mag_t_max == mag_t_min:
-            #     mag_refer = mag_t_max
-            #     ax.plot([mag_refer, mag_refer], [ys[0], ys[1]],  linestyle=lines, label=lb)
-            # else:
-            #     ax.plot([mag_t_min, mag_t_min], [ys[0], ys[1]],  linestyle=lines, label=lb+"_min")
-            #     ax.plot([mag_t_max, mag_t_max], [ys[0], ys[1]],  linestyle=lines, label=lb+"_max")
         ys = axs[ax_tag].set_ylim()
         xs = axs[ax_tag].set_xlim()
         if ys[1] > plt_ys[1]:
@@ -234,7 +192,7 @@ for m in range(2):
             if "e1" == argv[1]:
                 e_label = "$\chi^2$ of e$_1$ (g1=%.2f)"%g1
             else:
-                e_label = "$\chi^2 of e$_1$ (g2=%.2f)"%g2
+                e_label = "$\chi^2$ of e$_2$ (g2=%.2f)"%g2
             axs[ax_tag].set_ylabel(e_label, fontsize=fonts)
         if m == 1:
             axs[ax_tag].set_xlabel("Bin label", fontsize=fonts)

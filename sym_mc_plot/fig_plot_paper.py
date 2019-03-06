@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.ticker import ScalarFormatter
 from sys import path
-path.append('D:/Github/astrophy-research/my_lib')
+path.append('E:/Github/astrophy-research/my_lib')
 import tool_box
 import h5py
 
@@ -25,9 +25,9 @@ for axis in ["bottom", "left", "top", "right"]:
     # the line width of the frame
     ax.spines[axis].set_linewidth(axis_linewidth)
 ax.xaxis.set_tick_params(which="both",direction="in",length=6, width=axis_linewidth)
-data_path = "F:\works\selection_bias\point\\100_point_20-25\sym\sex2_1.5/"
+data_path = "G:\galsim\\normal_20_24.8_64x64_galsim_3\sym\sex2_1.5/"
 data_path = data_path.replace("\\","/")
-names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR", "SNR_AUTO"]
+names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "SNR$_A$"]
 files = ["flux2_ex1","mag_auto", "flux2_ex5","sex_snr","snr_auto"]
 
 ch_num = 9
@@ -35,17 +35,17 @@ cuts_num = 10
 x_coord = [i * cuts_num for i in range(ch_num)]
 ch = [i for i in range(ch_num)]
 
-plt_item = 3
+plt_item = 0
 ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$",
            "c$_1 \\times 10^4$", "c$_2 \\times 10^4$"]
 mc_item = ["m1", "m2", "c1", "c2"]
-pic_name = mc_item[plt_item] + "_pts_b.pdf"
+pic_name = mc_item[plt_item] + "_galsim_b.pdf"
 for i in range(len(files)):
     data = numpy.load(data_path+files[i]+"/total.npz")
     mc1 = data['arr_0'][:, ch]
     mc2 = data['arr_1'][:, ch]
     if i == 2:
-        line_style ="-"
+        line_style = "-"
     else:
         line_style = "-"
     if plt_item == 0:
@@ -68,7 +68,7 @@ xs = ax.set_xlim()
 ys = ax.set_ylim()
 ax.plot([xs[0],100],[0,0], linewidth=plt_line_width, c="grey", linestyle="--")
 ax.set_xlim(xs[0], xs[1])
-ax.set_ylim(ys[0], ys[1]+0.3)
+ax.set_ylim(ys[0]-0.4, ys[1]+0.1)
 ax.xaxis.set_major_formatter(xticks)
 ax.legend(ncol=2,fontsize=xy_lb_size)
 ax.set_xlabel("Cutoff percentage",fontsize=xy_lb_size)
