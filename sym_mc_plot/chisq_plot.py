@@ -180,7 +180,7 @@ for m in range(2):
             plt_xs[0] = xs[0]
         axs[ax_tag].legend(loc=locs[m], fontsize=legend_size)
     # ax.set_ylim(ys[0], ys[1])
-    print(plt_xs, plt_ys)
+    # print(plt_xs, plt_ys)
 
     for i in range(4):
         ax_tag = m * 4 + i
@@ -207,5 +207,5 @@ for m in range(2):
         axs[ax_tag].yaxis.set_tick_params(which="minor",direction="in",length=5, width=axis_linewidth)
     print(g1, g2)
 plt.subplots_adjust(wspace=0, hspace=0)
-plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/chisq.pdf",bbox_inches='tight')
+plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s.pdf"%(argv[1], argv[2], argv[3]),bbox_inches='tight')
 

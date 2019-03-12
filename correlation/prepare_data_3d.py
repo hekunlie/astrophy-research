@@ -234,7 +234,7 @@ if cmd == "collect":
 
     print(rank, num)
     # stack the sub-catalogs from each area
-    if rank < 0:
+    if rank < 1:
         fig1 = plt.figure(figsize=(14, 14))
         fig2 = plt.figure(figsize=(14, 14))
         fig3 = plt.figure(figsize=(14, 14))

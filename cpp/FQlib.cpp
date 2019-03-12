@@ -132,6 +132,46 @@ void read_para(const std::string path, const std::string name, int &para)
 }
 
 
+void read_text(const std::string path, double *arr, const int start_line, const int read_lines, const int read_cols)
+{
+	// start_line counts from 0 not 1 !!!
+	int i = start_line, ie = start_line+read_lines, j;
+	std::ifstream infile;
+	std::string str;
+	std::string *strs= new std::string[read_cols];
+	std::stringstream strs_;
+
+	infile.open(path);
+
+	while (i<ie)
+	{	
+		// clear the string before assignment
+		str.clear();	
+
+		// read the line
+		getline(infile, str);
+
+		if (i >= start_line)
+		{
+			strs_.clear();
+			// assign the contents to stringstream
+			strs_ << str;
+			for (j = 0; j < read_cols; j++)
+			{
+				strs[j].clear();
+				strs_ >> strs[j];
+				// to the array
+				arr[(i - start_line)*read_cols + j] = std::stod(strs[j]);
+			}
+		}
+		i++;
+	}
+
+	infile.close();
+
+	delete[] strs;
+}
+
 void read_text(const std::string path, double *arr, const int read_lines)
 {
 	std::ifstream infile;
