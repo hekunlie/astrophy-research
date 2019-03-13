@@ -225,7 +225,7 @@ if cmd == "collect":
 
     print(rank, "the galaxy number in each area", num)
     # stack the sub-catalogs from each area
-    if rank < 1:
+    if rank == 0:
         fig1 = plt.figure(figsize=(14, 14))
         fig2 = plt.figure(figsize=(14, 14))
         fig3 = plt.figure(figsize=(14, 14))
@@ -262,13 +262,16 @@ if cmd == "collect":
                 data = temp_s
             else:
                 data = numpy.row_stack((data, temp_s))
-        fig1.savefig(data_path + "Ra_dec_%s.png"%result_source)
-        fig2.savefig(data_path + "Z_%s.png"%result_source)
-        fig3.savefig(data_path + "Mag_%s.png"%result_source)
-        plt.close()
-        h5f["/total"] = data
+            print("Totally, %d galaxies are detected in W_%d" % (len(temp_s), area_id))
 
+        fig1.savefig(data_path + "pic/Ra_dec_%s.png"%result_source)
+        fig2.savefig(data_path + "pic/Z_%s.png"%result_source)
+        fig3.savefig(data_path + "pic/Mag_%s.png"%result_source)
+        plt.close()
+
+        h5f["/total"] = data
         h5f.close()
+
     t2 = time.time()
     if rank == 0:
-        print(t2-t1)
+        print(t2-t1, len(data))
