@@ -398,7 +398,7 @@ void write_h5_attrs(const char *filename, const char *set_name, const char *attr
 	status = H5Fclose(file_id);
 }
 
-void creat_h5_group(const char *filename, const char *set_name, const bool trunc)
+void create_h5_group(const char *filename, const char *set_name, const bool trunc)
 {
 	int i, j, m, count = 0, s_count = 0;
 
@@ -514,13 +514,13 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
-	std::cout << set_name << std::endl;
-	std::cout << name << std::endl;
-	std::cout << new_name << std::endl;
-	show_arr(slash, 1, count);
-	std::cout << std::endl;
+	//std::cout << set_name << std::endl;
+	//std::cout << name << std::endl;
+	//std::cout << new_name << std::endl;
+	//show_arr(slash, 1, count);
+	//std::cout << std::endl;
 	// try to create /a/b
-	creat_h5_group(filename, name, trunc);
+	create_h5_group(filename, name, trunc);
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
@@ -587,13 +587,13 @@ void write_h5(const char *filename, const char *set_name, const float*data, cons
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
-	std::cout << set_name << std::endl;
-	std::cout << name << std::endl;
-	std::cout << new_name << std::endl;
-	show_arr(slash, 1, count);
-	std::cout << std::endl;
+	//std::cout << set_name << std::endl;
+	//std::cout << name << std::endl;
+	//std::cout << new_name << std::endl;
+	//show_arr(slash, 1, count);
+	//std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
-	creat_h5_group(filename, name, trunc);
+	create_h5_group(filename, name, trunc);
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
@@ -660,13 +660,13 @@ void write_h5(const char *filename, const char *set_name, const int*data, const 
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
-	std::cout << set_name << std::endl;
-	std::cout << name << std::endl;
-	std::cout << new_name << std::endl;
-	show_arr(slash, 1, count);
-	std::cout << std::endl;
+	//std::cout << set_name << std::endl;
+	//std::cout << name << std::endl;
+	//std::cout << new_name << std::endl;
+	//show_arr(slash, 1, count);
+	//std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
-	creat_h5_group(filename, name, trunc);
+	create_h5_group(filename, name, trunc);
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
@@ -734,13 +734,13 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 		new_name[i - slash[s_count - 1] - 1] = set_name[i];
 	}
 	new_name[slash[s_count] - slash[s_count - 1] - 1] = '\0';
-	std::cout << set_name << std::endl;
-	std::cout << name << std::endl;
-	std::cout << new_name << std::endl;
-	show_arr(slash, 1, count);
-	std::cout << std::endl;
+	//std::cout << set_name << std::endl;
+	//std::cout << name << std::endl;
+	//std::cout << new_name << std::endl;
+	//show_arr(slash, 1, count);
+	//std::cout << std::endl;
 	// try to create /a/b if it doesn't exist 
-	creat_h5_group(filename, name, trunc);
+	create_h5_group(filename, name, trunc);
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
@@ -2425,6 +2425,67 @@ double chisq_2d(const int *hist_arr, const int size)
 	return chi * 0.5;
 }
 
+/********************************************************************************************************************************************/
+/* cosmology */
+/********************************************************************************************************************************************/
+void com_distance(const double low_z, const double high_z, const double precision_thresh, const double omg_m, const double omg_lam, double &result)
+{
+	int i, j, bin_num;
+	int max_run = 500;
+	double result_1, result_2, d_res;
+	double dz, z1, z2;
+
+	bin_num = 20;
+	result_1 = 0;
+	for (i = 0; i < max_run; i++)
+	{
+		dz = (high_z - low_z) / bin_num;
+		result_2 = 0;
+		for (j = 0; j < bin_num; j++)
+		{
+			z1 = low_z + j * dz;
+			z2 = z1 + dz;
+			result_2 = result_2 + 1. / sqrt(pow(1 + z1, 3)*omg_m + omg_lam) + 1. / sqrt(pow(1 + z2, 3)*omg_m + omg_lam);
+			//result_2 = result_2 + 1. / sqrt(z1*omg_m + pow(z1, 4)*omg_lam) + 1. / sqrt(z2*omg_m + pow(z2, 4)*omg_lam);
+		}
+		result_2 = result_2 * dz*0.5;
+
+		if (fabs(result_2 - result_1) <= precision_thresh)
+		{
+			result = (result_2 + result_1) *0.5;
+			break;
+		}
+		else
+		{
+			result_1 = result_2;
+			bin_num *= 2;
+		}
+	}
+	if (i == max_run)
+	{
+		std::cout << "Max iteration, doesn't converge, " << result_2 - result_1 << "." << std::endl;
+		exit(0);
+	}
+}
+
+void log_bin(const double start, const double end, const int num, double * bins)
+{
+	double st, et, dp;
+	int i;
+	if (start <= 0 or end <= 0 or start >= end)
+	{
+		std::cout << "Wrong start- or end-point !!!" << std::endl;
+		exit(0);
+	}
+	st = log10(start);
+	et = log10(end);
+	dp = (et - st) / (num - 1);
+
+	for (i = 0; i < num; i++)
+	{
+		bins[i] = pow(10, st + i * dp);
+	}
+}
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/

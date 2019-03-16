@@ -19,13 +19,10 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 cmd = argv[1]
-cmds = ["collect","redshift","grid"]
+cmds = ["collect", "select"]
 
 # collect: collect the data from the files. run it firstly
-# redshift: divide the data from "collect" into several redshift bins
-#           the data will be cut off (nstar, flux_alt, redshift..).
-#           run it before "grid"
-# grid: divide the data into the grid
+# select: select the galaxy
 
 if cmd not in cmds:
     if rank == 0:
@@ -239,7 +236,7 @@ if cmd == "collect":
             red_z = temp[:, -3]
             idxz_1 = red_z < z_max
             idxz_2 = red_z > z_min
-            temp_s = temp#[idxz_1&idxz_2]
+            temp_s = temp[idxz_1&idxz_2]
 
             # show the range of RA & DEC
             print(area_id, temp_s.shape,temp_s[:,12].min()*60, temp_s[:,12].max()*60,
@@ -275,3 +272,73 @@ if cmd == "collect":
     t2 = time.time()
     if rank == 0:
         print(t2-t1, len(data))
+
+if cmd == "select":
+    t1 = time.time()
+
+    h5f_path = data_path + "cata_%s.hdf5" % result_source
+    h5f_path_cut = data_path + "cata_%s_cut.hdf5" % result_source
+
+    if rank == 0:
+        h5f = h5py.File(h5f_path_cut, "w")
+        h5f.close()
+    comm.Barrier()
+
+    if rank < area_num:
+        h5f = h5py.File(h5f_path, "r")
+        cata_data = h5f["/w_%d"%(rank+1)].value
+        h5f.close()
+
+        # cut off
+        flux_alt_idx = cata_data[:, flux_alt_lb] >= flux_alt_thresh
+        nstar_idx = cata_data[:, nstar_lb] >= nstar_thresh
+        total_area_idx = cata_data[:, total_area_lb] >= total_area_thresh
+
+        fg1 = numpy.abs(cata_data[:, field_g1_lb])
+        fg2 = numpy.abs(cata_data[:, field_g2_lb])
+
+        fg1_idx = fg1 <= field_g1_bound
+        fg2_idx = fg2 <= field_g2_bound
+
+        redshift = cata_data[:, z_lb]
+        idxz_1 = redshift <= z_max
+        idxz_2 = redshift >= z_min
+
+        cut_idx = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx & idxz_1 & idxz_2
+
+        fg1 = fg1[cut_idx]
+        fg2 = fg2[cut_idx]
+
+        # the esitmators
+        mn = cata_data[:, mn_lb][cut_idx]
+        mu = cata_data[:, mu_lb][cut_idx]
+        mv = cata_data[:, mv_lb][cut_idx]
+        # correction due to additive bias and field distortion
+        mg1 = cata_data[:, mg1_lb][cut_idx] - fg1 * (mn + mu) - fg2 * mv
+        mg2 = cata_data[:, mg2_lb][cut_idx] - (fg2 + c2_correction) * (mn - mu) - fg1 * mv
+
+        ra = cata_data[:, ra_lb][cut_idx] * 60
+        dec = cata_data[:, dec_lb][cut_idx] * 60
+        redshift = cata_data[:, z_lb][cut_idx]
+
+        gal_num = len(mg1)
+        ra_min, ra_max = ra.min(),ra.max()
+        dec_min, dec_max = dec.min(), dec.max()
+
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv]
+        data_num = len(redshift)
+
+    comm.Barrier()
+
+    for area_id in range(area_num):
+        if rank == area_id:
+            h5f = h5py.File(h5f_path_cut, "r+")
+            for i in range(len(names)):
+                h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
+                h5f["/w_%d/%s" % (rank+1, names[i])].attrs["shape"] = numpy.array([data_num,1], dtype=numpy.intc)
+            h5f.close()
+        comm.Barrier()
+    t2 = time.time()
+    if rank == 0:
+        print(t2-t1, data_num)

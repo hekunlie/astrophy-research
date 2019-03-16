@@ -92,7 +92,7 @@ grid_cols = int((ra_max - ra_min) / block_scale + 1)
 
 # the foreground
 fig, ax = plt.subplots(figsize=(15,15))
-idx_m1 = mag < 23.5
+idx_m1 = mag < 19.5
 idx_m2 = mag > 0
 
 idx_z = redshift < 0.3
@@ -119,7 +119,7 @@ cbar = matplotlib.colorbar.ColorbarBase(cax, cmap=cmap, norm=normalize)
 
 plt.savefig(pic_path+"w_%d_fore.png"%(rank+1))
 plt.close()
-
+print("fore",len(ra[idxs]))
 
 # all galaxies
 fig, ax = plt.subplots(figsize=(15,15))
@@ -150,7 +150,7 @@ idx_g = star_flag == 0
 idxs = idx_m1&idx_m2&idx_g
 
 # print(rank, mag.shape[0], idxs.sum())
-h5f = h5py.File(data_path+"cata_result_ext.hdf5","r")
+h5f = h5py.File(data_path+"cata_result_ext.hdf5", "r")
 data = h5f["/w_%d"%(rank+1)].value
 h5f.close()
 

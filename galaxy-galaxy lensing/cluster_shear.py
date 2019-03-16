@@ -59,7 +59,7 @@ mv_lb = int(para_items[10])
 z_lb = -3
 mag_lb = -2
 
-block_scale = 50
+block_scale = 60
 margin = 0.5
 
 flux_alt_thresh = 8.77
@@ -89,13 +89,15 @@ fg2_idx = fg2 <= field_g2_bound
 
 cut_idx = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx
 
+fg1 = fg1[cut_idx]
+fg2 = fg2[cut_idx]
 
 # the esitmators
-mg1 = cat_data[:, mg1_lb][cut_idx]
 mn = cat_data[:, mn_lb][cut_idx]
 mu = cat_data[:, mu_lb][cut_idx]
 mv = cat_data[:, mv_lb][cut_idx]
-mg2 = cat_data[:, mg2_lb][cut_idx] - c2_correction*(mn - mu)
+mg1 = cat_data[:, mg1_lb][cut_idx] - fg1*(mn+mu) - fg2*mv
+mg2 = cat_data[:, mg2_lb][cut_idx] - (fg2 + c2_correction)*(mn-mu) - fg1*mv
 
 ra = cat_data[:,ra_lb][cut_idx] * 60
 dec = cat_data[:,dec_lb][cut_idx] * 60
@@ -110,6 +112,7 @@ dec_bin = numpy.array([dec_min + i * block_scale for i in range(grid_rows + 1)])
 ra_bin = numpy.array([ra_min + i * block_scale for i in range(grid_cols + 1)])
 
 if rank == 0:
+
     fig, ax = plt.subplots(figsize=(10, 10))
     nums = numpy.histogram2d(dec, ra, [dec_bin, ra_bin])[0]
     numpy.savez(pic_path+"w_%d_num.npz"%(rank+1), nums)
@@ -139,7 +142,7 @@ for grid in my_grid:
     mg2_ = mg2[idxs]
     mnu1 = mn[idxs] + mu[idxs]
     mnu2 = mn[idxs] - mu[idxs]
-    print(len(mg1_))
+    print(row, col, len(mg1_))
     g1, g1_sig = fq.fmin_g_new(mg1_, mnu1, bin_num=8)
     g2, g2_sig = fq.fmin_g_new(mg2_, mnu2, bin_num=8)
 
@@ -158,4 +161,6 @@ else:
         comm.Recv(recvs, source=procs, tag=procs)
         shear_final += recvs
         shear_array = numpy.row_stack((shear_array, recvs))
-    numpy.savez(data_path + "w_1_shear.npz",shear_final, shear_array)
+    numpy.savez(data_path + "w_%d_shear.npz"%area_id,
+                shear_final, shear_array,numpy.array([grid_rows, grid_cols]), numpy.array([ra_min, ra_max, dec_min, dec_max]))
+

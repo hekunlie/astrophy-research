@@ -174,7 +174,7 @@ void write_h5_attrs(const char *filename, const char *set_name, const char *attr
 /* the attributes must be attached to the non-root directory, or it will rasie the error "/".
 	flag: "d" for data set, "g" for data group
 */
-void creat_h5_group(const char *filename, const char *set_name, const bool trunc);//checked
+void create_h5_group(const char *filename, const char *set_name, const bool trunc);//checked
 /* create the data group 
 */
 void write_h5(const char *filename, const char *set_name, const double *data, const int row, const int column, const bool trunc);//checked
@@ -314,6 +314,19 @@ double chisq_2d(const int *hist_arr, const int size);//checked
 /* 2d chi square for correlation calculation
 	hist_arr: the 2d histogram of G1, G1~ 
 */
+
+
+/********************************************************************************************************************************************/
+/* cosmology */
+/********************************************************************************************************************************************/
+void com_distance(const double low_z, const double high_z, const double precision_thresh, const double omg_m, const double omg_lam, double &result);
+/* calculate the comoving distance (without the c/H_0 parameter). There are only matter and dark energy in the universe */
+
+void log_bin(const double start, const double end, const int num, double * bins);
+/* the loggrithmical bin, including the start and end point
+	num: the number of bin borders
+*/
+
 
 /********************************************************************************************************************************************/
 /* random */
