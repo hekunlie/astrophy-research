@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 	char logs[200];
 	sprintf(file_name, "test.hdf5");
 	sprintf(set_name, "/a/b/c");
-	creat_h5_group(file_name, set_name, TRUE);
+	create_h5_group(file_name, set_name, TRUE);
 	//sprintf(set_name, "/a/b");
 	//creat_h5_group(name, set_name, FALSE);
 	//sprintf(set_name, "/a/b/c/c1");

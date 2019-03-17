@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 
 	char  attrs_name[50];
 	int shape[2];
+	double scale[1];
 	double red_bin[2];
 	char set_name[50],*names[13];
 	for (i = 0; i < 13; i++)
@@ -81,12 +82,16 @@ int main(int argc, char *argv[])
 		sprintf(set_name, "/foreground");
 		create_h5_group(h5f_path_2, set_name, TRUE);
 
+		sprintf(attrs_name, "block_scale");
+		scale[0] = block_scale;
+
 		for (i = 1; i < area_num + 1; i++)
 		{
 			sprintf(set_name, "/foreground/w_%d", i);
 			create_h5_group(h5f_path_2, set_name, FALSE);
 			sprintf(set_name, "/background/w_%d", i);
 			create_h5_group(h5f_path_2, set_name, FALSE);
+			write_h5_attrs(h5f_path_2, set_name, attrs_name, scale, 1, "g");
 		}
 
 		sprintf(attrs_name, "redshift_bin");
@@ -241,6 +246,19 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/background/w_%d/%s", area_id, names[bdy_id]);
 			write_h5(h5f_path_2, set_name, block_boundy, grid_num, 4, FALSE);
 			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+
+			shape[0] = grid_nx+1;
+			shape[1] = 1;
+			sprintf(set_name, "/background/w_%d/RA_bin", area_id);
+			write_h5(h5f_path_2, set_name, ra_bin, shape[0], shape[1], FALSE);
+			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+
+			shape[0] = grid_ny + 1;
+			shape[1] = 1;
+			sprintf(set_name, "/background/w_%d/DEC_bin", area_id);
+			write_h5(h5f_path_2, set_name, dec_bin, shape[0], shape[1], FALSE);
+			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+
 
 			delete[] block_boundx;
 			delete[] block_boundy;
