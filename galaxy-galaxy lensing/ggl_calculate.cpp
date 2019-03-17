@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
 	int foregal_num, gal_id;
 	double *foregal_data[3];
 	double z_f, ra_f, dec_f;
-
+	double dist_len, dist_source, dist_len_source;
+	double coeff;
 
 	int data_num;
 	int backgal_num;
@@ -30,6 +31,7 @@ int main(int argc, char *argv[])
 	int ra_bin_id = 13, dec_bin_id = 14;
 	double *backgal_data[13];
 	double z_b, ra_b, dec_b;
+
 	double *ra_bin, *dec_bin;
 	int ra_bin_num, dec_bin_num;
 	int my_gal_s, my_gal_e;
@@ -164,6 +166,7 @@ int main(int argc, char *argv[])
 		}
 	
 		// loop the foreground galaxy
+		coeff = 10.8 / C_0 / Pi;
 		for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 		{
 			z_f = foregal_data[z_id][gal_id];
@@ -188,8 +191,8 @@ int main(int argc, char *argv[])
 			// loop the search radius
 			for (rad_id = 0; rad_id < radius_num; rad_id++)
 			{				
-				radius_s = radius_bin[rad_id];
-				radius_e = radius_bin[rad_id + 1];
+				radius_s = radius_bin[rad_id]*coeff;
+				radius_e = radius_bin[rad_id + 1] * coeff;
 
 				// find the blocks needed
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);

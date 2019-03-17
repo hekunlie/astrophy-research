@@ -88,6 +88,8 @@ struct pts_info
 
 
 const double Pi = 3.1415926535897932384626433832795;
+const double C_0 = 2.99792458;
+const double H_0 = 70;
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 extern std::ofstream loggers;
@@ -470,6 +472,8 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+void find_near(const double *arr, const double tar_val, const int arr_len, int & label);
+/* find the label of the element in "arr" which is the nearest to "tar_val" */
 
 void check_buffer(double *target_arr, double *buffer, const int start_t, const int buffer_size, int & count, int count_line);
 /* if the count > count_line, the data in buffer will be added to the target_arr and be cleared then.

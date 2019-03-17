@@ -9,12 +9,11 @@ Comving distance:
 
 $$ dt = \frac{da}{\dot{a}} \Rightarrow -dw = \frac{cdt}{a} = \frac{cda}{a\dot{a}}=\frac{cda}{a^2H}$$
 
-$$ \begin{aligned}w(z_1,z_2) &= \frac{c}{H_0}\int_{a(z_2)}^{a(z_1)} \frac{da}{\sqrt{a\Omega_m + a^2(1-\Omega_m -\Omega_\Lambda) + a^4\Omega_\Lambda}}, z_1 < z_2 \\\\ 
-&= \frac{c}{H_0}\int_{z_1}^{z_2} \frac{dz}{\sqrt{(1+z)^3\Omega_m + (1+z)^2(1-\Omega_m -\Omega_\Lambda) + \Omega_\Lambda}}, z_1 < z_2 \\\\
-&= \frac{c}{H_0}\alpha(z_1, z_2) \end{aligned}$$
+$$ \begin{aligned}w(z_1,z_2) &= \frac{c}{H_0}\int_{a(z_2)}^{a(z_1)} \frac{da}{\sqrt{a\Omega_m + a^2(1-\Omega_m -\Omega_\Lambda) + a^4\Omega_\Lambda}}, z_1 < z_2 \\\\ &= \frac{c}{H_0}\int_{z_1}^{z_2} \frac{dz}{\sqrt{(1+z)^3\Omega_m + (1+z)^2(1-\Omega_m -\Omega_\Lambda) + \Omega_\Lambda}}, z_1 < z_2 \\\\ &= \frac{c}{H_0}\alpha(z_1, z_2) \end{aligned}$$
 
 The search radius is \\( R h^{-1} Mpc\\). Then, the search radius in arcmin is
 
-$$ \begin{aligned} &w\theta = \frac{c}{H_0}\theta\alpha(z_1, z_2) = \frac{c*10^5 Km\cdot s^{-1}}{100 h Km\cdot s^{-1} {Mpc}^{-1}}\theta \alpha(z_1,z_2) = R h^{-1} Mpc \\\\ &\Rightarrow \theta = \frac{R}{1000c\alpha(z_1,z_2)}*\frac{180*60}{\pi} = \frac{10.8R}{c\pi\alpha(z_1, z_2)}\end{aligned}$$
+$$\begin{aligned} & w \theta = \frac{c}{H_0}\theta\alpha (z_1, z_2) = \frac{c\times10^5 Km\cdot s^{-1}}{100 h Km\cdot s^{-1} {Mpc}^{-1}}\theta \alpha(z_1,z_2) = R h^{-1} Mpc \\\\ \Rightarrow &\theta = \frac{ R }{1000 c \alpha (z_1,z_2)} \frac{180\times60}{\pi} = \frac{10.8 R}{c \pi \alpha (z_1, z_2)} \end{aligned}$$
 
 The \\(\alpha(z_1, z_2)\\) 
+

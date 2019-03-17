@@ -3282,6 +3282,47 @@ void matrix_inv(const double *arr, const int size, double *arr_inv)
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+void find_near(const double *arr, const double tar_val, const int arr_len, int &label)
+{
+	double near;
+	int sl, sm, sr, ds, tag;
+	sl = 0;
+	sr = arr_len - 1;
+	sm = int ((sr - sl)*0.5);
+	ds = sr - sl;
+	if (ds >= 4)
+	{
+		while (TRUE)
+		{
+			if (arr[sm] <= tar_val)
+			{
+				sl = sm;
+				sm = int((sr + sm)*0.5);
+			}
+			else
+			{
+				sr = sm;
+				sm = int((sl +sr)*0.5);
+			}
+			ds = sr - sl;
+			if (ds <= 4)
+			{
+				break;
+			}
+		}
+	}
+	near = fabs(arr[sr] - tar_val);
+	tag = sr;
+	for (int i = sr; i < sl + 1; i++)
+	{
+		if (fabs(arr[i] - tar_val) < near)
+		{
+			near = fabs(arr[i] - tar_val);
+			tag = i;
+		}
+	}
+	label = tag;
+}
 
 void check_buffer(double *target_arr, double *buffer, const int start_t, const int buffer_size, int & count, int count_line)
 {
