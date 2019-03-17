@@ -363,7 +363,7 @@ void write_h5_attrs(const char *filename, const char *set_name, const char *attr
 		status = H5Awrite(attrs_id, H5T_NATIVE_DOUBLE, attrs_buffer);
 		status = H5Aclose(attrs_id);
 		status = H5Sclose(dataspace_id);
-		status = H5Dclose(dataset_id);
+		status = H5Gclose(dataset_id);
 	}
 	status = H5Fclose(file_id);
 }
@@ -393,7 +393,7 @@ void write_h5_attrs(const char *filename, const char *set_name, const char *attr
 		status = H5Awrite(attrs_id, H5T_NATIVE_INT, attrs_buffer);
 		status = H5Aclose(attrs_id);
 		status = H5Sclose(dataspace_id);
-		status = H5Dclose(dataset_id);
+		status = H5Gclose(dataset_id);
 	}
 	status = H5Fclose(file_id);
 }
@@ -503,11 +503,21 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 	// the set_name is something like /a/b/c
 	// the dataset will be under c,while /a/b must be created before
 	// the "c" is in the "new_names",  "/a/b" in "names"
-	for (i = 0; i < slash[s_count - 1]; i++)
+	if (s_count > 1)
 	{
-		name[i] = set_name[i];
+		// the case like /a/b, /a/b/c...
+		for (i = 0; i < slash[s_count - 1]; i++)
+		{
+			name[i] = set_name[i];
+		}
+		name[slash[s_count - 1]] = '\0';
 	}
-	name[slash[s_count - 1] ] = '\0';
+	else
+	{
+		// the case like /a
+		name[0] = '/';
+		name[1] = '\0';
+	}
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
@@ -518,7 +528,7 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 	//std::cout << name << std::endl;
 	//std::cout << new_name << std::endl;
 	//show_arr(slash, 1, count);
-	//std::cout << std::endl;
+	//std::cout << s_count << std::endl;
 	// try to create /a/b
 	create_h5_group(filename, name, trunc);
 
@@ -528,11 +538,12 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 	unsigned rank = 2;
 	dims[0] = row;
 	dims[1] = column;
-
+	
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 	group_id = H5Gopen1(file_id, name);
 	dataspace_id = H5Screate_simple(rank, dims, NULL);
 	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+
 	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 
 	status = H5Dclose(dataset_id);
@@ -576,11 +587,19 @@ void write_h5(const char *filename, const char *set_name, const float*data, cons
 	// the set_name is something like /a/b/c
 	// the dataset will be under c,while /a/b must be created before
 	// the "c" is in the "new_names",  "/a/b" in "names"
-	for (i = 0; i < slash[s_count - 1]; i++)
+	if (s_count > 1)
 	{
-		name[i] = set_name[i];
+		for (i = 0; i < slash[s_count - 1]; i++)
+		{
+			name[i] = set_name[i];
+		}
+		name[slash[s_count - 1]] = '\0';
 	}
-	name[slash[s_count - 1]] = '\0';
+	else
+	{
+		name[0] = '/';
+		name[1] = '\0';
+	}
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
@@ -649,11 +668,19 @@ void write_h5(const char *filename, const char *set_name, const int*data, const 
 	// the set_name is something like /a/b/c
 	// the dataset will be under c,while /a/b must be created before
 	// the "c" is in the "new_names",  "/a/b" in "names"
-	for (i = 0; i < slash[s_count - 1]; i++)
+	if (s_count > 1)
 	{
-		name[i] = set_name[i];
+		for (i = 0; i < slash[s_count - 1]; i++)
+		{
+			name[i] = set_name[i];
+		}
+		name[slash[s_count - 1]] = '\0';
 	}
-	name[slash[s_count - 1]] = '\0';
+	else
+	{
+		name[0] = '/';
+		name[1] = '\0';
+	}
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{
@@ -723,11 +750,19 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 	// the set_name is something like /a/b/c
 	// the dataset will be under c,while /a/b must be created before
 	// the "c" is in the "new_names",  "/a/b" in "names"
-	for (i = 0; i < slash[s_count - 1]; i++)
+	if (s_count > 1)
 	{
-		name[i] = set_name[i];
+		for (i = 0; i < slash[s_count - 1]; i++)
+		{
+			name[i] = set_name[i];
+		}
+		name[slash[s_count - 1]] = '\0';
 	}
-	name[slash[s_count - 1]] = '\0';
+	else
+	{
+		name[0] = '/';
+		name[1] = '\0';
+	}
 
 	for (i = slash[s_count - 1] + 1; i < slash[s_count]; i++)
 	{

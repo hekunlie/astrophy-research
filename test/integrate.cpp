@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 		
 		//distance(a1, a2, 0.00001, 0.31, 0.69, r);
 		com_distance(z1, z2, 0.00001, 0.31, 0.69, r);
-		distance(z1, z2, 0.00001, 0.31, 0.69, r1);
+		//distance(z1, z2, 0.00001, 0.31, 0.69, r1);
 	}
 	t2 = clock();
 
