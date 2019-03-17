@@ -3298,11 +3298,13 @@ void find_near(const double *arr, const double tar_val, const int arr_len, int &
 			{
 				sl = sm;
 				sm = int((sr + sm)*0.5);
+				//std::cout << sl << " " << sm << " " << sr << std::endl;
 			}
 			else
 			{
 				sr = sm;
 				sm = int((sl +sr)*0.5);
+				//std::cout << sl << " " << sm << " " << sr << std::endl;
 			}
 			ds = sr - sl;
 			if (ds <= 4)
@@ -3311,9 +3313,10 @@ void find_near(const double *arr, const double tar_val, const int arr_len, int &
 			}
 		}
 	}
+
 	near = fabs(arr[sr] - tar_val);
 	tag = sr;
-	for (int i = sr; i < sl + 1; i++)
+	for (int i = sl; i < sr + 1; i++)
 	{
 		if (fabs(arr[i] - tar_val) < near)
 		{

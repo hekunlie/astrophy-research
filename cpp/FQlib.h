@@ -472,7 +472,7 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
-void find_near(const double *arr, const double tar_val, const int arr_len, int & label);
+void find_near(const double *arr, const double tar_val, const int arr_len, int & label);//checked
 /* find the label of the element in "arr" which is the nearest to "tar_val" */
 
 void check_buffer(double *target_arr, double *buffer, const int start_t, const int buffer_size, int & count, int count_line);

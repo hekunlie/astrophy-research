@@ -15,7 +15,7 @@ void distance(double low_z, double high_z, double precision_thresh, double omg_m
 
 	num = 20;
 	
-	fbin1 = new double[pow(2,max_run)*(num-1)+1];
+	fbin1 = new double[int(pow(2,max_run)*(num-1)+1)];
 	tag1 = 1;
 
 	result_1 = 0;
@@ -94,7 +94,19 @@ int main(int argc, char *argv[])
 	double a1, a2, z1,z2;
 	double t1, t2;
 	int num;
-	
+	char data_path[150];
+	char set_name[50];
+	int i, j, k;
+	int tag;
+	double redshift[1001]{};
+	double distance[1001]{};
+	char log_inform[200];
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/redshift.hdf5");
+	sprintf(set_name, "/redshift");
+	read_h5(data_path, set_name, redshift);
+	sprintf(set_name, "/distance");
+	read_h5(data_path, set_name, distance);
+
 	
 	z1 = atof(argv[1]);
 	z2 = atof(argv[2]);
@@ -105,25 +117,28 @@ int main(int argc, char *argv[])
 	num = atoi(argv[3]);
 	std::cout << z1 << " " << z2 << std::endl;
 	double *bins = new double[num];
-	//log_bin(z1, z2, num, bins);
+	log_bin(z1+0.1, z2+1, num, bins);
 	//show_arr(bins, 1, num);
-	for (int i = 0; i < num; i++)
+	for ( i = 0; i < num; i++)
 	{
 		std::cout << log10(bins[i]) << ", ";
 	}
 	std::cout << std::endl;
 	double r,r1;
 	t1 = clock();
-	for (int i = 0; i < 1; i++)
+	for ( i = 0; i < 1; i++)
 	{
-		
-		//distance(a1, a2, 0.00001, 0.31, 0.69, r);
-		com_distance(z1, z2, 0.00001, 0.31, 0.69, r);
+		com_distance(z1, z2, 0.000001, 0.31, 0.69, r);
 		//distance(z1, z2, 0.00001, 0.31, 0.69, r1);
+		find_near(redshift, z2, 1001, tag);
 	}
 	t2 = clock();
+	sprintf(log_inform, "z1: %.3f, z2: %.3f. distance(z1, z2): %.7f. found z: %d %.3f (%.2f), distance(z1, z): %.7f. time: %4f sec", z1, z2, r, tag, redshift[tag], z2, distance[tag], (t2 - t1) / CLOCKS_PER_SEC);
+	std::cout <<log_inform << std::endl;
+
+
 
 	delete[] bins;
-	std::cout << r <<", "<<r1<<", "<< (t2-t1)/CLOCKS_PER_SEC<<std::endl;
+	
 	return 0;
 }

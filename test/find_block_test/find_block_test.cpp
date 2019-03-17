@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 	rad_s = std::atof(argv[2]);
 	rad_e = std::atof(argv[3]);
 	int seed = 100;
-	gsl_rng_initialize(seed+tag);
+	gsl_initialize(seed+tag);
 	block_bound(scale, ny, nx, boundy, boundx);
 	
 	std::cout << "X: " << std::endl;
@@ -197,6 +197,6 @@ int main(int argc, char* argv[])
 	delete[] boundx;
 	delete[] boundy;
 	delete[] mask;
-	gsl_rng_free();
+	gsl_free();
 	return 0;
 }

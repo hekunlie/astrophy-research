@@ -16,12 +16,23 @@ int main(int argc, char *argv[])
 	int i, j, k;
 	int area_id, area_num;
 	area_num = 4;
-	
+	int tag;
 	int foregal_num, gal_id;
 	double *foregal_data[3];
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_source;
 	double coeff;
+
+	// the chi and the shear guess
+	int g_num = 80;
+	double chi[80];
+	double gh[80];
+	double g_step;
+	g_step = 0.17 / 80;
+	for (i = 0; i < 80; i++)
+	{
+		gh[i] = -0.085 + i * g_step;
+	}
 
 	int data_num;
 	int backgal_num;
@@ -39,6 +50,7 @@ int main(int argc, char *argv[])
 
 	int grid_num, grid_ny, grid_nx;
 	int row, col, bin_label;
+	int block_id;
 	double block_scale[1];
 	int *block_mask;
 
@@ -86,7 +98,6 @@ int main(int argc, char *argv[])
 	red_num = shape[0];
 	redshifts = new double[red_num] {};
 	distances = new double[red_num] {};
-
 	read_h5(h5f_path, set_name, redshifts);
 	sprintf(set_name, "/distance");
 	read_h5(h5f_path, set_name, distances);
@@ -170,6 +181,9 @@ int main(int argc, char *argv[])
 		for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 		{
 			z_f = foregal_data[z_id][gal_id];
+			find_near(redshifts, z_f, red_num, tag);
+			dist_len = distances[tag];
+
 			ra_f = foregal_data[ra_id][gal_id];
 			dec_f = foregal_data[dec_id][gal_id];
 
@@ -191,16 +205,17 @@ int main(int argc, char *argv[])
 			// loop the search radius
 			for (rad_id = 0; rad_id < radius_num; rad_id++)
 			{				
-				radius_s = radius_bin[rad_id]*coeff;
-				radius_e = radius_bin[rad_id + 1] * coeff;
+				radius_s = radius_bin[rad_id] * coeff/dist_len;
+				radius_e = radius_bin[rad_id + 1] * coeff/dist_len;
 
 				// find the blocks needed
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
+				initialize_arr(chi, 80, 0);
 				// loop the found blocks and calculate
-				for (i = 0; i < grid_num; i++)
+				for (block_id = 0; block_id < grid_num; block_id++)
 				{
-					if (block_mask[i] > -1)
+					if (block_mask[block_id] > -1)
 					{
 
 					}
