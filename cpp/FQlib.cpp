@@ -2460,6 +2460,56 @@ double chisq_2d(const int *hist_arr, const int size)
 	return chi * 0.5;
 }
 
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig)
+{
+	// fit a 2nd order 1-D curve for estimate the shear.
+	// y = ax^2+bx + c
+
+	int i, count = 0;
+	int *mask = new int[num] {};
+	double min_chi = 0, chi_up;
+	double coeff[3];
+
+	// find the minimum
+	for (i = 0; i < num; i++)
+	{
+		if (chisq[i] < min_chi)
+		{
+			min_chi = chisq[i];
+		}
+	}
+	// find the width for fitting
+	for (i = 0; i < num; i++)
+	{
+		if (chisq[i] < min_chi + 40)
+		{
+			count++;
+			mask[i] = 1;
+		}
+	}
+	// for fitting
+	double *new_chisq = new double[count];
+	double *new_shear = new double[count];
+	count = 0;
+	for (i = 0; i < num; i++)
+	{
+		if (mask[i] == 1)
+		{
+			new_chisq[count] = chisq[i];
+			new_shear[count] = shear[i];
+			count++;
+		}
+	}
+	// g`= a1 + a2*g + a3*g^2
+	poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
+
+	gh = -coeff[1] / coeff[2]*0.5;
+	gh_sig = sqrt(0.5 / coeff[2]);
+
+	delete[] mask;
+	delete[] new_chisq;
+	delete[] new_shear;
+}
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
@@ -2862,6 +2912,58 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 	return fvals;
 }
 
+void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs)
+{
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+	int i, j, s;
+	int terms = order + 1;
+	double *cov_matrix = new double[terms*terms]{};
+	double *f_vector = new double[terms] {};
+	
+	cov_matrix_1d(x, fx, data_num, order, cov_matrix, f_vector);
+
+	gsl_matrix *cov_mat = gsl_matrix_alloc(terms, terms);
+	gsl_vector * vect_b = gsl_vector_alloc(terms);
+	gsl_matrix *mat_inv = gsl_matrix_alloc(terms, terms);
+	gsl_permutation *permu = gsl_permutation_alloc(terms);
+	gsl_vector *pamer = gsl_vector_alloc(terms);
+
+	for (j = 0; j < terms; j++)
+	{
+		gsl_vector_set(vect_b, j, f_vector[j]);
+	}
+
+	for (i = 0; i < terms; i++)
+	{
+		for (j = 0; j < terms; j++)
+		{
+			gsl_matrix_set(cov_mat, i, j, cov_matrix[i*terms + j]);
+		}
+	}
+
+	gsl_linalg_LU_decomp(cov_mat, permu, &s);
+	//gsl_linalg_LU_invert(cov_mat, permu, mat_inv);
+	gsl_linalg_LU_solve(cov_mat, permu, vect_b, pamer);
+
+	for (i = 0; i < terms; i++)
+	{
+		coeffs[i] = gsl_vector_get(pamer, i);
+	}
+
+	gsl_matrix_free(cov_mat);
+	gsl_vector_free(vect_b);
+	gsl_matrix_free(mat_inv);
+	gsl_vector_free(pamer);
+	gsl_permutation_free(permu);
+
+	delete[] cov_matrix;
+	delete[] f_vector;
+}
+
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
 {
 	double chi, c0, c1, cov00, cov01, cov11;
@@ -2909,7 +3011,7 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	double *f_vector = new double[terms] {};
 	double *check = new double[terms*terms]{};
 	
-	cov_martix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
+	cov_matrix_2d(x, y, fxy, data_num, order, cov_matrix, f_vector);
 
 	gsl_matrix *cov_mat = gsl_matrix_alloc( terms, terms);
 	gsl_vector * vect_b = gsl_vector_alloc(terms);
@@ -2950,7 +3052,55 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	delete[] check;
 }
 
-void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vector)
+void cov_matrix_1d(const double *x, const double *fx, const int data_num, const int order, double *cov_mat, double *f_vector)
+{
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+	int i, j, k, m;
+	int terms = order + 1;
+	double *xn = new double[(2*order+1)*data_num];
+	double elem_sum = 0;
+
+	for (j = 0; j < data_num; j++)
+	{
+		xn[j] = 1;
+		xn[data_num + j] = x[j];
+	}
+	for (i = 2; i < 2 * order + 1; i++)
+	{
+		for (j = 0; j < data_num; j++)
+		{
+			xn[i*data_num + j] = pow(x[j], i);
+		}	
+	}
+
+	for (i = 0; i < terms; i++)
+	{
+		elem_sum = 0;
+		for (m = 0; m < data_num; m++)
+		{
+			elem_sum += fx[m] * xn[i*data_num + m];
+		}
+		f_vector[i] = elem_sum;
+
+		for (j = 0; j < terms; j++)
+		{
+			elem_sum = 0;
+			for (k = 0; k < data_num; k++)
+			{
+				elem_sum += xn[(i + j)*data_num + k];
+			}
+			cov_mat[i*terms+ j] = elem_sum;
+		}
+	}
+
+	delete[] xn;
+}
+
+void cov_matrix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_mat, double *f_vector)
 {
 	// order >= 1;
 	if (order < 1)
@@ -3082,7 +3232,7 @@ void cov_martix_2d(const double *x, const double *y, const double *fxy, const in
 					}
 				}
 			}
-			cov_matrix[i*terms + j] = dn_sum;
+			cov_mat[i*terms + j] = dn_sum;
 		}
 	}
 
@@ -3621,6 +3771,21 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 	}
 }
 
+void histogram_s(const double data, const double *data_bin, const int bin_num, int &bin_label)
+{
+	int i;
+	// loop y-bins
+
+	for (i = 0; i < bin_num; i++)
+	{
+		if (data >= data_bin[i] and data < data_bin[i + 1])
+		{
+			bin_label = i;
+			break;
+		}
+	}
+
+}
 void histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num, int &bin_label)
 {
 	int i, j;

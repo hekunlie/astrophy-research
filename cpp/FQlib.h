@@ -317,6 +317,7 @@ double chisq_2d(const int *hist_arr, const int size);//checked
 	hist_arr: the 2d histogram of G1, G1~ 
 */
 
+void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig);
 
 /********************************************************************************************************************************************/
 /* cosmology */
@@ -387,6 +388,9 @@ void smooth_real(double*image, const double *coeffs, para *paras);
 
 void hyperfit_5(const double *data, double*fit_para, para *paras);//checked
 
+void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs);//checked
+/* fit y = a1 +a2*x +a3*x^2 + a4*x^3 ... */
+
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
 /* polynomial fitting by GSL
 	FX = c + m*X
@@ -425,7 +429,10 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 /* fit the stand deviation of background noise of the a chip
 */
 
-void cov_martix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);//checked
+void cov_matrix_1d(const double *x, const double *fx, const int data_num, const int order, double *cov_matrix, double *f_vector);//checked
+/* calculate the matrix on the left and right of the equation from the least square method to "order" */
+
+void cov_matrix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);//checked
 /*	 solve the matrix equation A*P = F which comes from the least square method ( not the eaquations A*X = Y)
 	A is the target covariance matrix which will be obtained by this method.
 	P is the vector of coefficients ( this method has nothing to do with it)
@@ -538,6 +545,7 @@ void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const in
 			 |							|
 	bin_num, y(x)bin_num: array
 */
+void histogram_s(const double data, const double *data_bins, int bin_num, int &bin_label);
 void histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num, int &bin_label);
 
 

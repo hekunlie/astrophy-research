@@ -398,10 +398,10 @@ def fit_1d(x, y, order, method):
     x = x*1.0
     if method == "lsq":
         pows = [[i + j for i in range(turns)] for j in range(turns)]
-        fxy = [numpy.sum(y * (x ** pows[0][i])) for i in range(turns)]
-        cov = [[numpy.sum(x**pows[i][j]) for i in range(turns)] for j in range(turns)]
-        res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
-        return res
+        fxy = numpy.array([numpy.sum(y * (x ** pows[0][i])) for i in range(turns)])
+        cov = numpy.array([[numpy.sum(x**pows[i][j]) for i in range(turns)] for j in range(turns)])
+        res = numpy.dot(numpy.linalg.inv(cov), fxy)
+        return res, cov, fxy
     elif method == "scipy":
         x = numpy.array([x**i for i in range(turns)]).T
         res = scipy.linalg.lstsq(x,y)[0]

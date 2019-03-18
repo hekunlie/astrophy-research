@@ -19,20 +19,12 @@ int main(int argc, char *argv[])
 	int tag;
 	int foregal_num, gal_id;
 	double *foregal_data[3];
+	double *foregal_g1,*foregal_g2, *foregal_gt,*foregal_gx;;
+	double *foregal_g1_sig, *foregal_g2_sig, *foregal_g_count, num_count;
+	double temp_g1, temp_g2;
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_source;
 	double coeff;
-
-	// the chi and the shear guess
-	int g_num = 80;
-	double chi[80];
-	double gh[80];
-	double g_step;
-	g_step = 0.17 / 80;
-	for (i = 0; i < 80; i++)
-	{
-		gh[i] = -0.085 + i * g_step;
-	}
 
 	int data_num;
 	int backgal_num;
@@ -41,22 +33,48 @@ int main(int argc, char *argv[])
 	int nib_id = 8, bs_id = 9, be_id = 10, bdy_id = 11, bdx_id = 12;
 	int ra_bin_id = 13, dec_bin_id = 14;
 	double *backgal_data[13];
-	double z_b, ra_b, dec_b;
+	int *backgal_mask;
+	double *backgal_cos_2phi, *backgal_sin_2phi;
+	double sin_phi, cos_phi;
+	double z_b, z_thresh, ra_b, dec_b;
+	double diff_ra, diff_dec, diff_r;
+	double back_mg1, back_mg2, back_mnu1, back_mnu2;
+	int back_tag;
+
 
 	double *ra_bin, *dec_bin;
 	int ra_bin_num, dec_bin_num;
 	int my_gal_s, my_gal_e;
 
+	// the chi and the shear guess
+	int g_num = 100, ig, ic, ig_label;
+	int mg_bin_num = 12, mg_bin_num2 = mg_bin_num/2;
+	double *mg1_bin = new double[mg_bin_num + 1];
+	double *mg2_bin = new double[mg_bin_num+1];
+	double *chi_1 = new double[mg_bin_num*g_num];
+	double *chi_2 = new double[mg_bin_num*g_num];
+	double *chisq_1 = new double[g_num];
+	double *chisq_2 = new double[g_num];
+	double *gh = new double[g_num];
+	double g_step;
+	double chi_temp1, chi_temp2;
+	double gh1, gh1_sig, gh2, gh2_sig;
+	g_step = 0.17 / g_num;
+	for (i = 0; i < g_num; i++)
+	{
+		gh[i] = -0.085 + i * g_step;
+	}
 
 	int grid_num, grid_ny, grid_nx;
 	int row, col, bin_label;
-	int block_id;
+	int block_id, block_s, block_e, ib;
 	double block_scale[1];
 	int *block_mask;
 
 
-	int radius_num, rad_id;
+	int radius_num, radi_id;
 	double radius_s, radius_e;
+	double radius_s_sq, radius_e_sq;
 	double *radius_bin;
 
 
@@ -127,7 +145,16 @@ int main(int argc, char *argv[])
 			foregal_data[i] = new double[foregal_num] {};			
 			read_h5(h5f_path, set_name, foregal_data[i]);
 		}
+		// each foreground galaxy has "radius_num" shears in "radius_num" radius.
+		foregal_g1 = new double[foregal_num*radius_num]{};
+		foregal_g2 = new double[foregal_num*radius_num]{};
+		foregal_g1_sig = new double[foregal_num*radius_num]{};
+		foregal_g2_sig = new double[foregal_num*radius_num]{};
 
+		foregal_gt = new double[foregal_num*radius_num]{};
+		foregal_gx = new double[foregal_num*radius_num]{};
+
+		foregal_g_count = new double[foregal_num*radius_num] {};
 
 		// read background information
 		sprintf(set_name, "/background/w_%d", area_id);
@@ -163,6 +190,14 @@ int main(int argc, char *argv[])
 			backgal_data[i] = new double[shape[0] * shape[1]] {};
 			read_h5(h5f_path, set_name, backgal_data[i]);
 		}
+		backgal_mask = new int[backgal_num] {};
+		backgal_cos_2phi = new double[backgal_num] {};
+		backgal_sin_2phi = new double[backgal_num] {};
+
+		// set the bins for g1 & g2 estimation
+		set_bin(backgal_data[mg1_id], backgal_num, mg1_bin, mg_bin_num+1, 100);
+		set_bin(backgal_data[mg2_id], backgal_num, mg2_bin, mg_bin_num+1, 100);
+
 
 		// task distribution
 		if (numprocs - 1 == rank)
@@ -181,6 +216,7 @@ int main(int argc, char *argv[])
 		for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 		{
 			z_f = foregal_data[z_id][gal_id];
+			z_thresh = z_f + 0.1;
 			find_near(redshifts, z_f, red_num, tag);
 			dist_len = distances[tag];
 
@@ -198,30 +234,113 @@ int main(int argc, char *argv[])
 			gal_info.ny = grid_ny;
 			gal_info.nx = grid_nx;
 			gal_info.blocks_num = grid_num;
-			gal_info.scale = block_scale[0];
+			gal_info.scale = block_scale[0];			
 
-			initialize_arr(block_mask, grid_num, -1);
-
-			// loop the search radius
-			for (rad_id = 0; rad_id < radius_num; rad_id++)
-			{				
-				radius_s = radius_bin[rad_id] * coeff/dist_len;
-				radius_e = radius_bin[rad_id + 1] * coeff/dist_len;
+			// loop the search radius//
+			for (radi_id = 0; radi_id < radius_num; radi_id++)
+			{	
+				// the searching radius depend on the redshift of lens
+				radius_s = radius_bin[radi_id] * coeff/dist_len;
+				radius_e = radius_bin[radi_id + 1] * coeff/dist_len;
+				radius_s_sq = radius_s * radius_s;
+				radius_e_sq = radius_e * radius_e;
 
 				// find the blocks needed
+				initialize_arr(block_mask, grid_num, -1);
+				initialize_arr(backgal_mask, backgal_num, 0);
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
-				initialize_arr(chi, 80, 0);
-				// loop the found blocks and calculate
+				initialize_arr(chi_1, mg_bin_num*g_num, 0);
+				initialize_arr(chi_2, mg_bin_num*g_num, 0);
+
+				
+				// loop the found blocks and calculate//
 				for (block_id = 0; block_id < grid_num; block_id++)
 				{
 					if (block_mask[block_id] > -1)
 					{
+						// the start and end point of the block
+						block_s = backgal_data[bs_id][block_id];
+						block_e = backgal_data[be_id][block_id];
+						for (ib = block_s; ib < block_e; ib++)
+						{
+							ra_b = backgal_data[ra_id][ib];
+							dec_b = backgal_data[dec_id][ib];
+							diff_ra = ra_b - ra_f;
+							diff_dec = dec_b - dec_f;
+							diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
 
+							if (diff_r >= radius_s_sq and diff_r < radius_e_sq and backgal_data[z_id][ib]>z_thresh)
+							{
+								backgal_mask[ib] = 1;
+
+								// the position angle of background galaxy respect to the foreground
+								backgal_cos_2phi[ib] = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_r;
+								backgal_sin_2phi[ib] = 2 * diff_ra*diff_dec / diff_r;
+
+								back_mnu1 = backgal_data[mn_id][ib] + backgal_data[mu_id][ib];
+								back_mnu2 = backgal_data[mn_id][ib] - backgal_data[mu_id][ib];
+
+								for (ig = 0; ig < g_num; ig++)
+								{
+									ig_label = ig * mg_bin_num;
+									back_mg1 = backgal_data[mg1_id][ib] - gh[ig] * back_mnu1;
+									back_mg2 = backgal_data[mg2_id][ib] - gh[ig] * back_mnu2;
+
+									histogram_s(back_mg1, mg1_bin, mg_bin_num, back_tag);
+									chi_1[ig_label + back_tag] += 1;
+
+									histogram_s(back_mg2, mg2_bin, mg_bin_num, back_tag);
+									chi_2[ig_label+back_tag] += 1;
+								}
+							}
+
+						}
 					}
 				}
 
+				// esitmate the shear in [raidus_s, radius_e]//
+				initialize_arr(chisq_1, g_num, 0);
+				initialize_arr(chisq_2, g_num, 0);
+				for (ig = 0; ig < g_num; ig++)
+				{	
+					ig_label = ig * mg_bin_num;
 
+					for (ic = 0; ic < mg_bin_num2; ic++)
+					{
+						chi_temp1 = chi_1[ig_label + mg_bin_num2 - ic] - chi_1[ig_label + ic + mg_bin_num2];
+						chi_temp2 = chi_1[ig_label + mg_bin_num2 - ic] + chi_1[ig_label + ic + mg_bin_num2];
+						chisq_1[ig] += chi_temp1 * chi_temp1 / chi_temp2;
+
+						chi_temp1 = chi_2[ig_label + mg_bin_num2 - ic] - chi_2[ig_label + ic + mg_bin_num2];
+						chi_temp2 = chi_2[ig_label + mg_bin_num2 - ic] + chi_2[ig_label + ic + mg_bin_num2];
+						chisq_2[ig] += chi_temp1 * chi_temp1 / chi_temp2;
+					}
+					chisq_1[ig] = chisq_1[ig] * 0.5;
+					chisq_2[ig] = chisq_2[ig] * 0.5;
+				}
+				fit_shear(gh, chisq_1, g_num, gh1, gh1_sig);
+				fit_shear(gh, chisq_2, g_num, gh2, gh2_sig);
+
+				foregal_g1[gal_id*radius_num + radi_id] = gh1;
+				foregal_g2[gal_id*radius_num + radi_id] = gh2;
+
+				foregal_g1_sig[gal_id*radius_num + radi_id] = gh1_sig;
+				foregal_g2_sig[gal_id*radius_num + radi_id] = gh2_sig;
+
+				for (ib = 0; ib < backgal_num; ib++)
+				{
+					if (backgal_mask[ib] == 1)
+					{
+						z_b = backgal_data[z_id][ib];
+						find_near(redshifts, z_b, red_num, tag);
+						dist_source = distances[tag];
+						dist_len_source = dist_source - dist_len;
+
+
+
+					}
+				}
 			}
 		}
 
@@ -235,7 +354,28 @@ int main(int argc, char *argv[])
 		{
 			delete[] backgal_data[i];
 		}
+		delete[] backgal_mask;
+		delete[] foregal_g1;
+		delete[] foregal_g2;
+		delete[] foregal_g1_sig;
+		delete[] foregal_g2_sig;
+		delete[] foregal_gt;
+		delete[] foregal_gx;
+		delete[] foregal_g_count;
+
+		delete[] backgal_sin_2phi;
+		delete[] backgal_cos_2phi;		
 	}
+
+	delete[] mg1_bin;
+	delete[] mg2_bin;
+	delete[] chi_1;
+	delete[] chi_2;
+	delete[] chisq_1;
+	delete[] chisq_2;
+	delete[] gh;
+
 	MPI_Finalize();
+
 	return 0;
 }
