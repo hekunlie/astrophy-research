@@ -15,10 +15,12 @@ int main(int argc, char *argv[])
 
 	int i, j, k;
 	int area_id, area_num;
+	int disp_unit;
 	area_num = 4;
 	int tag;
 	int foregal_num, gal_id;
 	double *foregal_data[3];
+	double *foregal_data_shared;
 	double *foregal_g1,*foregal_g2, *foregal_gt,*foregal_gx;;
 	double *foregal_g1_sig, *foregal_g2_sig, *foregal_g_count, pair_count;
 	double shear_tan, shear_cros;
@@ -34,6 +36,7 @@ int main(int argc, char *argv[])
 	int nib_id = 8, bs_id = 9, be_id = 10, bdy_id = 11, bdx_id = 12;
 	int ra_bin_id = 13, dec_bin_id = 14;
 	double *backgal_data[13];
+	double *backgal_data_shared;
 	int *backgal_mask;
 	double *backgal_cos_2phi, *backgal_sin_2phi;
 	double sin_phi, cos_phi;
@@ -132,6 +135,9 @@ int main(int argc, char *argv[])
 	radius_num = radius_num - 1;
 
 
+	MPI_Win win_1, win_2;
+	MPI_Aint size_1, size_2;
+
 	for (area_id = 1; area_id < area_num + 1; area_id++)
 	{
 		// read foreground information
@@ -147,15 +153,19 @@ int main(int argc, char *argv[])
 			read_h5(h5f_path, set_name, foregal_data[i]);
 		}
 		// each foreground galaxy has "radius_num" shears in "radius_num" radius.
+
 		foregal_g1 = new double[foregal_num*radius_num]{};
 		foregal_g2 = new double[foregal_num*radius_num]{};
 		foregal_g1_sig = new double[foregal_num*radius_num]{};
 		foregal_g2_sig = new double[foregal_num*radius_num]{};
 
-		foregal_gt = new double[foregal_num*radius_num]{};
-		foregal_gx = new double[foregal_num*radius_num]{};
+		foregal_gt = new double[foregal_num*radius_num];
+		foregal_gx = new double[foregal_num*radius_num];
+		initialize_arr(foregal_gt, foregal_num*radius_num, 0);
+		initialize_arr(foregal_gx, foregal_num*radius_num, 0);
 
 		foregal_g_count = new double[foregal_num*radius_num] {};
+		initialize_arr(foregal_g_count, foregal_num*radius_num, 0);
 
 		// read background information
 		sprintf(set_name, "/background/w_%d", area_id);
@@ -199,6 +209,45 @@ int main(int argc, char *argv[])
 		set_bin(backgal_data[mg1_id], backgal_num, mg1_bin, mg_bin_num+1, 100);
 		set_bin(backgal_data[mg2_id], backgal_num, mg2_bin, mg_bin_num+1, 100);
 
+		size_1 = foregal_num * radius_num * 6 * sizeof(double);
+		if (0 == rank)
+		{
+			MPI_Win_allocate_shared(size_1, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_1);
+		}
+		else
+		{
+			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_1);
+			MPI_Win_shared_query(win_1, 0, &size_1, &disp_unit, &foregal_data_shared);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (0 == rank)
+		{
+			for (i = 0; i < foregal_num * radius_num * 6; i++)
+			{
+				foregal_data_shared[i] = 0;
+			}
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		size_2 = backgal_num * 10 * sizeof(double);
+		if (0 == rank)
+		{
+			MPI_Win_allocate_shared(size_2, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_data_shared, &win_2);
+		}
+		else
+		{
+			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_data_shared, &win_2);
+			MPI_Win_shared_query(win_2, 0, &size_2, &disp_unit, &backgal_data_shared);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		if (0 == rank)
+		{
+			for (i = 0; i < backgal_num * 10; i++)
+			{
+				backgal_data_shared[i] = 0;
+			}
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		// task distribution
 		if (numprocs - 1 == rank)
@@ -332,6 +381,7 @@ int main(int argc, char *argv[])
 				foregal_g1_sig[gal_id*radius_num + radi_id] = gh1_sig;
 				foregal_g2_sig[gal_id*radius_num + radi_id] = gh2_sig;
 
+				// calculate the \Sum g_t \Sigma_crit
 				for (ib = 0; ib < backgal_num; ib++)
 				{
 					if (backgal_mask[ib] == 1)
@@ -346,12 +396,12 @@ int main(int argc, char *argv[])
 						// only the comoving distance part of the real critical surface density 
 						crit_surf_density = dist_source / dist_len_source / dist_len / (1 + z_f);
 						shear_tan = -gh1*backgal_cos_2phi[ib] - gh2*backgal_sin_2phi[ib];
-						shear_cros = gh1*backgal_sin_2phi[ib] - gh2*backgal_cos_2phi[ib]; 
+						//shear_cros = gh1*backgal_sin_2phi[ib] - gh2*backgal_cos_2phi[ib]; 
 
-
-
+						foregal_gt[gal_id*radius_num + radi_id] += shear_tan*crit_surf_density;
 					}
 				}
+				foregal_g_count[gal_id*radius_num + radi_id] = pair_count;
 			}
 		}
 
