@@ -88,8 +88,25 @@ struct pts_info
 
 
 const double Pi = 3.1415926535897932384626433832795;
-const double C_0 = 2.99792458;
-const double H_0 = 70;
+
+const double C_0_hat = 2.99792458; // 10^8
+const double C_0 = 2.99792458*1.e8;// speed of light m/s
+
+const double H_0_hat = 0.70;
+const double H_0 = 70; //  Km/s/Mpc
+
+const double G_0_hat= 6.6740831313; //  10^{-11}
+const double G_0 = 6.6740831*1.e-11; //  m^3 s^{-2} Kg^{-1}
+
+const double One_Light_Year_hat = 9.4607304725808;// 10^15
+const double One_Light_Year = 9.4607304725808*1.e15;// meter
+
+const double One_Mpc_hat = 3.085677581; // 10^22
+const double One_Mpc = 3.085677581*1.e22;// meter
+
+const double M_sun_hat = 1.98847;
+const double M_sun = 1.98847*1.e30;//Kg
+
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
 extern std::ofstream loggers;

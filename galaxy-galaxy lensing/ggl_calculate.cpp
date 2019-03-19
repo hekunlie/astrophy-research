@@ -20,11 +20,12 @@ int main(int argc, char *argv[])
 	int foregal_num, gal_id;
 	double *foregal_data[3];
 	double *foregal_g1,*foregal_g2, *foregal_gt,*foregal_gx;;
-	double *foregal_g1_sig, *foregal_g2_sig, *foregal_g_count, num_count;
-	double temp_g1, temp_g2;
+	double *foregal_g1_sig, *foregal_g2_sig, *foregal_g_count, pair_count;
+	double shear_tan, shear_cros;
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_source;
-	double coeff;
+	double coeff, da_coeff;
+	double crit_surf_density;
 
 	int data_num;
 	int backgal_num;
@@ -212,7 +213,9 @@ int main(int argc, char *argv[])
 		}
 	
 		// loop the foreground galaxy
-		coeff = 10.8 / C_0 / Pi;
+		coeff = 10.8 / C_0_hat / Pi;
+		da_coeff = C_0_hat/ H_0_hat;
+
 		for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 		{
 			z_f = foregal_data[z_id][gal_id];
@@ -240,8 +243,8 @@ int main(int argc, char *argv[])
 			for (radi_id = 0; radi_id < radius_num; radi_id++)
 			{	
 				// the searching radius depend on the redshift of lens
-				radius_s = radius_bin[radi_id] * coeff/dist_len;
-				radius_e = radius_bin[radi_id + 1] * coeff/dist_len;
+				radius_s = radius_bin[radi_id] * coeff/dist_len*(1+z_f); // the physical distance
+				radius_e = radius_bin[radi_id + 1] * coeff/dist_len * (1 + z_f);;
 				radius_s_sq = radius_s * radius_s;
 				radius_e_sq = radius_e * radius_e;
 
@@ -323,7 +326,8 @@ int main(int argc, char *argv[])
 				fit_shear(gh, chisq_2, g_num, gh2, gh2_sig);
 
 				foregal_g1[gal_id*radius_num + radi_id] = gh1;
-				foregal_g2[gal_id*radius_num + radi_id] = gh2;
+				// because the direction of RA is opposite to that of the real
+				foregal_g2[gal_id*radius_num + radi_id] = -gh2; 
 
 				foregal_g1_sig[gal_id*radius_num + radi_id] = gh1_sig;
 				foregal_g2_sig[gal_id*radius_num + radi_id] = gh2_sig;
@@ -332,10 +336,17 @@ int main(int argc, char *argv[])
 				{
 					if (backgal_mask[ib] == 1)
 					{
+						pair_count += 1;
+
 						z_b = backgal_data[z_id][ib];
 						find_near(redshifts, z_b, red_num, tag);
 						dist_source = distances[tag];
 						dist_len_source = dist_source - dist_len;
+						
+						// only the comoving distance part of the real critical surface density 
+						crit_surf_density = dist_source / dist_len_source / dist_len / (1 + z_f);
+						shear_tan = -gh1*backgal_cos_2phi[ib] - gh2*backgal_sin_2phi[ib];
+						shear_cros = gh1*backgal_sin_2phi[ib] - gh2*backgal_cos_2phi[ib]; 
 
 
 
