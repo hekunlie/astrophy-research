@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 		if (0 == rank)
 		{
 			sprintf(set_name, "/background/w_%d", area_id);
-			sprintf(attrs_name, "/grid_shape");
+			sprintf(attrs_name, "grid_shape");
 			shape[0] = grid_ny;
 			shape[1] = grid_nx;
 			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "g");
