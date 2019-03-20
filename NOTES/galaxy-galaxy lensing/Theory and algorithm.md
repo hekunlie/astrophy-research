@@ -13,17 +13,17 @@ $$ \begin{aligned}\omega(z_1,z_2) &= \frac{c}{H_0}\int_{a(z_2)}^{a(z_1)} \frac{d
 &= \frac{c}{H_0}\int_{z_1}^{z_2} \frac{dz}{\sqrt{(1+z)^3\Omega_m + (1+z)^2(1-\Omega_m -\Omega_\Lambda) + \Omega_\Lambda}}, z_1 < z_2 \\\\
 &= \frac{c}{H_0}\alpha(z_1, z_2) \end{aligned}$$
 
-The physical distance relates the angle and the size of a distant object is the angular diameter distance \\(D_A\\). 
+The physical distance relates the angle to the size of a distant object is the angular diameter distance \\(D_A\\). 
 
 $$ D_A(z) = a(z)f_k(\omega(0,z))$$
 
-The search radius is \\( R h^{-1} \rm{Mpc}\\). In the flat universe, the search radius in arcmin is
+The search radius is \\( R h^{-1} \rm{Mpc}\\). In the flat universe, the search radius in unit of degree is
 
-$$ \begin{aligned} D_A(z) = &a(z)\omega(0,z)\theta = \frac{1}{1+z}\frac{c}{H_0}\alpha(0, z)\theta=\frac{\theta\alpha(0,z_2)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km\cdot s^{-1} {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{(1+z)R}{1000c\alpha(0,z_2)}\frac{180\times60}{\pi} = \frac{10.8}{c\pi}\frac{1+z}{\alpha(0, z_2)}R\end{aligned}$$
+$$ \begin{aligned} D_A(z)\theta = &a(z)\omega(0,z)\theta = \frac{1}{1+z}\frac{c}{H_0}\alpha(0, z)\theta=\frac{\theta\alpha(0,z)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{(1+z)R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{1+z}{\alpha(0, z)}R\end{aligned}$$
 
 The angular distance between \\(z_1\\) and \\(z_2\\) is
 
-$$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2))$$
+$$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2)) = \frac{a(z_2)c}{H_0}[\alpha(0, z_2) - \alpha(0, z_1)]$$
 
 It is valid only for \\(\omega_k \geq 0 \\) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)
 

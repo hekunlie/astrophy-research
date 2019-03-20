@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 		}
 
 		// loop the foreground galaxy
-		coeff = 10.8 / C_0_hat / Pi;
+		coeff = 0.18 / C_0_hat / Pi;
 		da_coeff = C_0_hat / H_0_hat;
 
 		for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
 			z_thresh = z_f + 0.3;
 			find_near(redshifts, z_f, red_num, tag);
 			dist_len = distances[tag];
-
+			// degree
 			ra_f = foregal_data[ra_id][gal_id];
 			dec_f = foregal_data[dec_id][gal_id];
 
