@@ -25,7 +25,7 @@ The angular distance between \\(z_1\\) and \\(z_2\\) is
 
 $$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2))$$
 
-It is valid only for \\(\omega_k \leq 0 \\) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)
+It is valid only for \\(\omega_k \geq 0 \\) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)
 
 The critial surface density in comoving distance:
 
@@ -33,8 +33,8 @@ $$ \begin{aligned}\Sigma_{crit}(z_1, z_2) &= \frac{c^2}{4\pi G}\frac{\omega(0,z_
 &=\frac{c^2}{4\pi G}\frac{H_0}{c}\frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)} \\\\
 &= \frac{c\times 10^{8} \rm{m\cdot s^{-1}}100h\rm{Km\cdot s^{-1}{Mpc}^{-1}}}{4\pi G\times 10^{-11} \rm{m^3\cdot s^{-2} \cdot Kg^{-1}}}\frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)} \\\\
 & = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}\frac{c \cdot h}{4\pi G}\times 10^{24}\rm{Kg \cdot m^{-1}\cdot Mpc^{-1}} \\\\ 
-& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}\frac{c \cdot h \cdot m_{pc} }{4\pi G\cdot m_s}\times 10^{16}\rm{M_{sum} \cdot Mpc^{-2}} \\\\
-& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}3.88283351\times 10^{14}\rm{M_{sum} \cdot Mpc^{-2}}
+& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}\frac{c \cdot h \cdot m_{pc} }{4\pi G\cdot m_s}\times 10^{4}\rm{M_{sum} \cdot pc^{-2}} \\\\
+& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}3.88283351\times 10^{2}\rm{M_{sum} \cdot pc^{-2}}
 \end{aligned}$$
 
 $$  h = 0.7, \quad c = 2.99792458 \quad  m_{pc} = 3.085677581 \quad m_s = 1.98847 \quad G = 6.6740831313$$
