@@ -317,8 +317,8 @@ if cmd == "select":
         mg1 = cata_data[:, mg1_lb][cut_idx] - fg1 * (mn + mu) - fg2 * mv
         mg2 = cata_data[:, mg2_lb][cut_idx] - (fg2 + c2_correction) * (mn - mu) - fg1 * mv
 
-        ra = cata_data[:, ra_lb][cut_idx] * 60
-        dec = cata_data[:, dec_lb][cut_idx] * 60
+        ra = cata_data[:, ra_lb][cut_idx]
+        dec = cata_data[:, dec_lb][cut_idx]
         redshift = cata_data[:, z_lb][cut_idx]
 
         gal_num = len(mg1)
