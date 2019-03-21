@@ -1,7 +1,7 @@
 import platform
-if platform.system() == 'Linux':
-    import matplotlib
-    matplotlib.use('Agg')
+# if platform.system() == 'Linux':
+#     import matplotlib
+#     matplotlib.use('Agg')
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
@@ -527,8 +527,8 @@ class Fourier_Quad:
         inverse = range(int(bin_num / 2 - 1), -1, -1)
         G_h = g - nu * g_h
         num = numpy.histogram(G_h, bins)[0]
-        n1 = num[0:int(bin_num / 2)]
-        n2 = num[int(bin_num / 2):][inverse]
+        n1 = num[0:int(bin_num / 2)][inverse]
+        n2 = num[int(bin_num / 2):]
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
 
