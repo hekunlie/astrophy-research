@@ -2460,7 +2460,7 @@ double chisq_2d(const int *hist_arr, const int size)
 	return chi * 0.5;
 }
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig)
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2+bx + c
@@ -2481,15 +2481,15 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	// find the width for fitting
 	for (i = 0; i < num; i++)
 	{
-		if (chisq[i] < min_chi + 40)
+		if (chisq[i] < min_chi + d_chi)
 		{
 			count++;
 			mask[i] = 1;
 		}
 	}
 	// for fitting
-	double *new_chisq = new double[count];
-	double *new_shear = new double[count];
+	double *new_chisq = new double[count] {};
+	double *new_shear = new double[count] {};
 	count = 0;
 	for (i = 0; i < num; i++)
 	{
@@ -2500,6 +2500,9 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			count++;
 		}
 	}
+	std::cout << "Fitting data:" << std::endl;
+	show_arr(new_chisq, 1, count);
+	show_arr(new_shear, 1, count);
 	// g`= a1 + a2*g + a3*g^2
 	poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
 
@@ -2510,6 +2513,8 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	delete[] new_chisq;
 	delete[] new_shear;
 }
+
+
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
@@ -2571,10 +2576,12 @@ void log_bin(const double start, const double end, const int num, double * bins)
 		bins[i] = pow(10, st + i * dp);
 	}
 }
+
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
-double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result)
+void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result)
 {	
 	int i, j;
 	gsl_matrix *covs = gsl_matrix_alloc(num, num);
@@ -2605,26 +2612,25 @@ double rand_multi_gauss(const double*cov, const double *mu, const int num, doubl
 	gsl_vector_free(res);
 }
 
-double rand_gauss(double sigma, double mean)
+void rand_gauss(double sigma, double mean, double &rand_n)
 {
-	double gauss_vars;
-	gauss_vars = gsl_ran_gaussian(rng, sigma) + mean;
-	return gauss_vars;
+	rand_n = gsl_ran_gaussian(rng, sigma) + mean;
 }
 
-double rand_uniform(double start, double end)
+void rand_uniform(double start, double end, double &rand_n)
 {
 	double unif_vars;
-	unif_vars = gsl_ran_flat(rng, start, end);
-	return unif_vars;
+	rand_n = gsl_ran_flat(rng, start, end);
 }
 
 void rand_shuffle(double *seq, int length)
 {
 	int rand_i;
+	double rand_n;
 	for (int i = 0; i < length-1; i++)
 	{	
-		rand_i = int(rand_uniform(0, length));
+		rand_uniform(0, length, rand_n);
+		rand_i = int(rand_n);
 		std::swap(seq[i], seq[rand_i]);
 	}
 }
@@ -2632,9 +2638,11 @@ void rand_shuffle(double *seq, int length)
 void rand_shuffle(float *seq, int length)
 {
 	int rand_i;
+	double rand_n;
 	for (int i = 0; i < length-1; i++)
 	{
-		rand_i = int(rand_uniform(0, length));
+		rand_uniform(0, length, rand_n);
+		rand_i = int(rand_n);
 		std::swap(seq[i], seq[rand_i]);
 	}
 }
@@ -2642,9 +2650,11 @@ void rand_shuffle(float *seq, int length)
 void rand_shuffle(int *seq, int length)
 {
 	int rand_i;
-	for (int i = 0; i < length-1; i++)
+	double rand_n;
+	for (int i = 0; i < length - 1; i++)
 	{
-		rand_i = int(rand_uniform(0, length));
+		rand_uniform(0, length, rand_n);
+		rand_i = int(rand_n);
 		std::swap(seq[i], seq[rand_i]);
 	}
 }
@@ -3521,7 +3531,7 @@ void show_arr(const double*arr, const int rows, const int cols)
 		{
 			for (j = 0; j < cols; j++)
 			{
-				std::cout << arr[i*cols + j] << ", ";
+				std::cout << arr[i*cols + j] << "  ";
 			}
 			std::cout << std::endl;
 		}
@@ -3542,7 +3552,7 @@ void show_arr(const int*arr, const int rows, const int cols)
 		{
 			for (j = 0; j < cols; j++)
 			{
-				std::cout << arr[i*cols + j] << ", ";
+				std::cout << arr[i*cols + j] << "  ";
 			}
 			std::cout << std::endl;
 		}

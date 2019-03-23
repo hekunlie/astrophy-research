@@ -24,6 +24,7 @@
 #include <gsl/gsl_matrix.h>
 #include<gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_histogram.h>
 #include<hdf5.h>
 #include<stdlib.h>
 #include<sys/stat.h> // for stat()
@@ -334,7 +335,7 @@ double chisq_2d(const int *hist_arr, const int size);//checked
 	hist_arr: the 2d histogram of G1, G1~ 
 */
 
-void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig);
+void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double d_chi=100);
 
 /********************************************************************************************************************************************/
 /* cosmology */
@@ -352,11 +353,11 @@ void log_bin(const double start, const double end, const int num, double * bins)
 /* random */
 /********************************************************************************************************************************************/
 
-double rand_gauss(double sigma, double mean);//checked
+void rand_gauss(const double sigma, const double mean, double &rand_n);//checked
 /* return a double from the normal distribution with sigma and mean. 
 */
 
-double rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);//checked
+void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);//checked
 /* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
 
 	cov: array, the covariance matrix
@@ -365,7 +366,7 @@ double rand_multi_gauss(const double*cov, const double *mu, const int num, doubl
 	result: array, the k numbers
 */
 
-double rand_uniform(double start, double end);
+void rand_uniform(const double start, const double end, double &rand_n);
 /* return a double, [ start, end ), with a unifrom distribution.
 */
 
