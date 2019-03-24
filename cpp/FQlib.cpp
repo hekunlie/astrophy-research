@@ -2488,6 +2488,11 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		}
 	}
 	// for fitting
+	if (count < 5)
+	{
+		std::cout << "Too less points ("<<count<<")"<<" for fitting!!!" << std::endl;
+		exit(0);
+	}
 	double *new_chisq = new double[count] {};
 	double *new_shear = new double[count] {};
 	count = 0;
@@ -2500,9 +2505,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			count++;
 		}
 	}
-	std::cout << "Fitting data:" << std::endl;
-	show_arr(new_chisq, 1, count);
-	show_arr(new_shear, 1, count);
+
 	// g`= a1 + a2*g + a3*g^2
 	poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
 
