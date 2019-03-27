@@ -68,7 +68,7 @@ void histogram_new(double *data, const double *bins, int *num, const int data_nu
 	}
 }
 
-void chisq_1d(const int *hist_num, const int size, double &chi_sq)
+void chisq_1d_(const int *hist_num, const int size, double &chi_sq)
 {   
     // the size must be an even number
     int i,j;

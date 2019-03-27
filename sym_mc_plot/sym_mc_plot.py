@@ -77,14 +77,19 @@ fourier_idx = ["flux2", "flux_alt", "flux", "snr",
                "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
 sex_idx = ["sex_snr", "sex_area", "snr_auto",  "mag_auto"]
 
+sex_data = numpy.load(sex_path)["arr_0"]
+detected = sex_data[:, 0] > 0
+
 if cut in fourier_idx:
 
     fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
     fq_snr_file = h5py.File(fq_snr_h5path, "r")
     fq_snr_data = fq_snr_file["/data"].value
     fq_snr_file.close()
-    # it should be
-    detected = fq_snr_data[:, -1] > -1
+
+    # detected_sex = sex_data[:, 0] > 0
+    # detected_fourier = fq_snr_data[:, -1] > -1
+    # detected = detected_sex & detected_fourier
     if "snr_ex" in cut:
         flux_data = fq_snr_data[:, fourier_idx.index(cut)-5]
         area_data = fq_snr_data[:, fourier_idx.index(cut)]
@@ -96,8 +101,16 @@ if cut in fourier_idx:
 
 
 elif cut in sex_idx:
-    sex_data = numpy.load(sex_path)["arr_0"]
-    detected = sex_data[:, 0] > 0
+    # fq_snr_h5path = result_path + "data/data_%s/data_%d.hdf5" % (sig, rank)
+    # fq_snr_file = h5py.File(fq_snr_h5path, "r")
+    # fq_snr_data = fq_snr_file["/data"].value
+    # fq_snr_file.close()
+
+    # sex_data = numpy.load(sex_path)["arr_0"]
+    # detected_sex = sex_data[:, 0] > 0
+    # detected_fourier = fq_snr_data[:, -1] > -1
+    # detected = detected_sex & detected_fourier
+    # detected = sex_data[:, 0] > 0
     if "snr_auto" in cut:
         flux_auto = sex_data[:, 1]
         flux_err = sex_data[:, 2]

@@ -642,7 +642,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -774,7 +774,7 @@ class Fourier_Quad:
         return g_h, g_sig
 
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.1, right=0.1):
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction

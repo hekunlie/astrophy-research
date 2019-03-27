@@ -17,8 +17,7 @@ total_path, result_path, para_path, log_path = path_items
 
 
 sex_filters = ["sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
-cut_nm = ["mag_auto", "sex_snr", "flux2", "flux_alt", "snr_auto", "flux", "snr",
-          "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
+cut_nm = ["mag_auto", "sex_snr", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
 
 if cmd == "cut":
     cut_path = result_path + "cuts/"
@@ -27,13 +26,15 @@ if cmd == "cut":
     for sub_filter in sex_filters:
         for sub_nm in cut_nm:
             sub_path = cut_path + "sym/%s/%s/"%(sub_filter, sub_nm)
-            if "sex2_" in sub_filter:
-                os.makedirs(sub_path)
-                print("Build: %s"%sub_path)
-            else:
-                if "mag" in sub_nm or "sex" in sub_nm or "snr_" in sub_nm:
-                    os.makedirs(sub_path)
-                    print("Build: %s" % sub_path)
+            os.makedirs(sub_path)
+            print("Build: %s" % sub_path)
+            # if "sex2_" in sub_filter:
+            #     os.makedirs(sub_path)
+            #     print("Build: %s"%sub_path)
+            # else:
+            #     if "mag" in sub_nm or "sex" in sub_nm or "snr_" in sub_nm:
+            #         os.makedirs(sub_path)
+            #         print("Build: %s" % sub_path)
 
 
 if cmd == "sex":

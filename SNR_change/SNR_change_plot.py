@@ -15,23 +15,38 @@ import tool_box
 size, num, title, flux_num = int(argv[1]), int(argv[2]), argv[3], int(argv[4])
 seed = 80000
 
-markers = ['o','v','p','h','d','s',"4","*","X","^",">","+"]
+markers = ['o','v','s','h','d','p',"4","*","X","^",">","+"]
 colors = ["C%d"%i for i in range(10)]
 
 fmt='%2.f%%'
 fig_x = 8
 fig_y = fig_x*4/6
-figs = (fig_x*4, fig_y)
 fonts = 20
-xy_lb_size = 18
-legend_size = fonts - 4
-axis_linewidth = 1.2
-plt_line_width = 2
+xy_lb_size = 22
+xy_tick_size = xy_lb_size - 5
+legend_size = xy_tick_size
+axis_linewidth = 2.5
+plt_line_width = 2.5
 cap_size = 5
+tick_len = 6
+figs = (fig_x*4, fig_y)
+
 fig = plt.figure(figsize=figs)
 axs = []
 for i in range(4):
     ax = fig.add_subplot(141+i)
+    if i == 0:
+        ax.set_ylabel("Change rate",fontsize=xy_lb_size)
+    else:
+        ax.set_yticklabels([])
+
+    ax.tick_params(direction='in', labelsize=xy_tick_size, top=True, right=True, pad=5)
+    for axis in ["bottom", "left", "top", "right"]:
+        # the line width of the frame
+        ax.spines[axis].set_linewidth(axis_linewidth)
+    ax.xaxis.set_tick_params(which="both", direction="in", length=tick_len, width=axis_linewidth)
+    ax.yaxis.set_tick_params(which="major", direction="in", length=tick_len, width=axis_linewidth)
+    ax.yaxis.set_tick_params(which="minor", direction="in", length=tick_len-2, width=axis_linewidth)
     axs.append(ax)
 fq = Fourier_Quad(size, seed)
 noise_sig = 60
@@ -106,8 +121,10 @@ for i in range(flux_num):
             lbs = ["P$_{k0}$", "MAG_AUTO", "SNR$_S$", "SNR$_A$"]
             for select in range(4):
                 lb = "%s (%.2f)"%(lbs[select], snr_tradi_0)
-                axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=8, label=lb,
-                         marker=markers[i],linestyle=' ')#fillstyle='none',
+                # axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=12, label=lb,
+                #          marker=markers[i],linestyle=' ',fillstyle='none')
+                axs[select].scatter(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], edgecolor=colors[i],s=150, label=lb,
+                         marker=markers[i],facecolor="none",linewidths=3)
 
 ys = [0,0]
 for i in range(4):
@@ -118,25 +135,17 @@ for i in range(4):
         ys[0] = ys[0]
 dy = ys[1] - ys[0]
 x_ticks = numpy.linspace(-0.06, 0.06, 5)
+y_ticks = numpy.linspace(-0.04, 0.04, 5)
 for i in range(4):
     axs[i].set_ylim(-0.042, 0.042)
     axs[i].set_xlim(-0.075,0.075)
     axs[i].set_xticks(x_ticks)
+    axs[i].set_yticks(y_ticks)
     axs[i].set_xlabel("g1",fontsize=xy_lb_size)
-    if i == 0:
-        axs[i].set_ylabel("Change rate",fontsize=xy_lb_size)
-    else:
-        axs[i].set_yticklabels([])
-    axs[i].legend(fontsize=legend_size,loc="best")
-    axs[i].tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
-    for axis in ["bottom", "left", "top", "right"]:
-        # the line width of the frame
-        axs[i].spines[axis].set_linewidth(axis_linewidth)
-    axs[i].xaxis.set_tick_params(which="both", direction="in", length=5, width=axis_linewidth)
-    axs[i].yaxis.set_tick_params(which="major", direction="in", length=5, width=axis_linewidth)
-    axs[i].yaxis.set_tick_params(which="minor", direction="in", length=5, width=axis_linewidth)
+    axs[i].legend(fontsize=legend_size, loc="best", frameon=False)
 plt.subplots_adjust(wspace=0, hspace=0)
-pic_name = total_path + '/imgs/%s.pdf'%title
+# pic_name = total_path + '/imgs/%s.pdf'%title
+pic_name = total_path + '/imgs/change.pdf'
 plt.savefig(pic_name,bbox_inches='tight')
 plt.show()
 plt.close()

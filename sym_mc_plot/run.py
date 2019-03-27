@@ -3,17 +3,23 @@ import time
 from sys import argv
 import os
 
-sources = ["pts"]
+sources = [argv[1]]
 resolution_factor = [0.7]
 while True:
     if os.path.exists("finish.dat"):
         break
-if argv[1] == "sex":
+if argv[2] == "sex":
     filter_name = ["sex2_1.5", "sex2_2","sex3_1.5","sex3_2", "sex4_1.5","sex4_2"]
     cuts = ["mag_auto", "snr_auto", 'sex_snr']
+elif argv[2] == "f1":
+    filter_name = ["sex2_1.5", "sex3_1.5","sex4_1.5"]
+    cuts = ["flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
+elif argv[2] == "f2":
+    filter_name = ["sex2_2", "sex3_2","sex4_2"]
+    cuts = ["flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
 else:
-    filter_name = ["sex2_1.5", "sex2_2"]
-    cuts = ["flux2", "flux_alt", "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4","flux2_ex5"]
+    print("Wrong!!! %s"%argv[2])
+    exit()
 for s, source in enumerate(sources):
     for f in range(len(filter_name)):
         for i in range(len(cuts)):

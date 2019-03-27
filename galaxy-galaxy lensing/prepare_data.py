@@ -69,6 +69,8 @@ mn_lb = int(para_items[8])
 mu_lb = int(para_items[9])
 mv_lb = int(para_items[10])
 z_lb = -3
+mag_lb = -2
+starflag_lb = -1
 
 flux_alt_thresh = 6.38
 nstar_thresh = 14
@@ -156,7 +158,7 @@ if cmd == "collect":
                             f_data[i, -3] = c_data[tag, 10]
                             # magnitude
                             f_data[i, -2] = c_data[tag, 15]
-                            # starglag
+                            # starflag
                             f_data[i, -1] = c_data[tag, 14]
                             pairs += 1
 
@@ -314,19 +316,21 @@ if cmd == "select":
         mu = cata_data[:, mu_lb][cut_idx]
         mv = cata_data[:, mv_lb][cut_idx]
         # correction due to additive bias and field distortion
-        mg1 = cata_data[:, mg1_lb][cut_idx] - fg1 * (mn + mu) - fg2 * mv
+        mg1 = cata_data[:, mg1_lb][cut_idx] - (fg1 + c1_correction) * (mn + mu) - fg2 * mv
         mg2 = cata_data[:, mg2_lb][cut_idx] - (fg2 + c2_correction) * (mn - mu) - fg1 * mv
 
         ra = cata_data[:, ra_lb][cut_idx]
         dec = cata_data[:, dec_lb][cut_idx]
         redshift = cata_data[:, z_lb][cut_idx]
+        mag = cata_data[:, mag_lb][cut_idx]
+        starflag = cata_data[:, starflag_lb][cut_idx]
 
         gal_num = len(mg1)
         ra_min, ra_max = ra.min(),ra.max()
         dec_min, dec_max = dec.min(), dec.max()
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V"]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "STARFLAG"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, starflag]
         data_num = len(redshift)
 
     comm.Barrier()

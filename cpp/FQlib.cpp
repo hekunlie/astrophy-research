@@ -2044,8 +2044,16 @@ void addnoise(float *image, const int pixel_num, const float sigma)
 }
 
 
+void initialize_arr(long *arr, const int length, const long x)
+{/* will set all the elements to x */
+	for (int i = 0; i < length; i++)
+	{
+		arr[i] = x;
+	}
+}
+
 void initialize_arr(double *arr, const int length, const double x)
-{/* will set all the elements to zero */
+{/* will set all the elements to x */
 	for (int i = 0; i < length; i++)
 	{
 		arr[i] = x;
@@ -2053,7 +2061,7 @@ void initialize_arr(double *arr, const int length, const double x)
 }
 
 void initialize_arr(float *arr, const int length, const float x)
-{/* will set all the elements to zero */
+{/* will set all the elements to x */
 	for (int i = 0; i < length; i++)
 	{
 		arr[i] = x;
@@ -2061,7 +2069,7 @@ void initialize_arr(float *arr, const int length, const float x)
 }
 
 void initialize_arr(int *arr, const int length, const int x)
-{/* will set all the elements to zero */
+{/* will set all the elements to x */
 	for (int i = 0; i < length; i++)
 	{
 		arr[i] = x;
@@ -2407,28 +2415,28 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	}
 }
 
-double chisq_2d(const double *hist_arr, const int size)
+void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, const double *bins, const int bin_num, const double gh, double &result)
 {
-	int h = size / 2, i, j, s1, s2 = size * size;
-	double chi = 0, n, m;
-	for (i = 0; i < h; i++)
+	int i, j, k;
+	double *temp = new double[data_num];
+	int *num_in_bin = new int[bin_num];
+
+	for (i = 0; i < data_num; i++)
 	{
-		s1 = i * size;
-		for (j = 0; j < h; j++)
-		{
-			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
-			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
-			chi += m * m / n;
-		}
+		temp[i] = mg[i] - gh * mnu[i];
 	}
-	return chi * 0.5;
+	histogram(temp, bins, num_in_bin, data_num, bin_num);
+
+	chisq_1d(num_in_bin, bin_num, result);
+
+	delete[] num_in_bin;
+	delete[] temp;
 }
 
-double chisq_2d(const long *hist_arr, const int size)
+void chisq_2d(const double *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
 	double chi = 0, n, m;
-
 	for (i = 0; i < h; i++)
 	{
 		s1 = i * size;
@@ -2439,10 +2447,11 @@ double chisq_2d(const long *hist_arr, const int size)
 			chi += m * m / n;
 		}
 	}
-	return chi * 0.5;
+	result = chi * 0.5;
+
 }
 
-double chisq_2d(const int *hist_arr, const int size)
+void chisq_2d(const long *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
 	double chi = 0, n, m;
@@ -2457,7 +2466,142 @@ double chisq_2d(const int *hist_arr, const int size)
 			chi += m * m / n;
 		}
 	}
-	return chi * 0.5;
+	result = chi * 0.5;
+}
+
+void chisq_2d(const int *hist_arr, const int size, double &result)
+{
+	int h = size / 2, i, j, s1, s2 = size * size;
+	double chi = 0, n, m;
+
+	for (i = 0; i < h; i++)
+	{
+		s1 = i * size;
+		for (j = 0; j < h; j++)
+		{
+			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
+			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			chi += m * m / n;
+		}
+	}
+	result = chi * 0.5;
+}
+
+
+void chisq_1d(const double *hist_num, const int bin_num, double &result)
+{
+	// the size must be an even number
+	int i, j;
+	int mid = bin_num / 2;
+	double chi_count = 0;
+	double dn, sn;
+	for (i = mid; i < bin_num; i++)
+	{
+		dn = hist_num[i] - hist_num[bin_num - i - 1];
+		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		chi_count += dn * dn / sn;
+	}
+	result = chi_count * 0.5;
+}
+
+void chisq_1d(const long *hist_num, const int bin_num, double &result)
+{
+	// the size must be an even number
+	int i, j;
+	int mid = bin_num / 2;
+	double chi_count = 0;
+	double dn, sn;
+	for (i = mid; i < bin_num; i++)
+	{
+		dn = hist_num[i] - hist_num[bin_num - i - 1];
+		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		chi_count += dn * dn / sn;
+	}
+	result = chi_count * 0.5;
+}
+
+void chisq_1d(const int *hist_num, const int bin_num, double &result)
+{
+	// the size must be an even number
+	int i, j;
+	int mid = bin_num / 2;
+	double chi_count = 0;
+	double dn, sn;
+	for (i = mid; i < bin_num; i++)
+	{
+		dn = hist_num[i] - hist_num[bin_num - i - 1];
+		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		chi_count += dn * dn / sn;
+	}
+	result = chi_count * 0.5;
+}
+
+
+
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double lini_eft, const double ini_right, const double chi_gap)
+{
+	int i, j, k;
+	int chi_num = 40;
+
+	double *bins = new double[bin_num + 1];
+	double *temp = new double[data_num];
+	double *gh_fit = new double[chi_num];
+	double *chisq_fit = new double[chi_num];
+
+	int same = 0, iters = 0, change = 1;
+	double left = ini_right, right = ini_right, step;
+	double chi_left, chi_right, chi_mid;
+	double gh_left, gh_right, gh_mid;
+
+	// set the bins for G1
+	set_bin(mg, data_num, bins, bin_num, 1000);
+
+	while (change == 1)
+	{
+		change = 0;
+		gh_mid = (left + right) *0.5;
+		gh_left = (gh_mid + left) *0.5;
+		gh_right = (gh_mid + right) *0.5;
+
+		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+
+		if (chi_left > chi_mid + chi_gap)
+		{
+			left = (gh_mid + gh_left) *0.5;
+			change = 1;
+		}
+		if (chi_right > chi_mid + chi_gap)
+		{
+			right = (gh_mid + gh_right)*0.5;
+			change = 1;
+		}
+
+		iters += 1;
+		if (iters > 12)
+		{
+			break;
+		}
+	}
+
+	step = (right - left) / chi_num;
+	for (i = 0; i < chi_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	for (i = 0; i < chi_num; i++)
+	{
+		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+		chisq_fit[i] = chi_right;
+	}
+
+	fit_shear(gh_fit, chisq_fit, chi_num, gh, gh_sig, chi_gap);
+
+	delete[] gh_fit;
+	delete[] chisq_fit;
+	delete[] temp;
+	delete[] bins;
 }
 
 void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double d_chi)
@@ -2516,6 +2660,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	delete[] new_chisq;
 	delete[] new_shear;
 }
+
 
 
 /********************************************************************************************************************************************/
@@ -3646,59 +3791,114 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 }
 
 
-void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num)
+void histogram(const double *data, const double *bins, int *num_in_bin, const int data_num, const int bin_num)
 {
 	// initialize
 	int i, j;
-	initialize_arr(num, bin_num, 0);
+	initialize_arr(num_in_bin, bin_num, 0);
 	for ( i = 0; i < data_num; i++)
 	{
 		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
-				num[j] += 1;
+				num_in_bin[j] += 1;
 				break;
 			}
 		}
 	}
 }
 
-void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num)
+void histogram(const double *data, const double *bins, long *num_in_bin, const int data_num, const int bin_num)
+{
+	// initialize
+	int i, j;
+	initialize_arr(num_in_bin, bin_num, 0);
+	for (i = 0; i < data_num; i++)
+	{
+		for (j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num_in_bin[j] += 1;
+				break;
+			}
+		}
+	}
+}
+
+void histogram(const float *data, const float *bins, int *num_in_bin, const int data_num, const int bin_num)
 {	
 	// initialize
 	int i, j;
-	initialize_arr(num, bin_num, 0);
+	initialize_arr(num_in_bin, bin_num, 0);
 	for ( i = 0; i < data_num; i++)
 	{
 		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
-				num[j] += 1;
+				num_in_bin[j] += 1;
 				break;
 			}
 		}
 	}
 }
 
-void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num)
+void histogram(const float *data, const float *bins, long *num_in_bin, const int data_num, const int bin_num)
 {
 	// initialize
 	int i, j;
-	initialize_arr(num, bin_num,0);
+	initialize_arr(num_in_bin, bin_num, 0);
+	for (i = 0; i < data_num; i++)
+	{
+		for (j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num_in_bin[j] += 1;
+				break;
+			}
+		}
+	}
+}
+
+void histogram(const int *data, const  int *bins, int *num_in_bin, const  int data_num, const  int bin_num)
+{
+	// initialize
+	int i, j;
+	initialize_arr(num_in_bin, bin_num,0);
 	for ( i = 0; i < data_num; i++)
 	{
 		for ( j = 0; j < bin_num; j++)
 		{
 			if (data[i] < bins[j + 1] && data[i] >= bins[j])
 			{
-				num[j] += 1;
+				num_in_bin[j] += 1;
 				break;
 			}
 		}
 	}
 }
+
+void histogram(const int *data, const  int *bins, long *num_in_bin, const  int data_num, const  int bin_num)
+{
+	// initialize
+	int i, j;
+	initialize_arr(num_in_bin, bin_num, 0);
+	for (i = 0; i < data_num; i++)
+	{
+		for (j = 0; j < bin_num; j++)
+		{
+			if (data[i] < bins[j + 1] && data[i] >= bins[j])
+			{
+				num_in_bin[j] += 1;
+				break;
+			}
+		}
+	}
+}
+
 
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
 {
@@ -3799,6 +3999,7 @@ void histogram_s(const double data, const double *data_bin, const int bin_num, i
 	}
 
 }
+
 void histogram2d_s(const double data_y, const double data_x, const double *bin_y, const double *bin_x, const int ybin_num, const  int xbin_num, int &bin_label)
 {
 	int i, j;

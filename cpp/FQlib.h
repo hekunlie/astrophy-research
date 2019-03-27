@@ -298,16 +298,19 @@ void addnoise(double *image, const int pixel_num, const double sigma);//checked
 void addnoise(float *image, const int pixel_num, const float sigma);//checked
 /* add Gaussian noise to an array */
 
+void initialize_arr(long *arr, const int length, const long x);
 void initialize_arr(double *arr, const int length, const double x);//checked
 void initialize_arr(float *arr, const int length, const float x);//checked
 void initialize_arr(int *arr, const int length, const int x);//checked
-/* set every elements to zero*/
+/* set every elements to x*/
 
 void normalize_arr(double *arr, const int size);//checked
 void normalize_arr(float *arr, const int size);//checked
 /* normalize the PSF power spectrum,
 	divide each pixel by the peak 
 */
+
+
 
 /********************************************************************************************************************************************/
 /* Fourier Quad */
@@ -328,14 +331,55 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 
 void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);//checked
 
-double chisq_2d(const double *hist_arr, const int size);//checked
-double chisq_2d(const long *hist_arr, const int size);//checked
-double chisq_2d(const int *hist_arr, const int size);//checked
-/* 2d chi square for correlation calculation
-	hist_arr: the 2d histogram of G1, G1~ 
+void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, const double *bins, const int bin_num, const double gh, double &result);
+/* calculate the chi square with the input G1, N, U and the guess of shear, gh 
+	Fourier Quad shear estimators: G1, G2, N, U, V
+	mg: array, G1(2), for g1(2)
+	mnu: array, N+U for g1, N-U for g2
+	gh: the guess of shear
+	bins: the bin for G1(2) , which must be set up (call set_bin()) before , for chi square calculation
+	chisq: the chi square with shear guess, gh
 */
 
-void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double d_chi=100);
+void chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
+void chisq_2d(const long *hist_arr, const int bin_num, double &result);//checked
+void chisq_2d(const int *hist_arr, const int bin_num, double &result);//checked
+/* 2d chi square for correlation calculation
+	hist_arr: the 2d histogram of G1, G1~
+*/
+void chisq_1d(const double *hist_num, const int bin_num, double &result);
+void chisq_1d(const long *hist_num, const int bin_num, double &result);
+void chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
+/* calculate the 1d chi square using the histogram of G1(2) for the shear eastimation 
+	hist_num: the histogrom of G1(2), the count of G1(2) 
+*/
+
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
+/* estimate shear and sigma using dichotomy 
+	Fourier Quad shear estimators: G1, G2, N, U, V
+
+	find the minimum range of g, then call "fit_shear()" to fit a quadratic function
+
+	mg: array, G1(2), for g1(2)
+	mnu: array, N+U for g1, N-U for g2
+	data_num: data number
+	bin_num: must be even number, bin number, >= 4
+	gh (gh_sig): the result, g and sigma of g
+	ini_left: the initial guess of shear of the left end
+	ini_right: the initial guess of shear of the right end
+	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
+*/
+
+void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double chi_gap = 40);
+/* fitting a quadratic function to estimate shear 
+	
+	shear: array, the shears [start, end] for fitting, the X
+	chi: array, chi square corresponding to the points in "shear" array, the Y
+	num: the number of point
+	gh (gh_sig): the result, g and sigma of g
+	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
+*/
+
 
 /********************************************************************************************************************************************/
 /* cosmology */
@@ -548,9 +592,13 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 					  have been shifted.
 */
 
-void histogram(const double *data, const double *bins, int *num, const int data_num, const int bin_num);//checked
-void histogram(const float *data, const float *bins, int *num, const int data_num, const int bin_num);//checked
-void histogram(const int *data, const  int *bins, int *num, const  int data_num, const  int bin_num);//checked
+void histogram(const double *data, const double *bins, int *num_in_bin, const int data_num, const int bin_num);//checked
+void histogram(const double *data, const double *bins, long *num_in_bin, const int data_num, const int bin_num);
+void histogram(const float *data, const float *bins, int *num_in_bin, const int data_num, const int bin_num);//checked
+void histogram(const float *data, const float *bins, long *num_in_bin, const int data_num, const int bin_num);
+void histogram(const int *data, const  int *bins, int *num_in_bin, const  int data_num, const  int bin_num);//checked
+void histogram(const int *data, const  int *bins, long *num_in_bin, const  int data_num, const  int bin_num);
+
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const  int xbin_num);
 void histogram2d(const float *data_y, const float*data_x, const float *bin_y, const float *bin_x, int *num, const int data_num, const  int ybin_num, const int xbin_num);
 void histogram2d(const int *data_y, const int*data_x, const int *bin_y, const int *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num);

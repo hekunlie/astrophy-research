@@ -42,19 +42,18 @@ def set_bin(data, bin_num, bound_scale):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
-
 fmt='%2.f%%'
-fig_x = 7
+fig_x = 9
 fig_y = fig_x*4/6
-figs = (fig_x*4, fig_y*2)
 fonts = 20
-xy_lb_size = 18
-legend_size = fonts - 4
-axis_linewidth = 1.2
+xy_lb_size = 22
+xy_tick_size = xy_lb_size - 5
+legend_size =xy_tick_size
+axis_linewidth = 2
 plt_line_width = 2
 cap_size = 5
-
-
+tick_len = 6
+figs = (fig_x*4, fig_y*2)
 fig = plt.figure(figsize=figs)
 axs = []
 for i in range(8):
@@ -193,18 +192,18 @@ for m in range(2):
                 e_label = "$\chi^2$ of e$_1$ (g1=%.2f)"%g1
             else:
                 e_label = "$\chi^2$ of e$_2$ (g2=%.2f)"%g2
-            axs[ax_tag].set_ylabel(e_label, fontsize=fonts)
+            axs[ax_tag].set_ylabel(e_label, fontsize=xy_lb_size)
         if m == 1:
-            axs[ax_tag].set_xlabel("Bin label", fontsize=fonts)
+            axs[ax_tag].set_xlabel("Bin label", fontsize=xy_lb_size)
         else:
             axs[ax_tag].set_xticklabels([])
-        axs[ax_tag].tick_params(direction='in', labelsize=xy_lb_size, top=True, right=True)
+        axs[ax_tag].tick_params(direction='in', labelsize=xy_tick_size, top=True, right=True,pad=5)
         for axis in ["bottom", "left", "top", "right"]:
             # the line width of the frame
             axs[ax_tag].spines[axis].set_linewidth(axis_linewidth)
-        axs[ax_tag].xaxis.set_tick_params(which="both",direction="in",length=5, width=axis_linewidth)
-        axs[ax_tag].yaxis.set_tick_params(which="major",direction="in",length=5, width=axis_linewidth)
-        axs[ax_tag].yaxis.set_tick_params(which="minor",direction="in",length=5, width=axis_linewidth)
+        axs[ax_tag].xaxis.set_tick_params(which="both",direction="in",length=tick_len, width=axis_linewidth)
+        axs[ax_tag].yaxis.set_tick_params(which="major",direction="in",length=tick_len, width=axis_linewidth)
+        axs[ax_tag].yaxis.set_tick_params(which="minor",direction="in",length=tick_len-2, width=axis_linewidth)
     print(g1, g2)
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.savefig("/home/hkli/work/selection_bias/sym_mc_plot/pics/%s_%s_%s.pdf"%(argv[1], argv[2], argv[3]),bbox_inches='tight')
