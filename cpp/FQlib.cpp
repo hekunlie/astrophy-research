@@ -2291,6 +2291,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras)
 
 }
 
+
 void ellip_est(const double *gal_img, const int size, para*paras)
 {
 	int i, j, sizeh = size*0.5;
@@ -2415,6 +2416,8 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	}
 }
 
+
+
 void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, const double *bins, const int bin_num, const double gh, double &result)
 {
 	int i, j, k;
@@ -2432,6 +2435,8 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	delete[] num_in_bin;
 	delete[] temp;
 }
+
+
 
 void chisq_2d(const double *hist_arr, const int size, double &result)
 {
@@ -3070,6 +3075,8 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 	return fvals;
 }
 
+
+
 void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs)
 {
 	if (order < 1)
@@ -3209,6 +3216,8 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	delete[] f_vector;
 	delete[] check;
 }
+
+
 
 void cov_matrix_1d(const double *x, const double *fx, const int data_num, const int order, double *cov_mat, double *f_vector)
 {
@@ -3449,6 +3458,8 @@ void cov_matrix_2d(const double *x, const double *y, const double *fxy, const in
 	delete[] xs;
 	delete[] xy_pow_mask;
 }
+
+
 
 void sum_arr(const double *arr, const int size, const int start_t, const int stop_t, double &total)
 {
@@ -3730,6 +3741,7 @@ void initialize_para(para *paras)
 }
 
 
+
 void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale)
 {
 	double *data_cp = new double[data_num];
@@ -3789,6 +3801,7 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 	}
 	delete[] data_cp;
 }
+
 
 
 void histogram(const double *data, const double *bins, int *num_in_bin, const int data_num, const int bin_num)
@@ -3898,6 +3911,7 @@ void histogram(const int *data, const  int *bins, long *num_in_bin, const  int d
 		}
 	}
 }
+
 
 
 void histogram2d(const double *data_y, const double*data_x, const double *bin_y, const double *bin_x, int *num, const int data_num, const int ybin_num, const int xbin_num)
@@ -4023,6 +4037,8 @@ void histogram2d_s(const double data_y, const double data_x, const double *bin_y
 	}
 
 }
+
+
 
 void sort_arr(double* arr, int size, int order=1)
 {
