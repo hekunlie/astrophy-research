@@ -355,6 +355,7 @@ void chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
 */
 
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
+// checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
 
