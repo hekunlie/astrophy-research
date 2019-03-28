@@ -476,7 +476,7 @@ class Fourier_Quad:
         noise_level = numpy.sum(self.rim*image_ps)/numpy.sum(self.rim)
         return numpy.sqrt(image_ps[int(self.size/2), int(self.size/2)]/noise_level)
 
-    def set_bin(self, data, bin_num, sort_method="abs", sym=True):
+    def set_bin(self, data, bin_num, scale=100., sort_method="abs", sym=True):
         """
         set up bins for 1-D data
         :param data:
@@ -498,18 +498,18 @@ class Fourier_Quad:
             bin_size = len(temp_data) / bin_num * 2
             bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
             bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-            bound = numpy.max(numpy.abs(data)) * 100.
+            bound = numpy.max(numpy.abs(data)) * scale
             bins = numpy.append(-bound, numpy.append(bins, bound))
         else:
             bin_size = len(temp_data) / bin_num
             bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, bin_num)])
             if sort_method == "abs" or sort_method == "posi":
                 bins = numpy.sort(numpy.append([0], bins))
-                bound = numpy.max(numpy.abs(data)) * 100.
+                bound = numpy.max(numpy.abs(data)) * scale
                 bins = numpy.append(bins, bound)
             else:
                 # for the sort of negative data
-                bound = numpy.min(data)*100
+                bound = numpy.min(data)*scale
                 bins = numpy.append(bound, numpy.append(bins, -bound))
         return bins
 
@@ -642,7 +642,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -656,7 +656,7 @@ class Fourier_Quad:
         :param left, right: the initial guess of shear
         :return: estimated shear and sigma
         """
-        bins = self.set_bin(g, bin_num)
+        bins = self.set_bin(g, bin_num,scale)
         same = 0
         iters = 0
         # m1 chi square & left & left chi square & right & right chi square
@@ -774,7 +774,7 @@ class Fourier_Quad:
         return g_h, g_sig
 
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, pic_path=False, left=-0.2, right=0.2):
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -788,7 +788,7 @@ class Fourier_Quad:
         :param left, right: the initial guess of shear
         :return: estimated shear and sigma
         """
-        bins = self.set_bin(g,bin_num)
+        bins = self.set_bin(g,bin_num,scale)
         iters = 0
         change = 1
         while change == 1:
