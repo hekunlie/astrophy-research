@@ -2543,10 +2543,10 @@ void chisq_1d(const int *hist_num, const int bin_num, double &result)
 
 
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double lini_eft, const double ini_right, const double chi_gap)
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
-	int chi_num = 40;
+	int chi_num = 20;
 
 	double *bins = new double[bin_num + 1];
 	double *temp = new double[data_num];
@@ -2554,7 +2554,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	double *chisq_fit = new double[chi_num];
 
 	int same = 0, iters = 0, change = 1;
-	double left = ini_right, right = ini_right, step;
+	double left = ini_left, right = ini_right, step;
 	double chi_left, chi_right, chi_mid;
 	double gh_left, gh_right, gh_mid;
 
@@ -2563,6 +2563,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 
 	while (change == 1)
 	{
+		
 		change = 0;
 		gh_mid = (left + right) *0.5;
 		gh_left = (gh_mid + left) *0.5;
@@ -2571,6 +2572,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
 
 		if (chi_left > chi_mid + chi_gap)
 		{
@@ -2589,6 +2591,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 			break;
 		}
 	}
+	
+	//std::cout << left << " " << right << std::endl;
 
 	step = (right - left) / chi_num;
 	for (i = 0; i < chi_num; i++)
@@ -2602,6 +2606,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	}
 
 	fit_shear(gh_fit, chisq_fit, chi_num, gh, gh_sig, chi_gap);
+
+	//std::cout << gh << " " << gh_sig << std::endl;
 
 	delete[] gh_fit;
 	delete[] chisq_fit;
