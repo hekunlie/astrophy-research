@@ -13,5 +13,5 @@ temp.py
 .idea
 my_lib/__pycache__/Fourier_Quad.cpython-37.pyc
 my_lib/__pycache__/Fourier_Quad.cpython-37.pyc
-*.pyc
-*.pyc
+my_lib/__pycache__/*.pyc
+my_lib/__pycache__/*
