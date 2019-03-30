@@ -16,7 +16,7 @@ path_items = tool_box.config(envs_path,['get','get','get','get'], get_contents)
 total_path, result_path, para_path, log_path = path_items
 
 
-sex_filters = ["sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
+sex_filters = ["sex2_4", "sex3_4", "sex4_4","sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
 cut_nm = ["mag_auto", "sex_snr", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
 
 if cmd == "cut":
@@ -46,12 +46,15 @@ if cmd == "sex":
         print("Build: %scat/" % sex_path)
 
 if cmd == "data":
-    os.makedirs(result_path + "data/data_2.0sig/")
-    print("Build: %scat/" % (result_path + "data/data_2.0sig/"))
-    os.makedirs(result_path + "data/data_1.5sig/")
-    print("Build: %scat/" % (result_path + "data/data_1.5sig/"))
-    os.makedirs(result_path + "data/check/")
-    print("Build: %scat/" % (result_path + "data/check/"))
+    data_sigs = ["data/data_2.0sig/","data/data_1.5sig/","data/data_4.0sig/"]
+    for sigs in data_sigs:
+        data_path = result_path + sigs
+        if not os.path.exists(data_path):
+            #shutil.rmtree(data_path)
+            os.makedirs(data_path)
+            print("Build: %s/" %data_path)
+        else:
+            print(data_path," exists")
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
         if os.path.exists(sex_path):
@@ -62,7 +65,8 @@ if cmd == "data":
 if cmd == "all":
     for i in range(14):
         img_path = total_path + "%d/"%i
-        os.makedirs(img_path)
+        if not os.path.exists(img_path):
+            os.makedirs(img_path)
     os.makedirs(para_path + "logs/")
     os.makedirs(para_path + "pic/")
     os.mkdir(total_path + "logs/")

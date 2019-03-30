@@ -21,15 +21,15 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 2.0, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
+	double psf_thres_scale = 2., sig_level = 5.0, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
 
 	int cmd = 1;
 
@@ -104,7 +104,7 @@ int main(int argc, char*argv[])
 	pow_spec(psf, ppsf, size, size);
 
 	seed = 12300;
-	gsl_rng_initialize(seed);	
+	gsl_initialize(seed);	
 
 	//addnoise(noise, size*size, gal_noise_sig);
 	//pow_spec(noise, pnoise, size, size);	
@@ -115,7 +115,7 @@ int main(int argc, char*argv[])
 
 	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
 
-	gsl_rng_free();
+	gsl_free();
 
 	if (0 == myid)
 	{
@@ -135,18 +135,18 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			
-			initialize_arr(recvbuf, total_chips*stamp_num*shear_esti_data_cols);
-			initialize_arr(recvbuf_s, total_chips*stamp_num*snr_para_data_cols);
+			initialize_arr(recvbuf, total_chips*stamp_num*shear_esti_data_cols, 0);
+			initialize_arr(recvbuf_s, total_chips*stamp_num*snr_para_data_cols, 0);
 		}
-		initialize_arr(data, data_row*shear_esti_data_cols);
-		initialize_arr(data_s, data_row*snr_para_data_cols);
+		initialize_arr(data, data_row*shear_esti_data_cols, 0);
+		initialize_arr(data_s, data_row*snr_para_data_cols, 0);
 
 
 		for (i = chip_id_s; i < chip_id_e; i++)
 		{
 			seed = myid * i + shear_id + 1+ i + temp_s;
 			temp_s++;
-			gsl_rng_initialize(seed);
+			gsl_initialize(seed);
 			t1 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip start...", myid, shear_id, i);
 			write_log(log_path, log_inform);
@@ -156,8 +156,8 @@ int main(int argc, char*argv[])
 			}
 
 			sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
-			initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
-			initialize_arr(check_img, stamp_nx*stamp_nx*size*size);
+			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
+			initialize_arr(check_img, stamp_nx*stamp_nx*size*size, 0);
 
 			read_fits(chip_path, big_img);
 
@@ -166,17 +166,19 @@ int main(int argc, char*argv[])
 
 			for (j = 0; j < stamp_num; j++)			
 			{				
-				initialize_arr(noise, size*size);
-				initialize_arr(pnoise, size*size);
-				initialize_arr(gal, size*size);
-				initialize_arr(pgal, size*size);
+				initialize_arr(noise, size*size, 0);
+				initialize_arr(pnoise, size*size, 0);
+				initialize_arr(gal, size*size, 0);
+				initialize_arr(pgal, size*size, 0);				
+				initialize_arr(mask, size*size, 0);
+
 				initialize_para(&all_paras);
-				initialize_arr(mask, size*size);
 
 				segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 				pow_spec(gal, pgal, size, size);
 
 				detect_label = galaxy_finder(gal, mask, &all_paras, false);
+				// check
 				if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
 				{
 					stack(check_img, mask, j, size, stamp_nx, stamp_nx);
@@ -207,9 +209,9 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
 				data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
 
-				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0]/size/gal_noise_sig;//P(k=0)
-				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1]/size/gal_noise_sig;//P(k=0)_fit
-				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2]/size/gal_noise_sig;//MAX(P(k=0), P(k=0)_fit)
+				data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];//P(k=0)
+				data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];//P(k=0)_fit
+				data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];//MAX(P(k=0), P(k=0)_fit)
 				data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
 				data_s[row_s + j * snr_para_data_cols + 8] = -mag[i*stamp_num + j];
 				data_s[row_s + j * snr_para_data_cols + 9] = detect_label;
@@ -223,7 +225,7 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-			gsl_rng_free();
+			gsl_free();
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		sprintf(set_name, "/data");
@@ -234,7 +236,7 @@ int main(int argc, char*argv[])
 			if (0 == myid)
 			{
 				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
-				write_h5(h5_path, set_name, recvbuf, total_data_row, shear_esti_data_cols);
+				write_h5(h5_path, set_name, recvbuf, total_data_row, shear_esti_data_cols,TRUE);
 			}
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -243,7 +245,7 @@ int main(int argc, char*argv[])
 		if (0 == myid)
 		{
 			sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
-			write_h5(snr_h5_path, set_name, recvbuf_s, total_data_row, snr_para_data_cols);
+			write_h5(snr_h5_path, set_name, recvbuf_s, total_data_row, snr_para_data_cols, TRUE);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 

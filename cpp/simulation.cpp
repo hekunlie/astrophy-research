@@ -26,8 +26,8 @@ int main(int argc, char*argv[])
 		char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 		char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 		
-		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_64/");
-		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_64/";
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 		std::string str_paraf_path = str_data_path + "parameters/para.ini";
 		std::string str_shear_path = str_data_path + "parameters/shear.dat";
 		sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
@@ -145,12 +145,12 @@ int main(int argc, char*argv[])
 			{
 				t1 = clock();
 
-				seed = myid * i + shear_id + 190000+i+temp_s;
+				seed = myid * i + shear_id + 5490000+i+temp_s;
 				temp_s++;
-				gsl_rng_initialize(seed + i);
+				gsl_initialize(seed + i);
 
 				sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
-				initialize_arr(big_img, stamp_nx*stamp_nx*size*size);
+				initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 
 				sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %04d, start.", myid,shear_id, i);
 				write_log(log_path, log_inform);
@@ -164,11 +164,11 @@ int main(int argc, char*argv[])
 
 				for (j = 0; j < stamp_num; j++)
 				{
-					initialize_arr(gal, size*size);
-					initialize_arr(pgal, size*size);
-					initialize_arr(point, num_p * 2);
-					initialize_arr(noise, size*size);
-					initialize_arr(pnoise, size*size);
+					initialize_arr(gal, size*size, 0);
+					initialize_arr(pgal, size*size, 0);
+					initialize_arr(point, num_p * 2, 0);
+					initialize_arr(noise, size*size, 0);
+					initialize_arr(pnoise, size*size, 0);
 					initialize_para(&all_paras);
 
 					create_points(point, num_p, max_radius);
@@ -176,7 +176,7 @@ int main(int argc, char*argv[])
 					// for measuring the intrinsic ellipticity
 					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
 
-					initialize_arr(gal, size*size);
+					initialize_arr(gal, size*size, 0);
 					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);
 
 					addnoise(gal, size*size, gal_noise_sig);
@@ -208,15 +208,15 @@ int main(int argc, char*argv[])
 					data_s[row_s + j * snr_para_data_cols + 2] = all_paras.gal_flux;
 					data_s[row_s + j * snr_para_data_cols + 3] = all_paras.gal_osnr;
 
-					data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0]/size/gal_noise_sig;//P(k=0)
-					data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1]/size/gal_noise_sig;//P(k=0)_fit
-					data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2]/size/gal_noise_sig;//MAX(P(k=0), P(k=0)_fit)
+					data_s[row_s + j * snr_para_data_cols + 4] = all_paras.gal_flux2_ext[0];//P(k=0)
+					data_s[row_s + j * snr_para_data_cols + 5] = all_paras.gal_flux2_ext[1];//P(k=0)_fit
+					data_s[row_s + j * snr_para_data_cols + 6] = all_paras.gal_flux2_ext[2];//MAX(P(k=0), P(k=0)_fit)
 					data_s[row_s + j * snr_para_data_cols + 7] = all_paras.gal_flux2_ext[3];
 					data_s[row_s + j * snr_para_data_cols + 8] = -mag[i*stamp_num + j];
 					data_s[row_s + j * snr_para_data_cols + 9] = detect_label;
 
 				}
-				gsl_rng_free();
+				gsl_free();
 
 				write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
 
@@ -241,7 +241,7 @@ int main(int argc, char*argv[])
 			if (0 == myid)
 			{
 				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
-				write_h5(h5_path, set_1, recvbuf, total_data_row, shear_esti_data_cols);
+				write_h5(h5_path, set_1, recvbuf, total_data_row, shear_esti_data_cols, TRUE);
 			}
 
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -250,7 +250,7 @@ int main(int argc, char*argv[])
 			if (0 == myid)
 			{
 				sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
-				write_h5(snr_h5_path, set_1, recvbuf_s, total_data_row, snr_para_data_cols);
+				write_h5(snr_h5_path, set_1, recvbuf_s, total_data_row, snr_para_data_cols, TRUE);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 		}

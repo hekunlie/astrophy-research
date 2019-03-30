@@ -8,9 +8,10 @@ import tool_box
 import time
 
 sources = ["debug"]
+max_radius = 9
 cpus = 50
 num = 80
-jobs = numpy.zeros((num, 1))
+jobs = numpy.zeros((num, 1))+1
 
 t1 = time.time()
 for source in sources:
@@ -33,14 +34,11 @@ for source in sources:
             if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
                 jobs[i, 0] = 1
 
-    if "pts" in source:
-        max_radius = 8
-    else:
-        max_radius = 5.5
-
-    filter_names = ["sex2_2", "sex3_2", "sex4_2",
+    filter_names = ["sex2_4", "sex3_4", "sex4_4",
+                    "sex2_2", "sex3_2", "sex4_2",
                     "sex2_1.5", "sex3_1.5", "sex4_1.5"]
     gauss_filters = ["gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7",
+                     "gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7",
                      "gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7"]
 
     for ii, filter_name in enumerate(filter_names):
@@ -65,9 +63,9 @@ for source in sources:
         a.wait()
 
         # check
-        #cmd = "mpirun -np %d python snr_est.py check %s %s %.1f"%(shear_num,source, filter_name, max_radius)
-        #a = Popen(cmd, shell=True)
-        #a.wait()
+        cmd = "mpirun -np %d python snr_est.py check %s %s %.1f"%(shear_num,source, filter_name, max_radius)
+        a = Popen(cmd, shell=True)
+        a.wait()
 t2 = time.time()
 print("SNR EST: ",sources, cpus, t2-t1)
 

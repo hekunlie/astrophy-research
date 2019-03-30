@@ -1,7 +1,6 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-# define backgal_data_col 15
 
 int main(int argc, char *argv[])
 {
@@ -28,16 +27,16 @@ int main(int argc, char *argv[])
 	double *foregal_data[3];
 	double *foregal_data_shared;
 	int foregal_data_shared_col, shared_col_in_radi, shared_elem_id;
-	double pair_count;
+	int pair_count;// be carefull, the pair number may be too many, long or double 
 	double shear_tan, shear_tan_sig, shear_cros;
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_source;
 	double coeff, da_coeff;
 	double crit_surf_density_comoving;
 
-	int data_num;
+	int data_num, backgal_data_col=15;
 	int backgal_num;
-	double *backgal_data[backgal_data_col];
+	double *backgal_data[15]; //backgal_data_col
 	int *backgal_mask, *my_backgal_mask;;
 	double *backgal_cos_2phi, *backgal_sin_2phi;
 	double z_b, z_thresh, ra_b, dec_b;
@@ -45,6 +44,7 @@ int main(int argc, char *argv[])
 	double back_mg1, back_mg2, back_mnu1, back_mnu2;
 	int back_tag;
 
+	double *mg1, *mg2, *mnu1, *mnu2;
 
 	double *ra_bin, *dec_bin;
 	int ra_bin_num, dec_bin_num;
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	char data_path[200], log_path[200], h5f_path[200], h5f_res_path[200];
 	char set_name[80], attrs_name[80], log_infom[200];
 
-	char *names[backgal_data_col];
+	char *names[15];//backgal_data_col
 	for (i = 0; i < backgal_data_col; i++)
 	{
 		names[i] = new char[25];
@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
 		st_start = clock();
 		time_label[0] = clock();
 		// read foreground information
-		sprintf(attrs_name, "shape");
 		// Z, RA, DEC
+		sprintf(attrs_name, "shape");
 		for (i = 0; i < 3; i++)
 		{
 			sprintf(set_name, "/foreground/w_%d/%s", area_id, names[i]);
@@ -247,16 +247,16 @@ int main(int argc, char *argv[])
 			std::cout << log_infom << std::endl;
 		}
 
-		MPI_Win win_1, win_mask, win_shear;
-		MPI_Aint size_1, size_mask, size_shear;
+		MPI_Win win_foregal, win_mask, win_shear;
+		MPI_Aint size_fore, size_mask, size_shear;
 		shared_col_in_radi = 7;
 		foregal_data_shared_col = radius_num * shared_col_in_radi;
-		size_1 = foregal_num * foregal_data_shared_col * sizeof(double);
+		size_fore = foregal_num * foregal_data_shared_col * sizeof(double);
 		size_mask = backgal_num * sizeof(int);
-		size_shear = 2*radius_num * sizeof(double);
+		size_shear = 4*radius_num * sizeof(double);
 		if (0 == rank)
 		{
-			MPI_Win_allocate_shared(size_1, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_1);
+			MPI_Win_allocate_shared(size_fore, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_foregal);
 
 			MPI_Win_allocate_shared(size_mask, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_mask, &win_mask);
 
@@ -265,8 +265,8 @@ int main(int argc, char *argv[])
 		else
 		{
 			int disp_unit, disp_unit_mask, disp_unit_shear;
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_1);
-			MPI_Win_shared_query(win_1, 0, &size_1, &disp_unit, &foregal_data_shared);
+			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_foregal);
+			MPI_Win_shared_query(win_foregal, 0, &size_fore, &disp_unit, &foregal_data_shared);
 
 			MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_mask, &win_mask);
 			MPI_Win_shared_query(win_mask, 0, &size_mask, &disp_unit_mask, &backgal_mask);
@@ -280,10 +280,6 @@ int main(int argc, char *argv[])
 			for (i = 0; i < foregal_num * foregal_data_shared_col; i++)
 			{
 				foregal_data_shared[i] = 0;
-			}
-			for (i = 0; i < backgal_num; i++)
-			{
-				backgal_mask[i] = 0;
 			}
 			for (i = 0; i < 2*radius_num; i++)
 			{
@@ -329,13 +325,23 @@ int main(int argc, char *argv[])
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-			////////////////////////////////////////////
-			//		1). loop the foreground galaxy	//
-			//////////////////////////////////////////
+			//////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//		1). loop the foreground galaxyto find the background galaxies in [radius_s, radius_e].	//
+			///////////////////////////////////////////////////////////////////////////////////////////////////////
+			if (0 == rank)
+			{
+				initialize_arr(backgal_mask, backgal_num, 0);
+			}
+			initialize_arr(my_backgal_mask, backgal_num, 0);
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			radius_s = radius_bin[radi_id] * coeff ; 
+			radius_e = radius_bin[radi_id + 1] * coeff ;
+			radius_s_sq = radius_s * radius_s;
+			radius_e_sq = radius_e * radius_e;
+
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
-				time_label[2] = clock();
-
 				//process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
 				//per_n = double((gal_id - my_gal_s) / (my_gal_e - my_gal_s) * 100);
 				//
@@ -354,8 +360,8 @@ int main(int argc, char *argv[])
 				find_near(redshifts, z_f, red_num, tag);
 				dist_len = distances[tag];
 				// the searching radius depend on the redshift of lens
-				radius_s = radius_bin[radi_id] * coeff / dist_len * (1 + z_f); // the physical distance
-				radius_e = radius_bin[radi_id + 1] * coeff / dist_len * (1 + z_f);
+				radius_s = radius_s / dist_len * (1 + z_f); // the physical distance
+				radius_e = radius_e / dist_len * (1 + z_f);
 				radius_s_sq = radius_s * radius_s;
 				radius_e_sq = radius_e * radius_e;
 
@@ -379,8 +385,54 @@ int main(int argc, char *argv[])
 
 				// find the blocks needed
 				initialize_arr(block_mask, grid_num, -1);
-				initialize_arr(backgal_mask, backgal_num, 0);
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
+
+				for (block_id = 0; block_id < grid_num; block_id++)
+				{
+					if (block_mask[block_id] > -1)
+					{
+						// the start and end point of the block//
+						// the start- & end-point
+						block_s = backgal_data[bs_id][block_id];
+						block_e = backgal_data[be_id][block_id];
+						for (ib = block_s; ib < block_e; ib++)
+						{
+							ra_b = backgal_data[ra_id][ib];
+							dec_b = backgal_data[dec_id][ib];
+							diff_ra = ra_b - ra_f;
+							diff_dec = dec_b - dec_f;
+							diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
+
+							if (diff_r >= radius_s_sq and diff_r < radius_e_sq and backgal_data[z_id][ib]>z_thresh)
+							{
+								my_backgal_mask[ib] = +1;
+							}
+						}
+					}
+				}
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+			for (i = 0; i < numprocs; i++)
+			{
+				if (i == rank)
+				{
+					for (j = 0; j < backgal_num; j++)
+					{	
+						/*  if the galaxy is identified as a background galaxy of one foreground galaxy  */
+						/*  then it will be labeled. One background galaxy may be the background of   */
+						/*  foreground galaxy, but it will be used only once in the shear calculation     */
+						if (my_backgal_mask[j] > 0)
+						{
+							/* only be used once, otherwise, backgal_mask[j] += 1, */
+							/*	and fix the following process to use it n times            */
+							backgal_mask[j] = 1;
+							//backgal_mask[j] += 1;
+						}
+					}
+				}
+				MPI_Barrier(MPI_COMM_WORLD);
+			}
+				/*
 				// the background galaxy may belong to many foreground galaxies in the same (or not) radius scale
 				// depending on the foreground galaxy density
 				// it must be initialized for each foreground galaxy each radius bin
@@ -514,25 +566,54 @@ int main(int argc, char *argv[])
 					{
 						std::cout << log_infom << std::endl;
 					}
-				}
+				}*/
 
 
-			}
+			
 			
 			/////////////////////////////////////////////////////////////
 			//		2). calculate the shear in [radius_s, radius_e]		//
 			//////////////////////////////////////////////////////////
 			MPI_Barrier(MPI_COMM_WORLD);
+			pair_count = 0;
 			if (0 == rank)
 			{
 				for (gal_id = 0; gal_id < backgal_num; gal_id++)
 				{
-					if (backgal_mask[gal_id] == 1)
+					if (backgal_mask[gal_id] > 0)
 					{
-
+						pair_count += 1;
 					}
-
 				}
+
+				mg1 = new double[pair_count];
+				mg2 = new double[pair_count];
+				mnu1 = new double[pair_count];
+				mnu2 = new double[pair_count];
+				pair_count = 0;
+				for (gal_id = 0; gal_id < backgal_num; gal_id++)
+				{
+					if (backgal_mask[gal_id] > 0)
+					{
+						mg1[pair_count] = backgal_data[mg1_id][gal_id];
+						mg2[pair_count] = backgal_data[mg2_id][gal_id];
+						mnu1[pair_count] = backgal_data[mn_id][gal_id] + backgal_data[mu_id][gal_id];
+						mnu2[pair_count] = backgal_data[mn_id][gal_id] - backgal_data[mu_id][gal_id];
+						pair_count += 1;
+					}
+				}
+				find_shear(mg1, mnu1, pair_count, 12, gh1, gh1_sig);
+				find_shear(mg2, mnu2, pair_count, 12, gh2, gh2_sig);
+
+				shear_in_radius[radi_id] = gh1;
+				shear_in_radius[radi_id + radius_num] = gh1_sig;
+				shear_in_radius[radi_id + radius_num * 2] = gh2;
+				shear_in_radius[radi_id + radius_num * 3] = gh2_sig;
+
+				delete[] mg1;
+				delete[] mg2;
+				delete[] mnu1;
+				delete[] mnu2;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			
@@ -541,7 +622,61 @@ int main(int argc, char *argv[])
 			/////////////////////////////////////////////
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
+				z_f = foregal_data[z_id][gal_id];
+				z_thresh = z_f + 0.3;
+				find_near(redshifts, z_f, red_num, tag);
+				dist_len = distances[tag];
+				// the searching radius depend on the redshift of lens
+				radius_s = radius_s / dist_len * (1 + z_f); // the physical distance
+				radius_e = radius_e / dist_len * (1 + z_f);
+				radius_s_sq = radius_s * radius_s;
+				radius_e_sq = radius_e * radius_e;
 
+				// degree
+				ra_f = foregal_data[ra_id][gal_id];
+				dec_f = foregal_data[dec_id][gal_id];
+
+				histogram2d_s(dec_f, ra_f, backgal_data[dec_bin_id], backgal_data[ra_bin_id], dec_bin_num, ra_bin_num, bin_label);
+				row = bin_label / grid_nx;
+				col = bin_label % grid_nx;
+
+				gal_info.idy = row;
+				gal_info.idx = col;
+				gal_info.y = dec_f;
+				gal_info.x = ra_f;
+				gal_info.ny = grid_ny;
+				gal_info.nx = grid_nx;
+				gal_info.blocks_num = grid_num;
+				gal_info.scale = block_scale[0];
+
+
+				// find the blocks needed
+				initialize_arr(block_mask, grid_num, -1);
+				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
+
+				for (block_id = 0; block_id < grid_num; block_id++)
+				{
+					if (block_mask[block_id] > -1)
+					{
+						// the start and end point of the block//
+						// the start- & end-point
+						block_s = backgal_data[bs_id][block_id];
+						block_e = backgal_data[be_id][block_id];
+						for (ib = block_s; ib < block_e; ib++)
+						{
+							ra_b = backgal_data[ra_id][ib];
+							dec_b = backgal_data[dec_id][ib];
+							diff_ra = ra_b - ra_f;
+							diff_dec = dec_b - dec_f;
+							diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
+
+							if (diff_r >= radius_s_sq and diff_r < radius_e_sq and backgal_data[z_id][ib]>z_thresh)
+							{
+								my_backgal_mask[ib] = +1;
+							}
+						}
+					}
+				}
 			}
 	}
 		// finish the area_i
@@ -568,7 +703,7 @@ int main(int argc, char *argv[])
 		//}
 
 		// free the memory	
-		MPI_Win_free(&win_1);
+		MPI_Win_free(&win_foregal);
 
 		delete[] backgal_sin_2phi;
 		delete[] backgal_cos_2phi;
