@@ -50,7 +50,7 @@ if rank == 0:
 comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
-seed = rank * 344 + 11121
+seed = rank * 344 + 111345
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seed)

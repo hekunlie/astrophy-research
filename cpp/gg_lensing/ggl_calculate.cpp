@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
 				z_thresh = z_f + 0.3;
 				find_near(redshifts, z_f, red_num, tag);
 				dist_len = distances[tag];
-				// the searching radius depend on the redshift of lens
+				/* the searching radius depend on the redshift of lens  */
 				radius_s = radius_s / dist_len * (1 + z_f); // the physical distance
 				radius_e = radius_e / dist_len * (1 + z_f);
 				radius_s_sq = radius_s * radius_s;
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
 				gal_info.scale = block_scale[0];
 
 
-				// find the blocks needed
+				/* find the blocks needed */
 				initialize_arr(block_mask, grid_num, -1);
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
@@ -391,8 +391,8 @@ int main(int argc, char *argv[])
 				{
 					if (block_mask[block_id] > -1)
 					{
-						// the start and end point of the block//
-						// the start- & end-point
+						/* the start and end point of the block */
+						/* the start- & end-point					  */
 						block_s = backgal_data[bs_id][block_id];
 						block_e = backgal_data[be_id][block_id];
 						for (ib = block_s; ib < block_e; ib++)
@@ -590,6 +590,7 @@ int main(int argc, char *argv[])
 				mg2 = new double[pair_count];
 				mnu1 = new double[pair_count];
 				mnu2 = new double[pair_count];
+
 				pair_count = 0;
 				for (gal_id = 0; gal_id < backgal_num; gal_id++)
 				{
@@ -620,6 +621,10 @@ int main(int argc, char *argv[])
 			///////////////////////////////////////////////
 			//		3). caculate the tangential shear		//
 			/////////////////////////////////////////////
+			radius_s = radius_bin[radi_id] * coeff;
+			radius_e = radius_bin[radi_id + 1] * coeff;
+			radius_s_sq = radius_s * radius_s;
+			radius_e_sq = radius_e * radius_e;
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
 				z_f = foregal_data[z_id][gal_id];

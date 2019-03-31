@@ -26,8 +26,8 @@ int main(int argc, char*argv[])
 		char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 		char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 		
-		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
-		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
+		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
 		std::string str_paraf_path = str_data_path + "parameters/para.ini";
 		std::string str_shear_path = str_data_path + "parameters/shear.dat";
 		sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
