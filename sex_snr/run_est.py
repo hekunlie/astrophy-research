@@ -7,11 +7,11 @@ import numpy
 import tool_box
 import time
 
-sources = ["debug"]
-max_radius = 9
+sources = ["dimmerm2"]
+max_radius = 5.5
 cpus = 50
-num = 80
-jobs = numpy.zeros((num, 1))+1
+num = 60
+jobs = numpy.zeros((num, 1))
 
 t1 = time.time()
 for source in sources:
@@ -28,11 +28,16 @@ for source in sources:
     shear_num = int(para_items[1])
 
     while True:
-        if jobs.sum() == num:
+        if os.path.exists("%s/work/test/job/%s/finish.dat"%(my_home, source)):
             break
-        for i in range(num):
-            if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
-                jobs[i, 0] = 1
+
+
+    # while True:
+    #     if jobs.sum() == num and os.path.exists("%s/work/test/job/%s/finish.dat"%(my_home, source)):
+    #         break
+    #     for i in range(num):
+    #         if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
+    #             jobs[i, 0] = 1
 
     filter_names = ["sex2_4", "sex3_4", "sex4_4",
                     "sex2_2", "sex3_2", "sex4_2",

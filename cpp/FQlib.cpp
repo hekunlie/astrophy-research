@@ -1016,7 +1016,7 @@ void create_points(double *point, const int num_p, const double radius)
 		xm += x;
 		ym += y;
 	}
-	//re-move the mass center of the points cluster to (0,0)
+	/* move the mass center of the points cluster to (0,0) */
 	for (i = 0; i < num_p; i++)
 	{
 		point[i] = point[i] - xm / num_p;
@@ -1099,10 +1099,11 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	}
 	else
 	{
+		/* shear the profile and move the center to image center */
 		for (i = 0; i < num_p; i++)
 		{
-			points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + size / 2.;
-			points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + size / 2.;
+			points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + size*0.5-0.5;
+			points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + size*0.5-0.5;
 		}
 	}
 

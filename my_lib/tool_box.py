@@ -983,7 +983,7 @@ def set_bin(data, bin_num, bound_scale):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
-def back_to_block(data, num, cols, size_y, size_x, yi, xi, area_i, distance_thresh):
+def back_to_block(data, num, cols, size_y, size_x, cen_y, cen_x, yi, xi, area_i, distance_thresh):
     """
     for the analysis of the data measured by SExtractor
     the sequence of measured parameters are reserved.
@@ -1006,7 +1006,7 @@ def back_to_block(data, num, cols, size_y, size_x, yi, xi, area_i, distance_thre
     my, dy = numpy.divmod(data[:, yi] - sex_ori, size_y)
     mx, dx = numpy.divmod(data[:, xi] - sex_ori, size_x)
     block_n = (my*cols + mx).astype(int)
-    away = numpy.sqrt((dy-size_y/2)**2 + (dx-size_x/2)**2)
+    away = numpy.sqrt((dy-cen_y)**2 + (dx-cen_x)**2)
     for i in range(data.shape[0]):
         block_id = block_n[i]
         # print(block_id)

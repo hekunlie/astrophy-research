@@ -1,7 +1,7 @@
 import platform
-# if platform.system() == 'Linux':
-#     import matplotlib
-#     matplotlib.use('Agg')
+if platform.system() == 'Linux':
+    import matplotlib
+    matplotlib.use('Agg')
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg
@@ -9,8 +9,6 @@ from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
 import tool_box
-import time
-import datetime
 
 
 class Fourier_Quad:
