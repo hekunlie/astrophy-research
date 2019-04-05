@@ -3162,8 +3162,8 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 	}
 	coeffs[0] = c0;
 	coeffs[1] = cov00;
-	coeffs[0] = c1;
-	coeffs[1] = cov11;
+	coeffs[2] = c1;
+	coeffs[3] = cov11;
 }
 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs)

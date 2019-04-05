@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 
 		sprintf(log_inform, "%d:  t1: %.3f. t2: %.3f. t3: %.3f. t4: %.3f. t5: %.3f. chi_1: %.4f,  chi_2: %.4f. ", i,
 			(st2 - st1) / CLOCKS_PER_SEC, (st3 - st2) / CLOCKS_PER_SEC,
-			(st4 - st3) / CLOCKS_PER_SEC, (st5 - st4) / CLOCKS_PER_SEC, (st6 - st5) / CLOCKS_PER_SEC, chi_1[i], chi_2[i], );
+			(st4 - st3) / CLOCKS_PER_SEC, (st5 - st4) / CLOCKS_PER_SEC, (st6 - st5) / CLOCKS_PER_SEC, chi_1[i], chi_2[i]);
 		std::cout <<log_inform << std::endl;
     }
 
