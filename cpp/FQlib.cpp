@@ -3141,29 +3141,29 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 	double chi, c0, c1, cov00, cov01, cov11;
 	if (1 == weight)
 	{
-		double *inv_cov = new double[data_num];
+		double *wi = new double[data_num];
 		for (int i = 0; i < data_num; i++)
 		{
 			if (0 == fx_err[i])
 			{
-				inv_cov[i] = 1;
+				wi[i] = 1;
 			}
 			else
 			{
-				inv_cov[i] = 1. / fx_err[i] / fx_err[i];
+				wi[i] = 1. / fx_err[i] / fx_err[i];
 			}
 		}
-		gsl_fit_wlinear(x, 1, inv_cov,1,fx,1,data_num,&c0,&c1,&cov00,&cov01,&cov11,&chi);
-		delete[] inv_cov;
+		gsl_fit_wlinear(x, 1, wi,1,fx,1,data_num,&c0,&c1,&cov00,&cov01,&cov11,&chi);
+		delete[] wi;
 	}
 	else
 	{
 		gsl_fit_linear(x, 1, fx, 1, data_num, &c0, &c1, &cov00, &cov01, &cov11, &chi);
 	}
 	coeffs[0] = c0;
-	coeffs[1] = cov00;
+	coeffs[1] = sqrt(cov00);
 	coeffs[2] = c1;
-	coeffs[3] = cov11;
+	coeffs[3] = sqrt(cov11);
 }
 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs)

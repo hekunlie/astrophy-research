@@ -371,7 +371,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 */
 
-void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double chi_gap = 40);
+void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double chi_gap = 40);// checked
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
@@ -454,7 +454,7 @@ void hyperfit_5(const double *data, double*fit_para, para *paras);//checked
 void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs);//checked
 /* fit y = a1 +a2*x +a3*x^2 + a4*x^3 ... */
 
-void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);
+void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);// checked
 /* polynomial fitting by GSL
 	FX = c + m*X
 	x: array, coordinates

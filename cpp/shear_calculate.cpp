@@ -51,7 +51,7 @@ int main(int argc, char**argv)
 	MPI_Aint shear_size;
 	shear_size = shear_num * 4 * sizeof(double);
 
-	data_path_s = "/mnt/ddnfs/data_users/hkli/simu_test/parameters/shear.dat";
+	data_path_s = "/mnt/ddnfs/data_users/hkli/simu_test1/parameters/shear.dat";
 	read_text(data_path_s, shear, 2 * shear_num);
 
 	if (rank == 0)
@@ -73,7 +73,7 @@ int main(int argc, char**argv)
 	}
 
 	sprintf(set_name, "/data");
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/result/data/data_%d.hdf5", rank);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/result/data/data_%d.hdf5", rank);
 	read_h5(data_path, set_name, data);
 
 	for (i = 0; i < data_num; i++)
@@ -113,24 +113,26 @@ int main(int argc, char**argv)
 			measured_g2[i] = result[i + shear_num * 2];
 			measured_g2_sig[i] = result[i + shear_num * 3];
 		}
-
-		show_arr(measured_g1, 1, shear_num);
-		show_arr(measured_g1_sig, 1, shear_num);
-		show_arr(measured_g2, 1, shear_num);
-		show_arr(measured_g2_sig, 1, shear_num);
+		sprintf(data_path, "/home/hkli/work/shear_result.hdf5");
+		sprintf(set_name, "/data");
+		write_h5(data_path, set_name, result, 4, shear_num, TRUE);
+		//show_arr(measured_g1, 1, shear_num);
+		//show_arr(measured_g1_sig, 1, shear_num);
+		//show_arr(measured_g2, 1, shear_num);
+		//show_arr(measured_g2_sig, 1, shear_num);
 
 		st3 = clock();
 		poly_fit_1d(g1, measured_g1, measured_g1_sig, shear_num, coeff, 1);
 		st4 = clock();
 		show_arr(coeff, 1, 4);
-		sprintf(log_inform, "m1: %8.6f (%8.6f), c1: %9.6f (%9.6f). %.2f", coeff[3], coeff[2], coeff[1], coeff[0], (st4-st3)/CLOCKS_PER_SEC);
+		sprintf(log_inform, "m1: %8.6f (%8.6f), c1: %9.6f (%9.6f). %.2f", coeff[2]-1, coeff[3], coeff[0], coeff[1], (st4-st3)/CLOCKS_PER_SEC);
 		std::cout << log_inform << std::endl;
 
 		st5 = clock();
 		poly_fit_1d(g2, measured_g2, measured_g2_sig, shear_num, coeff, 1);
 		st6 = clock();
 		show_arr(coeff, 1, 4);
-		sprintf(log_inform, "m2: %6.4f (%6.4f), c2: %9.6f (%9.6f)", coeff[3], coeff[2], coeff[1], coeff[0], (st6 - st5) / CLOCKS_PER_SEC);
+		sprintf(log_inform, "m2: %6.4f (%6.4f), c2: %9.6f (%9.6f)", coeff[2] - 1, coeff[3], coeff[0], coeff[1], (st6 - st5) / CLOCKS_PER_SEC);
 		std::cout << log_inform << std::endl;
 
 		delete[] measured_g1;
