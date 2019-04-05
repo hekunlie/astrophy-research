@@ -354,7 +354,7 @@ void chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const int choice=0, const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -366,6 +366,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	data_num: data number
 	bin_num: must be even number, bin number, >= 4
 	gh (gh_sig): the result, g and sigma of g
+	choice: if > 0, "randomly" choose a sub-sample to set up the bin for shear estimation to save time
 	ini_left: the initial guess of shear of the left end
 	ini_right: the initial guess of shear of the right end
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
@@ -580,9 +581,9 @@ void show_arr(const int*arr, const int rows, const int cols);//checked
 void initialize_para(para *paras);
 /* set the "gal_" parameters zero */
 
-void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale); //checked
-void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale);//checked
-void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale);//checked
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale, int choice=0); //checked
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale, int choice=0);//checked
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale, int choice=0);//checked
 /* operate on the copy of data, involving sort_arr().
 	the length of bins is bin_num+1
 	data: array
@@ -591,6 +592,7 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 	max_scale: the scale (times the outer boundary of bins) of the bins boundary,
 					  to make it big enough to contain all the data, even when the data
 					  have been shifted.
+	choice: if > 0, "randomly" choose a sub-sample to set up the bin for shear estimation to save time
 */
 
 void histogram(const double *data, const double *bins, int *num_in_bin, const int data_num, const int bin_num);//checked

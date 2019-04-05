@@ -18,9 +18,9 @@ int main(int argc, char**argv)
 	double st1, st2, st3, st4, st5, st6;
 
 	int shear_num = 10;
-	if (numprocs < shear_num)
+	if (numprocs > shear_num)
 	{
-		std::cout << "Cpu "<<numprocs << " < shear_num" << shear_num << std::endl;
+		std::cout << "Cpu "<<numprocs << " > shear_num" << shear_num << std::endl;
 		exit(0);
 	}
 
@@ -85,8 +85,8 @@ int main(int argc, char**argv)
 	}
 	st1 = clock();
 	/* calculate the g1 & g2 */
-	find_shear(mg1, mnu1, data_num, 12, gh1, gh1_sig);
-	find_shear(mg2, mnu2, data_num, 12, gh2, gh2_sig);
+	find_shear(mg1, mnu1, data_num, 12, gh1, gh1_sig,10000,-0.1, 0.1);
+	//find_shear(mg2, mnu2, data_num, 12, gh2, gh2_sig);
 	st2 = clock();
 	result[rank] = gh1;
 	result[rank +shear_num] = gh1_sig;
@@ -96,8 +96,8 @@ int main(int argc, char**argv)
 	std::cout << log_inform << std::endl;
 
 	MPI_Barrier(MPI_COMM_WORLD);
-
-	/* least square to fit the m & c*/
+	/*
+	// least square to fit the m & c
 	if (rank == 0)
 	{	
 		double coeff[4];
@@ -140,7 +140,7 @@ int main(int argc, char**argv)
 		delete[] measured_g1_sig;
 		delete[] measured_g2_sig; 
 	}
-
+	*/
 	delete[] mnu2;
 	delete[] mnu1;
 	delete[] mg2;

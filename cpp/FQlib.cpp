@@ -2544,7 +2544,7 @@ void chisq_1d(const int *hist_num, const int bin_num, double &result)
 
 
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const int choice, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	int chi_num = 20;
@@ -2558,13 +2558,13 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	double left = ini_left, right = ini_right, step;
 	double chi_left, chi_right, chi_mid;
 	double gh_left, gh_right, gh_mid;
-
-	// set the bins for G1
-	set_bin(mg, data_num, bins, bin_num, 1000);
-
+	double st1, st2, st3, st4, st5, st6;
+	st1 = clock();
+	// set the bins for G1(2)
+	set_bin(mg, data_num, bins, bin_num, 1000, choice);
+	st2 = clock();
 	while (change == 1)
-	{
-		
+	{		
 		change = 0;
 		gh_mid = (left + right) *0.5;
 		gh_left = (gh_mid + left) *0.5;
@@ -2593,8 +2593,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		}
 	}
 	
-	//std::cout << left << " " << right << std::endl;
-
+	std::cout << iters<<" "<< left << " " << right << std::endl;
+	st3 = clock();
 	step = (right - left) / chi_num;
 	for (i = 0; i < chi_num; i++)
 	{
@@ -2605,11 +2605,11 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
 		chisq_fit[i] = chi_right;
 	}
-
+	st4 = clock();
 	fit_shear(gh_fit, chisq_fit, chi_num, gh, gh_sig, chi_gap);
-
+	st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
-
+	std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] temp;
@@ -3749,17 +3749,41 @@ void initialize_para(para *paras)
 
 
 
-void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale)
+void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale, int choice)
 {
-	double *data_cp = new double[data_num];
-	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
-	for (i = 0; i < data_num; i++)
+	int i;
+	int mid = bin_num / 2, step, num;
+	double *data_cp;
+	if (choice < 0)
 	{
-		data_cp[i] = fabs(data[i]);
+		std::cout << "choice must be non-negative!!!" << std::endl;
+		exit(0);
 	}
-	sort_arr(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * max_scale;// make the boundary big enough to enclose all the data
-	bins[bin_num] = data_cp[data_num - 1] * max_scale;
+	else if (0 == choice)
+	{
+		num = data_num;
+		data_cp = new double[num];		
+		for (i = 0; i < num; i++)
+		{
+			data_cp[i] = fabs(data[i]);
+		}
+	}
+	else
+	{	
+		// choice the data "randomly" to save time
+		num = choice;
+		int ch_step = data_num / choice;		
+		data_cp = new double[num];
+		for (i = 0; i < choice; i++)
+		{
+			data_cp[i] = fabs(data[i*ch_step]);
+		}
+	}
+	step = num / bin_num * 2;
+	sort_arr(data_cp, num, 1);
+
+	bins[0] = -data_cp[num - 1] * max_scale;// make the boundary big enough to enclose all the data
+	bins[bin_num] = data_cp[num - 1] * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -3769,10 +3793,13 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 	delete[] data_cp;
 }
 
-void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale)
+void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale, int choice)
 {
 	float *data_cp = new float[data_num];
 	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
+	
+	
+	
 	for (i = 0; i < data_num; i++)
 	{
 		data_cp[i] = fabs(data[i]);
@@ -3789,7 +3816,7 @@ void set_bin(const float *data, const int data_num, float * bins, const int bin_
 	delete[] data_cp;
 }
 
-void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale)
+void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale, int choice)
 {
 	int *data_cp = new int[data_num];
 	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
