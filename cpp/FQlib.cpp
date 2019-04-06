@@ -8,6 +8,14 @@ char buffer[1000], exception_name[50];
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
+
+void char_to_str( char *char_in, std::string &string_out)
+{
+	std::stringstream media;
+	media << char_in;
+	string_out = media.str();
+}
+
 void write_log(char*filename, char *inform)
 {
 	char time_now[40];
@@ -2558,11 +2566,12 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	double left = ini_left, right = ini_right, step;
 	double chi_left, chi_right, chi_mid;
 	double gh_left, gh_right, gh_mid;
-	double st1, st2, st3, st4, st5, st6;
-	st1 = clock();
+	//double st1, st2, st3, st4, st5, st6;
+	//st1 = clock();
 	// set the bins for G1(2)
-	set_bin(mg, data_num, bins, bin_num, 1000, choice);
-	st2 = clock();
+	set_bin(mg, data_num, bins, bin_num, choice, choice);
+	//show_arr(bins, 1, bin_num + 1);
+	//st2 = clock();
 	while (change == 1)
 	{		
 		change = 0;
@@ -2593,8 +2602,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		}
 	}
 	
-	std::cout << iters<<" "<< left << " " << right << std::endl;
-	st3 = clock();
+	//std::cout << iters<<" "<< left << " " << right << std::endl;
+	//st3 = clock();
 	step = (right - left) / chi_num;
 	for (i = 0; i < chi_num; i++)
 	{
@@ -2605,11 +2614,12 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
 		chisq_fit[i] = chi_right;
 	}
-	st4 = clock();
+	
+	//st4 = clock();
 	fit_shear(gh_fit, chisq_fit, chi_num, gh, gh_sig, chi_gap);
-	st5 = clock();
+	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
-	std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
+	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] temp;
@@ -2623,7 +2633,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 
 	int i, count = 0;
 	int *mask = new int[num] {};
-	double min_chi = 0, chi_up;
+	double min_chi = chisq[0];
 	double coeff[3];
 
 	// find the minimum
@@ -2643,6 +2653,8 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			mask[i] = 1;
 		}
 	}
+	//std::cout << min_chi << std::endl;
+	//show_arr(chisq, 1, num);
 	// for fitting
 	if (count < 5)
 	{
@@ -2661,7 +2673,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			count++;
 		}
 	}
-
+	
 	// g`= a1 + a2*g + a3*g^2
 	poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
 
@@ -3753,7 +3765,21 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 {
 	int i;
 	int mid = bin_num / 2, step, num;
-	double *data_cp;
+	double *data_cp, data_max = 0, data_min = 0, bound;
+	for (i = 0; i < data_num; i++)
+	{
+		if (data[i] > data_max)
+		{
+			data_max = data[i];
+		}
+		if (data[i] < data_min)
+		{
+			data_min = data[i];
+		}
+	}
+	data_min = fabs(data_min);
+	bound = std::max(data_min, data_max);
+
 	if (choice < 0)
 	{
 		std::cout << "choice must be non-negative!!!" << std::endl;
@@ -3779,11 +3805,13 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 			data_cp[i] = fabs(data[i*ch_step]);
 		}
 	}
+
 	step = num / bin_num * 2;
 	sort_arr(data_cp, num, 1);
 
-	bins[0] = -data_cp[num - 1] * max_scale;// make the boundary big enough to enclose all the data
-	bins[bin_num] = data_cp[num - 1] * max_scale;
+	// make the boundary big enough to enclose all the data
+	bins[0] = -bound * max_scale;
+	bins[bin_num] = bound * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -3795,18 +3823,55 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 
 void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale, int choice)
 {
-	float *data_cp = new float[data_num];
-	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
-	
-	
-	
+	int i;
+	int mid = bin_num / 2, step, num;
+	float *data_cp, data_max = 0, data_min = 0, bound;
 	for (i = 0; i < data_num; i++)
 	{
-		data_cp[i] = fabs(data[i]);
+		if (data[i] > data_max)
+		{
+			data_max = data[i];
+		}
+		if (data[i] < data_min)
+		{
+			data_min = data[i];
+		}
 	}
-	sort_arr(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * max_scale;// make the boundary big enough to enclose all the data
-	bins[bin_num] = data_cp[data_num - 1] * max_scale;
+	data_min = fabs(data_min);
+	bound = std::max(data_min, data_max);
+
+	if (choice < 0)
+	{
+		std::cout << "choice must be non-negative!!!" << std::endl;
+		exit(0);
+	}
+	else if (0 == choice)
+	{
+		num = data_num;
+		data_cp = new float[num];
+		for (i = 0; i < num; i++)
+		{
+			data_cp[i] = fabs(data[i]);
+		}
+	}
+	else
+	{
+		// choice the data "randomly" to save time
+		num = choice;
+		int ch_step = data_num / choice;
+		data_cp = new float[num];
+		for (i = 0; i < choice; i++)
+		{
+			data_cp[i] = fabs(data[i*ch_step]);
+		}
+	}
+
+	step = num / bin_num * 2;
+	sort_arr(data_cp, num, 1);
+
+	// make the boundary big enough to enclose all the data
+	bins[0] = -bound * max_scale;
+	bins[bin_num] = bound * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
@@ -3818,15 +3883,55 @@ void set_bin(const float *data, const int data_num, float * bins, const int bin_
 
 void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale, int choice)
 {
-	int *data_cp = new int[data_num];
-	int i, mid = bin_num / 2, step = data_num / bin_num * 2;
+	int i;
+	int mid = bin_num / 2, step, num;
+	int *data_cp, data_max = 0, data_min = 0, bound;
 	for (i = 0; i < data_num; i++)
 	{
-		data_cp[i] = fabs(data[i]);
+		if (data[i] > data_max)
+		{
+			data_max = data[i];
+		}
+		if (data[i] < data_min)
+		{
+			data_min = data[i];
+		}
 	}
-	sort_arr(data_cp, data_num, 1);
-	bins[0] = -data_cp[data_num - 1] * max_scale; // make the boundary big enough to enclose all the data
-	bins[bin_num] = data_cp[data_num - 1] * max_scale;
+	data_min = fabs(data_min);
+	bound = std::max(data_min, data_max);
+
+	if (choice < 0)
+	{
+		std::cout << "choice must be non-negative!!!" << std::endl;
+		exit(0);
+	}
+	else if (0 == choice)
+	{
+		num = data_num;
+		data_cp = new int[num];
+		for (i = 0; i < num; i++)
+		{
+			data_cp[i] = fabs(data[i]);
+		}
+	}
+	else
+	{
+		// choice the data "randomly" to save time
+		num = choice;
+		int ch_step = data_num / choice;
+		data_cp = new int[num];
+		for (i = 0; i < choice; i++)
+		{
+			data_cp[i] = fabs(data[i*ch_step]);
+		}
+	}
+
+	step = num / bin_num * 2;
+	sort_arr(data_cp, num, 1);
+
+	// make the boundary big enough to enclose all the data
+	bins[0] = -bound * max_scale;
+	bins[bin_num] = bound * max_scale;
 	bins[mid] = 0;
 	for (i = 1; i < bin_num / 2; i++)
 	{
