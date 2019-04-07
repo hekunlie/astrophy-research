@@ -475,7 +475,7 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, ybloc
                 idx_2 = fz <= min(pix_ub, upper)
                 # print(function, pix_lb, bottom, pix_ub, upper)
                 if function == "flat":
-                    para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)
+                    para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)[0]
                 elif function == "gauss":
                     nums, bins = numpy.histogram(fz[idx_1&idx_2], 100)
                     para = gauss_fit([bins[:-1]], nums)
@@ -495,7 +495,7 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, ybloc
                     raise ValueError("function must be one of \"flat, gauss\"")
             else:
                 if function == "flat":
-                    para = fit_2d(xs,ys,fz,order)
+                    para = fit_2d(xs,ys,fz,order)[0]
                 elif function == "gauss":
                     nums, bins = numpy.histogram(fz, 100)
                     para = gauss_fit([bins[:-1]],nums)
