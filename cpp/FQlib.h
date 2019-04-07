@@ -6,15 +6,22 @@
 #pragma once
 #include <iostream>
 #include<fstream>
-#include<string>
-#include<string.h>
 #include<sstream>
 #include <iomanip>
-#include <cmath>
-#include "fitsio.h"
 #include<stdio.h>
-#include <fftw3.h>
+#include<string>
+#include<cstring>
 #include <ctime>
+#include <cmath>
+
+#include<stdlib.h>
+#include<sys/stat.h> // for stat()
+#include<algorithm> // sort(), std::max()
+#include<functional> // std::less, std::greater..
+#include<ciso646> // for "and, not, or, ..."
+
+#include "fitsio.h"
+#include <fftw3.h>
 #include <gsl/gsl_randist.h>
 #include<gsl/gsl_cdf.h>
 #include <gsl/gsl_rng.h>
@@ -26,11 +33,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_histogram.h>
 #include<hdf5.h>
-#include<stdlib.h>
-#include<sys/stat.h> // for stat()
-#include<algorithm> // sort(), std::max()
-#include<functional> // std::less, std::greater..
-#include<ciso646> // for "and, not, or, ..."
+
 
 // something relates to the shear measurement and source dection
 struct para
@@ -161,14 +164,27 @@ extern "C"
 /* file reading and writting*/
 /********************************************************************************************************************************************/
 
-void char_to_str(char *char_in, std::string &string_out);
+void char_to_str(char *char_in, std::string &string_out);//checked
 /* convert a char to string */
 
-bool file_exist(const char *filename);
+bool file_exist(const char *filename);//checked
 /* check the existence of a file */
 
 void write_log(char *filename, char *inform); //checked
 /* write char to log file */
+
+void read_config(const std::string path, const std::string target_section, const std::string target_para, std::string &para);//checked
+/*  find the content or value of a parameter, "name", in section,"section".
+	 the config file muse be written as follow:
+	 [section a]			 # section name must be enclosed by "[ ]"
+	 para_a = aaaaa    #  the content in each section must consist of parameter name, "=" and the content of the parameter
+								# and there is a space in each side of "=" to separate the the name and the content
+
+	 path: the config file path
+	 target_section: the section name of which to be read
+	 target_para: the target parameter to read
+	 para: the value of the target_para
+*/
 
 void read_para(const std::string path, const std::string name, int &para);//checked
 void read_para(const std::string path, const std::string name, double &para);
@@ -263,8 +279,8 @@ void get_psf_radius(const float *psf_pow, para*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
-int source_detector(const double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross);
-int source_detector(const float *source_img, int *soucrce_x, int*source_y, float *source_paras, para* paras, bool cross);
+void source_detector(const double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross, int &detection, std::string &info);
+void source_detector(const float *source_img, int *soucrce_x, int*source_y, float *source_paras, para* paras, bool cross, int &detection, std::string &info);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -273,12 +289,13 @@ int source_detector(const float *source_img, int *soucrce_x, int*source_y, float
 						   8 elemets for each source, [....,area, peak_y, peak_x, peak_val, half_light_area, total_flux, half_light_flux, flux_sq,...]
 	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
 							False for detecion on the nearest eight pixels, "x" and "+"  
-	return : int, the total number of detection 
+	detection: int, the total number of detection 
+	info: the information of detecion
 */
 
 
-int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross);
-int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross);
+void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
+void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
 /* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection

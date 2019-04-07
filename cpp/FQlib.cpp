@@ -31,6 +31,80 @@ bool file_exist(const char *filename)
 	return (stat(filename, &my_stat) == 0);
 }
 
+void read_config(const std::string path, const std::string target_section, const std::string target_para, std::string &para)
+{
+	// find the content or value of a parameter, "name", in section,"section".
+	// the config file muse be written as follow:
+	// [section a]			 # section name must be enclosed by "[ ]"
+	// para_a = aaaaa    #  the content in each section must consist of parameter name, "=" and the content of the parameter
+	//								# and there is a space in each side of "=" to separate the the name and the content
+
+	std::ifstream infile;
+	std::string str, str1, str2, str3, sect_name;
+	std::stringstream strs;
+	int sect_found = 0, para_found = 0, line_label = 0;
+	int pos1, pos2;
+	infile.open(path);
+	while (!infile.eof())
+	{
+		str.clear();
+		str1.clear();
+		str2.clear();
+		str3.clear();
+		strs.clear();
+
+		getline(infile, str);
+
+		// find the section name which in a "[ ]"
+		pos1 = str.find("[");
+		pos2 = str.find("]");
+		if (pos1 > -1 and pos2 > pos1)
+		{
+			sect_name = str.substr(pos1 + 1, pos2 - pos1 - 1);
+			// find the section
+			if (target_section == sect_name)
+			{
+				// label the found of section
+				sect_found = 1;
+				// label this line as the line of section name not the parameter lines
+				line_label = 1;
+				// the section has been found and skip this line in file
+				continue;
+			}
+		}
+		else
+		{
+			line_label = 0;
+		}
+		if (1 == sect_found and 0 == line_label)
+		{
+			strs << str;
+			strs >> str1 >> str2 >> str3;			
+			if (target_para == str1)
+			{
+				para = str3;
+				para_found = 1;
+				break;
+			}
+		}
+	 }
+	infile.close();
+	if (0 == sect_found)
+	{
+		str.clear();
+		str = "Section '" + target_section + "' can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
+	}
+	if (0 == para_found)
+	{
+		str.clear();
+		str = "Parameter '" + target_para + "' can not be found!!";
+		std::cout << str << std::endl;
+		exit(0);
+	}
+}
+
 void read_para(const std::string path, const std::string name, double &para)
 {
 	std::ifstream infile;
@@ -1529,7 +1603,7 @@ void get_psf_radius(const float *psf_pow, para*paras, const float scale)
 }
 
 
-int source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross)
+void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross, int &detection, std::string &info)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -1604,8 +1678,7 @@ int source_detector(const double *source_img, int *source_x, int*source_y, doubl
 								}
 							}							
 						}
-
-						else /* search the nearest nine pixels */
+						else /* search the nearest eight pixels */
 						{
 							for (iy = -1; iy < 2; iy++)
 							{
@@ -1640,6 +1713,7 @@ int source_detector(const double *source_img, int *source_x, int*source_y, doubl
 					if (s_num >= paras->max_source)
 					{
 						std::cout << "Too many source!" << std::endl;
+						info = "Too many source!";
 						break;
 					}
 					for (m = 0; m < len; m++)
@@ -1668,13 +1742,17 @@ int source_detector(const double *source_img, int *source_x, int*source_y, doubl
 			}
 		}
 	}
+	if (info != "Too many source!")
+	{
+		info = "Normal.";
+	}
 	delete[] cp_img;
 	delete[] temp_x;
 	delete[] temp_y;
-	return s_num;
+	detection = s_num;
 }
 
-int source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, para*paras, bool cross)
+void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, para*paras, bool cross, int &detection, std::string &info)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -1785,6 +1863,7 @@ int source_detector(const float *source_img, int *source_x, int*source_y, float*
 					if (s_num >= paras->max_source)
 					{
 						std::cout << "Too many source!" << std::endl;
+						info = "Too many source!";
 						break;
 					}
 					for (m = 0; m < len; m++)
@@ -1813,25 +1892,35 @@ int source_detector(const float *source_img, int *source_x, int*source_y, float*
 			}
 		}
 	}
+	if (info != "Too many source!")
+	{
+		info = "Normal.";
+	}
 	delete[] cp_img;
 	delete[] temp_x;
 	delete[] temp_y;
-	return s_num;
+	detection = s_num;
 }
 
 
-int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross)
+void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info)
 {	
 	int elem_unit = 8; // the number of parameters for each source detected 
-	int source_num, area=0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
-	int detect=-1, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
+	int source_num, area = 0, hlr_area, yp, xp;
+	int size = paras->stamp_size, pix_num = size * size;
+	int xc = size / 2, yc = size / 2;
+	int detect = -1; 
+
 	int tag_s = 0, tag_e, i, j;
+
 	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
+	double dy, dx;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
-	int *mask = new int[pix_num] {};
+
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
+
+	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
 	//std::cout << source_num << std::endl;
 	for ( i = 0; i < source_num; i++)
 	{	
@@ -1845,7 +1934,12 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 			tag_s = 0;
 		}
 		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
-		{
+		{	
+			// detection mask
+			check_mask[source_y[j] * size + source_x[j]] = 1;
+
+			// if the source contains the pixel of the image center
+			// it will be regarded the galaxy
 			if (source_y[j] == yc &&  source_x[j] == xc)
 			{
 				if (source_para[i * elem_unit] > area)
@@ -1856,10 +1950,14 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 				}
 			}
 		}
-		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
+		dy = source_para[i * elem_unit + 1] - yc;
+		dx = source_para[i * elem_unit + 2] - xc;
+		radius = dy*dy+ dx*dx;
+
 		//std::cout << "PARA  "<<source_para[i * elem_unit + 1]<<" "<< source_para[i * elem_unit + 2]<<" "<< source_para[i*elem_unit] <<" "<<max_distance<< std::endl;
-		if (radius <= max_distance) // if it peaks within 5.5 pixels from the stamp center, it will be indentified as a galaxy
+		if (radius <= max_distance) 
 		{
+			// if it peaks within "max_distance" from the stamp center, it will be indentified as a galaxy
 			if (source_para[i * elem_unit] > area)
 			{
 				area = source_para[i * elem_unit];
@@ -1868,14 +1966,22 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 			}
 		}
 	}
-	//tag_s = 0;
-	//for (i = 0; i < detect; i++)
-	//{
-	//	tag_s += source_para[i*elem_unit];
-	//}
-	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
+
 	if (detect > -1)
-	{		
+	{	
+		// mask the target galaxy
+		tag_s = 0;
+		int tag_e;
+		for (i = 0; i < detect; i++)
+		{
+			tag_s += source_para[i*elem_unit];
+		}
+		tag_e = tag_s + source_para[detect*elem_unit];
+		for (i = tag_s; i < tag_e; i++)
+		{
+			check_mask[source_y[i] * size + source_x[i]] = 2;
+		}
+		
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
@@ -1895,22 +2001,27 @@ int galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cr
 	delete[] source_x;
 	delete[] source_y;
 	delete[] source_para;
-	delete[] mask;
-	return detect;
+	detect_label = detect;
 }
 
-int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross)
+void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info)
 {
 	int elem_unit = 8; // the number of parameters for each source detected 
-	int source_num, area = 0, hlr_area, yp, xp, pix_num = paras->stamp_size*paras->stamp_size;
-	int detect = -1, xc = paras->stamp_size / 2, yc = paras->stamp_size / 2;
+	int source_num, area = 0, hlr_area, yp, xp;
+	int size = paras->stamp_size, pix_num = size * size;
+	int xc = size / 2, yc = size / 2;
+	int detect = -1;
+
 	int tag_s = 0, tag_e, i, j;
-	float hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
+
+	double hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
+	double dy, dx;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
-	int *mask = new int[pix_num] {};
+
 	float *source_para = new float[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-	source_num = source_detector(stamp_arr, source_x, source_y, source_para, paras, cross);
+
+	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
 	//std::cout << source_num << std::endl;
 	for (i = 0; i < source_num; i++)
 	{
@@ -1925,6 +2036,11 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 		}
 		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
 		{
+			// detection mask
+			check_mask[source_y[j] * size + source_x[j]] = 1;
+
+			// if the source contains the pixel of the image center
+			// it will be regarded the galaxy
 			if (source_y[j] == yc && source_x[j] == xc)
 			{
 				if (source_para[i * elem_unit] > area)
@@ -1935,10 +2051,14 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 				}
 			}
 		}
-		radius = (source_para[i * elem_unit + 1] - xc)*(source_para[i * elem_unit + 1] - xc) + (source_para[i * elem_unit + 2] - yc)*(source_para[i * elem_unit + 2] - yc);
+		dy = source_para[i * elem_unit + 1] - yc;
+		dx = source_para[i * elem_unit + 2] - xc;
+		radius = dy * dy + dx * dx;
+
 		//std::cout << "PARA  "<<source_para[i * elem_unit + 1]<<" "<< source_para[i * elem_unit + 2]<<" "<< source_para[i*elem_unit] <<" "<<max_distance<< std::endl;
-		if (radius <= max_distance) // if it peaks within 5.5 pixels from the stamp center, it will be indentified as a galaxy
+		if (radius <= max_distance)
 		{
+			// if it peaks within "max_distance" from the stamp center, it will be indentified as a galaxy
 			if (source_para[i * elem_unit] > area)
 			{
 				area = source_para[i * elem_unit];
@@ -1947,14 +2067,22 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 			}
 		}
 	}
-	//tag_s = 0;
-	//for (i = 0; i < detect; i++)
-	//{
-	//	tag_s += source_para[i*elem_unit];
-	//}
-	//std::cout << detect << "  "<<tag_s<<" "<<area<<std::endl;
+
 	if (detect > -1)
 	{
+		// mask the target galaxy
+		tag_s = 0;
+		int tag_e;
+		for (i = 0; i < detect; i++)
+		{
+			tag_s += source_para[i*elem_unit];
+		}
+		tag_e = tag_s + source_para[detect*elem_unit];
+		for (i = tag_s; i < tag_e; i++)
+		{
+			check_mask[source_y[i] * size + source_x[i]] = 2;
+		}
+
 		paras->gal_size = area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
@@ -1974,8 +2102,7 @@ int galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cro
 	delete[] source_x;
 	delete[] source_y;
 	delete[] source_para;
-	delete[] mask;
-	return detect;
+	detect_label = detect;
 }
 
 int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters)

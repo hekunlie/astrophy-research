@@ -1,10 +1,10 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-
-/* argv[1]: filter name, like sex2_2 ... */
-/* argv[2]: sigma, like 1.5, 2, ..			  */
-/* argv[2]: selection name, like mag_auto, flux2_ex1, ..			  */
+/* argv[1]: the the name of total directory of the data				 */
+/* argv[2]: filter name, like sex2_2 ...										     */
+/* argv[3]: sigma, like 1.5, 2, ..													     */
+/* argv[4]: selection name, like mag_auto, flux2_ex1, ..			     */
 
 
 // an array of struct will store the index of each cutoff criterion
@@ -53,10 +53,26 @@ int main(int argc, char**argv)
 	char total_path[200], log_inform[200], set_name[30];
 	char data_path[200], sex_path[200], cut_result_path[200];
 	char sigma[5], filter_name[20], select_name[20];
-	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
+	
 
-	std::string shear_path_s = "/mnt/ddnfs/data_users/hkli/simu_test1/parameters/shear.dat";
+	std::string total_path_s, shear_path_s;
+	std::string section_name, para_name;
 	std::string filter_name_s, sigma_s, select_name_s;
+	
+	char_to_str(argv[1], para_name);
+	char_to_str(argv[2], filter_name_s);
+	char_to_str(argv[3], sigma_s);
+	char_to_str(argv[4], select_name_s);
+
+	sprintf(filter_name, argv[2]);
+	sprintf(sigma, argv[3]);
+	sprintf(select_name, argv[4]);
+
+	read_config("/home/hkli/work/envs/envs.dat", "selection_bias", para_name+"_path", total_path_s);
+	shear_path_s = total_path_s + "parameters/shear.dat";
+	std::strcpy(total_path, total_path_s.c_str());
+
+
 	double *shear = new double[shear_num * 2];
 	double *g1_true, *g2_true;
 	g1_true = new double[shear_num];
@@ -66,15 +82,8 @@ int main(int argc, char**argv)
 	{
 		g1_true[i] = shear[i];
 		g2_true[i] = shear[i + shear_num];
-	}
-	
-	char_to_str(argv[1], filter_name_s);
-	char_to_str(argv[2], sigma_s);
-	char_to_str(argv[3], select_name_s);
+	}	
 
-	sprintf(filter_name, argv[1]);
-	sprintf(sigma, argv[2]);
-	sprintf(select_name, argv[3]);
 	   	  
 	int criterion_label;
 	cutoff_info cutoffs[8];
@@ -345,7 +354,7 @@ int main(int argc, char**argv)
 			mc1_array[i + cut_num * 2] = coeff[0];//c
 			mc1_array[i + cut_num * 3] = coeff[1];//c_sig
 
-			poly_fit_1d(g1_true, fit_gh1, fit_gh1_sig, shear_num, coeff, 1);
+			poly_fit_1d(g2_true, fit_gh2, fit_gh2_sig, shear_num, coeff, 1);
 			mc2_array[i] = coeff[2] - 1;// m
 			mc2_array[i + cut_num] = coeff[3];//m_sig
 			mc2_array[i + cut_num * 2] = coeff[0];//c

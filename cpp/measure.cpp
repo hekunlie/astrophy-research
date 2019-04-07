@@ -21,10 +21,12 @@ int main(int argc, char*argv[])
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmerm2/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmerm2/";
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m2/");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer_m2/";
 	std::string str_paraf_path = str_data_path + "parameters/para.ini";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
+
+	std::string detect_info;
 
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;
@@ -51,12 +53,12 @@ int main(int argc, char*argv[])
 		std::cout<<data_path<<std::endl;
 		if (0 == cmd)
 		{	
-			std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma" << std::endl;
+			std::cout << "OPERATION: detect & measure, SIG_LEVEL: " << sig_level << " sigma(" << gal_noise_sig<<")"<< std::endl;
 			
 		}
 		if (1 == cmd)
 		{	
-			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma" << std::endl;
+			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma(" << gal_noise_sig << ")" << std::endl;
 		}
 		std::cout << "Total chip: " << total_chips<<", Total cpus: "<<numprocs <<", Stamp size: "<<size <<std::endl;
 		sprintf(log_inform, "RANK: %03d,  thread: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
@@ -71,7 +73,7 @@ int main(int argc, char*argv[])
 	all_paras.detect_thres = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
-	all_paras.max_distance = 9; // because the max half light radius of the galsim source is 5.5 pixels
+	all_paras.max_distance = 6; // because the max half light radius of the galsim source is 5.5 pixels
 
 	double *psf = new double[size*size]();
 	double *ppsf = new double[size*size]();
@@ -177,7 +179,7 @@ int main(int argc, char*argv[])
 				segment(big_img, gal, j, size, stamp_nx, stamp_nx);
 				pow_spec(gal, pgal, size, size);
 
-				detect_label = galaxy_finder(gal, mask, &all_paras, false);
+				galaxy_finder(gal, mask, &all_paras, false, detect_label, detect_info);
 				// check
 				if (i<chip_id_s+2 && 0 == myid && 0 == shear_id)
 				{
