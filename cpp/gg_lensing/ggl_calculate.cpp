@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 			{
 				foregal_data_shared[i] = 0;
 			}
-			for (i = 0; i < 2*radius_num; i++)
+			for (i = 0; i < 4*radius_num; i++)
 			{
 				shear_in_radius[i] = 0;
 			}
@@ -337,8 +337,6 @@ int main(int argc, char *argv[])
 
 			radius_s = radius_bin[radi_id] * coeff ; 
 			radius_e = radius_bin[radi_id + 1] * coeff ;
-			radius_s_sq = radius_s * radius_s;
-			radius_e_sq = radius_e * radius_e;
 
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
@@ -369,6 +367,7 @@ int main(int argc, char *argv[])
 				ra_f = foregal_data[ra_id][gal_id];
 				dec_f = foregal_data[dec_id][gal_id];
 
+				// all the data has been aranged into blocks, find the block label of this foreground galaxy
 				histogram2d_s(dec_f, ra_f, backgal_data[dec_bin_id], backgal_data[ra_bin_id], dec_bin_num, ra_bin_num, bin_label);
 				row = bin_label / grid_nx;
 				col = bin_label % grid_nx;
@@ -383,7 +382,7 @@ int main(int argc, char *argv[])
 				gal_info.scale = block_scale[0];
 
 
-				/* find the blocks needed */
+				// find the blocks needed //
 				initialize_arr(block_mask, grid_num, -1);
 				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
@@ -391,8 +390,8 @@ int main(int argc, char *argv[])
 				{
 					if (block_mask[block_id] > -1)
 					{
-						/* the start and end point of the block */
-						/* the start- & end-point					  */
+						// the start and end point of the block //
+						// the start- & end-point					      //
 						block_s = backgal_data[bs_id][block_id];
 						block_e = backgal_data[be_id][block_id];
 						for (ib = block_s; ib < block_e; ib++)
@@ -412,6 +411,12 @@ int main(int argc, char *argv[])
 				}
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
+			sprintf(log_infom, "RANK: %d. All the source galaxies have been found in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id+1]);
+			if (0 == rank)
+			{
+				std::cout << log_infom << std::endl;
+			}
+
 			for (i = 0; i < numprocs; i++)
 			{
 				if (i == rank)
@@ -425,152 +430,19 @@ int main(int argc, char *argv[])
 						{
 							/* only be used once, otherwise, backgal_mask[j] += 1, */
 							/*	and fix the following process to use it n times            */
-							backgal_mask[j] = 1;
-							//backgal_mask[j] += 1;
+							//backgal_mask[j] = 1;
+							backgal_mask[j] += 1;
 						}
 					}
 				}
 				MPI_Barrier(MPI_COMM_WORLD);
+			}		
+			sprintf(log_infom, "RANK: %d. Assign the mask to the total mask in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id + 1]);
+			if (0 == rank)
+			{
+				std::cout << log_infom << std::endl;
 			}
-				/*
-				// the background galaxy may belong to many foreground galaxies in the same (or not) radius scale
-				// depending on the foreground galaxy density
-				// it must be initialized for each foreground galaxy each radius bin
-				initialize_arr(backgal_sin_2phi, backgal_num, 0);
-				initialize_arr(backgal_cos_2phi, backgal_num, 0);
 
-				initialize_arr(chi_1, mg_bin_num*g_num, 0);
-				initialize_arr(chi_2, mg_bin_num*g_num, 0);
-
-				pair_count = 0;
-
-
-				// loop the found blocks and calculate//
-				for (block_id = 0; block_id < grid_num; block_id++)
-				{
-					if (block_mask[block_id] > -1)
-					{
-						// the start and end point of the block//
-						// the start- & end-point
-						block_s = backgal_data[bs_id][block_id];
-						block_e = backgal_data[be_id][block_id];
-						for (ib = block_s; ib < block_e; ib++)
-						{
-							ra_b = backgal_data[ra_id][ib];
-							dec_b = backgal_data[dec_id][ib];
-							diff_ra = ra_b - ra_f;
-							diff_dec = dec_b - dec_f;
-							diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
-
-							if (diff_r >= radius_s_sq and diff_r < radius_e_sq and backgal_data[z_id][ib]>z_thresh)
-							{
-								backgal_mask[ib] = 1;
-								pair_count += 1;
-								// the position angle of background galaxy respect to the foreground
-								// the cos(-2\phi) & sin(-2\phi)
-								backgal_cos_2phi[ib] = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_r;
-								backgal_sin_2phi[ib] = -2 * diff_ra*diff_dec / diff_r;
-
-								back_mnu1 = backgal_data[mn_id][ib] + backgal_data[mu_id][ib];
-								back_mnu2 = backgal_data[mn_id][ib] - backgal_data[mu_id][ib];
-
-								for (ig = 0; ig < g_num; ig++)
-								{
-									ig_label = ig * mg_bin_num;
-									back_mg1 = backgal_data[mg1_id][ib] - gh[ig] * back_mnu1;
-									back_mg2 = backgal_data[mg2_id][ib] - gh[ig] * back_mnu2;
-
-									histogram_s(back_mg1, mg1_bin, mg_bin_num, back_tag);
-									chi_1[ig_label + back_tag] += 1;
-									//std::cout << back_mg1 << " " << back_tag << std::endl;
-									histogram_s(back_mg2, mg2_bin, mg_bin_num, back_tag);
-									chi_2[ig_label + back_tag] += 1;
-									//std::cout << back_mg2 << " " << back_tag << std::endl;
-								}
-							}
-
-						}
-					}
-				}
-
-				//show_arr(chi_1, mg_bin_num, g_num);
-				// esitmate the shear in [raidus_s, radius_e]//
-				shared_elem_id = gal_id * foregal_data_shared_col + radi_id * shared_col_in_radi;
-				if (pair_count > 10000)
-				{
-					// skip if too little pair 
-					initialize_arr(chisq_1, g_num, 0);
-					initialize_arr(chisq_2, g_num, 0);
-					for (ig = 0; ig < g_num; ig++)
-					{
-						ig_label = ig * mg_bin_num;
-
-						for (ic = 0; ic < mg_bin_num2; ic++)
-						{
-							chi_temp1 = chi_1[ig_label + ic] - chi_1[ig_label + ic + mg_bin_num2];
-							chi_temp2 = chi_1[ig_label + ic] + chi_1[ig_label + ic + mg_bin_num2];
-							chisq_1[ig] += chi_temp1 * chi_temp1 / chi_temp2;
-
-							chi_temp1 = chi_2[ig_label + ic] - chi_2[ig_label + ic + mg_bin_num2];
-							chi_temp2 = chi_2[ig_label + ic] + chi_2[ig_label + ic + mg_bin_num2];
-							chisq_2[ig] += chi_temp1 * chi_temp1 / chi_temp2;
-						}
-						chisq_1[ig] = chisq_1[ig] * 0.5;
-						chisq_2[ig] = chisq_2[ig] * 0.5;
-					}
-					std::cout << rank << " " << radi_id << " " << radius_s << radius_e << std::endl;
-					show_arr(chisq_1, 1, g_num);
-					show_arr(chisq_2, 1, g_num);
-
-					fit_shear(gh, chisq_1, g_num, gh1, gh1_sig);
-					fit_shear(gh, chisq_2, g_num, gh2, gh2_sig);
-
-					foregal_data_shared[shared_elem_id + 0] = gh1;
-					// because the direction of RA is opposite to that of the real
-					foregal_data_shared[shared_elem_id + 1] = -gh2;
-
-					foregal_data_shared[shared_elem_id + 2] = gh1_sig;
-					foregal_data_shared[shared_elem_id + 3] = gh2_sig;
-
-					// calculate the \Sum g_t \Sigma_crit
-					for (ib = 0; ib < backgal_num; ib++)
-					{
-						if (backgal_mask[ib] == 1)
-						{
-							z_b = backgal_data[z_id][ib];
-							find_near(redshifts, z_b, red_num, tag);
-							dist_source = distances[tag];
-							dist_len_source = dist_source - dist_len;
-
-							// only the comoving distance part of the real critical surface density
-							// it will be multiplied by the factor
-							crit_surf_density_comoving = dist_source / dist_len_source / dist_len / (1 + z_f);
-							shear_tan = -gh1 * backgal_cos_2phi[ib] - gh2 * backgal_sin_2phi[ib];
-							shear_tan_sig = -gh1_sig * backgal_cos_2phi[ib] - gh2_sig * backgal_sin_2phi[ib];
-							//shear_cros = gh1*backgal_sin_2phi[ib] - gh2*backgal_cos_2phi[ib];
-
-							shared_elem_id = ib * foregal_data_shared_col + radi_id * shared_col_in_radi;
-							foregal_data_shared[shared_elem_id + 4] += shear_tan * crit_surf_density_comoving;
-							foregal_data_shared[shared_elem_id + 5] += shear_tan_sig * crit_surf_density_comoving;
-						}
-					}
-					foregal_data_shared[gal_id * foregal_data_shared_col + radi_id * shared_col_in_radi + 6] = pair_count;
-				}
-				
-				time_label[3] = clock();
-				if (0 == process_per)
-				{
-					sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time used: %.2f sec", rank, area_id, per_n, (time_label[3] - time_label[2]) / CLOCKS_PER_SEC);
-					write_log(log_path, log_infom);
-					if (0 == rank)
-					{
-						std::cout << log_infom << std::endl;
-					}
-				}*/
-
-
-			
-			
 			/////////////////////////////////////////////////////////////
 			//		2). calculate the shear in [radius_s, radius_e]		//
 			//////////////////////////////////////////////////////////
@@ -578,6 +450,7 @@ int main(int argc, char *argv[])
 			pair_count = 0;
 			if (0 == rank)
 			{
+				// the number of source galaxies
 				for (gal_id = 0; gal_id < backgal_num; gal_id++)
 				{
 					if (backgal_mask[gal_id] > 0)
@@ -594,6 +467,7 @@ int main(int argc, char *argv[])
 				pair_count = 0;
 				for (gal_id = 0; gal_id < backgal_num; gal_id++)
 				{
+					// each source galaxy is used just once
 					if (backgal_mask[gal_id] > 0)
 					{
 						mg1[pair_count] = backgal_data[mg1_id][gal_id];
@@ -617,14 +491,18 @@ int main(int argc, char *argv[])
 				delete[] mnu2;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
-			
+			sprintf(log_infom, "RANK: %d. Calculate the shear in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id + 1]);
+			if (0 == rank)
+			{
+				std::cout << log_infom << std::endl;
+			}
+
 			///////////////////////////////////////////////
 			//		3). caculate the tangential shear		//
 			/////////////////////////////////////////////
 			radius_s = radius_bin[radi_id] * coeff;
 			radius_e = radius_bin[radi_id + 1] * coeff;
-			radius_s_sq = radius_s * radius_s;
-			radius_e_sq = radius_e * radius_e;
+
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
 				z_f = foregal_data[z_id][gal_id];
@@ -753,3 +631,138 @@ int main(int argc, char *argv[])
 	MPI_Finalize();
 	return 0;
 }
+/*
+// the background galaxy may belong to many foreground galaxies in the same (or not) radius scale
+// depending on the foreground galaxy density
+// it must be initialized for each foreground galaxy each radius bin
+initialize_arr(backgal_sin_2phi, backgal_num, 0);
+initialize_arr(backgal_cos_2phi, backgal_num, 0);
+
+initialize_arr(chi_1, mg_bin_num*g_num, 0);
+initialize_arr(chi_2, mg_bin_num*g_num, 0);
+
+pair_count = 0;
+
+
+// loop the found blocks and calculate//
+for (block_id = 0; block_id < grid_num; block_id++)
+{
+	if (block_mask[block_id] > -1)
+	{
+		// the start and end point of the block//
+		// the start- & end-point
+		block_s = backgal_data[bs_id][block_id];
+		block_e = backgal_data[be_id][block_id];
+		for (ib = block_s; ib < block_e; ib++)
+		{
+			ra_b = backgal_data[ra_id][ib];
+			dec_b = backgal_data[dec_id][ib];
+			diff_ra = ra_b - ra_f;
+			diff_dec = dec_b - dec_f;
+			diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
+
+			if (diff_r >= radius_s_sq and diff_r < radius_e_sq and backgal_data[z_id][ib]>z_thresh)
+			{
+				backgal_mask[ib] = 1;
+				pair_count += 1;
+				// the position angle of background galaxy respect to the foreground
+				// the cos(-2\phi) & sin(-2\phi)
+				backgal_cos_2phi[ib] = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_r;
+				backgal_sin_2phi[ib] = -2 * diff_ra*diff_dec / diff_r;
+
+				back_mnu1 = backgal_data[mn_id][ib] + backgal_data[mu_id][ib];
+				back_mnu2 = backgal_data[mn_id][ib] - backgal_data[mu_id][ib];
+
+				for (ig = 0; ig < g_num; ig++)
+				{
+					ig_label = ig * mg_bin_num;
+					back_mg1 = backgal_data[mg1_id][ib] - gh[ig] * back_mnu1;
+					back_mg2 = backgal_data[mg2_id][ib] - gh[ig] * back_mnu2;
+
+					histogram_s(back_mg1, mg1_bin, mg_bin_num, back_tag);
+					chi_1[ig_label + back_tag] += 1;
+					//std::cout << back_mg1 << " " << back_tag << std::endl;
+					histogram_s(back_mg2, mg2_bin, mg_bin_num, back_tag);
+					chi_2[ig_label + back_tag] += 1;
+					//std::cout << back_mg2 << " " << back_tag << std::endl;
+				}
+			}
+
+		}
+	}
+}
+
+//show_arr(chi_1, mg_bin_num, g_num);
+// esitmate the shear in [raidus_s, radius_e]//
+shared_elem_id = gal_id * foregal_data_shared_col + radi_id * shared_col_in_radi;
+if (pair_count > 10000)
+{
+	// skip if too little pair
+	initialize_arr(chisq_1, g_num, 0);
+	initialize_arr(chisq_2, g_num, 0);
+	for (ig = 0; ig < g_num; ig++)
+	{
+		ig_label = ig * mg_bin_num;
+
+		for (ic = 0; ic < mg_bin_num2; ic++)
+		{
+			chi_temp1 = chi_1[ig_label + ic] - chi_1[ig_label + ic + mg_bin_num2];
+			chi_temp2 = chi_1[ig_label + ic] + chi_1[ig_label + ic + mg_bin_num2];
+			chisq_1[ig] += chi_temp1 * chi_temp1 / chi_temp2;
+
+			chi_temp1 = chi_2[ig_label + ic] - chi_2[ig_label + ic + mg_bin_num2];
+			chi_temp2 = chi_2[ig_label + ic] + chi_2[ig_label + ic + mg_bin_num2];
+			chisq_2[ig] += chi_temp1 * chi_temp1 / chi_temp2;
+		}
+		chisq_1[ig] = chisq_1[ig] * 0.5;
+		chisq_2[ig] = chisq_2[ig] * 0.5;
+	}
+	std::cout << rank << " " << radi_id << " " << radius_s << radius_e << std::endl;
+	show_arr(chisq_1, 1, g_num);
+	show_arr(chisq_2, 1, g_num);
+
+	fit_shear(gh, chisq_1, g_num, gh1, gh1_sig);
+	fit_shear(gh, chisq_2, g_num, gh2, gh2_sig);
+
+	foregal_data_shared[shared_elem_id + 0] = gh1;
+	// because the direction of RA is opposite to that of the real
+	foregal_data_shared[shared_elem_id + 1] = -gh2;
+
+	foregal_data_shared[shared_elem_id + 2] = gh1_sig;
+	foregal_data_shared[shared_elem_id + 3] = gh2_sig;
+
+	// calculate the \Sum g_t \Sigma_crit
+	for (ib = 0; ib < backgal_num; ib++)
+	{
+		if (backgal_mask[ib] == 1)
+		{
+			z_b = backgal_data[z_id][ib];
+			find_near(redshifts, z_b, red_num, tag);
+			dist_source = distances[tag];
+			dist_len_source = dist_source - dist_len;
+
+			// only the comoving distance part of the real critical surface density
+			// it will be multiplied by the factor
+			crit_surf_density_comoving = dist_source / dist_len_source / dist_len / (1 + z_f);
+			shear_tan = -gh1 * backgal_cos_2phi[ib] - gh2 * backgal_sin_2phi[ib];
+			shear_tan_sig = -gh1_sig * backgal_cos_2phi[ib] - gh2_sig * backgal_sin_2phi[ib];
+			//shear_cros = gh1*backgal_sin_2phi[ib] - gh2*backgal_cos_2phi[ib];
+
+			shared_elem_id = ib * foregal_data_shared_col + radi_id * shared_col_in_radi;
+			foregal_data_shared[shared_elem_id + 4] += shear_tan * crit_surf_density_comoving;
+			foregal_data_shared[shared_elem_id + 5] += shear_tan_sig * crit_surf_density_comoving;
+		}
+	}
+	foregal_data_shared[gal_id * foregal_data_shared_col + radi_id * shared_col_in_radi + 6] = pair_count;
+}
+
+time_label[3] = clock();
+if (0 == process_per)
+{
+	sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time used: %.2f sec", rank, area_id, per_n, (time_label[3] - time_label[2]) / CLOCKS_PER_SEC);
+	write_log(log_path, log_infom);
+	if (0 == rank)
+	{
+		std::cout << log_infom << std::endl;
+	}
+}*/

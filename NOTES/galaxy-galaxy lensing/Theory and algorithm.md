@@ -1,5 +1,6 @@
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
 
+
 Hubbule parameter:
 
 $$ \begin{aligned}H^2 &= H_0^2[\frac{\Omega_r}{a^4}+\frac{\Omega_m}{a^3}-\frac{Kc^2}{a^2H_0^2}+\Omega_{\Lambda}] \\\\
@@ -19,7 +20,7 @@ $$ D_A(z) = a(z)f_k(\omega(0,z))$$
 
 The search radius is \\( R h^{-1} \rm{Mpc}\\). In the flat universe, the search radius in unit of degree is
 
-$$ \begin{aligned} D_A(z)\theta = &a(z)\omega(0,z)\theta = \frac{1}{1+z}\frac{c}{H_0}\alpha(0, z)\theta=\frac{\theta\alpha(0,z)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{(1+z)R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{1+z}{\alpha(0, z)}R\end{aligned}$$
+$$ \begin{aligned} D_A(z)\theta = &a(z)\omega(0,z)\theta = \frac{1}{1+z}\frac{c}{H_0}\alpha(0, z)\theta=\frac{\theta\alpha(0,z)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{(1+z)R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{1+z}{\alpha(0, z)}R \end{aligned} $$
 
 The angular distance between \\(z_1\\) and \\(z_2\\) is
 
@@ -62,3 +63,29 @@ g_{\times} & = g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$
 4). Run the C++ program to build the grid and assign the source to each grid for final calculation.
 
 "mpirun -n ....  "
+
+# <center> Code structure
+
+Loop the radius bin (in unit of degree):
+
+
+1). Loop the all foreground galaxy to find the background source galaxies in radius bin ([radius_s, radius_e]) and label them.
+~~~
+The source galaxy: Z > Z(len) + 0.3 (will change with the new redshift catalog).
+
+The searching radius is calculated by the former formula.
+
+The seperation radius (in unit of degree) is calculated in the Cartesian coordinate because of the small seperation.
+
+Each thread label the found source galaxy in the mask array. It is possible that one galaxy may be identified as the source galaxy of the two or more foreground galaxy due to the small seperation of foreground galaxies. Once it is identified as source galaxy, the corresponding mask will increase by 1.
+
+Then they will assign the mask to the final mask that can seen by each thread.
+~~~
+
+2). The rank 0 thread calculates the shear in this radius bin,  [radius_s, radius_e].
+
+~~~
+Each source galaxy is just used once even though it may be identified as the source galaxy by many foregroudn galaxies.
+~~~
+
+1). Loop the foreground galaxy to calculate the tangential shear and the \\(\Delta \Sigma(R)\\)

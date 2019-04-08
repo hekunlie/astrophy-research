@@ -58,7 +58,7 @@ int main(int argc, char**argv)
 	std::string total_path_s, shear_path_s;
 	std::string section_name, para_name;
 	std::string filter_name_s, sigma_s, select_name_s;
-	
+
 	char_to_str(argv[1], para_name);
 	char_to_str(argv[2], filter_name_s);
 	char_to_str(argv[3], sigma_s);
@@ -91,7 +91,7 @@ int main(int argc, char**argv)
 	{
 		if (i < 5)
 		{
-			cutoffs[i].cut_name = "flux2_ex1";
+			cutoffs[i].cut_name = "flux2_ex" + std::to_string( i + 1);
 			cutoffs[i].source = "fourier";	
 			cutoffs[i].idx_in_cata = 4 + i;
 			cutoffs[i].data_col = data_f_col;
@@ -221,12 +221,12 @@ int main(int argc, char**argv)
 			cut_scale[i] = data_cut[i*cut_step];
 		}
 		std::cout << "The selection criterion: " << select_name_s << " " << criterion_label << std::endl;
-		show_arr(cut_scale, 1, cut_num);
+		//show_arr(cut_scale, 1, cut_num);
 		delete[] data_cut;
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 	st2 = clock();
-
+	
 	shear_change = -1;
 	for (i = 0; i < total_cutoff_cells; i++)
 	{
@@ -254,7 +254,7 @@ int main(int argc, char**argv)
 				if ("fourier" == cutoffs[criterion_label].source)
 				{
 					// read the fourier quad results, selction criteria
-					sprintf(data_path, "%sresult/data/data_%.1f/data_%d.hdf5", total_path, atof(sigma), my_shear);
+					sprintf(data_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", total_path, atof(sigma), my_shear);
 					cata_label = 0;
 				}
 				else
@@ -308,7 +308,7 @@ int main(int argc, char**argv)
 
 			find_shear(mg1, mnu1, source_count, 12, gh1, gh1_sig, 20000);
 			find_shear(mg2, mnu2, source_count, 12, gh2, gh2_sig, 20000);
-			std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
+			//std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
 
 
 			shear_result[my_shear * 4 * cut_num + my_cut] = gh1;
