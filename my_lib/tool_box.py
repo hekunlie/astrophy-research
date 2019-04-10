@@ -983,6 +983,41 @@ def set_bin(data, bin_num, bound_scale):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
+def set_bin_log(start_point, end_point, num):
+    return 10**numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), num)
+
+def find_near(data, target_val):
+    sl = 0
+    sr = len(data) - 1
+    sm = int((sr - sl) * 0.5)
+    ds = sr - sl
+    if ds >= 4:
+        while True:
+            if data[sm] <= target_val:
+                sl = sm
+                sm = int((sr + sm) * 0.5)
+            else:
+                sr = sm
+                sm = int((sl + sr) * 0.5)
+            ds = sr - sl
+            if ds <= 4:
+                break
+        near = numpy.abs(data[sr] - target_val)
+        tag = sr
+        for i in range(sl, sr+1):
+            if numpy.abs(data[i] - target_val) < near:
+                near = numpy.abs(data[i] - target_val)
+                tag = i
+    else:
+        near = numpy.abs(data[sr] - target_val)
+        tag = sr
+        for i in range(sl, sr+1):
+            if numpy.abs(data[i] - target_val) < near:
+                near = numpy.abs(data[i] - target_val)
+                tag = i
+    return tag
+
+
 def back_to_block(data, num, cols, size_y, size_x, cen_y, cen_x, yi, xi, area_i, distance_thresh):
     """
     for the analysis of the data measured by SExtractor
