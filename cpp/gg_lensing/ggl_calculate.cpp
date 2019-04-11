@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	double shear_tan, shear_tan_sig, shear_cros,shear_cros_sig;
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_source;
-	double coeff;
+	double coeff, coeff_inv;
 	double crit_surf_density_com, crit_surf_density_com_sig;
 	double *delta_crit;
 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	int *backgal_mask, *my_backgal_mask;
 	double backgal_cos_2phi, backgal_sin_2phi, dx_over_dy, dx_over_dy_sq;
 	double z_b, z_thresh, ra_b, dec_b;
-	double diff_ra, diff_dec, diff_r, diff_theta;
+	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh=0.3;
 	double back_mg1, back_mg2, back_mnu1, back_mnu2;
 	int back_tag;
 
@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 		}
 		
 		coeff = 0.18 / C_0_hat / Pi;
-
+		coeff_inv = C_0_hat * Pi / 0.18;
 		// loop the search radius//
 		for (radi_id = 0; radi_id < radius_num; radi_id++)
 		{	
@@ -340,9 +340,10 @@ int main(int argc, char *argv[])
 			initialize_arr(my_backgal_mask, backgal_num, 0);
 			MPI_Barrier(MPI_COMM_WORLD);
 
-			radius_s = radius_bin[radi_id] * coeff ; 
-			radius_e = radius_bin[radi_id + 1] * coeff ;
-
+			radius_s = 0; 
+			radius_s_sq = 0;
+			radius_e = radius_bin[radi_id + 1]*coeff;
+			
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
 				//process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
@@ -359,14 +360,15 @@ int main(int argc, char *argv[])
 				//}
 
 				z_f = foregal_data[z_id][gal_id];
-				z_thresh = z_f + 0.3;
+				// the source must be at z = z_f + diff_z_thresh
+				z_thresh = z_f + diff_z_thresh;
 				find_near(redshifts, z_f, red_num, tag_f);
 				dist_len = distances[tag_f];
-				// the searching radius depend on the redshift of lens  //
-				radius_s = radius_s / dist_len; //comving distance
-				radius_e = radius_e / dist_len ;
-				radius_s_sq = radius_s * radius_s;
-				radius_e_sq = radius_e * radius_e;
+
+				// the max searching radius depend on the redshift of lens  //	
+				// the max seperation of the source at the z = z_f + diff_z_thresh //
+				radius_e = radius_e / dist_len ; // degree
+				radius_e_sq = radius_e * radius_e; // degree^2
 
 				// degree
 				ra_f = foregal_data[ra_id][gal_id];
@@ -405,18 +407,21 @@ int main(int argc, char *argv[])
 							dec_b = backgal_data[dec_id][ib];
 							diff_ra = ra_b - ra_f;
 							diff_dec = dec_b - dec_f;
-							diff_theta = sqrt(diff_ra * diff_ra + diff_dec * diff_dec);
+							diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
-							z_b = backgal_data[z_id][ib];
-							find_near(redshifts, z_b, red_num, tag_b);
-							diff_r = distances[tag_b]*diff_theta;
-
-							if (backgal_data[z_id][ib] > z_thresh and diff_r < radius_e and diff_r >= radius_s)
+							// if the source galaxy stay above the z_thresh 
+							// and the seperation is smaller than the max seperation
+							if (backgal_data[z_id][ib] >= z_thresh and diff_theta_sq <= radius_e_sq)
 							{
+								z_b = backgal_data[z_id][ib];
+								find_near(redshifts, z_b, red_num, tag_b);
+								// the seperation in comving coordinate
+								diff_r = distances[tag_b] * sqrt(diff_theta_sq)*coeff_inv;
 
-								diff_theta = r
-								if(dist_len)
-								my_backgal_mask[ib] = +1;
+								if (diff_r < radius_bin[radi_id + 1] and diff_r >= radius_bin[radi_id])
+								{
+									my_backgal_mask[ib] = +1;
+								}
 							}
 						}
 					}
@@ -504,7 +509,7 @@ int main(int argc, char *argv[])
 				delete[] mnu2;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
-			sprintf(log_infom, "RANK: %d. Calculate the shear in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id + 1]);
+			sprintf(log_infom, "RANK: %d. Finish the shear calculation in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id + 1]);
 			if (0 == rank)
 			{
 				std::cout << log_infom << std::endl;
@@ -514,8 +519,6 @@ int main(int argc, char *argv[])
 			///////////////////////////////////////////////
 			//		3). caculate the tangential shear		//
 			/////////////////////////////////////////////
-			radius_s = radius_bin[radi_id] * coeff;
-			radius_e = radius_bin[radi_id + 1] * coeff;
 
 			gh1 = shear_in_radius[radi_id];
 			gh1_sig = shear_in_radius[radi_id + radius_num];
@@ -525,15 +528,15 @@ int main(int argc, char *argv[])
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
 				z_f = foregal_data[z_id][gal_id];
-				z_thresh = z_f + 0.3;
+				// the source must be at z = z_f + diff_z_thresh
+				z_thresh = z_f + diff_z_thresh;
 				find_near(redshifts, z_f, red_num, tag_f);
 				dist_len = distances[tag_f];
 
-				// the searching radius depend on the redshift of lens
-				radius_s = radius_s / dist_len * (1 + z_f); // the physical distance
-				radius_e = radius_e / dist_len * (1 + z_f);
-				radius_s_sq = radius_s * radius_s;
-				radius_e_sq = radius_e * radius_e;
+				// the max searching radius depend on the redshift of lens  //	
+				// the max seperation of the source at the z = z_f + diff_z_thresh //
+				radius_e = radius_e / dist_len ; // degree
+				radius_e_sq = radius_e * radius_e; // degree^2
 
 				// degree
 				ra_f = foregal_data[ra_id][gal_id];
@@ -569,36 +572,46 @@ int main(int argc, char *argv[])
 							dec_b = backgal_data[dec_id][ib];
 							diff_ra = ra_b - ra_f;
 							diff_dec = dec_b - dec_f;
-							diff_r = diff_ra * diff_ra + diff_dec * diff_dec;
+							diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
 							z_b = backgal_data[z_id][ib];
 
-							if (diff_r >= radius_s_sq and diff_r < radius_e_sq and z_b>z_thresh)
+							if (backgal_data[z_id][ib] >= z_thresh and diff_theta_sq <= radius_e_sq)
 							{	
+								z_b = backgal_data[z_id][ib];
 								find_near(redshifts, z_b, red_num, tag_b);
-								dist_source = distances[tag_b];
+								// the seperation in comving coordinate
+								diff_r = distances[tag_b] * sqrt(diff_theta_sq)*coeff_inv;
+								
+								if (diff_r < radius_bin[radi_id + 1] and diff_r >= radius_bin[radi_id])
+								{
+									backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
+									backgal_cos_2phi = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_theta_sq;
 
-								backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_r;
-								backgal_cos_2phi = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_r;
+									shear_tan = -gh1 * backgal_cos_2phi - gh2 * backgal_sin_2phi;
+									shear_tan_sig = -gh1_sig * backgal_cos_2phi - gh2_sig * backgal_sin_2phi;
 
-								shear_tan = -gh1 * backgal_cos_2phi - gh2 * backgal_sin_2phi;
-								shear_tan_sig = -gh1_sig * backgal_cos_2phi - gh2_sig * backgal_sin_2phi;
+									//shear_cros = gh1 * backgal_sin_2phi - gh2 * backgal_cos_2phi;
+									//shear_cros_sig = gh1_sig * backgal_sin_2phi - gh2_sig * backgal_cos_2phi;
 
-								//shear_cros = gh1 * backgal_sin_2phi - gh2 * backgal_cos_2phi;
-								//shear_cros_sig = gh1_sig * backgal_sin_2phi - gh2_sig * backgal_cos_2phi;
+									crit_surf_density_com = dist_source / dist_len / (dist_source - dist_len) / (1 + z_f);
 
-								crit_surf_density_com = dist_source / dist_len / (dist_source - dist_len) / (1 + z_f);
+									foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num] += 1;
+									foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num + 1] += crit_surf_density_com * shear_tan;
+									foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num + 2] += crit_surf_density_com * shear_tan_sig;
 
-								foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num] += 1;
-								foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num + 1] += crit_surf_density_com * shear_tan;
-								foregal_data_shared[gal_id*foregal_data_shared_col + radi_id * radius_num + 2] += crit_surf_density_com * shear_tan_sig;
-
-								//foregal_data_shared[gal_id*foregal_data_shared_col+2] += crit_surf_density_com * shear_cros;
-								//foregal_data_shared[gal_id*foregal_data_shared_col+3] += crit_surf_density_com * shear_cros_sig;
+									//foregal_data_shared[gal_id*foregal_data_shared_col+2] += crit_surf_density_com * shear_cros;
+									//foregal_data_shared[gal_id*foregal_data_shared_col+3] += crit_surf_density_com * shear_cros_sig;
+								}
 							}
 						}
 					}
 				}
+			}
+			sprintf(log_infom, "RANK: %d. Finish the \Delta\Sigma calculation in radius bin [%.4f,  %.4f]", rank, radius_bin[radi_id], radius_bin[radi_id + 1]);
+			if (0 == rank)
+			{
+				std::cout << log_infom << std::endl;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 

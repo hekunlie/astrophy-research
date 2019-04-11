@@ -280,7 +280,7 @@ if cmd == "select":
 
     h5f_path = data_path + "cata_%s.hdf5" % result_source
     h5f_path_cut = data_path + "cata_%s_cut.hdf5" % result_source
-
+    h5f_red_dist_path = data_path + "redshift.hdf5"
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
         h5f.close()
@@ -289,6 +289,11 @@ if cmd == "select":
     if rank < area_num:
         h5f = h5py.File(h5f_path, "r")
         cata_data = h5f["/w_%d"%(rank+1)].value
+        h5f.close()
+
+        h5f = h5py.File(h5f_red_dist_path, "r")
+        redshift_refer = h5f["/redshift"].value
+        distance_refer = h5f["/distance"].value
         h5f.close()
 
         # cut off
@@ -329,8 +334,12 @@ if cmd == "select":
         ra_min, ra_max = ra.min(),ra.max()
         dec_min, dec_max = dec.min(), dec.max()
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "STARFLAG"]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, starflag]
+        distance = numpy.zeros_like(redshift)
+        for i in range(gal_num):
+            tag = tool_box.find_near(redshift_refer, redshift[i])
+            distance[i] = distance_refer[tag]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "STARFLAG","DISTANCE"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, starflag, distance]
         data_num = len(redshift)
 
     comm.Barrier()
