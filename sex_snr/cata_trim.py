@@ -45,7 +45,7 @@ for f_nm in filter_name:
     # print(final_data.shape, data[:, mag_auto_idx].shape, data.shape, len(data))
 
     # magnitude
-    final_data[:, 0] = data[:, mag_auto_idx]
+    final_data[:, 0] = -data[:, mag_auto_idx]
 
     # snr
     final_data[:, 1] = data[:, snr_idx]
