@@ -40,9 +40,9 @@ if cmd == "cut":
 if cmd == "sex":
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
-        if os.path.exists(sex_path):
-            shutil.rmtree(sex_path)
-        os.makedirs(sex_path + "cat/")
+        if not os.path.exists(sex_path):
+            # shutil.rmtree(sex_path)
+            os.makedirs(sex_path + "cat/")
         print("Build: %scat/" % sex_path)
 
 if cmd == "data":
@@ -57,9 +57,9 @@ if cmd == "data":
             print(data_path," exists")
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
-        if os.path.exists(sex_path):
-            shutil.rmtree(sex_path)
-        os.makedirs(sex_path + "cat/")
+        if not os.path.exists(sex_path):
+            # shutil.rmtree(sex_path)
+            os.makedirs(sex_path + "cat/")
         print("Build: %scat/" % sex_path)
 
 if cmd == "all":

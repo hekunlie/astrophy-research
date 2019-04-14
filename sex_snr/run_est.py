@@ -7,10 +7,10 @@ import numpy
 import tool_box
 import time
 
-sources = ["dimmerm2"]
-max_radius = 5.5
-cpus = 50
-num = 60
+sources = ["dimmerm"]
+max_radius = 6
+cpus = 40
+num = 40
 jobs = numpy.zeros((num, 1))
 
 t1 = time.time()
@@ -71,6 +71,11 @@ for source in sources:
         cmd = "mpirun -np %d python snr_est.py check %s %s %.1f"%(shear_num,source, filter_name, max_radius)
         a = Popen(cmd, shell=True)
         a.wait()
+
+    cmd = "mpirun -np %d python cata_trim.py %s" % (shear_num, source)
+    a = Popen(cmd, shell=True)
+    a.wait()
+
 t2 = time.time()
 print("SNR EST: ",sources, cpus, t2-t1)
 
