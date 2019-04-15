@@ -40,9 +40,9 @@ if cmd == "cut":
 if cmd == "sex":
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
-        if os.path.exists(sex_path):
-            shutil.rmtree(sex_path)
-        os.makedirs(sex_path + "cat/")
+        if not os.path.exists(sex_path):
+            # shutil.rmtree(sex_path)
+            os.makedirs(sex_path + "cat/")
         print("Build: %scat/" % sex_path)
 
 if cmd == "data":
@@ -57,9 +57,9 @@ if cmd == "data":
             print(data_path," exists")
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
-        if os.path.exists(sex_path):
-            shutil.rmtree(sex_path)
-        os.makedirs(sex_path + "cat/")
+        if not os.path.exists(sex_path):
+            # shutil.rmtree(sex_path)
+            os.makedirs(sex_path + "cat/")
         print("Build: %scat/" % sex_path)
 
 if cmd == "all":
@@ -67,20 +67,40 @@ if cmd == "all":
         img_path = total_path + "%d/"%i
         if not os.path.exists(img_path):
             os.makedirs(img_path)
-    os.makedirs(para_path + "logs/")
-    os.makedirs(para_path + "pic/")
-    os.mkdir(total_path + "logs/")
-    os.makedirs(result_path + "data/data_2.0sig/")
-    os.makedirs(result_path + "data/data_1.5sig/")
-    os.makedirs(result_path + "data/check/")
-    os.makedirs(result_path + "pic/")
+
+    if not os.path.exists(para_path + "logs/"):
+        os.makedirs(para_path + "logs/")
+
+    if not os.path.exists(para_path + "pic/"):
+        os.makedirs(para_path + "pic/")
+
+    if not os.path.exists(total_path + "logs/"):
+        os.makedirs(total_path + "logs/")
+
+    if not os.path.exists(result_path + "data/data_2.0sig/"):
+        os.makedirs(result_path + "data/data_2.0sig/")
+    if not os.path.exists(result_path + "data/data_1.5sig/"):
+        os.makedirs(result_path + "data/data_1.5sig/")
+    if not os.path.exists(result_path + "data/data_4.0sig/"):
+        os.makedirs(result_path + "data/data_4.0sig/")
+
+    if not os.path.exists(result_path + "data/check/"):
+        os.makedirs(result_path + "data/check/")
+
+    if not os.path.exists(result_path + "pic/"):
+        os.makedirs(result_path + "pic/")
 
     cut_path = result_path + "cuts/"
     for sub_sex in sex_filters:
         sex_path = result_path + "data/%s/"%sub_sex
-        os.makedirs(sex_path + "cat/")
-        sex_check = result_path + "data/check/%s/"%sub_sex
-        os.makedirs(sex_check)
+        if not os.path.exists(sex_path + "cat/"):
+            os.makedirs(sex_path + "cat/")
+
+        sex_check = result_path + "data/check/%s/" % sub_sex
+        if not os.path.exists(sex_check):
+            os.makedirs(sex_check)
+
         for sub_nm in cut_nm:
             sub_path = cut_path + "sym/%s/%s/"%(sub_sex, sub_nm)
-            os.makedirs(sub_path)
+            if not os.path.exists(sub_path):
+                os.makedirs(sub_path)
