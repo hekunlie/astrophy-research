@@ -148,12 +148,14 @@ int main(int argc, char**argv)
 	double gh1, gh1_sig, gh2, gh2_sig;
 
 	double *cut_scale, *shear_result;
+	int *source_num;
 
-	MPI_Win win_cut_scale, win_shear;
-	MPI_Aint scale_size, shear_size;
+	MPI_Win win_cut_scale, win_shear, win_num;
+	MPI_Aint scale_size, shear_size, num_size;
 
 	shear_size = shear_num * cut_num * 4 * sizeof(double);
 	scale_size = cut_num * sizeof(double);
+	num_size = shear_num * cut_num * sizeof(int);
 
 	if (0 == rank)
 	{	
@@ -161,16 +163,21 @@ int main(int argc, char**argv)
 		MPI_Win_allocate_shared(shear_size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &shear_result, &win_shear);
 		// win_cut_scale stores the cutoff thresholds 10 elements.
 		MPI_Win_allocate_shared(scale_size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &cut_scale, &win_cut_scale);
+
+		MPI_Win_allocate_shared(num_size, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &source_num, &win_num);
 	}
 	else
 	{
-		int disp_unit_s, disp_unit_c;
+		int disp_unit_s, disp_unit_c, disp_unit_num;
 
 		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &shear_result, &win_shear);
 		MPI_Win_shared_query(win_shear, 0, &shear_size, &disp_unit_s, &shear_result);
 
 		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &cut_scale, &win_cut_scale);
 		MPI_Win_shared_query(win_cut_scale, 0, &scale_size, &disp_unit_c, &cut_scale);
+
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &source_num, &win_num);
+		MPI_Win_shared_query(win_num, 0, &num_size, &disp_unit_num, &source_num);
 	}
 
 	// read all the data and calculate the cutoff thresholds 
@@ -315,6 +322,8 @@ int main(int argc, char**argv)
 			shear_result[my_shear * 4 * cut_num + cut_num + my_cut] = gh1_sig;
 			shear_result[my_shear * 4 * cut_num + cut_num * 2 + my_cut] = gh2;
 			shear_result[my_shear * 4 * cut_num + cut_num * 3 + my_cut] = gh2_sig;
+			
+			source_num[my_shear * cut_num + my_cut] = source_count;
 
 			delete[] mg1;
 			delete[] mg2;
@@ -368,6 +377,8 @@ int main(int argc, char**argv)
 		write_h5(data_path, set_name, mc2_array, 4, cut_num, FALSE);
 		sprintf(set_name, "/shear");
 		write_h5(data_path, set_name, shear_result, shear_num, 4*cut_num, FALSE);
+		sprintf(set_name, "/num");
+		write_h5(data_path, set_name, source_num, shear_num, cut_num, FALSE);
 
 		delete[] fit_gh1;
 		delete[] fit_gh1_sig;
