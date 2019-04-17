@@ -1,7 +1,7 @@
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
-path.append('%s/work/fourier_quad/'%my_home)
+path.append('%s/work/mylib/'%my_home)
 from subprocess import Popen
 import os
 import time

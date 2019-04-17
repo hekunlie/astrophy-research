@@ -1,6 +1,6 @@
 import numpy
 from sys import path
-path.append("E:/Github/astrophy-research/my_lib")
+path.append("E:/Github/astrophy-research/mylib")
 import matplotlib.pyplot as plt
 
 data = numpy.load("E:/pic/w_1_num.npz")["arr_0"]

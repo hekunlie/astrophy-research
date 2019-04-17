@@ -2566,7 +2566,7 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	}
 	histogram(temp, bins, num_in_bin, data_num, bin_num);
 
-	chisq_1d(num_in_bin, bin_num, result);
+	cal_chisq_1d(num_in_bin, bin_num, result);
 
 	delete[] num_in_bin;
 	delete[] temp;
@@ -2574,7 +2574,7 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 
 
 
-void chisq_2d(const double *hist_arr, const int size, double &result)
+void cal_chisq_2d(const double *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
 	double chi = 0, n, m;
@@ -2592,7 +2592,7 @@ void chisq_2d(const double *hist_arr, const int size, double &result)
 
 }
 
-void chisq_2d(const long *hist_arr, const int size, double &result)
+void cal_chisq_2d(const long *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
 	double chi = 0, n, m;
@@ -2610,7 +2610,7 @@ void chisq_2d(const long *hist_arr, const int size, double &result)
 	result = chi * 0.5;
 }
 
-void chisq_2d(const int *hist_arr, const int size, double &result)
+void cal_chisq_2d(const int *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
 	double chi = 0, n, m;
@@ -2629,7 +2629,7 @@ void chisq_2d(const int *hist_arr, const int size, double &result)
 }
 
 
-void chisq_1d(const double *hist_num, const int bin_num, double &result)
+void cal_chisq_1d(const double *hist_num, const int bin_num, double &result)
 {
 	// the size must be an even number
 	int i, j;
@@ -2645,7 +2645,7 @@ void chisq_1d(const double *hist_num, const int bin_num, double &result)
 	result = chi_count * 0.5;
 }
 
-void chisq_1d(const long *hist_num, const int bin_num, double &result)
+void cal_chisq_1d(const long *hist_num, const int bin_num, double &result)
 {
 	// the size must be an even number
 	int i, j;
@@ -2661,7 +2661,7 @@ void chisq_1d(const long *hist_num, const int bin_num, double &result)
 	result = chi_count * 0.5;
 }
 
-void chisq_1d(const int *hist_num, const int bin_num, double &result)
+void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 {
 	// the size must be an even number
 	int i, j;

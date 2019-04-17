@@ -362,15 +362,15 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	chisq: the chi square with shear guess, gh
 */
 
-void chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
-void chisq_2d(const long *hist_arr, const int bin_num, double &result);//checked
-void chisq_2d(const int *hist_arr, const int bin_num, double &result);//checked
+void cal_chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
+void cal_chisq_2d(const long *hist_arr, const int bin_num, double &result);//checked
+void cal_chisq_2d(const int *hist_arr, const int bin_num, double &result);//checked
 /* 2d chi square for correlation calculation
 	hist_arr: the 2d histogram of G1, G1~
 */
-void chisq_1d(const double *hist_num, const int bin_num, double &result);
-void chisq_1d(const long *hist_num, const int bin_num, double &result);
-void chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
+void cal_chisq_1d(const double *hist_num, const int bin_num, double &result);
+void cal_chisq_1d(const long *hist_num, const int bin_num, double &result);
+void cal_chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
 /* calculate the 1d chi square using the histogram of G1(2) for the shear eastimation 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
@@ -393,11 +393,11 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 */
 
-void fit_shear(const double *shear, const double *chi, const int num, double &gh, double &gh_sig, const double chi_gap = 40);// checked
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double chi_gap = 40);// checked
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
-	chi: array, chi square corresponding to the points in "shear" array, the Y
+	chisq: array, chi square corresponding to the points in "shear" array, the Y
 	num: the number of point
 	gh (gh_sig): the result, g and sigma of g
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended

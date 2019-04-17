@@ -5,7 +5,7 @@ import os
 # my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
 # path.append('%s/work/fourier_quad/'%my_home)
-path.append("E:/Github/astrophy-research/my_lib/")
+path.append("E:/Github/astrophy-research/mylib/")
 import time
 from Fourier_Quad import Fourier_Quad
 # # import galsim
@@ -18,6 +18,14 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D, get_test_data
 from matplotlib import cm
 from numpy import fft
 
+
+f = h5py.File("E:/total.hdf5")
+data = f["/mc1"].value
+print(data)
+print(list(f.keys()))
+
+
+exit(0)
 def pow_spec(image):
     image_ps = fft.fft2(image)
     return image_ps

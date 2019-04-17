@@ -41,14 +41,46 @@ $$ \begin{aligned}\Sigma_{crit}(z_1, z_2) &= \frac{c^2}{4\pi G}\frac{D_A (z_2)}{
 
 $$  h = 0.7, \quad c = 2.99792458 \quad  m_{pc} = 3.085677581 \quad m_s = 1.98847 \quad G = 6.6740831313$$
 
-Tangential shear and cross shear:
 
-$$ \begin{aligned} g e^{-2i\phi} &=(g_1+ig_2)e^{-2i\phi} \\\\
-&= g_1\cos(2\phi)+g_2\sin(2\phi) + i(g_2 \cos(2\phi) - g_1\sin(2\phi)) \\\\ 
-g_t &= -Re[g e^{-2i\phi}] \\\\ &= -g_1\cos(2\phi) - g_2\sin(2\phi) \\\\ 
-g_{\times} & = -Im[g e^{-2i\phi}] \\\\
-&=g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$
+The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \\(V\\).
 
+<table border="0">
+ <tr>
+    <td>Spin-0</b></td>
+    <td>Spin-2</b></td>
+    <td>Spin-4</b></td>
+ </tr>
+ <tr>
+ <td>$$N \rightarrow N$$</td>
+    <td>$$\begin{aligned} G_1^{\prime}+iG_2^{\prime} &= (G_1+iG_2)\exp(2i\phi) \\\\
+   G_1^{\prime} &= G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
+   G_2^{\prime} &= G_1\sin(2\phi)  + G_2\cos(2\phi) \end{aligned}$$</td>
+    <td>$$\begin{aligned} U^{\prime}+iV^{\prime} &= (U+iV)\exp(4i\phi) \\\\
+   U^{\prime} &= U\cos(4\phi)  - V\sin(4\phi) \\\\
+   V^{\prime} &= U\sin(4\phi)  + V\cos(4\phi) \end{aligned}$$</td>
+ </tr>
+</table>
+
+<table border="0">
+ <tr>
+    <td>g</b></td>
+    <td>G</b></td>
+    <td>U & V</b></td>
+ </tr>
+ <tr>
+    <td>$$ \begin{aligned} g &=(g_1+ig_2)e^{-2i\phi} \\\\
+    &= g_1\cos(2\phi)+g_2\sin(2\phi) \\\\
+    &+ i(g_2 \cos(2\phi) - g_1\sin(2\phi)) \\\\ 
+    g_t &= -Re[g e^{-2i\phi}] \\\\ &= -g_1\cos(2\phi) - g_2\sin(2\phi) \\\\ 
+    g_{\times} & = -Im[g e^{-2i\phi}] \\\\
+    & = g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$</td>
+    <td>$$\begin{aligned} G &= (G_1+iG_2) e^{-2i\phi} \\\\
+    G_t &= -G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
+    G_{\times} &= G_1\sin(2\phi) - G_2\cos(2\phi) \end{aligned}$$</td>
+    <td>$$\begin{aligned} U^{\prime} &= (U+iV) e^{-4i\phi} \\\\
+    U_t &= U\cos(4\phi) + V\sin(4\phi) \\\\ \end{aligned}$$</td>
+ </tr>
+</table>
 
 
 # <center>Process

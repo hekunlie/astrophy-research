@@ -3,7 +3,7 @@ matplotlib.use("Agg")
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
-path.append('%s/work/fourier_quad/' % my_home)
+path.append('%s/work/mylib/' % my_home)
 from astropy.io import fits
 import numpy
 from Fourier_Quad import Fourier_Quad
