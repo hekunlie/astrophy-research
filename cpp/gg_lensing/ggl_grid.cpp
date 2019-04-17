@@ -1,6 +1,8 @@
 #include<FQlib.h>
 #include<mpi.h>
 
+// argv[1]: block scale in unit of degree
+
 int main(int argc, char *argv[])
 {
 	int rank, numprocs, namelen;
@@ -16,11 +18,12 @@ int main(int argc, char *argv[])
 	int area_id;
 	double st1, st2, st3, st4, st5, st6, st7,st8, sts, ste;
 
-	int z_id = 0, ra_id = 1, dec_id = 2, mg1_id = 3, mg2_id = 4, mn_id = 5, mu_id = 6, mv_id = 7;
-	int nib_id = 8, bs_id = 9, be_id = 10, bdy_id = 11, bdx_id = 12;
+
+	int z_id = 0, dist_id=1, ra_id = 2, dec_id = 3, cos_dec_id=4, mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
+	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
 	// for the initial data
 	int num_ini;
-	int data_col = 8;	
+	int data_col = 10;	 // read Z~V, 10 column
 	double *data_ini[13];
 	// for others
 	double *data_temp[13], *data_buffer;
@@ -39,11 +42,9 @@ int main(int argc, char *argv[])
 	double *block_boundy, *block_boundx;
 
 	// redshift range for foreground galaxy
-	double low_z, high_z, block_scale;
+	double block_scale; // degree
 	
-	low_z = atof(argv[1]);
-	high_z = atof(argv[2]);
-	block_scale = atof(argv[3]);
+	block_scale = atof(argv[1]);
 	margin = 0.1*block_scale;
 
 	char h5f_path_1[150], h5f_path_2[150], log_inform[200];
@@ -53,19 +54,23 @@ int main(int argc, char *argv[])
 	int shape[2];
 	double scale[1];
 	double red_bin[2];
-	char set_name[50],*names[13];
-	for (i = 0; i < 13; i++)
+	char set_name[50],*names[15];
+	for (i = 0; i < 15; i++)
 	{
 		names[i] = new char[40];
 	}
 	sprintf(names[z_id], "Z");
+	sprintf(names[dist_id], "DISTANCE");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
+	sprintf(names[cos_dec_id], "COS_DEC");
+
 	sprintf(names[mg1_id], "G1");
 	sprintf(names[mg2_id], "G2");
 	sprintf(names[mn_id], "N");
 	sprintf(names[mu_id], "U");
 	sprintf(names[mv_id], "V");
+
 	sprintf(names[nib_id], "num_in_block");
 	sprintf(names[bs_id], "block_start");
 	sprintf(names[be_id], "block_end");
@@ -94,12 +99,6 @@ int main(int argc, char *argv[])
 			write_h5_attrs(h5f_path_2, set_name, attrs_name, scale, 1, "g");
 		}
 
-		sprintf(attrs_name, "redshift_bin");
-		red_bin[0] = low_z;
-		red_bin[1] = high_z;
-		sprintf(set_name, "/foreground");
-		write_h5_attrs(h5f_path_2, set_name, attrs_name, red_bin, 2, "g");
-		
 		double radius_bin[13];
 		sprintf(set_name, "/radius_bin");
 		sprintf(attrs_name, "shape");
@@ -115,6 +114,7 @@ int main(int argc, char *argv[])
 	{
 		st1 = clock();
 
+		// read the former 10 columns , Z, DISTANCE,... ~ V
 		sprintf(attrs_name, "shape");
 		sprintf(set_name, "/w_%d/Z", area_id);
 		read_h5_attrs(h5f_path_1, set_name, attrs_name, shape, "d");
@@ -127,50 +127,7 @@ int main(int argc, char *argv[])
 			read_h5(h5f_path_1, set_name, data_ini[i]);
 		}	
 		
-		// the foreground galaxy
-		if (0 == rank)
-		{	
-			count = 0;
-			for (i = 0; i < num_ini; i++)
-			{
-				// find the foreground galaxy
-				if (low_z <= data_ini[z_id][i] and data_ini[z_id][i] <= high_z)
-				{
-					mask[i] = 1;
-					count += 1;
-				}
-			}
-			shape[0] = count;
-			shape[1] = 1;
-			
-			for (i = 0; i < data_col; i++)
-			{	
-				// alloc the array for foreground galaxy
-				data_temp[i] = new double[count];
-			}
-			count = 0;
-			for (i = 0; i < num_ini; i++)
-			{				
-				if (1 == mask[i])
-				{
-					for (j = 0; j < data_col; j++)
-					{
-						data_temp[j][count] = data_ini[j][i];
-					}
-					count += 1;
-				}				
-			}
-			sprintf(attrs_name, "shape");
-			for (j = 0; j < data_col; j++)
-			{
-				// write to file
-				sprintf(set_name, "/foreground/w_%d/%s", area_id, names[j]);
-				write_h5(h5f_path_2, set_name, data_temp[j], count, 1, FALSE);
-				write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
-				// free the memory
-				delete[] data_temp[j];
-			}
-		}
+		
 		st2 = clock();
 		sprintf(log_inform, "Rank %d w_%d: %d foreground galaxies in (%.2f sec)", rank, area_id, count, (st2 - st1) / CLOCKS_PER_SEC);
 		write_log(log_path, log_inform);
@@ -273,7 +230,7 @@ int main(int argc, char *argv[])
 		}
 
 		// shared memory buffer  
-		// "num_ini" elements are the block labels,
+		// "num_ini" elements (= lenof(data)) are the block labels of galaxies,
 		// "grid_num" elements are the number counts for each block
 		MPI_Win win, win_d;
 		MPI_Aint size = (num_ini + grid_num) * sizeof(int), size_d = num_ini*sizeof(double);

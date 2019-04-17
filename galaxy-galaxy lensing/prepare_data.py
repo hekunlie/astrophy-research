@@ -4,7 +4,6 @@ import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
 path.append('%s/work/mylib/'%my_home)
-from Fourier_Quad import Fourier_Quad
 import tool_box
 import h5py
 from mpi4py import MPI
@@ -326,6 +325,8 @@ if cmd == "select":
 
         ra = cata_data[:, ra_lb][cut_idx]
         dec = cata_data[:, dec_lb][cut_idx]
+        cos_dec = numpy.cos((dec/180*numpy.pi))
+
         redshift = cata_data[:, z_lb][cut_idx]
         mag = cata_data[:, mag_lb][cut_idx]
         starflag = cata_data[:, starflag_lb][cut_idx]
@@ -338,8 +339,8 @@ if cmd == "select":
         for i in range(gal_num):
             tag = tool_box.find_near(redshift_refer, redshift[i])
             distance[i] = distance_refer[tag]
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "STARFLAG","DISTANCE"]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, starflag, distance]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "COS_DEC", "DISTANCE", "STARGLAG"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, distance, starflag]
         data_num = len(redshift)
 
     comm.Barrier()

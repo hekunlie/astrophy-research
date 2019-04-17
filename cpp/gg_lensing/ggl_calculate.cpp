@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 
 
 
-	int data_num, backgal_data_col=16;
+	int data_num, backgal_data_col=17;
 	int backgal_num;
 	double *backgal_data[15]; //backgal_data_col
 	long *backgal_count, *my_backgal_mask;
@@ -92,10 +92,10 @@ int main(int argc, char *argv[])
 	int delta_crit_in_radius_col=5;
 
 
-	int z_id = 0, ra_id = 1, dec_id = 2, cos_dec_id = 3;
-	int mg1_id = 4, mg2_id = 5, mn_id = 6, mu_id = 7, mv_id = 8;
-	int nib_id = 9, bs_id = 10, be_id = 11, bdy_id = 12, bdx_id = 13;
-	int ra_bin_id = 14, dec_bin_id = 15;
+	int z_id = 0, dist_id=1, ra_id = 2, dec_id = 3, cos_dec_id = 4;
+	int mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
+	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
+	int ra_bin_id = 15, dec_bin_id = 16;
 
 	double *redshifts, *distances;
 	int red_num;
@@ -103,12 +103,13 @@ int main(int argc, char *argv[])
 	char data_path[200], log_path[200], h5f_path[200], h5f_res_path[200];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 
-	char *names[15];//backgal_data_col
+	char *names[17];//backgal_data_col
 	for (i = 0; i < backgal_data_col; i++)
 	{
 		names[i] = new char[25];
 	}
 	sprintf(names[z_id], "Z");
+	sprintf(names[dist_id], "DISTANCE");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
@@ -441,7 +442,8 @@ int main(int argc, char *argv[])
 									backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
 
 									// G_t = - Re[(G_1 + i*G_2)*EXP(-2i\phi)] = - G_1 *cos2\phi - G_2*sin2\phi
-									backgal_mg_tan = -backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
+									// the direction of R.A. is oppsite, actually,  G_t = - G_1 *cos2\phi + G_2*sin2\phi
+									backgal_mg_tan = -backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
 									// scalar
 									backgal_mn_tan = backgal_data[mn_id][ib];
 									// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
