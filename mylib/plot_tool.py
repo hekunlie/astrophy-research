@@ -29,9 +29,13 @@ class Image_Plot:
         plt.rcParams['font.family'] = font_style
 
     def plot_img(self, ny, nx):
-        fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
+        # fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
+        fig = plt.figure(figsize=(int(nx * self.fig_x), int(ny * self.fig_y)))
+        sub_fig = [[] for i in range(ny)]
         for i in range(ny):
             for j in range(nx):
+                ax = fig.add_subplot(ny, nx, i*nx+j+1)
+                sub_fig[i].append(ax)
                 sub_fig[i][j].tick_params(direction='in', labelsize=self.xy_tick_size, top=True, right=True, pad=self.pad_size)
 
                 for axis in ["bottom", "left", "top", "right"]:

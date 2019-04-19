@@ -19,6 +19,22 @@ from matplotlib import cm
 from numpy import fft
 
 
+
+nx =1
+ny =1
+sub_fig = [[] for i in range(ny)]
+print(sub_fig)
+fig = plt.figure()
+for i in range(ny):
+    for j in range(nx):
+        ax = fig.add_subplot(ny, nx, i * nx + j + 1)
+        sub_fig[i].append(ax)
+        print(type(sub_fig[i][j]))
+        sub_fig[i][j].tick_params(direction='in')
+print(sub_fig)
+print(sub_fig[0][0])
+exit()
+
 f = h5py.File("E:/total.hdf5")
 data = f["/mc1"].value
 print(data)

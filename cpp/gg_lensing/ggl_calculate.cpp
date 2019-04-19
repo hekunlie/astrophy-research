@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	pts_info gal_info;
 
 	int i, j, k;
-	double st_start, st_end, st1, st2, st3, st4;
+	double st_start, st_end, st1, st2, st3, st4, stgal1, stgal2;
 	int process_per;
 	double per_n;
 	int area_id, area_num;
@@ -353,18 +353,7 @@ int main(int argc, char *argv[])
 			
 			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
-				//process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
-				//per_n = double((gal_id - my_gal_s) / (my_gal_e - my_gal_s) * 100);
-				//
-				//if (0 == process_per)
-				//{
-				//	sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time since begin: %.2f sec", rank, area_id, per_n, (time_label[2] - time_label[1]) / CLOCKS_PER_SEC);
-				//	write_log(log_path, log_infom);
-				//	if (0 == rank)
-				//	{
-				//		std::cout << log_infom << std::endl;
-				//	}
-				//}
+				stgal1 = clock();
 
 				z_f = foregal_data[z_id][gal_id];
 				// the source must be at z = z_f + diff_z_thresh
@@ -467,6 +456,20 @@ int main(int argc, char *argv[])
 						}
 					}
 				}
+				stgal2 = clock();
+				process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
+				per_n = double((gal_id - my_gal_s) / (my_gal_e - my_gal_s) * 100);
+
+				if (0 == process_per)
+				{
+					sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time since begin: %.2f sec", rank, area_id, per_n, (stgal2 - stgal1) / CLOCKS_PER_SEC);
+					write_log(log_path, log_infom);
+					if (0 == rank)
+					{
+						std::cout << log_infom << std::endl;
+					}
+				}
+
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			st2 = clock();

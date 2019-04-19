@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
 	double st1, st2, st3, st4, st5, st6, st7,st8, sts, ste;
 
 
-	int z_id = 0, dist_id=1, ra_id = 2, dec_id = 3, cos_dec_id=4, mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
+	int z_id = 0, dist_id = 1, ra_id = 2, dec_id = 3, cos_dec_id = 4;
+	int mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
 	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
 	// for the initial data
 	int num_ini;
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 	int shape[2];
 	double scale[1];
 	double red_bin[2];
-	char set_name[50],*names[15];
+	char set_name[50],*names[20];
 	for (i = 0; i < 15; i++)
 	{
 		names[i] = new char[40];
@@ -99,13 +100,13 @@ int main(int argc, char *argv[])
 			write_h5_attrs(h5f_path_2, set_name, attrs_name, scale, 1, "g");
 		}
 
-		double radius_bin[13];
+		double radius_bin[14];
 		sprintf(set_name, "/radius_bin");
 		sprintf(attrs_name, "shape");
-		shape[0] = 13;
+		shape[0] = 14;
 		shape[1] = 1;
-		log_bin(0.04, 15, 13, radius_bin);
-		write_h5(h5f_path_2, set_name, radius_bin, 13, 1, FALSE);
+		log_bin(0.04, 15, shape[0], radius_bin);
+		write_h5(h5f_path_2, set_name, radius_bin, shape[0], shape[1], FALSE);
 		write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
 	}
 
@@ -141,17 +142,23 @@ int main(int argc, char *argv[])
 		// build the grid
 		ra_min = *std::min_element(data_ini[ra_id], data_ini[ra_id] + num_ini);
 		ra_max = *std::max_element(data_ini[ra_id], data_ini[ra_id] + num_ini);
-		ra_min = ra_min - margin;
+		ra_min = ra_min - 0.1*margin;
 
 		dec_min = *std::min_element(data_ini[dec_id], data_ini[dec_id] + num_ini);
 		dec_max = *std::max_element(data_ini[dec_id], data_ini[dec_id] + num_ini);
-		dec_min = dec_min - margin;
+		dec_min = dec_min - 0.1*margin;
 
-		grid_ny = (int) (dec_max - dec_min) / block_scale + 1;
-		grid_nx = (int) (ra_max - ra_min) / block_scale + 1;
+		grid_ny = (int) ((dec_max - dec_min) / block_scale + 2);
+		grid_nx = (int) ((ra_max - ra_min) / block_scale + 2);
 		grid_num = grid_nx * grid_ny;
 		if (0 == rank)
-		{
+		{	
+
+			std::cout << "Rank 0 w_" << area_id << ": ";
+			std::cout << "DEC: " << dec_min << " " << dec_max << " (" << dec_max - dec_min<<") "<< grid_ny << std::endl;
+			std::cout << "Rank 0 w_" << area_id << ": " ;
+			std::cout <<"RA: "<< ra_min << " " << ra_max <<" ("<< ra_max - ra_min<<") "<<grid_nx<< std::endl;
+
 			sprintf(set_name, "/background/w_%d", area_id);
 			sprintf(attrs_name, "grid_shape");
 			shape[0] = grid_ny;
@@ -169,6 +176,11 @@ int main(int argc, char *argv[])
 		for (i = 0; i < grid_ny + 1; i++)
 		{
 			dec_bin[i] = dec_min + i * block_scale;
+		}
+		if (ra_bin[grid_nx] <= ra_max or dec_bin[grid_ny]<=dec_max)
+		{
+			std::cout << "The RA & Dec bins don't cover all the region!!!";
+			exit(0);
 		}
 
 		// write the boundary of blocks to file
@@ -393,7 +405,10 @@ int main(int argc, char *argv[])
 
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-
+		if (0 == rank)
+		{
+			std::cout << std::endl;
+		}
 		for (i = 0; i < data_col; i++)
 		{
 			delete[] data_ini[i];
