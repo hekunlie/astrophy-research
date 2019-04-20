@@ -5,20 +5,30 @@ import numpy
 
 num = 50
 
-sources = ["pts"]
+sources = ["dimmerm"]
 
+jobs = numpy.zeros((num, 1))
 for source in sources:
+
     while True:
-        if os.path.exists("/home/hkli/work/cpp/finish.dat"):
+        for i in range(50):
+            if os.path.exists("/home/hkli/work/test/job/%s/finish_%d.dat"%(source,i)):
+                jobs[i] = 1
+        if jobs.sum() == num:
             break
+
     print("Run measurement")
-    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_1.5"%(my_home, source)
+    cmd = "mpiexec -n 40 %s/work/cpp/measure_%s_1.5"%(my_home, source)
     run = Popen(cmd, shell=True)
     run.wait()
 
-    cmd = "mpiexec -n 50 %s/work/cpp/measure_%s_2.0"%(my_home, source)
+    cmd = "mpiexec -n 40 %s/work/cpp/measure_%s_2.0"%(my_home, source)
     run = Popen(cmd, shell=True)
     run.wait()
 
-with open("/home/hkli/work/selection_bias/sym_mc_plot/finish.dat") as f:
-    f.write("f")
+    cmd = "mpiexec -n 40 %s/work/cpp/measure_%s_4.0"%(my_home, source)
+    run = Popen(cmd, shell=True)
+    run.wait()
+
+    with open("/home/hkli/work/test/job/%s/finish.dat"%source) as f:
+        f.write("f")
