@@ -12,13 +12,74 @@ from Fourier_Quad import Fourier_Quad
 import matplotlib.pyplot as plt
 from astropy.io import fits
 import tool_box
+import plot_tool
 # from mpi4py import MPI
 import h5py
 from mpl_toolkits.mplot3d.axes3d import Axes3D, get_test_data
 from matplotlib import cm
 from numpy import fft
+import matplotlib
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
 
+
+
+
+def plot_examples(cms):
+    """
+    helper function to plot two colormaps
+    """
+    numpy.random.seed(19680801)
+    data = numpy.random.randn(30, 30)
+
+    fig, axs = plt.subplots(1, 2, figsize=(6, 3), constrained_layout=True)
+    for [ax, cmap] in zip(axs, cms):
+        psm = ax.pcolormesh(data, cmap=cmap, rasterized=True, vmin=-4, vmax=4)
+        fig.colorbar(psm, ax=ax)
+    plt.show()
+
+N = 256
+vals = numpy.ones((N, 4))
+vals[:, 0] = 0.95
+vals[:, 1] = numpy.linspace(0, 0.01, N)
+vals[:, 2] = numpy.linspace(0, 0.04, N)
+vals[:, 3] = numpy.linspace(0, 1, N)
+print(vals)
+newcmp = ListedColormap(vals)
+
+# Create custom colormaps
+cdict = {'red': ((0.0, 1.0, 1.0),   # Full red at the first stop
+                 (0.5, 0.0, 0.0),   # No red at second stop
+                 (1.0, 1.0, 1.0)),  # Full red at final stop
+        #
+        'green': ((0.0, 0.0, 0.0),  # No green at all stop
+                 (0.5, 0.0, 0.0),   #
+                 (1.0, 0.0, 0.0)),  #
+        #
+        'blue': ((0.0, 0.0, 0.0),   # No blue at first stop
+                 (0.5, 1.0, 1.0),   # Full blue at second stop
+                 (1.0, 0.0, 0.0))}  # No blue at final stop
+
+# cmap = LinearSegmentedColormap('Rd_Bl_Rd', cdict, 256)
+# im = numpy.outer(numpy.ones(10), numpy.linspace(0, 255, 256))
+# fig = plt.figure(figsize=(9, 2))
+# ax = fig.add_subplot('111')
+# ax.set_xticks(numpy.linspace(0, 255, 3))
+# ax.set_xticklabels([0, 0.5, 1])
+# ax.set_yticks([])
+# # ax.set_yticklabels([])
+im = numpy.abs(numpy.random.normal(0,100,10000).reshape((100,100)))
+# norm = matplotlib.colors.Normalize(vmin=im.min(), vmax=im.max())
+# ax_=ax.imshow(im, interpolation='nearest', cmap=newcmp)
+#
+# plt.colorbar(ax_, cmap=newcmp, norm=norm)
+# plt.show()
+img = plot_tool.Image_Plot(fig_x=8, fig_y=6)
+img.set_style()
+img.plot_img(1,1)
+img.imgshow(0,0,im,True)
+plt.show()
+exit(0)
 
 nx =1
 ny =1

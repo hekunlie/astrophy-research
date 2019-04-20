@@ -20,7 +20,7 @@ $$ D_A(z) = a(z)f_k(\omega(0,z))$$
 
 The search radius is \\( R h^{-1} \rm{Mpc}\\). In the flat universe, the search radius in unit of degree is
 
-$$ \begin{aligned} \omega(0,z)\theta &= \frac{c}{H_0}\alpha(0, z)\theta = \theta\alpha(0,z) \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{R}{\alpha(0, z)}\end{aligned} $$
+$$ \begin{aligned} a(z)\omega(0,z)\theta &= \frac{c}{H_0}\frac{\alpha(0, z)\theta}{1+z} = \frac{\theta\alpha(0,z)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\\\ &\Rightarrow \theta = \frac{(1+z) R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{(1+z) R}{\alpha(0, z)}\end{aligned} $$
 
 The angular distance between \\(z_1\\) and \\(z_2\\) is
 

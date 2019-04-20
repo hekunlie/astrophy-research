@@ -1,7 +1,8 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-
+import numpy
+from matplotlib.colors import ListedColormap
 
 class Image_Plot:
 
@@ -73,3 +74,18 @@ class Image_Plot:
 
     def subimg_adjust(self, h, w):
         plt.subplots_adjust(hspace=h, wspace=w)
+
+    def get_colormap(self):
+        N = 256
+        vals = numpy.ones((N, 4))
+        vals[:, 0] = 1
+        vals[:, 1] = 0#numpy.linspace(0, 0.01, N)
+        vals[:, 2] = 0#numpy.linspace(0, 0.04, N)
+        vals[:, 3] = numpy.linspace(0, 1, N)
+        return ListedColormap(vals)
+
+    def imgshow(self,iy, ix, arr, colorbar=False):
+        ax_ = self.axs[iy][ix].imshow(arr, interpolation='nearest', cmap=self.get_colormap())
+        if colorbar:
+            norm = matplotlib.colors.Normalize(vmin=arr.min(), vmax=arr.max())
+            plt.colorbar(ax_, cmap=self.get_colormap(), norm=norm)
