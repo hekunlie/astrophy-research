@@ -210,7 +210,7 @@ int main(int argc, char**argv)
 			std::cout << data_path << std::endl;
 			for (j = 0; j < total_data_num; j++)
 			{
-				if (mask[j] > 0)
+				if (mask[j] > -1)
 				{
 					// the column index & the data column
 					label = cutoffs[criterion_label].idx_in_cata + j * cutoffs[criterion_label].data_col;
@@ -275,7 +275,7 @@ int main(int argc, char**argv)
 				for (j = 0; j < total_data_num; j++)
 				{
 					label = cutoffs[criterion_label].idx_in_cata + j * cutoffs[criterion_label].data_col;
-					if (mask[j] > 0 and data_select[cata_label][label] >= cut_scale[my_cut])
+					if (mask[j] > -1 and data_select[cata_label][label] >= cut_scale[my_cut])
 					{
 						mask_s[j] = 1;
 						source_count++;
@@ -287,7 +287,7 @@ int main(int argc, char**argv)
 				for (j = 0; j < total_data_num; j++)
 				{
 					label = cutoffs[criterion_label].idx_in_cata + j * cutoffs[criterion_label].data_col;
-					if (mask[j] > 0 and data_select[cata_label][label] >= cut_scale[my_cut])
+					if (mask[j] > -1 and data_select[cata_label][label] >= cut_scale[my_cut])
 					{
 						mask_s[j] = 1;
 						source_count++;
