@@ -74,11 +74,11 @@ The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \
     g_t &= -Re[g e^{-2i\phi}] \\\\ &= -g_1\cos(2\phi) - g_2\sin(2\phi) \\\\ 
     g_{\times} & = -Im[g e^{-2i\phi}] \\\\
     & = g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$</td>
-    <td>$$\begin{aligned} G &= (G_1+iG_2) e^{-2i\phi} \\\\
-    G_t &= -G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
-    G_{\times} &= G_1\sin(2\phi) - G_2\cos(2\phi) \end{aligned}$$</td>
-    <td>$$\begin{aligned} U^{\prime} &= (U+iV) e^{-4i\phi} \\\\
-    U_t &= U\cos(4\phi) + V\sin(4\phi) \\\\ \end{aligned}$$</td>
+    <td>Rotate as above $$\begin{aligned} G &= (G_1+iG_2) e^{2i\phi} \\\\
+    G_t &= G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
+    G_{\times} &= G_1\sin(2\phi) + G_2\cos(2\phi) \end{aligned}$$</td>
+    <td>Rotate as above $$\begin{aligned} U^{\prime} &= (U+iV) e^{4i\phi} \\\\
+    U_t &= U\cos(4\phi) - V\sin(4\phi) \\\\ \end{aligned}$$</td>
  </tr>
 </table>
 

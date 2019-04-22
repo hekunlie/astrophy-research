@@ -7,8 +7,8 @@ int main()
 	/* redshift: 0 ~ 10                                                                                                          */
 	double omega_m = 0.31, omeg_lambda = 0.69;
 	double precision = 0.00000001;
-	int i, step = 1000;
-	double z_step = 0.01;
+	int i, step = 100000;
+	double z_step = 10./step;
 	double distance;
 	double *redshift = new double[step + 1]{};
 	double *co_dist = new double[step + 1]{};

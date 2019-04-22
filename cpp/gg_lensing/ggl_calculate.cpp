@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
 	area_num = 4;
 	int tag_f, tag_b;
-	int foregal_num, gal_id, foregal_data_col=4;
+	int foregal_num, gal_id, foregal_data_col=5;
 	int my_gal_s, my_gal_e;
 	double *foregal_data[4];
 	double *foregal_data_shared;
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
 	double coeff, coeff_inv;
-	double crit_surf_density_com, delta_crit, delta_crit_sig;
+	double crit_surf_density_com, delta_crit, delta_crit_sig,delta_crit_x, delta_crit_x_sig;
 
 
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	double *backgal_data[15]; //backgal_data_col
 	long *backgal_count, *my_backgal_mask;
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi, dx_over_dy, dx_over_dy_sq;
-	double backgal_mg_tan, backgal_mn_tan, backgal_mu_tan;
+	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double z_b, z_thresh, ra_b, dec_b;
 	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh=0.3;
 	double back_mg1, back_mg2, back_mnu1, back_mnu2;
@@ -61,15 +61,16 @@ int main(int argc, char *argv[])
 	double *mg2_bin = new double[mg_bin_num + 1];
 
 	// the chi square for fitting shear
-	long *chi = new long[mg_bin_num*g_num], *chi_shared;
+	long *chi_tan = new long[mg_bin_num*g_num], long *chi_cross = new long[mg_bin_num*g_num],*chi_shared;
 	long *chi_block = new long[mg_bin_num];
-	double *chisq = new double[g_num];
+	double *chisq_tan = new double[g_num];
+	double *chisq_cross = new double[g_num];
 
 
 	double *gh = new double[g_num];
 	double g_step;
 	double chi_temp;
-	double gh_tan, gh_tan_sig, gh2, gh2_sig;
+	double gh_tan, gh_tan_sig, gh_cross, gh_cross_sig;
 	g_step = 0.15 / g_num;
 	for (i = 0; i < g_num; i++)
 	{
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
 	double *radius_bin;
 	// \Delta\Sigma, its errorbar, g_tan, g_tan_sig, source number in each bin
 	double *delta_crit_in_radius;
-	int delta_crit_in_radius_col=5;
+	int delta_crit_in_radius_col=9;
 
 
 	int z_id = 0, dist_id=1, ra_id = 2, dec_id = 3, cos_dec_id = 4;
@@ -179,7 +180,12 @@ int main(int argc, char *argv[])
 
 
 	for (area_id = 1; area_id < area_num + 1; area_id++)
-	{
+	{	
+		if (area_id == 2)
+		{
+			continue;
+		}
+
 		st_start = clock();
 
 		// read foreground information
@@ -262,7 +268,7 @@ int main(int argc, char *argv[])
 		foregal_data_shared_col = 1; // \Delta\Sigma
 		size_fore = foregal_num * foregal_data_shared_col * sizeof(double);
 		size_count = foregal_num * sizeof(long);
-		size_chi = mg_bin_num*g_num*sizeof(long);
+		size_chi = 2*mg_bin_num*g_num*sizeof(long);
 		size_crit = delta_crit_in_radius_col*radius_num * sizeof(double);
 		if (0 == rank)
 		{
@@ -343,7 +349,8 @@ int main(int argc, char *argv[])
 				initialize_arr(backgal_count, foregal_num, 0);
 				initialize_arr(chi_shared, mg_bin_num*g_num, 0);
 			}
-			initialize_arr(chi, mg_bin_num*g_num, 0);
+			initialize_arr(chi_tan, mg_bin_num*g_num, 0);
+			initialize_arr(chi_cross, mg_bin_num*g_num, 0);
 			initialize_arr(my_backgal_mask, backgal_num, 0);
 			MPI_Barrier(MPI_COMM_WORLD);
 
@@ -358,12 +365,14 @@ int main(int argc, char *argv[])
 				z_f = foregal_data[z_id][gal_id];
 				// the source must be at z = z_f + diff_z_thresh
 				z_thresh = z_f + diff_z_thresh;
-				find_near(redshifts, z_f, red_num, tag_f);
-				dist_len = distances[tag_f];
-				dist_len_coeff = 1. / (dist_len*(1 + z_f));
+
+				//find_near(redshifts, z_f, red_num, tag_f);
+				//dist_len = distances[tag_f];
+				dist_len = foregal_data[dist_id][gal_id];
+				dist_len_coeff = 1. / dist_len;
 
 				// the max searching radius depend on the redshift of lens  //	
-				// the max seperation of the source at the z = z_f + diff_z_thresh //
+				// the max seperation of the source at the z = z_f  //
 				radius_e = radius_e / dist_len ; // degree
 				radius_e_sq = radius_e * radius_e; // degree^2
 
@@ -413,8 +422,9 @@ int main(int argc, char *argv[])
 							if (backgal_data[z_id][ib] >= z_thresh and diff_theta_sq <= radius_e_sq)
 							{
 								z_b = backgal_data[z_id][ib];
-								find_near(redshifts, z_b, red_num, tag_b);
-								dist_source = distances[tag_b];
+								//find_near(redshifts, z_b, red_num, tag_b);
+								//dist_source = distances[tag_b];
+								dist_source = backgal_data[dist_id][ib];
 								// the seperation in comving coordinate, 
 								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
 
@@ -430,22 +440,27 @@ int main(int argc, char *argv[])
 									backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
 									backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
 
-									// G_t = - Re[(G_1 + i*G_2)*EXP(-2i\phi)] = - G_1 *cos2\phi - G_2*sin2\phi
-									// the direction of R.A. is oppsite, actually,  G_t = - G_1 *cos2\phi + G_2*sin2\phi
-									backgal_mg_tan = -backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
+									// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
+									// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
+									backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
+									// the cross components
+									backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
 									// scalar
 									backgal_mn_tan = backgal_data[mn_id][ib];
 									// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
 									backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
 
-									// the cross components
-									//backgal_mg_x= backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi;	
+
 									// estimate chi square for shear estimation
 									for (ig = 0; ig < g_num; ig++)
 									{
 										backgal_mg_tan = backgal_mg_tan - gh[ig] * (backgal_mn_tan + backgal_mu_tan);
 										histogram_s(backgal_mg_tan, mg1_bin, mg_bin_num, ig_label);
-										chi[ig_label + ig * g_num] += 1;
+										chi_tan[ig_label + ig * g_num] += 1;
+
+										backgal_mg_cross = backgal_mg_cross - gh[ig] * (backgal_mn_tan - backgal_mu_tan);
+										histogram_s(backgal_mg_cross, mg2_bin, mg_bin_num, ig_label);
+										chi_cross[ig_label + ig * g_num] += 1;
 									}
 
 									crit_surf_density_com = dist_source /(dist_source - dist_len) *dist_len_coeff;
@@ -489,7 +504,8 @@ int main(int argc, char *argv[])
 				{
 					for (j = 0; j < mg_bin_num*g_num; j++)
 					{
-						chi_shared[j] += chi[j];
+						chi_shared[j] += chi_tan[j];
+						chi_shared[j + mg_bin_num * g_num] += chi_cross[j];
 					}
 				}
 				MPI_Barrier(MPI_COMM_WORLD);
@@ -499,6 +515,7 @@ int main(int argc, char *argv[])
 			if (0 == rank)
 			{	
 				// estimate tangential shear
+				// tangential component
 				for (ig = 0; ig < g_num; ig++)
 				{
 					for (ic = 0; ic < mg_bin_num; ic++)
@@ -506,9 +523,20 @@ int main(int argc, char *argv[])
 						chi_block[ic] = chi_shared[ig*mg_bin_num + ic];
 					}
 					cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
-					chisq[ig] = chi_temp;
+					chisq_tan[ig] = chi_temp;
 				}
-				fit_shear(gh, chisq, g_num, gh_tan, gh_tan_sig, 100);
+				fit_shear(gh, chisq_tan, g_num, gh_tan, gh_tan_sig, 100);
+				// cross component
+				for (ig = 0; ig < g_num; ig++)
+				{
+					for (ic = 0; ic < mg_bin_num; ic++)
+					{
+						chi_block[ic] = chi_shared[mg_bin_num*g_num + ig * mg_bin_num + ic];
+					}
+					cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
+					chisq_cross[ig] = chi_temp;
+				}
+				fit_shear(gh, chisq_cross, g_num, gh_cross, gh_cross_sig, 100);
 
 				pair_count = 0;
 				crit_surf_density_com = 0;
@@ -525,11 +553,18 @@ int main(int argc, char *argv[])
 				delta_crit = crit_surf_density_com / pair_count * gh_tan;
 				delta_crit_sig = crit_surf_density_com / pair_count * gh_tan_sig;
 
+				delta_crit_x = crit_surf_density_com / pair_count * gh_cross;
+				delta_crit_x_sig = crit_surf_density_com / pair_count * gh_cross_sig;
+
 				delta_crit_in_radius[radi_id * delta_crit_in_radius_col] = delta_crit;
 				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 1] = delta_crit_sig;
 				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 2] = gh_tan;
 				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 3] = gh_tan_sig;
-				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 4] = pair_count;
+				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 4] = delta_crit_x;
+				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 5] = delta_crit_x_sig;
+				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 6] = gh_cross;
+				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 7] = gh_cross_sig;
+				delta_crit_in_radius[radi_id * delta_crit_in_radius_col + 8] = pair_count;
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			st3 = clock();
@@ -541,15 +576,19 @@ int main(int argc, char *argv[])
 				std::cout << log_infom << std::endl;
 				
 				// save the chi square
-				sprintf(set_name, "/w_%d/%d/chisq", area_id, radi_id);
+				sprintf(set_name, "/w_%d/%d/chisq_tan", area_id, radi_id);
 				if (1 == area_id and 0 == radi_id)
 				{
-					write_h5(h5f_res_path, set_name, chisq, g_num, 1, TRUE);
+					write_h5(h5f_res_path, set_name, chisq_tan, g_num, 1, TRUE);
 				}
 				else
 				{
-					write_h5(h5f_res_path, set_name, chisq, g_num, 1, FALSE);
+					write_h5(h5f_res_path, set_name, chisq_tan, g_num, 1, FALSE);
 				}
+
+				sprintf(set_name, "/w_%d/%d/chisq_cross", area_id, radi_id);
+				write_h5(h5f_res_path, set_name, chisq_cross, g_num, 1, FALSE);
+
 				// save chi, the number count in each bin of each g point
 				sprintf(set_name, "/w_%d/%d/chi", area_id, radi_id);
 				write_h5(h5f_res_path, set_name, chi_shared, g_num, mg_bin_num, FALSE);
@@ -620,9 +659,11 @@ int main(int argc, char *argv[])
 
 	delete[] mg1_bin;
 	delete[] mg2_bin;
-	delete[] chi;
+	delete[] chi_tan;
+	delete[] chi_cross;
 	delete[] chi_block;
-	delete[] chisq;
+	delete[] chisq_tan;
+	delete[] chisq_cross;
 	delete[] gh;
 	delete[] redshifts;
 	delete[] distances;

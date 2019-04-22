@@ -335,12 +335,12 @@ if cmd == "select":
         ra_min, ra_max = ra.min(),ra.max()
         dec_min, dec_max = dec.min(), dec.max()
 
-        distance = numpy.zeros_like(redshift)
-        for i in range(gal_num):
-            tag = tool_box.find_near(redshift_refer, redshift[i])
-            distance[i] = distance_refer[tag]
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "COS_DEC", "DISTANCE", "STARGLAG"]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, distance, starflag]
+        # distance = numpy.zeros_like(redshift)
+        # for i in range(gal_num):
+        #     tag = tool_box.find_near(redshift_refer, redshift[i])
+        #     distance[i] = distance_refer[tag]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "COS_DEC", "STARGLAG"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag]
         data_num = len(redshift)
 
     comm.Barrier()

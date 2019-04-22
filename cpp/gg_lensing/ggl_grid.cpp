@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 
 	if (0 == rank)
 	{
-		sprintf(set_name, "/foreground");
+		sprintf(set_name, "/background");
 		create_h5_group(h5f_path_2, set_name, TRUE);
 
 		sprintf(attrs_name, "block_scale");
@@ -93,8 +93,6 @@ int main(int argc, char *argv[])
 
 		for (i = 1; i < area_num + 1; i++)
 		{
-			sprintf(set_name, "/foreground/w_%d", i);
-			create_h5_group(h5f_path_2, set_name, FALSE);
 			sprintf(set_name, "/background/w_%d", i);
 			create_h5_group(h5f_path_2, set_name, FALSE);
 			write_h5_attrs(h5f_path_2, set_name, attrs_name, scale, 1, "g");

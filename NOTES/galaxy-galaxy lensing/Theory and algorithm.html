@@ -397,7 +397,7 @@ blockquote {
 <p>The physical distance relates the angle to the size of a distant object is the angular diameter distance \(D_A\).</p>
 <p>$$ D_A(z) = a(z)f_k(\omega(0,z))$$</p>
 <p>The search radius is \( R h^{-1} \rm{Mpc}\). In the flat universe, the search radius in unit of degree is</p>
-<p>$$ \begin{aligned} \omega(0,z)\theta &amp;= \frac{c}{H_0}\alpha(0, z)\theta = \theta\alpha(0,z) \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\ &amp;\Rightarrow \theta = \frac{R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{R}{\alpha(0, z)}\end{aligned} $$</p>
+<p>$$ \begin{aligned} a(z)\omega(0,z)\theta &amp;= \frac{c}{H_0}\frac{\alpha(0, z)\theta}{1+z} = \frac{\theta\alpha(0,z)}{1+z} \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\ &amp;\Rightarrow \theta = \frac{(1+z) R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{(1+z) R}{\alpha(0, z)}\end{aligned} $$</p>
 <p>The angular distance between \(z_1\) and \(z_2\) is</p>
 <p>$$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2)) = \frac{c}{H_0}a(z_2)[\alpha(0, z_2) - \alpha(0, z_1)]$$</p>
 <p>It is valid only for \(\omega_k \geq 0 \) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)</p>
@@ -411,9 +411,7 @@ blockquote {
 &amp; = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}3.88283351\times 10^{2}\rm{M_{sum} \cdot pc^{-2}}
 \end{aligned}$$</p>
 <p>$$  h = 0.7, \quad c = 2.99792458 \quad  m_{pc} = 3.085677581 \quad m_s = 1.98847 \quad G = 6.6740831313$$</p>
-<p>Tangential shear and cross shear:</p>
-<p>$$ \begin{aligned} \end{aligned}$$</p>
-<p>The shear eastimator: \(G_1\), \(G_2\), \(N\), \(U\), \(V\).</p>
+<p>The rotation of the shear eastimators: \(G_1\), \(G_2\), \(N\), \(U\), \(V\).</p>
 <table border="0">
  <tr>
     <td>Spin-0</b></td>
@@ -422,18 +420,32 @@ blockquote {
  </tr>
  <tr>
  <td>$$N \rightarrow N$$</td>
-    <td>$$\begin{aligned} G_1^{\prime}+iG_2^{\prime} &= (G_1+iG_2)\exp(2i\theta) \\\\
-    G_1^{\prime} &= G_1\cos(2\theta)  - G_2\sin(2\theta) \\\\
-    G_2^{\prime} &= G_1\sin(2\theta)  + G_2\cos(2\theta) \\\\
-    g e^{-2i\phi} &=(g_1+ig_2)e^{-2i\phi} \\\\
-    &= g_1\cos(2\phi)+g_2\sin(2\phi) + i(g_2 \cos(2\phi) - g_1\sin(2\phi)) \\\\ 
+    <td>$$\begin{aligned} G_1^{\prime}+iG_2^{\prime} &= (G_1+iG_2)\exp(2i\phi) \\\\
+   G_1^{\prime} &= G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
+   G_2^{\prime} &= G_1\sin(2\phi)  + G_2\cos(2\phi) \end{aligned}$$</td>
+    <td>$$\begin{aligned} U^{\prime}+iV^{\prime} &= (U+iV)\exp(4i\phi) \\\\
+   U^{\prime} &= U\cos(4\phi)  - V\sin(4\phi) \\\\
+   V^{\prime} &= U\sin(4\phi)  + V\cos(4\phi) \end{aligned}$$</td>
+ </tr>
+</table>
+<table border="0">
+ <tr>
+    <td>g</b></td>
+    <td>G</b></td>
+    <td>U & V</b></td>
+ </tr>
+ <tr>
+    <td>$$ \begin{aligned} g &=(g_1+ig_2)e^{-2i\phi} \\\\
+    &= g_1\cos(2\phi)+g_2\sin(2\phi) \\\\
+    &+ i(g_2 \cos(2\phi) - g_1\sin(2\phi)) \\\\ 
     g_t &= -Re[g e^{-2i\phi}] \\\\ &= -g_1\cos(2\phi) - g_2\sin(2\phi) \\\\ 
     g_{\times} & = -Im[g e^{-2i\phi}] \\\\
-    &=g_1\sin(2\phi) - g_2 \cos(2\phi)
-   \end{aligned}$$</td>
-    <td>$$\begin{aligned} U^{\prime}+iV^{\prime} &= (U+iV)\exp(4i\theta) \\\\
-   U^{\prime} &= U\cos(4\theta)  - V\sin(4\theta) \\\\
-   V^{\prime} &= U\sin(4\theta)  + V\cos(4\theta) \end{aligned}$$</td>
+    & = g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$</td>
+    <td>Rotate as above $$\begin{aligned} G &= (G_1+iG_2) e^{2i\phi} \\\\
+    G_t &= G_1\cos(2\phi)  - G_2\sin(2\phi) \\\\
+    G_{\times} &= G_1\sin(2\phi) + G_2\cos(2\phi) \end{aligned}$$</td>
+    <td>Rotate as above $$\begin{aligned} U^{\prime} &= (U+iV) e^{4i\phi} \\\\
+    U_t &= U\cos(4\phi) - V\sin(4\phi) \\\\ \end{aligned}$$</td>
  </tr>
 </table>
 <h1 id="centerprocess"><center>Process</h1>
