@@ -346,6 +346,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras);//checked
 void ellip_est(const double *gal_img, const int size, para*paras);
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
+void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask);
 /* find the target blocks for a specific point for the calculation of correlation function.
 	
 */
@@ -370,7 +371,8 @@ void cal_chisq_2d(const int *hist_arr, const int bin_num, double &result);//chec
 */
 void cal_chisq_1d(const double *hist_num, const int bin_num, double &result);
 void cal_chisq_1d(const long *hist_num, const int bin_num, double &result);
-void cal_chisq_1d(const int *hist_num, const int bin_num, double &result);//checked
+void cal_chisq_1d(const int *hist_num, const int bin_num,  double &result);//checked
+void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double &result);//checked
 /* calculate the 1d chi square using the histogram of G1(2) for the shear eastimation 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */

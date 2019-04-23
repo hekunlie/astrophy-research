@@ -61,7 +61,9 @@ int main(int argc, char *argv[])
 	double *mg2_bin = new double[mg_bin_num + 1];
 
 	// the chi square for fitting shear
-	long *chi_tan = new long[mg_bin_num*g_num], long *chi_cross = new long[mg_bin_num*g_num],*chi_shared;
+	long *chi_tan = new long[mg_bin_num*g_num];
+	long *chi_cross = new long[mg_bin_num*g_num];
+	long *chi_shared;
 	long *chi_block = new long[mg_bin_num];
 	double *chisq_tan = new double[g_num];
 	double *chisq_cross = new double[g_num];
@@ -179,7 +181,7 @@ int main(int argc, char *argv[])
 	}
 
 
-	for (area_id = 1; area_id < area_num + 1; area_id++)
+	for (area_id = 1; area_id < 1 + 1; area_id++)
 	{	
 		if (area_id == 2)
 		{
@@ -248,12 +250,13 @@ int main(int argc, char *argv[])
 		my_backgal_mask = new long[backgal_num] {};
 
 		// set the bins for g1 & g2 estimation
-		set_bin(backgal_data[mg1_id], backgal_num, mg1_bin, mg_bin_num, 100, 50000);
-		set_bin(backgal_data[mg2_id], backgal_num, mg2_bin, mg_bin_num, 100, 50000);
+		set_bin(backgal_data[mg1_id], backgal_num, mg1_bin, mg_bin_num, 100, 200000);
+		set_bin(backgal_data[mg2_id], backgal_num, mg2_bin, mg_bin_num, 100, 200000);
 		if (0 == rank)
 		{
 			show_arr(mg1_bin, 1, mg_bin_num + 1);
 			show_arr(mg2_bin, 1, mg_bin_num + 1);
+			show_arr(radius_bin, 1, radius_num + 1);
 		}
 		sprintf(log_infom, "RANK: %d. w_%d. Read background data. %d galaxies. %d grids (%d x %d)", rank, area_id, backgal_num, grid_num, grid_ny, grid_nx);
 		write_log(log_path, log_infom);
@@ -337,7 +340,7 @@ int main(int argc, char *argv[])
 		coeff = 0.18 / C_0_hat / Pi;
 		coeff_inv = C_0_hat * Pi / 0.18;
 		// loop the search radius//
-		for (radi_id = 0; radi_id < radius_num; radi_id++)
+		for (radi_id = 0; radi_id < 1; radi_id++)
 		{	
 			st1 = clock();
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -354,11 +357,9 @@ int main(int argc, char *argv[])
 			initialize_arr(my_backgal_mask, backgal_num, 0);
 			MPI_Barrier(MPI_COMM_WORLD);
 
-			radius_s = 0; 
-			radius_s_sq = 0;
 			radius_e = radius_bin[radi_id + 1]*coeff;
 			
-			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
+			for (gal_id = my_gal_s; gal_id < my_gal_s+100; gal_id++)
 			{
 				stgal1 = clock();
 
@@ -373,7 +374,7 @@ int main(int argc, char *argv[])
 
 				// the max searching radius depend on the redshift of lens  //	
 				// the max seperation of the source at the z = z_f  //
-				radius_e = radius_e / dist_len ; // degree
+				radius_e = radius_bin[radi_id + 1] * coeff / dist_len/foregal_data[cos_dec_id][gal_id]; // degree
 				radius_e_sq = radius_e * radius_e; // degree^2
 
 				// degree
@@ -393,40 +394,37 @@ int main(int argc, char *argv[])
 				gal_info.nx = grid_nx;
 				gal_info.blocks_num = grid_num;
 				gal_info.scale = block_scale[0];
-
+				//std::cout << row << " " << col << " " << block_scale[0] << " " << radius_e << " " << dist_len <<" "<< coeff << std::endl;
 
 				// find the blocks needed //
 				initialize_arr(block_mask, grid_num, -1);
-				find_block(&gal_info, radius_s, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
+				find_block(&gal_info, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
 				for (block_id = 0; block_id < grid_num; block_id++)
 				{
 					if (block_mask[block_id] > -1)
 					{
+						std::cout << block_mask[block_id] <<"  "<< block_id / grid_nx << "  " << block_id % grid_nx << std::endl;
 						// the start and end point of the block //
 						// the start- & end-point					      //
 						block_s = backgal_data[bs_id][block_id];
 						block_e = backgal_data[be_id][block_id];
 						for (ib = block_s; ib < block_e; ib++)
 						{
-							ra_b = backgal_data[ra_id][ib];
-							dec_b = backgal_data[dec_id][ib];
-
-							// times cos(dec) due to the different length the arc corresponding to the same delta R.A. at different Dec
-							diff_ra = (ra_b - ra_f)*foregal_data[cos_dec_id][gal_id];
-							diff_dec = dec_b - dec_f;
-							diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
-
-							// if the source galaxy stay above the z_thresh 
-							// and the seperation is smaller than the max seperation
-							if (backgal_data[z_id][ib] >= z_thresh and diff_theta_sq <= radius_e_sq)
+							if (backgal_data[z_id][ib] >= z_thresh)
 							{
-								z_b = backgal_data[z_id][ib];
-								//find_near(redshifts, z_b, red_num, tag_b);
-								//dist_source = distances[tag_b];
+								ra_b = backgal_data[ra_id][ib];
+								dec_b = backgal_data[dec_id][ib];
+
 								dist_source = backgal_data[dist_id][ib];
+
+								// times cos(dec) due to the different length the arc corresponding to the same delta R.A. at different Dec
+								diff_ra = (ra_b - ra_f)*foregal_data[cos_dec_id][gal_id];
+								diff_dec = dec_b - dec_f;
+								diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
+
 								// the seperation in comving coordinate, 
-								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
+								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;					
 
 								if (diff_r < radius_bin[radi_id + 1] and diff_r >= radius_bin[radi_id])
 								{
@@ -434,8 +432,8 @@ int main(int argc, char *argv[])
 									backgal_count[gal_id] = +1;
 
 									// rotation for shear calculation
-									backgal_sin_2phi =  2 * diff_ra*diff_dec / diff_theta_sq;
-									backgal_cos_2phi = (diff_ra*diff_ra - diff_dec * diff_dec) / diff_theta_sq;
+									backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
+									backgal_cos_2phi = (diff_ra - diff_dec)*(diff_ra + diff_dec) / diff_theta_sq;
 
 									backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
 									backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
@@ -463,21 +461,22 @@ int main(int argc, char *argv[])
 										chi_cross[ig_label + ig * g_num] += 1;
 									}
 
-									crit_surf_density_com = dist_source /(dist_source - dist_len) *dist_len_coeff;
+									crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
 									foregal_data_shared[gal_id] += crit_surf_density_com;
 
 								}
+								
 							}
 						}
 					}
 				}
 				stgal2 = clock();
 				process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
-				per_n = double((gal_id - my_gal_s) / (my_gal_e - my_gal_s) * 100);
+				per_n = double((gal_id - my_gal_s) *1.0/ (my_gal_e - my_gal_s) * 100);
 
 				if (0 == process_per)
 				{
-					sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time since begin: %.2f sec", rank, area_id, per_n, (stgal2 - stgal1) / CLOCKS_PER_SEC);
+					sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %.2f%%. Time since begin: %.2f sec. %ld background galaxies have been found", rank, area_id, per_n, (stgal2 - stgal1) / CLOCKS_PER_SEC, backgal_count[gal_id]);
 					write_log(log_path, log_infom);
 					if (0 == rank)
 					{
@@ -568,7 +567,7 @@ int main(int argc, char *argv[])
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			st3 = clock();
-			sprintf(log_infom, "RANK: %d. Finish radius bin [%.4f,  %.4f]. \Delta\Sigma: %9.6f (%9.6f),  g_t: %9.6f(%9.6f),  num: %ld, Time: %.2f sec", rank, radius_bin[radi_id], radius_bin[radi_id + 1],
+			sprintf(log_infom, "RANK: %d. Finish radius bin [%.4f,  %.4f]. \\Delta\\Sigma: %9.6f (%9.6f),  g_t: %9.6f(%9.6f),  num: %ld, Time: %.2f sec", rank, radius_bin[radi_id], radius_bin[radi_id + 1],
 				delta_crit, delta_crit_sig, gh_tan, gh_tan_sig, pair_count, (st3-st2)/CLOCKS_PER_SEC);
 			write_log(log_path, log_infom);
 			if (0 == rank)

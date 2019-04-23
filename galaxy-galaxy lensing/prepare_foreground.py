@@ -3,7 +3,7 @@ from astropy.io import fits
 import h5py
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
-from sys import path
+from sys import path, argv
 path.append('%s/work/mylib/'%my_home)
 import tool_box
 from plot_tool import Image_Plot
@@ -54,7 +54,7 @@ for i in range(1,5):
 h5f.close()
 img.axs[0][0].legend()
 img.save_img("/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/pic/overlap_ori.png")
-img.close()
+plt.close()
 
 
 # The catalog in grid
@@ -85,7 +85,7 @@ for i in range(1, 5):
 h5f.close()
 img.axs[0][0].legend()
 img.save_img("/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/pic/overlap.png")
-img.close()
+plt.close()
 
 
 
@@ -167,7 +167,7 @@ for j in range(2):
 
 img.subimg_adjust(0.3, 0.2)
 img.save_img("/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/pic/areas.pdf")
-img.close()
+plt.close()
 
 h5f.close()
 
@@ -195,19 +195,20 @@ for i in range(3):
     for iz in range(sp[0]):
         tag = tool_box.find_near(redshift, z_select[iz])
         dist_select[iz] = distance[tag]
+        print(z_select[iz], redshift[tag], distance[tag])
 
-    h5f_cata["/foreground/%s/Z"] = z_select
-    h5f_cata["/foreground/%s/Z"].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
+    h5f_cata["/foreground/%s/Z"%area_nm[i]] = z_select
+    h5f_cata["/foreground/%s/Z"%area_nm[i]].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
 
-    h5f_cata["/foreground/%s/DISTANCE"] = dist_select
-    h5f_cata["/foreground/%s/DISTANCE"].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
+    h5f_cata["/foreground/%s/DISTANCE"%area_nm[i]] = dist_select
+    h5f_cata["/foreground/%s/DISTANCE"%area_nm[i]].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
 
-    h5f_cata["/foreground/%s/RA"] = ra_select
-    h5f_cata["/foreground/%s/RA"].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
+    h5f_cata["/foreground/%s/RA"%area_nm[i]] = ra_select
+    h5f_cata["/foreground/%s/RA"%area_nm[i]].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
 
-    h5f_cata["/foreground/%s/DEC"] = dec_select
-    h5f_cata["/foreground/%s/DEC"].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
+    h5f_cata["/foreground/%s/DEC"%area_nm[i]] = dec_select
+    h5f_cata["/foreground/%s/DEC"%area_nm[i]].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
 
-    h5f_cata["/foreground/%s/COS_DEC"] = cos_dec_select
-    h5f_cata["/foreground/%s/COS_DEC"].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
+    h5f_cata["/foreground/%s/COS_DEC"%area_nm[i]] = cos_dec_select
+    h5f_cata["/foreground/%s/COS_DEC"%area_nm[i]].attrs["shape"] = numpy.array(sp, dtype=numpy.intc)
 h5f_cata.close()

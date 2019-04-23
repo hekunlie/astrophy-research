@@ -2552,6 +2552,81 @@ void find_block(const pts_info *infos, const double radius_s, const double radiu
 	}
 }
 
+void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask)
+{
+	int i, j, k, lb, lby, lb_d, lb_d_, seq = 0;
+	int idy = infos->idy;// block id of the point
+	int idx = infos->idx;
+	double y = infos->y;// the coordinates of the point
+	double x = infos->x;
+	double scale = infos->scale;// the length of the side of the square blocks
+	int ny = infos->ny; // the number of blocks along each axis 
+	int nx = infos->nx;
+	int num = infos->blocks_num;// the numbers of total blocks
+
+	int nx_left, nx_right, ny_up, ny_down; // the max blocks number in each direction
+												// away from the point within radius_e
+	int nx_s, nx_e, ny_s, ny_e;
+
+	double re_sq = radius * radius;
+	double dx, dy;
+	double distance[4];
+	// "distance" stores the distance of the four vertexes of each block,
+	// the sequence of the vertexes：
+	// | (y1,x1), (y1,x2) |
+	// | (y2,x1), (y2,x2) |
+
+	// find the minimum square that contains the target blocks
+	nx_left = (int)((radius - x + bound_x[0]) / scale) + idx + 1;
+	nx_right = (int)((radius + x - bound_x[0]) / scale) - idx;
+	ny_up = (int)((radius + y - bound_y[0]) / scale) - idy;
+	ny_down = (int)((radius - y + bound_y[0]) / scale) + idy + 1;
+
+	nx_s = std::max(idx - nx_left, 0);
+	nx_e = std::min(idx + nx_right + 1, nx);
+	ny_s = std::min(idy - ny_down, 0);
+	ny_e = std::min(idy + ny_up + 1, ny);
+
+	// initialiize the mask
+	for (i = 0; i < num; i++)
+	{
+		block_mask[i] = -1;
+	}
+
+	for (i = idy; i < ny_e; i++)
+	{
+		lby = i * nx; // for speed
+		for (j = nx_s; j < nx_e; j++)
+		{
+			lb = lby + j; // label of the block
+			lb_d = lb * 4;
+			for (k = 0; k < 4; k++)
+			{
+				lb_d_ = lb_d + k;
+				dy = bound_y[lb_d_] - y;
+				dx = bound_x[lb_d_] - x;
+				distance[k] = dy * dy + dx * dx;
+			}
+			sort_arr(distance, 4, 1); // ascending order
+			if (distance[0] > re_sq and i not_eq idy and j not_eq idx)
+			{
+				//	"distance[0] > re_sq and i not_eq idy and j not_eq idx":  
+				//  if the minimum distance between the vertexes of a block ,
+				//	which is not on the cross centers on  (idy, idx) , is larger 
+				//	than radius_e, it is not the target one. 
+				//	The blocks on the cross centers on  (idy, idx) are the 
+				//	targets.
+				continue;
+			}
+			else
+			{
+				block_mask[seq] = lb;
+				seq++;
+			}
+		}
+	}
+}
+
 
 
 void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, const double *bins, const int bin_num, const double gh, double &result)
@@ -2669,6 +2744,22 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 	double chi_count = 0;
 	double dn, sn;
 	for (i = mid; i < bin_num; i++)
+	{
+		dn = hist_num[i] - hist_num[bin_num - i - 1];
+		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		chi_count += dn * dn / sn;
+	}
+	result = chi_count * 0.5;
+}
+
+void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double &result)
+{
+	// the size must be an even number
+	int i, j;
+	int mid = bin_num / 2;
+	double chi_count = 0;
+	double dn, sn;
+	for (i = mid; i < mid+num+1; i++)
 	{
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];

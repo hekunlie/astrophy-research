@@ -297,10 +297,10 @@ int main(int argc, char **argv)
         histogram(dg2, mg_bin, num_in_bin_2, data_stack_num, bin_num);
 		st4 = clock();
 
-		chisq_1d(num_in_bin_1, bin_num, chi_sq_1);
+		cal_chisq_1d(num_in_bin_1, bin_num, 2, chi_sq_1);
 		chi_1[i] = chi_sq_1;	
 
-        chisq_1d(num_in_bin_2, bin_num, chi_sq_2);
+		cal_chisq_1d(num_in_bin_2, bin_num, 2, chi_sq_2);
         chi_2[i] = chi_sq_2;	
 		if (0 == rank)
 		{
@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 		std::cout << std::endl;
 
 		sprintf(set_name, "/chi_1");
-		sprintf(data_path, "/home/hklee/work/jupyter/chisq.hdf5");
+		sprintf(data_path, "/home/hklee/work/chisq.hdf5");
 		write_h5(data_path, set_name, chi_1, gh_num, 1, TRUE);
 
 		sprintf(set_name, "/chi_2");
