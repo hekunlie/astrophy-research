@@ -21,10 +21,31 @@ from numpy import fft
 import matplotlib
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 
+def psf(flux, psf_scale, size, ellip, theta):
+    my, mx = numpy.mgrid[0:size, 0:size] - size/2.
+    r_scale_sq = 9
+    m = 3.5
+
+    r1 = numpy.cos(theta)
+    r2 = numpy.sin(theta)
+    q = (1-ellip**2)/(1+ellip**2)
+
+    mx_r = mx*r1 - my*r2
+    my_r = mx*r2 + my*r1
+
+    factor = flux * 1. / (numpy.pi * psf_scale ** 2 * ((1. + r_scale_sq) ** (1. - m) - 1.) / (1. - m))
+    rsq = (mx_r/ psf_scale) ** 2 + (my_r/ psf_scale/q) ** 2
+    idx = rsq > r_scale_sq
+    rsq[idx] = 0.
+    arr = factor * (1. + rsq) ** (-m)
+    arr[idx] = 0.
+    return arr
+
+plt.imshow(psf(1, 4, 40, 0.05, numpy.pi/4))
+plt.show()
 
 
-
-
+exit()
 def plot_examples(cms):
     """
     helper function to plot two colormaps

@@ -183,14 +183,19 @@ h5f.close()
 
 area_nm = ["w_1", "w_3", "w_4"]
 h5f_cata = h5py.File("/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/cata_result_ext_grid.hdf5", "a")
+try:
+    del h5f_cata["/foreground"]
+except:
+    print("foreground doesn't exist.")
+
 for i in range(3):
     ra_select = select_data[1][i][0]
     dec_select = select_data[1][i][1]
     dec_arc = select_data[1][i][1] / 180 * numpy.pi
-    cos_dec_select = numpy.cos(dec_arc)
+    cos_dec_select = numpy.abs(numpy.cos(dec_arc))
     z_select = select_data[1][i][2]
     dist_select = numpy.zeros_like(z_select)
-    sp = [ra_select.shape[0], 0]
+    sp = [ra_select.shape[0], 1]
 
     for iz in range(sp[0]):
         tag = tool_box.find_near(redshift, z_select[iz])

@@ -37,7 +37,7 @@ void find_block_(const pts_info *infos, const double radius, const double *bound
 
 	nx_s = std::max(idx - nx_left, 0);
 	nx_e = std::min(idx + nx_right + 1, nx);
-	ny_s = std::min(idy - ny_down, 0);
+	ny_s = std::max(idy - ny_down, 0);
 	ny_e = std::min(idy + ny_up + 1, ny);
 
 	// initialiize the mask
@@ -46,7 +46,7 @@ void find_block_(const pts_info *infos, const double radius, const double *bound
 		block_mask[i] = -1;
 	}
 
-	for (i = idy; i < ny_e; i++)
+	for (i = ny_s; i < ny_e; i++)
 	{
 		lby = i * nx; // for speed
 		for (j = nx_s; j < nx_e; j++)
@@ -84,22 +84,25 @@ int main(int argc, char* argv[])
 {
 	int ny, nx;
 	int i, j, k;
-	int tag;
-	double scale = 3;
+	int tag, bin_label;
+	double scale = 0.15;
 	double x, y;
 	double rad_s, rad_e;
 	int shape[2];
-	int area_id = 1;
+	int area_id = 1, num;
+	int ra_bin_num, dec_bin_num;
 
 	char path[50], data_path[200];
 	char buf[100], set_name[50], attr_name[50];
-	tag = std::atoi(argv[1]);
-	rad_s = std::atof(argv[2]);
-	rad_e = std::atof(argv[3]);
-	int seed = 100;
-	gsl_initialize(seed+tag);
-	
 
+
+	// sky area, the label of the foreground galaxy and the radius for searching
+	area_id = std::atoi(argv[1]);
+	tag = std::atoi(argv[2]);
+	rad_e = std::atof(argv[3]);
+
+
+	// for the mask of needed grid
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/cata_result_ext_grid.hdf5");
 	sprintf(set_name, "/background/w_%d", area_id);
 	sprintf(attr_name, "grid_shape");
@@ -107,34 +110,89 @@ int main(int argc, char* argv[])
 	ny = shape[0];
 	nx = shape[1];
 	int *mask = new int[ny*nx]{};
-
-
+	std::cout << "Grid: " << ny << " " << nx << " " << scale << std::endl;
+	// the boundary of blocks
 	sprintf(set_name, "/background/w_%d/block_boundx", area_id);
 	sprintf(attr_name, "shape");	
 	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
 	double *boundx = new double[shape[0]*shape[1]]{};
+	read_h5(data_path, set_name, boundx);
 
 	sprintf(set_name, "/background/w_%d/block_boundy", area_id);
 	sprintf(attr_name, "shape");
 	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
 	double *boundy = new double[shape[0] * shape[1]]{};
+	read_h5(data_path, set_name, boundy);
+
+	sprintf(set_name, "/background/w_%d/RA_bin", area_id);
+	sprintf(attr_name, "shape");
+	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
+	double *ra_bin = new double[shape[0] * shape[1]]{};
+	read_h5(data_path, set_name, ra_bin);
+	ra_bin_num = shape[0] - 1;
+
+	sprintf(set_name, "/background/w_%d/DEC_bin", area_id);
+	sprintf(attr_name, "shape");
+	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
+	double *dec_bin = new double[shape[0] * shape[1]]{};
+	read_h5(data_path, set_name, dec_bin);
+	dec_bin_num = shape[0] - 1;
 
 	
+	// the foreground 
+	sprintf(set_name, "/foreground/w_%d/RA", area_id);
+	sprintf(attr_name, "shape");
+	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
+	double *ra = new double[shape[0]]{};
+	read_h5(data_path, set_name, ra);
+
+	sprintf(set_name, "/foreground/w_%d/DEC", area_id);
+	sprintf(attr_name, "shape");
+	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
+	double *dec = new double[shape[0]]{};
+	read_h5(data_path, set_name, dec);
+
+	sprintf(set_name, "/foreground/w_%d/COS_DEC", area_id);
+	sprintf(attr_name, "shape");
+	read_h5_attrs(data_path, set_name, attr_name, shape, "d");
+	double *cos_dec = new double[shape[0]]{};
+	read_h5(data_path, set_name, cos_dec);
+
+	num = shape[0];
+
+	if (tag >= num)
+	{
+		tag = num - 1;
+	}
+
 	pts_info pts;
-	pts.idx = tag % nx;
-	pts.idy = tag / nx;
+
+	// the information of the foreground galaxy
+	histogram2d_s(dec[tag], ra[tag], dec_bin, ra_bin, dec_bin_num, ra_bin_num, bin_label);
+	std::cout << dec_bin_num << " " << ra_bin_num <<" "<<bin_label<< std::endl;
+	show_arr(dec_bin, 1, dec_bin_num + 1);
+	std::cout << std::endl;
+	show_arr(ra_bin, 1, ra_bin_num + 1);
+	std::cout << std::endl;
+
+	pts.idx = bin_label % nx;
+	pts.idy = bin_label / nx;
 	pts.nx = nx;
 	pts.ny = ny;
 	pts.scale = scale;
 	pts.blocks_num = ny * nx;
-	pts.x = rand_uniform(boundx[4 * tag], boundx[4 * tag + 1]);
-	pts.y = rand_uniform(boundy[4 * tag], boundy[4 * tag + 2]);
-	find_block(&pts, rad_s, rad_e, boundy, boundx, mask);
+	pts.x = ra[tag];
+	pts.y = dec[tag];
+	std::cout << "Position: "<<dec[tag]<<" "<<ra[tag] <<" Grid: "<<pts.idy<< " " << pts.idx<< " (" << pts.ny<<" "<<pts.nx <<")"<< std::endl;
+
+	find_block(&pts, rad_e, boundy, boundx, mask);
+
 	std::cout << std::endl;
 	sprintf(buf, "PTS: %d, %d", pts.idy, pts.idx);
 	std::cout << buf << std::endl;
 	std::cout << scale << std::endl;
 	std::cout << pts.y << ", " << pts.x << std::endl;
+
 
 	sprintf(path, "!mask.fits");
 	write_fits(path, mask, ny, nx);
@@ -142,6 +200,9 @@ int main(int argc, char* argv[])
 	delete[] boundx;
 	delete[] boundy;
 	delete[] mask;
+	delete[] ra;
+	delete[] dec;
+	delete[] cos_dec;
 	gsl_free();
 	return 0;
 }

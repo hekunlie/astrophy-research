@@ -267,7 +267,10 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 /********************************************************************************************************************************************/
 void create_points(double *point, const int num_p, const double radius);
 void create_epoints(double *point, const int num_p, const double ellip);
+
 void create_psf(double*in_img, const double scale, const int size, const int psf);
+void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const int psf);
+
 void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, para *paras);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
@@ -346,7 +349,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras);//checked
 void ellip_est(const double *gal_img, const int size, para*paras);
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
-void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask);
+void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask);//checked
 /* find the target blocks for a specific point for the calculation of correlation function.
 	
 */

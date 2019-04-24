@@ -1132,6 +1132,8 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 {
 	int i, j;
 	double rs, r1, val, flux_g, flux_m, rd;
+	double cent;
+	cent = size / 2.;
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
@@ -1139,10 +1141,10 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	rd = 1. / scale / scale;
 	for (i = 0; i < size; i++)
 	{
-		r1 = (i - size / 2.)*(i - size / 2.)*rd;
+		r1 = (i - cent)*(i - cent)*rd;
 		for (j = 0; j < size; j++)
 		{
-			rs = r1 + (j - size / 2.)*(j - size / 2.)*rd;
+			rs = r1 + (j - cent)*(j - cent)*rd;
 			if (psf == 1)  // Gaussian PSF
 			{
 				if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
@@ -1150,6 +1152,46 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 			else              // Moffat PSF
 			{
 				if (rs <= 9.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+			}
+		}
+	}
+}
+
+void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const int psf)
+{
+	int i, j;
+	double rs, r1, val, flux_g, flux_m, rd;
+	double cent, q, rot_1, rot_2;
+	double r1, r2, ry1, ry2;
+
+	cent = size / 2.;
+
+	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+
+	rot_1 = cos(theta);
+	rot_2 = sin(theta);
+	q =  (1 + ellip * ellip)/(1 - ellip * ellip);
+
+	rd = 1. / scale / scale;
+	for (i = 0; i < size; i++)
+	{
+		ry1 = - rot_2 * (i - cent);
+		ry2 = rot_1 * (i - cent);
+
+		for (j = 0; j < size; j++)
+		{
+			r1 = rot_1 * (j - cent) + ry1;
+			r2 = rot_2 * (j - cent) + ry2;
+			rs = r1 * r1*rd + r2 * r2*rd*q;
+
+			if (psf == 1)  // Gaussian PSF
+			{
+				if (rs <= 9) in_img[i*size + j] += flux_g * exp(-rs * 0.5);
+			}
+			else              // Moffat PSF
+			{
+				if (rs <= 9.) in_img[i*size + j] += flux_m * pow(1. + rs, -3.5);
 			}
 		}
 	}
@@ -2584,7 +2626,7 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 
 	nx_s = std::max(idx - nx_left, 0);
 	nx_e = std::min(idx + nx_right + 1, nx);
-	ny_s = std::min(idy - ny_down, 0);
+	ny_s = std::max(idy - ny_down, 0);
 	ny_e = std::min(idy + ny_up + 1, ny);
 
 	// initialiize the mask
@@ -2593,7 +2635,7 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 		block_mask[i] = -1;
 	}
 
-	for (i = idy; i < ny_e; i++)
+	for (i = ny_s; i < ny_e; i++)
 	{
 		lby = i * nx; // for speed
 		for (j = nx_s; j < nx_e; j++)
