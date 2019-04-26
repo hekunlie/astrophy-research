@@ -23,11 +23,13 @@ int main(int argc, char*argv[])
 
 		std::ifstream fin;
 		std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
+		std::string dect_info;
+
 		char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 		char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 		
-		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/");
-		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test1/";
+		sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+		std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
 		std::string str_paraf_path = str_data_path + "parameters/para.ini";
 		std::string str_shear_path = str_data_path + "parameters/shear.dat";
 		sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
@@ -38,12 +40,13 @@ int main(int argc, char*argv[])
 		double max_radius=9, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
 		int i, j, k, sss1, sss2;
 		double g1, g2, ts, te, t1, t2;
+		double psf_ellip, psf_ang, psf_norm_factor;
 
 		if (0 == myid)
 		{
 			for (i = 0; i < numprocs; i++)
 			{
-				sprintf(finish_path, "/home/hkli/work/test/job/pts/finish_%d.dat", i);
+				sprintf(finish_path, "/home/hkli/work/test/job/debug/finish_%d.dat", i);
 				if (remove(finish_path))
 				{
 					std::cout << "REMOVE: " << finish_path << std::endl;
@@ -107,8 +110,15 @@ int main(int argc, char*argv[])
 
 		read_text(str_shear_path, shear, 2*shear_pairs);
 	
-		//PSF
-		create_psf(psf, psf_scale, size, psf_type);
+		//// circle PSF
+		//create_psf(psf, psf_scale, size, psf_type);
+
+		// elliptical PSF, e = 0.05, position angle = Pi/4
+		psf_ellip = 0.05;
+		psf_ang = Pi / 4;
+		psf_norm_factor = 19.0643; // by numercal integrate
+		create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
+
 		pow_spec(psf, ppsf, size, size);
 		get_psf_radius(ppsf, &all_paras, psf_thres_scale);
 		if (0 == myid)
@@ -145,7 +155,7 @@ int main(int argc, char*argv[])
 			{
 				t1 = clock();
 
-				seed = myid * i + shear_id + 5490000+i+temp_s;
+				seed = myid * i + shear_id + 15008+i+temp_s;
 				temp_s++;
 				gsl_initialize(seed + i);
 
@@ -174,16 +184,22 @@ int main(int argc, char*argv[])
 					create_points(point, num_p, max_radius);
 					flux_i = flux[i*stamp_num + j] / num_p;
 					// for measuring the intrinsic ellipticity
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
+					//// circle PSF
+					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
+					// elliptical PSF
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang,psf_norm_factor,&all_paras);
 
 					initialize_arr(gal, size*size, 0);
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);
+					//// circle PSF
+					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
+					// elliptical PSF
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 					addnoise(gal, size*size, gal_noise_sig);
 
 					stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 
-					detect_label = galaxy_finder(gal, mask, &all_paras, false);
+					galaxy_finder(gal, mask, &all_paras, false, detect_label, dect_info);
 
 					pow_spec(gal, pgal, size, size);
 
@@ -254,7 +270,7 @@ int main(int argc, char*argv[])
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		sprintf(log_path, "/home/hkli/work/test/job/pts/finish_%d.dat", myid);
+		sprintf(log_path, "/home/hkli/work/test/job/debug/finish_%d.dat", myid);
 		write_log(log_path, log_path);
 
 		if (0 == myid)

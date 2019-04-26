@@ -1,8 +1,8 @@
 import os
 from sys import path, argv
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
-path.append('%s/work/fourier_quad/'%my_home)
-path.append('E:/Github/astrophy-research/my_lib/')
+path.append('%s/work/mylib/'%my_home)
+path.append('E:/Github/astrophy-research/mylib/')
 import tool_box
 import shutil
 

@@ -1157,41 +1157,40 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	}
 }
 
-void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const int psf)
+void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const double amplitude, const int psf)
 {
 	int i, j;
-	double rs, r1, val, flux_g, flux_m, rd;
+	double rs, val, flux_norm, rd;
 	double cent, q, rot_1, rot_2;
 	double r1, r2, ry1, ry2;
 
 	cent = size / 2.;
 
-	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
-	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
-
 	rot_1 = cos(theta);
 	rot_2 = sin(theta);
-	q =  (1 + ellip * ellip)/(1 - ellip * ellip);
+	q =  (1 + ellip)/(1 - ellip);
 
 	rd = 1. / scale / scale;
+	flux_norm = 1. / amplitude;
+
 	for (i = 0; i < size; i++)
 	{
-		ry1 = - rot_2 * (i - cent);
-		ry2 = rot_1 * (i - cent);
+		ry1 =  rot_2 * (i - cent);
+		ry2 =  rot_1 * (i - cent);
 
 		for (j = 0; j < size; j++)
 		{
 			r1 = rot_1 * (j - cent) + ry1;
-			r2 = rot_2 * (j - cent) + ry2;
+			r2 = - rot_2 * (j - cent) + ry2;
 			rs = r1 * r1*rd + r2 * r2*rd*q;
 
 			if (psf == 1)  // Gaussian PSF
 			{
-				if (rs <= 9) in_img[i*size + j] += flux_g * exp(-rs * 0.5);
+				if (rs <= 9) in_img[i*size + j] += flux_norm * exp(-rs * 0.5);
 			}
 			else              // Moffat PSF
 			{
-				if (rs <= 9.) in_img[i*size + j] += flux_m * pow(1. + rs, -3.5);
+				if (rs <= 9.) in_img[i*size + j] += flux_norm * pow(1. + rs, -3.5);
 			}
 		}
 	}
@@ -1249,6 +1248,81 @@ void convolve(double *in_img, const double * points, const double flux, const in
 				else				// Moffat PSF
 				{
 					if (rs <= 9) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+				}
+			}
+		}
+	}
+	if (0 == flag)
+	{
+		ellip_est(in_img, size, paras);
+	}
+	delete[] points_r;
+}
+
+
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, para *paras)
+{	 /* will not change the inputted array */
+	 /* in_img is the container of the final image,
+	 points is the array of points' coordinates,
+	 rotate is the radian in units of pi/4,
+	 scale is the scale length of PSF,
+	 psf=1 means the Gaussian PSF, psf=2 means the Moffat PSF	*/
+	int i, j, k, m;
+	double r1, r2, n, flux_norm;
+	double ry1, ry2, rx1, rx2;
+	double psf_rot_1, psf_rot_2, q;
+	// rotation of psf
+	psf_rot_1 = cos(theta);
+	psf_rot_2 = sin(theta);
+	q = (1. + ellip) / (1. - ellip);
+
+	// rotation of points
+	// |rot1, - rot2 |
+	// |rot2,  rot1  |
+	double rot1 = cos(rotate*Pi / 4.), rot2 = sin(rotate*Pi / 4.), val, rs, rd;
+	rd = 1. / scale / scale;  // scale of PSF	
+
+	double *points_r = new double[num_p * 2];
+	/* rotate and shear */
+	if (rotate != 0)
+	{
+		for (i = 0; i < num_p; i++)
+		{
+			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2 * points[i + num_p]) + g2 * (rot2 * points[i] + rot1 * points[i + num_p]) + size / 2.;
+			points_r[i + num_p] = g2 * (rot1 * points[i] - rot2 * points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1 * points[i + num_p]) + size / 2.;
+		}
+	}
+	else
+	{
+		/* shear the profile and move the center to image center */
+		for (i = 0; i < num_p; i++)
+		{
+			points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + size * 0.5 - 0.5;
+			points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + size * 0.5 - 0.5;
+		}
+	}
+
+	/*  convolve PSF and draw the image */
+	flux_norm = 1. / amplitude;
+
+	for (k = 0; k < num_p; k++)
+	{
+		for (i = 0; i < size; i++)  /* y coordinate */
+		{
+			ry1 = psf_rot_2 * (i - points_r[k + num_p]);
+			ry2 = psf_rot_1 * (i - points_r[k + num_p]);
+			for (j = 0; j < size; j++) /* x coordinate */
+			{
+				r1 = psf_rot_1 * (j - points_r[k]) + ry1;
+				r2 = -psf_rot_2 * (j - points_r[k]) + ry2;
+				rs = (r1*r1 + r2*r2*q)*rd;
+				if (psf == 1)  // Gaussian PSF
+				{
+					if (rs <= 9) in_img[i*size + j] += flux_norm * exp(-rs * 0.5);
+				}
+				else				// Moffat PSF
+				{
+					if (rs <= 9) in_img[i*size + j] += flux_norm * pow(1. + rs, -3.5);
 				}
 			}
 		}

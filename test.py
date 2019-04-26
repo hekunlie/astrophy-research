@@ -26,22 +26,46 @@ def psf(flux, psf_scale, size, ellip, theta):
     r_scale_sq = 9
     m = 3.5
 
-    r1 = numpy.cos(theta)
-    r2 = numpy.sin(theta)
-    q = (1-ellip**2)/(1+ellip**2)
+    rot_1 = numpy.cos(theta)
+    rot_2 = numpy.sin(theta)
+    q = (1+ellip)/(1-ellip)
 
-    mx_r = mx*r1 - my*r2
-    my_r = mx*r2 + my*r1
+    # mx_r = mx*r1 + my*r2
+    # my_r = -mx*r2 + my*r1
 
-    factor = flux * 1. / (numpy.pi * psf_scale ** 2 * ((1. + r_scale_sq) ** (1. - m) - 1.) / (1. - m))
-    rsq = (mx_r/ psf_scale) ** 2 + (my_r/ psf_scale/q) ** 2
-    idx = rsq > r_scale_sq
-    rsq[idx] = 0.
-    arr = factor * (1. + rsq) ** (-m)
-    arr[idx] = 0.
+    # factor = flux * 1. / (numpy.pi * psf_scale ** 2 * ((1. + r_scale_sq) ** (1. - m) - 1.) / (1. - m))
+    # rsq = (mx_r/ psf_scale) ** 2 + (my_r/ psf_scale/q) ** 2
+    # idx = rsq > r_scale_sq
+    # rsq[idx] = 0.
+    # arr = factor * (1. + rsq) ** (-m)
+    # arr[idx] = 0.
+
+    cent = size/2
+    arr = numpy.zeros((size, size))
+    rd = 1./psf_scale/psf_scale
+    for i in range(size):
+        ry1 = rot_2*(i-cent)
+        ry2 = rot_1*(i-cent)
+        for j in range(size):
+            r1 = rot_1 * (j - cent) + ry1
+            r2 = - rot_2 * (j - cent) + ry2
+            rs = r1 * r1 * rd + r2 * r2 * rd*q
+
+            if rs <= 9.:
+                arr[i,j] += (1. + rs)**(-3.5)
+                # arr[i, j] += numpy.exp(-rs*0.5)
     return arr
 
-plt.imshow(psf(1, 4, 40, 0.05, numpy.pi/4))
+plt.subplot(121)
+psf_img = psf(1, 30, 200, 0.7, 0)
+idx = psf_img > 0
+psf_img[idx] = 1
+plt.imshow(psf_img)
+plt.subplot(122)
+psf_img = psf(1, 30, 200, 0.7, numpy.pi/4)
+idx = psf_img > 0
+psf_img[idx] = 1
+plt.imshow(psf_img)
 plt.show()
 
 
