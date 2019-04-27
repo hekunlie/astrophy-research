@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	double *redshifts, *distances;
 	int red_num;
 	int shape[2];
-	char data_path[250], log_path[250], h5f_path[250], h5f_res_path[250], temp_path[250];
+	char data_path[250], log_path[250], h5f_path[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 
 	char *names[backgal_data_col];//backgal_data_col
@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
 
 			radius_e = radius_bin[radi_id + 1]*coeff;
 			
-			for (gal_id = my_gal_s; gal_id < my_gal_s+1; gal_id++)
+			for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 			{
 				stgal1 = clock();
 
@@ -423,9 +423,10 @@ int main(int argc, char *argv[])
 					{
 						// the start and end point of the block //
 						// the start- & end-point					      //
-						block_s = backgal_data[bs_id][block_id];
-						block_e = backgal_data[be_id][block_id];
+						block_s = backgal_data[bs_id][block_mask[block_id]];
+						block_e = backgal_data[be_id][block_mask[block_id]];
 
+						std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
 						for (ib = block_s; ib < block_e; ib++)
 						{
 							if (backgal_data[z_id][ib] >= z_thresh)
@@ -441,8 +442,11 @@ int main(int argc, char *argv[])
 								diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
 								// the seperation in comving coordinate, 
-								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;					
-								//std::cout << gal_id<<" "<< dec_b << " "<<ra_b<<" "<< dec_f<<" "<< ra_f <<" "<<radius_bin[radi_id]<<" "<<diff_r<<" "<< radius_bin[radi_id+1]<<" "<< sqrt(diff_theta_sq) <<" "<<dist_source<<" "<<coeff_inv<< std::endl;
+								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
+								sprintf(temp_path, "Gal: %d, B dec: %.6f, ra: %.6f. F dec: %.6f, ra: %.6f. R1: %.6f, diff_r: %.6f, R2: %.6f, diff_theta:%.6f, dist: %.6f, coeff_inv: %.6f ",
+									gal_id, dec_b, ra_b, dec_f, ra_f, radius_bin[radi_id], diff_r, radius_bin[radi_id + 1], sqrt(diff_theta_sq), dist_source, coeff_inv);
+								std::cout << temp_path << std::endl;
+								
 								if (diff_r >= radius_bin[radi_id] and diff_r < radius_bin[radi_id + 1])
 								{
 									// counting for the ensemble average of \Deleta \Sigma 

@@ -187,7 +187,7 @@ int main(int argc, char*argv[])
 					//// circle PSF
 					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
 					// elliptical PSF
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang,psf_norm_factor,&all_paras);
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 					initialize_arr(gal, size*size, 0);
 					//// circle PSF
