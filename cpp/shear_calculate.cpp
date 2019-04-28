@@ -12,7 +12,7 @@ int main(int argc, char**argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-	
+
 	int i, j, k;
 	int cut_num = 1;
 	double st1, st2, st3, st4, st5, st6;
@@ -26,7 +26,7 @@ int main(int argc, char**argv)
 
 	int data_num = 10000000, data_col = 7;
 	int size = data_num * data_col;
-	char data_path[200], set_name[50], log_inform[250];
+	char data_path[200], set_name[50], log_inform[250], total_path[250];
 
 	double gh1, gh2, gh1_sig, gh2_sig;
 	double m1, m1_sig, m2, m2_sig, c1, c1_sig, c2, c2_sig;
@@ -51,7 +51,12 @@ int main(int argc, char**argv)
 	MPI_Aint shear_size;
 	shear_size = shear_num * 4 * sizeof(double);
 
-	data_path_s = "/mnt/ddnfs/data_users/hkli/simu_test1/parameters/shear.dat";
+	data_path_s = "/mnt/ddnfs/data_users/hkli/simu_test/parameters/shear.dat";
+	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
+	if (0 == rank)
+	{
+		std::cout << total_path << std::endl;
+	}
 	read_text(data_path_s, shear, 2 * shear_num);
 
 	if (rank == 0)
@@ -62,7 +67,7 @@ int main(int argc, char**argv)
 			g1[i] = shear[i];
 			g2[i] = shear[i + shear_num];
 		}
-		
+
 		MPI_Win_allocate_shared(shear_size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &result, &win_shear);
 	}
 	else
@@ -73,7 +78,7 @@ int main(int argc, char**argv)
 	}
 
 	sprintf(set_name, "/data");
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test1/result/data/data_%d.hdf5", rank);
+    sprintf(data_path, "%sresult/data/data_%d.hdf5", total_path, rank);
 	read_h5(data_path, set_name, data);
 
 	for (i = 0; i < data_num; i++)
@@ -96,16 +101,16 @@ int main(int argc, char**argv)
 	std::cout << log_inform << std::endl;
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	
+
 	// least square to fit the m & c
 	if (rank == 0)
-	{	
+	{
 		double coeff[4];
 		double *measured_g1 = new double[shear_num];
 		double *measured_g2 = new double[shear_num];
 		double *measured_g1_sig = new double[shear_num];
 		double *measured_g2_sig = new double[shear_num];
-			 
+
 		for (i = 0; i < shear_num; i++)
 		{
 			measured_g1[i] = result[i];
@@ -113,8 +118,8 @@ int main(int argc, char**argv)
 			measured_g2[i] = result[i + shear_num * 2];
 			measured_g2_sig[i] = result[i + shear_num * 3];
 		}
-		sprintf(data_path, "/home/hkli/work/shear_result.hdf5");
-		sprintf(set_name, "/data");
+		sprintf(data_path, "%sresult/data/shear_result.hdf5", total_path);
+		sprintf(set_name, "/shears");
 		write_h5(data_path, set_name, result, 4, shear_num, TRUE);
 		//show_arr(measured_g1, 1, shear_num);
 		//show_arr(measured_g1_sig, 1, shear_num);
@@ -128,6 +133,10 @@ int main(int argc, char**argv)
 		sprintf(log_inform, "m1: %8.6f (%8.6f), c1: %9.6f (%9.6f). %.2f", coeff[2]-1, coeff[3], coeff[0], coeff[1], (st4-st3)/CLOCKS_PER_SEC);
 		std::cout << log_inform << std::endl;
 
+		coeff[2] = coeff[2] - 1;
+		sprintf(set_name, "/mc1");
+		write_h5(data_path, set_name, coeff, 4, 1, FALSE);
+
 		st5 = clock();
 		poly_fit_1d(g2, measured_g2, measured_g2_sig, shear_num, coeff, 1);
 		st6 = clock();
@@ -135,12 +144,16 @@ int main(int argc, char**argv)
 		sprintf(log_inform, "m2: %6.4f (%6.4f), c2: %9.6f (%9.6f)", coeff[2] - 1, coeff[3], coeff[0], coeff[1], (st6 - st5) / CLOCKS_PER_SEC);
 		std::cout << log_inform << std::endl;
 
+		coeff[2] = coeff[2] - 1;
+		sprintf(set_name, "/mc2");
+		write_h5(data_path, set_name, coeff, 4, 1, FALSE);
+
 		delete[] measured_g1;
 		delete[] measured_g2;
 		delete[] measured_g1_sig;
-		delete[] measured_g2_sig; 
+		delete[] measured_g2_sig;
 	}
-	
+
 	delete[] mnu2;
 	delete[] mnu1;
 	delete[] mg2;
