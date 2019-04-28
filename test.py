@@ -20,7 +20,14 @@ from matplotlib import cm
 from numpy import fft
 import matplotlib
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from astropy.cosmology import LambdaCDM
 
+
+cos = LambdaCDM(H0=70, Om0=0.31, Ode0=0.69)
+r = cos.comoving_distance(0.4743854)
+r1 = 2.99792458*1e5/70*0.4198876
+print(r*0.7,r1*0.7)
+exit()
 def psf(flux, psf_scale, size, ellip, theta):
     my, mx = numpy.mgrid[0:size, 0:size] - size/2.
     r_scale_sq = 9

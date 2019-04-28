@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi, dx_over_dy, dx_over_dy_sq;
 	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double z_b, z_thresh, ra_b, dec_b;
-	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh=0.3;
+	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh=0.1;
 	double back_mg1, back_mg2, back_mnu1, back_mnu2;
 	int back_tag;
 
@@ -347,7 +347,9 @@ int main(int argc, char *argv[])
 		coeff_inv = C_0_hat * Pi / 0.18;
 		// loop the search radius//
 
-		for (radi_id = 1; radi_id < 2; radi_id++)
+		pair_count = 0;
+
+		for (radi_id = 0; radi_id < 1; radi_id++)
 		{	
 			st1 = clock();
 			//////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -406,16 +408,16 @@ int main(int argc, char *argv[])
 				// find the blocks needed //
 				initialize_arr(block_mask, grid_num, -1);
 				find_block(&gal_info, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
-				for (i = 0; i < grid_num; i++)
-				{
-					if (block_mask[i] > -1)
-					{
-						std::cout << block_mask[i] << " " << block_mask[i] / grid_nx << "  " << block_mask[i] % grid_nx << " Row col " << row << " " << col<<" Ra Dec "<<ra_f<<" "<< dec_f << std::endl;
-					}
-				}
-				sprintf(temp_path, "!/home/hklee/work/mask.fits");
-				write_fits(temp_path, block_mask, grid_ny, grid_nx);
-				std::cout << radius_e << " Row col " << row << " " << col << " Ra Dec " << ra_f << " " << dec_f <<std::endl;
+				//for (i = 0; i < grid_num; i++)
+				//{
+				//	if (block_mask[i] > -1)
+				//	{
+				//		std::cout << block_mask[i] << " " << block_mask[i] / grid_nx << "  " << block_mask[i] % grid_nx << " Row col " << row << " " << col<<" Ra Dec "<<ra_f<<" "<< dec_f << std::endl;
+				//	}
+				//}
+				//sprintf(temp_path, "!/home/hklee/work/mask.fits");
+				//write_fits(temp_path, block_mask, grid_ny, grid_nx);
+				//std::cout << radius_e << " Row col " << row << " " << col << " Ra Dec " << ra_f << " " << dec_f <<std::endl;
 
 				for (block_id = 0; block_id < grid_num; block_id++)
 				{
@@ -426,7 +428,7 @@ int main(int argc, char *argv[])
 						block_s = backgal_data[bs_id][block_mask[block_id]];
 						block_e = backgal_data[be_id][block_mask[block_id]];
 
-						std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
+						//std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
 						for (ib = block_s; ib < block_e; ib++)
 						{
 							if (backgal_data[z_id][ib] >= z_thresh)
@@ -443,14 +445,17 @@ int main(int argc, char *argv[])
 
 								// the seperation in comving coordinate, 
 								diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
-								sprintf(temp_path, "Gal: %d, B dec: %.6f, ra: %.6f. F dec: %.6f, ra: %.6f. R1: %.6f, diff_r: %.6f, R2: %.6f, diff_theta:%.6f, dist: %.6f, coeff_inv: %.6f ",
-									gal_id, dec_b, ra_b, dec_f, ra_f, radius_bin[radi_id], diff_r, radius_bin[radi_id + 1], sqrt(diff_theta_sq), dist_source, coeff_inv);
-								std::cout << temp_path << std::endl;
 								
 								if (diff_r >= radius_bin[radi_id] and diff_r < radius_bin[radi_id + 1])
 								{
+
 									// counting for the ensemble average of \Deleta \Sigma 
 									backgal_count[gal_id] = +1;
+									pair_count += 1;
+									std::cout << pair_count;
+									sprintf(temp_path, "  Gal: %d, B dec: %.6f, ra: %.6f. F dec: %.6f, ra: %.6f. R1: %.6f, diff_r: %.6f, R2: %.6f, diff_theta:%.6f, dist: %.6f, coeff_inv: %.6f ",
+										gal_id, dec_b, ra_b, dec_f, ra_f, radius_bin[radi_id], diff_r, radius_bin[radi_id + 1], sqrt(diff_theta_sq), dist_source, coeff_inv);
+									std::cout << temp_path << std::endl;
 
 									// rotation for shear calculation
 									backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
