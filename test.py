@@ -5,7 +5,7 @@ import os
 # my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
 # path.append('%s/work/fourier_quad/'%my_home)
-path.append("E:/Github/astrophy-research/mylib/")
+path.append("D:/Github/astrophy-research/mylib/")
 import time
 from Fourier_Quad import Fourier_Quad
 # # import galsim
@@ -23,6 +23,15 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 
 
+
+x = [1,2,3]
+img = plot_tool.Image_Plot()
+img.plot_img(1, 1)
+
+img.axs[0][0].plot(x,x)
+img.axs[0][0].set_xscale("log")
+img.show_img()
+exit()
 h5f = h5py.File("E:/ggl_test_result.hdf5","r")
 print(list(h5f.keys()))
 data = h5f["/data_0"].value
