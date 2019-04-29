@@ -227,11 +227,13 @@ int main(int argc, char**argv)
 		{
 			cut_scale[i] = data_cut[i*cut_step];
 		}
+
 		std::cout << "The selection criterion: " << select_name_s << " " << criterion_label << std::endl;
 		//show_arr(cut_scale, 1, cut_num);
 		delete[] data_cut;
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	st2 = clock();
 	
 	shear_change = -1;
@@ -369,10 +371,13 @@ int main(int argc, char**argv)
 			mc2_array[i + cut_num * 2] = coeff[0];//c
 			mc2_array[i + cut_num * 3] = coeff[1];//c_sig
 		}
-
+		
+		// save the cutoff scales
 		sprintf(data_path, "%sresult/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
+		sprintf(set_name, "/cut_scale");
+		write_h5(data_path, set_name, cut_scale, 1, cut_num, TRUE);
 		sprintf(set_name, "/mc1");
-		write_h5(data_path, set_name, mc1_array, 4, cut_num, TRUE);
+		write_h5(data_path, set_name, mc1_array, 4, cut_num, FALSE);
 		sprintf(set_name, "/mc2");
 		write_h5(data_path, set_name, mc2_array, 4, cut_num, FALSE);
 		sprintf(set_name, "/shear");
@@ -387,6 +392,7 @@ int main(int argc, char**argv)
 		delete[] mc1_array;
 		delete[] mc2_array;
 	}
+	
 	MPI_Barrier(MPI_COMM_WORLD);
 	st4 = clock();
 	if (0 == rank)

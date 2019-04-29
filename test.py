@@ -23,6 +23,32 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 
 
+h5f = h5py.File("E:/ggl_test_result.hdf5","r")
+print(list(h5f.keys()))
+data = h5f["/data_0"].value
+num = 5691
+gt = data[0,:num]
+gx = data[1,:num]
+n = data[2,:num]
+u = data[3,:num]
+crit = data[4,:num]
+g1 = data[5,:num]
+
+gt = gt*crit
+nt = (n+u)
+
+print(gt)
+print(g1)
+print(crit)
+# plt.hist(crit, 50)
+# plt.hist(g1, 50)
+plt.hist(gt, 1000)
+plt.show()
+
+
+
+exit()
+
 cos = LambdaCDM(H0=70, Om0=0.31, Ode0=0.69)
 r = cos.comoving_distance(0.4743854)
 r1 = 2.99792458*1e5/70*0.4198876

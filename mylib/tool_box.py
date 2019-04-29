@@ -851,18 +851,18 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     return blocks_found
 
 
-def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
+def mcplot(x1_data, y1_data, y1_data_err,y1_num, x2_data, y2_data, y2_data_err,y2_num, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
     # "x_data' is the 'x'
     # 'y_data' is an (3,n) array "[[y's],[dy's],[num's]]
     fig = plt.figure(figsize=(20, 10))
     ax = fig.add_subplot(121)
-    ax.errorbar(x1_data, y1_data[0], y1_data[1], ecolor='black', elinewidth=1, fmt='none', capsize=2)
+    ax.errorbar(x1_data, y1_data, y1_data_err, ecolor='black', elinewidth=1, fmt='none', capsize=2)
     ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
-    ax.scatter(x1_data, y1_data[0], c='black')
+    ax.scatter(x1_data, y1_data, c='black')
 
     for j in range(len(x1_data)):
-        ax.text(x1_data[j], y1_data[0,j], str(round(y1_data[2,j] / 1000, 1)) + "K", color="red")
+        ax.text(x1_data[j], y1_data[j], str(round(y1_num[j] / 1000, 1)) + "K", color="red")
     ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6)) + '$\pm$' + str(round(e1mc[1], 6)), color='green', ha='left',
             va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6)) + '$\pm$' + str(round(e1mc[3], 6)), color='green', ha='left',
@@ -877,12 +877,12 @@ def mcplot(x1_data, y1_data, x2_data, y2_data, e1mc, e2mc, cut_start, cut_end, x
 
     # plot g2 line
     ax = fig.add_subplot(122)
-    ax.errorbar(x2_data, y2_data[0], y2_data[1], ecolor='black', elinewidth=1, fmt='none', capsize=2)
+    ax.errorbar(x2_data, y2_data, y2_data_err, ecolor='black', elinewidth=1, fmt='none', capsize=2)
     ax.plot(x2_data, e2mc[0] * x2_data + e2mc[2], color='red')
     ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
-    ax.scatter(x2_data, y2_data[0], c='black')
+    ax.scatter(x2_data, y2_data, c='black')
     for j in range(len(x2_data)):
-        ax.text(x2_data[j], y2_data[0, j], str(round(y2_data[2, j] / 1000, 1)) + "K", color="red")
+        ax.text(x2_data[j], y2_data[j], str(round(y2_num[j] / 1000, 1)) + "K", color="red")
     ax.text(0.1, 0.85, 'm=' + str(round(e2mc[0] - 1, 6)) + '$\pm$' + str(round(e2mc[1], 6)), color='green', ha='left',
             va='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.1, 0.8, 'c=' + str(round(e2mc[2], 6)) + '$\pm$' + str(round(e2mc[3], 6)), color='green', ha='left',

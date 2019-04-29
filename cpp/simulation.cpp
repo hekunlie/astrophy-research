@@ -38,7 +38,8 @@ int main(int argc, char*argv[])
 		int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;		
 		int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2, temp_s=myid, detect_label;
 		double max_radius=9, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
-		int i, j, k, sss1, sss2;
+		int i, j, k, ib;
+		int sss1, sss2;
 		double g1, g2, ts, te, t1, t2;
 		double psf_ellip, psf_ang, psf_norm_factor;
 
@@ -85,6 +86,7 @@ int main(int argc, char*argv[])
 		initialize_para(&all_paras);
 		
 		double *big_img = new double[stamp_nx*stamp_nx*size*size]();
+		float *big_img_buffer = new float[stamp_nx*stamp_nx*size*size]();
 		double *point = new double[2 * num_p]();
 		double *gal = new double[size*size]();
 		double *pgal = new double[size*size]();
@@ -159,7 +161,6 @@ int main(int argc, char*argv[])
 				temp_s++;
 				gsl_initialize(seed + i);
 
-				sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
 				initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 
 				sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %04d, start.", myid,shear_id, i);
@@ -234,7 +235,13 @@ int main(int argc, char*argv[])
 				}
 				gsl_free();
 
-				write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
+				// float array for saving disk volume
+				for (ib = 0; ib < stamp_nx*stamp_nx*size*size; ib++)
+				{
+					big_img_buffer[ib] = big_img[ib];
+				}
+				sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
+				write_fits(chip_path, big_img_buffer, stamp_nx*size, stamp_nx*size);
 
 				t2 = clock();
 				sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %04d, done in %.2f s.", myid, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
@@ -281,6 +288,7 @@ int main(int argc, char*argv[])
 		}
 
 		delete[] big_img;
+		delete[] big_img_buffer;
 		delete[] point;
 		delete[] gal;
 		delete[] pgal;
