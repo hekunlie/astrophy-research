@@ -23,6 +23,21 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 
 
+
+result = numpy.load("E:/ggl/result.npz")["arr_0"]
+
+img = plot_tool.Image_Plot()
+img.plot_img(1, 1)
+gh = 10 ** numpy.linspace(numpy.log10(0.04), numpy.log10(15), 13)
+img.axs[0][0].errorbar(gh, result[0], result[1], label="T")
+
+img.axs[0][0].errorbar(gh, result[2], result[3], label="X")
+
+img.axs[0][0].legend()
+
+
+exit()
+
 h5f = h5py.File("E:/ggl_test_result.hdf5","r")
 print(list(h5f.keys()))
 data = h5f["/data_0"].value
