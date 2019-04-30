@@ -28,12 +28,10 @@ int main(int argc, char *argv[])
 
 	// controller
 	area_num = 4;
-	area_id = 1;
 
-	int radi_st = atoi(argv[1]);
-	int pair_lim = atoi(argv[2]);
 
-	int block_size = pair_lim;
+	area_id = atoi(argv[1]);
+	int radi_st = atoi(argv[2]);
 
 
 	int tag_f, tag_b;
@@ -147,11 +145,11 @@ int main(int argc, char *argv[])
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
 
-	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
-	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
-	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
-	sprintf(h5f_res_path, "%s%d.hdf5", data_path,radi_st);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
+	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	//sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
+	//sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	sprintf(h5f_res_path, "%s/w_%d/%d.hdf5", data_path, area_id, radi_st);
 
 	sprintf(log_infom, "RANK: %d. Start ...", rank);
 	write_log(log_path, log_infom);

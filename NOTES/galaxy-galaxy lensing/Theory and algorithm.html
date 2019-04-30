@@ -453,9 +453,14 @@ blockquote {
 <p>&quot;mpirun -np ....  prepare_data.py collect&quot;</p>
 <p>2). Run the sym_mc_plot_cfht.py for cutoffs. Then determine the cutoff threshold (flux_alt or ..) according to the results (multiplicative bias and additive bias).</p>
 <p>3). Run prepare_data.py to select the data needed. The name of the result file is &quot;cata_result_ext_cut.hdf5&quot;.</p>
-<p>&quot;mpirun -np ....  prepare_data.py select&quot;</p>
-<p>4). Run the C++ program to build the grid and assign the source to each grid for final calculation.</p>
-<p>&quot;mpirun -n ....  &quot;</p>
+<p>&quot;mpirun -np 4 python prepare_data.py select&quot;</p>
+<p>4). Run the ggl_com_dist.cpp to assign the comoving distance (only the integrate part) to each galaxy in the file &quot;cata_result_ext_cut.hdf5&quot;. The comoving distances have been calculated for 0 to 10 with an interval \(\delta z = 0.0001\).</p>
+<p>&quot;./ggl_com_dist&quot;</p>
+<p>5). Run ggl_grid.cpp to build the grid for background galaxies.</p>
+<p>&quot;mpirun -n 30 ./ggl_grid 0.15&quot; ...</p>
+<p>6). Run prepare_foreground.py to prepare the foreground data for measurement.</p>
+<p>&quot;python prepare_foreground.py&quot;</p>
+<p>7). Run the C++ program to build the grid and assign the source to each grid for final calculation.</p>
 <h1 id="center-code-structure"><center> Code structure</h1>
 <p>Loop the radius bin (in unit of degree):</p>
 <p>1). Loop the all foreground galaxy to find the background source galaxies in radius bin ([radius_s, radius_e]) and label them.</p>

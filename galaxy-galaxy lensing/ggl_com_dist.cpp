@@ -1,17 +1,10 @@
 #include<FQlib.h>
 #include<mpi.h>
 
+// assign the comoving distance to the data according to their redshifts
 
 int main(int argc, char *argv[])
 {
-	int rank, numprocs, namelen;
-	char processor_name[MPI_MAX_PROCESSOR_NAME];
-
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-	MPI_Get_processor_name(processor_name, &namelen);
-
 	int i, j, k;
 	int area_id;
 	char data_path[200], set_name[30], attrs_name[30], inform[200];

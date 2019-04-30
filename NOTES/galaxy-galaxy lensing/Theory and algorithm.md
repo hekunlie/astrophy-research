@@ -93,11 +93,23 @@ The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \
 
 3). Run prepare_data.py to select the data needed. The name of the result file is "cata_result_ext_cut.hdf5". 
 
-"mpirun -np ....  prepare_data.py select"
+"mpirun -np 4 python prepare_data.py select"
 
-4). Run the C++ program to build the grid and assign the source to each grid for final calculation.
+4). Run the ggl_com_dist.cpp to assign the comoving distance (only the integrate part) to each galaxy in the file "cata_result_ext_cut.hdf5". The comoving distances have been calculated for 0 to 10 with an interval \\(\delta z = 0.0001\\).
 
-"mpirun -n ....  "
+"./ggl_com_dist"
+
+5). Run ggl_grid.cpp to build the grid for background galaxies.
+
+"mpirun -n 30 ./ggl_grid 0.15" ...
+
+6). Run prepare_foreground.py to prepare the foreground data for measurement.
+
+"python prepare_foreground.py"
+
+7). Run the C++ program to build the grid and assign the source to each grid for final calculation.
+
+
 
 # <center> Code structure
 

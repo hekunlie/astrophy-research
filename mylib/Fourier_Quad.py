@@ -640,7 +640,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2,fit_num=60):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -755,7 +755,7 @@ class Fourier_Quad:
             left = records[label_r, 1]
             right = 2*m1 - left
 
-        fit_range = numpy.linspace(left, right, 60)
+        fit_range = numpy.linspace(left, right, fit_num)
         chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
@@ -772,7 +772,7 @@ class Fourier_Quad:
         return g_h, g_sig
 
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2):
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2, fit_num=60):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -807,7 +807,7 @@ class Fourier_Quad:
             iters += 1
             if iters > 12:
                 break
-        fit_range = numpy.linspace(left, right, 60)
+        fit_range = numpy.linspace(left, right, fit_num)
         chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")

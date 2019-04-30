@@ -71,14 +71,14 @@ z_lb = -3
 mag_lb = -2
 starflag_lb = -1
 
-flux_alt_thresh = 6.38
+flux_alt_thresh = 4.64
 nstar_thresh = 14
 total_area_thresh = 1
 field_g1_bound = 0.005
 field_g2_bound = 0.0075
-z_min, z_max = 0.2, 1.3
-c1_correction = -0.000287
-c2_correction = 0.000609
+z_min, z_max = 0.0, 15
+c1_correction = -0.000474
+c2_correction = 0.000508
 
 
 # data collection
