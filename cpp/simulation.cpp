@@ -112,14 +112,14 @@ int main(int argc, char*argv[])
 
 		read_text(str_shear_path, shear, 2*shear_pairs);
 	
-		//// circle PSF
-		//create_psf(psf, psf_scale, size, psf_type);
+		// circle PSF
+		create_psf(psf, psf_scale, size, psf_type);
 
 		// elliptical PSF, e = 0.05, position angle = Pi/4
-		psf_ellip = 0.05;
-		psf_ang = Pi / 4;
-		psf_norm_factor = 19.0643; // by numercal integrate
-		create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
+		//psf_ellip = 0.05;
+		//psf_ang = Pi / 4;
+		//psf_norm_factor = 19.0643; // by numercal integrate
+		//create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
 
 		pow_spec(psf, ppsf, size, size);
 		get_psf_radius(ppsf, &all_paras, psf_thres_scale);
@@ -157,7 +157,7 @@ int main(int argc, char*argv[])
 			{
 				t1 = clock();
 
-				seed = myid * i + shear_id + 15008+i+temp_s;
+				seed = myid * i + shear_id + 15115+i+temp_s;
 				temp_s++;
 				gsl_initialize(seed + i);
 
@@ -185,16 +185,16 @@ int main(int argc, char*argv[])
 					create_points(point, num_p, max_radius);
 					flux_i = flux[i*stamp_num + j] / num_p;
 					// for measuring the intrinsic ellipticity
-					//// circle PSF
-					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
+					// circle PSF
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
 					// elliptical PSF
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
+					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 					initialize_arr(gal, size*size, 0);
-					//// circle PSF
-					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
+					// circle PSF
+					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
 					// elliptical PSF
-					convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
+					//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 					addnoise(gal, size*size, gal_noise_sig);
 

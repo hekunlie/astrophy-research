@@ -468,9 +468,9 @@ int main(int argc, char *argv[])
 
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
 							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
-							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
+							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
 							// the cross components
-							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
+							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_sin_2phi + backgal_data[mg2_id][ib] * backgal_cos_2phi;
 							// scalar
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
