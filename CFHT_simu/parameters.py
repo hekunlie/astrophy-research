@@ -5,7 +5,7 @@ if platform.system() == 'Linux':
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
-path.append('%s/work/fourier_quad/'%my_home)
+path.append('%s/work/mylib/'%my_home)
 import numpy
 import matplotlib.pyplot as plt
 import tool_box
@@ -44,7 +44,7 @@ h5_path = para_path+'para_%d.hdf5'%rank
 para_logs_path = para_path + "logs/logs_%d.dat"%rank
 logger = tool_box.get_logger(para_logs_path)
 log_inform = "RANK: %d, LOOP: %d, TOTAL NUM: %d, NUM in LOOP: %d, " \
-             "SIZEL %d, MAG: %d ~ %d, RADIUS: %.2f ~ %.2f\n"%(rank, loops, num, num_i, size, mag_s, mag_e, radius_s, radius_e)
+             "SIZEL %d, MAG: %f ~ %f, RADIUS: %.2f ~ %.2f\n"%(rank, loops, num, num_i, size, mag_s, mag_e, radius_s, radius_e)
 logger.info(log_inform)
 f = h5py.File(h5_path,"w")
 
@@ -64,6 +64,10 @@ f = h5py.File(h5_path,"w")
 # numpy.savetxt('E:/selection_bias/parameters/shear.dat',numpy.append(g1,g2))
 
 
+seed_ini = numpy.random.randint(1, 100000, size=cpus)[rank]
+rng_ini = numpy.random.RandomState(seed_ini)
+seeds = rng_ini.randint(0, 100000, size=2000)
+
 # ellipticity
 e1, e2, e = numpy.zeros((num*stamp_num, 1)), numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1))
 gal_type = numpy.zeros((num*stamp_num, 1))
@@ -77,14 +81,16 @@ bulge_num = int(bulge_frac*num)*stamp_num
 
 pesb = numpy.linspace(0, 0.8, int(0.8 / 0.0000001) + 1)
 
+counts = 0
 if disc_frac > 0:
 
     pef = tool_box.disc_e_pdf([pesb])
     pe = pef / pef.sum()
 
     for i in range(loops):
-        seed = rank * 43254 + int(numpy.random.randint(1, 12565, 1)[0])
-        rng = numpy.random.RandomState(seed)
+
+        rng = numpy.random.RandomState(seeds[counts])
+        counts += 1
 
         disc_e_i = rng.choice(pesb, disc_num_i, p=pe)
 
@@ -102,7 +108,7 @@ if disc_frac > 0:
 
         log_inform = "Disc loop: %d, %d: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
                      "max(e1): %.4f, max(e2): %.4f\n"\
-                     %(i, sp, ep, seed, e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
+                     %(i, sp, ep, seeds[counts], e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
                        e1[sp:ep, 0].max(), e2[sp:ep, 0].max())
         logger.info(log_inform)
     plt.subplot(331)
@@ -122,8 +128,9 @@ if bulge_num > 0:
     pe = pef / pef.sum()
 
     for i in range(loops):
-        seed = rank * 432 + int(numpy.random.randint(1, 12565, 1)[0])
-        rng = numpy.random.RandomState(seed)
+
+        rng = numpy.random.RandomState(seeds[counts])
+        counts += 1
 
         bulge_e_i = rng.choice(pesb, bulge_num_i, p=pe)
 
@@ -142,7 +149,7 @@ if bulge_num > 0:
 
         log_inform = "Bulge loop: %d, %d: %d, seed: %d, mean(e1): %.4f, std(e1): %.4f, mean(e2): %.4f, std(e2): %.4f, " \
                      "max(e1): %.4f, max(e2): %.4f\n"\
-                     %(i, sp, ep, seed, e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
+                     %(i, sp, ep, seeds[counts], e1[sp:ep, 0].mean(), e1[sp:ep, 0].std(), e2[sp:ep, 0].mean(), e2[sp:ep, 0].std(),
                        e1[sp:ep, 0].max(), e2[sp:ep, 0].max())
         logger.info(log_inform)
 
@@ -188,9 +195,10 @@ plt.hist(mag, 100)
 # galactic radius
 radius = numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
+
     time.sleep(rank*0.05)
-    rng = numpy.random.RandomState(seed=seed)
+    rng = numpy.random.RandomState(seeds[counts])
+    counts += 1
 
     # radius_i = rng.uniform(radius_s, radius_e, num_i*stamp_num)
 
@@ -209,13 +217,14 @@ plt.hist(radius, 100)
 # B/T ratio
 btr = numpy.zeros((num*stamp_num, 1))
 for i in range(loops):
-    seed = rank * 43254 + int(numpy.random.randint(1, 125654, 1)[0])
-    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac_pdf, num_i*stamp_num, seed, 0, 1, 0, 4.1)[0]
+
+    f_btr_i = tool_box.ran_generator(tool_box.bulge_frac_pdf, num_i*stamp_num, seeds[counts], 0, 1, 0, 4.1)[0]
+    counts += 1
 
     sp, ep = i*num_i*stamp_num, (i + 1)*num_i*stamp_num
     btr[sp: ep, 0] = f_btr_i
 
-    log_inform = "B/T loop: %d, seed: %d, min: %.2f, max: %.2f\n"%(i, seed, f_btr_i.min(), f_btr_i.max())
+    log_inform = "B/T loop: %d, seed: %d, min: %.2f, max: %.2f\n"%(i, seeds[counts], f_btr_i.min(), f_btr_i.max())
     logger.info(log_inform)
 plt.subplot(339)
 plt.title("B/T")

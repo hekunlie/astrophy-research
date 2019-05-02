@@ -1,7 +1,7 @@
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
-path.append('%s/work/fourier_quad/' % my_home)
+path.append('%s/work/mylib/' % my_home)
 import numpy
 import galsim
 from astropy.io import fits
@@ -50,13 +50,15 @@ if rank == 0:
 comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
-seed = rank * 344 + 111345
+seed_ini = numpy.random.randint(1, 1000000, size=cpus)[rank]
+rng_ini = numpy.random.RandomState(seed_ini)
+seeds = rng_ini.randint(0, 10000000, size=100000)
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
-fq = Fourier_Quad(stamp_size, seed)
+fq = Fourier_Quad(stamp_size, seeds[0])
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=2.1)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.8)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -65,12 +67,13 @@ if rank == 0:
     hdu.writeto(psf_path, overwrite=True)
     logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
                 %(source,stamp_size, pixel_scale, noise_sig, total_chips_num))
-logger.info("seed: %d"%seed)
+logger.info("seed: %d"%seed_ini)
 
 # task allocation
 chip_tags = [i for i in range(total_chips_num)]
 chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
 
+counts = 0
 for shear_id in range(shear_num):
     shear_cata = para_path + "shear.npz"
     shear = numpy.load(shear_cata)
@@ -94,7 +97,8 @@ for shear_id in range(shear_num):
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
-        rng = numpy.random.RandomState(seed + shear_id + t)
+        rng = numpy.random.RandomState(seeds[counts])
+        counts += 1
 
         chip_path = total_path + "%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
         gal_pool = []
