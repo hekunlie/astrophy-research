@@ -5,6 +5,7 @@
 #define backgal_data_col 17
 #define g_num 100
 #define mg_bin_num 12
+#define area_num 3
 
 int main(int argc, char *argv[])
 {
@@ -22,9 +23,9 @@ int main(int argc, char *argv[])
 	double st_start, st_end, st1, st2, st3, st4, stgal1, stgal2;
 	int process_per;
 	double per_n;
-	int area_id, area_num;
+	int area_id;
 
-	area_num = 4;
+
 	int tag_f, tag_b;
 	int foregal_num, gal_id;
 	int my_gal_s, my_gal_e;
@@ -38,8 +39,7 @@ int main(int argc, char *argv[])
 	double coeff, coeff_inv;
 	double crit_surf_density_com, delta_crit, delta_crit_sig,delta_crit_x, delta_crit_x_sig;
 
-
-
+	
 	int data_num;
 	int backgal_num;
 	double *backgal_data[backgal_data_col]; //backgal_data_col = 17
@@ -61,12 +61,18 @@ int main(int argc, char *argv[])
 	int mg_bin_num2 = mg_bin_num / 2;
 
 	// the bin of G1(2) for shear estimation
-	double *mg1_bin = new double[mg_bin_num + 1];
-	double *mg2_bin = new double[mg_bin_num + 1];
+	double *mgt_bin = new double[mg_bin_num + 1];
+	double *mgx_bin = new double[mg_bin_num + 1];
 
 	// the chi square for fitting shear
 	long *chi_tan = new long[mg_bin_num*g_num];
 	long *chi_cross = new long[mg_bin_num*g_num];
+
+	// chi square of the signal from the all areas
+	long *chi_total_shared;
+	// chi square of the signal of each areas
+	long *chi_area_shared;
+
 	long *chi_shared;
 	long *chi_block = new long[mg_bin_num];
 	double *chisq_tan = new double[g_num];
@@ -104,7 +110,6 @@ int main(int argc, char *argv[])
 	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
 	int ra_bin_id = 15, dec_bin_id = 16;
 
-	double *redshifts, *distances;
 	int red_num;
 	int shape[2];
 	char data_path[250], log_path[250], h5f_path[250], h5f_res_path[250], temp_path[300];
@@ -149,17 +154,6 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	// the Z-comoving distance have be calculated from z =0 ~ z =10
-	sprintf(h5f_path, "%sredshift.hdf5", data_path);
-	sprintf(set_name, "/redshift");
-	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
-	red_num = shape[0];
-	redshifts = new double[red_num] {};
-	distances = new double[red_num] {};
-	read_h5(h5f_path, set_name, redshifts);
-	sprintf(set_name, "/distance");
-	read_h5(h5f_path, set_name, distances);
 
 	sprintf(log_infom, "RANK: %d. Read redshift.hdf5", rank);
 	write_log(log_path, log_infom);
@@ -186,15 +180,53 @@ int main(int argc, char *argv[])
 		std::cout << red_num << " " << radius_num << std::endl;
 	}
 
-	
-	for (area_id = 1; area_id < area_num+1; area_id++)
-	{	
-		if (area_id == 2)
-		{
-			continue;
-		}
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	// the shared buffer of the total chi square of the signal from the all areas
+	// the chi square of each area
+	MPI_Win win_chi_total, win_chi_area;
+	MPI_Aint size_chi;
 
+	size_chi = 2 * mg_bin_num*g_num;
+
+	if (0 == rank)
+	{
+		MPI_Win_allocate_shared(size_chi *sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_total_shared, &win_chi_total);
+
+		MPI_Win_allocate_shared(size_chi * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_area_shared, &win_chi_area);
+	}
+	else
+	{
+		int dispu_total, dispu_area;
+
+		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_total_shared, &win_chi_total);
+		MPI_Win_shared_query(win_chi_total, 0, &size_chi, &dispu_total, &chi_total_shared);
+
+		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_area_shared, &win_chi_area);
+		MPI_Win_shared_query(win_chi_area, 0, &size_chi, &dispu_area, &chi_area_shared);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (0 == rank)
+	{	
+		// initialization
+		initialize_arr(chi_total_shared, 2 * mg_bin_num*g_num, 0);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	int *area_label = new int[area_num] {1, 3, 4};
+	int area_tag;
+	for (area_tag = 0; area_tag < area_num; area_tag++)
+	{	
 		st_start = clock();
+		area_id = area_label[area_tag];
+
+		if (0 == rank)
+		{	// initialization
+			initialize_arr(chi_area_shared, 2 * mg_bin_num*g_num, 0);
+		}
 
 		// read foreground information
 		// Z, DISTANCE, RA, DEC, COS_DEC
@@ -255,13 +287,8 @@ int main(int argc, char *argv[])
 
 		my_backgal_mask = new long[backgal_num] {};
 
-		// set the bins for g1 & g2 estimation
-		set_bin(backgal_data[mg1_id], backgal_num, mg1_bin, mg_bin_num, 1000, 200000);
-		set_bin(backgal_data[mg2_id], backgal_num, mg2_bin, mg_bin_num, 1000, 200000);
 		if (0 == rank)
 		{
-			show_arr(mg1_bin, 1, mg_bin_num + 1);
-			show_arr(mg2_bin, 1, mg_bin_num + 1);
 			show_arr(radius_bin, 1, radius_num + 1);
 		}
 		sprintf(log_infom, "RANK: %d. w_%d. Read background data. %d galaxies. %d grids (%d x %d)", rank, area_id, backgal_num, grid_num, grid_ny, grid_nx);
@@ -690,8 +717,6 @@ int main(int argc, char *argv[])
 	delete[] chisq_tan;
 	delete[] chisq_cross;
 	delete[] gh;
-	delete[] redshifts;
-	delete[] distances;
 	delete[] radius_bin;
 
 	sprintf(log_infom, "RANK: %d. Finish. Free the memory at last", rank);
