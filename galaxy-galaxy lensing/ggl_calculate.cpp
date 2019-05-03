@@ -60,17 +60,18 @@ int main(int argc, char *argv[])
 	int ig, ic, ig_label;
 	int mg_bin_num2 = mg_bin_num / 2;
 
-	// the bin of G1(2) for shear estimation
-	double *mgt_bin = new double[mg_bin_num + 1];
-	double *mgx_bin = new double[mg_bin_num + 1];
+	// the bin of G_t(x) for signal estimation
+	double *mg_bin = new double[mg_bin_num + 1];
 
 	// the chi square for fitting shear
 	long *chi_tan = new long[mg_bin_num*g_num];
 	long *chi_cross = new long[mg_bin_num*g_num];
 
 	// chi square of the signal from the all areas
+	// [chi_tan, chi_cross]
 	long *chi_total_shared;
 	// chi square of the signal of each areas
+	// [chi_tan, chi_cross]
 	long *chi_area_shared;
 
 	long *chi_shared;
@@ -147,21 +148,6 @@ int main(int argc, char *argv[])
 	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
 	sprintf(h5f_res_path, "%sggl_result.hdf5", data_path);
 
-	sprintf(log_infom, "RANK: %d. Start ...", rank);
-	write_log(log_path, log_infom);
-	if (0 == rank)
-	{
-		std::cout << log_infom << std::endl;
-	}
-
-
-	sprintf(log_infom, "RANK: %d. Read redshift.hdf5", rank);
-	write_log(log_path, log_infom);
-	if (0 == rank)
-	{
-		std::cout << log_infom << std::endl;
-	}
-
 	// read the search radius
 	sprintf(h5f_path, "%scata_result_ext_grid.hdf5", data_path);
 	sprintf(set_name, "/radius_bin");
@@ -187,6 +173,7 @@ int main(int argc, char *argv[])
 	MPI_Win win_chi_total, win_chi_area;
 	MPI_Aint size_chi;
 
+	// [chi_tan, chi_cross]
 	size_chi = 2 * mg_bin_num*g_num;
 
 	if (0 == rank)
@@ -215,7 +202,7 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
-
+	// the target areas
 	int *area_label = new int[area_num] {1, 3, 4};
 	int area_tag;
 	for (area_tag = 0; area_tag < area_num; area_tag++)
@@ -224,10 +211,13 @@ int main(int argc, char *argv[])
 		area_id = area_label[area_tag];
 
 		if (0 == rank)
-		{	// initialization
+		{	
+			// initialization
 			initialize_arr(chi_area_shared, 2 * mg_bin_num*g_num, 0);
 		}
 
+		////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 		// read foreground information
 		// Z, DISTANCE, RA, DEC, COS_DEC
 		sprintf(attrs_name, "shape");
@@ -240,6 +230,16 @@ int main(int argc, char *argv[])
 			foregal_data[i] = new double[foregal_num];
 			read_h5(h5f_path, set_name, foregal_data[i]);
 		}
+		// read the G_t(x) bins for signal estimation
+		sprintf(set_name, "/foreground/w_%d/mg_bin", area_id);
+		read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
+		if (shape[0] != mg_bin_num)
+		{
+			std::cout << "The shapes of the G-bin in date and code dosen't match each other. (" << shape[0] << ", " << mg_bin_num << ").";
+			exit(0);
+		}
+
+		read_h5(h5f_path, set_name, mg_bin);
 		
 		sprintf(log_infom, "RANK: %d. w_%d. Read foreground data. %d galaxies", rank, area_id, foregal_num);
 		write_log(log_path, log_infom);
@@ -247,7 +247,12 @@ int main(int argc, char *argv[])
 		{
 			std::cout << log_infom << std::endl;
 		}
+		////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 		
+
+		////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 		// read background information
 		sprintf(set_name, "/background/w_%d", area_id);
 		sprintf(attrs_name, "grid_shape");
@@ -297,59 +302,9 @@ int main(int argc, char *argv[])
 		{
 			std::cout << log_infom << std::endl;
 		}
-	
-		MPI_Win win_foregal, win_count, win_chi, win_crit;
-		MPI_Aint size_fore, size_count, size_chi, size_crit;
+		////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////
 
-		foregal_data_shared_col = 1; // \Delta\Sigma
-		size_fore = foregal_num * foregal_data_shared_col * sizeof(double);
-		size_count = foregal_num * sizeof(long);
-		size_chi = 2*mg_bin_num*g_num*sizeof(long);
-		size_crit = delta_crit_in_radius_col*radius_num * sizeof(double);
-		if (0 == rank)
-		{
-			MPI_Win_allocate_shared(size_fore, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_foregal);
-
-			MPI_Win_allocate_shared(size_count, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_count, &win_count);
-
-			MPI_Win_allocate_shared(size_chi, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_shared, &win_chi);
-
-			MPI_Win_allocate_shared(size_crit, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_crit_in_radius, &win_crit);
-		}
-		else
-		{
-			int disp_unit, disp_unit_mask, disp_init_chi, disp_unit_crit;
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &foregal_data_shared, &win_foregal);
-			MPI_Win_shared_query(win_foregal, 0, &size_fore, &disp_unit, &foregal_data_shared);
-
-			MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &backgal_count, &win_count);
-			MPI_Win_shared_query(win_count, 0, &size_count, &disp_unit_mask, &backgal_count);
-
-			MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_shared, &win_chi);
-			MPI_Win_shared_query(win_chi, 0, &size_chi, &disp_init_chi, &chi_shared);
-
-			MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_crit_in_radius, &win_crit);
-			MPI_Win_shared_query(win_crit, 0, &size_crit, &disp_unit_crit, &delta_crit_in_radius);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-		if (0 == rank)
-		{
-			for (i = 0; i < foregal_num * foregal_data_shared_col; i++)
-			{
-				foregal_data_shared[i] = 0;
-			}
-			for (i = 0; i < delta_crit_in_radius_col*radius_num; i++)
-			{
-				delta_crit_in_radius[i] = 0;
-			}
-		}
-		sprintf(log_infom, "RANK: %d. w_%d. Create & initialize the shared buffer [%d,  %d]", rank, area_id, foregal_num, foregal_data_shared_col);
-		write_log(log_path, log_infom);
-		if (0 == rank)
-		{
-			std::cout << log_infom << std::endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
 
 		// task distribution
 		if (numprocs - 1 == rank)
