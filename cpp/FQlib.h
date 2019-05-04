@@ -546,6 +546,7 @@ void cov_matrix_2d(const double *x, const double *y, const double *fxy, const in
 */
 
 void sum_arr(const double *arr, const int size, const int start_t, const int end_t, double &total);//checked
+void sum_arr(const long *arr, const int size, const int start_t, const int end_t, long &total);//checked
 /* sum the array from "start_t" to "end_t"(excluded) and assign to the "total"
 	"total" will be set to be zero in the begin of the method for safety.
 */

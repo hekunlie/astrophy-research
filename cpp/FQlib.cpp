@@ -3820,7 +3820,7 @@ void cov_matrix_2d(const double *x, const double *y, const double *fxy, const in
 
 void sum_arr(const double *arr, const int size, const int start_t, const int stop_t, double &total)
 {
-	total = 0;
+	double temp = 0;
 	if (stop_t > size)
 	{	
 		std::cout << "Cross the boundary of array!!! Stop_t: " <<stop_t<<",   Size: "<<size<< std::endl;
@@ -3828,8 +3828,24 @@ void sum_arr(const double *arr, const int size, const int start_t, const int sto
 	}
 	for (int i = start_t; i < stop_t; i++)
 	{
-		total += arr[i];
+		temp += arr[i];
 	}
+	total = temp;
+}
+
+void sum_arr(const long *arr, const int size, const int start_t, const int stop_t, long &total)
+{
+	long temp = 0;
+	if (stop_t > size)
+	{
+		std::cout << "Cross the boundary of array!!! Stop_t: " << stop_t << ",   Size: " << size << std::endl;
+		exit(0);
+	}
+	for (int i = start_t; i < stop_t; i++)
+	{
+		temp += arr[i];
+	}
+	total = temp;
 }
 
 void arr_pow(const double *arr, double *arr_out, const int size, const int alpha, const int beta, const double power)
