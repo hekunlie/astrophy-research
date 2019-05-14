@@ -30,7 +30,7 @@ class Image_Plot:
         self.set_style_default()
         plt.rcParams['font.family'] = font_style
 
-    def plot_img(self, ny, nx):
+    def create_subfig(self, ny, nx):
         # fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
         fig = plt.figure(figsize=(int(nx * self.fig_x), int(ny * self.fig_y)))
         sub_fig = [[] for i in range(ny)]

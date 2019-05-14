@@ -1,9 +1,35 @@
 #include<FQlib.h>
 
+void read_h5_datasize_(const char *filename, const char *set_name, int &elem_num)
+{
+	int num, i;
+	hid_t file_id, dataset_id, space_id;
+	herr_t status;
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	space_id = H5Dget_space(dataset_id);
+	num = H5Sget_simple_extent_npoints(space_id);
+	if (num > 0)
+	{
+		elem_num = num;
+	}
+	else
+	{
+		elem_num = -1;
+		std::cout << "Failed in reading the size of " << set_name << "." << std::endl;
+	}
+}
 int main(int argc, char *argv[])
 {
 	char file_name[100], set_name[100], attrs_name[50];;
 	char logs[200];
+	int ele_num;
+	sprintf(file_name, "test.hdf5");
+	sprintf(set_name, "/data");
+	read_h5_datasize(file_name, set_name, ele_num);
+	std::cout << ele_num << std::endl;
+	exit(0);
+
 	sprintf(file_name, "test.hdf5");
 	sprintf(set_name, "/a/b/c");
 	create_h5_group(file_name, set_name, TRUE);

@@ -58,7 +58,7 @@ ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seeds[0])
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.8)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.8).shear(g=0.05, beta=0.25*numpy.pi*galsim.radians)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)

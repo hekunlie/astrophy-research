@@ -290,6 +290,29 @@ void read_text(const std::string path, int *arr, const int read_lines)
 	infile.close();
 }
 
+void read_h5_datasize(const char *filename, const char *set_name, int &elem_num)
+{
+	int num, i;
+	herr_t status;
+	hid_t file_id, dataset_id, space_id;
+
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	space_id = H5Dget_space(dataset_id);
+	num = H5Sget_simple_extent_npoints(space_id);
+	if (num > 0)
+	{
+		elem_num = num;
+	}
+	else
+	{
+		elem_num = -1;
+		std::cout << "Failed in reading the size of " << set_name << "." << std::endl;
+	}
+	status = H5Sclose(space_id);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
 
 void read_h5(const char *filename, const char *set_name, double *arr)
 {
@@ -2768,7 +2791,6 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 }
 
 
-
 void cal_chisq_2d(const double *hist_arr, const int size, double &result)
 {
 	int h = size / 2, i, j, s1, s2 = size * size;
@@ -2780,6 +2802,11 @@ void cal_chisq_2d(const double *hist_arr, const int size, double &result)
 		{
 			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
 			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			if (hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j] == 0)
+			{
+				std::cout << "Chi square divided by zero!!!" << std::endl;
+				exit(0);
+			}
 			chi += m * m / n;
 		}
 	}
@@ -2799,6 +2826,11 @@ void cal_chisq_2d(const long *hist_arr, const int size, double &result)
 		{
 			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
 			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			if (hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j] == 0)
+			{
+				std::cout << "Chi square divided by zero!!!" << std::endl;
+				exit(0);
+			}
 			chi += m * m / n;
 		}
 	}
@@ -2817,6 +2849,11 @@ void cal_chisq_2d(const int *hist_arr, const int size, double &result)
 		{
 			m = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] - (hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j]);
 			n = hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j];
+			if (hist_arr[s1 + j] + hist_arr[s2 - s1 - j - 1] + hist_arr[s1 + size - j - 1] + hist_arr[s2 - s1 - size + j] == 0)
+			{
+				std::cout << "Chi square divided by zero!!!" << std::endl;
+				exit(0);
+			}
 			chi += m * m / n;
 		}
 	}
@@ -2835,6 +2872,11 @@ void cal_chisq_1d(const double *hist_num, const int bin_num, double &result)
 	{
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
+		{
+			std::cout << "Chi square divided by zero!!!" << std::endl;
+			exit(0);
+		}
 		chi_count += dn * dn / sn;
 	}
 	result = chi_count * 0.5;
@@ -2851,6 +2893,11 @@ void cal_chisq_1d(const long *hist_num, const int bin_num, double &result)
 	{
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
+		{
+			std::cout << "Chi square divided by zero!!!" << std::endl;
+			exit(0);
+		}
 		chi_count += dn * dn / sn;
 	}
 	result = chi_count * 0.5;
@@ -2867,6 +2914,11 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 	{
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
+		{
+			std::cout << "Chi square divided by zero!!!" << std::endl;
+			exit(0);
+		}
 		chi_count += dn * dn / sn;
 	}
 	result = chi_count * 0.5;
@@ -2883,6 +2935,11 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 	{
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
+		{
+			std::cout << "Chi square divided by zero!!!" << std::endl;
+			exit(0);
+		}
 		chi_count += dn * dn / sn;
 	}
 	result = chi_count * 0.5;
@@ -2890,15 +2947,15 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 
 
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const int choice, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,
+						const int chi_num_fit, const int choice, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
-	int chi_num = 20;
-
+	
 	double *bins = new double[bin_num + 1];
 	double *temp = new double[data_num];
-	double *gh_fit = new double[chi_num];
-	double *chisq_fit = new double[chi_num];
+	double *gh_fit = new double[chi_num_fit];
+	double *chisq_fit = new double[chi_num_fit];
 
 	int same = 0, iters = 0, change = 1;
 	double left = ini_left, right = ini_right, step;
@@ -2942,19 +2999,20 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	
 	//std::cout << iters<<" "<< left << " " << right << std::endl;
 	//st3 = clock();
-	step = (right - left) / chi_num;
-	for (i = 0; i < chi_num; i++)
+	step = (right - left) / chi_num_fit;
+	for (i = 0; i < chi_num_fit; i++)
 	{
 		gh_fit[i] = left + step * i;
 	}
-	for (i = 0; i < chi_num; i++)
+	for (i = 0; i < chi_num_fit; i++)
 	{
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
 		chisq_fit[i] = chi_right;
+		chi_check[i] = chi_right;// for checking
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_num, gh, gh_sig, chi_gap);
+	fit_shear(gh_fit, chisq_fit, chi_num_fit, gh, gh_sig, chi_gap);
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
 	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
@@ -2970,57 +3028,68 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	// y = ax^2+bx + c
 
 	int i, count = 0;
-	int *mask = new int[num] {};
 	double min_chi = chisq[0];
 	double coeff[3];
+	if (d_chi > 0)
+	{
+		int *mask = new int[num] {};
+		// find the minimum
+		for (i = 0; i < num; i++)
+		{
+			if (chisq[i] < min_chi)
+			{
+				min_chi = chisq[i];
+			}
+		}
+		// find the width for fitting
+		for (i = 0; i < num; i++)
+		{
+			if (chisq[i] < min_chi + d_chi)
+			{
+				count++;
+				mask[i] = 1;
+			}
+		}
+		//std::cout << min_chi << std::endl;
+		//show_arr(chisq, 1, num);
+		// for fitting
+		if (count < 5)
+		{
+			std::cout << "Too less points (" << count << ")" << " for fitting!!!" << std::endl;
+			exit(0);
+		}
+		double *new_chisq = new double[count] {};
+		double *new_shear = new double[count] {};
+		count = 0;
+		for (i = 0; i < num; i++)
+		{
+			if (mask[i] == 1)
+			{
+				new_chisq[count] = chisq[i];
+				new_shear[count] = shear[i];
+				count++;
+			}
+		}
 
-	// find the minimum
-	for (i = 0; i < num; i++)
-	{
-		if (chisq[i] < min_chi)
-		{
-			min_chi = chisq[i];
-		}
-	}
-	// find the width for fitting
-	for (i = 0; i < num; i++)
-	{
-		if (chisq[i] < min_chi + d_chi)
-		{
-			count++;
-			mask[i] = 1;
-		}
-	}
-	//std::cout << min_chi << std::endl;
-	//show_arr(chisq, 1, num);
-	// for fitting
-	if (count < 5)
-	{
-		std::cout << "Too less points ("<<count<<")"<<" for fitting!!!" << std::endl;
-		exit(0);
-	}
-	double *new_chisq = new double[count] {};
-	double *new_shear = new double[count] {};
-	count = 0;
-	for (i = 0; i < num; i++)
-	{
-		if (mask[i] == 1)
-		{
-			new_chisq[count] = chisq[i];
-			new_shear[count] = shear[i];
-			count++;
-		}
-	}
-	
-	// g`= a1 + a2*g + a3*g^2
-	poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
+		// g`= a1 + a2*g + a3*g^2
+		poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
 
+		delete[] mask;
+		delete[] new_chisq;
+		delete[] new_shear;
+	}
+	else
+	{
+		poly_fit_1d(shear, chisq, num, 2, coeff);
+	}
+	if (coeff[2] < 0)
+	{
+		std::cout << "Bad signal fitting!!!";
+	}
 	gh = -coeff[1] / coeff[2]*0.5;
 	gh_sig = sqrt(0.5 / coeff[2]);
 
-	delete[] mask;
-	delete[] new_chisq;
-	delete[] new_shear;
+
 }
 
 

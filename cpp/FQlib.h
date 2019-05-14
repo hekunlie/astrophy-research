@@ -198,6 +198,10 @@ void read_text(const std::string path, int *arr, const int read_lines);
 	the read_lines limits the maximum lines to read
 */
 
+void read_h5_datasize(const char *filename, const char *set_name, int &elem_num);//checked
+/* read the element number in the dataset 
+	if it fails, elem_num=-1 
+*/
 void read_h5(const char *filename, const char *set_name, double *data);//checked
 void read_h5(const char *filename, const char *set_name, float *data);
 void read_h5(const char *filename, const char *set_name, int *data);//checked
@@ -384,7 +388,8 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, const int choice=0, const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20,
+	const int choice=0, 	const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -396,6 +401,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	data_num: data number
 	bin_num: must be even number, bin number, >= 4
 	gh (gh_sig): the result, g and sigma of g
+	chi_check: store the chi squares for checking, length >= chi_fit_num.
+	chi_fit_num: the number of point in the final interval of signal for fitting.
 	choice: if > 0, "randomly" choose a sub-sample to set up the bin for shear estimation to save time
 	ini_left: the initial guess of shear of the left end
 	ini_right: the initial guess of shear of the right end
@@ -410,6 +417,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	num: the number of point
 	gh (gh_sig): the result, g and sigma of g
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
+				  if < 0, all the points will be used for fitting.
 */
 
 

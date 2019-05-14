@@ -210,7 +210,7 @@ if cmd == "collect":
             # each shear estimator is 2 times the one in the paper,
             # Zhang et al. 2017 ApJ 834,
             # G1 = 2*G1_paper, G2 = 2*G2_paper
-            # And N = -2N_paper, U = -2U_paper, V = -2V_paper
+            # And N = 2N_paper, U = -2U_paper, V = -2V_paper
             recv_buffer[:,mg1_lb] = recv_buffer[:,mg1_lb] / 2
             recv_buffer[:,mg2_lb] = recv_buffer[:,mg2_lb] / 2
             recv_buffer[:,mn_lb] = recv_buffer[:,mn_lb] / 2

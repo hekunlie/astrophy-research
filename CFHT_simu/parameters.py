@@ -49,19 +49,28 @@ logger.info(log_inform)
 f = h5py.File(h5_path,"w")
 
 
-# g1 = numpy.append(numpy.append(ran(-0.02, 0, 4), ran(0, 0.021, 3)),numpy.append(ran(-0.02, 0, 3), ran(0, 0.021, 4)))
-# g2 = numpy.append(numpy.append(ran(-0.02, 0, 3), ran(0, 0.021, 4)),numpy.append(ran(0, 0.021, 3), ran(-0.02, 0, 4)))
-# numpy.random.shuffle(g1)
-# numpy.random.shuffle(g2)
-# plt.subplot(131)
-# plt.scatter(g1,g2)
-# plt.subplot(132)
-# plt.scatter(g1,g1)
-# plt.subplot(133)
-# plt.scatter(g2,g2)
-# plt.show()
-# numpy.savez('E:/selection_bias/parameters/shear.npz', g1, g2)
-# numpy.savetxt('E:/selection_bias/parameters/shear.dat',numpy.append(g1,g2))
+itemsize = MPI.DOUBLE.Get_size()
+element_num = cpus
+if rank == 0:
+    # bytes for 10 double elements
+    nbytes = element_num*itemsize
+else:
+    nbytes = 0
+
+# on rank 0 of comm, create the contiguous shared block
+win1 = MPI.Win.Allocate_shared(nbytes*2, itemsize, comm=comm)
+win2 = MPI.Win.Allocate_shared(nbytes*2, itemsize, comm=comm)
+# create a numpy array whose data points to the shared block
+# buf is the block's address in the memory
+buf1, itemsize = win1.Shared_query(0)
+buf2, itemsize = win2.Shared_query(0)
+
+# create a numpy array from buf
+# code can run successfully without the following step
+# buf = np.array(buf, dtype='float64', copy=False) # may be redundant
+# "d" means double = 'float64'
+mean_e = numpy.ndarray(buffer=buf1, dtype='d', shape=(element_num,2)) # array filled with zero
+sig_e = numpy.ndarray(buffer=buf2, dtype='d', shape=(element_num,2))
 
 
 seed_ini = numpy.random.randint(1, 100000, size=cpus)[rank]
@@ -172,6 +181,10 @@ f["/e2"] = e2
 f["/e"] = e
 f["/type"] = gal_type
 
+mean_e[rank,0] = e1.mean()
+mean_e[rank,1] = e2.mean()
+sig_e[rank, 0] = e1.std()
+sig_e[rank, 1] = e2.std()
 
 # magnitude & flux
 flux, mag = numpy.zeros((num*stamp_num, 1)),numpy.zeros((num*stamp_num, 1))
@@ -235,6 +248,18 @@ plt.close()
 f["/btr"] = btr
 f.close()
 
+comm.Barrier()
+if rank == 0:
+    shears = numpy.loadtxt(para_path + "shear.dat")
+    g1_t = shears[:cpus]
+    g2_t = shears[cpus:2*cpus]
 
-
-
+    mc1 = tool_box.data_fit(g1_t, mean_e[:,0], sig_e[:,0]/numpy.sqrt(num*stamp_num))
+    mc2 = tool_box.data_fit(g2_t, mean_e[:,1], sig_e[:,1]/numpy.sqrt(num*stamp_num))
+    print(mean_e[:,0])
+    print(sig_e[:,0])
+    print(mean_e[:,1])
+    print(sig_e[:,1])
+    print("m1: %.5f(%.5f), c1: %.6f(%.6f)"%(mc1[0], mc1[1], mc1[2], mc1[3]))
+    print("m2: %.5f(%.5f), c2: %.6f(%.6f)"%(mc2[0], mc2[1], mc2[2], mc2[3]))
+comm.Barrier()

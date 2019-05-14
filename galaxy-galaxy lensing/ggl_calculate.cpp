@@ -36,10 +36,10 @@ int main(int argc, char *argv[])
 	double gh_end = atof(argv[4]);
 	int gh_num = atoi(argv[5]);
 	   
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
-	//sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
-	//sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
+	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
+	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
 
 	sprintf(h5f_res_path, "%s/w_%d/radius_%d.hdf5", data_path, area_id, radius_label);
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
 	double st_start, st_end, st1, st2, st3, st4, stgal;
 	int process_per;
-	double per_n;
+	int per_n;
 
 
 	int foregal_num;
