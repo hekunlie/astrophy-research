@@ -61,7 +61,7 @@ int main(int argc, char ** argv)
 	double*total_chisq, chisq_temp;
 	double gt, gx, gt_sig, gx_sig;
 
-	gh_left = -130 + 10 * rank;
+	gh_left = -130 + 10 * radius_id;
 	gh_right = fabs(gh_left);
 	gh_num = int(gh_right * 2);
 
@@ -224,7 +224,8 @@ int main(int argc, char ** argv)
 		write_h5(result_path, set_name, total_chisq, 2, gh_num, TRUE);
 		sprintf(set_name, "/signal");
 		write_h5(result_path, set_name, signal, 4, 1, FALSE);
-
+		sprintf(set_name, "/shear");
+		write_h5(result_path, set_name, gh, 1, gh_num, FALSE);
 		delete[] chisq_fit;
 	}
 	MPI_Win_free(&win_bin);
