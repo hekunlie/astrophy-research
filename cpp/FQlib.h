@@ -380,16 +380,16 @@ void cal_chisq_2d(const int *hist_arr, const int bin_num, double &result);//chec
 /* 2d chi square for correlation calculation
 	hist_arr: the 2d histogram of G1, G1~
 */
-void cal_chisq_1d(const double *hist_num, const int bin_num, double &result);
+void cal_chisq_1d(const double *hist_num,  const int bin_num, double &result);
 void cal_chisq_1d(const long *hist_num, const int bin_num, double &result);
-void cal_chisq_1d(const int *hist_num, const int bin_num,  double &result);//checked
-void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double &result);//checked
+void cal_chisq_1d(const int *hist_num,  const int bin_num,  double &result);//checked
+void cal_chisq_1d(const int *hist_num,  const int bin_num, const int num, double &result);//checked
 /* calculate the 1d chi square using the histogram of G1(2) for the shear eastimation 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
 
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20,
-	const int choice=0, 	const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
+	const int choice=0, const double max_scale=100., const double ini_left = -0.2, const double ini_right = 0.2, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -404,6 +404,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	chi_check: store the chi squares for checking, length >= chi_fit_num.
 	chi_fit_num: the number of point in the final interval of signal for fitting.
 	choice: if > 0, "randomly" choose a sub-sample to set up the bin for shear estimation to save time
+	max_scale: by which the boundary of the bins (the first and last elements) will be multiplied to include all data points.
 	ini_left: the initial guess of shear of the left end
 	ini_right: the initial guess of shear of the right end
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
@@ -614,7 +615,9 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 */
 
 void show_arr(const double*arr, const int rows, const int cols);//checked
+void show_arr(const long*arr, const int rows, const int cols);//checked
 void show_arr(const int*arr, const int rows, const int cols);//checked
+void show_arr(const float*arr, const int rows, const int cols);//checked
 /* print the elements on the screen
 */
 void initialize_para(para *paras);

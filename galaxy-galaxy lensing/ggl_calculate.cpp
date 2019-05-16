@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	int radius_label = atoi(argv[2]);
 	double gh_start = atof(argv[3]);
 	double gh_end = atof(argv[4]);
-	int gh_num = atoi(argv[5]);
+
 	   
 	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
 	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
@@ -43,12 +43,18 @@ int main(int argc, char *argv[])
 
 	sprintf(h5f_res_path, "%s/w_%d/radius_%d.hdf5", data_path, area_id, radius_label);
 
-	double *gh = new double[gh_num];
+
+	
 	double g_step;
+	double gh_left = -130 + 10 * rank;
+	double gh_right = fabs(gh_left);
+	int gh_num = int(gh_right * 2);
 	g_step = (gh_end - gh_start) / (gh_num - 1);
+
+	double *gh = new double[gh_num];
 	for (i = 0; i < gh_num; i++)
 	{
-		gh[i] = gh_start + i * g_step;
+		gh[i] = gh_left + i;
 	}
 
 	pts_info gal_info;
@@ -387,7 +393,7 @@ int main(int argc, char *argv[])
 
 							// rotation for shear calculation
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
-							backgal_cos_2phi = (diff_ra - diff_dec)*(diff_ra + diff_dec) / diff_theta_sq;
+							backgal_cos_2phi = (diff_dec - diff_ra)*(diff_ra + diff_dec) / diff_theta_sq;
 
 							backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
 							backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
@@ -395,9 +401,9 @@ int main(int argc, char *argv[])
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
 							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
 							// \Sigma_crit *G_t(x)
-							backgal_mg_tan = crit_surf_density_com*( backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi);
+							backgal_mg_tan = crit_surf_density_com*( backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi);
 							// the cross components
-							backgal_mg_cross = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_sin_2phi + backgal_data[mg2_id][ib] * backgal_cos_2phi);
+							backgal_mg_cross = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi);
 							// scalar
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi

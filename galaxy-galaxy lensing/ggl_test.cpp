@@ -7,6 +7,10 @@
 #define backgal_data_col 17
 #define g_num 100
 #define mg_bin_num 12
+/*	area_id : argv[1]					*/
+/* radius_id: argv[2]					*/
+/* foreground data: argv[3]		*/
+/*												*/
 
 int main(int argc, char *argv[])
 {
@@ -188,10 +192,10 @@ int main(int argc, char *argv[])
 	for (i = 0; i < foregal_data_col; i++)
 	{
 		strcpy(set_name, names[i]);
-		read_h5_datasize(h5f_fore_path, names[i], foregal_num);
+		read_h5_datasize(h5f_fore_path, set_name, foregal_num);
 		foregal_data[i] = new double[foregal_num];
 		read_h5(h5f_fore_path, set_name, foregal_data[i]);
-		std::cout << i <<" "<< set_name<<" "<< foregal_num<< std::endl;
+		std::cout << i <<" "<< set_name <<" "<< foregal_num<< std::endl;
 	}
 
 	sprintf(log_infom, "RANK: %d. w_%d. Read foreground data. %d galaxies", rank, area_id, foregal_num);
@@ -211,7 +215,6 @@ int main(int argc, char *argv[])
 	read_h5_attrs(h5f_path, set_name, attrs_name, block_scale, "g");
 
 	block_mask = new int[grid_num];
-
 
 	// Z, RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
 	// block_boundx, block_boundy
@@ -436,16 +439,16 @@ int main(int argc, char *argv[])
 							
 							// rotation for shear calculation
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
-							backgal_cos_2phi = (diff_ra - diff_dec)*(diff_ra + diff_dec) / diff_theta_sq;
+							backgal_cos_2phi =  (diff_dec - diff_ra)*(diff_ra + diff_dec) / diff_theta_sq;
 
 							backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
 							backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
 
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
 							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
-							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
+							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
 							// the cross components
-							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_sin_2phi + backgal_data[mg2_id][ib] * backgal_cos_2phi;
+							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi;
 							// scalar
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi

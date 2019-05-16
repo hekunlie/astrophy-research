@@ -2783,8 +2783,20 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 		temp[i] = mg[i] - gh * mnu[i];
 	}
 	histogram(temp, bins, num_in_bin, data_num, bin_num);
-
-	cal_chisq_1d(num_in_bin, bin_num, result);
+	try
+	{
+		cal_chisq_1d(num_in_bin, bin_num, result);
+	}
+	catch(const char *msg)
+	{
+		std::cout << "g_guess: " << gh << std::endl;
+		std::cout << "Num: " << std::endl;
+		show_arr(num_in_bin, 1, bin_num);
+		std::cout << "Bin: " << std::endl;
+		show_arr(bins, 1, bin_num + 1);
+		std::cerr << msg << std::endl;
+		throw "Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d) !!!";
+	}
 
 	delete[] num_in_bin;
 	delete[] temp;
@@ -2874,8 +2886,7 @@ void cal_chisq_1d(const double *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			std::cout << "Chi square divided by zero!!!" << std::endl;
-			exit(0);
+			throw "Chi square divided by zero (cal_chisq_1d) !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -2895,8 +2906,7 @@ void cal_chisq_1d(const long *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			std::cout << "Chi square divided by zero!!!" << std::endl;
-			exit(0);
+			throw "Chi square divided by zero (cal_chisq_1d) !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -2916,8 +2926,7 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			std::cout << "Chi square divided by zero!!!" << std::endl;
-			exit(0);
+			throw "Chi square divided by zero (cal_chisq_1d) !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -2936,9 +2945,8 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
-		{
-			std::cout << "Chi square divided by zero!!!" << std::endl;
-			exit(0);
+		{	
+			throw "Chi square divided by zero (cal_chisq_1d) !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -2948,7 +2956,7 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 
 
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,
-						const int chi_num_fit, const int choice, const double ini_left, const double ini_right, const double chi_gap)
+						const int chi_num_fit, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	
@@ -2964,7 +2972,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
-	set_bin(mg, data_num, bins, bin_num, choice, choice);
+	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
 	//show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
 	while (change == 1)
@@ -4124,6 +4132,47 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 }
 
 void show_arr(const double*arr, const int rows, const int cols)
+{
+	int i, j;
+	if (rows >= 1)
+	{
+		for (i = 0; i < rows; i++)
+		{
+			for (j = 0; j < cols; j++)
+			{
+				std::cout << arr[i*cols + j] << "  ";
+			}
+			std::cout << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "rows must >= 1 !!!" << std::endl;
+		exit(0);
+	}
+}
+void show_arr(const long*arr, const int rows, const int cols)
+{
+	int i, j;
+	if (rows >= 1)
+	{
+		for (i = 0; i < rows; i++)
+		{
+			for (j = 0; j < cols; j++)
+			{
+				std::cout << arr[i*cols + j] << "  ";
+			}
+			std::cout << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "rows must >= 1 !!!" << std::endl;
+		exit(0);
+	}
+}
+
+void show_arr(const float*arr, const int rows, const int cols)
 {
 	int i, j;
 	if (rows >= 1)

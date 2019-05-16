@@ -131,7 +131,7 @@ comm.Barrier()
 if rank == 0:
     numpy.savez(data_path + "result_%d.npz"%area_id, result)
     img = plot_tool.Image_Plot()
-    img.plot_img(1, 2)
+    img.create_subfig(1, 2)
     gh = 10**numpy.linspace(numpy.log10(0.04), numpy.log10(15), 13)
     img.axs[0][0].errorbar(gh, result[0], result[1], label="T",capsize=img.cap_size)
     img.axs[0][0].errorbar(gh, result[2], result[3], label="X",capsize=img.cap_size)
