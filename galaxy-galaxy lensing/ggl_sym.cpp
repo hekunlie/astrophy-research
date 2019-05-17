@@ -55,7 +55,7 @@ int main(int argc, char ** argv)
 	double *data[max_area];
 	double *mgt, *mgx, *mnu1, *mnu2, *crit, *mg1;
 	int choice;
-	double gh_left, gh_right, *gh;
+	double gh_left, gh_right, gstep, *gh;
 	int gh_num, gh_s, gh_e;
 	double *mg_bin;
 	double*total_chisq, chisq_temp;
@@ -63,7 +63,9 @@ int main(int argc, char ** argv)
 
 	gh_left = -130 + 10 * rank;
 	gh_right = fabs(gh_left);
-	gh_num = int(gh_right * 2);
+	
+	gstep = 0.5;
+	gh_num = int(gh_right * 2/ gstep);
 
 	gh_s = gh_num / numprocs * rank;
 	gh_e = gh_num / numprocs * (rank + 1);
@@ -75,7 +77,7 @@ int main(int argc, char ** argv)
 	gh = new double[gh_num] {};
 	for (i = 0; i < gh_num; i++)
 	{
-		gh[i] = gh_left + i;
+		gh[i] = gh_left + i* gstep;
 	}
 
 	for (i = 0; i < area_num; i++)
@@ -120,6 +122,7 @@ int main(int argc, char ** argv)
 	{
 		if (i == rank)
 		{	
+			std::cout << "gh_num: " << gh_num << std::endl;
 			std::cout << "gh: " << gh_s << " ~ " << gh_e << std::endl;
 			std::cout << "Radius: " << radius_id << ".  Pair num: ";
 			for (j = 0; j < area_num; j++)
@@ -211,17 +214,19 @@ int main(int argc, char ** argv)
 	{
 		double *chisq_fit = new double[gh_num];
 		double signal[4];
+
+		sprintf(result_path, "%sresult/%s/%d.hdf5", total_path, fore_source, radius_id);
+		sprintf(set_name, "/chisq");
+		write_h5(result_path, set_name, total_chisq, 2, gh_num, TRUE);
+
 		for (j = 0; j < 2; j++)
 		{
 			for (i = 0; i < gh_num; i++)
 			{
-				chisq_fit[i] = total_chisq[i + j*gh_num];
+				chisq_fit[i] = total_chisq[i + j * gh_num];
 			}
-			fit_shear(gh, chisq_fit, gh_num, signal[j*2], signal[j*2+1], 60);
+			fit_shear(gh, chisq_fit, gh_num, signal[j * 2], signal[j * 2 + 1], 60);
 		}
-		sprintf(result_path, "%sresult/%s/%d.hdf5", total_path, fore_source, radius_id);
-		sprintf(set_name, "/chisq");
-		write_h5(result_path, set_name, total_chisq, 2, gh_num, TRUE);
 		sprintf(set_name, "/signal");
 		write_h5(result_path, set_name, signal, 4, 1, FALSE);
 
