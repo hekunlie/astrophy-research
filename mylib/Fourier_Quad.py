@@ -149,6 +149,20 @@ class Fourier_Quad:
     def shear(self, pos, g1, g2):
         return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
 
+    def rotation(self, e1, e2, theta):
+        """
+        return the new (e1,e2) after rotation
+
+        :param e1: ellipticity
+        :param e2: ellipticity
+        :param theta: position angle, is a clockwise measure relative to positive direction of DEC
+                    on the right-handed coordinates,
+        :return:
+        """
+        e1_r = e1 * numpy.cos(2 * theta) - e2 * numpy.sin(2 * theta)
+        e2_r = e1 * numpy.sin(2 * theta) + e2 * numpy.cos(2 * theta)
+        return e1_r, e2_r
+
     def convolve_psf(self, pos, psf_scale, flux=1., psf="GAUSS"):
         x = pos.shape[1]
         arr = numpy.zeros((self.size, self.size))

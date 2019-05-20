@@ -6,12 +6,15 @@
 #define crit_coeff 388.2833518
 #define mg_bin_num 12
 
-/* argv[1]: the file name of foreground source		*/
-/* argv[2]: radius bin label										*/
-/* argv[3] -- argv[n]: area labels, like 1,3, 4			*/
-
 int main(int argc, char ** argv)
 {
+	/* crit_coeff is the coefficient of the critical density, see the note for detials */
+	
+	/* argv[1]: 1for calculate	gamma_t, 2 for calculate the differential surface mass density	*/
+	/* argv[2]: the file name of foreground source		*/
+	/* argv[3]: radius bin label										*/
+	/* argv[4] -- argv[n]: area labels, like 1,3, 4			*/
+
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -29,13 +32,14 @@ int main(int argc, char ** argv)
 	int total_data_num, total_pair_num;
 	int data_num[max_area], pair_num[max_area];
 
+	int shear_cmd = atoi(argv[1]);
 
-	strcpy(fore_source, argv[1]);
-	radius_id = atoi(argv[2]);
-	area_num = argc - 3;
-	for (i = 3; i < argc; i++)
+	strcpy(fore_source, argv[2]);
+	radius_id = atoi(argv[3]);
+	area_num = argc - 4;
+	for (i = 4; i < argc; i++)
 	{
-		area_id[i - 3] = atoi(argv[i]);
+		area_id[i - 4] = atoi(argv[i]);
 	}
 	if (0 == rank)
 	{
@@ -61,23 +65,29 @@ int main(int argc, char ** argv)
 	double*total_chisq, chisq_temp;
 	double gt, gx, gt_sig, gx_sig;
 
-	gh_left = -140 + 5 * radius_id;
+	if (shear_cmd == 1)
+	{
+		gh_left = -0.03+ 0.001 * radius_id;
+		gstep = 0.0003;
+	}
+	else
+	{
+		gh_left = -140 + 5 * radius_id;
+		gstep = 0.5;
+	}
 	gh_right = fabs(gh_left);
-	
-	gstep = 0.5;
-	gh_num = int(gh_right * 2/ gstep);
+	gh_num = int(gh_right * 2 / gstep);
+	gh = new double[gh_num] {};
+	for (i = 0; i < gh_num; i++)
+	{
+		gh[i] = gh_left + i* gstep;
+	}
 
 	gh_s = gh_num / numprocs * rank;
 	gh_e = gh_num / numprocs * (rank + 1);
 	if (rank == numprocs - 1)
 	{
 		gh_e = gh_num / numprocs * (rank + 1) + gh_num % numprocs;
-	}
-
-	gh = new double[gh_num] {};
-	for (i = 0; i < gh_num; i++)
-	{
-		gh[i] = gh_left + i* gstep;
 	}
 
 	for (i = 0; i < area_num; i++)
@@ -111,8 +121,16 @@ int main(int argc, char ** argv)
 		{
 			mgt[k+ j] = data[i][j*data_col] * data[i][j*data_col + 4]* crit_coeff;
 			mgx[k + j] = data[i][j*data_col + 1] * data[i][j*data_col + 4]* crit_coeff;
-			mnu1[k + j] = data[i][j*data_col + 2] + data[i][j*data_col + 3];
-			mnu2[k+ j] = data[i][j*data_col + 2] - data[i][j*data_col + 3];
+			if (shear_cmd == 1)
+			{
+				mnu1[k + j] = (data[i][j*data_col + 2] + data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
+				mnu2[k + j] = (data[i][j*data_col + 2] - data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
+			}
+			else
+			{
+				mnu1[k + j] = data[i][j*data_col + 2] + data[i][j*data_col + 3];
+				mnu2[k + j] = data[i][j*data_col + 2] - data[i][j*data_col + 3];
+			}
 			mg1[k + j] = data[i][j*data_col + 5];
 		}
 	}
@@ -169,7 +187,7 @@ int main(int argc, char ** argv)
 		{
 			choice = 100000;
 		}
-		set_bin(mgt, total_pair_num, mg_bin, mg_bin_num, 10000, choice);
+		set_bin(mgt, total_pair_num, mg_bin, mg_bin_num, 100000, choice);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -184,7 +202,7 @@ int main(int argc, char ** argv)
 		}
 		catch (const char* msg)
 		{
-			std::cerr << "Rank: " << rank <<". g_gusee: "<<i<< ". Tangential. " << msg << std::endl;
+			std::cerr << "Rank: " << rank <<". g_guess: "<<i<< ". Tangential. " << msg << std::endl;
 			exit(0);
 		}
 		try
@@ -194,7 +212,7 @@ int main(int argc, char ** argv)
 		}
 		catch (const char* msg)
 		{
-			std::cerr << "Rank: " << rank << ". g_gusee: " << i<<". Cross. " << msg << std::endl;
+			std::cerr << "Rank: " << rank << ". g_guess: " << i<<". Cross. " << msg << std::endl;
 			exit(0);
 		}		
 	}
@@ -213,7 +231,7 @@ int main(int argc, char ** argv)
 	if (0 == rank)
 	{
 		double *chisq_fit = new double[gh_num];
-		double signal[4];
+		double signal[4]{ -1, -1,-1,-1 };
 
 		sprintf(result_path, "%sresult/%s/%d.hdf5", total_path, fore_source, radius_id);
 		sprintf(set_name, "/chisq");
@@ -227,7 +245,14 @@ int main(int argc, char ** argv)
 			{
 				chisq_fit[i] = total_chisq[i + j * gh_num];
 			}
-			fit_shear(gh, chisq_fit, gh_num, signal[j * 2], signal[j * 2 + 1], 60);
+			try
+			{
+				fit_shear(gh, chisq_fit, gh_num, signal[j * 2], signal[j * 2 + 1], 80);
+			}
+			catch (const char* msg)
+			{
+				std::cerr <<fore_source<<" Radius: "<<radius_id<<" "<< msg;
+			}
 		}
 		sprintf(set_name, "/signal");
 		write_h5(result_path, set_name, signal, 4, 1, FALSE);

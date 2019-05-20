@@ -81,7 +81,7 @@ The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \
     U_t &= U\cos(4\phi) - V\sin(4\phi) \\\\ \end{aligned}$$</td>
  </tr>
 </table>
-
+<img src="rotation.jpg" width = 100% height = 100% div align=left/>
 
 # <center>Process
 

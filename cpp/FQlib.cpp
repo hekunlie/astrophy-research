@@ -3063,8 +3063,9 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		// for fitting
 		if (count < 5)
 		{
-			std::cout << "Too less points (" << count << ")" << " for fitting!!!" << std::endl;
-			exit(0);
+			char err_log[100];
+			sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
+			throw err_log;
 		}
 		double *new_chisq = new double[count] {};
 		double *new_shear = new double[count] {};
@@ -3092,7 +3093,9 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	}
 	if (coeff[2] < 0)
 	{
-		std::cout << "Bad signal fitting!!!";
+		char err_log[100];
+		sprintf(err_log, "Bad shear fitting !!!");
+		throw err_log;
 	}
 	gh = -coeff[1] / coeff[2]*0.5;
 	gh_sig = sqrt(0.5 / coeff[2]);

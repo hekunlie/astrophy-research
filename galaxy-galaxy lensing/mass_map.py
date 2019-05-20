@@ -46,11 +46,12 @@ h5f.close()
 
 tag = tool_box.find_near(redshift_refer, foreground_z)
 foreground_dist = dist_refer[tag]
-
+if rank == 0:
+    print(redshift_refer[tag], foreground_z, dist_refer[tag])
 fq = Fourier_Quad(10, 123)
 
 # gamma_t, sig, gamma_x, sig, position angle, galaxy number
-block_num = 6
+block_num = 11
 itemsize = MPI.DOUBLE.Get_size()
 element_num = nx*ny*block_num
 if rank == 0:
@@ -79,18 +80,19 @@ h5f = h5py.File(data_path + "cata_result_ext_cut.hdf5", "r")
 
 names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "COS_DEC", "DISTANCE"]
 
-z = h5f["/w_%d/Z" % area_id].value
-idx_z = z >= foreground_z + delta_z
+# z = h5f["/w_%d/Z" % area_id].value
+# idx_z = z >= foreground_z + delta_z
 
 ra = h5f["/w_%d/RA" % area_id].value
 idx_ra_1 = ra >= ra_bin[0]
-idx_ra_2 = ra < ra_bin[-1]
+idx_ra_2 = ra <= ra_bin[-1]
 
 dec = h5f["/w_%d/DEC" % area_id].value
 idx_dec_1 = dec >= dec_bin[0]
-idx_dec_2 = dec < dec_bin[-1]
+idx_dec_2 = dec <= dec_bin[-1]
 
-idx = idx_z & idx_ra_1 & idx_ra_2 & idx_dec_1 & idx_dec_2
+# idx = idx_z & idx_ra_1 & idx_ra_2 & idx_dec_1 & idx_dec_2
+idx = idx_ra_1 & idx_ra_2 & idx_dec_1 & idx_dec_2
 
 background_num = idx.sum()
 data = numpy.zeros((background_num, len(names)))
@@ -117,25 +119,30 @@ center = SkyCoord(ra=foreground_ra*astro_unit.degree,
 background_pos = SkyCoord(ra=data[:, names.index("RA")]*astro_unit.degree,
                           dec=data[:, names.index("DEC")]*astro_unit.degree, frame='icrs')
 
-sep_angle = center.position_angle(background_pos).radian
+position_angle = center.position_angle(background_pos).radian
 
 # diff_ra = data[:, names.index("RA")] - foreground_ra
 # diff_dec = data[:, names.index("DEC")] - foreground_dec
 
-sin_theta = numpy.sin(sep_angle)
-cos_theta = numpy.cos(sep_angle)
+# sin_theta = numpy.sin(position_angle)
+# cos_theta = numpy.cos(position_angle)
+#
+# sin_2theta = numpy.sin(2*position_angle)
+# cos_2theta = numpy.cos(2*position_angle)
+#
+# sin_4theta = numpy.sin(4*position_angle)
+# cos_4theta = numpy.cos(4*position_angle)
 
-sin_2theta = 2*sin_theta*cos_theta
-cos_2theta = cos_theta**2 - sin_theta**2
+#sigma_crit = data[:, names.index("DISTANCE")]/(data[:, names.index("DISTANCE")] - foreground_dist)/foreground_dist*(1+foreground_z)*388.283351
+sigma_crit = 1
+# mg_t = (data[:, names.index("G1")]*cos_2theta - data[:, names.index("G2")]*sin_2theta)*sigma_crit
+# mg_x = (data[:, names.index("G1")]*sin_2theta + data[:, names.index("G2")]*cos_2theta)*sigma_crit
+# mu = (data[:, names.index("U")]*cos_4theta - data[:, names.index("V")]*sin_4theta)*sigma_crit
 
-sin_4theta = 2*sin_2theta*cos_2theta
-cos_4theta = cos_2theta**2 - sin_2theta**2
+mg_t = data[:, names.index("G1")]*sigma_crit
+mg_x = data[:, names.index("G2")]*sigma_crit
+mu = data[:, names.index("U")]*sigma_crit
 
-sigma_crit = data[:, names.index("DISTANCE")]/(data[:, names.index("DISTANCE")] - foreground_dist)/foreground_dist*(1+foreground_z)*388.283351
-
-mg_t = (data[:, names.index("G1")]*cos_2theta - data[:, names.index("G2")]*sin_2theta)*sigma_crit
-mg_x = (data[:, names.index("G1")]*sin_2theta + data[:, names.index("G2")]*cos_2theta)*sigma_crit
-mu = (data[:, names.index("U")]*cos_4theta - data[:, names.index("V")]*sin_4theta)*sigma_crit
 mn = data[:, names.index("N")]*sigma_crit
 
 t3 = time.time()
@@ -144,7 +151,7 @@ for grid in my_grid:
     iy, ix = grid
 
     grid_pos = SkyCoord(ra=(ra_bin[ix] + ra_bin[ix+1])/2 * astro_unit.degree,
-                              dec=(dec_bin[iy] + dec_bin[iy+1])/2 * astro_unit.degree, frame='icrs')
+                        dec=(dec_bin[iy] + dec_bin[iy+1])/2 * astro_unit.degree, frame='icrs')
 
     # radian
     sep_angle = center.position_angle(grid_pos).radian
@@ -153,8 +160,14 @@ for grid in my_grid:
     idx_2 = data[:, names.index("RA")] < ra_bin[ix+1]
     idx_3 = data[:, names.index("DEC")] >= dec_bin[iy]
     idx_4 = data[:, names.index("DEC")] < dec_bin[iy+1]
+
+    idx_5 = data[:, names.index("Z")] >= foreground_z + delta_z
+
     idx = idx_1 & idx_2 & idx_3 & idx_4
+    idx_z = idx_5 & idx
+
     sub_num = idx.sum()
+    sub_num_back = idx_z.sum()
 
     mg_t_ = mg_t[idx]
     mg_x_ = mg_x[idx]
@@ -169,12 +182,34 @@ for grid in my_grid:
     pic_nm = result_path + "mass_map/pic/%d_%d_x.png"%(iy,ix)
     cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=10, scale=100, pic_path=pic_nm, left=-0.1, right=0.1, fit_num=20)
 
-    result[iy, ix] = tan_g
-    result[iy + ny, ix] = tan_g_sig
-    result[iy + 2*ny, ix] = cross_g
-    result[iy + 3*ny, ix] = cross_g_sig
-    result[iy + 4*ny, ix] = sub_num
-    result[iy + 5*ny, ix] = sep_angle
+    mg_t_ = mg_t[idx_z]
+    mg_x_ = mg_x[idx_z]
+    mn_ = mn[idx_z]
+    mu_ = mu[idx_z]
+    mnu1 = mn_ + mu_
+    mnu2 = mn_ - mu_
+
+    pic_nm = result_path + "mass_map/pic/%d_%d_t_back.png"%(iy,ix)
+    tan_g_back, tan_g_sig_back = fq.fmin_g_new(g=mg_t_, nu=mnu1, bin_num=10, scale=100, pic_path=pic_nm, left=-0.1, right=0.1, fit_num=20)
+
+    pic_nm = result_path + "mass_map/pic/%d_%d_x_back.png"%(iy,ix)
+    cross_g_back, cross_g_sig_back = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=10, scale=100, pic_path=pic_nm, left=-0.1, right=0.1, fit_num=20)
+
+    result[iy, ix] = tan_g_back
+    result[iy + ny, ix] = tan_g_sig_back
+    result[iy + 2*ny, ix] = cross_g_back
+    result[iy + 3*ny, ix] = cross_g_sig_back
+
+    result[iy + 4*ny, ix] = sub_num_back
+
+    result[iy + 5*ny, ix] = tan_g
+    result[iy + 6*ny, ix] = tan_g_sig
+    result[iy + 7*ny, ix] = cross_g
+    result[iy + 8*ny, ix] = cross_g_sig
+
+    result[iy + 9*ny, ix] = sub_num
+
+    result[iy + 10*ny, ix] = sep_angle
 
 comm.Barrier()
 t4 = time.time()
