@@ -34,6 +34,10 @@ ny = nx
 grid_num = nx*ny
 
 delta_z = 0.1
+# degree, separation angle for shear estimation
+radius = 10./60
+# degree, smooth scale in the weight
+smooth_len = 30./3600
 
 total_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/mass_map/"
 result_path = total_path + foreground_name + "/w_%d/"%area_id
@@ -83,21 +87,6 @@ fore_num = fore_ra.shape[0]
 # read background catalog
 names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "COS_DEC", "DISTANCE"]
 
-h5f = h5py.File(data_path + "cata_result_ext_cut.hdf5", "r")
-
-redshift = h5f["/w_%d/Z" % area_id].value
-data = numpy.zeros((redshift.shape[0], len(names)))
-data[:,0] = redshift
-for i in range(1, len(names)):
-    data_arr = h5f["/w_%d/%s" % (area_id, names[i])].value
-    if len(data_arr.shape) > 1:
-        data[:, i] = data_arr[:, 0]
-    else:
-        data[:, i] = data_arr
-# the x-coord is opposite to RA
-data[:, names.index("G2")] = - data[:, names.index("G2")]
-h5f.close()
-
 grid_id = [(i, j) for i in range(ny) for j in range(nx)]
 my_grid = tool_box.allot(grid_id, cpus)[rank]
 
@@ -106,6 +95,21 @@ t2 = time.time()
 for igal in range(min(max_num,fore_num)):
 
     it1 = time.time()
+
+    h5f = h5py.File(data_path + "foreground/%s/w_%d_sub.hdf5" % (foreground_name, area_id), "r")
+
+    redshift = h5f["/%d/Z" %igal].value
+    data = numpy.zeros((redshift.shape[0], len(names)))
+    data[:, 0] = redshift
+    for i in range(1, len(names)):
+        data_arr = h5f["/%d/%s" % (igal, names[i])].value
+        if len(data_arr.shape) > 1:
+            data[:, i] = data_arr[:, 0]
+        else:
+            data[:, i] = data_arr
+    # the x-coord is opposite to RA
+    data[:, names.index("G2")] = - data[:, names.index("G2")]
+    h5f.close()
 
     result_path_ig = result_path + "source_%d/"%igal
     pic_path_ig = result_path_ig + "pic/"
@@ -129,46 +133,37 @@ for igal in range(min(max_num,fore_num)):
 
     idx_z = data[:, names.index("Z")] >= fore_z[igal] + delta_z
 
-    idx_ra_1 = data[:, names.index("RA")] >= ra_bin[0]
-    idx_ra_2 = data[:, names.index("RA")] < ra_bin[-1]
-
-    idx_dec_1 = data[:, names.index("DEC")] >= dec_bin[0]
-    idx_dec_2 = data[:, names.index("DEC")] < dec_bin[-1]
-
-    idx = idx_z & idx_ra_1 & idx_ra_2 & idx_dec_1 & idx_dec_2
-
     # sub-area
-    mg_t = data[:, names.index("G1")][idx]
-    mg_x = data[:, names.index("G2")][idx]
-    mu = data[:, names.index("U")][idx]
-    mn = data[:, names.index("N")][idx]
-    ra = data[:, names.index("RA")][idx]
-    dec = data[:, names.index("DEC")][idx]
+    mg_t = data[:, names.index("G1")][idx_z]
+    mg_x = data[:, names.index("G2")][idx_z]
+    mu = data[:, names.index("U")][idx_z]
+    mn = data[:, names.index("N")][idx_z]
+    ra = data[:, names.index("RA")][idx_z]
+    dec = data[:, names.index("DEC")][idx_z]
+
+    galaxy_pos = SkyCoord(ra=ra*astro_unit.degree, dec=dec*astro_unit.degree, frame='icrs')
 
     for grid in my_grid:
         iy, ix = grid
 
-        grid_pos = SkyCoord(ra=(ra_bin[ix] + ra_bin[ix + 1]) / 2 * astro_unit.degree,
-                            dec=(dec_bin[iy] + dec_bin[iy + 1]) / 2 * astro_unit.degree, frame='icrs')
+        grid_ra = (ra_bin[ix] + ra_bin[ix + 1]) / 2
+        grid_dec = (dec_bin[iy] + dec_bin[iy + 1]) / 2
+        grid_center = SkyCoord(ra=grid_ra*astro_unit.degree, dec=grid_dec*astro_unit.degree, frame='icrs')
 
-        sep_angle = center.position_angle(grid_pos).radian
+        sep_angle = grid_center.separation(galaxy_pos).degree
 
-        idx_1 = ra >= ra_bin[ix]
-        idx_2 = ra < ra_bin[ix + 1]
-        idx_3 = dec >= dec_bin[iy]
-        idx_4 = dec < dec_bin[iy + 1]
+        idx_sub = sep_angle <= radius
 
-        idx_sub = idx_1 & idx_2 & idx_3 & idx_4
+        weight = numpy.exp(-sep_angle[idx_sub]**2/2/smooth_len**2)
 
-        mg_t_ = mg_t[idx_sub]
-        mg_x_ = mg_x[idx_sub]
-        mn_ = mn[idx_sub]
-        mu_ = mu[idx_sub]
+        mg_t_ = mg_t[idx_sub]*weight
+        mg_x_ = mg_x[idx_sub]*weight
+        mn_ = mn[idx_sub]*weight
+        mu_ = mu[idx_sub]*weight
         mnu1 = mn_ + mu_
         mnu2 = mn_ - mu_
 
         result[iy + 4 * ny, ix] = idx_sub.sum()
-        result[iy + 5 * ny, ix] = sep_angle
 
         if idx_sub.sum() > 0:
             try:
@@ -198,7 +193,7 @@ for igal in range(min(max_num,fore_num)):
                  ["para", "foreground Dec", str(fore_dec[igal])], ["para", "delta RA", str(delta_ra*60)],
                  ["para", "delta Dec", str(delta_dec*60)],
                  ["para", "ny", str(ny)], ["para", "nx", str(nx)], ["para", "delta Z", str(delta_z)],
-                 ["para", "total galaxy", str(idx.sum())]]
+                 ["para", "total galaxy", str(idx_z.sum())]]
         cmd = ["add" for i in range(len(paras))]
         tool_box.config(log_path, cmd, paras, write=True)
     it2 = time.time()
