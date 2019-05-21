@@ -7,7 +7,7 @@ import tool_box
 
 
 
-data_path = "E:/mass_map/7/"
+data_path = "E:/mass_map/CFHT_cluster/w_1/source_0/"
 
 gets_item = [["para", "nx", "0"], ["para", "ny", "0"]]
 para_items = tool_box.config(data_path+"result.dat", ["get", "get"], gets_item)
@@ -23,10 +23,10 @@ foregal = np_data["arr_3"]
 
 inverse = range(ny-1,-1,-1)
 
-gamma_t = result[:ny] - result[5*ny:6*ny]
-gamma_t_sig = result[ny:2*ny] - result[6*ny:7*ny]
-gamma_x = result[2*ny:3*ny] - result[7*ny:8*ny]
-gamma_x_sig = result[3*ny:4*ny] - result[8*ny:9*ny]
+gamma_t = result[:ny]
+gamma_t_sig = result[ny:2*ny]
+gamma_x = result[2*ny:3*ny]
+gamma_x_sig = result[3*ny:4*ny]
 num = result[4*ny:5*ny]
 position_angle = result[5*ny:6*ny]
 

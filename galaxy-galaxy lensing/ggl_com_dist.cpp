@@ -41,7 +41,15 @@ int main(int argc, char *argv[])
 				find_near(redshift_refer, redshift[i], refer_num, k);
 				dist[i] = dist_refer[k];
 
-				if (0 == i % (int)(data_num/10))
+				if (data_num > 100)
+				{
+					if (0 == i % (int)(data_num / 10))
+					{
+						sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %d", redshift[i], redshift_refer[k], dist_refer[k], k);
+						std::cout << inform << std::endl;
+					}
+				}
+				else
 				{
 					sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %d", redshift[i], redshift_refer[k], dist_refer[k], k);
 					std::cout << inform << std::endl;

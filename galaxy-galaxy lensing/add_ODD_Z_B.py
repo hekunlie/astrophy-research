@@ -104,7 +104,7 @@ for nms in sub_src_list:
     sub_data = data[idx]
     for i in range(src_sp[0]):
 
-        ra_src, dec_src, z_b_src = src_data[i,0],src_data[i,1], src_data[i,10]
+        ra_src, dec_src, z_b_src = src_data[i,0], src_data[i,1], src_data[i,10]
 
         d_ra, d_dec, d_z_b = numpy.abs(ra_src - sub_data[:,0]), numpy.abs(dec_src - sub_data[:,1]),numpy.abs(z_b_src - sub_data[:,4])
 
@@ -117,13 +117,13 @@ for nms in sub_src_list:
             npw_ra = numpy.where(d_ra == d_ra_min)[0][0]
             npw_dec = numpy.where(d_dec == d_dec_min)[0][0]
 
-            dst_data[i, src_sp[1]] = data[npw_ra, 5]
-            dst_data[i, src_sp[1] + 1] = data[npw_ra, 6]
-            dst_data[i, src_sp[1] + 2] = data[npw_ra, 7]
+            dst_data[i, src_sp[1]] = sub_data[npw_ra, 5]
+            dst_data[i, src_sp[1] + 1] = sub_data[npw_ra, 6]
+            dst_data[i, src_sp[1] + 2] = sub_data[npw_ra, 7]
             # delta ra & delta dec for checking
-            dst_data[i, src_sp[1] + 3] = data[npw_ra, 0] - ra_src
-            dst_data[i, src_sp[1] + 4] = data[npw_ra, 1] - dec_src
-            dst_data[i, src_sp[1] + 5] = data[npw_ra, 4] - z_b_src
+            dst_data[i, src_sp[1] + 3] = sub_data[npw_ra, 0] - ra_src
+            dst_data[i, src_sp[1] + 4] = sub_data[npw_ra, 1] - dec_src
+            dst_data[i, src_sp[1] + 5] = sub_data[npw_ra, 4] - z_b_src
             mask[i] = +1
 
     st2 = time.time()
