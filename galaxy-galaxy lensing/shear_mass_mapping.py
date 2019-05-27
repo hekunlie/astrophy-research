@@ -13,6 +13,8 @@ from mpi4py import MPI
 from astropy.coordinates import SkyCoord
 from astropy import units as astro_unit
 
+
+# the RA & DEC are calculated in arcminute
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
@@ -20,11 +22,13 @@ cpus = comm.Get_size()
 t1 = time.time()
 
 foreground_name = "CFHT_cluster"
+deg2arcmin = 60
+arcmin2rad = 1./60/180*numpy.pi
 
 area_id = int(argv[1])
 # ra ~ foreground_ra +/- delta_ra
 # input arcminute  -> degree
-delta_ra = float(argv[2])/60
+delta_ra = float(argv[2])
 delta_dec = delta_ra
 # grid nx, ny (even number)
 nx = int(argv[3])
@@ -34,10 +38,12 @@ ny = nx
 grid_num = nx*ny
 
 delta_z = 0.1
-# degree, separation angle for shear estimation
-radius = 10./60
-# degree, smooth scale in the weight
-smooth_len = 30./3600
+# arcmin, separation angle for shear estimation
+radius = 5
+radius_sq = radius**2
+# arcmin, smooth scale in the weight
+smooth_len = 1.5
+
 
 total_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/mass_map/"
 result_path = total_path + foreground_name + "/w_%d/"%area_id
@@ -46,6 +52,8 @@ if rank == 0:
         os.mkdir(total_path+foreground_name)
     if not os.path.exists(result_path):
         os.mkdir(result_path)
+    if not os.path.exists(result_path + "pic/"):
+        os.mkdir(result_path + "pic/")
 comm.Barrier()
 
 data_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/"
@@ -53,7 +61,7 @@ data_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/"
 fq = Fourier_Quad(10, 123)
 
 # gamma_t, sig, gamma_x, sig, position angle, galaxy number
-block_num = 6
+block_num = 7
 itemsize = MPI.DOUBLE.Get_size()
 element_num = nx*ny*block_num
 if rank == 0:
@@ -74,13 +82,14 @@ comm.Barrier()
 
 #  read foreground clusters
 h5f = h5py.File(data_path + "foreground/%s/w_%d_sub.hdf5"%(foreground_name, area_id), "r")
-fore_ra = h5f["/RA"].value
-fore_dec = h5f["/DEC"].value
-fore_z = h5f["/Z"].value
-fore_dist = h5f["/DISTANCE"].value
+# fore_dist = h5f["/DISTANCE"].value
 fore_cos_dec = h5f["/COS_DEC"].value
 fore_n200 = h5f["/N200"].value
+fore_ra = h5f["/RA"].value*deg2arcmin
+fore_dec = h5f["/DEC"].value*deg2arcmin
+fore_z = h5f["/Z"].value
 h5f.close()
+
 
 fore_num = fore_ra.shape[0]
 
@@ -112,7 +121,7 @@ for igal in range(min(max_num,fore_num)):
     h5f.close()
 
     result_path_ig = result_path + "source_%d/"%igal
-    pic_path_ig = result_path_ig + "pic/"
+    pic_path_ig = result_path + "pic/source_%d/"%igal
     if rank == 0:
         if not os.path.exists(result_path_ig):
             os.mkdir(result_path_ig)
@@ -122,14 +131,15 @@ for igal in range(min(max_num,fore_num)):
 
         for i in range(block_num * ny):
             for j in range(nx):
-                result[i, j] = -99
+                result[i, j] = -2
     comm.Barrier()
 
-    center = SkyCoord(ra=fore_ra[igal]*astro_unit.degree,dec=fore_dec[igal]*astro_unit.degree, frame='icrs')
+    # center = SkyCoord(ra=fore_ra[igal]*astro_unit.degree,dec=fore_dec[igal]*astro_unit.degree, frame='fk5')
 
     # set up bins for RA and DEC
     ra_bin = numpy.linspace(fore_ra[igal]-delta_ra, fore_ra[igal]+delta_ra, nx+1)
     dec_bin = numpy.linspace(fore_dec[igal]-delta_dec, fore_dec[igal]+delta_dec, ny+1)
+    ra_bin_at_dec = ra_bin*numpy.cos(dec_bin*arcmin2rad)
 
     idx_z = data[:, names.index("Z")] >= fore_z[igal] + delta_z
 
@@ -138,23 +148,57 @@ for igal in range(min(max_num,fore_num)):
     mg_x = data[:, names.index("G2")][idx_z]
     mu = data[:, names.index("U")][idx_z]
     mn = data[:, names.index("N")][idx_z]
-    ra = data[:, names.index("RA")][idx_z]
-    dec = data[:, names.index("DEC")][idx_z]
+    ra = data[:, names.index("RA")][idx_z]*deg2arcmin
+    dec = data[:, names.index("DEC")][idx_z]*deg2arcmin
+    cos_dec = data[:,names.index("COS_DEC")][idx_z]
+    ra_at_dec = ra*cos_dec
 
-    galaxy_pos = SkyCoord(ra=ra*astro_unit.degree, dec=dec*astro_unit.degree, frame='icrs')
+    galaxy_pos = SkyCoord(ra=ra * astro_unit.arcmin, dec=dec * astro_unit.arcmin, frame='fk5')
 
+    ra_min, ra_max = ra_bin.min(), ra_bin.max()
+    dec_min, dec_max = dec_bin.min(), dec_bin.max()
+
+    idx_ra_s1 = ra >= ra_min - radius
+    idx_ra_s2 = ra <= ra_max + radius
+    idx_dec_s1 = dec >= dec_min - radius
+    idx_dec_s2 = dec <= dec_max + radius
+    idx_s = idx_ra_s1 & idx_ra_s2 & idx_dec_s1 & idx_dec_s2
+
+    if rank == 0:
+        img = plot_tool.Image_Plot(fig_x=12, fig_y=12)
+        img.create_subfig(1, 1)
+
+        img.axs[0][0].scatter(fore_ra[igal], fore_dec[igal], s=200, facecolors="none", edgecolors="r", marker="*")
+        for i in range(ny + 1):
+            img.axs[0][0].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",
+                               alpha=0.5, linewidth=0.3)
+        for j in range(nx + 1):
+            img.axs[0][0].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black", linestyle="--",
+                               alpha=0.5, linewidth=0.3)
+
+        img.axs[0][0].scatter(ra[idx_s], dec[idx_s],s=5)
+        img.tick_label(0,0,0,"DEC (arcmin)")
+        img.tick_label(0,0,1,"RA (arcmin)")
+        img.axs[0][0].set_title("%d galaxies"%idx_s.sum())
+        img.save_img(result_path_ig+"s%d_density.png"%igal)
+        img.close_img()
+    #
+    total_num = 0
     for grid in my_grid:
         iy, ix = grid
 
         grid_ra = (ra_bin[ix] + ra_bin[ix + 1]) / 2
         grid_dec = (dec_bin[iy] + dec_bin[iy + 1]) / 2
-        grid_center = SkyCoord(ra=grid_ra*astro_unit.degree, dec=grid_dec*astro_unit.degree, frame='icrs')
-
-        sep_angle = grid_center.separation(galaxy_pos).degree
-
+        grid_center = SkyCoord(ra=grid_ra*astro_unit.arcmin, dec=grid_dec*astro_unit.arcmin, frame='fk5')
+        sep_angle = grid_center.separation(galaxy_pos).arcmin
         idx_sub = sep_angle <= radius
-
-        weight = numpy.exp(-sep_angle[idx_sub]**2/2/smooth_len**2)
+        weight = numpy.exp(-sep_angle[idx_sub]**2/2/smooth_len ** 2) * 40
+        #
+        # grid_ra = (ra_bin_at_dec[ix] + ra_bin_at_dec[ix + 1]) / 2
+        # grid_dec = (dec_bin[iy] + dec_bin[iy + 1]) / 2
+        # sep_angle = (ra_at_dec - grid_ra)**2 + (dec - grid_dec)**2
+        # idx_sub = sep_angle <= radius_sq
+        # weight = numpy.exp(-sep_angle[idx_sub]/2/smooth_len**2)*40
 
         mg_t_ = mg_t[idx_sub]*weight
         mg_x_ = mg_x[idx_sub]*weight
@@ -162,38 +206,57 @@ for igal in range(min(max_num,fore_num)):
         mu_ = mu[idx_sub]*weight
         mnu1 = mn_ + mu_
         mnu2 = mn_ - mu_
+        # if idx_sub.sum() > 0:
+        #     pass
+        # else:
+        #     print("%d, %d, [%d, %d], %f"%(rank, igal, iy, ix,radius))
 
         result[iy + 4 * ny, ix] = idx_sub.sum()
 
+        tan_g, tan_g_sig = -2, -2
+        cross_g, cross_g_sig = -2, -2
+
         if idx_sub.sum() > 0:
+
+            total_num += idx_sub.sum()
             try:
                 pic_nm = pic_path_ig + "%d_%d_t.png" % (iy, ix)
-                tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_, nu=mnu1, bin_num=10, scale=100, pic_path=pic_nm, left=-0.1, right=0.1,
-                                                 fit_num=20)
+                tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_, nu=mnu1, bin_num=8, scale=100, pic_path=pic_nm, left=-0.1,
+                                                 right=0.1, fit_num=20)
                 result[iy, ix] = tan_g
                 result[iy + ny, ix] = tan_g_sig
+                result[iy + 5 * ny, ix] = 1 # successful fitting
             except:
-                pass
+                print("%d, %d, [%d, %d], Bad fitting g1" % (rank, igal, iy, ix))
             try:
                 pic_nm = pic_path_ig + "%d_%d_x.png" % (iy, ix)
-                cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=10, scale=100, pic_path=pic_nm, left=-0.1,
+                cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=8, scale=100, pic_path=pic_nm, left=-0.1,
                                                      right=0.1, fit_num=20)
                 result[iy + 2 * ny, ix] = cross_g
                 result[iy + 3 * ny, ix] = cross_g_sig
+                result[iy + 6 * ny, ix] = 1 # successful fitting
             except:
-                pass
+                print("%d, %d, [%d, %d], Bad fitting g2" % (rank, igal, iy, ix))
+        else:
+            print("%d, EMPTY %d, [%d, %d], %f"%(rank, igal, iy, ix,radius))
 
+    comm.Barrier()
     if rank == 0:
         numpy.savez(result_path_ig + "result.npz", result, ra_bin, dec_bin,[fore_ra[igal], fore_dec[igal], fore_z[igal]])
 
         log_path = result_path_ig + "result.dat"
+        if os.path.exists(log_path):
+            os.remove(log_path)
 
         paras = [["para", "area", str(area_id)], ["para", "foreground Z", str(fore_z[igal])],
-                 ["para", "foreground RA", str(fore_ra[igal])],
-                 ["para", "foreground Dec", str(fore_dec[igal])], ["para", "delta RA", str(delta_ra*60)],
-                 ["para", "delta Dec", str(delta_dec*60)],
+                 ["para", "foreground RA (arcmin)", str(fore_ra[igal])], ["para", "foreground Dec (arcmin)", str(fore_dec[igal])],
+                 ["para", "RA width (arcmin)", str(2*delta_ra)],
+                 ["para", "Dec width (arcmin)", str(2*delta_dec)],
+                 ["para", "delta RA (arcmin)", str(ra_bin[1]-ra_bin[0])],
+                 ["para", "delta Dec (arcmin)", str(dec_bin[1] - dec_bin[0])],
+                 ["para", "max radius (arcsec)", str(radius*60)], ["para", "smooth radius (arcsec)", str(smooth_len*60)],
                  ["para", "ny", str(ny)], ["para", "nx", str(nx)], ["para", "delta Z", str(delta_z)],
-                 ["para", "total galaxy", str(idx_z.sum())]]
+                 ["para", "total galaxy", str(total_num)]]
         cmd = ["add" for i in range(len(paras))]
         tool_box.config(log_path, cmd, paras, write=True)
     it2 = time.time()
@@ -202,7 +265,7 @@ for igal in range(min(max_num,fore_num)):
 comm.Barrier()
 
 t3 = time.time()
-print(rank, " %.2f,%.2f"%(t2-t1, t3-t2))
+# print(rank, " %.2f,%.2f"%(t2-t1, t3-t2))
 
 
 

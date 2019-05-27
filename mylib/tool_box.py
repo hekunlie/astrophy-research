@@ -407,7 +407,8 @@ def fit_1d(x, y, order, method):
         res = scipy.linalg.lstsq(x,y)[0]
         return res
     else:
-        raise ValueError("method must be one of \"lsq, scipy\"")
+        print("method must be one of \"lsq, scipy\"")
+        raise ValueError
 
 
 def fit_2d(x, y, fun_val, order):

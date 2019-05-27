@@ -152,11 +152,10 @@ class Fourier_Quad:
     def rotation(self, e1, e2, theta):
         """
         return the new (e1,e2) after rotation
-
+        e = (e1 + i e2)*exp(2i\theta)
         :param e1: ellipticity
         :param e2: ellipticity
-        :param theta: position angle, is a clockwise measure relative to positive direction of DEC
-                    on the right-handed coordinates,
+        :param theta: position angle
         :return:
         """
         e1_r = e1 * numpy.cos(2 * theta) - e2 * numpy.sin(2 * theta)
@@ -774,16 +773,23 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
+            fig = plt.figure(figsize=(3, 2.4))
             plt.scatter(fit_range, chi_sq)
             plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-            s = str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
+            s = str(len(g)) + " "+ str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
             plt.title(s)
             plt.savefig(pic_path)
             plt.close()
+
         g_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_h = -coeff[1] / 2. / coeff[2]
-
         return g_h, g_sig
+        # try:
+        #     g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        #     g_h = -coeff[1] / 2. / coeff[2]
+        #     return g_h, g_sig
+        # except:
+        #     raise ValueError
 
 
     def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2, fit_num=60):
@@ -826,15 +832,24 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         if pic_path:
+            fig = plt.figure(figsize=(3,2.4))
             plt.scatter(fit_range, chi_sq)
             plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-            s = str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
+            s = str(len(g)) + " "+str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
             plt.title(s)
             plt.savefig(pic_path)
             plt.close()
+
         g_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_h = -coeff[1] / 2. / coeff[2]
-
         return g_h, g_sig
+        # try:
+        #     g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        #     g_h = -coeff[1] / 2. / coeff[2]
+        #     return g_h, g_sig
+        # except:
+        #     raise ValueError
+
+
 
 

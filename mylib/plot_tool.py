@@ -90,3 +90,6 @@ class Image_Plot:
         if colorbar:
             norm = matplotlib.colors.Normalize(vmin=arr.min(), vmax=arr.max())
             plt.colorbar(ax_, cmap=self.get_colormap(), norm=norm)
+
+    def close_img(self):
+        plt.close()
