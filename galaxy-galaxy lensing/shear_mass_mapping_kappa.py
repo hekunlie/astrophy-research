@@ -317,7 +317,7 @@ for igal in range(min(max_num,fore_num)):
                  ["para", "delta RA (arcmin)", str(ra_bin[1]-ra_bin[0])],
                  ["para", "delta Dec (arcmin)", str(dec_bin[1] - dec_bin[0])],
                  ["para", "max radius (arcsec)", str(radius*60)], ["para", "smooth radius (arcsec)", str(smooth_len*60)],
-                 ["para", "ny", str(ny)], ["para", "nx", str(nx)], ["para", "delta Z", str(delta_z)],["para","block num",str(block_num)]]
+                 ["para", "ny", str(ny)], ["para", "nx", str(nx)], ["para", "delta Z", str(delta_z)]]
         cmd = ["add" for i in range(len(paras))]
         tool_box.config(log_path, cmd, paras, write=True)
     it2 = time.time()

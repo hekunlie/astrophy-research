@@ -653,7 +653,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2,fit_num=60):  # checked 2017-7-9!!!
+    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -686,7 +686,7 @@ class Fourier_Quad:
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
             records[iters, ] = fm1, left, fL, right, fR
-            if max(values) < 30:
+            if max(values) < chi_gap:
                 temp_left = left
                 temp_right = right
             if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
@@ -751,13 +751,13 @@ class Fourier_Quad:
                 break
                 # print(left,right,abs(left-right))
         # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - 20))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - 20))[0]
+        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - chi_gap))
+        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - chi_gap))[0]
         if len(label_l > 1):
             label_l = label_l[0]
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - 20))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - 20))[0]
+        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - chi_gap))
+        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - chi_gap))[0]
         if len(label_r > 1):
             label_r = label_r[0]
 
@@ -772,27 +772,21 @@ class Fourier_Quad:
         chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
-        if pic_path:
-            fig = plt.figure(figsize=(3, 2.4))
-            plt.scatter(fit_range, chi_sq)
-            plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-            s = str(len(g)) + " "+ str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
-            plt.title(s)
-            plt.savefig(pic_path)
-            plt.close()
 
-        g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
+        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
         g_h = -coeff[1] / 2. / coeff[2]
-        return g_h, g_sig
-        # try:
-        #     g_sig = numpy.sqrt(1 / 2. / coeff[2])
-        #     g_h = -coeff[1] / 2. / coeff[2]
-        #     return g_h, g_sig
-        # except:
-        #     raise ValueError
+        g_sig = 0.70710678118/numpy.sqrt(coeff[2])
+
+        if fig_ax:
+            fig_ax.scatter(fit_range, chi_sq)
+            fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+
+        return g_h, g_sig, coeff
 
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, pic_path=False, left=-0.2, right=0.2, fit_num=60):
+
+    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -812,12 +806,13 @@ class Fourier_Quad:
         while change == 1:
             change = 0
             mc = (left + right) / 2.
-            mcl = (mc + left) / 2.
-            mcr = (mc + right) / 2.
+            mcl = left
+            mcr = right
             fmc = self.G_bin(g, nu, mc, bins, ig_num)
             fmcl = self.G_bin(g, nu, mcl, bins, ig_num)
             fmcr = self.G_bin(g, nu, mcr, bins, ig_num)
-            temp = fmc + 20
+            temp = fmc + chi_gap
+
             if fmcl > temp:
                 left = (mc + mcl)/2.
                 change = 1
@@ -827,28 +822,29 @@ class Fourier_Quad:
             iters += 1
             if iters > 12:
                 break
+
         fit_range = numpy.linspace(left, right, fit_num)
         chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
-        if pic_path:
-            fig = plt.figure(figsize=(3,2.4))
-            plt.scatter(fit_range, chi_sq)
-            plt.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
-            s = str(len(g)) + " "+str(round(coeff[0], 3)) + " " + str(round(coeff[1], 3)) + " " + str(round(coeff[2], 3))
-            plt.title(s)
-            plt.savefig(pic_path)
-            plt.close()
 
-        g_sig = numpy.sqrt(1 / 2. / coeff[2])
+        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
+        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
         g_h = -coeff[1] / 2. / coeff[2]
-        return g_h, g_sig
-        # try:
-        #     g_sig = numpy.sqrt(1 / 2. / coeff[2])
-        #     g_h = -coeff[1] / 2. / coeff[2]
-        #     return g_h, g_sig
-        # except:
-        #     raise ValueError
+        g_sig = 0.70710678118/numpy.sqrt(coeff[2])
+
+        if fig_ax:
+            fig_ax.scatter(fit_range, chi_sq, alpha=0.7,s=5)
+            fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2,alpha=0.7)
+            fig_ax.text(0.1, 0.9, '%d'%len(g), color='C3', ha='left',  va='center', transform=fig_ax.transAxes, fontsize=10)
+            fig_ax.text(0.1, 0.8, '%.5f'%coeff[0], color='C3', ha='left', va='center', transform=fig_ax.transAxes,fontsize=10)
+            fig_ax.text(0.1, 0.7, '%.5fx' % coeff[1], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                    fontsize=10)
+            fig_ax.text(0.1, 0.6, '%.5f$x^2$' % coeff[2], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                    fontsize=10)
+
+        return g_h, g_sig, coeff
+
 
 
 
