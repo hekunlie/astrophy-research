@@ -11,6 +11,8 @@ import scipy
 import configparser
 import logging
 import time
+from numpy import fft
+
 
 ################################################################
 # the detection methods
@@ -530,6 +532,44 @@ def data_fit(x_data, y_data, y_err):
     sig_c1 = numpy.sqrt(L1[0, 0])
     mc = numpy.dot(L1, R1)
     return mc[1], sig_m1, mc[0], sig_c1
+
+def image_fft(image):
+    return fft.fftshift(fft.fft2(image))
+
+def image_ifft(image):
+    return fft.ifft2(fft.ifftshift(image))
+
+def shear2kappa(gamma1, gamma2, cen_x=0, cen_y=0):
+    size = gamma1.shape[0]
+    cen = int(size / 2)
+    my, mx = numpy.mgrid[0:size, 0:size]
+    ky, kx = my - cen, mx - cen
+
+    # D_f = (kx ** 2 - ky ** 2 + 2j * ky * kx) / (ky ** 2 + kx ** 2)*numpy.pi
+    D_f_con = (kx**2 - ky**2 - 2j*ky*kx)/(ky**2 + kx**2)*numpy.pi
+
+    D_f_con[cen,cen] = cen_x-cen_y*1j
+
+    gamma_ = gamma1 + 1j*gamma2
+    gamma_f = image_fft(gamma_)
+
+    kappa_f_recon = gamma_f * D_f_con / numpy.pi
+    kappa_recon = image_ifft(kappa_f_recon)
+    return kappa_recon
+
+def kappa2shear(kappa, cen_x=0, cen_y=0):
+    size = kappa.shape[0]
+    cen = int(size / 2)
+    my, mx = numpy.mgrid[0:size, 0:size]
+    ky, kx = my - cen, mx - cen
+
+    kappa_f = image_fft(kappa)
+    D_f = (kx ** 2 - ky ** 2 + 2j * ky * kx) / (ky ** 2 + kx ** 2)*numpy.pi
+    D_f[cen, cen] = cen_x-cen_y*1j
+
+    gamma_f = D_f * kappa_f / numpy.pi
+    gamma = image_ifft(gamma_f)
+    return gamma
 
 
 ################################################################

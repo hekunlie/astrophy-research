@@ -39,7 +39,7 @@ grid_num = nx*ny
 
 delta_z = 0.1
 # arcmin, separation angle for shear estimation
-radius = 7
+radius = 5
 radius_sq = radius**2
 # arcmin, smooth scale in the weight
 smooth_len = 2
@@ -110,7 +110,7 @@ t2 = time.time()
 for igal in range(min(max_num,fore_num)):
 
     it1 = time.time()
-
+    # created by CFHT_cluster_cata.ipynb +/- 0.75 degree around each foreground point
     h5f = h5py.File(data_path + "foreground/%s/w_%d_sub.hdf5" % (foreground_name, area_id), "r")
 
     redshift_all = h5f["/%d/Z" %igal].value
@@ -128,9 +128,9 @@ for igal in range(min(max_num,fore_num)):
 
     # set up redshift bin
     redshift_bin = [fore_z[igal] + delta_z]
-    while redshift_bin[-1] <= 1:
+    while redshift_bin[-1] <= 0:
         redshift_bin.append(redshift_bin[-1]+0.3)
-    redshift_bin.append(10)
+    redshift_bin.append(20)
 
     result_path_ig = result_path + "source_%d/"%igal
     pic_path_ = result_path + "pic/source_%d/"%igal

@@ -2,8 +2,10 @@
 #include<mpi.h>
 #include<vector>
 
+#define max_data_col 40
 #define foregal_data_col 5
-#define backgal_data_col 17
+#define grid_data_col 5
+#define backgal_data_col 23
 #define mg_bin_num 12
 
 int main(int argc, char *argv[])
@@ -26,24 +28,27 @@ int main(int argc, char *argv[])
 
 
 	int i, j, k;
-	char data_path[250], log_path[250], h5f_path[250], h5f_res_path[250], temp_path[300];
+	char data_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
+	char foreground_name[50];
 
 	// the controllers
 	int area_id = atoi(argv[1]);
 	int radius_label = atoi(argv[2]);
 	double gh_start = atof(argv[3]);
 	double gh_end = atof(argv[4]);
+	strcpy(foreground_name, argv[5]);
 
 	   
 	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
 	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	//sprintf(h5f_path_fore, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/foreground/%s", foreground_name);
+
 	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
 	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	sprintf(h5f_path_fore, "/mnt/perc/hklee/CFHT/gg_lensing/data/foreground/%s", foreground_name);
 
 	sprintf(h5f_res_path, "%s/w_%d/radius_%d.hdf5", data_path, area_id, radius_label);
-
-
 	
 	double g_step;
 	double gh_left = -130 + 10 * rank;
@@ -66,7 +71,7 @@ int main(int argc, char *argv[])
 
 	int foregal_num;
 	int my_gal_s, my_gal_e, gal_id;
-	double *foregal_data[foregal_data_col];
+	double *foregal_data[max_data_col];
 	long pair_count;// be carefull, the pair number may be too many, long or double 
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
@@ -75,7 +80,7 @@ int main(int argc, char *argv[])
 
 
 	int backgal_num;
-	double *backgal_data[backgal_data_col]; //backgal_data_col = 17
+	double *backgal_data[max_data_col]; //backgal_data_col = 17
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi;
 	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double z_b, z_thresh, ra_b, dec_b;
@@ -108,18 +113,25 @@ int main(int argc, char *argv[])
 	double radius_s, radius_e, radius_e_sq;
 	double *radius_bin;
 
-	int z_id = 0, dist_id = 1, ra_id = 2, dec_id = 3, cos_dec_id = 4;
-	int mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
-	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
-	int ra_bin_id = 15, dec_bin_id = 16;
+	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
+	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
+	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
+	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17, mag_lb = 18;
+	int ra_bin_id = 19, dec_bin_id = 20, block_scale_id = 21, grid_shape_id = 22;
 
 	int shape[2];
 
-	char *names[backgal_data_col];//backgal_data_col
+	char *names[max_data_col];//backgal_data_col
 	for (i = 0; i < backgal_data_col; i++)
 	{
-		names[i] = new char[25];
+		names[i] = new char[40];
 	}
+	sprintf(names[nib_id], "num_in_block");
+	sprintf(names[bs_id], "block_start");
+	sprintf(names[be_id], "block_end");
+	sprintf(names[bdy_id], "block_boundy");
+	sprintf(names[bdx_id], "block_boundx");
+
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
 	sprintf(names[ra_id], "RA");
@@ -132,14 +144,15 @@ int main(int argc, char *argv[])
 	sprintf(names[mu_id], "U");
 	sprintf(names[mv_id], "V");
 
-	sprintf(names[nib_id], "num_in_block");
-	sprintf(names[bs_id], "block_start");
-	sprintf(names[be_id], "block_end");
-	sprintf(names[bdy_id], "block_boundy");
-	sprintf(names[bdx_id], "block_boundx");
-
+	sprintf(names[zmin_lb], "Z_MIN");
+	sprintf(names[zmax_lb], "Z_MAX");
+	sprintf(names[odds_lb], "ODDS");
+	sprintf(names[mag_lb], "MAG");
+	
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
+	sprintf(names[block_scale_id], "block_scale");
+	sprintf(names[grid_shape_id], "grid_shape");
 
 	sprintf(log_infom, "RANK: %d. Start area: w_%d, radius: %d", rank, area_id, radius_label);
 	write_log(log_path, log_infom);
@@ -149,15 +162,12 @@ int main(int argc, char *argv[])
 	}
 
 	// read the search radius
-	sprintf(h5f_path, "%scata_result_ext_grid.hdf5", data_path);
+	sprintf(h5f_path_grid, "%scata_result_ext_grid.hdf5", data_path);
 	sprintf(set_name, "/radius_bin");
-	sprintf(attrs_name, "shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
-	radius_num = shape[0];
+	read_h5_datasize(h5f_path_grid, set_name, radius_num);
 	radius_bin = new double[radius_num] {};
-	read_h5(h5f_path, set_name, radius_bin);
+	read_h5(h5f_path_grid, set_name, radius_bin);
 	radius_num = radius_num - 1;
-
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,24 +216,22 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	// read foreground information
 	// Z, DISTANCE, RA, DEC, COS_DEC
-	sprintf(attrs_name, "shape");
 	for (i = 0; i < foregal_data_col; i++)
 	{
-		sprintf(set_name, "/foreground/w_%d/%s", area_id, names[i]);
-		read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
-		foregal_num = shape[0];
+		sprintf(set_name, "/w_%d/%s", area_id, names[i + grid_data_col]);
+		read_h5_datasize(h5f_path_grid, set_name, foregal_num);
 
 		foregal_data[i] = new double[foregal_num];
-		read_h5(h5f_path, set_name, foregal_data[i]);
+		read_h5(h5f_path_grid, set_name, foregal_data[i]);
 	}
-	sprintf(set_name, "/foreground/w_%d/mg_bin", area_id);
-	read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
+	sprintf(set_name, "/w_%d/mg_bin", area_id);
+	read_h5_attrs(h5f_path_grid, set_name, attrs_name, shape, "d");
 	if (shape[0] != mg_bin_num + 1)
 	{	//check
 		std::cout << "The shapes of the G-bin in date and code dosen't match each other. (" << shape[0] << ", " << mg_bin_num + 1 << ").";
 		exit(0);
 	}
-	read_h5(h5f_path, set_name, mg_bin);
+	read_h5(h5f_path_grid, set_name, mg_bin);
 	sprintf(log_infom, "RANK: %d. w_%d. Read foreground data. %d galaxies", rank, area_id, foregal_num);
 	write_log(log_path, log_infom);
 	if (0 == rank)
@@ -239,12 +247,12 @@ int main(int argc, char *argv[])
 	// read background information
 	sprintf(set_name, "/background/w_%d", area_id);
 	sprintf(attrs_name, "grid_shape");
-	read_h5_attrs(h5f_path, set_name, attrs_name, shape, "g");
+	read_h5_attrs(h5f_path_grid, set_name, attrs_name, shape, "g");
 	grid_ny = shape[0];
 	grid_nx = shape[1];
 	grid_num = grid_ny * grid_nx;
 	sprintf(attrs_name, "block_scale");
-	read_h5_attrs(h5f_path, set_name, attrs_name, block_scale, "g");
+	read_h5_attrs(h5f_path_grid, set_name, attrs_name, block_scale, "g");
 
 	// Z, RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
 	// block_boundx, block_boundy
@@ -252,7 +260,7 @@ int main(int argc, char *argv[])
 	{
 		sprintf(set_name, "/background/w_%d/%s", area_id, names[i]);
 		sprintf(attrs_name, "shape");
-		read_h5_attrs(h5f_path, set_name, attrs_name, shape, "d");
+		read_h5_attrs(h5f_path_grid, set_name, attrs_name, shape, "d");
 
 		if (z_id == i)
 		{
@@ -267,7 +275,7 @@ int main(int argc, char *argv[])
 			dec_bin_num = shape[0] - 1;
 		}
 		backgal_data[i] = new double[shape[0] * shape[1]]{};
-		read_h5(h5f_path, set_name, backgal_data[i]);
+		read_h5(h5f_path_grid, set_name, backgal_data[i]);
 	}
 
 	block_mask = new int[grid_num];

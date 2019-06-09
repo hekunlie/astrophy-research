@@ -1,15 +1,29 @@
+import platform
 import numpy
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
 import matplotlib.pyplot as plt
-from sys import path
+from sys import path,argv
+path.append('%s/work/mylib/'%my_home)
 path.append("E:/Github/astrophy-research/mylib/")
 import plot_tool
 import tool_box
-from scipy import signal
+import h5py
 
 
-data_path = "G:\Backup\works\Mass_Mapping/source_2/".replace("\\","/")
+source_no = argv[1]
+crit_z = float(argv[2])
+file_name = argv[3]
+data_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/mass_map/CFHT_cluster/w_1/filter_%s/source_%s/"%(file_name,source_no)
+h5f = h5py.File("/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/redshift.hdf5","r")
+
+# data_path = "G:\Backup\works\Mass_Mapping/source_2/".replace("\\","/")
+# h5f = h5py.File("G:/Backup/works/Mass_Mapping/redshift.hdf5","r")
+
+
+dist_refer = h5f["distance"].value
+red_refer = h5f["redshift"].value
+h5f.close()
 
 gets_item = [["para", "nx", "0"], ["para", "ny", "0"],
              ["para", "delta RA (arcmin)", "0"],["para", "delta Dec (arcmin)", "0"]]
@@ -21,8 +35,8 @@ np_data = numpy.load(data_path + "result.npz")
 
 block_num = 10
 
-result = np_data["arr_0"]
-sp = result.shape
+data_set = np_data["arr_0"]
+sp = data_set.shape
 
 redshift_bin_num = int(sp[0]/block_num/ny)
 
@@ -31,29 +45,44 @@ dec_bin = np_data["arr_2"]
 redshift_bin = np_data["arr_3"]
 foregal = np_data["arr_4"]
 
-print("Foregal Z: %f"%foregal[2])
-print("%d redshift bins\n"%redshift_bin_num,redshift_bin)
-
 inverse = range(ny-1,-1,-1)
+
+sgima_coeff = 388.283351
+tag = tool_box.find_near(red_refer, foregal[2])
+dist_len = dist_refer[tag]
+tag = tool_box.find_near(red_refer, crit_z)
+dist_source = dist_refer[tag]
+
+crit_density_z = sgima_coeff*dist_source/(dist_source - dist_len)/dist_len*(1+foregal[2])
+print("Foregal Z: %f"%foregal[2])
+print("\Sigma_c(z=%.2f) = %.4f"%(crit_z, crit_density_z))
+print("%d redshift bins\n"%redshift_bin_num,redshift_bin)
+if crit_z <= foregal[2]+0.1:
+    print("Too small Z")
+    exit()
 
 for ir in range(redshift_bin_num):
 
-    sub_data = result[ir*block_num*ny:(ir+1)*block_num*ny]
+    result = data_set[ir*block_num*ny:(ir+1)*block_num*ny]
 
     dens_t = result[:ny]
     dens_t_sig = result[ny:2*ny]
     dens_x = result[2*ny:3*ny]
     dens_x_sig = result[3*ny:4*ny]
     sigma_mean = result[4*ny:5*ny]
-
+    print(dens_t[0].sum())
     gamma_t = result[5*ny:6*ny]
     gamma_t_sig = result[6*ny:7*ny]
     gamma_x = result[7*ny:8*ny]
     gamma_x_sig = result[8*ny:9*ny]
     num = result[9*ny:10*ny]
 
-    gamma_tc = dens_t/sigma_mean
-    gamma_xc = dens_x/sigma_mean
+    kappa_recon = tool_box.shear2kappa(gamma_t,gamma_x).real
+
+    gamma_tc = dens_t/crit_density_z
+    gamma_xc = dens_x/crit_density_z
+
+    kappa_recon_c = tool_box.shear2kappa(gamma_tc, gamma_xc).real
 
     idx_t1 = numpy.abs(gamma_t) < 1.e-9
     idx_t2 = gamma_t < -1
@@ -76,7 +105,7 @@ for ir in range(redshift_bin_num):
     gamma = numpy.sqrt(gamma_t**2 + gamma_x**2)
     gamma_sig = numpy.sqrt((gamma_t/gamma)**2*gamma_t_sig**2 + (gamma_x/gamma)**2*gamma_x_sig**2)
     gamma_c = numpy.sqrt(gamma_tc**2 + gamma_xc**2)
-    gamma_c_sig = numpy.sqrt(dens_t_sig**2/sigma_mean**2 + dens_x_sig**2*dens_x**2/sigma_mean**4)
+    gamma_c_sig = numpy.sqrt(dens_t_sig**2/crit_density_z**2 + dens_x_sig**2*dens_x**2/crit_density_z**4)
 
     # position angle
     cos_theta = numpy.sqrt((1+gamma_t/gamma)/2)
@@ -115,13 +144,14 @@ for ir in range(redshift_bin_num):
             img.figure.colorbar(ax, ax=img.axs[i][j])
 
     img.save_img(data_path + "density_%d.png"%ir)
-    img.show_img()
+    if platform.system() != 'Linux':
+        img.show_img()
     plt.close()
 
     datas = [[gamma_t, gamma_x, gamma], [gamma_t_sig, gamma_x_sig, num],[gamma_tc, gamma_xc, num]]
     titles = [["$g_1$", "$g_2$", "$g$"],
               ["$\delta g_1$", "$\delta g_2$", "$number$"],
-              ["$< g_1\Sigma_c>/<\Sigma_c>$","$< g_2\Sigma_c>/<\Sigma_c>$","nothing"]]
+              ["$< g_1\Sigma_c>/\Sigma_{z=%.2f}$"%crit_z,"$< g_2\Sigma_c>/\Sigma_{z=%.2f}$"%crit_z,"nothing"]]
     img = plot_tool.Image_Plot(fig_x=8, fig_y=8)
     img.create_subfig(3, 3)
     cmap = plt.get_cmap('YlOrRd')
@@ -138,30 +168,48 @@ for ir in range(redshift_bin_num):
             img.figure.colorbar(ax, ax=img.axs[i][j])
 
     img.save_img(data_path + "shear_%d.png"%ir)
-    img.show_img()
+    if platform.system() != 'Linux':
+        img.show_img()
     plt.close()
 
 
     max_g = gamma[numpy.abs(gamma)<0.1].max()
     max_gc = gamma_c[numpy.abs(gamma_c) < 0.1].max()
     print(max_g,max_gc)
-    max_len = (ra_bin[2] - ra_bin[1])*60*0.7
+    dec_sq_len = (dec_bin[2] - dec_bin[1])
+    ra_sq_len = (ra_bin[2] - ra_bin[1])
+    max_len = ra_sq_len*0.9
 
     dg_scale = gamma/max_g*max_len/2
     dg_scale_c = gamma_c / max_gc * max_len / 2
 
-    img = plot_tool.Image_Plot(fig_x=14, fig_y=14)
-    img.create_subfig(2,1)
+    img = plot_tool.Image_Plot(fig_x=10, fig_y=10)
+    img.create_subfig(2,2)
 
-    img.axs[0][0].scatter(foregal[0]*60, foregal[1]*60,s=200,facecolors="none",edgecolors="r",marker="*")
-    img.axs[1][0].scatter(foregal[0] * 60, foregal[1] * 60, s=200, facecolors="none", edgecolors="r", marker="*")
+    fig = img.axs[1][0].imshow(kappa_recon)
+    plt.colorbar(fig, ax=img.axs[1][0])
+
+    fig = img.axs[1][1].imshow(kappa_recon_c)
+    plt.colorbar(fig, ax=img.axs[1][1])
+
+    shear_bench = 0.03
+    scale_len = shear_bench/max_g*max_len
+
+    x1, x2 = ra_min + ra_sq_len*6, ra_min + ra_sq_len*6 + scale_len
+    y1,y2 = dec_max + dec_sq_len*3, dec_max + dec_sq_len*3
+    img.axs[0][0].plot([x1,x2],[y1,y2],c="black")
+    img.axs[0][0].text(0.03, 0.93, "shear=%.3f"%shear_bench, color='black', ha='left',
+            va='center', transform=img.axs[0][0].transAxes, fontsize=img.legend_size-5)
+
+    img.axs[0][0].scatter(foregal[0], foregal[1],s=200,facecolors="none",edgecolors="r",marker="*")
+    img.axs[0][1].scatter(foregal[0], foregal[1], s=200, facecolors="none", edgecolors="r", marker="*")
     for i in range(ny + 1):
-        img.axs[0][0].plot([ra_min*60, ra_max*60], [dec_bin[i]*60, dec_bin[i]*60], c="black", linestyle="--",alpha=0.5,linewidth=0.3)
-        img.axs[1][0].plot([ra_min * 60, ra_max * 60], [dec_bin[i] * 60, dec_bin[i] * 60], c="black", linestyle="--",
+        img.axs[0][0].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",alpha=0.5,linewidth=0.3)
+        img.axs[0][1].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",
                            alpha=0.5, linewidth=0.3)
     for j in range(nx + 1):
-        img.axs[0][0].plot([ra_bin[j]*60, ra_bin[j]*60], [dec_min*60, dec_max*60], c="black",linestyle="--" ,alpha=0.5, linewidth=0.3)
-        img.axs[1][0].plot([ra_bin[j] * 60, ra_bin[j] * 60], [dec_min * 60, dec_max * 60], c="black", linestyle="--",
+        img.axs[0][0].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black",linestyle="--" ,alpha=0.5, linewidth=0.3)
+        img.axs[0][1].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black", linestyle="--",
                            alpha=0.5, linewidth=0.3)
     norm = plt.Normalize(vmin=numpy.min(max_g), vmax=numpy.max(max_g))
     cmap = plt.get_cmap('plasma')
@@ -170,6 +218,7 @@ for ir in range(redshift_bin_num):
     color = 2
     for i in range(ny):
         for j in range(nx):
+
             if not idx[i,j]:
 
                 if gamma_x[i,j] < 0:
@@ -187,23 +236,25 @@ for ir in range(redshift_bin_num):
                     dyc = dg_scale_c[i, j] * sin_theta_c[i, j]
                 cl = cmap(norm(gamma[i,j]))
 
-                x = (ra_bin[j] + ra_bin[j+1])/2*60
-                y = (dec_bin[i] + dec_bin[i+1])/2*60
+                x = (ra_bin[j] + ra_bin[j+1])/2
+                y = (dec_bin[i] + dec_bin[i+1])/2
                 if color == 1:
                     img.axs[0][0].plot([x+dx, x-dx], [y+dy, y-dy],c=cl)
-                    img.axs[1][0].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c=cl)
+                    img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c=cl)
                 else:
-                    img.axs[0][0].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c="C0")
-                    img.axs[1][0].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c="C0")
-
+                    img.axs[0][0].plot([x + dx, x - dx], [y + dy, y - dy], c="C0")
+                    img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c="C0")
+    img.axs[0][0].set_title("From the estimated $g$",fontsize=img.xy_lb_size)
+    img.axs[0][1].set_title("Recoved from the $< g_{1/2}\Sigma_c>/\Sigma_{z=%.2f}$"%crit_z,fontsize=img.xy_lb_size)
     img.tick_label(0, 0, 1, "RA")
-    img.tick_label(1, 0, 0, "DEC")
-    img.tick_label(1, 0, 1, "RA")
-    img.tick_label(1, 0, 0, "DEC")
+    img.tick_label(0, 0, 0, "DEC")
+    img.tick_label(0, 1, 1, "RA")
+    img.tick_label(0, 1, 0, "DEC")
     if color == 1:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []
         plt.colorbar(sm, ax=img.axs[0][0])
 
-    img.save_img(data_path + "shear_map_%d.png"%ir)
-    img.show_img()
+    img.save_img(data_path + "shear_map_%d_z=%.2f.png"%(ir,crit_z))
+    if platform.system() != 'Linux':
+        img.show_img()

@@ -1,10 +1,14 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-// argv[1]: block scale in unit of degree
+#define backgal_data_col 19
+#define grid_data_col 5
+#define max_data_col 30
 
 int main(int argc, char *argv[])
 {
+	// argv[1]: block scale in unit of degree
+
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -14,20 +18,20 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(processor_name, &namelen);
 
 	int i, j, k;
-	int area_num = 4;
+	int area_num = 4, radius_num = 13;
 	int area_id;
 	double st1, st2, st3, st4, st5, st6, st7,st8, sts, ste;
 
+	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
+	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
+	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
+	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17, mag_lb = 18;
 
-	int z_id = 0, dist_id = 1, ra_id = 2, dec_id = 3, cos_dec_id = 4;
-	int mg1_id = 5, mg2_id = 6, mn_id = 7, mu_id = 8, mv_id = 9;
-	int nib_id = 10, bs_id = 11, be_id = 12, bdy_id = 13, bdx_id = 14;
 	// for the initial data
-	int num_ini;
-	int data_col = 10;	 // read Z~V, 10 column
-	double *data_ini[13];
+	int num_ini, data_len;
+	double *data_ini[max_data_col];
 	// for others
-	double *data_temp[13], *data_buffer;
+	double *data_temp[max_data_col], *data_buffer;
 	int *mask, count;
 
 	double ra, ra_min, ra_max;
@@ -48,18 +52,25 @@ int main(int argc, char *argv[])
 	block_scale = atof(argv[1]);
 	margin = 0.1*block_scale;
 
-	char h5f_path_1[150], h5f_path_2[150], log_inform[200];
+	char h5f_path_src[150], h5f_path_dst[150], log_inform[200];
 	char data_path[150], log_path[150];
 
 	char  attrs_name[50];
 	int shape[2];
 	double scale[1];
 	double red_bin[2];
-	char set_name[50],*names[20];
-	for (i = 0; i < 15; i++)
+	char set_name[50],*names[max_data_col];
+	for (i = 0; i < backgal_data_col; i++)
 	{
 		names[i] = new char[40];
 	}
+
+	sprintf(names[nib_id], "num_in_block");
+	sprintf(names[bs_id], "block_start");
+	sprintf(names[be_id], "block_end");
+	sprintf(names[bdy_id], "block_boundy");
+	sprintf(names[bdx_id], "block_boundx");
+
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
 	sprintf(names[ra_id], "RA");
@@ -71,71 +82,57 @@ int main(int argc, char *argv[])
 	sprintf(names[mn_id], "N");
 	sprintf(names[mu_id], "U");
 	sprintf(names[mv_id], "V");
+	
+	sprintf(names[zmin_lb], "Z_MIN");
+	sprintf(names[zmax_lb], "Z_MAX");
+	sprintf(names[odds_lb], "ODDS");
+	sprintf(names[mag_lb], "MAG");
 
-	sprintf(names[nib_id], "num_in_block");
-	sprintf(names[bs_id], "block_start");
-	sprintf(names[be_id], "block_end");
-	sprintf(names[bdy_id], "block_boundy");
-	sprintf(names[bdx_id], "block_boundx");
 
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	sprintf(h5f_path_1, "%scata_result_ext_cut.hdf5", data_path);
-	sprintf(h5f_path_2, "%scata_result_ext_grid.hdf5", data_path);
+	sprintf(h5f_path_src, "%scata_result_ext_cut.hdf5", data_path);
+	sprintf(h5f_path_dst, "%scata_result_ext_grid.hdf5", data_path);
 	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/grid_log_%d.dat", rank);
 
 	if (0 == rank)
 	{
 		sprintf(set_name, "/background");
-		create_h5_group(h5f_path_2, set_name, TRUE);
+		create_h5_group(h5f_path_dst, set_name, TRUE);
 
-		sprintf(attrs_name, "block_scale");
+		sprintf(set_name, "/background/block_scale");
 		scale[0] = block_scale;
+		write_h5(h5f_path_dst, set_name, scale, 1, 1, FALSE);
 
 		for (i = 1; i < area_num + 1; i++)
 		{
 			sprintf(set_name, "/background/w_%d", i);
-			create_h5_group(h5f_path_2, set_name, FALSE);
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, scale, 1, "g");
+			create_h5_group(h5f_path_dst, set_name, FALSE);
 		}
 
-		double radius_bin[14];
+		double *radius_bin = new double[radius_num+1];
 		sprintf(set_name, "/radius_bin");
-		sprintf(attrs_name, "shape");
-		shape[0] = 14;
-		shape[1] = 1;
-		log_bin(0.04, 15, shape[0], radius_bin);
-		write_h5(h5f_path_2, set_name, radius_bin, shape[0], shape[1], FALSE);
-		write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+		// the radius bin (log space)
+		log_bin(0.04, 15, radius_num + 1, radius_bin);
+		write_h5(h5f_path_dst, set_name, radius_bin, radius_num + 1, 1, FALSE);
 	}
-
 
 	for (area_id = 1; area_id < area_num+1; area_id++)
 	{
 		st1 = clock();
 
-		// read the former 10 columns , Z, DISTANCE,... ~ V
-		sprintf(attrs_name, "shape");
+		// read the former 'backgal_data_col' columns , Z, DISTANCE,... ~ V
 		sprintf(set_name, "/w_%d/Z", area_id);
-		read_h5_attrs(h5f_path_1, set_name, attrs_name, shape, "d");
-		num_ini = shape[0];
+		read_h5_datasize(h5f_path_src, set_name, num_ini);
 		mask = new int[num_ini] {};
-		for (i = 0; i < data_col; i++)
+		for (i = grid_data_col; i < backgal_data_col; i++)
 		{
 			data_ini[i] = new double[num_ini];
 			sprintf(set_name, "/w_%d/%s", area_id, names[i]);
-			read_h5(h5f_path_1, set_name, data_ini[i]);
-		}	
-		
+			read_h5(h5f_path_src, set_name, data_ini[i]);
+		}			
 		
 		st2 = clock();
-		sprintf(log_inform, "Rank %d w_%d: %d foreground galaxies in (%.2f sec)", rank, area_id, count, (st2 - st1) / CLOCKS_PER_SEC);
-		write_log(log_path, log_inform);
-		if (0 == rank)
-		{			
-			std::cout << log_inform << std::endl;
-		}
 		MPI_Barrier(MPI_COMM_WORLD);
-
 
 		// build the grid
 		ra_min = *std::min_element(data_ini[ra_id], data_ini[ra_id] + num_ini);
@@ -151,17 +148,16 @@ int main(int argc, char *argv[])
 		grid_num = grid_nx * grid_ny;
 		if (0 == rank)
 		{	
-
 			std::cout << "Rank 0 w_" << area_id << ": ";
 			std::cout << "DEC: " << dec_min << " " << dec_max << " (" << dec_max - dec_min<<") "<< grid_ny << std::endl;
 			std::cout << "Rank 0 w_" << area_id << ": " ;
 			std::cout <<"RA: "<< ra_min << " " << ra_max <<" ("<< ra_max - ra_min<<") "<<grid_nx<< std::endl;
 
-			sprintf(set_name, "/background/w_%d", area_id);
-			sprintf(attrs_name, "grid_shape");
 			shape[0] = grid_ny;
 			shape[1] = grid_nx;
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "g");
+
+			sprintf(set_name, "/background/w_%d/grid_shape", area_id);
+			write_h5(h5f_path_dst, set_name, shape, 2, 1, FALSE);
 		}
 
 		ra_bin = new double[grid_nx + 1]{};
@@ -202,30 +198,21 @@ int main(int argc, char *argv[])
 				block_boundx[i * 4 + 3] = ra_bin[col + 1];
 			}
 
-			shape[0] = grid_num;
-			shape[1] = 4;
-			sprintf(attrs_name, "shape");
-
 			sprintf(set_name, "/background/w_%d/%s", area_id, names[bdx_id]);
-			write_h5(h5f_path_2, set_name, block_boundx, grid_num, 4, FALSE);
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+			write_h5(h5f_path_dst, set_name, block_boundx, grid_num, 4, FALSE);
 
 			sprintf(set_name, "/background/w_%d/%s", area_id, names[bdy_id]);
-			write_h5(h5f_path_2, set_name, block_boundy, grid_num, 4, FALSE);
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+			write_h5(h5f_path_dst, set_name, block_boundy, grid_num, 4, FALSE);
 
 			shape[0] = grid_nx+1;
 			shape[1] = 1;
 			sprintf(set_name, "/background/w_%d/RA_bin", area_id);
-			write_h5(h5f_path_2, set_name, ra_bin, shape[0], shape[1], FALSE);
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+			write_h5(h5f_path_dst, set_name, ra_bin, shape[0], shape[1], FALSE);
 
 			shape[0] = grid_ny + 1;
 			shape[1] = 1;
 			sprintf(set_name, "/background/w_%d/DEC_bin", area_id);
-			write_h5(h5f_path_2, set_name, dec_bin, shape[0], shape[1], FALSE);
-			write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
-
+			write_h5(h5f_path_dst, set_name, dec_bin, shape[0], shape[1], FALSE);
 
 			delete[] block_boundx;
 			delete[] block_boundy;
@@ -316,7 +303,6 @@ int main(int argc, char *argv[])
 			std::cout << log_inform << std::endl;
 		}
 
-
 		num_in_block = new int[grid_num] {};
 		block_start = new int[grid_num] {};
 		block_end = new int[grid_num] {};
@@ -339,7 +325,7 @@ int main(int argc, char *argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		for (k = 0; k < data_col; k++)
+		for (k = grid_data_col; k < backgal_data_col; k++)
 		{
 			st5 = clock();
 			initialize_arr(count_in_block, grid_num, 0);
@@ -367,30 +353,22 @@ int main(int argc, char *argv[])
 			// write to file
 			if (0 == rank)
 			{
-				sprintf(attrs_name, "shape");
-				shape[0] = num_ini;
-				shape[1] = 1;
-
 				sprintf(set_name, "/background/w_%d/%s", area_id, names[k]);
-				write_h5(h5f_path_2, set_name, data_buffer, num_ini, 1, FALSE);
-				write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+				write_h5(h5f_path_dst, set_name, data_buffer, num_ini, 1, FALSE);
+
 				if (k == 0)
 				{
-					sprintf(attrs_name, "shape");
-					shape[0] = grid_num;
-					shape[1] = 1;
 					// block_start
 					sprintf(set_name, "/background/w_%d/%s", area_id, names[bs_id]);
-					write_h5(h5f_path_2, set_name, block_start, grid_num, 1, FALSE);
-					write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+					write_h5(h5f_path_dst, set_name, block_start, grid_num, 1, FALSE);
+
 					// block_end
 					sprintf(set_name, "/background/w_%d/%s", area_id, names[be_id]);
-					write_h5(h5f_path_2, set_name, block_end, grid_num, 1, FALSE);
-					write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+					write_h5(h5f_path_dst, set_name, block_end, grid_num, 1, FALSE);
+
 					// num_in_block
 					sprintf(set_name, "/background/w_%d/%s", area_id, names[nib_id]);
-					write_h5(h5f_path_2, set_name, num_in_block, grid_num, 1, FALSE);
-					write_h5_attrs(h5f_path_2, set_name, attrs_name, shape, 2, "d");
+					write_h5(h5f_path_dst, set_name, num_in_block, grid_num, 1, FALSE);
 				}
 			}
 			st7 = clock();
@@ -407,7 +385,7 @@ int main(int argc, char *argv[])
 		{
 			std::cout << std::endl;
 		}
-		for (i = 0; i < data_col; i++)
+		for (i = grid_data_col; i < backgal_data_col; i++)
 		{
 			delete[] data_ini[i];
 		}

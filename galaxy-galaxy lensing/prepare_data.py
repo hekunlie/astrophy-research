@@ -67,9 +67,14 @@ mg2_lb = int(para_items[7])
 mn_lb = int(para_items[8])
 mu_lb = int(para_items[9])
 mv_lb = int(para_items[10])
-z_lb = -3
-mag_lb = -2
-starflag_lb = -1
+
+# it would change as more parameters added into the file
+odds_lb = -1
+z_max_lb = -2
+z_min_lb = -3
+z_lb = -4
+mag_lb = -5
+starflag_lb = -6
 
 flux_alt_thresh = 4.64
 nstar_thresh = 14
@@ -126,8 +131,10 @@ if cmd == "collect":
         field_count = 0
         cata_data = None
         for field_name in field_pool:
+            # read the catalogs from Fourier_Quad and CFHT
             f_data_path = fourier_cata_path + "%s/%s/%s_shear.dat"%(field_name, result_source, field_name)
-            c_data_path = cfht_cata_path + "%s.dat"%field_name
+            # c_data_path = cfht_cata_path + "%s.dat"%field_name
+            c_data_path = cfht_cata_path + "field_dat/%s.hdf5"%field_name
 
             if os.path.exists(f_data_path) and os.path.exists(c_data_path):
                 try:
@@ -135,10 +142,14 @@ if cmd == "collect":
                     f_data = numpy.loadtxt(f_data_path)
                     f_sp = f_data.shape
                     # the redshift magnitude and starflag, if non-exist in the cfht catalog, labeled by -1
-                    z_mag_col = numpy.zeros((f_sp[0], 3), dtype=numpy.double) - 1
-                    f_data = numpy.column_stack((f_data, z_mag_col))
+                    new_data = numpy.zeros((f_sp[0], f_sp[1] + 6), dtype=numpy.double) - 1
+                    new_data[:,:f_sp[1]] = f_data
 
-                    c_data = numpy.loadtxt(c_data_path)
+                    # c_data = numpy.loadtxt(c_data_path)
+                    h5f_c = h5py.File(c_data_path,"r")
+                    c_data = h5f_c["/data"].value
+                    h5f_c.close()
+
                     c_sp = c_data.shape
                     # f_sp[0] > c_sp[0]
                     pairs = 0
@@ -149,16 +160,21 @@ if cmd == "collect":
                         # to the row in the CFHTLenS catalog
                         tag = int(f_data[i, 0] - 1)
                         # check
-                        d_ra = abs(f_data[i,ra_lb] - c_data[tag, 0])
-                        d_dec = abs(f_data[i,dec_lb] - c_data[tag, 1])
+                        del_radius = numpy.abs(f_data[i,ra_lb] - c_data[tag, 0]) + numpy.abs(f_data[i,dec_lb] - c_data[tag, 1])
 
-                        if d_ra <= 10**(-4) and d_dec <= 10**(-4):
-                            # redshift
-                            f_data[i, -3] = c_data[tag, 10]
-                            # magnitude
-                            f_data[i, -2] = c_data[tag, 15]
+                        if del_radius <= 0.000005:
                             # starflag
-                            f_data[i, -1] = c_data[tag, 14]
+                            new_data[i, f_sp[1]] = c_data[tag, 14]
+                            # magnitude
+                            new_data[i, f_sp[1] + 1] = c_data[tag, 15]
+                            # redshift
+                            new_data[i, f_sp[1] + 2] = c_data[tag, 10]
+                            # Z_MIN
+                            new_data[i, f_sp[1] + 3] = c_data[tag, 16]
+                            # Z_MAX
+                            new_data[i, f_sp[1] + 4] = c_data[tag, 17]
+                            # ODDS in redshift fitting
+                            new_data[i, f_sp[1] + 5] = c_data[tag, 18]
                             pairs += 1
 
                     if pairs == 0:
@@ -166,9 +182,9 @@ if cmd == "collect":
                         exit(0)
 
                     if field_count == 0:
-                        cata_data = f_data
+                        cata_data = new_data
                     else:
-                        cata_data = numpy.row_stack((cata_data, f_data))
+                        cata_data = numpy.row_stack((cata_data, new_data))
                     field_count += 1
                 except:
                     print(rank, "%s.dat doesn't exist"%field_name)
@@ -220,41 +236,41 @@ if cmd == "collect":
             h5f["/w_%d" % area_id] = recv_buffer
             h5f.close()
             print("RECV: ", recv_buffer.shape)
-
+        comm.Barrier()
     print(rank, "the galaxy number in each area", num)
     # stack the sub-catalogs from each area
     if rank == 0:
-        fig1 = plt.figure(figsize=(14, 14))
-        fig2 = plt.figure(figsize=(14, 14))
-        fig3 = plt.figure(figsize=(14, 14))
+        # fig1 = plt.figure(figsize=(14, 14))
+        # fig2 = plt.figure(figsize=(14, 14))
+        # fig3 = plt.figure(figsize=(14, 14))
 
         h5f = h5py.File(h5f_path,"r+")
 
         for area_id in range(1,area_num+1):
-            temp = h5f["/w_%d" % area_id].value
+            temp_s = h5f["/w_%d" % area_id].value
 
-            # select the data as CFTHLenS
-            red_z = temp[:, -3]
-            idxz_1 = red_z < z_max
-            idxz_2 = red_z > z_min
-            temp_s = temp[idxz_1&idxz_2]
-
-            # show the range of RA & DEC
-            print(area_id, temp_s.shape,temp_s[:,12].min()*60, temp_s[:,12].max()*60,
-                  temp_s[:,13].min()*60, temp_s[:,13].max()*60)
-            ax1 = fig1.add_subplot(220 + area_id)
-            ax1.scatter(temp_s[:,12]*60, temp_s[:,13]*60, s=0.3)
-
-            # histogram of redshift
-            ax2 = fig2.add_subplot(220 + area_id)
-            ax2.hist(red_z, 50)
-
-            # of magnitude
-            mag = temp_s[:, -2]
-            idxm_1 = mag > 0
-            idxm_2 = mag < 30
-            ax3 = fig3.add_subplot(220 + area_id)
-            ax3.hist(mag[idxm_1&idxm_2], 50)
+            # # select the data as CFTHLenS
+            # red_z = temp[:, -3]
+            # idxz_1 = red_z < z_max
+            # idxz_2 = red_z > z_min
+            # temp_s = temp[idxz_1&idxz_2]
+            #
+            # # show the range of RA & DEC
+            # print(area_id, temp_s.shape,temp_s[:,12].min()*60, temp_s[:,12].max()*60,
+            #       temp_s[:,13].min()*60, temp_s[:,13].max()*60)
+            # ax1 = fig1.add_subplot(220 + area_id)
+            # ax1.scatter(temp_s[:,12]*60, temp_s[:,13]*60, s=0.3)
+            #
+            # # histogram of redshift
+            # ax2 = fig2.add_subplot(220 + area_id)
+            # ax2.hist(red_z, 50)
+            #
+            # # of magnitude
+            # mag = temp_s[:, -2]
+            # idxm_1 = mag > 0
+            # idxm_2 = mag < 30
+            # ax3 = fig3.add_subplot(220 + area_id)
+            # ax3.hist(mag[idxm_1&idxm_2], 50)
 
             if area_id == 1:
                 data = temp_s
@@ -262,9 +278,9 @@ if cmd == "collect":
                 data = numpy.row_stack((data, temp_s))
             print("Totally, %d galaxies are detected in W_%d" % (len(temp_s), area_id))
 
-        fig1.savefig(data_path + "pic/Ra_dec_%s.png"%result_source)
-        fig2.savefig(data_path + "pic/Z_%s.png"%result_source)
-        fig3.savefig(data_path + "pic/Mag_%s.png"%result_source)
+        # fig1.savefig(data_path + "pic/Ra_dec_%s.png"%result_source)
+        # fig2.savefig(data_path + "pic/Z_%s.png"%result_source)
+        # fig3.savefig(data_path + "pic/Mag_%s.png"%result_source)
         plt.close()
 
         h5f["/total"] = data
@@ -290,11 +306,6 @@ if cmd == "select":
         cata_data = h5f["/w_%d"%(rank+1)].value
         h5f.close()
 
-        h5f = h5py.File(h5f_red_dist_path, "r")
-        redshift_refer = h5f["/redshift"].value
-        distance_refer = h5f["/distance"].value
-        h5f.close()
-
         # cut off
         flux_alt_idx = cata_data[:, flux_alt_lb] >= flux_alt_thresh
         nstar_idx = cata_data[:, nstar_lb] >= nstar_thresh
@@ -306,9 +317,8 @@ if cmd == "select":
         fg1_idx = fg1 <= field_g1_bound
         fg2_idx = fg2 <= field_g2_bound
 
-        redshift = cata_data[:, z_lb]
-        idxz_1 = redshift <= z_max
-        idxz_2 = redshift >= z_min
+        idxz_1 = cata_data[:, z_lb] <= z_max
+        idxz_2 = cata_data[:, z_lb] >= z_min
 
         cut_idx = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx & idxz_1 & idxz_2
 
@@ -328,6 +338,10 @@ if cmd == "select":
         cos_dec = numpy.abs(numpy.cos((dec/180*numpy.pi)))
 
         redshift = cata_data[:, z_lb][cut_idx]
+        z_min = cata_data[:,z_min_lb][cut_idx]
+        z_max = cata_data[:,z_max_lb][cut_idx]
+        odds = cata_data[:,odds_lb][cut_idx]
+
         mag = cata_data[:, mag_lb][cut_idx]
         starflag = cata_data[:, starflag_lb][cut_idx]
 
@@ -339,8 +353,8 @@ if cmd == "select":
         # for i in range(gal_num):
         #     tag = tool_box.find_near(redshift_refer, redshift[i])
         #     distance[i] = distance_refer[tag]
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V","MAG", "COS_DEC", "STARGLAG"]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC", "STARGLAG","Z_MIN", "Z_MAX","ODDS"]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag, z_min, z_max, odds]
         data_num = len(redshift)
 
     comm.Barrier()
@@ -350,7 +364,6 @@ if cmd == "select":
             h5f = h5py.File(h5f_path_cut, "r+")
             for i in range(len(names)):
                 h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
-                h5f["/w_%d/%s" % (rank+1, names[i])].attrs["shape"] = numpy.array([data_num,1], dtype=numpy.intc)
             h5f.close()
         comm.Barrier()
     t2 = time.time()

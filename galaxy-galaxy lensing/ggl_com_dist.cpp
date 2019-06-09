@@ -1,5 +1,4 @@
 #include<FQlib.h>
-#include<mpi.h>
 
 // assign the comoving distance to the data according to their redshifts
 // argv[1]: directory to the data file
@@ -9,7 +8,8 @@ int main(int argc, char *argv[])
 	int i, j, k;
 	int data_num;
 	char data_path[200], set_name[30], attrs_name[30], inform[200];
-	
+	char target_set_name[20];
+
 	int refer_num = 100001;
 	double *redshift_refer = new double[refer_num];
 	double *dist_refer = new double[refer_num];
@@ -23,10 +23,11 @@ int main(int argc, char *argv[])
 	std::cout << redshift_refer[refer_num - 1] << " " << dist_refer[refer_num - 1] << std::endl;
 
 	strcpy(data_path, argv[1]);
+	strcpy(target_set_name, argv[2]);
 
 	if (file_exist(data_path))
 	{
-		sprintf(set_name, "/Z");
+		sprintf(set_name, "%s/Z", target_set_name);
 		read_h5_datasize(data_path, set_name, data_num);
 		if (data_num > 0)
 		{
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			sprintf(set_name, "/DISTANCE");
+			sprintf(set_name, "%s/DISTANCE", target_set_name);
 			write_h5(data_path, set_name, dist, data_num, 1, FALSE);
 			
 			delete[] redshift;

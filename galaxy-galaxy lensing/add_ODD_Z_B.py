@@ -56,7 +56,7 @@ print(rank, "I got %d files"%len(sub_src_list))
 #     h5f = h5py.File(dst_path,"w")
 #     h5f["/data"] = dst_data
 #     h5f.close()
-
+# data is the catalog contains additional parameters, "###.tsv"
 for i in range(1, 5):
     h5f = h5py.File(cata_path + "CFHT_W%d.hdf5"%i,"r")
     temp = h5f["/data"].value
@@ -83,9 +83,9 @@ for nms in sub_src_list:
     src_data = numpy.loadtxt(src_path)
     src_sp = src_data.shape
 
-    mask = numpy.zeros((src_sp[0], 1),dtype=numpy.intc)
+    mask = numpy.zeros((src_sp[0], ),dtype=numpy.intc)
     # 3 extra cols for Z_B_MIN Z_B_MAX ODDS
-    dst_data = numpy.zeros((src_sp[0], src_sp[1] + 6)) - 99
+    dst_data = numpy.zeros((src_sp[0], src_sp[1] + 5)) - 99
 
     dst_data[:, :src_sp[1]] = src_data
 
@@ -93,10 +93,10 @@ for nms in sub_src_list:
     dec_min, dec_max = src_data[:,1].min(),src_data[:,1].max()
 
     area_label = int(nms[1])
-    idx1 = data[:,0] >= ra_min
-    idx2 = data[:,0] <= ra_max
-    idx3 = data[:,1] >= dec_min
-    idx4 = data[:,1] <= dec_max
+    idx1 = data[:,0] >= ra_min - 0.001
+    idx2 = data[:,0] <= ra_max + 0.001
+    idx3 = data[:,1] >= dec_min - 0.001
+    idx4 = data[:,1] <= dec_max + 0.001
 
     idx = idx1 & idx2 & idx3 & idx4
 
@@ -104,33 +104,29 @@ for nms in sub_src_list:
     sub_data = data[idx]
     for i in range(src_sp[0]):
 
-        ra_src, dec_src, z_b_src = src_data[i,0], src_data[i,1], src_data[i,10]
+        ra_src, dec_src = src_data[i,0], src_data[i,1]
 
-        d_ra, d_dec, d_z_b = numpy.abs(ra_src - sub_data[:,0]), numpy.abs(dec_src - sub_data[:,1]),numpy.abs(z_b_src - sub_data[:,4])
+        del_radius = numpy.abs(ra_src - sub_data[:,0]) + numpy.abs(dec_src - sub_data[:,1])
 
-        d_ra_min = d_ra.min()
-        d_dec_min = d_dec.min()
-        d_z_b_min = d_dec.min()
+        del_radius_min = del_radius.min()
 
-        if d_ra_min < 0.00001 and d_dec_min < 0.00001 and d_z_b_min < 0.001:
+        if del_radius_min <= 0.000005:
 
-            npw_ra = numpy.where(d_ra == d_ra_min)[0][0]
-            npw_dec = numpy.where(d_dec == d_dec_min)[0][0]
+            npw_dr = numpy.where(del_radius == del_radius_min)[0][0]
 
-            dst_data[i, src_sp[1]] = sub_data[npw_ra, 5]
-            dst_data[i, src_sp[1] + 1] = sub_data[npw_ra, 6]
-            dst_data[i, src_sp[1] + 2] = sub_data[npw_ra, 7]
+            dst_data[i, src_sp[1]] = sub_data[npw_dr, 5]
+            dst_data[i, src_sp[1] + 1] = sub_data[npw_dr, 6]
+            dst_data[i, src_sp[1] + 2] = sub_data[npw_dr, 7]
             # delta ra & delta dec for checking
-            dst_data[i, src_sp[1] + 3] = sub_data[npw_ra, 0] - ra_src
-            dst_data[i, src_sp[1] + 4] = sub_data[npw_ra, 1] - dec_src
-            dst_data[i, src_sp[1] + 5] = sub_data[npw_ra, 4] - z_b_src
+            dst_data[i, src_sp[1] + 3] = sub_data[npw_dr, 0] - ra_src
+            dst_data[i, src_sp[1] + 4] = sub_data[npw_dr, 1] - dec_src
             mask[i] = +1
 
     st2 = time.time()
 
     idxm = mask == 1
     if idxm.sum() != src_sp[0]:
-        print(nms, "Some sources are missing (%d, %d)"%(idxm.sum(), src_sp[0]))
+        print(nms, "Some sources are missing. source: %d. matched: %d. diff: %d"%(src_sp[0],idxm.sum(), src_sp[0] - idxm.sum()))
         logger.info("Done %s,Some sources are missing. %.2f sec" % (nms, st2 - st1))
     idxm = mask > 1
     if idxm.sum() != 0:
