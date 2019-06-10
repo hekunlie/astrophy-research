@@ -4240,7 +4240,7 @@ void set_bin(const double *data, const int data_num, double * bins, const int bi
 {
 	int i;
 	int mid = bin_num / 2, step, num;
-	double *data_cp, data_max = 0, data_min = 0, bound;
+	double *data_cp, data_max = data[0], data_min = data[0], bound;
 	for (i = 0; i < data_num; i++)
 	{
 		if (data[i] > data_max)
@@ -4300,7 +4300,7 @@ void set_bin(const float *data, const int data_num, float * bins, const int bin_
 {
 	int i;
 	int mid = bin_num / 2, step, num;
-	float *data_cp, data_max = 0, data_min = 0, bound;
+	float *data_cp, data_max = data[0], data_min = data[0], bound;
 	for (i = 0; i < data_num; i++)
 	{
 		if (data[i] > data_max)
@@ -4360,7 +4360,7 @@ void set_bin(const int *data, const int data_num, int * bins, const int bin_num,
 {
 	int i;
 	int mid = bin_num / 2, step, num;
-	int *data_cp, data_max = 0, data_min = 0, bound;
+	int *data_cp, data_max = data[0], data_min = data[0], bound;
 	for (i = 0; i < data_num; i++)
 	{
 		if (data[i] > data_max)

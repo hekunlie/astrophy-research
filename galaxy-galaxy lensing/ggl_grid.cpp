@@ -4,6 +4,7 @@
 #define backgal_data_col 19
 #define grid_data_col 5
 #define max_data_col 30
+#define mg_bin_num 8
 
 int main(int argc, char *argv[])
 {
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
 	int *num_in_block, *block_start, *block_end;
 	int *block_buffer, *count_in_block;
 	double *block_boundy, *block_boundx;
+	double mg_bin[mg_bin_num+1];
 
 	// redshift range for foreground galaxy
 	double block_scale; // degree
@@ -96,16 +98,13 @@ int main(int argc, char *argv[])
 
 	if (0 == rank)
 	{
-		sprintf(set_name, "/background");
-		create_h5_group(h5f_path_dst, set_name, TRUE);
-
-		sprintf(set_name, "/background/block_scale");
+		sprintf(set_name, "/block_scale");
 		scale[0] = block_scale;
-		write_h5(h5f_path_dst, set_name, scale, 1, 1, FALSE);
+		write_h5(h5f_path_dst, set_name, scale, 1, 1, TRUE);
 
 		for (i = 1; i < area_num + 1; i++)
 		{
-			sprintf(set_name, "/background/w_%d", i);
+			sprintf(set_name, "/w_%d", i);
 			create_h5_group(h5f_path_dst, set_name, FALSE);
 		}
 
@@ -129,8 +128,13 @@ int main(int argc, char *argv[])
 			data_ini[i] = new double[num_ini];
 			sprintf(set_name, "/w_%d/%s", area_id, names[i]);
 			read_h5(h5f_path_src, set_name, data_ini[i]);
-		}			
-		
+		}
+		if (rank == 0)
+		{
+			set_bin(data_ini[mg1_id], num_ini, mg_bin, mg_bin_num, 1000, 50000);
+			sprintf(set_name, "/w_%d/mg_bin", area_id);
+			write_h5(h5f_path_dst, set_name, mg_bin, mg_bin_num+1, 1, FALSE);
+		}
 		st2 = clock();
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -156,7 +160,7 @@ int main(int argc, char *argv[])
 			shape[0] = grid_ny;
 			shape[1] = grid_nx;
 
-			sprintf(set_name, "/background/w_%d/grid_shape", area_id);
+			sprintf(set_name, "/w_%d/grid_shape", area_id);
 			write_h5(h5f_path_dst, set_name, shape, 2, 1, FALSE);
 		}
 
@@ -198,20 +202,20 @@ int main(int argc, char *argv[])
 				block_boundx[i * 4 + 3] = ra_bin[col + 1];
 			}
 
-			sprintf(set_name, "/background/w_%d/%s", area_id, names[bdx_id]);
+			sprintf(set_name, "/w_%d/%s", area_id, names[bdx_id]);
 			write_h5(h5f_path_dst, set_name, block_boundx, grid_num, 4, FALSE);
 
-			sprintf(set_name, "/background/w_%d/%s", area_id, names[bdy_id]);
+			sprintf(set_name, "/w_%d/%s", area_id, names[bdy_id]);
 			write_h5(h5f_path_dst, set_name, block_boundy, grid_num, 4, FALSE);
 
 			shape[0] = grid_nx+1;
 			shape[1] = 1;
-			sprintf(set_name, "/background/w_%d/RA_bin", area_id);
+			sprintf(set_name, "/w_%d/RA_bin", area_id);
 			write_h5(h5f_path_dst, set_name, ra_bin, shape[0], shape[1], FALSE);
 
 			shape[0] = grid_ny + 1;
 			shape[1] = 1;
-			sprintf(set_name, "/background/w_%d/DEC_bin", area_id);
+			sprintf(set_name, "/w_%d/DEC_bin", area_id);
 			write_h5(h5f_path_dst, set_name, dec_bin, shape[0], shape[1], FALSE);
 
 			delete[] block_boundx;
@@ -345,29 +349,26 @@ int main(int argc, char *argv[])
 			st6 = clock();
 			sprintf(log_inform, "Rank %d w_%d: Reorganize the data %s (%.2f sec)", rank, area_id, names[k], (st6 - st5) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
-			if (0 == rank)
-			{
-				std::cout << log_inform << std::endl;
-			}
 
 			// write to file
 			if (0 == rank)
 			{
-				sprintf(set_name, "/background/w_%d/%s", area_id, names[k]);
+				std::cout << log_inform << std::endl;
+				sprintf(set_name, "/w_%d/%s", area_id, names[k]);
 				write_h5(h5f_path_dst, set_name, data_buffer, num_ini, 1, FALSE);
 
-				if (k == 0)
+				if (k == grid_data_col)
 				{
 					// block_start
-					sprintf(set_name, "/background/w_%d/%s", area_id, names[bs_id]);
+					sprintf(set_name, "/w_%d/%s", area_id, names[bs_id]);
 					write_h5(h5f_path_dst, set_name, block_start, grid_num, 1, FALSE);
 
 					// block_end
-					sprintf(set_name, "/background/w_%d/%s", area_id, names[be_id]);
+					sprintf(set_name, "/w_%d/%s", area_id, names[be_id]);
 					write_h5(h5f_path_dst, set_name, block_end, grid_num, 1, FALSE);
 
 					// num_in_block
-					sprintf(set_name, "/background/w_%d/%s", area_id, names[nib_id]);
+					sprintf(set_name, "/w_%d/%s", area_id, names[nib_id]);
 					write_h5(h5f_path_dst, set_name, num_in_block, grid_num, 1, FALSE);
 				}
 			}
