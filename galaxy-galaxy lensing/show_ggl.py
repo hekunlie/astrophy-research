@@ -51,8 +51,8 @@ for tag, area_id in enumerate(area_ids):
     temp_chi_crit_cross = h5f["/chi_crit_cross"].value
 
     if tag == 0:
-        gh = h5f["/gh"].value
-        gh_crit = h5f["/gh_crit"].value
+        gh = h5f["/gh"].value[:,0]
+        gh_crit = h5f["/gh_crit"].value[:,0]
 
         gh_num = gh.shape[0]
         gh_crit_num = gh_crit.shape[0]
@@ -111,9 +111,9 @@ for i in range(2):
     idx = chi >= 0
     chi_min = chi[idx].min()
     idx = chi <= chi_min + 40
-    print(idx.sum())
-    coeff = tool_box.fit_1d(gh[idx], chi[idx], 2, "scipy")
-    chisq_fit.append((chi[idx], gh[idx],coeff))
+
+    coeff = tool_box.fit_1d(gh[idx], chisq[:,i][idx], 2, "scipy")
+    chisq_fit.append((chisq[:,i][idx], gh[idx],coeff))
     g_h = -coeff[1] / 2. / coeff[2]
     g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
     final_signal[rank, i*2] = g_h
@@ -132,13 +132,13 @@ for i in range(2):
     idx = chi >= 0
     chi_min = chi[idx].min()
     idx = chi <= chi_min + 40
-    coeff = tool_box.fit_1d(gh_crit[idx], chi[idx], 2, "scipy")
-    chisq_fit.append((chi[idx], gh_crit[idx], coeff))
+    coeff = tool_box.fit_1d(gh_crit[idx], chisq_crit[:,i][idx], 2, "scipy")
+    chisq_crit_fit.append((chisq_crit[:,i][idx], gh_crit[idx], coeff))
     g_h = -coeff[1] / 2. / coeff[2]*388.2833518
     g_sig = 0.70710678118 / numpy.sqrt(coeff[2])*388.2833518
     final_signal[rank, i*2 + 4] = g_h
     final_signal[rank, i * 2 + 5] = g_sig
-    print(idx.sum())
+
 
 img = Image_Plot()
 img.create_subfig(2,2)
@@ -147,7 +147,8 @@ img.axs[0][0].scatter(gh, chisq[:,0],c="C1",s=3)
 img.axs[0][0].scatter(chisq_fit[0][1], chisq_fit[0][0],c="C2",s=5)
 
 coeff = chisq_fit[0][2]
-fx = coeff[0]+coeff[1]*chisq_fit[0][1]+coeff[2]*chisq_fit[0][1]**2
+fit_range = chisq_fit[0][1]
+fx = coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2
 img.axs[0][0].plot(chisq_fit[0][1], fx, c="C2")
 
 
@@ -155,22 +156,25 @@ img.axs[0][1].scatter(gh, chisq[:,1],c="C1",s=3)
 img.axs[0][1].scatter(chisq_fit[1][1], chisq_fit[1][0],c="C2",s=5)
 
 coeff = chisq_fit[1][2]
-fx = coeff[0]+coeff[1]*chisq_fit[1][1]+coeff[2]*chisq_fit[1][1]**2
-img.axs[0][0].plot(chisq_fit[1][1], fx, c="C2")
+fit_range = chisq_fit[1][1]
+fx = coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2
+img.axs[0][1].plot(chisq_fit[1][1], fx, c="C2")
 
 
 img.axs[1][0].scatter(gh_crit, chisq_crit[:,0],c="C1",s=3)
 img.axs[1][0].scatter(chisq_crit_fit[0][1], chisq_crit_fit[0][0],c="C2",s=5)
 
 coeff = chisq_crit_fit[0][2]
-fx = coeff[0]+coeff[1]*chisq_crit_fit[0][1]+coeff[2]*chisq_crit_fit[0][1]**2
+fit_range = chisq_crit_fit[0][1]
+fx = coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2
 img.axs[1][0].plot(chisq_crit_fit[0][1], fx, c="C2")
 
 img.axs[1][1].scatter(gh_crit, chisq_crit[:,1],c="C1",s=3)
 img.axs[1][1].scatter(chisq_crit_fit[1][1], chisq_crit_fit[1][0],c="C2",s=5)
 
 coeff = chisq_crit_fit[1][2]
-fx = coeff[0]+coeff[1]*chisq_crit_fit[1][1]+coeff[2]*chisq_crit_fit[1][1]**2
+fit_range = chisq_crit_fit[1][1]
+fx = coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2
 img.axs[1][1].plot(chisq_crit_fit[1][1], fx, c="C2")
 
 if area_num == 1:
@@ -184,17 +188,26 @@ if rank == 0:
 
     background_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/cata_result_ext_grid.hdf5"
     h5f = h5py.File(background_path,"r")
-    radius_bin = h5f["/radius_bin"].value[:cpus]
+    radius_bin = h5f["/radius_bin"].value
     h5f.close()
-
+    x = (radius_bin[:cpus] + radius_bin[1:])/2
     img = Image_Plot()
     img.create_subfig(1, 2)
-    img.axs[0][0].errorbar(radius_bin, final_signal[:, 0],final_signal[:, 1], c="C1", label="T")
-    img.axs[0][0].errorbar(radius_bin, final_signal[:, 2],final_signal[:, 3], c="C2", label="X")
-    img.axs[0][1].errorbar(radius_bin, final_signal[:, 4],final_signal[:, 5], c="C1",  label="T")
-    img.axs[0][1].errorbar(radius_bin, final_signal[:, 6],final_signal[:, 7], c="C2",  label="X")
+    img.axs[0][0].errorbar(x, final_signal[:, 0],final_signal[:, 1], capsize=3, c="C1", label="T")
+    img.axs[0][0].errorbar(x, final_signal[:, 2],final_signal[:, 3], capsize=3, c="C2", label="X")
+
+    img.axs[0][1].errorbar(x, final_signal[:, 4],final_signal[:, 5], capsize=3, c="C1",  label="T")
+    img.axs[0][1].errorbar(x, final_signal[:, 6],final_signal[:, 7], capsize=3, c="C2",  label="X")
     img.axs[0][0].legend()
     img.axs[0][1].legend()
+    img.axs[0][0].set_xscale("log")
+    img.axs[0][1].set_xscale("log")
+    # img.axs[0][0].set_yscale("symlog")
+    img.axs[0][1].set_yscale("symlog")
+    img.tick_label(0, 0, 0,"$\gamma$")
+    img.tick_label(0, 0, 1, "$R \quad Mpc\cdot h^{-1}$")
+    img.tick_label(0, 1, 0, "$\Delta\Sigma$")
+    img.tick_label(0, 1, 1, "$R \quad Mpc\cdot h^{-1}$")
     if area_num == 1:
         img.save_img(data_path + "pic/w_%d/signal.png" %area_ids[0])
     else:
