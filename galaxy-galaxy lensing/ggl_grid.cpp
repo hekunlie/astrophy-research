@@ -131,9 +131,12 @@ int main(int argc, char *argv[])
 		}
 		if (rank == 0)
 		{
-			set_bin(data_ini[mg1_id], num_ini, mg_bin, mg_bin_num, 1000, 50000);
-			sprintf(set_name, "/w_%d/mg_bin", area_id);
+			set_bin(data_ini[mg1_id], num_ini, mg_bin, mg_bin_num, 10000, 200000);
+			sprintf(set_name, "/w_%d/mg1_bin", area_id);
 			write_h5(h5f_path_dst, set_name, mg_bin, mg_bin_num+1, 1, FALSE);
+			set_bin(data_ini[mg2_id], num_ini, mg_bin, mg_bin_num, 10000, 200000);
+			sprintf(set_name, "/w_%d/mg2_bin", area_id);
+			write_h5(h5f_path_dst, set_name, mg_bin, mg_bin_num + 1, 1, FALSE);
 		}
 		st2 = clock();
 		MPI_Barrier(MPI_COMM_WORLD);

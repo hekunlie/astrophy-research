@@ -3167,7 +3167,21 @@ void log_bin(const double start, const double end, const int num, double * bins)
 	}
 }
 
-
+void linspace(const double start, const double end, const int num, double *bins)
+{
+	int i, j, k;
+	double diff;
+	if (end <= start)
+	{
+		std::cout << "The end point must be larger than the start" << std::endl;
+		exit(0);
+	}
+	diff = (end - start) / (num - 1);
+	for (i = 0; i < num; i++)
+	{
+		bins[i] = start + i * diff;
+	}
+}
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/
@@ -3916,6 +3930,21 @@ void sum_arr(const double *arr, const int size, const int start_t, const int sto
 void sum_arr(const long *arr, const int size, const int start_t, const int stop_t, long &total)
 {
 	long temp = 0;
+	if (stop_t > size)
+	{
+		std::cout << "Cross the boundary of array!!! Stop_t: " << stop_t << ",   Size: " << size << std::endl;
+		exit(0);
+	}
+	for (int i = start_t; i < stop_t; i++)
+	{
+		temp += arr[i];
+	}
+	total = temp;
+}
+
+void sum_arr(const int *arr, const int size, const int start_t, const int stop_t, int &total)
+{
+	int temp = 0;
 	if (stop_t > size)
 	{
 		std::cout << "Cross the boundary of array!!! Stop_t: " << stop_t << ",   Size: " << size << std::endl;

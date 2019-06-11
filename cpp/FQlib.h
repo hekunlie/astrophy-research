@@ -432,7 +432,8 @@ void log_bin(const double start, const double end, const int num, double * bins)
 /* the loggrithmical bin, including the start and end point
 	num: the number of bin borders
 */
-
+void linspace(const double start, const double end, const int num, double *bins);
+/* numpy.linspace(st, ed, num), include the end point*/
 
 /********************************************************************************************************************************************/
 /* random */
@@ -556,6 +557,7 @@ void cov_matrix_2d(const double *x, const double *y, const double *fxy, const in
 
 void sum_arr(const double *arr, const int size, const int start_t, const int end_t, double &total);//checked
 void sum_arr(const long *arr, const int size, const int start_t, const int end_t, long &total);//checked
+void sum_arr(const int *arr, const int size, const int start_t, const int end_t, int &total);//checked
 /* sum the array from "start_t" to "end_t"(excluded) and assign to the "total"
 	"total" will be set to be zero in the begin of the method for safety.
 */
