@@ -2979,8 +2979,8 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	{		
 		change = 0;
 		gh_mid = (left + right) *0.5;
-		gh_left = (gh_mid + left) *0.5;
-		gh_right = (gh_mid + right) *0.5;
+		gh_left = left;
+		gh_right = right;
 
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);

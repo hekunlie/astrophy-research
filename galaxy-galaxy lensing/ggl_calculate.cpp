@@ -23,10 +23,7 @@ int main(int argc, char *argv[])
 	/*		1. the sky area label																												*/
 	/*		2. the radius bin label, the search raidus																			*/
 	/*     3. the name of the foreground data set																			    */
-
-
-
-
+	   	 
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -143,10 +140,10 @@ int main(int argc, char *argv[])
 	// chi of the signal from the all areas
 	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared, *pair_count_shared;
 	// chi square of the signal of each thread in each areas
-	MY_INT *my_chi_tan = new MY_INT[mg_bin_num*gh_num];
-	MY_INT *my_chi_cross = new MY_INT[mg_bin_num*gh_num];
-	MY_INT *my_chi_crit_tan = new MY_INT[mg_bin_num*gh_crit_num];
-	MY_INT *my_chi_crit_cross = new MY_INT[mg_bin_num*gh_crit_num];
+	double *my_chi_tan = new double[mg_bin_num*gh_num];
+	double *my_chi_cross = new double[mg_bin_num*gh_num];
+	double *my_chi_crit_tan = new double[mg_bin_num*gh_crit_num];
+	double *my_chi_crit_cross = new double[mg_bin_num*gh_crit_num];
 	double mg_t, mg_x;
 	int chi_bin_label;
 	
@@ -235,31 +232,31 @@ int main(int argc, char *argv[])
 	{
 #if ! defined( SMALL_CATA)
 		// for the chi square of tangential shear
-		MPI_Win_allocate_shared(size_chi_tan * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
-		MPI_Win_allocate_shared(size_chi_cross * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
+		MPI_Win_allocate_shared(size_chi_tan * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
+		MPI_Win_allocate_shared(size_chi_cross * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
 		// for the chi square of shear*critical_surface_density
-		MPI_Win_allocate_shared(size_chi_crit_tan * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
-		MPI_Win_allocate_shared(size_chi_crit_cross * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
+		MPI_Win_allocate_shared(size_chi_crit_tan * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
+		MPI_Win_allocate_shared(size_chi_crit_cross * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
 #endif
-		MPI_Win_allocate_shared(size_pair_count * sizeof(long), sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(size_pair_count * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 	}
 	else
 	{
 		int dispu_total;
 #if ! defined( SMALL_CATA)
-		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
 		MPI_Win_shared_query(win_chi_tan_total, 0, &size_chi_tan, &dispu_total, &chi_tan_shared);
 
-		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
 		MPI_Win_shared_query(win_chi_cross_total, 0, &size_chi_cross, &dispu_total, &chi_cross_shared);
 
-		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
 		MPI_Win_shared_query(win_chi_crit_tan_total, 0, &size_chi_crit_tan, &dispu_total, &chi_crit_tan_shared);
 
-		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
 		MPI_Win_shared_query(win_chi_crit_cross_total, 0, &size_chi_crit_cross, &dispu_total, &chi_crit_cross_shared);
 #endif
-		MPI_Win_allocate_shared(0, sizeof(long), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -482,7 +479,10 @@ int main(int argc, char *argv[])
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
 							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
-
+							if (fabs(backgal_mg_tan) < 1.e-4)
+							{
+								std::cout << "Rank " << rank << " " << backgal_mg_tan <<" "<< backgal_mg_cross <<" "<< backgal_mn_tan << std::endl;
+							}
 							data_cache.push_back(backgal_mg_tan);
 							data_cache.push_back(backgal_mg_cross);
 							data_cache.push_back(backgal_mn_tan);
@@ -558,38 +558,61 @@ int main(int argc, char *argv[])
 	{
 		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
-
-		final_buf = new double[pair_count * 5]{};
 	}
 	// final_buf will store the data of all the pairs
 	my_data_buf = new double[pair_count_shared[rank] * 5]{};
-
-	// calculate the entry of each rank in the big buffer
-	MY_INT *displ = new MY_INT[numprocs]{};
-	for (i = 0; i < numprocs; i++)
-	{
-		for (j = 0; j < i; j++)
-		{
-			displ[i] += pair_count_shared[j];
-		}
-	}
 	// copy the data in the vector into the buffer 
 	if (!data_cache.empty())
 	{
 		memcpy(my_data_buf, &data_cache[0], data_cache.size() * sizeof(double));
 	}
-	// gather the data from each thread, empty data from some threads are allowed
-	MPI_Gatherv(my_data_buf, pair_count_shared[rank], MPI_DOUBLE, final_buf, pair_count_shared, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	if (numprocs > 1)
+	{
+		// calculate the entry of each rank in the big buffer
+		MY_INT *displ = new MY_INT[numprocs]{};
+		MY_INT *num_of_thread = new MY_INT[numprocs]{};
 
-	delete[] my_data_buf;
-	if (rank == 0)
+		for (i = 0; i < numprocs; i++)
+		{
+			num_of_thread[i] = pair_count_shared[i] * 5;
+			for (j = 0; j < i; j++)
+			{
+				displ[i] += num_of_thread[j];
+			}
+		}
+		if (rank == 0)
+		{
+			final_buf = new double[pair_count * 5];
+			show_arr(displ, 1, numprocs);
+			show_arr(num_of_thread, 1, numprocs);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		//char test_path[200];
+		//sprintf(test_path, "/home/hkli/work/test/%d.hdf5", rank);
+		//sprintf(set_name, "/pair_data");
+		//write_h5(test_path, set_name, my_data_buf, pair_count_shared[rank], 5, TRUE);
+		// gather the data from each thread, empty data from some threads are allowed
+
+		MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		if (rank == 0)
+		{
+			//show_arr(final_buf, pair_count, 5);
+			sprintf(set_name, "/pair_data");
+			write_h5(h5f_res_path, set_name, final_buf, pair_count, 5, TRUE);
+			delete[] final_buf;
+		}
+	}
+	else
 	{
 		sprintf(set_name, "/pair_data");
-		write_h5(h5f_res_path, set_name, final_buf, pair_count, 5, TRUE);
-		delete[] final_buf;
+		write_h5(h5f_res_path, set_name, my_data_buf, pair_count, 5, TRUE);
 	}
+	delete[] my_data_buf;
 	MPI_Barrier(MPI_COMM_WORLD);
 
 #else

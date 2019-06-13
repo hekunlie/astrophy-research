@@ -1,10 +1,10 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-#define data_col 6
-#define max_area 20
-#define crit_coeff 388.2833518
-#define mg_bin_num 12
+#define DATA_COL 5
+#define MAX_AREA 20
+#define CRIT_COEFF 388.2833518
+#define MG_BIN_NUM 8
 
 int main(int argc, char ** argv)
 {
@@ -12,8 +12,7 @@ int main(int argc, char ** argv)
 
 	/* argv[1]: 1for calculate	gamma_t, 2 for calculate the differential surface mass density	*/
 	/* argv[2]: the file name of foreground source		*/
-	/* argv[3]: radius bin label										*/
-	/* argv[4] -- argv[n]: area labels, like 1,3, 4			*/
+	/* argv[3] -- argv[n]: area labels, like 1,3, 4			*/
 
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -26,25 +25,31 @@ int main(int argc, char ** argv)
 	char total_path[300], data_path[300], set_name[30], result_path[300];
 	char fore_source[50];
 	char log[300];
+
 	int i, j, k;
-	double st1, st2;
-	int area_id[max_area]{}, area_num, radius_id;
+	int choice, shear_cmd, chi_fit_num=20;
+
+	int area_id[MAX_AREA]{}, area_num, radius_id;
 	int total_data_num, total_pair_num;
-	int data_num[max_area], pair_num[max_area];
+	int data_num[MAX_AREA], pair_num[MAX_AREA];
 
-	int shear_cmd = atoi(argv[1]);
+	double *data[MAX_AREA];
+	double *mgt, *mgx, *mnu1, *mnu2, *crit;
+	double *total_result, *total_chi_check;
+	double *chi_check[2];
+	double gt, gx, gt_sig, gx_sig, coeff;
+	double st1, st2;
 
+	shear_cmd= atoi(argv[1]);
 	strcpy(fore_source, argv[2]);
-	radius_id = atoi(argv[3]);
-	area_num = argc - 4;
-	for (i = 4; i < argc; i++)
+	area_num = argc - 3;
+	for (i = 3; i < argc; i++)
 	{
-		area_id[i - 4] = atoi(argv[i]);
+		area_id[i - 3] = atoi(argv[i]);
 	}
 	if (0 == rank)
 	{
 		std::cout << "Foreground: " << fore_source << std::endl;
-		std::cout << "Radius bin: " << radius_id << std::endl;
 		std::cout << "Area: ";
 		for (i = 0; i < area_num; i++)
 		{
@@ -54,24 +59,19 @@ int main(int argc, char ** argv)
 	}
 
 	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/");
+
 	total_data_num = 0;
 	total_pair_num = 0;
-	double *data[max_area];
-	double *mgt, *mgx, *mnu1, *mnu2, *crit, *mg1;
-	int choice;
-	double gh_left, gh_right, gstep, *gh;
-	int gh_num, gh_s, gh_e;
-	double *mg_bin;
-	double*total_chisq, chisq_temp;
-	double gt, gx, gt_sig, gx_sig;
+	radius_id = rank;
 
 
+	// read data from each files
 	for (i = 0; i < area_num; i++)
-	{
-		sprintf(data_path, "%sresult/%s/w_%d/%d.hdf5", total_path, fore_source, area_id[i], radius_id);
-		sprintf(set_name, "/data_0");//////
+	{	
+		sprintf(data_path, "%sresult/%s/w_%d/radius_%d.hdf5", total_path, fore_source, area_id[i], radius_id);
+		sprintf(set_name, "/pair_data");
 		read_h5_datasize(data_path, set_name, data_num[i]);
-		pair_num[i] = data_num[i] / data_col;
+		pair_num[i] = data_num[i] / DATA_COL;
 
 		total_data_num += data_num[i];
 		total_pair_num += pair_num[i];
@@ -79,13 +79,28 @@ int main(int argc, char ** argv)
 		data[i] = new double[data_num[i]]{};
 		read_h5(data_path, set_name, data[i]);
 	}
+	for (i = 0; i < numprocs; i++)
+	{
+		if (i == rank)
+		{
+			for (j = 0; j < area_num; j++)
+			{
+				std::cout << "In area " << area_id[j] << ", " << pair_num[j] << " galaxy pairs are found in " << radius_id << " radius bin." << std::endl;
+			}
+			std::cout << "Total " << total_pair_num << " galaxy pairs are found" << std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
 	mgt = new double[total_pair_num];
 	mgx = new double[total_pair_num];
 	mnu1 = new double[total_pair_num];
 	mnu2 = new double[total_pair_num];
-	mg1 = new double[total_pair_num];
+	//crit = new double[total_pair_num];
+	chi_check[0] = new double[chi_fit_num];
+	chi_check[1] = new double[chi_fit_num];
 
+	// stack the data into one array
 	for (i = 0; i < area_num; i++)
 	{
 		k = 0;
@@ -95,106 +110,101 @@ int main(int argc, char ** argv)
 		}
 		for (j = 0; j < pair_num[i]; j++)
 		{
-			mgt[k + j] = data[i][j*data_col] * data[i][j*data_col + 4] * crit_coeff;
-			mgx[k + j] = data[i][j*data_col + 1] * data[i][j*data_col + 4] * crit_coeff;
+			mgt[k + j] = data[i][j*DATA_COL] * data[i][j*DATA_COL + 4];
+			mgx[k + j] = data[i][j*DATA_COL + 1] * data[i][j*DATA_COL + 4];
 			if (shear_cmd == 1)
 			{
-				mnu1[k + j] = (data[i][j*data_col + 2] + data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
-				mnu2[k + j] = (data[i][j*data_col + 2] - data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
+				mnu1[k + j] = (data[i][j*DATA_COL + 2] + data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4];
+				mnu2[k + j] = (data[i][j*DATA_COL + 2] -  data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4];
 			}
 			else
 			{
-				mnu1[k + j] = data[i][j*data_col + 2] + data[i][j*data_col + 3];
-				mnu2[k + j] = data[i][j*data_col + 2] - data[i][j*data_col + 3];
+				mnu1[k + j] = data[i][j*DATA_COL + 2] + data[i][j*DATA_COL + 3];
+				mnu2[k + j] = data[i][j*DATA_COL + 2] - data[i][j*DATA_COL + 3];
 			}
-			mg1[k + j] = data[i][j*data_col + 5];
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
+	
+	choice = 0;
+	if (total_pair_num > 200000)
+	{
+		choice = 100000;
+	}
+	double bins[MG_BIN_NUM];
+	set_bin(mgt, total_pair_num, bins, MG_BIN_NUM, 1, choice);
 	for (i = 0; i < numprocs; i++)
 	{
 		if (i == rank)
 		{
-			std::cout << "gh_num: " << gh_num << std::endl;
-			std::cout << "gh: " << gh_s << " ~ " << gh_e << std::endl;
-			std::cout << "Radius: " << radius_id << ".  Pair num: ";
-			for (j = 0; j < area_num; j++)
-			{
-				std::cout << pair_num[j] << " ";
-			}
-			std::cout << std::endl;
+			//for (k = 0; k < 100; k++)
+			//{
+			//	std::cout << mgt[k] << std::endl;
+			//}
+			show_arr(bins, 1, MG_BIN_NUM);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+	exit(0);
 
+	MPI_Win win_result, win_chi;
+	MPI_Aint size_result, size_chi;
 
-	MPI_Win win_bin, win_chisq;
-	MPI_Aint bin_size, chisq_size;
-	bin_size = mg_bin_num + 1;
-	chisq_size = 2 * gh_num;
+	size_result = 4 * numprocs;
+	size_chi = 2 * chi_fit_num*numprocs;
 
-	if (rank == 0)
+	if (0 == rank)
 	{
-		MPI_Win_allocate_shared(bin_size * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD,
-			&mg_bin, &win_bin);
-		MPI_Win_allocate_shared(chisq_size * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD,
-			&total_chisq, &win_chisq);
+		MPI_Win_allocate_shared(size_result*sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &total_result, &win_result);
+		MPI_Win_allocate_shared(size_chi * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chi_check, &win_chi);
 	}
 	else
 	{
-		int disp_unit, disp_unit_c;
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &mg_bin, &win_bin);
-		MPI_Win_shared_query(win_bin, 0, &bin_size, &disp_unit, &mg_bin);
+		int disp_unit;
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &total_result, &win_result);
+		MPI_Win_shared_query(win_result, 0, &size_result, &disp_unit, &total_result);
 
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chisq, &win_chisq);
-		MPI_Win_shared_query(win_chisq, 0, &chisq_size, &disp_unit_c, &total_chisq);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chi_check, &win_chi);
+		MPI_Win_shared_query(win_chi, 0, &size_chi, &disp_unit, &total_chi_check);
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	// set up bins for PDF-SYM
-	if (0 == rank)
-	{
-		if (total_pair_num < 200000)
-		{
-			choice = 0;
-		}
-		else
-		{
-			choice = 100000;
-		}
-		set_bin(mgt, total_pair_num, mg_bin, mg_bin_num, 100000, choice);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-
 
 	st1 = clock();
-	for (i = gh_s; i < gh_e; i++)
+	try
 	{
-		try
-		{
-			chisq_Gbin_1d(mgt, mnu1, total_pair_num, mg_bin, mg_bin_num, gh[i], chisq_temp);
-			total_chisq[i] = chisq_temp;
-		}
-		catch (const char* msg)
-		{
-			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Tangential. " << msg << std::endl;
-			exit(0);
-		}
-		try
-		{
-			chisq_Gbin_1d(mgx, mnu2, total_pair_num, mg_bin, mg_bin_num, gh[i], chisq_temp);
-			total_chisq[gh_num + i] = chisq_temp;
-		}
-		catch (const char* msg)
-		{
-			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Cross. " << msg << std::endl;
-			exit(0);
-		}
+		find_shear(mgt, mnu1, total_pair_num, MG_BIN_NUM, gt, gt_sig, chi_check[0], chi_fit_num, choice, 1000, -0.1, 0.1, 50);
+	}
+	catch (const char* msg)
+	{
+		std::cerr << "Rank: " << rank << " g1  " << msg << std::endl;
+	}
+	try
+	{
+		find_shear(mgx, mnu2, total_pair_num, MG_BIN_NUM, gx, gx_sig, chi_check[1], chi_fit_num, choice, 1000, -0.1, 0.1, 50);
+	}
+	catch (const char* msg)
+	{
+		std::cerr << "Rank: " << rank <<" g2 "<< msg << std::endl;
 	}
 	st2 = clock();
 
+	coeff = 1;
+	if (shear_cmd > 1)
+	{
+		coeff = CRIT_COEFF;
+	}
+	total_result[4 * rank] = gt* coeff;
+	total_result[4 * rank + 1] = gt_sig* coeff;
+	total_result[4 * rank + 2] = gx* coeff;
+	total_result[4 * rank + 3] = gx_sig* coeff;
+	for (i = 0; i < chi_fit_num; i++)
+	{
+		total_chi_check[2*chi_fit_num*rank + i] = chi_check[0][i];
+		total_chi_check[2*chi_fit_num*rank + chi_fit_num + i] = chi_check[1][i];
+	}
+
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	for (i = 0; i < numprocs; i++)
 	{
 		if (i == rank)
@@ -204,50 +214,35 @@ int main(int argc, char ** argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
+
 	if (0 == rank)
 	{
-		double *chisq_fit = new double[gh_num];
-		double signal[4]{ -1, -1,-1,-1 };
-
-		sprintf(result_path, "%sresult/%s/%d.hdf5", total_path, fore_source, radius_id);
-		sprintf(set_name, "/chisq");
-		write_h5(result_path, set_name, total_chisq, 2, gh_num, TRUE);
-		sprintf(set_name, "/shear");
-		write_h5(result_path, set_name, gh, 1, gh_num, FALSE);
-
-		for (j = 0; j < 2; j++)
+		if (area_num == 1)
 		{
-			for (i = 0; i < gh_num; i++)
-			{
-				chisq_fit[i] = total_chisq[i + j * gh_num];
-			}
-			try
-			{
-				fit_shear(gh, chisq_fit, gh_num, signal[j * 2], signal[j * 2 + 1], 80);
-			}
-			catch (const char* msg)
-			{
-				std::cerr << fore_source << " Radius: " << radius_id << " " << msg;
-			}
+			sprintf(result_path, "%sresult/%s/w_%d/result_gamma.hdf5", total_path, fore_source, area_id[0]);
 		}
-		sprintf(set_name, "/signal");
-		write_h5(result_path, set_name, signal, 4, 1, FALSE);
-
-		delete[] chisq_fit;
+		else
+		{
+			sprintf(result_path, "%sresult/%s/total/result_crit.hdf5", total_path, fore_source);
+		}
+		sprintf(set_name, "/result");
+		write_h5(result_path, set_name, total_result, numprocs, 4, TRUE);
+		sprintf(set_name, "/chisq");
+		write_h5(result_path, set_name, total_result, numprocs, 2*chi_fit_num, FALSE);
 	}
-	MPI_Win_free(&win_bin);
-	MPI_Win_free(&win_chisq);
+
+
 	for (i = 0; i < area_num; i++)
 	{
 		delete[] data[i];
 	}
+	MPI_Win_free(&win_chi);
+	MPI_Win_free(&win_result);
 
-	delete[] gh;
 	delete[] mgt;
 	delete[] mgx;
 	delete[] mnu1;
 	delete[] mnu2;
-	delete[] mg1;
 
 	MPI_Finalize();
 	return 0;

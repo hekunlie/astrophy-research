@@ -184,7 +184,7 @@ for ir in range(redshift_bin_num):
     dg_scale_c = gamma_c / max_gc * max_len / 2
 
     img = plot_tool.Image_Plot(fig_x=10, fig_y=10)
-    img.create_subfig(2,2)
+    img.create_subfig(3,2)
 
     fig = img.axs[1][0].imshow(kappa_recon)
     plt.colorbar(fig, ax=img.axs[1][0])
