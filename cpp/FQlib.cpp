@@ -3016,7 +3016,11 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	{
 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
 		chisq_fit[i] = chi_right;
-		chi_check[i] = chi_right;// for checking
+		if (chi_check)
+		{	// for checking
+			chi_check[i] = chi_right;
+			chi_check[chi_num_fit + i] = gh_fit[i];
+		}
 	}
 	
 	//st4 = clock();

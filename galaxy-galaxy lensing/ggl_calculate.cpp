@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
 
 		// the max searching radius depend on the redshift of lens  //	
 		// the max seperation of the source at the z = z_f  //
-		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
+		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 2; // degree
 		radius_e_sq = radius_e * radius_e; // degree^2
 
 		// degree
@@ -440,7 +440,8 @@ int main(int argc, char *argv[])
 				{	
 					z_b_sig95 = z_f + (backgal_data[zmin_lb][ib] + backgal_data[zmax_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
-					//if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95 and z_b_odds > 0.5)
+
+					//if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95 and z_b_odds > 0.5)	
 					if (backgal_data[z_id][ib] >= z_thresh)
 					{
 						ra_b = backgal_data[ra_id][ib];
@@ -479,10 +480,10 @@ int main(int argc, char *argv[])
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
 							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
-							if (fabs(backgal_mg_tan) < 1.e-4)
-							{
-								std::cout << "Rank " << rank << " " << backgal_mg_tan <<" "<< backgal_mg_cross <<" "<< backgal_mn_tan << std::endl;
-							}
+							//if (fabs(backgal_mg_tan) < 1.e-4)
+							//{
+							//	std::cout << "Rank " << rank << " " << backgal_mg_tan <<" "<< backgal_mg_cross <<" "<< backgal_mn_tan << std::endl;
+							//}
 							data_cache.push_back(backgal_mg_tan);
 							data_cache.push_back(backgal_mg_cross);
 							data_cache.push_back(backgal_mn_tan);
@@ -584,8 +585,8 @@ int main(int argc, char *argv[])
 		if (rank == 0)
 		{
 			final_buf = new double[pair_count * 5];
-			show_arr(displ, 1, numprocs);
-			show_arr(num_of_thread, 1, numprocs);
+			//show_arr(displ, 1, numprocs);
+			//show_arr(num_of_thread, 1, numprocs);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 

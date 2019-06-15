@@ -30,7 +30,7 @@ class Image_Plot:
         self.set_style_default()
         plt.rcParams['font.family'] = font_style
 
-    def create_subfig(self, ny, nx):
+    def subplots(self, ny, nx):
         # fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
         fig = plt.figure(figsize=(int(nx * self.fig_x), int(ny * self.fig_y)))
         sub_fig = [[] for i in range(ny)]
@@ -56,13 +56,21 @@ class Image_Plot:
         else:
             self.axs[iy][ix].yaxis.set_major_formatter(ticks_form)
 
-    def tick_label(self, iy, ix, axis_nm, label, size=None):
+    def set_label(self, iy, ix, axis_nm, label, size=None):
         if not size:
             size = self.xy_lb_size
         if axis_nm == 1:
             self.axs[iy][ix].set_xlabel(label, fontsize=size)
         else:
             self.axs[iy][ix].set_ylabel(label, fontsize=size)
+
+    def set_legend(self, iy, ix, fontsize=None, loc="best", bbox_to_anchor=None):
+        if not fontsize:
+            fontsize = self.legend_size
+        if bbox_to_anchor:
+            self.axs[iy][ix].legend(fontsize=fontsize, loc=loc, bbox_to_anchor=bbox_to_anchor)
+        else:
+            self.axs[iy][ix].legend(fontsize=fontsize, loc=loc)
 
     def save_img(self, pic_path, tight=True):
         if tight:

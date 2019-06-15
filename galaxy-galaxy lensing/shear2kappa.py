@@ -16,6 +16,22 @@ def gauss_kappa(ny, nx, ceny, cenx, sig, ampl=1):
     ky, kx = numpy.mgrid[-cy:cy, -cx:cx]
     return ampl/numpy.pi/2/sig**2*numpy.exp(-((ky-ceny)**2+(kx-cenx)**2)/2/sig**2)
 
+def add_hole(ny, nx, ceny, cenx, radius):
+    my, mx = numpy.mgrid[0:ny, 0:nx]
+    mask_final = numpy.zeros_like(my)
+    hole_num = len(cenx)
+    for i in range(hole_num):
+        mask = (my-ceny[i])**2 + (mx-cenx[i])**2
+        idx = mask <= radius[i]**2
+        mask[idx] = 0
+        idx = mask > 0
+        mask[idx] = 1
+        mask_final += mask
+    idx = mask_final < hole_num - 1.e-5
+    mask_final[idx] = 0
+    return mask_final
+
+
 def image_fft(image):
     return fft.fftshift(fft.fft2(image))
 
@@ -95,6 +111,11 @@ size = 50
 cen = int(size/2)
 sig = 5
 
+
+mask = add_hole(size, size, [10, 15, 40], [10, 16, 24], [3, 4, 7])
+plt.imshow(mask)
+plt.show()
+exit()
 kappa_1 = gauss_kappa(size, size, 14, -8,sig)
 kappa_2 = gauss_kappa(size, size, -10, 2,sig)
 kappa = kappa_1 + kappa_2

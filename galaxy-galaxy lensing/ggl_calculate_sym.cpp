@@ -97,8 +97,8 @@ int main(int argc, char ** argv)
 	mnu1 = new double[total_pair_num];
 	mnu2 = new double[total_pair_num];
 	//crit = new double[total_pair_num];
-	chi_check[0] = new double[chi_fit_num];
-	chi_check[1] = new double[chi_fit_num];
+	chi_check[0] = new double[2*chi_fit_num];
+	chi_check[1] = new double[2*chi_fit_num];
 
 	// stack the data into one array
 	for (i = 0; i < area_num; i++)
@@ -110,12 +110,12 @@ int main(int argc, char ** argv)
 		}
 		for (j = 0; j < pair_num[i]; j++)
 		{
-			mgt[k + j] = data[i][j*DATA_COL] * data[i][j*DATA_COL + 4];
-			mgx[k + j] = data[i][j*DATA_COL + 1] * data[i][j*DATA_COL + 4];
+			mgt[k + j] = data[i][j*DATA_COL] * data[i][j*DATA_COL + 4]* CRIT_COEFF;
+			mgx[k + j] = data[i][j*DATA_COL + 1] * data[i][j*DATA_COL + 4]* CRIT_COEFF;
 			if (shear_cmd == 1)
 			{
-				mnu1[k + j] = (data[i][j*DATA_COL + 2] + data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4];
-				mnu2[k + j] = (data[i][j*DATA_COL + 2] -  data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4];
+				mnu1[k + j] = (data[i][j*DATA_COL + 2] + data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4]* CRIT_COEFF;
+				mnu2[k + j] = (data[i][j*DATA_COL + 2] -  data[i][j*DATA_COL + 3])* data[i][j*DATA_COL + 4]* CRIT_COEFF;
 			}
 			else
 			{
@@ -132,21 +132,21 @@ int main(int argc, char ** argv)
 	{
 		choice = 100000;
 	}
-	double bins[MG_BIN_NUM];
-	set_bin(mgt, total_pair_num, bins, MG_BIN_NUM, 1, choice);
-	for (i = 0; i < numprocs; i++)
-	{
-		if (i == rank)
-		{
-			//for (k = 0; k < 100; k++)
-			//{
-			//	std::cout << mgt[k] << std::endl;
-			//}
-			show_arr(bins, 1, MG_BIN_NUM);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	exit(0);
+	//double bins[MG_BIN_NUM];
+	//set_bin(mgt, total_pair_num, bins, MG_BIN_NUM, 1, choice);
+	//for (i = 0; i < numprocs; i++)
+	//{
+	//	if (i == rank)
+	//	{
+	//		//for (k = 0; k < 100; k++)
+	//		//{
+	//		//	std::cout << mgt[k] << std::endl;
+	//		//}
+	//		show_arr(bins, 1, MG_BIN_NUM);
+	//	}
+	//	MPI_Barrier(MPI_COMM_WORLD);
+	//}
+	//exit(0);
 
 	MPI_Win win_result, win_chi;
 	MPI_Aint size_result, size_chi;
@@ -169,30 +169,42 @@ int main(int argc, char ** argv)
 		MPI_Win_shared_query(win_chi, 0, &size_chi, &disp_unit, &total_chi_check);
 	}
 
+	double gh_left, gh_right;
+	gh_left = -0.5*CRIT_COEFF;
+	gh_right = 0.5*CRIT_COEFF;
+	if (shear_cmd == 1)
+	{
+		gh_left = -0.1;
+		gh_right = 0.1;
+	}
 	st1 = clock();
 	try
 	{
-		find_shear(mgt, mnu1, total_pair_num, MG_BIN_NUM, gt, gt_sig, chi_check[0], chi_fit_num, choice, 1000, -0.1, 0.1, 50);
+		find_shear(mgt, mnu1, total_pair_num, MG_BIN_NUM, gt, gt_sig, chi_check[0], chi_fit_num, choice, 1000, gh_left, gh_right, 50);
 	}
 	catch (const char* msg)
 	{
 		std::cerr << "Rank: " << rank << " g1  " << msg << std::endl;
+		gt = 0;
+		gt_sig = 0;
 	}
 	try
 	{
-		find_shear(mgx, mnu2, total_pair_num, MG_BIN_NUM, gx, gx_sig, chi_check[1], chi_fit_num, choice, 1000, -0.1, 0.1, 50);
+		find_shear(mgx, mnu2, total_pair_num, MG_BIN_NUM, gx, gx_sig, chi_check[1], chi_fit_num, choice, 1000, gh_left, gh_right, 50);
 	}
 	catch (const char* msg)
 	{
 		std::cerr << "Rank: " << rank <<" g2 "<< msg << std::endl;
+		gx = 0;
+		gx_sig = 0;
 	}
 	st2 = clock();
 
 	coeff = 1;
-	if (shear_cmd > 1)
-	{
-		coeff = CRIT_COEFF;
-	}
+	//if (shear_cmd > 1)
+	//{
+	//	coeff = CRIT_COEFF;
+	//}
 	total_result[4 * rank] = gt* coeff;
 	total_result[4 * rank + 1] = gt_sig* coeff;
 	total_result[4 * rank + 2] = gx* coeff;
@@ -217,13 +229,22 @@ int main(int argc, char ** argv)
 
 	if (0 == rank)
 	{
-		if (area_num == 1)
+		char result_name[40];
+		if (shear_cmd == 1)
 		{
-			sprintf(result_path, "%sresult/%s/w_%d/result_gamma.hdf5", total_path, fore_source, area_id[0]);
+			sprintf(result_name, "result_gamma.hdf5");
 		}
 		else
 		{
-			sprintf(result_path, "%sresult/%s/total/result_crit.hdf5", total_path, fore_source);
+			sprintf(result_name, "result_crit.hdf5");
+		}
+		if (area_num == 1)
+		{
+			sprintf(result_path, "%sresult/%s/w_%d/%s", total_path, fore_source, area_id[0],result_name);
+		}
+		else
+		{
+			sprintf(result_path, "%sresult/%s/total/%s", total_path, fore_source, result_name);
 		}
 		sprintf(set_name, "/result");
 		write_h5(result_path, set_name, total_result, numprocs, 4, TRUE);
