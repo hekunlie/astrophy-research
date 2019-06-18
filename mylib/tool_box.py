@@ -6,6 +6,7 @@ import numpy
 import copy
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from scipy import signal
 import os
 import scipy
 import configparser
@@ -539,14 +540,16 @@ def image_fft(image):
 def image_ifft(image):
     return fft.ifft2(fft.ifftshift(image))
 
-def shear2kappa(gamma1, gamma2, cen_x=0, cen_y=0):
+def shear2kappa_ks95(gamma1, gamma2, cen_x=0, cen_y=0):
     size = gamma1.shape[0]
     cen = int(size / 2)
     my, mx = numpy.mgrid[0:size, 0:size]
     ky, kx = my - cen, mx - cen
 
+    R2 = ky ** 2 + kx ** 2
+    R2[cen,cen] = 1
     # D_f = (kx ** 2 - ky ** 2 + 2j * ky * kx) / (ky ** 2 + kx ** 2)*numpy.pi
-    D_f_con = (kx**2 - ky**2 - 2j*ky*kx)/(ky**2 + kx**2)*numpy.pi
+    D_f_con = (kx**2 - ky**2 - 2j*ky*kx)/R2*numpy.pi
 
     D_f_con[cen,cen] = cen_x-cen_y*1j
 
@@ -564,12 +567,52 @@ def kappa2shear(kappa, cen_x=0, cen_y=0):
     ky, kx = my - cen, mx - cen
 
     kappa_f = image_fft(kappa)
-    D_f = (kx ** 2 - ky ** 2 + 2j * ky * kx) / (ky ** 2 + kx ** 2)*numpy.pi
+    R2 = ky ** 2 + kx ** 2
+    R2[cen,cen] = 1
+    D_f = (kx ** 2 - ky ** 2 + 2j * ky * kx) / R2*numpy.pi
     D_f[cen, cen] = cen_x-cen_y*1j
 
     gamma_f = D_f * kappa_f / numpy.pi
     gamma = image_ifft(gamma_f)
     return gamma
+
+def shear2kappa(g1, g2):
+    sp = g1.shape
+    nx, ny = sp[1]*2+1, sp[0]*2+1
+    cenx, ceny = int(nx / 2), int(ny / 2)
+
+    my, mx = numpy.mgrid[-ceny:ny - ceny, -cenx:nx - cenx]
+
+    R2 = my ** 2 + mx ** 2
+    R2[ceny, cenx] = 1
+    D1 = (my ** 2 - mx ** 2) / R2 ** 2
+    D2 = -2 * my * mx / R2 ** 2
+
+    D1[ceny, cenx] = 0
+    D2[ceny, cenx] = 0
+
+    kappa_1 = signal.convolve(g1, D1, mode="same")
+    kappa_2 = signal.convolve(g2, D2, mode="same")
+
+    # kappa_ini = numpy.zeros_like(g1) + 0.001
+
+    # while True:
+    #     max_kappa_ini = kappa_ini.max()
+    #
+    #     g1_prime = (1 - kappa_ini)*g1
+    #     g2_prime = (1 - kappa_ini)*g2
+    #
+    #     kappa_1 = signal.convolve(g1_prime, D1, mode="same")
+    #     kappa_2 = signal.convolve(g2_prime, D2, mode="same")
+    #
+    #     kappa_resc = kappa_1 + kappa_2
+    #
+    #
+    #     kappa_ini = kappa_resc
+    #
+    #     diff_kappa = kappa_resc.max() - max_kappa
+
+    return (kappa_1 + kappa_2)/numpy.pi
 
 
 ################################################################

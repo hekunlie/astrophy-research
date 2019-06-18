@@ -27,7 +27,7 @@ arcmin2rad = 1./60/180*numpy.pi
 
 area_id = int(argv[1])
 # ra ~ foreground_ra +/- delta_ra
-# input arcminute  -> degree
+# input arcminute
 delta_ra = float(argv[2])
 delta_dec = delta_ra
 # grid nx, ny (even number)
@@ -39,10 +39,10 @@ grid_num = nx*ny
 
 delta_z = 0.1
 # arcmin, separation angle for shear estimation
-radius = 5
+radius = float(argv[5])
 radius_sq = radius**2
 # arcmin, smooth scale in the weight
-smooth_len = 2
+smooth_len = float(argv[6])
 
 sgima_coeff = 388.283351
 
@@ -193,8 +193,8 @@ for igal in range(min(max_num,fore_num)):
 
         if rank == 0:
 
-            img = plot_tool.Image_Plot(fig_x=12, fig_y=12)
-            img.create_subfig(1, 2)
+            img = plot_tool.Image_Plot(fig_x=30, fig_y=30)
+            img.subplots(1, 2)
 
             img.axs[0][0].scatter(fore_ra[igal], fore_dec[igal], s=200, facecolors="none", edgecolors="r", marker="*")
             for i in range(ny + 1):
@@ -207,12 +207,12 @@ for igal in range(min(max_num,fore_num)):
                 img.axs[0][0].scatter(ra[idx_s], dec[idx_s],s=3)
                 img.axs[0][1].hist(redshift[idx_s], 100)
 
-            img.tick_label(0,0,0,"DEC (arcmin)")
-            img.tick_label(0,0,1,"RA (arcmin)")
+            img.set_label(0,0,0,"DEC (arcmin)")
+            img.set_label(0,0,1,"RA (arcmin)")
             img.axs[0][0].set_title("%d galaxies (%.2f ~ %.2f)"%(idx_s.sum(),redshift_bin[ir], redshift_bin[ir+1]))
 
-            img.tick_label(0,1,0,"Number")
-            img.tick_label(0,1,1,"Z")
+            img.set_label(0,1,0,"Number")
+            img.set_label(0,1,1,"Z")
             img.save_img(result_path_ig+"s%d_density_%d.png"%(igal,ir))
             img.close_img()
 
@@ -270,28 +270,42 @@ for igal in range(min(max_num,fore_num)):
                 ax3 = fig.add_subplot(223)
                 ax4 = fig.add_subplot(224)
 
-                tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_*sigma_crit_, nu=mnu1, bin_num=8, scale=100,
-                                                 fig_ax=ax1, left=-1000,right=1000, fit_num=20, chi_gap=30)[:2]
-                result[iy, ix] = tan_g
-                result[iy + ny, ix] = tan_g_sig
+                tan_g, tan_g_sig = 0, 0
+                try:
+                    tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_*sigma_crit_, nu=mnu1, bin_num=8, scale=100,
+                                                     fig_ax=ax1, left=-1000,right=1000, fit_num=20, chi_gap=30)[:2]
+                    result[iy, ix] = tan_g
+                    result[iy + ny, ix] = tan_g_sig
+                except:
+                    print("Something wrong in tangential excess surface density")
 
-                cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_*sigma_crit_, nu=mnu2, bin_num=8, scale=100,
-                                                     fig_ax=ax2, left=-1000,right=1000, fit_num=20, chi_gap=30)[:2]
-                result[iy + 2*ny, ix] = cross_g
-                result[iy + 3*ny, ix] = cross_g_sig
+
+                try:
+                    cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_*sigma_crit_, nu=mnu2, bin_num=8, scale=100,
+                                                         fig_ax=ax2, left=-1000,right=1000, fit_num=20, chi_gap=30)[:2]
+                    result[iy + 2*ny, ix] = cross_g
+                    result[iy + 3*ny, ix] = cross_g_sig
+                except:
+                    print("Something wrong in cross excess surface density")
+
 
                 result[iy + 4*ny, ix] = sigma_crit_.mean()
 
                 # the tangential shear
-                tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_, nu=mnu1, bin_num=8, scale=100,
-                                                 fig_ax=ax3, left=-0.2,right=0.2, fit_num=20, chi_gap=30)[:2]
-                result[iy + 5*ny, ix] = tan_g
-                result[iy + 6*ny, ix] = tan_g_sig
-
-                cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=8, scale=100,
-                                                     fig_ax=ax4, left=-0.2,right=0.2, fit_num=20, chi_gap=30)[:2]
-                result[iy + 7*ny, ix] = cross_g
-                result[iy + 8*ny, ix] = cross_g_sig
+                try:
+                    tan_g, tan_g_sig = fq.fmin_g_new(g=mg_t_, nu=mnu1, bin_num=8, scale=100,
+                                                     fig_ax=ax3, left=-0.2,right=0.2, fit_num=20, chi_gap=30)[:2]
+                    result[iy + 5*ny, ix] = tan_g
+                    result[iy + 6*ny, ix] = tan_g_sig
+                except:
+                    print("Something wrong in tangential shear")
+                try:
+                    cross_g, cross_g_sig = fq.fmin_g_new(g=mg_x_, nu=mnu2, bin_num=8, scale=100,
+                                                         fig_ax=ax4, left=-0.2,right=0.2, fit_num=20, chi_gap=30)[:2]
+                    result[iy + 7*ny, ix] = cross_g
+                    result[iy + 8*ny, ix] = cross_g_sig
+                except:
+                    print("Something wrong in cross shear")
 
                 pic_nm = pic_path_ig + "%d_%d_%d.png" % (iy, ix, ir)
                 plt.savefig(pic_nm, bbox_inches='tight')
