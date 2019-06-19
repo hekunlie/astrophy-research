@@ -34,15 +34,15 @@ h5f_c.close()
 
 signals = [gamma, crit]
 chisq = [chi_g, chi_c]
-ylims = [(-1.5,3.1), (-20, 180)]
+ylims = [(-1.5,3.1), (-20, 300)]
 ylabels = ["$\gamma \\times 10^2$", "$\Delta\Sigma$"]
 
 img = Image_Plot()
 img.subplots(1,2)
 img.set_style()
 for i in range(2):
-    img.axs[0][i].errorbar(radius, signals[i][:, 0], signals[i][:, 1], linestyle="--", c="C1", capsize=4, label="T", marker="p")
-    img.axs[0][i].errorbar(radius, signals[i][:, 2], signals[i][:, 3], linestyle="--", c="C2", capsize=4, label="X", marker="p")
+    img.axs[0][i].errorbar(radius, signals[i][:, 0], signals[i][:, 1], c="C1", capsize=4, label="T", marker="p")
+    img.axs[0][i].errorbar(radius, signals[i][:, 2], signals[i][:, 3], c="C2", capsize=4, label="X", marker="p")
 
     img.set_label(0,i,0, ylabels[i])
     img.set_label(0,i,1, "$R \quad \\rm{Mpc \cdot h^{-1}}$")
@@ -52,10 +52,15 @@ for i in range(2):
 
     img.axs[0][i].set_ylim(ylims[i])
     xs = img.axs[0][i].set_xlim()
-    img.axs[0][i].plot([xs[0], xs[1]], [0, 0], linestyle="--", c="grey")
-    img.axs[0][i].set_xlim(xs[0], xs[1])
-
+    img.axs[0][i].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
     img.set_legend(0,i)
+
+    if i == 1:
+        for j in range(15):
+            if j < 10:
+                img.axs[0][i].plot([xs[0], xs[1]], [j, j], linewidth=1, c="grey", alpha=0.6)
+            img.axs[0][i].plot([xs[0], xs[1]], [10 + 10*j, 10 + 10*j], linewidth=1,c="grey", alpha=0.6)
+    img.axs[0][i].set_xlim(xs[0], xs[1])
 
 img.save_img(total_path + "result/%s/%s/result_%s.pdf"%(fore_source, data_file, data_file))
 img.save_img(total_path + "result/%s/%s/result_%s.png"%(fore_source, data_file, data_file))

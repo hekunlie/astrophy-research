@@ -20,7 +20,9 @@ cpus = comm.Get_size()
 cmd = argv[1]
 cmds = ["collect", "select"]
 
-# collect: collect the data from the files. run it firstly
+# collect: collect the data from the files. run it firstly.
+#           add MAG, Z, Z_MIN, Z_MAX, ODDS, starflag, weight , and mask
+#           to end of each row in Fourier catalog
 # select: select the galaxy
 
 if cmd not in cmds:
@@ -76,14 +78,23 @@ z_lb = -4
 mag_lb = -5
 starflag_lb = -6
 
-flux_alt_thresh = 4.64
-nstar_thresh = 14
+flux_alt_thresh = 3.25
+nstar_thresh = 12
 total_area_thresh = 1
 field_g1_bound = 0.005
 field_g2_bound = 0.0075
 z_min, z_max = 0.0, 15
-c1_correction = -0.000474
-c2_correction = 0.000508
+c1_correction = -0.000578
+c2_correction = 0.000493
+
+# flux_alt_thresh = 0
+# nstar_thresh = 12
+# total_area_thresh = 1
+# field_g1_bound = 0.2
+# field_g2_bound = 0.2
+# z_min, z_max = 0.0, 15
+# c1_correction = -0.000578
+# c2_correction = 0.000493
 
 
 # data collection
