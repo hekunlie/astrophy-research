@@ -4087,6 +4087,39 @@ void matrix_inv(const double *arr, const int size, double *arr_inv)
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+
+void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian)
+{
+	double dec1_rad, dec2_rad, ra1_rad, ra2_rad;
+	double diff_dec_rad, diff_ra_rad;
+	double cos_dec1, cos_dec2, sin_dec1, sin_dec2, cos_diff_ra, sin_diff_ra;
+	double m, m1,m2, n;
+	double deg2rad = 1. / 180 * Pi;
+
+	dec1_rad = DEC1 * deg2rad;
+	dec2_rad = DEC2 * deg2rad;
+	ra1_rad = RA1 * deg2rad;
+	ra2_rad = RA2 * deg2rad;
+	diff_ra_rad = ra2_rad - ra1_rad;
+
+	cos_dec1 = cos(dec1_rad);
+	cos_dec2 = cos(dec2_rad);
+
+	sin_dec1 = sin(dec1_rad);
+	sin_dec2 = sin(dec2_rad);
+
+	sin_diff_ra = sin(diff_ra_rad);
+	cos_diff_ra = cos(diff_ra_rad);
+
+	m1 = cos_dec2 * sin_diff_ra;
+	m2 = cos_dec1 * sin_dec2 - sin_dec1 * cos_dec2*cos_diff_ra;
+	m = sqrt(m1*m1 + m2 * m2);
+
+	n = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2*cos_diff_ra;
+
+	sep_radian = fabs(atan2(m, n));
+}
+
 void find_near(const double *arr, const double tar_val, const int arr_len, int &label)
 {
 	double near;

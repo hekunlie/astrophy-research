@@ -47,7 +47,6 @@ print(rank, "I got %d files"%len(sub_src_list))
 #     src_data = numpy.loadtxt(src_path)
 #     src_sp = src_data.shape
 #
-#     mask = numpy.zeros((src_sp[0], 1), dtype=numpy.intc)
 #     # 3 extra cols for Z_B_MIN Z_B_MAX ODDS
 #     dst_data = numpy.zeros((src_sp[0], src_sp[1] + 3))
 #
@@ -57,19 +56,20 @@ print(rank, "I got %d files"%len(sub_src_list))
 #     h5f["/data"] = dst_data
 #     h5f.close()
 # data is the catalog contains additional parameters, "###.tsv"
+# read all data from each area
 for i in range(1, 5):
     h5f = h5py.File(cata_path + "CFHT_W%d.hdf5"%i,"r")
     temp = h5f["/data"].value
     h5f.close()
     if i == 1:
-        data = copy.deepcopy(temp)
+        data = temp
     else:
         data = numpy.row_stack((data, temp))
 
 num = data.shape[0]
 
-file_header = "pos  Flag   FLUX_RADIUS  e1  e2  weight  fitclass    SNratio MASK    Z_B m   c2  LP_Mi   star_flag   MAG_i   " \
-              "Z_B_MIN  Z_B_MAX ODDS"
+file_header = "pos  Flag   FLUX_RADIUS  e1  e2  weight  fitclass    SNratio    MASK   Z_B " \
+              "  m   c2  LP_Mi   star_flag   MAG_i   Z_B_MIN  Z_B_MAX  ODDS"
 
 for nms in sub_src_list:
 
@@ -79,13 +79,14 @@ for nms in sub_src_list:
     src_path = cata_path + "field_dat/" + nms + ".dat"
     dst_path = cata_path + "field_dat/" + nms + "_new.dat"
     dst_path_h5 = cata_path + "field_dat/" + nms + ".hdf5"
+
     # read source data
     src_data = numpy.loadtxt(src_path)
     src_sp = src_data.shape
 
     mask = numpy.zeros((src_sp[0], ),dtype=numpy.intc)
     # 3 extra cols for Z_B_MIN Z_B_MAX ODDS
-    dst_data = numpy.zeros((src_sp[0], src_sp[1] + 5)) - 99
+    dst_data = numpy.zeros((src_sp[0], src_sp[1] + 5), dtype=numpy.float64) - 99.
 
     dst_data[:, :src_sp[1]] = src_data
 
@@ -102,15 +103,16 @@ for nms in sub_src_list:
 
     logger.info("Begin to match...")
     sub_data = data[idx]
+    # loop the source in original catalog to find the target in the new download catalog
     for i in range(src_sp[0]):
 
         ra_src, dec_src = src_data[i,0], src_data[i,1]
-
+        # radius
         del_radius = numpy.abs(ra_src - sub_data[:,0]) + numpy.abs(dec_src - sub_data[:,1])
 
         del_radius_min = del_radius.min()
 
-        if del_radius_min <= 0.000005:
+        if del_radius_min <= 0.00001:
 
             npw_dr = numpy.where(del_radius == del_radius_min)[0][0]
 

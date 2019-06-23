@@ -585,6 +585,10 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
+void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);
+/* calculate the separation angle between two points on the sphere */
+/* RA & DEC in unit of degree */
+
 void find_near(const double *arr, const double tar_val, const int arr_len, int & label);//checked
 /* find the label of the element in "arr" which is the nearest to "tar_val" */
 

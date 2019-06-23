@@ -8,7 +8,6 @@ import tool_box
 import h5py
 from mpi4py import MPI
 from sys import argv
-import matplotlib.pyplot as plt
 import numpy
 import time
 
@@ -18,11 +17,12 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 cmd = argv[1]
-cmds = ["collect", "select"]
+cmds = ["collect_cfht", "select_cfht", "collect_fourier", "select_fourier"]
 
-# collect: collect the data from the files. run it firstly.
-#           add MAG, Z, Z_MIN, Z_MAX, ODDS, starflag, weight , and mask
-#           to end of each row in Fourier catalog
+# collect: collect the data from the files of each field. run it firstly.
+#           add MAG, Z, Z_MIN, Z_MAX, ODDS, starflag, weight,
+#           mask, e1, e2, m, c, and fitclass to end of each row in Fourier catalog
+
 # select: select the galaxy
 
 if cmd not in cmds:
@@ -54,6 +54,9 @@ gets_item = [["fresh_para_idx", "nstar", "0"], ["fresh_para_idx", "flux_alt", "0
 gets = ["get" for i in range(len(gets_item))]
 para_items = tool_box.config(envs_path, gets, gets_item)
 
+############################# Fourier_Quad Option ################################################
+# the column label in Fourier_Quad catalog,
+# used in Fourier_quad related option
 nstar_lb = int(para_items[0])
 flux_alt_lb = int(para_items[1])
 total_area_lb = int(para_items[11])
@@ -71,13 +74,28 @@ mu_lb = int(para_items[9])
 mv_lb = int(para_items[10])
 
 # it would change as more parameters added into the file
-odds_lb = -1
-z_max_lb = -2
-z_min_lb = -3
-z_lb = -4
-mag_lb = -5
-starflag_lb = -6
+# the output of Fourier_quad pipeline contains 21 columns,
+# but there is an additional useless columns (22'th) added before...
+data_col = 21
 
+add_col = 6
+
+starflag_lb_f = 21
+mag_lb_f = 22
+z_lb_f = 23
+z_min_lb_f = 24
+z_max_lb_f = 25
+odds_lb_f = 26
+# optional
+fitclass_lb_f = 27
+weight_lb_f = 28
+mask_lb_f = 29
+e1_lb_f = 30
+e2_lb_f = 31
+m_lb_f = 32
+c_lb_f = 33
+
+# cut off
 flux_alt_thresh = 3.25
 nstar_thresh = 12
 total_area_thresh = 1
@@ -95,20 +113,48 @@ c2_correction = 0.000493
 # z_min, z_max = 0.0, 15
 # c1_correction = -0.000578
 # c2_correction = 0.000493
+############################# Fourier_Quad Option ################################################
 
 
-# data collection
-if cmd == "collect":
+############################# CFHTLenS Option ####################################################
+ra_lb_c = 0
+dec_lb_c = 1
+flag_lb_c = 2
+flux_rad_lb_c = 3
+e1_lb_c = 4
+e2_lb_c = 5
+weight_lb_c = 6
+fitclass_lb_c = 7
+snr_lb_c = 8
+mask_lb_c = 9
+z_lb_c = 10
+m_lb_c = 11
+c_lb_c = 12
+lp_mi_lb_c = 13
+starflag_lb_c = 14
+mag_lb_c = 15
+z_min_lb_c = 16
+z_max_lb_c = 17
+odds_lb_c = 18
+
+# change the cutoff threshold in the part of "select_cfht"
+
+############################# CFHTLenS Option ####################################################
+
+logger = tool_box.get_logger("./logs/%d.dat"%rank)
+
+############################# Fourier_quad data collection #######################################
+# combine the data of each field into one big catalog
+if cmd == "collect_fourier":
 
     t1 = time.time()
 
-    h5f_path = data_path + "cata_%s.hdf5" % result_source
+    h5f_path = data_path + "fourier_cata_%s.hdf5" % result_source
     if rank == 0:
         h5f = h5py.File(h5f_path, "w")
         h5f.close()
-        buffer = []
 
-    c_dicts, c_fields = tool_box.field_dict(cfht_cata_path+"nname.dat")
+    c_dicts, c_fields = tool_box.field_dict(cfht_cata_path + "nname.dat")
     f_dicts, f_fields = tool_box.field_dict(fourier_cata_path + "nname.dat")
 
     # choose the fields both exist in the two catalog
@@ -153,8 +199,10 @@ if cmd == "collect":
                     f_data = numpy.loadtxt(f_data_path)
                     f_sp = f_data.shape
                     # the redshift magnitude and starflag, if non-exist in the cfht catalog, labeled by -1
-                    new_data = numpy.zeros((f_sp[0], f_sp[1] + 6), dtype=numpy.double) - 1
-                    new_data[:,:f_sp[1]] = f_data
+                    new_data = numpy.zeros((f_sp[0], data_col + add_col), dtype=numpy.double) - 1
+                    # the output of Fourier_quad pipeline contains 21 columns,
+                    # but there is an additional useless columns (22'th) added before...
+                    new_data[:,:data_col] = f_data[:,:data_col]
 
                     # c_data = numpy.loadtxt(c_data_path)
                     h5f_c = h5py.File(c_data_path,"r")
@@ -164,6 +212,7 @@ if cmd == "collect":
                     c_sp = c_data.shape
                     # f_sp[0] > c_sp[0]
                     pairs = 0
+                    mask = numpy.zeros((f_sp[0],), dtype=numpy.intc)
                     for i in range(f_sp[0]):
                         # fortran start from 1 not 0
                         # the row labels corresponding to the galaxies in cfht catalog
@@ -173,24 +222,46 @@ if cmd == "collect":
                         # check
                         del_radius = numpy.abs(f_data[i,ra_lb] - c_data[tag, 0]) + numpy.abs(f_data[i,dec_lb] - c_data[tag, 1])
 
-                        if del_radius <= 0.000005:
+                        if del_radius < 0.00005:
                             # starflag
-                            new_data[i, f_sp[1]] = c_data[tag, 14]
+                            new_data[i, starflag_lb_f] = c_data[tag, 14]
                             # magnitude
-                            new_data[i, f_sp[1] + 1] = c_data[tag, 15]
+                            new_data[i, mag_lb_f] = c_data[tag, 15]
                             # redshift
-                            new_data[i, f_sp[1] + 2] = c_data[tag, 10]
+                            new_data[i, z_lb_f] = c_data[tag, 10]
                             # Z_MIN
-                            new_data[i, f_sp[1] + 3] = c_data[tag, 16]
+                            new_data[i, z_min_lb_f] = c_data[tag, 16]
                             # Z_MAX
-                            new_data[i, f_sp[1] + 4] = c_data[tag, 17]
+                            new_data[i, z_max_lb_f] = c_data[tag, 17]
                             # ODDS in redshift fitting
-                            new_data[i, f_sp[1] + 5] = c_data[tag, 18]
-                            pairs += 1
+                            new_data[i, odds_lb_f] = c_data[tag, 18]
+                            # # FITCLASS
+                            # new_data[i, fitclass_lb] = c_data[tag, 7]
+                            # # MASK
+                            # new_data[i, mask_lb] = c_data[tag, 9]
+                            # # weight
+                            # new_data[i, weight_lb] = c_data[tag, 6]
+                            # # e1
+                            # new_data[i, e1_lb] = c_data[tag, 4]
+                            # # e2
+                            # new_data[i, e2_lb] = c_data[tag, 5]
+                            # # m
+                            # new_data[i, m_lb] = c_data[tag, 11]
+                            # # c2
+                            # new_data[i, c_lb] = c_data[tag, 12]
 
+                            mask[i] += 1
+
+                    idx_mask = mask == 1
+                    pairs = idx_mask.sum()
+                    idx_mask_2 = mask > 1
                     if pairs == 0:
-                        print("These two catalogs can't match!!")
+                        print("%s These two catalogs can't match!!"%field_name)
                         exit(0)
+                    elif pairs < f_sp[0]:
+                        print("%s Some sources are missing!!"%field_name)
+                    if idx_mask_2.sum() > 0:
+                        print("%s Overlap!!" % field_name)
 
                     if field_count == 0:
                         cata_data = new_data
@@ -204,7 +275,7 @@ if cmd == "collect":
         if cata_data is not None:
             data_sp = cata_data.shape
         else:
-            cata_data = numpy.array([[1]])
+            cata_data = numpy.zeros((1,1))
             data_sp = cata_data.shape
 
         data_sps = comm.gather(data_sp, root=0)
@@ -213,7 +284,7 @@ if cmd == "collect":
         # numpy.savez(npz_name, cata_data)
 
         if rank > 0:
-            comm.Send(cata_data, dest=0, tag=rank)
+            comm.Send([cata_data, MPI.DOUBLE], dest=0, tag=rank)
         else:
             if data_sp[0] > 1 and data_sp[1] > 1:
                 stack_pool = [cata_data]
@@ -232,7 +303,7 @@ if cmd == "collect":
                 else:
                     recv_buffer = numpy.row_stack((recv_buffer, arr))
 
-            h5f = h5py.File(h5f_path)
+            h5f = h5py.File(h5f_path,"r+")
 
             # each shear estimator is 2 times the one in the paper,
             # Zhang et al. 2017 ApJ 834,
@@ -251,62 +322,171 @@ if cmd == "collect":
     print(rank, "the galaxy number in each area", num)
     # stack the sub-catalogs from each area
     if rank == 0:
-        # fig1 = plt.figure(figsize=(14, 14))
-        # fig2 = plt.figure(figsize=(14, 14))
-        # fig3 = plt.figure(figsize=(14, 14))
-
         h5f = h5py.File(h5f_path,"r+")
-
         for area_id in range(1,area_num+1):
             temp_s = h5f["/w_%d" % area_id].value
-
-            # # select the data as CFTHLenS
-            # red_z = temp[:, -3]
-            # idxz_1 = red_z < z_max
-            # idxz_2 = red_z > z_min
-            # temp_s = temp[idxz_1&idxz_2]
-            #
-            # # show the range of RA & DEC
-            # print(area_id, temp_s.shape,temp_s[:,12].min()*60, temp_s[:,12].max()*60,
-            #       temp_s[:,13].min()*60, temp_s[:,13].max()*60)
-            # ax1 = fig1.add_subplot(220 + area_id)
-            # ax1.scatter(temp_s[:,12]*60, temp_s[:,13]*60, s=0.3)
-            #
-            # # histogram of redshift
-            # ax2 = fig2.add_subplot(220 + area_id)
-            # ax2.hist(red_z, 50)
-            #
-            # # of magnitude
-            # mag = temp_s[:, -2]
-            # idxm_1 = mag > 0
-            # idxm_2 = mag < 30
-            # ax3 = fig3.add_subplot(220 + area_id)
-            # ax3.hist(mag[idxm_1&idxm_2], 50)
-
             if area_id == 1:
                 data = temp_s
             else:
                 data = numpy.row_stack((data, temp_s))
             print("Totally, %d galaxies are detected in W_%d" % (len(temp_s), area_id))
 
-        # fig1.savefig(data_path + "pic/Ra_dec_%s.png"%result_source)
-        # fig2.savefig(data_path + "pic/Z_%s.png"%result_source)
-        # fig3.savefig(data_path + "pic/Mag_%s.png"%result_source)
-        plt.close()
-
         h5f["/total"] = data
         h5f.close()
 
     t2 = time.time()
     if rank == 0:
-        print(t2-t1, len(data))
+        print("%.2f, %d"%(t2-t1, len(data)))
+############################# Fourier_quad data collection #######################################
 
-if cmd == "select":
+
+############################# CFHTLenS catalog collection ########################################
+# combine the data of each field into one big catalog
+if cmd == "collect_cfht":
+
     t1 = time.time()
 
-    h5f_path = data_path + "cata_%s.hdf5" % result_source
-    h5f_path_cut = data_path + "cata_%s_cut.hdf5" % result_source
-    h5f_red_dist_path = data_path + "redshift.hdf5"
+    logger.info("RANK: %03d. Begin..."%rank)
+
+    h5f_path = data_path + "cfht_cata.hdf5"
+    if rank == 0:
+        h5f = h5py.File(h5f_path, "w")
+        h5f.close()
+
+    pre_fields = tool_box.field_dict(cfht_cata_path + "nname.dat")[1]
+
+    # loop the areas,
+    # the catalog of each area will be stored in "w_i"
+    num = []
+    for area_id in range(1,area_num+1):
+        # distribution the files
+        field_tar = []
+        for field in pre_fields:
+            if "w%d" % area_id in field:
+                field_tar.append(field)
+
+        # if fields are more than the threads,
+        # some thread will get an empty "field_pool"
+        field_pool = tool_box.allot(field_tar, cpus)[rank]
+
+        # check
+        anothers = ["w%d"%i for i in range(1,area_num+1) if i != area_id]
+        for field_name in field_pool:
+            for ext_field in anothers:
+                if ext_field in field_name:
+                    print("WRONG",rank, area_id, field_name)
+                    exit()
+
+        field_count = 0
+
+        for field_name in field_pool:
+            # c_data_path = cfht_cata_path + "field_dat/%s_new.dat"%field_name
+            c_data_path = cfht_cata_path + "field_dat/%s.hdf5"%field_name
+
+            if os.path.exists(c_data_path):
+                # try:
+
+                # c_data = numpy.loadtxt(c_data_path)
+                h5f_c = h5py.File(c_data_path,"r")
+                c_data = h5f_c["/data"].value
+                h5f_c.close()
+
+                if field_count == 0:
+                    cata_data = c_data
+
+                else:
+                    cata_data = numpy.row_stack((cata_data, c_data))
+                field_count += 1
+
+                # except:
+                #     print(rank, "%s.dat doesn't exist"%field_name)
+            else:
+                print("Rank %d Can't find %s"%(rank,field_name))
+
+        # in case of that some thread gets nothing from the file (non-existed)
+        if field_count < 1:
+            cata_data = numpy.zeros((1,1))
+
+        data_sp = cata_data.shape
+
+        data_sps = comm.gather(data_sp, root=0)
+        num.append(data_sp)
+
+        # DEBUG
+        # for ir in range(cpus):
+        #     if ir == rank:
+        #         print(rank, len(field_tar), field_pool, field_count, cata_data.shape, type(cata_data), cata_data.dtype)
+        #         h5f_temp = h5py.File("%d.hdf5"%rank,"w")
+        #         h5f_temp["/data"] = cata_data
+        #         h5f_temp.close()
+        #     comm.Barrier()
+
+        if rank > 0:
+            logger.info("RANK: %03d. AREA: %d. Send... Files: %d" % (rank, area_id, field_count))
+            comm.Send([cata_data,MPI.DOUBLE], dest=0, tag=rank)
+        else:
+            logger.info("RANK: %03d. AREA: %d. Receive... Files: %d" % (rank, area_id, field_count))
+            if data_sp[0] > 1 and data_sp[1] > 1:
+                stack_pool = [cata_data]
+            else:
+                stack_pool = []
+
+            for procs in range(1,cpus):
+                recvs = numpy.empty(data_sps[procs], dtype=numpy.float64)
+                comm.Recv(recvs, source=procs, tag=procs)
+                if data_sps[procs][0] > 1 and data_sps[procs][1] > 1:
+                    stack_pool.append(recvs)
+
+            for stack_count, arr in enumerate(stack_pool):
+                if stack_count == 0:
+                    recv_buffer = arr
+                else:
+                    recv_buffer = numpy.row_stack((recv_buffer, arr))
+
+            h5f = h5py.File(h5f_path,"r+")
+
+            h5f["/w_%d" % area_id] = recv_buffer
+            h5f.close()
+            logger.info("RANK: %03d. AREA: %d. RECV: (%d, %d)" % (rank, area_id, recv_buffer.shape[0],recv_buffer.shape[1]))
+            print("RECV: ", recv_buffer.shape)
+        comm.Barrier()
+
+    print(rank, "the galaxy number in each area", num)
+    log_str = "RANK: %03d. galaxy number in each area [" % rank
+    for i in range(0, area_num):
+        log_str += "(%d, %d), "%(num[i][0], num[i][1])
+    log_str += "]. "
+    logger.info(log_str)
+    # stack the sub-catalogs from each area
+    t2 = time.time()
+    if rank == 0:
+
+        h5f = h5py.File(h5f_path,"r+")
+        for area_id in range(1,area_num+1):
+            logger.info("RANK: %03d. Stacking %d..." % (rank, area_id))
+            temp_s = h5f["/w_%d" % area_id].value
+            if area_id == 1:
+                data = temp_s
+            else:
+                data = numpy.row_stack((data, temp_s))
+            print("Totally, %d galaxies are detected in W_%d" % (len(temp_s), area_id))
+
+        h5f["/total"] = data
+        h5f.close()
+        logger.info("RANK: %03d. Finish..." %rank)
+    t3 = time.time()
+    if rank == 0:
+        print("%.2f,%.2f, %d"%(t2-t1,t3-t2, len(data)))
+############################# CFHTLenS catalog collection ########################################
+
+
+############################# Fourier_quad data cutoff ###########################################
+if cmd == "select_fourier":
+    t1 = time.time()
+
+    h5f_path = data_path + "fourier_cata_%s.hdf5" % result_source
+    h5f_path_cut = data_path + "fourier_cata_%s_cut.hdf5" % result_source
+
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
         h5f.close()
@@ -328,8 +508,8 @@ if cmd == "select":
         fg1_idx = fg1 <= field_g1_bound
         fg2_idx = fg2 <= field_g2_bound
 
-        idxz_1 = cata_data[:, z_lb] <= z_max
-        idxz_2 = cata_data[:, z_lb] >= z_min
+        idxz_1 = cata_data[:, z_lb_f] <= z_max
+        idxz_2 = cata_data[:, z_lb_f] >= z_min
 
         cut_idx = flux_alt_idx & nstar_idx & total_area_idx & fg1_idx & fg2_idx & idxz_1 & idxz_2
 
@@ -348,24 +528,27 @@ if cmd == "select":
         dec = cata_data[:, dec_lb][cut_idx]
         cos_dec = numpy.abs(numpy.cos((dec/180*numpy.pi)))
 
-        redshift = cata_data[:, z_lb][cut_idx]
-        z_min = cata_data[:,z_min_lb][cut_idx]
-        z_max = cata_data[:,z_max_lb][cut_idx]
-        odds = cata_data[:,odds_lb][cut_idx]
+        redshift = cata_data[:, z_lb_f][cut_idx]
+        z_min = cata_data[:,z_min_lb_f][cut_idx]
+        z_max = cata_data[:,z_max_lb_f][cut_idx]
+        odds = cata_data[:,odds_lb_f][cut_idx]
 
-        mag = cata_data[:, mag_lb][cut_idx]
-        starflag = cata_data[:, starflag_lb][cut_idx]
+        mag = cata_data[:, mag_lb_f][cut_idx]
+        starflag = cata_data[:, starflag_lb_f][cut_idx]
 
-        gal_num = len(mg1)
-        ra_min, ra_max = ra.min(),ra.max()
-        dec_min, dec_max = dec.min(), dec.max()
+        # e1 = cata_data[:,e1_lb][cut_idx]
+        # e2 = cata_data[:,e2_lb][cut_idx]
+        # weight = cata_data[:,weight_lb][cut_idx]
+        # fitclass = cata_data[:,fitclass_lb][cut_idx]
+        # mask = cata_data[:,mask_lb][cut_idx]
+        # m_bias = cata_data[:,m_lb][cut_idx]
+        # c_bias = cata_data[:,c_lb][cut_idx]
 
-        # distance = numpy.zeros_like(redshift)
-        # for i in range(gal_num):
-        #     tag = tool_box.find_near(redshift_refer, redshift[i])
-        #     distance[i] = distance_refer[tag]
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC", "STARGLAG","Z_MIN", "Z_MAX","ODDS"]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC",
+                 "STARGLAG", "Z_MIN", "Z_MAX", "ODDS"]\
+            # , "E1", "E2", "WEIGHT", "FITCLASS",  "MASK", "M", "C", ]
         datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag, z_min, z_max, odds]
+                 # e1, e2, weight, fitclass, mask, m_bias, c_bias]
         data_num = len(redshift)
 
     comm.Barrier()
@@ -380,3 +563,81 @@ if cmd == "select":
     t2 = time.time()
     if rank == 0:
         print(t2-t1, data_num)
+############################# Fourier_quad data cutoff ###########################################
+
+
+############################# CFHTLenS catlog cutoff #############################################
+if cmd == "select_cfht":
+    t1 = time.time()
+
+    h5f_path = data_path + "cfht_cata.hdf5"
+    h5f_path_cut = data_path + "cfht_cata_cut.hdf5"
+    if rank == 0:
+        h5f = h5py.File(h5f_path_cut, "w")
+        h5f.close()
+    comm.Barrier()
+
+    if rank < area_num:
+        h5f = h5py.File(h5f_path, "r")
+        cata_data = h5f["/w_%d"%(rank+1)].value
+        h5f.close()
+
+        # cut off
+        epsilon = 0.00001
+        # weight > 0
+        idx_weight = cata_data[:, weight_lb_c] > 0 - epsilon
+        # mask <= 1
+        idx_mask = cata_data[:, mask_lb_c] <= 1 + epsilon
+        # FITCLASS = 0
+        idx_fitclass = numpy.abs(cata_data[:, fitclass_lb_c]) < 0 + epsilon
+        # MAG < 24.7
+        idx_mag = cata_data[:, mag_lb_c] < 24.7
+        # Redshift
+        idxz_1 = cata_data[:, z_lb_c] <= z_max
+        idxz_2 = cata_data[:, z_lb_c] >= z_min
+        idxz_3 = cata_data[:, odds_lb_c] > 0.5 - epsilon
+
+        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+
+        ra = cata_data[:, ra_lb_c][cut_idx]
+        dec = cata_data[:, dec_lb_c][cut_idx]
+        cos_dec = numpy.abs(numpy.cos((dec/180*numpy.pi)))
+
+        redshift = cata_data[:, z_lb_c][cut_idx]
+        z_min = cata_data[:,z_min_lb_c][cut_idx]
+        z_max = cata_data[:,z_max_lb_c][cut_idx]
+        odds = cata_data[:,odds_lb_c][cut_idx]
+
+        mag = cata_data[:, mag_lb_c][cut_idx]
+        starflag = cata_data[:, starflag_lb_c][cut_idx]
+
+        e1 = cata_data[:,e1_lb_c][cut_idx]
+        e2 = cata_data[:,e2_lb_c][cut_idx]
+        weight = cata_data[:,weight_lb_c][cut_idx]
+
+        fitclass = cata_data[:,fitclass_lb_c][cut_idx]
+
+        mask = cata_data[:,mask_lb_c][cut_idx]
+
+        m_bias = cata_data[:,m_lb_c][cut_idx]
+        c_bias = cata_data[:,c_lb_c][cut_idx]
+
+        names = ["Z", "RA", "DEC", "MAG", "COS_DEC", "STARGLAG", "Z_MIN", "Z_MAX", "ODDS",
+                 "E1", "E2", "WEIGHT", "FITCLASS", "MASK", "M", "C"]
+        datas = [redshift, ra, dec, mag, cos_dec, starflag, z_min, z_max, odds,
+                 e1, e2, weight, fitclass, mask, m_bias, c_bias]
+        data_num = len(redshift)
+
+    comm.Barrier()
+
+    for area_id in range(area_num):
+        if rank == area_id:
+            h5f = h5py.File(h5f_path_cut, "r+")
+            for i in range(len(names)):
+                h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
+            h5f.close()
+        comm.Barrier()
+    t2 = time.time()
+    if rank == 0:
+        print(t2-t1, data_num)
+############################# CFHTLenS catlog cutoff #############################################

@@ -5,7 +5,7 @@
 #define max_data_col 40
 #define foregal_data_col 5
 #define grid_data_col 5
-#define backgal_data_col 21
+#define backgal_data_col 22
 #define mg_bin_num 8
 
 #define SMALL_CATA
@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 	/*		1. the sky area label																												*/
 	/*		2. the radius bin label, the search raidus																			*/
 	/*     3. the name of the foreground data set																			    */
-	   	 
+
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -32,10 +32,11 @@ int main(int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-// if the memory of the system could contain all the pairs
-// it will gather all the data and estimate the signal with SYM-PDF method
+	// if the memory of the system could contain all the pairs
+	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
+	int vec_data_col = 8;
 #endif
 
 	int i, j, k, temp;
@@ -48,9 +49,9 @@ int main(int argc, char *argv[])
 	int radius_label = atoi(argv[2]);
 	strcpy(foreground_name, argv[3]);
 
-	   
+
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	sprintf(h5f_res_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
+	sprintf(h5f_res_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
 	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
 	sprintf(h5f_path_fore, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/foreground/%s/w_%d.hdf5", foreground_name, area_id);
 
@@ -59,49 +60,7 @@ int main(int argc, char *argv[])
 	//sprintf(h5f_res_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
 	//sprintf(h5f_path_fore, "/mnt/perc/hklee/CFHT/gg_lensing/data/foreground/%s/w_%d.hdf", foreground_name, area_id);
 
-	sprintf(h5f_path_grid, "%sfourier_cata_result_ext_grid.hdf5", data_path);
-
-	
-	// be careful with the boundary of the guess of critical density and shear 
-	//double gh_crit_step = 0.001;
-	//double gh_crit_left = -0.32 + 0.02 * radius_label;
-	//double gh_crit_right = fabs(gh_crit_left);
-	//int gh_crit_num = int(gh_crit_right * 2 / gh_crit_step) + 1;
-	//double *gh_crit = new double[gh_crit_num];
-	//for (i = 0; i < gh_crit_num; i++)
-	//{
-	//	gh_crit[i] = gh_crit_left + gh_crit_step * i;
-	//}
-
-	//double gh_step = 0.0001;
-	//double gh_left = -0.04 + 0.003 * radius_label;
-	//double gh_right = fabs(gh_left);
-	//int gh_num = int(gh_right * 2 / gh_step) + 1;
-	//double *gh = new double[gh_num];
-	//for (i = 0; i < gh_num; i++)
-	//{
-	//	gh[i] = gh_left + gh_step * i;
-	//}
-
-	double gh_crit_step[13]{ 0.005, 0.005, 0.004, 0.002, 0.002, 0.001, 0.001, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002 };
-	double gh_crit_left[13]{-0.4,  -0.25, -0.2, -0.1, -0.05, -0.05,  -0.03, -0.01, -0.01, -0.01, -0.01,  -0.01,  -0.01};
-	double gh_crit_right[13]{0.4,  0.25,  0.2,  0.15,    0.1,     0.1,  0.08,   0.05,  0.05,   0.02,  0.02,  0.012,  0.012};
-	int gh_crit_num = int((gh_crit_right[radius_label] -gh_crit_left[radius_label])/ gh_crit_step[radius_label])+1;
-	double *gh_crit = new double[gh_crit_num];
-	for (i = 0; i < gh_crit_num; i++)
-	{
-		gh_crit[i] = gh_crit_left[radius_label] + gh_crit_step[radius_label] * i;
-	}
-
-	double gh_step[13]{ 0.0005, 0.0005, 0.0004, 0.0002, 0.0002, 0.0001, 0.0001, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002 };
-	double gh_left[13]{ -0.04,  -0.025, -0.02, -0.01, -0.005, -0.005,  -0.003, -0.001, -0.001, -0.001, -0.001,  -0.001,  -0.001 };
-	double gh_right[13]{ 0.04,  0.025,  0.02,  0.015,    0.01,     0.01,  0.008,   0.005,  0.005,   0.002,  0.002,  0.0012,  0.0012 };
-	int gh_num = int((gh_right[radius_label] - gh_left[radius_label]) / gh_step[radius_label]) + 1;
-	double *gh = new double[gh_num];
-	for (i = 0; i < gh_crit_num; i++)
-	{
-		gh[i] = gh_left[radius_label] + gh_step[radius_label] * i;
-	}
+	sprintf(h5f_path_grid, "%scfht_cata_grid.hdf5", data_path);
 
 	pts_info gal_info;
 
@@ -120,33 +79,21 @@ int main(int argc, char *argv[])
 
 
 	int backgal_num;
-	double *backgal_data[max_data_col]; 
+	double *backgal_data[max_data_col];
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi;
-	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
-	double backgal_mnu1_tan, backgal_mnu2_tan, backgal_mnu1_tan_c, backgal_mnu2_tan_c;
+	double backgal_e_t, backgal_e_x, backgal_m, backgal_c2;
 	double z_b, z_thresh, z_b_sig95, z_b_odds;
 	double ra_b, dec_b;
 	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh = 0.1;
-	  
+
 	double *my_data_buf, *final_buf;
-	// the chi and the shear guess
-	int ig, ic, ig_label;
-	int mg_bin_num2 = mg_bin_num / 2;
+	// the buf
+	double my_signal_buf[2];
+	// the signal from the all areas
+	double *delta_sigma;
+	MY_INT *pair_count_shared;
 
-	// the bin of G1(2) for shear estimation
-	double *mg1_bin = new double[mg_bin_num + 1];
-	double *mg2_bin = new double[mg_bin_num + 1];
 
-	// chi of the signal from the all areas
-	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared, *pair_count_shared;
-	// chi square of the signal of each thread in each areas
-	double *my_chi_tan = new double[mg_bin_num*gh_num];
-	double *my_chi_cross = new double[mg_bin_num*gh_num];
-	double *my_chi_crit_tan = new double[mg_bin_num*gh_crit_num];
-	double *my_chi_crit_cross = new double[mg_bin_num*gh_crit_num];
-	double mg_t, mg_x;
-	int chi_bin_label;
-	
 	int grid_num, grid_ny, grid_nx;
 	int row, col, bin_label;
 	int block_id, block_s, block_e, ib;
@@ -161,17 +108,15 @@ int main(int argc, char *argv[])
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
-	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
-	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17, mag_lb = 18;
-	int ra_bin_id = 19, dec_bin_id = 20;
-	int block_scale_id = 21, grid_shape_id = 22;
+	int e1_id = 10, e2_id = 11, weight_id = 12, m_id = 13, c_id = 14;
+	int starflag_id = 15, zmin_lb = 16, zmax_lb = 17, odds_lb = 18, mag_lb = 19;
+	int ra_bin_id = 20, dec_bin_id = 21;
+	int block_scale_id = 22, grid_shape_id = 23;
 
 	int shape[2];
 
-	char *names[max_data_col];
-	//backgal_data_col includes the data to "DEC_BIN",
-	// "+2" for "block_scale" and "grid_shape"
-	for (i = 0; i < backgal_data_col+2; i++)
+	char *names[max_data_col];//backgal_data_col
+	for (i = 0; i < backgal_data_col + 2; i++)
 	{
 		names[i] = new char[40];
 	}
@@ -187,17 +132,18 @@ int main(int argc, char *argv[])
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
 
-	sprintf(names[mg1_id], "G1");
-	sprintf(names[mg2_id], "G2");
-	sprintf(names[mn_id], "N");
-	sprintf(names[mu_id], "U");
-	sprintf(names[mv_id], "V");
+	sprintf(names[e1_id], "E1");
+	sprintf(names[e2_id], "E2");
+	sprintf(names[weight_id], "WEIGHT");
+	sprintf(names[m_id], "M");
+	sprintf(names[c_id], "C");
 
+	sprintf(names[starflag_id], "STARGLAG");
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
 	sprintf(names[mag_lb], "MAG");
-	
+
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
 
@@ -213,17 +159,17 @@ int main(int argc, char *argv[])
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	// the shared buffer for the total chi square of the signal
+	// the shared buffer for the total \Delta\Sigma_t , \Delta\Sigma_x, and the errors
 #if ! defined(SMALL_CATA)
 
-	MPI_Win win_chi_tan_total, win_chi_cross_total, win_chi_crit_tan_total, win_chi_crit_cross_total;
-	MPI_Aint size_chi_tan, size_chi_cross, size_chi_crit_tan, size_chi_crit_cross;
+	MPI_Win win_delta_sigma;
+	MPI_Aint size_delta_sigma;
+	// the signals from each field could be added into the final one to get the signal of the whole area
+	// so, the denominator and numerator are stored separately
+	//[\Sum weight*\Sigma_t,  \Sum weight*\Sigma_t_err,  
+	//  \Sum weight*\Sigma_x, \Sum weight*\Sigma_x_err,  \Sum weight]
+	size_delta_sigma = radius_num*5;
 
-	// [chi_tan, chi_cross]
-	size_chi_tan =  mg_bin_num*gh_num;
-	size_chi_cross = mg_bin_num*gh_num;
-	size_chi_crit_tan = mg_bin_num * gh_crit_num;
-	size_chi_crit_cross = mg_bin_num * gh_crit_num;
 #endif
 	MPI_Win win_pair_count;
 	MPI_Aint  size_pair_count;
@@ -234,11 +180,7 @@ int main(int argc, char *argv[])
 	{
 #if ! defined( SMALL_CATA)
 		// for the chi square of tangential shear
-		MPI_Win_allocate_shared(size_chi_tan * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
-		MPI_Win_allocate_shared(size_chi_cross * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
-		// for the chi square of shear*critical_surface_density
-		MPI_Win_allocate_shared(size_chi_crit_tan * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
-		MPI_Win_allocate_shared(size_chi_crit_cross * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
+		MPI_Win_allocate_shared(size_delta_sigma * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
 #endif
 		MPI_Win_allocate_shared(size_pair_count * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 	}
@@ -246,17 +188,9 @@ int main(int argc, char *argv[])
 	{
 		int dispu_total;
 #if ! defined( SMALL_CATA)
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_tan_shared, &win_chi_tan_total);
-		MPI_Win_shared_query(win_chi_tan_total, 0, &size_chi_tan, &dispu_total, &chi_tan_shared);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
+		MPI_Win_shared_query(win_delta_sigma, 0, &size_delta_sigma, &dispu_total, &delta_sigma);
 
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_cross_shared, &win_chi_cross_total);
-		MPI_Win_shared_query(win_chi_cross_total, 0, &size_chi_cross, &dispu_total, &chi_cross_shared);
-
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
-		MPI_Win_shared_query(win_chi_crit_tan_total, 0, &size_chi_crit_tan, &dispu_total, &chi_crit_tan_shared);
-
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
-		MPI_Win_shared_query(win_chi_crit_cross_total, 0, &size_chi_crit_cross, &dispu_total, &chi_crit_cross_shared);
 #endif
 		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
@@ -264,19 +198,12 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	// initialization
 	if (0 == rank)
-	{	
+	{
 #if ! defined( SMALL_CATA)
-		initialize_arr(chi_tan_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_cross_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_crit_tan_shared, mg_bin_num*gh_crit_num, 0);
-		initialize_arr(chi_crit_cross_shared, mg_bin_num*gh_crit_num, 0);
+		initialize_arr(delta_sigma, radius_num * 5, 0);
 #endif
 		initialize_arr(pair_count_shared, numprocs, 0);
 	}
-	initialize_arr(my_chi_tan, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_cross, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_crit_tan, mg_bin_num*gh_crit_num, 0);
-	initialize_arr(my_chi_crit_cross, mg_bin_num*gh_crit_num, 0);
 	MPI_Barrier(MPI_COMM_WORLD);
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,7 +251,7 @@ int main(int argc, char *argv[])
 
 	block_mask = new int[grid_num] {};
 
-	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
+	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, RA, DEC,  E1, E2, WEIGHT,  num_in_block,  block_start, block_end, 
 	// block_boundx, block_boundy
 	for (i = 0; i < backgal_data_col; i++)
 	{
@@ -343,14 +270,9 @@ int main(int argc, char *argv[])
 		{
 			dec_bin_num = temp - 1;
 		}
-		backgal_data[i] = new double[temp]{};
+		backgal_data[i] = new double[temp] {};
 		read_h5(h5f_path_grid, set_name, backgal_data[i]);
 	}
-	//set_bin(backgal_data[mg1_id], backgal_num, mg_bin, mg_bin_num, 1000, 50000);
-	sprintf(set_name, "/w_1/mg1_bin");
-	read_h5(h5f_path_grid, set_name, mg1_bin);
-	sprintf(set_name, "/w_1/mg2_bin");
-	read_h5(h5f_path_grid, set_name, mg2_bin);
 
 	sprintf(log_infom, "RANK: %d. w_%d. Read background data. %d galaxies. %d grids (%d x %d)", rank, area_id, backgal_num, grid_num, grid_ny, grid_nx);
 	write_log(log_path, log_infom);
@@ -360,7 +282,7 @@ int main(int argc, char *argv[])
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	   
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -392,7 +314,7 @@ int main(int argc, char *argv[])
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
-	{	
+	{
 		z_f = foregal_data[z_id][gal_id];
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
@@ -424,7 +346,7 @@ int main(int argc, char *argv[])
 		gal_info.nx = grid_nx;
 		gal_info.blocks_num = grid_num;
 		gal_info.scale = block_scale[0];
-		
+
 		// find the blocks needed //
 		initialize_arr(block_mask, grid_num, -1);
 		find_block(&gal_info, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
@@ -440,7 +362,7 @@ int main(int argc, char *argv[])
 
 				//std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
 				for (ib = block_s; ib < block_e; ib++)
-				{	
+				{
 					z_b_sig95 = z_f + (backgal_data[zmin_lb][ib] + backgal_data[zmax_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
 
@@ -459,7 +381,7 @@ int main(int argc, char *argv[])
 
 						// the seperation in comving coordinate, 
 						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
-						
+
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
 						diff_r = dist_source * sin(diff_theta) * coeff_rad_dist;
 
@@ -472,45 +394,29 @@ int main(int argc, char *argv[])
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
 							backgal_cos_2phi = (diff_dec - diff_ra)*(diff_ra + diff_dec) / diff_theta_sq;
 
-							backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
-							backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
-							
 #if defined (SMALL_CATA)
-							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
-							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
-							// \Sigma_crit *G_t(x)
-							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi;
-							// the cross components
-							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi;
-							// scalar
-							backgal_mn_tan = backgal_data[mn_id][ib];
-							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
-							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
-							//if (fabs(backgal_mg_tan) < 1.e-4)
-							//{
-							//	std::cout << "Rank " << rank << " " << backgal_mg_tan <<" "<< backgal_mg_cross <<" "<< backgal_mn_tan << std::endl;
-							//}
-							data_cache.push_back(backgal_mg_tan);
-							data_cache.push_back(backgal_mg_cross);
-							data_cache.push_back(backgal_mn_tan);
-							data_cache.push_back(backgal_mu_tan);
+
+							//// the direction of R.A. is oppsite, actually,  e2 = -e2
+							//// tangential component, e_t =  e_1 *cos2\phi - e_2*sin2\phi
+							//backgal_e_t = backgal_data[e1_id][ib] * backgal_cos_2phi + backgal_data[e2_id][ib] * backgal_sin_2phi;
+							//data_cache.push_back(backgal_e_t);
+
+							//// the cross component, e_x =  e_1 *sin2\phi + e_2*cos2\phi
+							//backgal_e_x = backgal_data[e1_id][ib] * backgal_sin_2phi - backgal_data[e2_id][ib] * backgal_cos_2phi;
+							//data_cache.push_back(backgal_e_x);
+
+							data_cache.push_back(backgal_data[e1_id][ib]);
+							data_cache.push_back(backgal_data[e2_id][ib]);
+							data_cache.push_back(backgal_cos_2phi);
+							data_cache.push_back(backgal_sin_2phi);
+							// mutiplicative bias
+							data_cache.push_back(backgal_data[m_id][ib]);
+							// additive bias
+							data_cache.push_back(backgal_data[c_id][ib]);
+							data_cache.push_back(backgal_data[weight_id][ib]);
 							data_cache.push_back(crit_surf_density_com);
 
 #else
-							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
-							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
-							// \Sigma_crit *G_t(x)
-							backgal_mg_tan = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi);
-							// the cross components
-							backgal_mg_cross = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi);
-							// scalar
-							backgal_mn_tan = backgal_data[mn_id][ib];
-							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
-							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
-							backgal_mnu1_tan_c = crit_surf_density_com * (backgal_mn_tan + backgal_mu_tan);
-							backgal_mnu2_tan_c = crit_surf_density_com * (backgal_mn_tan - backgal_mu_tan);
-							backgal_mnu1_tan = backgal_mn_tan + backgal_mu_tan;
-							backgal_mnu2_tan = backgal_mn_tan - backgal_mu_tan;
 
 							// calculate the PDF of the estimator for shear
 							for (ig = 0; ig < gh_num; ig++)
@@ -529,11 +435,11 @@ int main(int argc, char *argv[])
 							{
 								mg_t = backgal_mg_tan - gh_crit[ig] * backgal_mnu1_tan;
 								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] +=1;
+								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] += 1;
 
 								mg_x = backgal_mg_cross - gh_crit[ig] * backgal_mnu2_tan;
 								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label]+=1;
+								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label] += 1;
 							}
 #endif
 						}
@@ -547,7 +453,7 @@ int main(int argc, char *argv[])
 		per_n = int((gal_id - my_gal_s) *1.0 / (my_gal_e - my_gal_s) * 100);
 
 		if (0 == process_per)
-		{	
+		{
 			sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %d%%. Time since begin: %.2f sec.", rank, area_id, per_n, (stgal - st1) / CLOCKS_PER_SEC);
 			if (0 == rank)
 			{
@@ -567,7 +473,7 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 	// final_buf will store the data of all the pairs
-	my_data_buf = new double[pair_count_shared[rank] * 5]{};
+	my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
 	// copy the data in the vector into the buffer 
 	if (!data_cache.empty())
 	{
@@ -582,7 +488,7 @@ int main(int argc, char *argv[])
 
 		for (i = 0; i < numprocs; i++)
 		{
-			num_of_thread[i] = pair_count_shared[i] * 5;
+			num_of_thread[i] = pair_count_shared[i] * vec_data_col;
 			for (j = 0; j < i; j++)
 			{
 				displ[i] += num_of_thread[j];
@@ -590,7 +496,7 @@ int main(int argc, char *argv[])
 		}
 		if (rank == 0)
 		{
-			final_buf = new double[pair_count * 5];
+			final_buf = new double[pair_count * vec_data_col];
 			//show_arr(displ, 1, numprocs);
 			//show_arr(num_of_thread, 1, numprocs);
 		}
@@ -629,10 +535,10 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 	// merge the PDF of signal estimator into the shared buffer
-	for(i=0; i<numprocs; i++)
+	for (i = 0; i < numprocs; i++)
 	{
 		if (rank == i)
-		{				
+		{
 			for (j = 0; j < mg_bin_num*gh_num; j++)
 			{
 				chi_tan_shared[j] += my_chi_tan[j];
@@ -648,143 +554,14 @@ int main(int argc, char *argv[])
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	// calculate the result and write to file
-	if (0 == rank)
-	{
-		// the chi square for fitting shear
-		long *chi_block = new long[mg_bin_num];
-		double *chisq_tan = new double[gh_num];
-		double *chisq_cross = new double[gh_num];
-		double *chisq_crit_tan = new double[gh_crit_num];
-		double *chisq_crit_cross = new double[gh_crit_num];
-		double chi_temp, crit, crit_sig;
-		double crit_result[4];
-		// chi square of shear
-		for (i = 0; i < gh_num; i++)
-		{	
-			// tangential 
-			for (j = 0; j < mg_bin_num; j++)
-			{
-				chi_block[j] = chi_tan_shared[i*mg_bin_num + j];
-			}
-			try
-			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
-			}
-			catch (const char* msg)
-			{
-				std::cerr << "Rank: " << rank << ".  Tangential g_guess: " << i <<". "<< msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
-				chi_temp = 0;
-			}
-			chisq_tan[i] = chi_temp;
-
-			// cross
-			for (j = 0; j < mg_bin_num; j++)
-			{
-				chi_block[j] = chi_cross_shared[i*mg_bin_num + j];
-			}
-			try
-			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
-			}
-			catch (const char* msg)
-			{
-				std::cerr << "Rank: " << rank << ".  Cross g_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
-				chi_temp = 0;
-			}
-			chisq_cross[i] = chi_temp;
-		}
-		// chi square of shear*critical_surface_density
-		for (i = 0; i < gh_crit_num; i++)
-		{	// tangential 
-			for (j = 0; j < mg_bin_num; j++)
-			{
-				chi_block[j] = chi_crit_tan_shared[i*mg_bin_num + j];
-			}
-			try
-			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
-			}
-			catch (const char* msg)
-			{
-				std::cerr << "Rank: " << rank << ".  Tangential g_crit_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
-				chi_temp = 0;
-			}
-			chisq_crit_tan[i] = chi_temp;
-			// cross
-			for (j = 0; j < mg_bin_num; j++)
-			{
-				chi_block[j] = chi_crit_cross_shared[i*mg_bin_num + j];
-			}
-			try
-			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
-			}
-			catch (const char* msg)
-			{
-				std::cerr << "Rank: " << rank << ".  Cross g_crit_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
-				chi_temp = 0;
-			}
-			chisq_crit_cross[i] = chi_temp;
-		}
-
-		// write the result to file
-		sprintf(set_name, "/chi_tan");
-		write_h5(h5f_res_path, set_name, chi_tan_shared, gh_num, mg_bin_num, TRUE);
-		sprintf(set_name, "/chi_cross");
-		write_h5(h5f_res_path, set_name, chi_cross_shared, gh_num, mg_bin_num, FALSE);
-
-		sprintf(set_name, "/chi_crit_tan");
-		write_h5(h5f_res_path, set_name, chi_crit_tan_shared, gh_crit_num, mg_bin_num, FALSE);
-		sprintf(set_name, "/chi_crit_cross");
-		write_h5(h5f_res_path, set_name, chi_crit_cross_shared, gh_crit_num, mg_bin_num, FALSE);
-
-		sprintf(set_name, "/chisq_tan");
-		write_h5(h5f_res_path, set_name, chisq_tan, gh_num, 1, FALSE);
-		sprintf(set_name, "/chisq_cross");
-		write_h5(h5f_res_path, set_name, chisq_cross, gh_num, 1, FALSE);
-
-		sprintf(set_name, "/chisq_crit_tan");
-		write_h5(h5f_res_path, set_name, chisq_crit_tan, gh_crit_num, 1, FALSE);
-		sprintf(set_name, "/chisq_crit_cross");
-		write_h5(h5f_res_path, set_name, chisq_crit_cross, gh_crit_num, 1, FALSE);
-
-		sprintf(set_name, "/gh");
-		write_h5(h5f_res_path, set_name, gh, gh_num, 1, FALSE);
-		sprintf(set_name, "/gh_crit");
-		write_h5(h5f_res_path, set_name, gh_crit, gh_crit_num, 1, FALSE);
-
-		//// tangential
-		//fit_shear(gh, chisq_tan, gh_num, crit, crit_sig, 50);
-		//crit_result[0] = crit; 
-		//crit_result[1] = crit_sig;
-		//// cross
-		//fit_shear(gh, chisq_cross, gh_num, crit, crit_sig, 50);
-		//crit_result[2] = crit;
-		//crit_result[3] = crit_sig;
-		//sprintf(set_name, "/result");
-		//write_h5(h5f_res_path, set_name, crit_result, 4, 1, FALSE);
-
-		delete[] chi_block;
-		delete[] chisq_cross;
-		delete[] chisq_tan;
-		delete[] chisq_crit_cross;
-		delete[] chisq_crit_tan;
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+
 	// free the memory	
-	MPI_Win_free(&win_chi_tan_total);
-	MPI_Win_free(&win_chi_cross_total);
-	MPI_Win_free(&win_chi_crit_tan_total);
-	MPI_Win_free(&win_chi_crit_cross_total);
+	MPI_Win_free(&win_delta_sigma);
 #endif
 
 	MPI_Win_free(&win_pair_count);
-	
+
 	sprintf(log_infom, "RANK: %d. Write file of Radius bin [%.4f,  %.4f] ---- end. ", rank, radius_bin[radius_label], radius_bin[radius_label + 1]);
 	write_log(log_path, log_infom);
 	if (0 == rank)
@@ -802,12 +579,7 @@ int main(int argc, char *argv[])
 		delete[] foregal_data[i];
 	}
 	delete[] block_mask;
-	delete[] mg1_bin;
-	delete[] mg2_bin;
-	delete[] gh;
 	delete[] radius_bin;
-	delete[] my_chi_tan;
-	delete[] my_chi_cross;
 
 	MPI_Finalize();
 	return 0;
