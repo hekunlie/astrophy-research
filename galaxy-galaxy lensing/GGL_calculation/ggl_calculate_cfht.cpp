@@ -6,7 +6,6 @@
 #define foregal_data_col 5
 #define grid_data_col 5
 #define backgal_data_col 22
-#define mg_bin_num 8
 
 #define SMALL_CATA
 
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
-	int vec_data_col = 8;
+	int vec_data_col = 9;
 #endif
 
 	int i, j, k, temp;
@@ -105,6 +104,11 @@ int main(int argc, char *argv[])
 	int radius_num;
 	double radius_s, radius_e, radius_e_sq;
 	double *radius_bin;
+	// radius bin
+	radius_num = 11;
+	radius_bin = new double[radius_num + 1]{};
+	log_bin(0.1, 15, radius_num + 1, radius_bin);
+
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
@@ -114,6 +118,7 @@ int main(int argc, char *argv[])
 	int block_scale_id = 22, grid_shape_id = 23;
 
 	int shape[2];
+
 
 	char *names[max_data_col];//backgal_data_col
 	for (i = 0; i < backgal_data_col + 2; i++)
@@ -210,11 +215,12 @@ int main(int argc, char *argv[])
 
 
 	// read the search radius
-	sprintf(set_name, "/radius_bin");
-	read_h5_datasize(h5f_path_grid, set_name, radius_num);
-	radius_bin = new double[radius_num] {};
-	read_h5(h5f_path_grid, set_name, radius_bin);
-	radius_num = radius_num - 1;
+	//sprintf(set_name, "/radius_bin");
+	//read_h5_datasize(h5f_path_grid, set_name, radius_num);
+	//radius_bin = new double[radius_num] {};
+	//read_h5(h5f_path_grid, set_name, radius_bin);
+	//radius_num = radius_num - 1;
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,8 +371,9 @@ int main(int argc, char *argv[])
 				{
 					z_b_sig95 = z_f + (backgal_data[zmin_lb][ib] + backgal_data[zmax_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
-
-					//if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95 and z_b_odds > 0.5)	
+					
+					// if (backgal_data[z_id][ib] >= z_thresh)
+					// if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95)
 					if (backgal_data[z_id][ib] >= z_thresh)
 					{
 						ra_b = backgal_data[ra_id][ib];
@@ -415,6 +422,7 @@ int main(int argc, char *argv[])
 							data_cache.push_back(backgal_data[c_id][ib]);
 							data_cache.push_back(backgal_data[weight_id][ib]);
 							data_cache.push_back(crit_surf_density_com);
+							data_cache.push_back(diff_r);
 
 #else
 
@@ -466,68 +474,100 @@ int main(int argc, char *argv[])
 
 	sum_arr(pair_count_shared, numprocs, 0, numprocs, pair_count);
 
+	MPI_Barrier(MPI_COMM_WORLD);
+
 #if defined(SMALL_CATA)
 	if (rank == 0)
 	{
 		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
 	}
-	// final_buf will store the data of all the pairs
-	my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
-	// copy the data in the vector into the buffer 
-	if (!data_cache.empty())
-	{
-		memcpy(my_data_buf, &data_cache[0], data_cache.size() * sizeof(double));
-	}
-
-	if (numprocs > 1)
-	{
-		// calculate the entry of each rank in the big buffer
-		MY_INT *displ = new MY_INT[numprocs]{};
-		MY_INT *num_of_thread = new MY_INT[numprocs]{};
-
-		for (i = 0; i < numprocs; i++)
+	if (pair_count > 1)
+	{	
+		// final_buf will store the data of all the pairs
+		my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
+		// copy the data in the vector into the buffer 
+		if (!data_cache.empty())
 		{
-			num_of_thread[i] = pair_count_shared[i] * vec_data_col;
-			for (j = 0; j < i; j++)
+			memcpy(my_data_buf, &data_cache[0], data_cache.size() * sizeof(double));
+		}
+
+		// if more than 2 cpus
+		if (numprocs > 1)
+		{
+			// calculate the entry of each rank in the big buffer
+			MY_INT *displ = new MY_INT[numprocs]{};
+			MY_INT *num_of_thread = new MY_INT[numprocs]{};
+
+			for (i = 0; i < numprocs; i++)
 			{
-				displ[i] += num_of_thread[j];
+				num_of_thread[i] = pair_count_shared[i] * vec_data_col;
+				for (j = 0; j < i; j++)
+				{
+					displ[i] += num_of_thread[j];
+				}
+			}
+			if (rank == 0)
+			{
+				final_buf = new double[pair_count * vec_data_col];
+				//show_arr(displ, 1, numprocs);
+				//show_arr(num_of_thread, 1, numprocs);
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			//char test_path[200];
+			//sprintf(test_path, "/home/hkli/work/test/%d.hdf5", rank);
+			//sprintf(set_name, "/pair_data");
+			//write_h5(test_path, set_name, my_data_buf, pair_count_shared[rank], 5, TRUE);
+			// gather the data from each thread, empty data from some threads are allowed
+
+			MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			if (rank == 0)
+			{
+				//show_arr(final_buf, pair_count, vec_data_col);
+				sprintf(set_name, "/pair_data");
+				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, TRUE);
+
+				sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+				sprintf(set_name, "/radius_bin");
+				write_h5(temp_path, set_name, radius_bin, radius_num+1, 1, TRUE);
+
+				delete[] final_buf;
 			}
 		}
-		if (rank == 0)
-		{
-			final_buf = new double[pair_count * vec_data_col];
-			//show_arr(displ, 1, numprocs);
-			//show_arr(num_of_thread, 1, numprocs);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		//char test_path[200];
-		//sprintf(test_path, "/home/hkli/work/test/%d.hdf5", rank);
-		//sprintf(set_name, "/pair_data");
-		//write_h5(test_path, set_name, my_data_buf, pair_count_shared[rank], 5, TRUE);
-		// gather the data from each thread, empty data from some threads are allowed
-
-		MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		if (rank == 0)
-		{
-			//show_arr(final_buf, pair_count, 5);
+		else
+		{	
+			// only one cpu
 			sprintf(set_name, "/pair_data");
-			write_h5(h5f_res_path, set_name, final_buf, pair_count, 5, TRUE);
-			delete[] final_buf;
+			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, TRUE);
+
+			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(set_name, "/radius_bin");
+			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 		}
+		delete[] my_data_buf;
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	else
 	{
-		sprintf(set_name, "/pair_data");
-		write_h5(h5f_res_path, set_name, my_data_buf, pair_count, 5, TRUE);
-	}
-	delete[] my_data_buf;
-	MPI_Barrier(MPI_COMM_WORLD);
+		if (rank == 0)
+		{
+			my_data_buf = new double[vec_data_col];
+			initialize_arr(my_data_buf, vec_data_col, -1);
+			sprintf(set_name, "/pair_data");
+			write_h5(h5f_res_path, set_name, my_data_buf, 1, vec_data_col, TRUE);
 
+			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(set_name, "/radius_bin");
+			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
+
+			delete[] my_data_buf;
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
 #else
 	if (rank == 0)
 	{

@@ -8,7 +8,7 @@ from matplotlib.colors import ListedColormap
 class Image_Plot:
 
     def __init__(self, fig_x=8, fig_y=6, fontsize=20, xy_lb_size=22, xy_tick_size=17,
-                 legend_size=17, axis_linewidth=2, plt_line_width=2, cap_size=5, tick_len=6, pad_size=7):
+                 legend_size=17, axis_linewidth=2, plt_line_width=2, cap_size=5, tick_len=8, pad_size=7):
         self.fig_x = fig_x
         self.fig_y = fig_y
         self.fontsize = fontsize
@@ -43,7 +43,8 @@ class Image_Plot:
                 for axis in ["bottom", "left", "top", "right"]:
                     # the line width of the frame
                     sub_fig[i][j].spines[axis].set_linewidth(self.axis_linewidth)
-                sub_fig[i][j].xaxis.set_tick_params(which="both", direction="in", length=self.tick_len, width=self.axis_linewidth)
+                sub_fig[i][j].xaxis.set_tick_params(which="major", direction="in", length=self.tick_len, width=self.axis_linewidth)
+                sub_fig[i][j].xaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len*0.6), width=self.axis_linewidth)
                 sub_fig[i][j].yaxis.set_tick_params(which="major", direction="in", length=self.tick_len, width=self.axis_linewidth)
                 sub_fig[i][j].yaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len*0.6), width=self.axis_linewidth)
         self.figure = fig
@@ -56,21 +57,23 @@ class Image_Plot:
         else:
             self.axs[iy][ix].yaxis.set_major_formatter(ticks_form)
 
-    def set_label(self, iy, ix, axis_nm, label, size=None):
+    def set_label(self, iy, ix, axis_nm, label, font="serif", size=None):
         if not size:
             size = self.xy_lb_size
+        fontdict = {'family': font, 'size': size}
         if axis_nm == 1:
-            self.axs[iy][ix].set_xlabel(label, fontsize=size)
+            self.axs[iy][ix].set_xlabel(label, fontdict=fontdict)
         else:
-            self.axs[iy][ix].set_ylabel(label, fontsize=size)
+            self.axs[iy][ix].set_ylabel(label, fontdict=fontdict)
 
-    def set_legend(self, iy, ix, fontsize=None, loc="best", bbox_to_anchor=None):
-        if not fontsize:
-            fontsize = self.legend_size
+    def set_legend(self, iy, ix, font="serif", size=None, loc="best", bbox_to_anchor=None):
+        if not size:
+            size = self.legend_size
+        leg_prop = {'family': font, 'size': size}
         if bbox_to_anchor:
-            self.axs[iy][ix].legend(fontsize=fontsize, loc=loc, bbox_to_anchor=bbox_to_anchor)
+            self.axs[iy][ix].legend(loc=loc, bbox_to_anchor=bbox_to_anchor,prop=leg_prop)
         else:
-            self.axs[iy][ix].legend(fontsize=fontsize, loc=loc)
+            self.axs[iy][ix].legend(loc=loc, prop=leg_prop)
 
     def save_img(self, pic_path, tight=True):
         if tight:

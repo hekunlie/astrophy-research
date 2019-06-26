@@ -545,7 +545,7 @@ if cmd == "select_fourier":
         # c_bias = cata_data[:,c_lb][cut_idx]
 
         names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC",
-                 "STARGLAG", "Z_MIN", "Z_MAX", "ODDS"]\
+                 "STARGLAG", "Z_MIN", "Z_MAX", "ODDS"]
             # , "E1", "E2", "WEIGHT", "FITCLASS",  "MASK", "M", "C", ]
         datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag, z_min, z_max, odds]
                  # e1, e2, weight, fitclass, mask, m_bias, c_bias]

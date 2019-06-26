@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	MPI_Get_processor_name(processor_name, &namelen);
 
 	int i, j, k;
-	int area_num = 4, radius_num = 13;
+	int area_num = 4;
 	int area_id;
 	double st1, st2, st3, st4, st5, st6, st7,st8, sts, ste;
 
@@ -92,8 +92,8 @@ int main(int argc, char *argv[])
 
 
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	sprintf(h5f_path_src, "%scata_result_ext_cut.hdf5", data_path);
-	sprintf(h5f_path_dst, "%scata_result_ext_grid.hdf5", data_path);
+	sprintf(h5f_path_src, "%sfourier_cata_result_ext_cut.hdf5", data_path);
+	sprintf(h5f_path_dst, "%sfourier_cata_result_ext_grid.hdf5", data_path);
 	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/grid_log_%d.dat", rank);
 
 	if (0 == rank)
@@ -107,12 +107,6 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/w_%d", i);
 			create_h5_group(h5f_path_dst, set_name, FALSE);
 		}
-
-		double *radius_bin = new double[radius_num+1];
-		sprintf(set_name, "/radius_bin");
-		// the radius bin (log space)
-		log_bin(0.04, 15, radius_num + 1, radius_bin);
-		write_h5(h5f_path_dst, set_name, radius_bin, radius_num + 1, 1, FALSE);
 	}
 
 	for (area_id = 1; area_id < area_num+1; area_id++)

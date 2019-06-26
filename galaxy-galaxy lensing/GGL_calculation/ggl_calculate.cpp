@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 // it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
+	int vec_data_col = 6;
 #endif
 
 	int i, j, k, temp;
@@ -43,10 +44,19 @@ int main(int argc, char *argv[])
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
 
+	int radius_num;
+	double radius_s, radius_e, radius_e_sq;
+	double *radius_bin;
+	
 	// the controllers
 	int area_id = atoi(argv[1]);
 	int radius_label = atoi(argv[2]);
 	strcpy(foreground_name, argv[3]);
+
+	// radius bin
+	radius_num = 13;
+	radius_bin = new double[radius_num + 1]{};
+	log_bin(0.04, 15, radius_num + 1, radius_bin);
 
 	   
 	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
@@ -63,45 +73,45 @@ int main(int argc, char *argv[])
 
 	
 	// be careful with the boundary of the guess of critical density and shear 
-	//double gh_crit_step = 0.001;
-	//double gh_crit_left = -0.32 + 0.02 * radius_label;
-	//double gh_crit_right = fabs(gh_crit_left);
-	//int gh_crit_num = int(gh_crit_right * 2 / gh_crit_step) + 1;
-	//double *gh_crit = new double[gh_crit_num];
-	//for (i = 0; i < gh_crit_num; i++)
-	//{
-	//	gh_crit[i] = gh_crit_left + gh_crit_step * i;
-	//}
-
-	//double gh_step = 0.0001;
-	//double gh_left = -0.04 + 0.003 * radius_label;
-	//double gh_right = fabs(gh_left);
-	//int gh_num = int(gh_right * 2 / gh_step) + 1;
-	//double *gh = new double[gh_num];
-	//for (i = 0; i < gh_num; i++)
-	//{
-	//	gh[i] = gh_left + gh_step * i;
-	//}
-
-	double gh_crit_step[13]{ 0.005, 0.005, 0.004, 0.002, 0.002, 0.001, 0.001, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002 };
-	double gh_crit_left[13]{-0.4,  -0.25, -0.2, -0.1, -0.05, -0.05,  -0.03, -0.01, -0.01, -0.01, -0.01,  -0.01,  -0.01};
-	double gh_crit_right[13]{0.4,  0.25,  0.2,  0.15,    0.1,     0.1,  0.08,   0.05,  0.05,   0.02,  0.02,  0.012,  0.012};
-	int gh_crit_num = int((gh_crit_right[radius_label] -gh_crit_left[radius_label])/ gh_crit_step[radius_label])+1;
+	double gh_crit_step = 0.001;
+	double gh_crit_left = -0.32 + 0.02 * radius_label;
+	double gh_crit_right = fabs(gh_crit_left);
+	int gh_crit_num = int(gh_crit_right * 2 / gh_crit_step) + 1;
 	double *gh_crit = new double[gh_crit_num];
 	for (i = 0; i < gh_crit_num; i++)
 	{
-		gh_crit[i] = gh_crit_left[radius_label] + gh_crit_step[radius_label] * i;
+		gh_crit[i] = gh_crit_left + gh_crit_step * i;
 	}
 
-	double gh_step[13]{ 0.0005, 0.0005, 0.0004, 0.0002, 0.0002, 0.0001, 0.0001, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002 };
-	double gh_left[13]{ -0.04,  -0.025, -0.02, -0.01, -0.005, -0.005,  -0.003, -0.001, -0.001, -0.001, -0.001,  -0.001,  -0.001 };
-	double gh_right[13]{ 0.04,  0.025,  0.02,  0.015,    0.01,     0.01,  0.008,   0.005,  0.005,   0.002,  0.002,  0.0012,  0.0012 };
-	int gh_num = int((gh_right[radius_label] - gh_left[radius_label]) / gh_step[radius_label]) + 1;
+	double gh_step = 0.0001;
+	double gh_left = -0.04 + 0.003 * radius_label;
+	double gh_right = fabs(gh_left);
+	int gh_num = int(gh_right * 2 / gh_step) + 1;
 	double *gh = new double[gh_num];
-	for (i = 0; i < gh_crit_num; i++)
+	for (i = 0; i < gh_num; i++)
 	{
-		gh[i] = gh_left[radius_label] + gh_step[radius_label] * i;
+		gh[i] = gh_left + gh_step * i;
 	}
+
+	//double gh_crit_step[13]{ 0.005, 0.005, 0.004, 0.002, 0.002, 0.001, 0.001, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002 };
+	//double gh_crit_left[13]{-0.4,  -0.25, -0.2, -0.1, -0.05, -0.05,  -0.03, -0.01, -0.01, -0.01, -0.01,  -0.01,  -0.01};
+	//double gh_crit_right[13]{0.4,  0.25,  0.2,  0.15,    0.1,     0.1,  0.08,   0.05,  0.05,   0.02,  0.02,  0.012,  0.012};
+	//int gh_crit_num = int((gh_crit_right[radius_label] -gh_crit_left[radius_label])/ gh_crit_step[radius_label])+1;
+	//double *gh_crit = new double[gh_crit_num];
+	//for (i = 0; i < gh_crit_num; i++)
+	//{
+	//	gh_crit[i] = gh_crit_left[radius_label] + gh_crit_step[radius_label] * i;
+	//}
+
+	//double gh_step[13]{ 0.0005, 0.0005, 0.0004, 0.0002, 0.0002, 0.0001, 0.0001, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002 };
+	//double gh_left[13]{ -0.04,  -0.025, -0.02, -0.01, -0.005, -0.005,  -0.003, -0.001, -0.001, -0.001, -0.001,  -0.001,  -0.001 };
+	//double gh_right[13]{ 0.04,  0.025,  0.02,  0.015,    0.01,     0.01,  0.008,   0.005,  0.005,   0.002,  0.002,  0.0012,  0.0012 };
+	//int gh_num = int((gh_right[radius_label] - gh_left[radius_label]) / gh_step[radius_label]) + 1;
+	//double *gh = new double[gh_num];
+	//for (i = 0; i < gh_crit_num; i++)
+	//{
+	//	gh[i] = gh_left[radius_label] + gh_step[radius_label] * i;
+	//}
 
 	pts_info gal_info;
 
@@ -154,10 +164,6 @@ int main(int argc, char *argv[])
 	int *block_mask;
 	int ra_bin_num, dec_bin_num;
 
-
-	int radius_num;
-	double radius_s, radius_e, radius_e_sq;
-	double *radius_bin;
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
@@ -282,12 +288,6 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	// read the search radius
-	sprintf(set_name, "/radius_bin");
-	read_h5_datasize(h5f_path_grid, set_name, radius_num);
-	radius_bin = new double[radius_num] {};
-	read_h5(h5f_path_grid, set_name, radius_bin);
-	radius_num = radius_num - 1;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -486,15 +486,13 @@ int main(int argc, char *argv[])
 							backgal_mn_tan = backgal_data[mn_id][ib];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
 							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
-							//if (fabs(backgal_mg_tan) < 1.e-4)
-							//{
-							//	std::cout << "Rank " << rank << " " << backgal_mg_tan <<" "<< backgal_mg_cross <<" "<< backgal_mn_tan << std::endl;
-							//}
+
 							data_cache.push_back(backgal_mg_tan);
 							data_cache.push_back(backgal_mg_cross);
 							data_cache.push_back(backgal_mn_tan);
 							data_cache.push_back(backgal_mu_tan);
 							data_cache.push_back(crit_surf_density_com);
+							data_cache.push_back(diff_r);
 
 #else
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
@@ -560,68 +558,106 @@ int main(int argc, char *argv[])
 
 	sum_arr(pair_count_shared, numprocs, 0, numprocs, pair_count);
 
+	MPI_Barrier(MPI_COMM_WORLD);
+
 #if defined(SMALL_CATA)
 	if (rank == 0)
 	{
 		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
 	}
-	// final_buf will store the data of all the pairs
-	my_data_buf = new double[pair_count_shared[rank] * 5]{};
-	// copy the data in the vector into the buffer 
-	if (!data_cache.empty())
+	if (pair_count > 1)
 	{
-		memcpy(my_data_buf, &data_cache[0], data_cache.size() * sizeof(double));
-	}
-
-	if (numprocs > 1)
-	{
-		// calculate the entry of each rank in the big buffer
-		MY_INT *displ = new MY_INT[numprocs]{};
-		MY_INT *num_of_thread = new MY_INT[numprocs]{};
-
-		for (i = 0; i < numprocs; i++)
+		// final_buf will store the data of all the pairs
+		my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
+		// copy the data in the vector into the buffer 
+		if (!data_cache.empty())
 		{
-			num_of_thread[i] = pair_count_shared[i] * 5;
-			for (j = 0; j < i; j++)
+			memcpy(my_data_buf, &data_cache[0], data_cache.size() * sizeof(double));
+		}
+
+		if (numprocs > 1)
+		{
+			// calculate the entry of each rank in the big buffer
+			MY_INT *displ = new MY_INT[numprocs]{};
+			MY_INT *num_of_thread = new MY_INT[numprocs]{};
+
+			for (i = 0; i < numprocs; i++)
 			{
-				displ[i] += num_of_thread[j];
+				num_of_thread[i] = pair_count_shared[i] * vec_data_col;
+				for (j = 0; j < i; j++)
+				{
+					displ[i] += num_of_thread[j];
+				}
+			}
+			if (rank == 0)
+			{
+				final_buf = new double[pair_count * vec_data_col];
+				//show_arr(displ, 1, numprocs);
+				//show_arr(num_of_thread, 1, numprocs);
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			if (rank == 0)
+			{
+				// if mask == 1, the catalog can be used
+				sprintf(set_name, "/mask");
+				int *mask = new int[1];
+				mask[0] = 1;
+				write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
+
+				sprintf(set_name, "/pair_data");
+				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, FALSE);
+
+
+				sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+				sprintf(set_name, "/radius_bin");
+				write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
+
+				delete[] final_buf;
 			}
 		}
-		if (rank == 0)
+		else
 		{
-			final_buf = new double[pair_count * 5];
-			//show_arr(displ, 1, numprocs);
-			//show_arr(num_of_thread, 1, numprocs);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
+			// if mask == 1, the catalog can be used
+			sprintf(set_name, "/mask");
+			int *mask = new int[1];
+			mask[0] = 1;
+			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
 
-		//char test_path[200];
-		//sprintf(test_path, "/home/hkli/work/test/%d.hdf5", rank);
-		//sprintf(set_name, "/pair_data");
-		//write_h5(test_path, set_name, my_data_buf, pair_count_shared[rank], 5, TRUE);
-		// gather the data from each thread, empty data from some threads are allowed
-
-		MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		if (rank == 0)
-		{
-			//show_arr(final_buf, pair_count, 5);
 			sprintf(set_name, "/pair_data");
-			write_h5(h5f_res_path, set_name, final_buf, pair_count, 5, TRUE);
-			delete[] final_buf;
+			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, FALSE);
+
+			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(set_name, "/radius_bin");
+			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
+
 		}
+		delete[] my_data_buf;
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	else
 	{
-		sprintf(set_name, "/pair_data");
-		write_h5(h5f_res_path, set_name, my_data_buf, pair_count, 5, TRUE);
-	}
-	delete[] my_data_buf;
-	MPI_Barrier(MPI_COMM_WORLD);
+		if (rank == 0)
+		{
+			// if mask == 1, the catalog can be used
+			sprintf(set_name, "/mask");
+			int *mask = new int[1];
+			mask[0] = 0;
+			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
 
+
+			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(set_name, "/radius_bin");
+			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
+
+
+		}
+	}
 #else
 	if (rank == 0)
 	{
