@@ -1,7 +1,7 @@
-import platform
-if platform.system() == 'Linux':
-    import matplotlib
-    matplotlib.use('Agg')
+# import platform
+# if platform.system() == 'Linux':
+#     import matplotlib
+#     matplotlib.use('Agg')
 import numpy
 from numpy import fft
 from scipy.optimize import fmin_cg

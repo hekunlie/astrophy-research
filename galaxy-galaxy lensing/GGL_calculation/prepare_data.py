@@ -117,6 +117,8 @@ c2_correction = 0.000493
 
 
 ############################# CFHTLenS Option ####################################################
+# CFHT catalog contains 19 (0~18) columns, the 19'th and 20'th column are the checking data for
+# catalog matching, diff ra and diff dec. 21'th & 22'th column are the PZ data from Dong FY.
 ra_lb_c = 0
 dec_lb_c = 1
 flag_lb_c = 2
@@ -136,6 +138,8 @@ mag_lb_c = 15
 z_min_lb_c = 16
 z_max_lb_c = 17
 odds_lb_c = 18
+pz1_lb = 21
+pz2_lb = 22
 
 # change the cutoff threshold in the part of "select_cfht"
 
@@ -382,6 +386,7 @@ if cmd == "collect_cfht":
         for field_name in field_pool:
             # c_data_path = cfht_cata_path + "field_dat/%s_new.dat"%field_name
             c_data_path = cfht_cata_path + "field_dat/%s.hdf5"%field_name
+            pz_data_path = cfht_cata_path + "field_dat/%s-pz.dat"%field_name
 
             if os.path.exists(c_data_path):
                 # try:
@@ -391,11 +396,15 @@ if cmd == "collect_cfht":
                 c_data = h5f_c["/data"].value
                 h5f_c.close()
 
+                pz_data = numpy.loadtxt(pz_data_path)
+
+                point_data = numpy.column_stack((c_data, pz_data))
+
                 if field_count == 0:
-                    cata_data = c_data
+                    cata_data = point_data
 
                 else:
-                    cata_data = numpy.row_stack((cata_data, c_data))
+                    cata_data = numpy.row_stack((cata_data, point_data))
                 field_count += 1
 
                 # except:
@@ -406,11 +415,10 @@ if cmd == "collect_cfht":
         # in case of that some thread gets nothing from the file (non-existed)
         if field_count < 1:
             cata_data = numpy.zeros((1,1))
-
         data_sp = cata_data.shape
-
         data_sps = comm.gather(data_sp, root=0)
         num.append(data_sp)
+
 
         # DEBUG
         # for ir in range(cpus):
@@ -596,8 +604,13 @@ if cmd == "select_cfht":
         idxz_1 = cata_data[:, z_lb_c] <= z_max
         idxz_2 = cata_data[:, z_lb_c] >= z_min
         idxz_3 = cata_data[:, odds_lb_c] > 0.5 - epsilon
+        # the PZ selection criteria from Dong FY
+        idx_pz1 = numpy.abs(cata_data[:, pz1_lb] - 1) <= epsilon
+        idx_pz2 = cata_data[:, pz2_lb] <= 0.2
 
-        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+        # cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+
+        cut_idx = idx_pz1 & idx_pz2 & idx_fitclass
 
         ra = cata_data[:, ra_lb_c][cut_idx]
         dec = cata_data[:, dec_lb_c][cut_idx]

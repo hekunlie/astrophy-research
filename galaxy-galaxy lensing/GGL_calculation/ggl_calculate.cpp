@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 #endif
 
 	int i, j, k, temp;
-	char data_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
+	char parent_path[250], data_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
 
@@ -59,15 +59,16 @@ int main(int argc, char *argv[])
 	log_bin(0.04, 15, radius_num + 1, radius_bin);
 
 	   
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
-	sprintf(h5f_res_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
-	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
-	sprintf(h5f_path_fore, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/foreground/%s/w_%d.hdf5", foreground_name, area_id);
+	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
+	//sprintf(h5f_res_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
+	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
+	//sprintf(h5f_path_fore, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/foreground/%s/w_%d.hdf5", foreground_name, area_id);
 
-	//sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
-	//sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
-	//sprintf(h5f_res_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
-	//sprintf(h5f_path_fore, "/mnt/perc/hklee/CFHT/gg_lensing/data/foreground/%s/w_%d.hdf", foreground_name, area_id);
+	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
+	sprintf(data_path, "%sdata/", parent_path);
+	sprintf(h5f_res_path, "%sresult/%s/fourier/w_%d/radius_%d.hdf5", parent_path, foreground_name, area_id, radius_label);
+	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
+	sprintf(h5f_path_fore, "%sdata/foreground/%s/w_%d.hdf5", parent_path, foreground_name, area_id);
 
 	sprintf(h5f_path_grid, "%sfourier_cata_result_ext_grid.hdf5", data_path);
 
@@ -441,7 +442,7 @@ int main(int argc, char *argv[])
 				//std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
 				for (ib = block_s; ib < block_e; ib++)
 				{	
-					z_b_sig95 = z_f + (backgal_data[zmin_lb][ib] + backgal_data[zmax_lb][ib]) / 2;
+					z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
 
 					//if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95 and z_b_odds > 0.5)	
@@ -614,7 +615,7 @@ int main(int argc, char *argv[])
 				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, FALSE);
 
 
-				sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+				sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
 				sprintf(set_name, "/radius_bin");
 				write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -632,7 +633,7 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/pair_data");
 			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, FALSE);
 
-			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -651,7 +652,7 @@ int main(int argc, char *argv[])
 			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
 
 
-			sprintf(temp_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/cfht/w_%d/radius_bin.hdf5", foreground_name, area_id);
+			sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -825,7 +826,9 @@ int main(int argc, char *argv[])
 	write_log(log_path, log_infom);
 	if (0 == rank)
 	{
-		std::cout << log_infom << std::endl;
+		char times[50];
+		get_time(times, 50);
+		std::cout << log_infom <<times<< std::endl;
 	}
 
 

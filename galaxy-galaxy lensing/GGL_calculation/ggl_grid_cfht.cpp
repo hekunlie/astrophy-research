@@ -91,10 +91,10 @@ int main(int argc, char *argv[])
 	sprintf(names[mag_lb], "MAG");
 
 
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
+	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
 	sprintf(h5f_path_src, "%scfht_cata_cut.hdf5", data_path);
 	sprintf(h5f_path_dst, "%scfht_cata_grid.hdf5", data_path);
-	sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/grid_log_%d.dat", rank);
+	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/grid_log_%d.dat", rank);
 
 	if (0 == rank)
 	{
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
 		}
 		st3 = clock();
-		sprintf(log_inform, "Rank %d w_%d: Built RA, Dec and boundaries bin (%.2f sec)", rank, area_id, count, (st3 - st2) / CLOCKS_PER_SEC);
+		sprintf(log_inform, "Rank %d w_%d: Built RA, Dec and boundaries bin (%.2f sec)", rank, area_id, (st3 - st2) / CLOCKS_PER_SEC);
 		write_log(log_path, log_inform);
 		if (0 == rank)
 		{

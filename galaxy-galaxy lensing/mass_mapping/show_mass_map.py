@@ -187,15 +187,18 @@ for ir in range(redshift_bin_num):
 
     # show the recovered kappa map
     img = plot_tool.Image_Plot(fig_x=8, fig_y=8)
-    img.subplots(2,2)
+    img.subplots(1,1)
 
-    for i in range(2):
-        for j in range(2):
-            ax = img.axs[i][j].imshow(kappa_data[i][j][inverse],cmap=cm.jet)
-            img.set_label(i, j, 1, "RA")
-            img.set_label(i, j, 0, "DEC")
-            img.axs[i][j].set_title(kappa_titles[i][j], fontsize=img.xy_lb_size)
-            img.figure.colorbar(ax, ax=img.axs[i][j])
+    ax = img.axs[0][0].imshow(kappa_data[1][0][inverse],cmap=cm.jet)
+    img.set_label(0, 0, 1, "RA [arcmin]")
+    img.set_label(0, 0, 0, "DEC [arcmin]")
+    img.axs[0][0].set_title("$\kappa$ field", fontsize=img.xy_lb_size)
+
+    img.axs[0][0].tick_params(labelleft=False)
+    img.axs[0][0].tick_params(labelright=False)
+    img.axs[0][0].tick_params(labelbottom=False)
+    img.axs[0][0].tick_params(labeltop=False)
+    img.figure.colorbar(ax, ax=img.axs[0][0])
 
     img.save_img(data_path + "kappa_%d.png"%ir)
     if platform.system() != 'Linux':
@@ -213,28 +216,28 @@ for ir in range(redshift_bin_num):
     dg_scale_c = gamma_c / max_gc * max_len / 2
 
     # plot the shear field
-    img = plot_tool.Image_Plot(fig_x=20, fig_y=20)
-    img.subplots(1,2)
+    img = plot_tool.Image_Plot(fig_x=10, fig_y=10)
+    img.subplots(1,1)
 
-    shear_bench = 0.03
+    shear_bench = 0.02
     scale_len = shear_bench/max_g*max_len
 
     x1, x2 = ra_min + ra_sq_len*6, ra_min + ra_sq_len*6 + scale_len
-    y1,y2 = dec_max + dec_sq_len*3, dec_max + dec_sq_len*3
+    y1,y2 = dec_max + dec_sq_len*1, dec_max + dec_sq_len*1
     img.axs[0][0].plot([x1,x2],[y1,y2],c="black")
-    img.axs[0][0].text(0.03, 0.93, "shear=%.3f"%shear_bench, color='black', ha='left',
-            va='center', transform=img.axs[0][0].transAxes, fontsize=img.legend_size-5)
+    img.axs[0][0].text(ra_min, y1, "$g$ = %.3f"%shear_bench, color='black', ha='left',
+            va='center',  fontsize=img.legend_size)
 
     img.axs[0][0].scatter(foregal[0], foregal[1],s=200,facecolors="none",edgecolors="r",marker="*")
-    img.axs[0][1].scatter(foregal[0], foregal[1], s=200, facecolors="none", edgecolors="r", marker="*")
+    # img.axs[0][1].scatter(foregal[0], foregal[1], s=200, facecolors="none", edgecolors="r", marker="*")
     for i in range(ny + 1):
         img.axs[0][0].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",alpha=0.5,linewidth=0.3)
-        img.axs[0][1].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",
-                           alpha=0.5, linewidth=0.3)
+        # img.axs[0][1].plot([ra_min, ra_max], [dec_bin[i], dec_bin[i]], c="black", linestyle="--",
+        #                    alpha=0.5, linewidth=0.3)
     for j in range(nx + 1):
         img.axs[0][0].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black",linestyle="--" ,alpha=0.5, linewidth=0.3)
-        img.axs[0][1].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black", linestyle="--",
-                           alpha=0.5, linewidth=0.3)
+        # img.axs[0][1].plot([ra_bin[j], ra_bin[j]], [dec_min, dec_max], c="black", linestyle="--",
+        #                    alpha=0.5, linewidth=0.3)
     norm = plt.Normalize(vmin=numpy.min(max_g), vmax=numpy.max(max_g))
     cmap = plt.get_cmap('plasma')
 
@@ -264,16 +267,16 @@ for ir in range(redshift_bin_num):
                 y = (dec_bin[i] + dec_bin[i+1])/2
                 if color == 1:
                     img.axs[0][0].plot([x+dx, x-dx], [y+dy, y-dy],c=cl)
-                    img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c=cl)
+                    # img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c=cl)
                 else:
-                    img.axs[0][0].plot([x + dx, x - dx], [y + dy, y - dy], c="C0")
-                    img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c="C0")
-    img.axs[0][0].set_title("From the estimated $g$",fontsize=img.xy_lb_size)
-    img.axs[0][1].set_title("Recoved from the $< g_{1/2}\Sigma_c>/\Sigma_{z=%.2f}$"%crit_z,fontsize=img.xy_lb_size)
-    img.set_label(0, 0, 1, "RA")
-    img.set_label(0, 0, 0, "DEC")
-    img.set_label(0, 1, 1, "RA")
-    img.set_label(0, 1, 0, "DEC")
+                    img.axs[0][0].plot([x + dx, x - dx], [y + dy, y - dy], linewidth=2, c="red")
+                    # img.axs[0][1].plot([x + dxc, x - dxc], [y + dyc, y - dyc], c="C0")
+    img.axs[0][0].set_title("shear field",fontsize=img.xy_lb_size)
+    # img.axs[0][1].set_title("Recoved from the $< g_{1/2}\Sigma_c>/\Sigma_{z=%.2f}$"%crit_z,fontsize=img.xy_lb_size)
+    img.set_label(0, 0, 1, "RA [arcmin]")
+    img.set_label(0, 0, 0, "DEC [arcmin]")
+    # img.set_label(0, 1, 1, "RA")
+    # img.set_label(0, 1, 0, "DEC")
     if color == 1:
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []

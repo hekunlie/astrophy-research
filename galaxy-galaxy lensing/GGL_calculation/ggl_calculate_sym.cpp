@@ -66,7 +66,8 @@ int main(int argc, char ** argv)
 		std::cout << std::endl;
 	}
 
-	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/");
+	//sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/");
+	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 
 	total_data_num = 0;
 	total_pair_num = 0;
@@ -178,7 +179,7 @@ int main(int argc, char ** argv)
 		{
 			radius_mean_temp += dist_radius[i];
 
-			if (radius_mean_temp > 500000)
+			if (radius_mean_temp > 100000)
 			{
 				radius_mean += radius_mean_temp;
 				radius_mean_temp = 0;
@@ -186,6 +187,7 @@ int main(int argc, char ** argv)
 		}
 		radius_mean += radius_mean_temp;
 		radius_mean = radius_mean / total_pair_num;
+		std::cout << rank<<" "<<radius_mean <<"Mpc"<< std::endl;
 
 		choice = 0;
 		if (total_pair_num > 200000)
@@ -220,7 +222,7 @@ int main(int argc, char ** argv)
 		gh_left = -0.1;
 		gh_right = 0.1;
 
-		try
+		/*try
 		{
 			find_shear(mgt, mnu1_crit, total_pair_num, MG_BIN_NUM, gt, gt_sig, chi_check[0], chi_fit_num, choice, 1000, gh_left, gh_right, 50);
 		}
@@ -240,7 +242,7 @@ int main(int argc, char ** argv)
 			gx = 0;
 			gx_sig = 0;
 		}
-		
+		*/
 		st2 = clock();
 
 		total_result[rank] = gt;
@@ -282,6 +284,10 @@ int main(int argc, char ** argv)
 		sprintf(set_name, "/data");
 		write_h5(result_path, set_name, total_result, RESULT_ROW, numprocs, TRUE);
 
+		char times[50];
+		get_time(times, 50);
+		std::cout << times << std::endl;
+
 	}
 
 	for (i = 0; i < area_num; i++)
@@ -294,6 +300,7 @@ int main(int argc, char ** argv)
 	MPI_Win_free(&win_chi);
 	MPI_Win_free(&win_result);
 
+	
 	delete[] mgt;
 	delete[] mgx;
 	delete[] mnu1;

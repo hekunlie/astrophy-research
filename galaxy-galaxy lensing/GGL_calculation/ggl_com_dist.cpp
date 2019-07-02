@@ -10,15 +10,20 @@ int main(int argc, char *argv[])
 	char data_path[200], set_name[30], attrs_name[30], inform[200];
 	char target_set_name[20];
 
-	int refer_num = 100001;
+	int refer_num;
+
+
+	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/redshift.hdf5");
+	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/redshift.hdf5");
+	sprintf(set_name, "/Z");
+	read_h5_datasize(data_path, set_name, refer_num);
+
 	double *redshift_refer = new double[refer_num];
 	double *dist_refer = new double[refer_num];
 
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/redshift.hdf5");
-	sprintf(set_name, "redshift");
 	read_h5(data_path, set_name, redshift_refer);
 
-	sprintf(set_name, "distance");
+	sprintf(set_name, "/DISTANCE");
 	read_h5(data_path, set_name, dist_refer);
 	std::cout << redshift_refer[refer_num - 1] << " " << dist_refer[refer_num - 1] << std::endl;
 

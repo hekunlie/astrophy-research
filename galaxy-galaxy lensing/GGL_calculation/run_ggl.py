@@ -4,12 +4,12 @@ from sys import argv
 
 
 fore_source_nm = argv[1]
-area = [int(argv[i]) for i in range(2, len(argv))]
-radius_num = 13
+radius_num = int(argv[2])
+area = [int(argv[i]) for i in range(3, len(argv))]
 print(area)
 time.sleep(2)
 
-cpus = [2 + i*3 for i in range(radius_num)]
+cpus = [2 + i for i in range(radius_num)]
 
 for area_id in area:
     for radius_id in range(radius_num):

@@ -20,7 +20,7 @@
 #include<functional> // std::less, std::greater..
 #include<ciso646> // for "and, not, or, ..."
 
-#include "fitsio.h"
+#include <fitsio.h>
 #include <fftw3.h>
 #include <gsl/gsl_randist.h>
 #include<gsl/gsl_cdf.h>
@@ -164,7 +164,7 @@ extern "C"
 /* file reading and writting*/
 /********************************************************************************************************************************************/
 
-void char_to_str(char *char_in, std::string &string_out);//checked
+void char_to_str(const char *char_in, std::string &string_out);//checked
 /* convert a char to string */
 
 bool file_exist(const char *filename);//checked
@@ -585,7 +585,7 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
-void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);
+void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
 /* calculate the separation angle between two points on the sphere */
 /* RA & DEC in unit of degree */
 

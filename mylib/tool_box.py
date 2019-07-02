@@ -1,7 +1,7 @@
-import platform
-if platform.system() == 'Linux':
-    import matplotlib
-    matplotlib.use('Agg')
+# import platform
+# if platform.system() == 'Linux':
+#     import matplotlib
+#     matplotlib.use('Agg')
 import numpy
 import copy
 import matplotlib.pyplot as plt

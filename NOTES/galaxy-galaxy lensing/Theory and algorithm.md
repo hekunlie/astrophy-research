@@ -68,9 +68,9 @@ The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \
     <td>U & V</b></td>
  </tr>
  <tr>
-    <td>$$ \begin{aligned} g &=(g_1+ig_2)e^{-2i\phi} \\\\
-    &= g_1\cos(2\phi)+g_2\sin(2\phi) \\\\
-    &+ i(g_2 \cos(2\phi) - g_1\sin(2\phi)) \\\\ 
+    <td>$$ \begin{aligned} g &=(g_1+ig_2)e^{2i\phi} \\\\
+    &= g_1\cos(2\phi) - g_2\sin(2\phi) \\\\
+    &+ i( g_1\sin(2\phi) + g_2 \cos(2\phi)) \\\\ 
     g_t &= -Re[g e^{-2i\phi}] \\\\ &= -g_1\cos(2\phi) - g_2\sin(2\phi) \\\\ 
     g_{\times} & = -Im[g e^{-2i\phi}] \\\\
     & = g_1\sin(2\phi) - g_2 \cos(2\phi)\end{aligned}$$</td>

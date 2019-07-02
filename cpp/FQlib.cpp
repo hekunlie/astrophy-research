@@ -9,7 +9,7 @@ char buffer[1000], exception_name[50];
 /* file reading and writting*/
 /********************************************************************************************************************************************/
 
-void char_to_str( char *char_in, std::string &string_out)
+void char_to_str( const char *char_in, std::string &string_out)
 {
 	std::stringstream media;
 	media << char_in;
