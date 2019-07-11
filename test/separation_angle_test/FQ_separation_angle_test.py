@@ -55,11 +55,21 @@ if cmd == "compare":
     f.close()
 
     img = Image_Plot()
-    img.subplots(1, 2)
+    img.subplots(2, 2)
 
     img.axs[0][0].hist(data1[:,0]-data2[:,4], 100)
     img.axs[0][1].hist(data1[:,1]-data2[:,5], 100)
+    img.axs[1][0].scatter(data2[:,0], data2[:,2], s=3)
+    img.axs[1][1].scatter(data2[:,1], data2[:,3], s=3)
+    img.set_label(0,0,0,"Num")
+    img.set_label(0,0,1,"Difference [radian]")
+    img.set_label(0,1,0,"Num")
+    img.set_label(0,1,1,"Difference [deg]")
 
+    img.set_label(1,0,0,"DEC [deg]")
+    img.set_label(1,0,1,"RA [deg]")
+    img.set_label(1,1,0,"DEC [deg]")
+    img.set_label(1,1,1,"RA [deg]")
     img.save_img("compare_result.png")
     # img.show_img()
 

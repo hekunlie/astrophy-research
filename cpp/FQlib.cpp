@@ -3112,7 +3112,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
-void com_distance(const double low_z, const double high_z, const double precision_thresh, const double omg_m, const double omg_lam, double &result)
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh)
 {
 	int i, j, bin_num;
 	int max_run = 500;
@@ -3136,7 +3136,8 @@ void com_distance(const double low_z, const double high_z, const double precisio
 
 		if (fabs(result_2 - result_1) <= precision_thresh)
 		{
-			result = (result_2 + result_1) *0.5;
+			// comoving distance  [ Mpc/h ]
+			result = (result_2 + result_1) *0.5*1000*C_0_hat;
 			break;
 		}
 		else

@@ -462,9 +462,9 @@ int main(int argc, char *argv[])
 						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
 						
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
-						diff_r = dist_source * sin(diff_theta) * coeff_rad_dist;
+						diff_r = dist_len * diff_theta;
 
-						if (diff_r >= radius_bin[radius_label] and diff_r < radius_bin[radius_label + 1])
+						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
 							pair_count_shared[rank] += 1;
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;

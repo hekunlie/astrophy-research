@@ -3,10 +3,10 @@
 
 int main(int argc, char ** argv)
 {
-	/* calculate the comoving distance with omega_m0 = 0.31, omega_lambda0 = 0.69 */
-	/* only calculate the integrate without the factor c/H0                                                */
-	/* redshift: 0 ~ 10                                                                                                          */
-
+	/* calculate the comoving distance [Mpc/h]																*/
+	/*	argv[1]: Omega_m0, (Omega_lambda0 = 1 - Omega_m0									  */
+	/*  argv[2]: Z_MAX, 0~ Z_MAX, the distance to be calculated                                   */
+	
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -26,15 +26,15 @@ int main(int argc, char ** argv)
 	st1 = clock();
 
 	// \Omega_m0 & \Omega_lanbda0
-	omega_m = 0.268;
-	omeg_lambda = 0.732;
+	omega_m = atof(argv[1]);
+	omeg_lambda = 1 - omega_m;
 
 	// 0 ~ z_max
-	z_max = 10;
+	z_max = atof(argv[2]);
 	// precision for integrate
-	precision = 1.e-7;
+	precision = 1.e-8;
 	// point num [0, 1_max]
-	step = 500000;
+	step = 100000;
 	z_step = z_max / step;
 
 	total_num = step + 1;
@@ -101,7 +101,8 @@ int main(int argc, char ** argv)
 
 	for (i = my_num_i; i < my_num_e; i++)
 	{
-		com_distance(0, redshift[i], precision, omega_m, omeg_lambda, distance);
+
+		com_distance(0, redshift[i], omega_m, omeg_lambda, distance, precision);
 		my_com_dist[i - my_num_i] = distance;
 	}
 	

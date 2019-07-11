@@ -99,7 +99,7 @@ const double C_0 = 2.99792458*1.e8;// speed of light m/s
 const double H_0_hat = 0.70;
 const double H_0 = 70; //  Km/s/Mpc
 
-const double G_0_hat= 6.6740831313; //  10^{-11}
+const double G_0_hat= 6.6740831; //  10^{-11}
 const double G_0 = 6.6740831*1.e-11; //  m^3 s^{-2} Kg^{-1}
 
 const double One_Light_Year_hat = 9.4607304725808;// 10^15
@@ -108,8 +108,8 @@ const double One_Light_Year = 9.4607304725808*1.e15;// meter
 const double One_Mpc_hat = 3.085677581; // 10^22
 const double One_Mpc = 3.085677581*1.e22;// meter
 
-const double M_sun_hat = 1.98847;
-const double M_sun = 1.98847*1.e30;//Kg
+const double M_sun_hat = 1.9885;
+const double M_sun = 1.9885*1.e30;//Kg
 
 extern const gsl_rng_type *T;
 extern gsl_rng *rng;
@@ -425,8 +425,10 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
-void com_distance(const double low_z, const double high_z, const double precision_thresh, const double omg_m, const double omg_lam, double &result);
-/* calculate the comoving distance (without the c/H_0 parameter). There are only matter and dark energy in the universe */
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh = 1.e-8);//checked
+/* calculate the comoving distance [ Mpc/h ].																															*/
+/*There are only matter and dark energy in the universe																											 */
+/* the precision_thresh is set to be 1.e-8 by default to reduce the difference with astropy.cosmology module (<0.001 Mpc) */
 
 void log_bin(const double start, const double end, const int num, double * bins);
 /* the loggrithmical bin, including the start and end point

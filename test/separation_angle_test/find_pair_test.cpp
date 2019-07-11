@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
-	int vec_data_col = 9;
+	int vec_data_col = 8;
 #endif
 
 	int i, j, k, temp;
@@ -44,16 +44,19 @@ int main(int argc, char *argv[])
 	char foreground_name[50];
 
 	// the controllers
-	int radius_label = atoi(argv[1]);
-	int area_id = 1;
+	int area_id = atoi(argv[1]);
+	int radius_label = atoi(argv[2]);
+	//strcpy(foreground_name, argv[3]);
 
-	sprintf(parent_path, "/home/hklee/work/cpp/code_test/separation_angle_test/");
+
+	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/");
+	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
-	sprintf(h5f_res_path, "%sradius_%d.hdf5", data_path, radius_label);
-	sprintf(log_path, "%slog/ggl_log_%d.dat", data_path, rank);
-	sprintf(h5f_path_fore, "%s/cmass_w1_sub.hdf5", data_path);
+	sprintf(h5f_res_path, "./data/result/radius_%d.hdf5", radius_label);
+	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
+	sprintf(h5f_path_fore, "./data/w_%d_sub.hdf5", area_id);
 
-	sprintf(h5f_path_grid, "/mnt/perc/hklee/CFHT/gg_lensing/data/cfht_cata_grid.hdf5");
+	sprintf(h5f_path_grid, "%scfht_cata_grid.hdf5", data_path);
 
 	pts_info gal_info;
 
@@ -97,11 +100,12 @@ int main(int argc, char *argv[])
 
 	int radius_num;
 	double radius_s, radius_e, radius_e_sq;
+	double theta_s, theta_e;
 	double *radius_bin;
 	// radius bin
-	radius_num = 20;
+	radius_num = 10;
 	radius_bin = new double[radius_num + 1]{};
-	log_bin(0.01, 12, radius_num + 1, radius_bin);
+	log_bin(0.1, 15, radius_num + 1, radius_bin);
 
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
@@ -155,65 +159,6 @@ int main(int argc, char *argv[])
 	{
 		std::cout << log_infom << std::endl;
 	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	// the shared buffer for the total \Delta\Sigma_t , \Delta\Sigma_x, and the errors
-#if ! defined(SMALL_CATA)
-
-	MPI_Win win_delta_sigma;
-	MPI_Aint size_delta_sigma;
-	// the signals from each field could be added into the final one to get the signal of the whole area
-	// so, the denominator and numerator are stored separately
-	//[\Sum weight*\Sigma_t,  \Sum weight*\Sigma_t_err,  
-	//  \Sum weight*\Sigma_x, \Sum weight*\Sigma_x_err,  \Sum weight]
-	size_delta_sigma = radius_num * 5;
-
-#endif
-	MPI_Win win_pair_count;
-	MPI_Aint  size_pair_count;
-
-	size_pair_count = numprocs;
-
-	if (0 == rank)
-	{
-#if ! defined( SMALL_CATA)
-		// for the chi square of tangential shear
-		MPI_Win_allocate_shared(size_delta_sigma * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
-#endif
-		MPI_Win_allocate_shared(size_pair_count * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
-	}
-	else
-	{
-		int dispu_total;
-#if ! defined( SMALL_CATA)
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
-		MPI_Win_shared_query(win_delta_sigma, 0, &size_delta_sigma, &dispu_total, &delta_sigma);
-
-#endif
-		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
-		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	// initialization
-	if (0 == rank)
-	{
-#if ! defined( SMALL_CATA)
-		initialize_arr(delta_sigma, radius_num * 5, 0);
-#endif
-		initialize_arr(pair_count_shared, numprocs, 0);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	// read the search radius
-	//sprintf(set_name, "/radius_bin");
-	//read_h5_datasize(h5f_path_grid, set_name, radius_num);
-	//radius_bin = new double[radius_num] {};
-	//read_h5(h5f_path_grid, set_name, radius_bin);
-	//radius_num = radius_num - 1;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -284,6 +229,59 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 
+		/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	// the shared buffer for the total \Delta\Sigma_t , \Delta\Sigma_x, and the errors
+#if ! defined(SMALL_CATA)
+
+	MPI_Win win_delta_sigma;
+	MPI_Aint size_delta_sigma;
+	// the signals from each field could be added into the final one to get the signal of the whole area
+	// so, the denominator and numerator are stored separately
+	//[\Sum weight*\Sigma_t,  \Sum weight*\Sigma_t_err,  
+	//  \Sum weight*\Sigma_x, \Sum weight*\Sigma_x_err,  \Sum weight]
+	size_delta_sigma = radius_num * 5;
+
+#endif
+	MPI_Win win_pair_count;
+	MPI_Aint  size_pair_count;
+
+	size_pair_count = numprocs + foregal_num;
+
+	if (0 == rank)
+	{
+#if ! defined( SMALL_CATA)
+		// for the chi square of tangential shear
+		MPI_Win_allocate_shared(size_delta_sigma * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
+#endif
+		MPI_Win_allocate_shared(size_pair_count * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+	}
+	else
+	{
+		int dispu_total;
+#if ! defined( SMALL_CATA)
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &delta_sigma, &win_delta_sigma);
+		MPI_Win_shared_query(win_delta_sigma, 0, &size_delta_sigma, &dispu_total, &delta_sigma);
+
+#endif
+		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	// initialization
+	if (0 == rank)
+	{
+#if ! defined( SMALL_CATA)
+		initialize_arr(delta_sigma, radius_num * 5, 0);
+#endif
+		initialize_arr(pair_count_shared, numprocs + foregal_num, 0);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	st1 = clock();
@@ -310,24 +308,24 @@ int main(int argc, char *argv[])
 	coeff_inv = C_0_hat * Pi / 0.18;
 	coeff_rad_dist = C_0_hat * 1000;
 
-	radius_e = radius_bin[radius_label + 1] * coeff;
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
 	{
 		z_f = foregal_data[z_id][gal_id];
-		// the source must be at z = z_f + diff_z_thresh
+		// the source must be behind z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
 
-		//find_near(redshifts, z_f, red_num, tag_f);
-		//dist_len = distances[tag_f];
 		dist_len = foregal_data[dist_id][gal_id];
 		dist_len_coeff = 1. / dist_len / (1 + z_f);
 
+		theta_s = radius_bin[radius_label] / dist_len / coeff_rad_dist;
+		theta_e = radius_bin[radius_label + 1] / dist_len / coeff_rad_dist;
+
 		// the max searching radius depend on the redshift of lens  //	
 		// the max seperation of the source at the z = z_f  //
-		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 2; // degree
-		radius_e_sq = radius_e * radius_e; // degree^2
+		//radius_s = radius_bin[radius_label] * coeff / dist_len / foregal_data[cos_dec_id][gal_id]/3; // degree
+		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] *1.5; // degree
 
 		// degree
 		ra_f = foregal_data[ra_id][gal_id];
@@ -367,7 +365,7 @@ int main(int argc, char *argv[])
 					z_b_odds = backgal_data[odds_lb][ib];
 
 					//if (backgal_data[z_id][ib] >= z_thresh)
-					if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95)
+					if (backgal_data[z_id][ib] >= z_thresh)
 					{
 						ra_b = backgal_data[ra_id][ib];
 						dec_b = backgal_data[dec_id][ib];
@@ -383,66 +381,28 @@ int main(int argc, char *argv[])
 						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
 
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
-						diff_r = dist_source * sin(diff_theta) * coeff_rad_dist;
-
+						diff_r = dist_len * diff_theta * coeff_rad_dist;
+						//if (theta_s <= diff_theta and diff_theta < theta_e)
 						if (diff_r >= radius_bin[radius_label] and diff_r < radius_bin[radius_label + 1])
 						{
 							pair_count_shared[rank] += 1;
+							pair_count_shared[numprocs + gal_id] += 1;
+
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
 
 							// rotation for shear calculation, see the NOTE of gg_lensing for the detials 
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
 							backgal_cos_2phi = (diff_dec - diff_ra)*(diff_ra + diff_dec) / diff_theta_sq;
-
-#if defined (SMALL_CATA)
-
-							//// the direction of R.A. is oppsite, actually,  e2 = -e2
-							//// tangential component, e_t =  e_1 *cos2\phi - e_2*sin2\phi
-							//backgal_e_t = backgal_data[e1_id][ib] * backgal_cos_2phi + backgal_data[e2_id][ib] * backgal_sin_2phi;
-							//data_cache.push_back(backgal_e_t);
-
-							//// the cross component, e_x =  e_1 *sin2\phi + e_2*cos2\phi
-							//backgal_e_x = backgal_data[e1_id][ib] * backgal_sin_2phi - backgal_data[e2_id][ib] * backgal_cos_2phi;
-							//data_cache.push_back(backgal_e_x);
-
-							data_cache.push_back(backgal_data[e1_id][ib]);
-							data_cache.push_back(backgal_data[e2_id][ib]);
-							data_cache.push_back(backgal_cos_2phi);
-							data_cache.push_back(backgal_sin_2phi);
-							// mutiplicative bias
-							data_cache.push_back(backgal_data[m_id][ib]);
-							// additive bias
-							data_cache.push_back(backgal_data[c_id][ib]);
-							data_cache.push_back(backgal_data[weight_id][ib]);
+							
+							data_cache.push_back(gal_id);
+							data_cache.push_back(ib);
+							data_cache.push_back(diff_theta);
+							data_cache.push_back(ra_b);
+							data_cache.push_back(dec_b);
+							data_cache.push_back(backgal_data[z_id][ib]);
 							data_cache.push_back(crit_surf_density_com);
 							data_cache.push_back(diff_r);
 
-#else
-
-							// calculate the PDF of the estimator for shear
-							for (ig = 0; ig < gh_num; ig++)
-							{
-								mg_t = backgal_mg_tan - gh[ig] * backgal_mnu1_tan_c;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_tan[ig*mg_bin_num + chi_bin_label] += 1;
-
-								mg_x = backgal_mg_cross - gh[ig] * backgal_mnu2_tan_c;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_cross[ig*mg_bin_num + chi_bin_label] += 1;
-							}
-
-							// calculate the PDF of the estimator for 'shear*critical_surface_density'
-							for (ig = 0; ig < gh_crit_num; ig++)
-							{
-								mg_t = backgal_mg_tan - gh_crit[ig] * backgal_mnu1_tan;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] += 1;
-
-								mg_x = backgal_mg_cross - gh_crit[ig] * backgal_mnu2_tan;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label] += 1;
-							}
-#endif
 						}
 
 					}
@@ -503,16 +463,8 @@ int main(int argc, char *argv[])
 			if (rank == 0)
 			{
 				final_buf = new double[pair_count * vec_data_col];
-				//show_arr(displ, 1, numprocs);
-				//show_arr(num_of_thread, 1, numprocs);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
-
-			//char test_path[200];
-			//sprintf(test_path, "/home/hkli/work/test/%d.hdf5", rank);
-			//sprintf(set_name, "/pair_data");
-			//write_h5(test_path, set_name, my_data_buf, pair_count_shared[rank], 5, TRUE);
-			// gather the data from each thread, empty data from some threads are allowed
 
 			MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
@@ -520,11 +472,13 @@ int main(int argc, char *argv[])
 
 			if (rank == 0)
 			{
-				//show_arr(final_buf, pair_count, vec_data_col);
 				sprintf(set_name, "/pair_data");
 				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, TRUE);
 
-				sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+				sprintf(set_name, "/pair_count");
+				write_h5(h5f_res_path, set_name, pair_count_shared, foregal_num+numprocs, 1, FALSE);
+
+				sprintf(temp_path, "./data/result/radius_bin.hdf5");
 				sprintf(set_name, "/radius_bin");
 				write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -537,7 +491,10 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/pair_data");
 			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, TRUE);
 
-			sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(set_name, "/pair_count");
+			write_h5(h5f_res_path, set_name, pair_count_shared, foregal_num + numprocs, 1, FALSE);
+
+			sprintf(temp_path, "./data/result/radius_bin.hdf5");
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 		}
@@ -553,7 +510,10 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/pair_data");
 			write_h5(h5f_res_path, set_name, my_data_buf, 1, vec_data_col, TRUE);
 
-			sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(set_name, "/pair_count");
+			write_h5(h5f_res_path, set_name, pair_count_shared, foregal_num + numprocs, 1, FALSE);
+
+			sprintf(temp_path, "./data/result/radius_bin.hdf5");
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -587,11 +547,9 @@ int main(int argc, char *argv[])
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-}
-
-// free the memory	
-MPI_Win_free(&win_delta_sigma);
-#endif
+	// free the memory	
+	MPI_Win_free(&win_delta_sigma);
+	#endif
 
 	MPI_Win_free(&win_pair_count);
 

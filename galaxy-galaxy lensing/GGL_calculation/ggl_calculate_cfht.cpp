@@ -108,9 +108,9 @@ int main(int argc, char *argv[])
 	double radius_s, radius_e, radius_e_sq;
 	double *radius_bin;
 	// radius bin
-	radius_num = 20;
+	radius_num = 13;
 	radius_bin = new double[radius_num + 1]{};
-	log_bin(0.01, 12, radius_num + 1, radius_bin);
+	log_bin(0.04, 15, radius_num + 1, radius_bin);
 
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 
 		// the max searching radius depend on the redshift of lens  //	
 		// the max seperation of the source at the z = z_f  //
-		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 2; // degree
+		radius_e = radius_bin[radius_label + 1] / dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
 		radius_e_sq = radius_e * radius_e; // degree^2
 
 		// degree
@@ -392,9 +392,9 @@ int main(int argc, char *argv[])
 						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
 
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
-						diff_r = dist_source * sin(diff_theta) * coeff_rad_dist;
+						diff_r = dist_len * diff_theta;
 
-						if (diff_r >= radius_bin[radius_label] and diff_r < radius_bin[radius_label + 1])
+						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
 							pair_count_shared[rank] += 1;
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
@@ -596,7 +596,7 @@ int main(int argc, char *argv[])
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	}
+	
 
 	// free the memory	
 	MPI_Win_free(&win_delta_sigma);

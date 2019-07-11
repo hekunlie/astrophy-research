@@ -30,16 +30,37 @@ It is valid only for \\(\omega_k \geq 0 \\) (see astro-ph/9905116 or Principles 
 
 The critial surface density in comoving distance:
 
-$$ \begin{aligned}\Sigma_{crit}(z_1, z_2) &= \frac{c^2}{4\pi G}\frac{D_A (z_2)}{D_A (z_1) D_A (z_1, z_2) (1+z_1)^2}, z_1<z_2 \\\\
-&= \frac{c^2}{4 \pi G} \frac{\omega(0,z_2)}{\omega(0,z_1)[\omega(0,z_2) - \omega(0,z_1)] (1+z_1)} \\\\
-&=\frac{c^2}{4\pi G}\frac{H_0}{c}\frac{\alpha(0,z_2)}{\alpha(0,z_1)[\alpha(0,z_2) - \alpha(0,z_1)] (1+z_1)} \\\\
-&= \frac{c\times 10^{8} \rm{m\cdot s^{-1}}100h\rm{Km\cdot s^{-1}{Mpc}^{-1}}}{4\pi G\times 10^{-11} \rm{m^3\cdot s^{-2} \cdot Kg^{-1}}}\frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)} \\\\
-& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}\frac{c \cdot h}{4\pi G}\times 10^{24}\rm{Kg \cdot m^{-1}\cdot Mpc^{-1}} \\\\ 
-& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}\frac{c \cdot h \cdot m_{pc} }{4\pi G\cdot m_s}\times 10^{4}\rm{M_{sum} \cdot pc^{-2}} \\\\
-& = \frac{\alpha(0,z_2)}{[\alpha(0,z_2) - \alpha(0,z_1)]\alpha(0,z_1)(1+z_1)}3.88283351\times 10^{2}\rm{M_{sum} \cdot pc^{-2}}
-\end{aligned}$$
+<table border="0">
+ <tr>
+    <td>$$\Sigma_{crit}(z_L, z_S)$$</b></td>
+    <td>$$\Sigma_{crit}(z_L, z_S)$$</b></td>
+ </tr>
+ <tr>
+   <td>
+   $$ \begin{aligned}&= \frac{c^2}{4\pi G}\frac{D_A (z_S)}{D_A (z_L) D_A (z_L, z_S) (1+z_L)^2}, z_L < z_S \\\\
+   &= \frac{c^2}{4 \pi G} \frac{\omega(0,z_S)}{\omega(0,z_L)[\omega(0,z_S) - \omega(0,z_L)] (1+z_L)} \\\\
+   &= L(z_L, z_s)\frac{c_0^2\times 10^{16}\ \rm{m^2\cdot s^{-2} \cdot h \cdot Mpc^{-1}}}{4\pi G_0\times 10^{-11}\  \rm{m^3\cdot s^{-2} \cdot Kg^{-1}}} \\\\
+   & = L(z_L, z_s)\frac{c_0^2}{4\pi G_0}\times 10^{21}\ \rm{h \cdot Kg \cdot m^{-1} \cdot pc^{-1}} \\\\
+   & = L(z_L, z_s)\frac{c_0^2}{4\pi G_0 l_{pc} m_{\odot}}\times 10^{7}\ \rm{h \cdot M_{\odot} \cdot pc^{-2}} \\\\
+   & = L(z_L, z_s)\times 174648.0703379\ \rm{h \cdot M_{\odot} \cdot pc^{-2}}, \\\\
+   &L(z_L, z_s) = \frac{\omega(0,z_S)}{\omega(0,z_L)[\omega(0,z_S) - \omega(0,z_L)] (1+z_L)}
+   \end{aligned}$$
+   </td>
+   <td>
+   $$ \begin{aligned} &= \frac{c^2}{4\pi G}\frac{D_A (z_S)}{D_A (z_L) D_A (z_L, z_S) (1+z_L)^2}, z_L < z_S \\\\
+   &= \frac{c^2}{4 \pi G}\frac{H_0}{c} \frac{\alpha(0,z_S)}{\alpha(0,z_L)[\alpha(0,z_S) - \alpha(0,z_L)] (1+z_L)} \\\\
+   &= L^{\prime}(z_L, z_S)\frac{c_0\times 10^{16}\ \rm{m^2\cdot s^{-2}} \times 10^{-3} \ \rm{h \cdot Mpc^{-1}}}{4\pi G_0\times 10^{-11}\  \rm{m^3\cdot s^{-2} \cdot Kg^{-1}}}  \\\\
+   &= L^{\prime}(z_L, z_S)\frac{c_0}{4\pi G_0}\times 10^{24} \ \rm{h \cdot Kg \cdot m^{-1} \cdot Mpc^{-1}} \\\\
+   &= L^{\prime}(z_L, z_S)\frac{c_0 l_{pc}}{4\pi G_0 m_{\odot}}\times 10^{4} \ \rm{h \cdot M_{\odot} \cdot pc^{-2}} \\\\
+   & = L^{\prime}(z_L, z_S)\times 554.682\ 135\ 528\ \rm{h \cdot M_{\odot} \cdot pc^{-2}} \\\\
+   &L^{\prime}(z_L, z_S) = \frac{\alpha(0,z_S)}{\alpha(0,z_L)[\alpha(0,z_S) - \alpha(0,z_L)] (1+z_L)}
+   \end{aligned}$$
+   </td>
+ </tr>
+</table>
 
-$$  h = 0.7, \quad c = 2.99792458 \quad  m_{pc} = 3.085677581 \quad m_s = 1.98847 \quad G = 6.6740831313$$
+
+$$ c_0 = 2.99\ 792\ 458; \quad  l_{pc} = 3.085\ 677\ 581; \quad m_{\odot} = 1.9885, \quad M_{\odot} = 1.9885\times 10^{30}\  \rm{Kg}; \quad G_0 = 6.67\ 408\ 313$$
 
 
 The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \\(V\\).

@@ -38,11 +38,11 @@ else:
     dens_pic_path = total_path + "result/%s/cfht/result/cfht_%s_w_%d"%(fore_source, fore_source, int(argv[3]))
     dens_r_pic_path = total_path + "result/%s/cfht/result/cfht_%s_w_%d_sigmaxr"%(fore_source, fore_source, int(argv[3]))
 
-ylabels = ["$\gamma$", "$\Delta\Sigma \; [\\rm{M_{\odot}} \cdot \\rm{pc^{-2}}]$"]
+ylabels = ["$\gamma$", "$\Delta\Sigma \; [\\rm{h \cdot M_{\odot}} \cdot \\rm{pc^{-2}}]$"]
 ylabels_r = "$\\rm{R}\Delta\Sigma \; [\\rm{10^6\ M_{\odot}} \cdot \\rm{pc^{-2}}]$"
 xlabel = "$\\rm{R} \; [\\rm{Mpc} \cdot \\rm{h^{-1}}]$"
 
-coeff = 388.2833518
+coeff = 554.690501
 
 gt_lb, gx_lb = 0, 2
 sigt_lb, sigx_lb = 4, 6
@@ -109,7 +109,7 @@ if cmd == "calculate":
             result[sigx_lb+1, ir] = delta_crit_ex.std()/numpy.sqrt(pair_num)
             result[sigtxr_lb+1, ir] = delta_crit_et.std()/numpy.sqrt(pair_num)*r_mean
 
-            result[r_lb, ir] = r_mean
+            result[r_lb, ir] = r_mean#numpy.sum(dist*delta_crit_et)/numpy.sum(delta_crit_et)
 
             print("[%.5f, %.5f], %d galaxy pairs at radius %f (%f)"%(radius_bin[ir],radius_bin[ir+1], pair_num,
                                                                      r_mean,(radius_bin[ir]+radius_bin[ir+1])/2))
@@ -135,8 +135,6 @@ if cmd == "calculate":
     h5f["/data"] = result
     h5f.close()
 
-    ylims = (0.01, 140)
-
     img = Image_Plot()
     img.set_style()
     img.subplots(1, 1)
@@ -146,6 +144,8 @@ if cmd == "calculate":
     img.axs[0][0].errorbar(result[r_lb], result[sigt_lb], result[sigt_lb + 1], c="C1", capsize=4, label="T", marker="s")
     img.axs[0][0].errorbar(result[r_lb], result[sigx_lb], result[sigx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
+    y_max = img.axs[0][0].set_ylim()[1]
+    ylims = (0.01, y_max*2)
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
         w1_cfht_path = "./lensing_low/data.dat"
@@ -157,7 +157,7 @@ if cmd == "calculate":
     img.set_label(0, 0, 1, xlabel)
 
     img.axs[0][0].set_yscale("log")
-    # img.axs[0][0].set_ylim(ylims)
+    img.axs[0][0].set_ylim(ylims)
     img.axs[0][0].set_xscale("log")
     xs = img.axs[0][0].set_xlim()
     img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
@@ -192,8 +192,6 @@ if cmd == "plot":
     result = h5f["/data"].value
     h5f.close()
 
-    ylims = (0.01, 140)
-
     img = Image_Plot()
     img.set_style()
     img.subplots(1, 1)
@@ -202,6 +200,9 @@ if cmd == "plot":
 
     img.axs[0][0].errorbar(result[r_lb], result[sigt_lb], result[sigt_lb + 1], c="C1", capsize=4, label="T", marker="s")
     img.axs[0][0].errorbar(result[r_lb], result[sigx_lb], result[sigx_lb + 1], c="C2", capsize=4, label="X", marker="s")
+
+    y_max = img.axs[0][0].set_ylim()[1]
+    ylims = (0.01, y_max*2)
 
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":

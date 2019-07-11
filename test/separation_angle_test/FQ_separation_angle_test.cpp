@@ -22,7 +22,7 @@ int main(int argc, char**argv)
 		int i, j, k, arr_size, num;
 		int data_col = 6;
 
-		sprintf(path, "sep_test.hdf5");
+		sprintf(path, "./data/sep_test.hdf5");
 		sprintf(set_name, "/data");
 
 		read_h5_datasize(path, set_name, arr_size);
@@ -48,7 +48,7 @@ int main(int argc, char**argv)
 			}
 		}
 
-		sprintf(path, "sep_test_cpp.hdf5");
+		sprintf(path, "./data/sep_test_cpp.hdf5");
 		sprintf(set_name, "/data");
 		write_h5(path, set_name, diff, num, 2, TRUE);
 	}

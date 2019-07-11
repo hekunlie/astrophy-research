@@ -37,7 +37,7 @@ void read_text(const char *filename, double *data_buf, const int data_col, int &
 			str.clear();
 			strs.clear();
 			getline(infile, str);
-
+			std::cout << "READ: " << str <<" The first"<<str[0]<< std::endl;
 			strs << str;
 			for (i = 0; i < data_col; i++)
 			{

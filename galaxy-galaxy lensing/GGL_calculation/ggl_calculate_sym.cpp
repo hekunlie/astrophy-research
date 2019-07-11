@@ -4,7 +4,7 @@
 #define DATA_COL 6
 #define RESULT_ROW 11
 #define MAX_AREA 20
-#define CRIT_COEFF 388.2833518
+#define CRIT_COEFF 174648.0703379
 #define MG_BIN_NUM 8
 
 int main(int argc, char ** argv)

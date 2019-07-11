@@ -608,9 +608,9 @@ if cmd == "select_cfht":
         idx_pz1 = numpy.abs(cata_data[:, pz1_lb] - 1) <= epsilon
         idx_pz2 = cata_data[:, pz2_lb] <= 0.2
 
-        # cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
 
-        cut_idx = idx_pz1 & idx_pz2 & idx_fitclass
+        # cut_idx = idx_pz1 & idx_pz2 & idx_fitclass
 
         ra = cata_data[:, ra_lb_c][cut_idx]
         dec = cata_data[:, dec_lb_c][cut_idx]

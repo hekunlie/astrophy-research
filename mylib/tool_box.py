@@ -540,6 +540,12 @@ def image_fft(image):
 def image_ifft(image):
     return fft.ifft2(fft.ifftshift(image))
 
+def image_fft_3d(image_3d):
+    return fft.fftshift(fft.fftn(image_3d))
+
+def image_ifft_3d(image_3d):
+    return fft.ifftn(fft.ifftshift(image_3d))
+
 def shear2kappa_ks95(gamma1, gamma2, cen_x=0, cen_y=0):
     size = gamma1.shape[0]
     cen = int(size / 2)
