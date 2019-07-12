@@ -191,12 +191,24 @@ void read_para(const std::string path, const std::string name, double &para);
 void read_para(const std::string path, const std::string name, float &para);
 /* read the parameters ("name") value from parameter file */
 
+void read_text(const char *filename, double *data_buf, const int data_col, const int skipline = 0);
+/* read the data in the text file into the data_buf.														*/
+/* skipline: 1, skip the first line of annonation,   else 0												*/
+/* the function itself does not check the type of the content in the file,					*/
+/* so nothing except the data and the first line of annotation should be in the file	*/
+
 void read_text(const std::string path, double *arr, const int read_lines);//checked
 void read_text(const std::string path, float *arr, const int read_lines);
 void read_text(const std::string path, int *arr, const int read_lines);
 /* read data from txt file which should be just one column.
 	the read_lines limits the maximum lines to read
 */
+void write_text(const char*filename, double *data_buf, const int data_row, const int data_col, const int mode=0);
+void write_text(const char*filename, double *data_buf, const int data_row, const int data_col, const char * comment, const int mode=0);
+/* write array into file															*/
+/* mode: 0, trucate the file before writting							*/
+/*				1, append to the end of the file							*/
+/* comment: something like "#....", write to the first line	*/	
 
 void read_h5_datasize(const char *filename, const char *set_name, int &elem_num);//checked
 /* read the element number in the dataset 

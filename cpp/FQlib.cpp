@@ -214,6 +214,58 @@ void read_para(const std::string path, const std::string name, int &para)
 }
 
 
+void read_text(const char *filename, double *data_buf, const int data_col, const int skipline)
+{
+	std::ifstream infile;
+	std::string file_path, str, temp;
+	std::stringstream strs;
+
+	int i, j;
+
+	//char_to_str(filename, file_path);
+	int line_count = 0;
+
+	infile.open(filename);
+
+	if (skipline > 0)
+	{
+		while (!infile.eof())
+		{
+			str.clear();
+			strs.clear();
+			getline(infile, str);
+			std::cout << str << std::endl;
+			if (line_count > 0)
+			{
+				strs << str;
+				for (i = 0; i < data_col; i++)
+				{
+					strs >> data_buf[(line_count - 1)*data_col + i];
+				}
+			}
+			line_count += 1;
+		}
+	}
+	else
+	{
+		while (!infile.eof())
+		{
+			str.clear();
+			strs.clear();
+			temp.clear();
+			getline(infile, str);
+			std::cout << str << std::endl;
+			strs << str;
+			for (i = 0; i < data_col; i++)
+			{
+				strs >> data_buf[line_count*data_col + i];
+			}
+			line_count += 1;
+		}
+	}
+	infile.close();
+}
+
 void read_text(const std::string path, double *arr, const int start_line, const int read_lines, const int read_cols)
 {
 	// start_line counts from 0 not 1 !!!
@@ -289,6 +341,59 @@ void read_text(const std::string path, int *arr, const int read_lines)
 	}
 	infile.close();
 }
+
+
+void write_text(const char*filename, const double *data_buf, const int data_row, const int data_col, const int mode)
+{
+	int i, j, k;
+	std::ofstream fw;
+
+	if (mode == 0)
+	{
+		fw.open(filename, std::ios::out | std::ios::trunc);
+	}
+	else
+	{
+		fw.open(filename, std::ios::out | std::ios::app);
+	}
+
+	for (i = 0; i < data_row; i++)
+	{
+		for (j = 0; j < data_col - 1; j++)
+		{
+			fw << data_buf[i*data_col + j] << "\t";
+		}
+		fw << data_buf[i*data_col + j] << std::endl;
+	}
+	fw.close();
+}
+
+void write_text(const char*filename, double *data_buf, const int data_row, const int data_col, const char * comment, const int mode)
+{
+	int i, j, k;
+	std::ofstream fw;
+
+	if (mode == 0)
+	{
+		fw.open(filename, std::ios::out | std::ios::trunc);
+	}
+	else
+	{
+		fw.open(filename, std::ios::out | std::ios::app);
+	}
+
+	fw << comment << std::endl;
+	for (i = 0; i < data_row; i++)
+	{
+		for (j = 0; j < data_col - 1; j++)
+		{
+			fw << data_buf[i*data_col + j] << "\t";
+		}
+		fw << data_buf[i*data_col + j] << std::endl;
+	}
+	fw.close();
+}
+
 
 void read_h5_datasize(const char *filename, const char *set_name, int &elem_num)
 {
