@@ -12,7 +12,7 @@ import h5py
 
 
 # all the coordinates should be converted to the unit of arcmin
-def shear_field(x, y, cen, sig, ampl):
+def shear_field(x, y, shift, sig, ampl):
     ''' the shear field '''
     r = numpy.sqrt(x ** 2 + y ** 2)
     g = ampl*r*numpy.exp(-((y - shift[0]) ** 2 + (x-shift[1]) ** 2) / 2 / sig / sig) / numpy.pi / 2 / sig/sig
