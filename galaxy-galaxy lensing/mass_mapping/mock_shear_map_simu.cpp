@@ -23,13 +23,15 @@ int main(int argc, char**argv)
 
 	int total_data_num, my_data_num, data_start;
 
+	int my_expo_s, my_expo_e;
+
 	int stamp_nx, stamp_ny, stamp_num;
 	int source_num, size, point_num;
 	int psf_type;
 	double psf_scale , max_radius;
 	double sigma;
 
-	double *g1, *g2;
+	double *g1, *g2, *g;
 	double *ra, *dec;
 	double *flux, flux_i;
 
@@ -57,23 +59,33 @@ int main(int argc, char**argv)
 	psf_type = 2;
 	psf_scale = 4;
 
-	stamp_nx = 100;
-	stamp_ny = 100;
+	stamp_nx = 10;
+	stamp_ny = 10;
 	stamp_num = stamp_nx * stamp_nx;
-	source_num = 10000;
-	expo_num = 6;
+	source_num = 30000;
+	expo_num = 50;
 	chip_num = 1;
 	data_row = source_num;
-	data_col = 9; // 5 shear estimators + RA, DEC , g1 , g2
+	data_col = 10; // 5 shear estimators + RA, DEC , g, g1 , g2
 	total_data_num = chip_num * data_row * data_col;
 
-	seed = rank * 10 + 123;
+	seed = 12335812+ rank*10 + rank;
+
+	i = expo_num / numprocs;
+	j = expo_num % numprocs;
+	my_expo_s = i * rank;
+	my_expo_e = i * (rank + 1);
+	if (rank == numprocs - 1)
+	{
+		my_expo_e += j;
+	}
 
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/");
 	sprintf(shear_path, "%sparam.hdf5", parent_path);
 
 	g1 = new double[source_num];
 	g2 = new double[source_num];
+	g = new double[source_num];
 
 	ra = new double[source_num];
 	dec = new double[source_num];
@@ -82,18 +94,20 @@ int main(int argc, char**argv)
 	result_data = new double[total_data_num];
 
 	// read the shear
-	sprintf(set_name, "/g1/expo_%d",rank);
+	sprintf(set_name, "/g");
+	read_h5(shear_path, set_name, g);
+	sprintf(set_name, "/g1");
 	read_h5(shear_path, set_name, g1);
-	sprintf(set_name, "/g2/expo_%d", rank);
+	sprintf(set_name, "/g2");
 	read_h5(shear_path, set_name, g2);
 
 	// read  the  RA and DEC
-	sprintf(set_name, "/RA/expo_%d", rank);
+	sprintf(set_name, "/ra");
 	read_h5(shear_path, set_name, ra);
-	sprintf(set_name, "/DEC/expo_%d", rank);
+	sprintf(set_name, "/dec");
 	read_h5(shear_path, set_name, dec);
 	// read flux
-	sprintf(set_name, "/FLUX/expo_%d", rank);
+	sprintf(set_name, "/flux");
 	read_h5(shear_path, set_name, flux);
 
 	para all_paras;
@@ -118,13 +132,12 @@ int main(int argc, char**argv)
 	noise = new double[size*size];
 	noise_pow = new double[size*size];
 
-	big_img = new double[source_num*size*size];
-	big_img_f = new float[source_num*size*size];
+	big_img = new double[stamp_nx*stamp_ny*size*size];
+	big_img_f = new float[stamp_nx*stamp_ny*size*size];
 
 	create_psf(psf_stamp, psf_scale, size, 2);
 	pow_spec(psf_stamp, psf_pow, size, size);
 	get_psf_radius(psf_pow, &all_paras, 2);
-
 	if (rank == 0)
 	{
 		sprintf(chip_path, "!%sdata/psf.fits", parent_path);
@@ -133,13 +146,22 @@ int main(int argc, char**argv)
 		write_fits(chip_path, psf_pow, size, size);
 	}
 
-	for (j = 0; j < chip_num; j++)
+	for (i = 0; i < numprocs; i++)
+	{
+		if (i == rank)
+		{
+			std::cout << rank << " " << my_expo_s << " " << my_expo_e << std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
+	for (j = my_expo_s; j < my_expo_e; j++)
 	{
 		st1c = clock();
 		gsl_initialize(seed);
 
-		sprintf(chip_path, "!%sdata/chip_%d_expo_%d.fits", parent_path, j, rank);
-		initialize_arr(big_img, size*size*source_num, 0);
+		sprintf(chip_path, "!%sdata/expo_%d.fits", parent_path, j);
+		initialize_arr(big_img, size*size*stamp_nx*stamp_ny, 0);
 
 		for (k = 0; k < source_num; k++)
 		{
@@ -165,17 +187,21 @@ int main(int argc, char**argv)
 
 			shear_est(gal_pow, psf_pow, &all_paras);
 
-			stack(big_img, gal_stamp, k, size, stamp_nx, stamp_nx);
+			if (k < 100)
+			{
+				stack(big_img, gal_stamp, k, size, stamp_nx, stamp_nx);
+			}
 
 			result_data[k * data_col] = all_paras.n1;
 			result_data[k * data_col + 1] = all_paras.n2;
 			result_data[k * data_col + 2] = all_paras.dn;
 			result_data[k * data_col + 3] = all_paras.du;
 			result_data[k * data_col + 4] = all_paras.dv;
-			result_data[k * data_col + 5] = g1[k];
-			result_data[k * data_col + 6] = g2[k];
-			result_data[k * data_col + 7] = ra[k];
-			result_data[k * data_col + 8] = dec[k];
+			result_data[k * data_col + 5] = g[k];
+			result_data[k * data_col + 6] = g1[k];
+			result_data[k * data_col + 7] = g2[k];
+			result_data[k * data_col + 8] = ra[k];
+			result_data[k * data_col + 9] = dec[k];
 		}
 		for (k = 0; k < stamp_nx*size* stamp_nx*size; k++)
 		{
@@ -183,19 +209,19 @@ int main(int argc, char**argv)
 		}
 		write_fits(chip_path, big_img_f, stamp_nx*size, stamp_nx*size);
 		gsl_free();
+		
+		// write down the shear data of each shear point
+		sprintf(data_path, "%sresult/expo_%d.hdf5", parent_path, j);
+		sprintf(set_name, "/data");
+		write_h5(data_path, set_name, result_data, total_data_num / data_col, data_col, TRUE);
 		st2c = clock();
 
 		get_time(time_curr, 50);
-		std::cout << "EPXO: "<<rank<<". "<<"Chip " << j << ": " << (st2c - st1c) / CLOCKS_PER_SEC << " " << time_curr << std::endl;
+		std::cout << "EPXO: " << j <<" "<< (st2c - st1c) / CLOCKS_PER_SEC << " " << time_curr << std::endl;
 
 	}
 
-	// write down the shear data of each shear point
-	sprintf(data_path, "%sresult/expo_%d.hdf5", parent_path, rank);
-	sprintf(set_name, "/data");
-	write_h5(data_path, set_name, result_data, total_data_num / data_col, data_col, TRUE);
-	get_time(time_curr, 50);
-	std::cout << "Expo " << rank << ": "  << time_curr << std::endl;
+
 
 	delete[] big_img;
 	delete[] gal_stamp;
