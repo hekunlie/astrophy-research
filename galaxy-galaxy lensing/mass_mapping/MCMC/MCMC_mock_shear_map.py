@@ -13,30 +13,25 @@ import h5py
 import MCMC_program
 
 
+parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
+envs_path = "%s/param.dat" % my_home
 
 # all the coordinates should be converted to the unit of arcmin
 # number of grid
 nx = 200
 ny = nx
 # the field size in unit of arcmin
-delta_ra = 20
+delta_ra = 16
 delta_dec = delta_ra
 half_side = nx/2
 # arcmin/pix
 pixel_scale = delta_ra/nx
-# the shear profile
-sigma = 2 # arcmin
-amplitude = 0.8
-dx, dy = 0, 0
 # galaxy number density
 dens_num = 75
 num_each_expo = dens_num*delta_ra*delta_dec
 expo_num = 50
 total_num = num_each_expo*expo_num
-profile_params = [amplitude, dx, dy, sigma]
 print("%d galaxies each exposure. %d exposures."%(num_each_expo, expo_num))
-
-parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
 
 # the grid
 # x: ra, y: dec
@@ -55,8 +50,23 @@ gal_coord[0] = numpy.random.uniform(ra_range[0], ra_range[1], num_each_expo)
 gal_coord[1] = numpy.random.uniform(dec_range[0], dec_range[1], num_each_expo)
 gal_coord[2] = numpy.sqrt(gal_coord[0]**2 + gal_coord[1]**2)
 
+
+# the shear profile
+sigma = 2 # arcmin
+amplitude = 0.8
+dx, dy = 0, 0
+profile_params = [amplitude, dx, dy, sigma]
 # shear field
 g = MCMC_program.shear_field(profile_params, x, y)
+
+
+contents = [['param', "grid_nx", '%d'%nx], ['param', "grid_ny", '%d'%ny],
+            ['param', "RA", '%.2f'%delta_ra], ['param',"DEC", '%.2f'%delta_dec],
+            ['param', "pixel_scale", '%.6f' % pixel_scale], ['param', "sigma", '%.4f' % sigma],
+            ['param', "amplitude", '%.2f' % amplitude], ['param', "dx", '%.4f' % dx],
+            ['param', "dy", '%.2f' % dy], ['param', "density/arcmin^2", '%d' %dens_num],
+            ['param', "exposure", '%d'%expo_num]]
+path_items = tool_box.config(envs_path, ['add' for i in range(len(contents))], contents, True)
 
 
 img = Image_Plot()

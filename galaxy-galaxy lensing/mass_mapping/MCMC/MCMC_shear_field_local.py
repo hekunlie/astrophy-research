@@ -15,11 +15,43 @@ from multiprocessing import Pool
 import h5py
 from scipy.optimize import least_squares
 import MCMC_program
+import tool_box
+
 
 
 expo_num = int(argv[1])
 ncpus = int(argv[2])
 shear_cmd = argv[3]
+
+parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
+
+envs_path = "%s/param.dat" % my_home
+contents = [['param', "grid_nx", '1'], ['param', "grid_ny", '1'],
+            ['param', "RA", '1'], ['param',"DEC", '1'],
+            ['param', "pixel_scale", '1'], ['param', "sigma", '1'],
+            ['param', "amplitude", '1'], ['param', "dx", '1'],
+            ['param', "dy", '1'], ['param', "density/arcmin^2", '1'],
+            ['param', "exposure", '1']]
+
+var_items = tool_box.config(envs_path, ['get' for i in range(len(contents))], contents)
+
+# parameters
+fit_radius = 6 # arcmin
+# number of grid
+nx = 50
+ny = nx
+# the field size in unit of arcmin
+delta_ra = float(var_items[2])
+delta_dec = float(var_items[3])
+half_side = nx/2
+# arcmin/pix
+pixel_scale = float(var_items[4])
+
+sigma = float(var_items[5]) # arcmin
+amplitude = float(var_items[6])
+dx, dy = float(var_items[7]), float(var_items[8])
+
+parameters = [amplitude, dx, dy, sigma]
 
 nwalkers = 200
 ndim = 4
@@ -29,24 +61,7 @@ fq = Fourier_Quad(10, 112)
 bin_num = 8
 bin_num2 = int(bin_num / 2)
 
-fit_radius = 6
-# number of grid
-nx = 50
-ny = nx
-# the field size in unit of arcmin
-delta_ra = 20
-delta_dec = delta_ra
-half_side = nx/2
-# arcmin/pix
-pixel_scale = delta_ra/nx
-# parameters
-sigma = 2 # arcmin
-amplitude = 0.8
-shift = (0, 0)
-parameters = [amplitude, shift[0], shift[1], sigma]
 
-
-parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
 # parent_path = "/mnt/ddnfs/data_users/hkli/CFHT/multi_shear/cluster_field/result/"
 for i in range(expo_num):
     h5f = h5py.File(parent_path + "result/expo_%d.hdf5"%i,"r")

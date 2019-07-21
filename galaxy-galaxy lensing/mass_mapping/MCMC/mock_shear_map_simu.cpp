@@ -29,7 +29,7 @@ int main(int argc, char**argv)
 	int source_num, size, point_num;
 	int psf_type;
 	double psf_scale , max_radius;
-	double sigma;
+	double gal_noise_sigma;
 
 	double *g1, *g2, *g;
 	double *ra, *dec;
@@ -54,22 +54,22 @@ int main(int argc, char**argv)
 	point_num = 80;
 	max_radius = 8;
 	
-	sigma = 30;
+	gal_noise_sigma = 30;
 
 	psf_type = 2;
 	psf_scale = 4;
 
 	stamp_nx = 10;
 	stamp_ny = 10;
-	stamp_num = stamp_nx * stamp_nx;
-	source_num = 30000;
-	expo_num = 50;
+	stamp_num = stamp_nx * stamp_ny;
+	source_num = 19200;
+	expo_num = 30;
 	chip_num = 1;
 	data_row = source_num;
-	data_col = 10; // 5 shear estimators + RA, DEC , g, g1 , g2
+	data_col = 8; // 5 shear estimators + RA, DEC , g, g1 , g2
 	total_data_num = chip_num * data_row * data_col;
 
-	seed = 12335812+ rank*10 + rank;
+	seed = 123358 + rank*10 + rank;
 
 	i = expo_num / numprocs;
 	j = expo_num % numprocs;
@@ -81,7 +81,7 @@ int main(int argc, char**argv)
 	}
 
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/");
-	sprintf(shear_path, "%sparam.hdf5", parent_path);
+	sprintf(shear_path, "%sparam_slope.hdf5", parent_path);
 
 	g1 = new double[source_num];
 	g2 = new double[source_num];
@@ -96,10 +96,10 @@ int main(int argc, char**argv)
 	// read the shear
 	sprintf(set_name, "/g");
 	read_h5(shear_path, set_name, g);
-	sprintf(set_name, "/g1");
-	read_h5(shear_path, set_name, g1);
-	sprintf(set_name, "/g2");
-	read_h5(shear_path, set_name, g2);
+	//sprintf(set_name, "/g1");
+	//read_h5(shear_path, set_name, g1);
+	//sprintf(set_name, "/g2");
+	//read_h5(shear_path, set_name, g2);
 
 	// read  the  RA and DEC
 	sprintf(set_name, "/ra");
@@ -111,7 +111,7 @@ int main(int argc, char**argv)
 	read_h5(shear_path, set_name, flux);
 
 	para all_paras;
-	all_paras.gal_noise_sig = 0;
+	all_paras.gal_noise_sig = gal_noise_sigma;
 	all_paras.psf_noise_sig = 0;
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
@@ -135,9 +135,10 @@ int main(int argc, char**argv)
 	big_img = new double[stamp_nx*stamp_ny*size*size];
 	big_img_f = new float[stamp_nx*stamp_ny*size*size];
 
-	create_psf(psf_stamp, psf_scale, size, 2);
+	create_psf(psf_stamp, psf_scale, size, psf_type);
 	pow_spec(psf_stamp, psf_pow, size, size);
 	get_psf_radius(psf_pow, &all_paras, 2);
+
 	if (rank == 0)
 	{
 		sprintf(chip_path, "!%sdata/psf.fits", parent_path);
@@ -163,6 +164,8 @@ int main(int argc, char**argv)
 		sprintf(chip_path, "!%sdata/expo_%d.fits", parent_path, j);
 		initialize_arr(big_img, size*size*stamp_nx*stamp_ny, 0);
 
+		initialize_arr(result_data, total_data_num, 0);
+
 		for (k = 0; k < source_num; k++)
 		{
 			initialize_arr(gal_stamp, size*size, 0);
@@ -173,13 +176,13 @@ int main(int argc, char**argv)
 			initialize_para(&all_paras);
 
 			create_points(points, point_num, max_radius);
-			flux_i = flux[k]/point_num;
+			flux_i =  flux[k] / point_num;
 
-			convolve(gal_stamp, points, flux_i, size, point_num, 0, psf_scale, g1[k], g2[k], psf_type, 0, &all_paras);
+			convolve(gal_stamp, points, flux_i, size, point_num, 0, psf_scale, g[k], 0, psf_type, 1, &all_paras);
 
-			addnoise(gal_stamp, size*size, sigma);
+			addnoise(gal_stamp, size*size, gal_noise_sigma);
 
-			addnoise(noise, size*size, sigma);
+			addnoise(noise, size*size, gal_noise_sigma);
 			pow_spec(noise, noise_pow, size, size);
 
 			pow_spec(gal_stamp, gal_pow, size, size);
@@ -187,31 +190,39 @@ int main(int argc, char**argv)
 
 			shear_est(gal_pow, psf_pow, &all_paras);
 
-			if (k < 100)
-			{
-				stack(big_img, gal_stamp, k, size, stamp_nx, stamp_nx);
-			}
-
+			
 			result_data[k * data_col] = all_paras.n1;
 			result_data[k * data_col + 1] = all_paras.n2;
 			result_data[k * data_col + 2] = all_paras.dn;
 			result_data[k * data_col + 3] = all_paras.du;
 			result_data[k * data_col + 4] = all_paras.dv;
+
 			result_data[k * data_col + 5] = g[k];
-			result_data[k * data_col + 6] = g1[k];
-			result_data[k * data_col + 7] = g2[k];
-			result_data[k * data_col + 8] = ra[k];
-			result_data[k * data_col + 9] = dec[k];
+			result_data[k * data_col + 6] = ra[k];
+			result_data[k * data_col + 7] = dec[k];
+
+			//result_data[k * data_col + 5] = g[k];
+			//result_data[k * data_col + 6] = g1[k];
+			//result_data[k * data_col + 7] = g2[k];
+			//result_data[k * data_col + 8] = ra[k];
+			//result_data[k * data_col + 9] = dec[k];
+
+			if (k < 100)
+			{
+				stack(big_img, gal_stamp, k, size, stamp_ny, stamp_nx);
+			}
 		}
-		for (k = 0; k < stamp_nx*size* stamp_nx*size; k++)
+		
+		for (k = 0; k < stamp_ny*size* stamp_nx*size; k++)
 		{
 			big_img_f[k] = big_img[k];
 		}
-		write_fits(chip_path, big_img_f, stamp_nx*size, stamp_nx*size);
+		
+		write_fits(chip_path, big_img_f, stamp_ny*size, stamp_nx*size);
 		gsl_free();
 		
 		// write down the shear data of each shear point
-		sprintf(data_path, "%sresult/expo_%d.hdf5", parent_path, j);
+		sprintf(data_path, "%sresult/expo_%d_slope.hdf5", parent_path, j);
 		sprintf(set_name, "/data");
 		write_h5(data_path, set_name, result_data, total_data_num / data_col, data_col, TRUE);
 		st2c = clock();
