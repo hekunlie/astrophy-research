@@ -54,7 +54,7 @@ int main(int argc, char**argv)
 	point_num = 80;
 	max_radius = 8;
 	
-	gal_noise_sigma = 30;
+	gal_noise_sigma = 5;
 
 	psf_type = 2;
 	psf_scale = 4;
@@ -62,14 +62,14 @@ int main(int argc, char**argv)
 	stamp_nx = 10;
 	stamp_ny = 10;
 	stamp_num = stamp_nx * stamp_ny;
-	source_num = 19200;
-	expo_num = 30;
+	source_num = 128000;
+	expo_num = 20;
 	chip_num = 1;
 	data_row = source_num;
 	data_col = 8; // 5 shear estimators + RA, DEC , g, g1 , g2
 	total_data_num = chip_num * data_row * data_col;
 
-	seed = 123358 + rank*10 + rank;
+	seed = 1233 + rank*10 + rank;
 
 	i = expo_num / numprocs;
 	j = expo_num % numprocs;

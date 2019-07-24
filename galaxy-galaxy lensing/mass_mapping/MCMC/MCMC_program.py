@@ -1,19 +1,9 @@
 import numpy
 
 
-
-def ln_gh_prior(theta):
-    tag = 0
-    num = 4
-    fit_range = [[0, 1.5],[-2, 2],[-2, 2],[1, 6]]
-    for i in range(num):
-        if fit_range[i][0] <= theta[i] <= fit_range[i][1]:
-            tag += 1
-    if tag == num:
-        return 0.0
-    else:
-        return -numpy.inf
-
+def gauss_weight(sig, radius):
+    """weight for shear measurement"""
+    return numpy.exp(-radius**2/2/sig**2)*40
 
 def shear_profile(params, x, y):
     ''' the shear field '''
@@ -40,6 +30,30 @@ def shear_slope(params, x, y):
     a1, a2, a3 = params[0], params[1], params[2]
     g = a1 + a2*x + a3*y
     return g
+
+def ln_gh_prior(theta):
+    tag = 0
+    num = 4
+    fit_range = [[0, 1.5],[-2, 2],[-2, 2],[1, 6]]
+    for i in range(num):
+        if fit_range[i][0] <= theta[i] <= fit_range[i][1]:
+            tag += 1
+    if tag == num:
+        return 0.0
+    else:
+        return -numpy.inf
+
+def ln_gh_prior_slope(theta):
+    tag = 0
+    num = 3
+    fit_range = [[-0.1, 0.1],[-0.1, 0.1],[-0.1, 0.1]]
+    for i in range(num):
+        if fit_range[i][0] <= theta[i] <= fit_range[i][1]:
+            tag += 1
+    if tag == num:
+        return numpy.exp(-(theta[0]**2+theta[1]**2+ theta[2]**2)/2/0.1/0.1)
+    else:
+        return -numpy.inf
 
 def ln_prob_g_test(theta, g, x, y, tag):
     """
@@ -105,7 +119,36 @@ def ln_prob_g(theta, G, NU, bins, bin_num2, inverse, x, y, tag):
             return lp - xi
         return -numpy.inf
 
-
+def ln_prob_g_slope(theta, G, NU, bins, bin_num2, inverse, x, y):
+    """
+    :param theta:
+    :param G:
+    :param NU:
+    :param bins:
+    :param bin_num2:
+    :param inverse:
+    :param x:
+    :param y:
+    :return:
+    """
+    lp = ln_gh_prior_slope(theta)
+    if not numpy.isfinite(lp):
+        return -numpy.inf
+    else:
+        g = shear_slope(theta, x, y)
+        if numpy.abs(g).max() <= 0.1:
+            G_h = G - NU * g
+            num = numpy.histogram(G_h, bins)[0]
+            n1 = num[0:bin_num2][inverse]
+            n2 = num[bin_num2:]
+            idx1 = n1 == 0
+            idx2 = n2 == 0
+            znum = numpy.sum(idx1 & idx2)
+            if znum > 0:
+                print("ZERO",znum)
+            xi = numpy.sum((n1 - n2)**2/(n1 + n2))*0.5
+            return lp - xi
+        return -numpy.inf
 
 def result_fun(params, ra, dec, radius):
     f_sub = radius/ numpy.pi / 2 / params[3][0] * numpy.exp(-((dec - params[1][0]) ** 2 + (ra - params[2][0]) ** 2) / 2 / params[3][0])

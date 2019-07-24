@@ -13,9 +13,8 @@ import h5py
 import MCMC_program
 
 
-
 parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
-envs_path = "%s/param_slope.dat" % my_home
+envs_path = parent_path + "param_slope.dat"
 
 # all the coordinates should be converted to the unit of arcmin
 # number of grid
@@ -28,9 +27,9 @@ half_side = nx/2
 # arcmin/pix
 pixel_scale = delta_ra/nx
 # galaxy number density
-dens_num = 75
+dens_num = 500
 num_each_expo = dens_num*delta_ra*delta_dec
-expo_num = 30
+expo_num = 50
 total_num = num_each_expo*expo_num
 print("%d galaxies each exposure. %d exposures."%(num_each_expo, expo_num))
 
@@ -59,9 +58,9 @@ shear_field = MCMC_program.shear_slope(profile_params, x, y)
 
 contents = [['param', "grid_nx", '%d'%nx], ['param', "grid_ny", '%d'%ny],
             ['param', "RA", '%.2f'%delta_ra], ['param',"DEC", '%.2f'%delta_dec],
-            ['param', "pixel_scale", '%.6f' % pixel_scale], ['param', "a1", '%.4f' % a1],
-            ['param', "a2", '%.2f' % a2], ['param', "a3", '%.4f' % a3],
-            ['param', "density/arcmin^2", '%d' %dens_num], ['param', "exposure", '%d'%expo_num]]
+            ['param', "pixel_scale", '%.6f' % pixel_scale], ['param', "a1", '%f' % a1],
+            ['param', "a2", '%f' % a2], ['param', "a3", '%f' % a3],
+            ['param', "num/arcmin^2", '%d' %dens_num], ['param', "exposure", '%d'%expo_num]]
 
 path_items = tool_box.config(envs_path, ['add' for i in range(len(contents))], contents, True)
 

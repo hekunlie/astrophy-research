@@ -59,6 +59,18 @@ class Image_Plot:
         else:
             self.axs[iy][ix].yaxis.set_major_formatter(ticks_form)
 
+    def set_ticklabel(self, iy, ix, axis_nm, n, labels):
+        loc = mtick.LinearLocator(n)
+        fmt = mtick.FixedFormatter(labels)
+        # y-axis
+        if axis_nm == 0:
+            self.axs[iy][ix].yaxis.set_major_locator(loc)
+            self.axs[iy][ix].yaxis.set_major_formatter(fmt)
+        # x-axis
+        else:
+            self.axs[iy][ix].xaxis.set_major_locator(loc)
+            self.axs[iy][ix].xaxis.set_major_formatter(fmt)
+
     def set_label(self, iy, ix, axis_nm, label, font="serif", size=None):
         if not size:
             size = self.xy_lb_size
