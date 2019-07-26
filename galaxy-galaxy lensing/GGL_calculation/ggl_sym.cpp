@@ -332,56 +332,57 @@ int main(int argc, char ** argv)
 	{
 		double *final_chisq_t = new double[gh_num] {};
 		double *final_chisq_x = new double[gh_num] {};
-		double dm, dn;
-		try
-		{
-			chisq_Gbin_1d(my_mgt, my_mnut, pair_count[rank], mg_bin, MG_BIN_NUM, gh[i], chisq_temp);
-			total_chisq[i] = chisq_temp;
-		}
-		catch (const char* msg)
-		{
-			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Tangential. " << msg << std::endl;
-			exit(0);
-		}
-		try
-		{
-			chisq_Gbin_1d(mgx, mnu2, total_pair_num, mg_bin, mg_bin_num, gh[i], chisq_temp);
-			total_chisq[gh_num + i] = chisq_temp;
-		}
-		catch (const char* msg)
-		{
-			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Cross. " << msg << std::endl;
-			exit(0);
-		}
-
-		double *chisq_fit = new double[gh_num];
+		MY_INT temp_chi_t[MG_BIN_NUM]{}, temp_chi_x[MG_BIN_NUM]{};
 		double signal[4]{ -1, -1,-1,-1 };
 
-		sprintf(result_path, "%sresult/%s/%d.hdf5", total_path, fore_source, radius_id);
-		sprintf(set_name, "/chisq");
-		write_h5(result_path, set_name, total_chisq, 2, gh_num, TRUE);
+		for (i = 0; i < gh_num; i++)
+		{
+			for (j = 0; j < MG_BIN_NUM; j++)
+			{
+				temp_chi_t[j] = total_chisq[i*MG_BIN_NUM + j];
+				temp_chi_x[j] = total_chisq[(i + gh_num)*MG_BIN_NUM + j];
+			}
+			cal_chisq_1d(temp_chi_t, MG_BIN_NUM, final_chisq_t[i]);
+			cal_chisq_1d(temp_chi_x, MG_BIN_NUM, final_chisq_x[i]);
+		}
+
+		try
+		{
+			fit_shear(gh, final_chisq_t, gh_num, signal[0], signal[1], 50);
+		}
+		catch (const char* msg)
+		{
+			std::cerr << "Faliure in tangential shear fitting. " << msg << std::endl;
+			exit(0);
+		}
+		try
+		{
+			fit_shear(gh, final_chisq_x, gh_num, signal[2], signal[3], 50);
+		}
+		catch (const char* msg)
+		{
+			std::cerr << "Faliure in cross shear fitting. " << msg << std::endl;
+			exit(0);
+		}
+		if (area_num > 1)
+		{
+			sprintf(result_path, "%sresult/total_%d.hdf5", total_path, radius_id);
+		}
+		else
+		{
+			sprintf(result_path, "%sresult/w_%d_%d.hdf5", total_path, area_id[0], radius_id);
+		}
+
+		sprintf(set_name, "/chisq_t");
+		write_h5(result_path, set_name, final_chisq_t, 1, gh_num, TRUE);
+		sprintf(set_name, "/chisq_x");
+		write_h5(result_path, set_name, final_chisq_x, 1, gh_num, FALSE);
+
 		sprintf(set_name, "/shear");
 		write_h5(result_path, set_name, gh, 1, gh_num, FALSE);
 
-		for (j = 0; j < 2; j++)
-		{
-			for (i = 0; i < gh_num; i++)
-			{
-				chisq_fit[i] = total_chisq[i + j * gh_num];
-			}
-			try
-			{
-				fit_shear(gh, chisq_fit, gh_num, signal[j * 2], signal[j * 2 + 1], 80);
-			}
-			catch (const char* msg)
-			{
-				std::cerr <<fore_source<<" Radius: "<<radius_id<<" "<< msg;
-			}
-		}
 		sprintf(set_name, "/signal");
 		write_h5(result_path, set_name, signal, 4, 1, FALSE);
-
-		delete[] chisq_fit;
 	}
 
 
