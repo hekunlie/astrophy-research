@@ -9,7 +9,7 @@ area = [int(argv[i]) for i in range(3, len(argv))]
 print(area)
 time.sleep(2)
 
-cpus = [2 + i for i in range(radius_num)]
+cpus = [1 + i for i in range(radius_num)]
 
 for area_id in area:
     for radius_id in range(radius_num):

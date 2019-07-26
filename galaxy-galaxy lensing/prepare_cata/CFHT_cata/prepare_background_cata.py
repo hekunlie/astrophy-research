@@ -226,7 +226,7 @@ if cmd == "select":
     t1 = time.time()
 
     h5f_path = cfht_cata_path + "cfht_cata.hdf5"
-    h5f_path_cut = data_path + "cfht_cata_cut.hdf5"
+    h5f_path_cut = data_path + "cfht_cata/cfht_cata_cut.hdf5"
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
         h5f.close()
@@ -286,12 +286,12 @@ if cmd == "select":
         m_bias = cata_data[:,m_lb_c][cut_idx]
         c_bias = cata_data[:,c_lb_c][cut_idx]
 
-        names = ["Z", "RA", "DEC", "MAG", "COS_DEC", "STARGLAG", "Z_MIN", "Z_MAX", "ODDS",
-                 "E1", "E2", "WEIGHT", "FITCLASS", "MASK", "M", "C"]
-        datas = [redshift, ra, dec, mag, cos_dec, starflag, z_min, z_max, odds,
-                 e1, e2, weight, fitclass, mask, m_bias, c_bias]
+        names = ["Z", "RA", "DEC", "MAG", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS",
+                 "E1", "E2", "WEIGHT", "M", "C"]
+        datas = [redshift, ra, dec, mag, cos_dec, z_min, z_max, odds,
+                 e1, e2, weight, m_bias, c_bias]
         data_num = len(redshift)
-
+        print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
 
     for area_id in range(area_num):
@@ -303,5 +303,5 @@ if cmd == "select":
         comm.Barrier()
     t2 = time.time()
     if rank == 0:
-        print(t2-t1, data_num)
+        print(t2-t1)
 ############################# CFHTLenS catlog cutoff #############################################

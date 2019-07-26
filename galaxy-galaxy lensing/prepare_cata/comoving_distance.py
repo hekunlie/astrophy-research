@@ -27,5 +27,5 @@ cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 com_dist = cosmos.comoving_distance(z).value
 scale_len = radian*com_dist
 
-print("Z: %.3f. H0: %.3f. Omega_m: %.3f\nCom_dist: %f Mpc/h ( %f Mpc)."%(z, H_0, omega_m0,com_dist*h,com_dist))
+print("Z: %.5f. H0: %.3f. Omega_m: %.3f\nCom_dist: %f Mpc/h ( %f Mpc)."%(z, H_0, omega_m0,com_dist*h,com_dist))
 print("%.3f arcmin (%.5f rad) ~ %.5f Mpc"%(ang, radian, scale_len))

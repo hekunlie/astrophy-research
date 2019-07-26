@@ -305,7 +305,7 @@ if cmd == "select":
     t1 = time.time()
 
     h5f_path = fourier_cata_path + "fourier_cata.hdf5"
-    h5f_path_cut = data_path + "fourier_cata_cut.hdf5"
+    h5f_path_cut = data_path + "fourier_cata_new/fourier_cata_cut.hdf5"
 
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
@@ -347,13 +347,13 @@ if cmd == "select":
 
         mag = cata_data[:, mag_lb][cut_idx]
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC",
-                 "Z_MIN", "Z_MAX", "ODDS", "PZ1", "PZ2"]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "COS_DEC",
+                 "Z_MIN", "Z_MAX", "ODDS"]
 
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, z_min, z_max, odds, pz1, pz2]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, cos_dec, z_min, z_max, odds]
 
         data_num = len(redshift)
-
+        print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
 
     for area_id in range(area_num):
@@ -365,7 +365,7 @@ if cmd == "select":
         comm.Barrier()
     t2 = time.time()
     if rank == 0:
-        print(t2-t1, data_num)
+        print(t2-t1)
 ############################# Fourier_quad data cutoff ###########################################
 
 

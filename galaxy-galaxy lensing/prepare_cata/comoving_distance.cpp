@@ -4,7 +4,7 @@
 int main(int argc, char ** argv)
 {
 	/* calculate the comoving distance [Mpc/h]																*/
-	/*	argv[1]: Omega_m0, (Omega_lambda0 = 1 - Omega_m0									  */
+	/*	argv[1]: Omega_m0, (Omega_lambda0 = 1 - Omega_m0)	 								  */
 	/*  argv[2]: Z_MAX, 0~ Z_MAX, the distance to be calculated                                   */
 	
 	int rank, numprocs, namelen;
@@ -20,7 +20,7 @@ int main(int argc, char ** argv)
 	double distance, precision, z_step;
 	double *redshift, *com_dist, *my_com_dist;
 	int i, j, step;	
-	int my_num_i, my_num_e, my_num, total_num;
+	int num_step, m,n, my_num_i, my_num_e, my_num, total_num;
 	double st1, st2;
 
 	st1 = clock();
@@ -32,38 +32,15 @@ int main(int argc, char ** argv)
 	// 0 ~ z_max
 	z_max = atof(argv[2]);
 	// precision for integrate
-	precision = 1.e-8;
-	// point num [0, 1_max]
-	step = 100000;
-	z_step = z_max / step;
-
-	total_num = step + 1;
+	precision = 1.e-9;
+	// point num [0, Z_max]
+	total_num = 500000;
+	z_step = z_max / (total_num -1);
 	
 	if (rank == 0)
 	{
 		std::cout <<"Z:  0 ~ "<<z_max<<" Z_step: "<<z_step<<".  Total num: " << total_num <<".  Precision:  "<<precision<<std::endl;
 	}
-
-	if (numprocs - 1 == rank)
-	{
-		my_num_i = total_num / numprocs * rank;
-		my_num_e = total_num / numprocs * (rank + 1) + total_num % numprocs;
-	}
-	else
-	{
-		my_num_i = total_num / numprocs * rank;
-		my_num_e = total_num / numprocs * (rank + 1);
-	}
-	for (i = 0; i < numprocs; i++)
-	{
-		if(rank == i)
-		{
-			std::cout << "RANK: " << rank << " " << my_num_i << " ~ " << my_num_e << std::endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	
-
 
 	MPI_Win win_dist_share, win_z_share;
 	MPI_Aint  point_num;
@@ -86,6 +63,7 @@ int main(int argc, char ** argv)
 		MPI_Win_shared_query(win_dist_share, 0, &point_num, &dispu_total, &com_dist);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	if (rank == 0)
 	{
 		for (i = 0; i < total_num; i++)
@@ -94,31 +72,35 @@ int main(int argc, char ** argv)
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
-
-	my_num = my_num_e - my_num_i;
 	
-	my_com_dist = new double[my_num];
+	num_step = total_num / numprocs;
+	m = int(num_step / 10);
 
-	for (i = my_num_i; i < my_num_e; i++)
+	if (rank == 0)
 	{
-
-		com_distance(0, redshift[i], omega_m, omeg_lambda, distance, precision);
-		my_com_dist[i - my_num_i] = distance;
+		std::cout << "|";
 	}
-	
-	for (i = 0; i < numprocs; i++)
+	for (i = 0; i < num_step; i++)
 	{
-		if (rank == i)
+		com_distance(0, redshift[rank + i* numprocs], omega_m, omeg_lambda, distance, precision);
+		com_dist[rank + i* numprocs] = distance;
+		if (i % m == 0 and rank ==0)
 		{
-			for (j = 0; j < my_num; j++)
-			{
-				com_dist[j + my_num_i] = my_com_dist[j];
-				std::cout << "Redshift: " << redshift[j + my_num_i] << "  Comoving distance: " << my_com_dist[j] << std::endl;
-			}
+			std::cout << "|#";			
 		}
-		
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
+
+	if (rank == 0)
+	{
+		std::cout << "||"<<std::endl;
+		for (i=num_step*numprocs; i<total_num;i++)
+		{
+			com_distance(0, redshift[i], omega_m, omeg_lambda, distance, precision);
+			com_dist[i] = distance;
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+
 	st2 = clock();
 
 	if (rank == 0)
@@ -143,15 +125,18 @@ int main(int argc, char ** argv)
 
 		sprintf(set_name, "/DISTANCE");
 		write_h5(data_path, set_name, com_dist, total_num, 1, FALSE);
-
+	
+		for (j = 0; j < total_num; j++)
+		{
+			std::cout << "Redshift: " << redshift[j] << "  Comoving distance: " << com_dist[j] <<" Mpc/h"<< std::endl;
+		}		
 		get_time(end_time, 50);
 		std::cout << (st2 - st1) / CLOCKS_PER_SEC << " " << end_time << std::endl;
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	MPI_Win_free(&win_z_share);
 	MPI_Win_free(&win_dist_share);
-
-	delete[] my_com_dist;
 
 	MPI_Finalize();
 	

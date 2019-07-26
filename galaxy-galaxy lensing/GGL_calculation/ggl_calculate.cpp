@@ -5,7 +5,7 @@
 #define max_data_col 40
 #define foregal_data_col 5
 #define grid_data_col 5
-#define backgal_data_col 21
+#define backgal_data_col 20
 #define mg_bin_num 8
 
 #define SMALL_CATA
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 #endif
 
 	int i, j, k, temp;
-	char parent_path[250], data_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
+	char parent_path[250], data_path[250],result_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
 
@@ -66,12 +66,15 @@ int main(int argc, char *argv[])
 
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
-	sprintf(h5f_res_path, "%sresult/%s/fourier/w_%d/radius_%d.hdf5", parent_path, foreground_name, area_id, radius_label);
+	sprintf(result_path, "%sresult/%s/fourier_cata_new/", parent_path, foreground_name);
+
+	sprintf(h5f_res_path, "%sw_%d/radius_%d.hdf5", result_path, area_id, radius_label);
+
+	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
+
+	sprintf(h5f_path_grid, "%sfourier_cata_new/fourier_cata_grid.hdf5", data_path);
+
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
-	sprintf(h5f_path_fore, "%sdata/foreground/%s/w_%d.hdf5", parent_path, foreground_name, area_id);
-
-	sprintf(h5f_path_grid, "%sfourier_cata_result_ext_grid.hdf5", data_path);
-
 	
 	// be careful with the boundary of the guess of critical density and shear 
 	double gh_crit_step = 0.001;
@@ -169,9 +172,9 @@ int main(int argc, char *argv[])
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
 	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
-	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17, mag_lb = 18;
-	int ra_bin_id = 19, dec_bin_id = 20;
-	int block_scale_id = 21, grid_shape_id = 22;
+	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17;
+	int ra_bin_id = 18, dec_bin_id = 19;
+	int block_scale_id = 20, grid_shape_id = 21;
 
 	int shape[2];
 
@@ -203,7 +206,6 @@ int main(int argc, char *argv[])
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
-	sprintf(names[mag_lb], "MAG");
 	
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
@@ -385,11 +387,8 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	coeff = 0.18 / C_0_hat / Pi;
-	coeff_inv = C_0_hat * Pi / 0.18;
-	coeff_rad_dist = C_0_hat * 1000;
-
-	radius_e = radius_bin[radius_label + 1] * coeff;
+	coeff = 180 / Pi;
+	coeff_inv = Pi / 180;
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
@@ -398,13 +397,10 @@ int main(int argc, char *argv[])
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
 
-		//find_near(redshifts, z_f, red_num, tag_f);
-		//dist_len = distances[tag_f];
 		dist_len = foregal_data[dist_id][gal_id];
 		dist_len_coeff = 1. / dist_len / (1 + z_f);
 
-		// the max searching radius depend on the redshift of lens  //	
-		// the max seperation of the source at the z = z_f  //
+		// the max searching radius depend on the redshift of lens 
 		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 2; // degree
 		radius_e_sq = radius_e * radius_e; // degree^2
 
@@ -445,8 +441,8 @@ int main(int argc, char *argv[])
 					z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
 
-					//if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95 and z_b_odds > 0.5)	
-					if (backgal_data[z_id][ib] >= z_thresh)
+					//if (backgal_data[z_id][ib] >= z_thresh)
+					if (backgal_data[z_id][ib] >= z_thresh)// and backgal_data[z_id][ib] > z_b_sig95)
 					{
 						ra_b = backgal_data[ra_id][ib];
 						dec_b = backgal_data[dec_id][ib];
@@ -459,11 +455,11 @@ int main(int argc, char *argv[])
 						diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
 						// the seperation in comving coordinate, 
-						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
+						diff_r = dist_len * sqrt(diff_theta_sq)*coeff_inv;
 						
-						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
-						diff_r = dist_len * diff_theta;
-
+						//separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
+						//diff_r = dist_len * diff_theta;
+						//std::cout << radius_bin[radius_label] << " " << diff_r << " " << radius_bin[radius_label + 1] << " " << diff_theta << std::endl;
 						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
 							pair_count_shared[rank] += 1;
@@ -615,7 +611,7 @@ int main(int argc, char *argv[])
 				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, FALSE);
 
 
-				sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+				sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
 				sprintf(set_name, "/radius_bin");
 				write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -633,7 +629,7 @@ int main(int argc, char *argv[])
 			sprintf(set_name, "/pair_data");
 			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, FALSE);
 
-			sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 
@@ -651,8 +647,7 @@ int main(int argc, char *argv[])
 			mask[0] = 0;
 			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
 
-
-			sprintf(temp_path, "%sresult/%s/fourier/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 

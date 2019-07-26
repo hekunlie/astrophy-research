@@ -105,14 +105,6 @@ z_min, z_max = 0.0, 15
 c1_correction = -0.000578
 c2_correction = 0.000493
 
-# flux_alt_thresh = 0
-# nstar_thresh = 12
-# total_area_thresh = 1
-# field_g1_bound = 0.2
-# field_g2_bound = 0.2
-# z_min, z_max = 0.0, 15
-# c1_correction = -0.000578
-# c2_correction = 0.000493
 ############################# Fourier_Quad Option ################################################
 
 

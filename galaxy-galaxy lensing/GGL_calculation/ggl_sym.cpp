@@ -1,19 +1,26 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-#define data_col 6
-#define max_area 20
-#define crit_coeff 388.2833518
-#define mg_bin_num 12
+#define DATA_COL 5
+#define MAX_AREA 20
+#define MG_BIN_NUM 12
+#define ALLOWED_SIZE 300000000
+
+//#define SMALL_CATA
+
+#ifdef SMALL_CATA
+#define MY_INT int
+#else
+#define MY_INT long
+#endif 
 
 int main(int argc, char ** argv)
 {
 	/* crit_coeff is the coefficient of the critical density, see the note for detials */
 	
-	/* argv[1]: 1for calculate	gamma_t, 2 for calculate the differential surface mass density	*/
-	/* argv[2]: the file name of foreground source		*/
-	/* argv[3]: radius bin label										*/
-	/* argv[4] -- argv[n]: area labels, like 1,3, 4			*/
+	/* argv[1]: the file name of foreground source												*/
+	/* argv[2]: radius bin label																				*/
+	/* argv[3] -- argv[n]: area labels, like 1,3, 4														*/
 
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -26,20 +33,42 @@ int main(int argc, char ** argv)
 	char total_path[300], data_path[300], set_name[30], result_path[300];
 	char fore_source[50];
 	char log[300];
+
 	int i, j, k;
 	double st1, st2;
-	int area_id[max_area]{}, area_num, radius_id;
-	int total_data_num, total_pair_num;
-	int data_num[max_area], pair_num[max_area];
 
-	int shear_cmd = atoi(argv[1]);
+	int area_id[MAX_AREA]{}, area_num, radius_id;
 
-	strcpy(fore_source, argv[2]);
-	radius_id = atoi(argv[3]);
-	area_num = argc - 4;
-	for (i = 4; i < argc; i++)
+	MY_INT m, n, my_gal_s, my_gal_e;
+	MY_INT total_data_num, total_pair_num, my_num, temp_num;
+	MY_INT data_num[MAX_AREA]{}, pair_num[MAX_AREA]{};
+	MY_INT *pair_count;
+	MY_INT *total_chisq, *my_chisq;
+	MY_INT data_count[MG_BIN_NUM];
+
+	double *data[MAX_AREA];
+	double *All_mgt, *All_mgx, *All_mnut, *All_mnux;
+	double *my_mgt, *my_mgx, *my_mnut, *my_mnux, *mg;
+
+	int choice;
+	double mg1_bin[MG_BIN_NUM]{}, mg2_bin[MG_BIN_NUM]{};
+	double *mg_bin;
+
+	int gh_num;
+	double gh_s, gh_e, dg, *gh;
+
+	double*total_chisq, chisq_temp;
+	double gt, gx, gt_sig, gx_sig;
+
+
+	// the foreground name
+	strcpy(fore_source, argv[1]);
+	// the radius label
+	radius_id = atoi(argv[2]);
+	area_num = argc - 3;
+	for (i = 3; i < argc; i++)
 	{
-		area_id[i - 4] = atoi(argv[i]);
+		area_id[i - 3] = atoi(argv[i]);
 	}
 	if (0 == rank)
 	{
@@ -53,156 +82,265 @@ int main(int argc, char ** argv)
 		std::cout << std::endl;
 	}
 
-	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/");
-	total_data_num = 0;
-	total_pair_num = 0;
-	double *data[max_area];
-	double *mgt, *mgx, *mnu1, *mnu2, *crit, *mg1;
-	int choice;
-	double gh_left, gh_right, gstep, *gh;
-	int gh_num, gh_s, gh_e;
-	double *mg_bin;
-	double*total_chisq, chisq_temp;
-	double gt, gx, gt_sig, gx_sig;
+	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);
 
-	if (shear_cmd == 1)
-	{
-		gh_left = -0.03+ 0.001 * radius_id;
-		gstep = 0.0003;
-	}
-	else
-	{
-		gh_left = -140 + 5 * radius_id;
-		gstep = 0.5;
-	}
-	gh_right = fabs(gh_left);
-	gh_num = int(gh_right * 2 / gstep);
+	
+	gh_s = -150 + 10 * radius_id;
+	gh_e = fabs(gh_s);
+
+	dg = 0.2;
+
+	gh_num = int((gh_e - gh_s)/ dg) + 1;
 	gh = new double[gh_num] {};
 	for (i = 0; i < gh_num; i++)
 	{
-		gh[i] = gh_left + i* gstep;
+		gh[i] = gh_s + i * dg;
 	}
-
-	gh_s = gh_num / numprocs * rank;
-	gh_e = gh_num / numprocs * (rank + 1);
-	if (rank == numprocs - 1)
+	if (rank == 0)
 	{
-		gh_e = gh_num / numprocs * (rank + 1) + gh_num % numprocs;
+		std::cout << "The gh: ";
+		show_arr(gh, 1, gh_num);
 	}
 
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// rank 0 collects the data in each area
+	// then scatters them to each rank
+	total_data_num = 0;
+	total_pair_num = 0;
+
+	// collect the data from each file
 	for (i = 0; i < area_num; i++)
 	{
-		sprintf(data_path, "%sresult/%s/w_%d/%d.hdf5", total_path, fore_source, area_id[i], radius_id);
-		sprintf(set_name, "/data_0");//////
+		sprintf(data_path, "%sw_%d/%d.hdf5", total_path, area_id[i], radius_id);
+		sprintf(set_name, "/data");
 		read_h5_datasize(data_path, set_name, data_num[i]);
-		pair_num[i] = data_num[i] / data_col;
+		// each row contains G_t, G_x, N, U, Crit_ij
+		pair_num[i] = data_num[i] / DATA_COL;
 
 		total_data_num += data_num[i];
 		total_pair_num += pair_num[i];
-
-		data[i] = new double[data_num[i]] {};
-		read_h5(data_path, set_name, data[i]);
-	}
-
-	mgt = new double[total_pair_num];
-	mgx = new double[total_pair_num];
-	mnu1 = new double[total_pair_num];
-	mnu2 = new double[total_pair_num];
-	mg1 = new double[total_pair_num];
-	
-	for (i = 0; i < area_num; i++)
-	{
-		k = 0;
-		for (j = 0; j < i; j++)
-		{
-			k += pair_num[j];
-		}
-		for (j = 0; j < pair_num[i]; j++)
-		{
-			mgt[k+ j] = data[i][j*data_col] * data[i][j*data_col + 4]* crit_coeff;
-			mgx[k + j] = data[i][j*data_col + 1] * data[i][j*data_col + 4]* crit_coeff;
-			if (shear_cmd == 1)
-			{
-				mnu1[k + j] = (data[i][j*data_col + 2] + data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
-				mnu2[k + j] = (data[i][j*data_col + 2] - data[i][j*data_col + 3])* data[i][j*data_col + 4] * crit_coeff;;
-			}
-			else
-			{
-				mnu1[k + j] = data[i][j*data_col + 2] + data[i][j*data_col + 3];
-				mnu2[k + j] = data[i][j*data_col + 2] - data[i][j*data_col + 3];
-			}
-			mg1[k + j] = data[i][j*data_col + 5];
-		}
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	for (i = 0; i < numprocs; i++)
-	{
-		if (i == rank)
+		if (rank == 0)
 		{	
-			std::cout << "gh_num: " << gh_num << std::endl;
-			std::cout << "gh: " << gh_s << " ~ " << gh_e << std::endl;
-			std::cout << "Radius: " << radius_id << ".  Pair num: ";
-			for (j = 0; j < area_num; j++)
+			data[i] = new double[data_num[i]]{};
+			read_h5(data_path, set_name, data[i]);
+			std::cout << "Read " << pair_num[i] << " pairs in " << i << " area" << std::endl;
+			if (i == area_num - 1)
 			{
-				std::cout << pair_num[j] << " ";
+				std::cout <<"Total pair: "<< total_pair_num << std::endl;
 			}
-			std::cout << std::endl;
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
-
-
-	MPI_Win win_bin, win_chisq;
-	MPI_Aint bin_size, chisq_size;
-	bin_size = mg_bin_num+1;
-	chisq_size = 2*gh_num;
 
 	if (rank == 0)
 	{
-		MPI_Win_allocate_shared(bin_size * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD,
-			&mg_bin, &win_bin);
-		MPI_Win_allocate_shared(chisq_size * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, 
-			&total_chisq, &win_chisq);
+		All_mgt = new double[total_pair_num];
+		All_mgx = new double[total_pair_num];
+		All_mnut = new double[total_pair_num];
+		All_mnux = new double[total_pair_num];
+
+		// stack each column from each file
+		for (i = 0; i < area_num; i++)
+		{
+			k = 0;
+			for (j = 0; j < i; j++)
+			{
+				k += pair_num[j];
+			}
+			for (j = 0; j < pair_num[i]; j++)
+			{
+				All_mgt[k + j] = data[i][j*DATA_COL] * data[i][j*DATA_COL + 4];
+				All_mgx[k + j] = data[i][j*DATA_COL + 1] * data[i][j*DATA_COL + 4];
+
+				All_mnut[k + j] = data[i][j*DATA_COL + 2] + data[i][j*DATA_COL + 3];
+				All_mnux[k + j] = data[i][j*DATA_COL + 2] - data[i][j*DATA_COL + 3];
+			}
+		}
+		// set up the G bins
+		choice = total_pair_num;
+		if (total_pair_num > 500000)
+		{
+			choice = 200000;
+		}
+		set_bin(All_mgt, total_pair_num, mg1_bin, MG_BIN_NUM, 1000, choice);
+		set_bin(All_mgx, total_pair_num, mg2_bin, MG_BIN_NUM, 1000, choice);
+	}
+
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	// distribute the source
+	// it's safe for LONG/INT
+	m = total_pair_num / numprocs;
+	n = total_pair_num % numprocs;
+
+	my_gal_s = m * rank;
+	my_gal_e = m * (rank + 1);
+	if (rank == numprocs - 1)
+	{
+		my_gal_e += n;
+	}
+
+	my_num = my_gal_e - my_gal_s;
+
+	my_chisq = new MY_INT[2 * gh_num*MG_BIN_NUM]{};
+
+	MPI_Win win_chisq, win_mg_bin, win_pair_count;
+	MPI_Aint  size_chisq, size_mg_bin, size_pair_count;
+
+	size_chisq = 2*gh_num*MG_BIN_NUM;
+	size_mg_bin = 2*MG_BIN_NUM;
+	size_pair_count = numprocs;
+
+	if (0 == rank)
+	{
+		MPI_Win_allocate_shared(size_chisq * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chisq, &win_chisq);
+
+		MPI_Win_allocate_shared(numprocs * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count, &win_pair_count);
+
+		MPI_Win_allocate_shared(size_mg_bin * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &mg_bin, &win_mg_bin);
 	}
 	else
 	{
-		int disp_unit, disp_unit_c;
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &mg_bin, &win_bin);
-		MPI_Win_shared_query(win_bin, 0, &bin_size, &disp_unit, &mg_bin);
+		int dispu_total;
+		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chisq, &win_chisq);
+		MPI_Win_shared_query(win_chisq, 0, &size_chisq, &dispu_total, &total_chisq);
 
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &total_chisq, &win_chisq);
-		MPI_Win_shared_query(win_chisq, 0, &chisq_size, &disp_unit_c, &total_chisq);
+		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count, &win_pair_count);
+		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count);
+
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &mg_bin, &win_mg_bin);
+		MPI_Win_shared_query(win_mg_bin, 0, &size_mg_bin, &dispu_total, &mg_bin);
+
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	// set up bins for PDF-SYM
-	if (0 == rank)
+	pair_count[rank] = my_num;
+	if (rank == 0)
 	{
-		if (total_pair_num < 200000)
+		initialize_arr(total_chisq, 2*gh_num*MG_BIN_NUM, 0);
+		for (i = 0; i < MG_BIN_NUM; i++)
 		{
-			choice = 0;
+			mg_bin[i] = mg1_bin[i];
+			mg_bin[i+MG_BIN_NUM] = mg2_bin[i];
 		}
-		else
+	}
+	initialize_arr(my_chisq, 2*gh_num*MG_BIN_NUM, 0);
+	MPI_Barrier(MPI_COMM_WORLD);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	my_mgt = new double[pair_count[rank]];
+	my_mgx = new double[pair_count[rank]];
+	my_mnut = new double[pair_count[rank]];
+	my_mnux = new double[pair_count[rank]];
+
+	for (i = 0; i < MG_BIN_NUM; i++)
+	{
+		mg1_bin[i] = mg_bin[i];
+		mg2_bin[i] = mg_bin[i + MG_BIN_NUM];
+	}
+	if (rank == 0)
+	{
+		for (i = 0; i < pair_count[0];i++)
 		{
-			choice = 100000;
+			my_mgt[i] = All_mgt[i];
+			my_mgx[i] = All_mgx[i];
+			my_mnut[i] = All_mnut[i];
+			my_mnux[i] = All_mnux[i];
 		}
-		set_bin(mgt, total_pair_num, mg_bin, mg_bin_num, 100000, choice);
+		std::cout << "G1 bin: ";
+		show_arr(mg1_bin, 1, MG_BIN_NUM);
+		std::cout << "G2 bin: ";
+		show_arr(mg2_bin, 1, MG_BIN_NUM);
+		std::cout << "Num: ";
+		show_arr(pair_count, 1, numprocs);
+		sum_arr(pair_count, numprocs, 0, numprocs, temp_num);
+		std::cout << "Total num: " << temp_num << " [" << total_pair_num << "]." << std::endl;
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// distribute the data to each rank
+	// (developing) if the catalog is too big, the pairs will be to many to store in the memory.
+	// split the whole cata into many sub-sets, then loop the sub-sets,
+	// in each loop, distribute the set to each rank.
+
+	MPI_Status status;
+#define mysyn( a, b ) \
+	{ \
+		if (rank == 0) \
+		{\
+			for (i = 1; i < numprocs; i++)\
+			{\
+				MPI_Send((a) + pair_count[i - 1], pair_count[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD);\
+			}\
+		}\
+		else\
+		{\
+			MPI_Recv((b),  pair_count[rank], MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);\
+		}\
+	}
+
+	mysyn(All_mgt, my_mgt);
+	mysyn(All_mgx, my_mgx);
+	mysyn(All_mnut, my_mnut);
+	mysyn(All_mnux, my_mnux);
+#undef mysyn
+
+	// calculate the chi square
+	MPI_Barrier(MPI_COMM_WORLD);
 	st1 = clock();
-	for(i = gh_s; i < gh_e; i++)
+	for(i = 0; i < gh_num; i++)
 	{
-		try 
+		for (j = 0; j < pair_count[rank]; j++)
 		{
-			chisq_Gbin_1d(mgt, mnu1, total_pair_num, mg_bin, mg_bin_num, gh[i], chisq_temp);
+			mg[j] = my_mgt[j] - gh[i] * my_mnut[j];			
+		}
+		histogram(mg, mg1_bin, data_count, pair_count[rank], MG_BIN_NUM);
+		for (k = 0; k < MG_BIN_NUM; k++)
+		{
+			my_chisq[i*MG_BIN_NUM + k] += data_count[k];
+		}
+
+		for (j = 0; j < pair_count[rank]; j++)
+		{
+			mg[j] = my_mgx[j] - gh[i] * my_mnux[j];	
+		}
+		histogram(mg, mg2_bin, data_count, pair_count[rank], MG_BIN_NUM);
+		for (k = 0; k < MG_BIN_NUM; k++)
+		{
+			my_chisq[(i + gh_num)*MG_BIN_NUM + k] += data_count[k];
+		}		
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	for (i = 0; i < numprocs; i++)
+	{
+		if (i == rank)
+		{
+			for (j = 0; j < 2 * gh_num*MG_BIN_NUM; j++)
+			{
+				total_chisq[j] += my_chisq[j];
+			}
+
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	st2 = clock();
+
+	// fit the chis square
+	if (rank == 0)
+	{
+		double *final_chisq_t = new double[gh_num] {};
+		double *final_chisq_x = new double[gh_num] {};
+		double dm, dn;
+		try
+		{
+			chisq_Gbin_1d(my_mgt, my_mnut, pair_count[rank], mg_bin, MG_BIN_NUM, gh[i], chisq_temp);
 			total_chisq[i] = chisq_temp;
 		}
 		catch (const char* msg)
 		{
-			std::cerr << "Rank: " << rank <<". g_guess: "<<i<< ". Tangential. " << msg << std::endl;
+			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Tangential. " << msg << std::endl;
 			exit(0);
 		}
 		try
@@ -212,24 +350,10 @@ int main(int argc, char ** argv)
 		}
 		catch (const char* msg)
 		{
-			std::cerr << "Rank: " << rank << ". g_guess: " << i<<". Cross. " << msg << std::endl;
+			std::cerr << "Rank: " << rank << ". g_guess: " << i << ". Cross. " << msg << std::endl;
 			exit(0);
-		}		
-	}
-	st2 = clock();
-
-	MPI_Barrier(MPI_COMM_WORLD);
-	for (i = 0; i < numprocs; i++)
-	{
-		if (i == rank)
-		{
-			std::cout << "Radius: " << radius_id << ".  Time: " << (st2 - st1) / CLOCKS_PER_SEC << std::endl;
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
 
-	if (0 == rank)
-	{
 		double *chisq_fit = new double[gh_num];
 		double signal[4]{ -1, -1,-1,-1 };
 
@@ -259,19 +383,30 @@ int main(int argc, char ** argv)
 
 		delete[] chisq_fit;
 	}
-	MPI_Win_free(&win_bin);
+
+
+	MPI_Win_free(&win_mg_bin);
 	MPI_Win_free(&win_chisq);
-	for (i = 0; i < area_num; i++)
+	MPI_Win_free(&win_pair_count);
+
+	if (rank == 0)
 	{
-		delete[] data[i];
+		for (i = 0; i < area_num; i++)
+		{
+			delete[] data[i];
+		}
+		delete All_mgt;
+		delete All_mgx;
+		delete All_mnut;
+		delete All_mnux;
 	}
 
 	delete[] gh;
-	delete[] mgt;
-	delete[] mgx;
-	delete[] mnu1;
-	delete[] mnu2;
-	delete[] mg1;
+	delete[] my_mgt;
+	delete[] my_mgx;
+	delete[] my_mnut;
+	delete[] my_mnux;
+	delete[] mg;
 
 	MPI_Finalize();
 	return 0;

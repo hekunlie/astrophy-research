@@ -315,11 +315,9 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	coeff = 0.18 / C_0_hat / Pi;
-	coeff_inv = C_0_hat * Pi / 0.18;
+	coeff = 180/ Pi;
+	coeff_inv =  Pi / 180;
 	coeff_rad_dist = C_0_hat * 1000;
-
-	radius_e = radius_bin[radius_label + 1] * coeff;
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)

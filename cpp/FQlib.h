@@ -211,6 +211,7 @@ void write_text(const char*filename, double *data_buf, const int data_row, const
 /* comment: something like "#....", write to the first line	*/	
 
 void read_h5_datasize(const char *filename, const char *set_name, int &elem_num);//checked
+void read_h5_datasize(const char *filename, const char *set_name, long &elem_num);//checked
 /* read the element number in the dataset 
 	if it fails, elem_num=-1 
 */

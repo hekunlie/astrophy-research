@@ -397,7 +397,31 @@ void write_text(const char*filename, double *data_buf, const int data_row, const
 
 void read_h5_datasize(const char *filename, const char *set_name, int &elem_num)
 {
-	int num, i;
+	int num;
+	herr_t status;
+	hid_t file_id, dataset_id, space_id;
+
+	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
+	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	space_id = H5Dget_space(dataset_id);
+	num = H5Sget_simple_extent_npoints(space_id);
+	if (num > 0)
+	{
+		elem_num = num;
+	}
+	else
+	{
+		elem_num = -1;
+		std::cout << "Failed in reading the size of " << set_name << "." << std::endl;
+	}
+	status = H5Sclose(space_id);
+	status = H5Dclose(dataset_id);
+	status = H5Fclose(file_id);
+}
+
+void read_h5_datasize(const char *filename, const char *set_name, long &elem_num)
+{
+	long num;
 	herr_t status;
 	hid_t file_id, dataset_id, space_id;
 
