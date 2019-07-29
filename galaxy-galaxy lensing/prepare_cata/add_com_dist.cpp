@@ -20,12 +20,17 @@ int main(int argc, char *argv[])
 
 	double *redshift_refer = new double[refer_num];
 	double *dist_refer = new double[refer_num];
+	double *dist_integ_refer = new double[refer_num];
 
 	read_h5(data_path, set_name, redshift_refer);
 
 	sprintf(set_name, "/DISTANCE");
 	read_h5(data_path, set_name, dist_refer);
-	std::cout << redshift_refer[refer_num - 1] << " " << dist_refer[refer_num - 1] << std::endl;
+
+	sprintf(set_name, "/DISTANCE_INTEG");
+	read_h5(data_path, set_name, dist_integ_refer);
+
+	std::cout << redshift_refer[refer_num] << " " << dist_refer[refer_num] << " " << dist_integ_refer[refer_num]<<std::endl;
 
 	strcpy(data_path, argv[1]);
 	strcpy(target_set_name, argv[2]);
@@ -39,6 +44,7 @@ int main(int argc, char *argv[])
 			std::cout << "Data number: " << data_num << std::endl;
 			double *redshift = new double[data_num];
 			double *dist = new double[data_num];
+			double *dist_integ = new double[data_num];
 
 			read_h5(data_path, set_name, redshift);
 
@@ -46,24 +52,28 @@ int main(int argc, char *argv[])
 			{
 				find_near(redshift_refer, redshift[i], refer_num, k);
 				dist[i] = dist_refer[k];
+				dist_integ[i] = dist_integ_refer[k];
 
 				if (data_num > 100)
 				{
 					if (0 == i % (int)(data_num / 10))
 					{
-						sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %d", redshift[i], redshift_refer[k], dist_refer[k], k);
+						sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %.6f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k], k);
 						std::cout << inform << std::endl;
 					}
 				}
 				else
 				{
-					sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %d", redshift[i], redshift_refer[k], dist_refer[k], k);
+					sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %.6f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k],k);
 					std::cout << inform << std::endl;
 				}
 			}
 
 			sprintf(set_name, "%s/DISTANCE", target_set_name);
 			write_h5(data_path, set_name, dist, data_num, 1, FALSE);
+
+			sprintf(set_name, "%s/DISTANCE_INTEG", target_set_name);
+			write_h5(data_path, set_name, dist_integ, data_num, 1, FALSE);
 			
 			delete[] redshift;
 			delete[] dist;

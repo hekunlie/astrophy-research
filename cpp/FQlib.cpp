@@ -3015,7 +3015,10 @@ void cal_chisq_1d(const double *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			throw "Chi square divided by zero (cal_chisq_1d) !!!";
+			std::cout << "ERROR in cal_chisq_1d !"<<std::endl;
+			std::cout << "ERROR Data : ";
+			show_arr(hist_num, 1, bin_num);
+			throw "ERROR chi square divided by zero !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -3035,7 +3038,10 @@ void cal_chisq_1d(const long *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			throw "Chi square divided by zero (cal_chisq_1d) !!!";
+			std::cout << "ERROR in cal_chisq_1d !" << std::endl;
+			std::cout << "ERROR Data : ";
+			show_arr(hist_num, 1, bin_num);
+			throw "ERROR chi square divided by zero !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -3055,7 +3061,10 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
 		{
-			throw "Chi square divided by zero (cal_chisq_1d) !!!";
+			std::cout << "ERROR in cal_chisq_1d !" << std::endl;
+			std::cout<<"ERROR Data : ";
+			show_arr(hist_num, 1, bin_num);
+			throw "ERROR chi square divided by zero !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -3074,8 +3083,11 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 		dn = hist_num[i] - hist_num[bin_num - i - 1];
 		sn = hist_num[i] + hist_num[bin_num - i - 1];
 		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
-		{	
-			throw "Chi square divided by zero (cal_chisq_1d) !!!";
+		{
+			std::cout << "ERROR in cal_chisq_1d !";
+			std::cout << "ERROR Data : ";
+			show_arr(hist_num, 1, bin_num);
+			throw "ERROR chi square divided by zero !!!";
 		}
 		chi_count += dn * dn / sn;
 	}
@@ -3241,7 +3253,64 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
-void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh)
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh, const bool integ_only)
+{
+	// Int f(x) = (f_1+f_2)/2*dx + (f_2+f_3)/2*dx + (f_3+f_4)/2*dx...
+	//				= (f_1 + 2*f_2 + 2*f_3 + .. 2*f_{n-1} + f_n)/2*dx
+	//				= ((f_1+f_n)/2 + f_2 + f_3 + .. + f_{n-1})*dx
+	int i, j, bin_num, bin_num_0;
+	int max_iters = 50, iters = 0;
+	double res_1, res_2, d_res;
+	double dz, z;
+	double scale = 1000 * C_0_hat;
+
+	// run first time, if it converges, it returns the result
+	// else, do the while block
+	bin_num = 5;
+	dz = (high_z - low_z) / (bin_num - 1);
+	res_1 = 0;
+	// (f_1 + f_n)/2
+	res_2 = (1. / sqrt(pow(1 + low_z, 3)*omg_m + omg_lam) + 1. / sqrt(pow(1 + high_z, 3)*omg_m + omg_lam))*0.5;
+	// add the median value
+	for (j = 1; j < bin_num - 1; j++)
+	{
+		z = low_z + j * dz;
+		res_2 = res_2 + 1. / sqrt(pow(1 + z, 3)*omg_m + omg_lam);
+	}
+	while (TRUE)
+	{
+		d_res = fabs((res_2* dz - res_1)*scale);
+		if (d_res < precision_thresh)
+		{
+			break;
+		}
+		if (iters > max_iters)
+		{
+			std::cout << "com_dist() Max iteration, doesn't converge, " << d_res << "( " << precision_thresh << " )." << std::endl;
+			exit(0);
+		}
+		res_1 = res_2 * dz;
+
+		dz = dz * 0.5;
+
+		for (j = 0; j < bin_num - 1; j++)
+		{
+			z = low_z + (2 * j + 1) * dz;
+			res_2 = res_2 + 1. / sqrt(pow(1 + z, 3)*omg_m + omg_lam);
+		}
+		bin_num = bin_num + bin_num - 1;
+		iters++;
+	}
+	if (integ_only)
+	{
+		result = (res_2 * dz + res_1)*0.5;
+	}
+	else
+	{
+		result = (res_2 * dz + res_1)*0.5*scale;
+	}
+}
+/*void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh, int integ_tag)
 {
 	int i, j, bin_num;
 	int max_run = 500;
@@ -3261,12 +3330,18 @@ void com_distance(const double low_z, const double high_z, const double omg_m, c
 			result_2 = result_2 + 1. / sqrt(pow(1 + z1, 3)*omg_m + omg_lam) + 1. / sqrt(pow(1 + z2, 3)*omg_m + omg_lam);
 			//result_2 = result_2 + 1. / sqrt(z1*omg_m + pow(z1, 4)*omg_lam) + 1. / sqrt(z2*omg_m + pow(z2, 4)*omg_lam);
 		}
-		result_2 = result_2 * dz*0.5;
-
+		if (integ_tag == 0)
+		{
+			result_2 = result_2 * dz*0.5 * 1000 * C_0_hat;
+		}
+		else
+		{
+			result_2 = result_2 * dz*0.5;
+		}
 		if (fabs(result_2 - result_1) <= precision_thresh)
 		{
 			// comoving distance  [ Mpc/h ]
-			result = (result_2 + result_1) *0.5*1000*C_0_hat;
+			result = (result_2 + result_1) *0.5;
 			break;
 		}
 		else
@@ -3280,7 +3355,7 @@ void com_distance(const double low_z, const double high_z, const double omg_m, c
 		std::cout << "Max iteration, doesn't converge, " << result_2 - result_1 << "." << std::endl;
 		exit(0);
 	}
-}
+}*/
 
 void log_bin(const double start, const double end, const int num, double * bins)
 {
@@ -3316,6 +3391,8 @@ void linspace(const double start, const double end, const int num, double *bins)
 		bins[i] = start + i * diff;
 	}
 }
+
+
 /********************************************************************************************************************************************/
 /* random */
 /********************************************************************************************************************************************/

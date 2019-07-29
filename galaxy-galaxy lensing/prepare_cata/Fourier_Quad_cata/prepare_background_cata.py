@@ -34,17 +34,13 @@ if cmd not in cmds:
 
 area_num = 4
 
-envs_path = "%s/work/envs/envs.dat"%my_home
-
-gets_item = [["cfht", "cfht_path_catalog", "0"], ["gg_lensing", "ggl_path_data", "0"]]
-path_items = tool_box.config(envs_path, ["get", "get"], gets_item)
-
-cata_path, data_path = path_items
+cata_path = "/mnt/perc/hklee/CFHT/catalog/"
+data_path = "/mnt/perc/hklee/CFHT/gg_lensing/data/"
 
 cfht_cata_path = cata_path + "cfht_cata/"
 fourier_cata_path = cata_path + "fourier_cata_new/"
 
-
+envs_path = "%s/work/envs/envs.dat"%my_home
 gets_item = [["fresh_para_idx", "nstar", "0"], ["fresh_para_idx", "flux_alt", "0"],
              ["fresh_para_idx", "ra", "0"], ["fresh_para_idx", "dec", "0"],
              ["fresh_para_idx", "gf1", "0"], ["fresh_para_idx", "gf2", "0"],
@@ -157,8 +153,6 @@ if cmd == "collect":
             c_data_path = cfht_cata_path + "field_dat/%s.hdf5"%field_name
             pz_data_path = cfht_cata_path + "field_dat/%s-pz.dat"%field_name
 
-            print(f_data_path, c_data_path)
-
             if os.path.exists(f_data_path) and os.path.exists(c_data_path):
                 # try:
                 logger.info("Begin to match...")
@@ -177,7 +171,7 @@ if cmd == "collect":
                 h5f_c.close()
 
                 c_sp = c_data.shape
-                print(c_sp)
+
                 check_buf = numpy.zeros((f_sp[0], 2)) - 99
 
                 # f_sp[0] > c_sp[0]

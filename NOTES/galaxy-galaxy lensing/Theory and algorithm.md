@@ -27,6 +27,14 @@ The angular distance between \\(z_1\\) and \\(z_2\\) is
 $$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2)) = \frac{c}{H_0}a(z_2)[\alpha(0, z_2) - \alpha(0, z_1)]$$
 
 It is valid only for \\(\omega_k \geq 0 \\) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 The critial surface density in comoving distance:
 

@@ -34,17 +34,13 @@ if cmd not in cmds:
 
 area_num = 4
 
-envs_path = "%s/work/envs/envs.dat"%my_home
-
-gets_item = [["cfht", "cfht_path_catalog", "0"], ["gg_lensing", "ggl_path_data", "0"]]
-path_items = tool_box.config(envs_path, ["get", "get"], gets_item)
-
-cata_path, data_path = path_items
+cata_path = "/mnt/perc/hklee/CFHT/catalog/"
+data_path = "/mnt/perc/hklee/CFHT/gg_lensing/data/"
 
 cfht_cata_path = cata_path + "cfht_cata/"
-fourier_cata_path = cata_path + "fourier_cata_new/"
+fourier_cata_path = cata_path + "fourier_cata_old/"
 
-
+envs_path = "%s/work/envs/envs.dat"%my_home
 gets_item = [["fresh_para_idx", "nstar", "0"], ["fresh_para_idx", "flux_alt", "0"],
              ["fresh_para_idx", "ra", "0"], ["fresh_para_idx", "dec", "0"],
              ["fresh_para_idx", "gf1", "0"], ["fresh_para_idx", "gf2", "0"],
@@ -78,22 +74,22 @@ mv_lb = int(para_items[10])
 # but there is an additional useless columns (22'th) added before...
 data_col = 21
 
-add_col = 6
+add_col = 5
 
-starflag_lb_f = 21
-mag_lb_f = 22
-z_lb_f = 23
-z_min_lb_f = 24
-z_max_lb_f = 25
-odds_lb_f = 26
-# optional
-fitclass_lb_f = 27
-weight_lb_f = 28
-mask_lb_f = 29
-e1_lb_f = 30
-e2_lb_f = 31
-m_lb_f = 32
-c_lb_f = 33
+mag_lb_f = 21
+z_lb_f = 22
+z_min_lb_f = 23
+z_max_lb_f = 24
+odds_lb_f = 25
+
+# the labels of the added parameters in the CFHT catalog
+ra_lb_c = 0
+dec_lb_c = 1
+z_lb_c = 10
+mag_lb_c = 15
+z_min_lb_c = 16
+z_max_lb_c = 17
+odds_lb_c = 18
 
 # cut off
 flux_alt_thresh = 3.25
@@ -108,7 +104,7 @@ c2_correction = 0.000493
 ############################# Fourier_Quad Option ################################################
 
 
-ogger = tool_box.get_logger("%s/work/test/log/%d.dat"%(my_home,rank))
+logger = tool_box.get_logger("%s/work/test/log/%d.dat"%(my_home,rank))
 
 ############################# Fourier_quad data collection #######################################
 # combine the data of each field into one big catalog
@@ -156,7 +152,7 @@ if cmd == "collect":
         cata_data = None
         for field_name in field_pool:
             # read the catalogs from Fourier_Quad and CFHT
-            f_data_path = fourier_cata_path + "%s/%s_shear.dat"%(field_name, field_name)
+            f_data_path = fourier_cata_path + "%s/result_ext/%s_shear.dat"%(field_name, field_name)
             # c_data_path = cfht_cata_path + "%s.dat"%field_name
             c_data_path = cfht_cata_path + "field_dat/%s.hdf5"%field_name
 
@@ -180,6 +176,7 @@ if cmd == "collect":
                     # f_sp[0] > c_sp[0]
                     pairs = 0
                     mask = numpy.zeros((f_sp[0],), dtype=numpy.intc)
+                    check_buf = numpy.zeros((f_sp[0],1)) - 99
                     for i in range(f_sp[0]):
                         # fortran start from 1 not 0
                         # the row labels corresponding to the galaxies in cfht catalog
@@ -189,33 +186,19 @@ if cmd == "collect":
                         # check
                         del_radius = numpy.abs(f_data[i,ra_lb] - c_data[tag, 0]) + numpy.abs(f_data[i,dec_lb] - c_data[tag, 1])
 
+                        check_buf[i, 0] = del_radius
+
                         if del_radius < 0.00005:
-                            # starflag
-                            new_data[i, starflag_lb_f] = c_data[tag, 14]
                             # magnitude
-                            new_data[i, mag_lb_f] = c_data[tag, 15]
+                            new_data[i, mag_lb_f] = c_data[tag, mag_lb_c]
                             # redshift
-                            new_data[i, z_lb_f] = c_data[tag, 10]
+                            new_data[i, z_lb_f] = c_data[tag, z_lb_c]
                             # Z_MIN
-                            new_data[i, z_min_lb_f] = c_data[tag, 16]
+                            new_data[i, z_min_lb_f] = c_data[tag, z_min_lb_c]
                             # Z_MAX
-                            new_data[i, z_max_lb_f] = c_data[tag, 17]
+                            new_data[i, z_max_lb_f] = c_data[tag, z_max_lb_c]
                             # ODDS in redshift fitting
-                            new_data[i, odds_lb_f] = c_data[tag, 18]
-                            # # FITCLASS
-                            # new_data[i, fitclass_lb] = c_data[tag, 7]
-                            # # MASK
-                            # new_data[i, mask_lb] = c_data[tag, 9]
-                            # # weight
-                            # new_data[i, weight_lb] = c_data[tag, 6]
-                            # # e1
-                            # new_data[i, e1_lb] = c_data[tag, 4]
-                            # # e2
-                            # new_data[i, e2_lb] = c_data[tag, 5]
-                            # # m
-                            # new_data[i, m_lb] = c_data[tag, 11]
-                            # # c2
-                            # new_data[i, c_lb] = c_data[tag, 12]
+                            new_data[i, odds_lb_f] = c_data[tag, odds_lb_c]
 
                             mask[i] += 1
 
@@ -235,6 +218,7 @@ if cmd == "collect":
                     else:
                         cata_data = numpy.row_stack((cata_data, new_data))
                     field_count += 1
+                    logger.info("MASK: max = %d, min = %d. Check buff: max = %.6f" % (mask.max(), mask.min(),check_buf.max()))
                 except:
                     print(rank, "%s.dat doesn't exist"%field_name)
 
@@ -311,8 +295,8 @@ if cmd == "collect":
 if cmd == "select":
     t1 = time.time()
 
-    h5f_path = data_path + "fourier_cata_%s.hdf5" % result_source
-    h5f_path_cut = data_path + "fourier_cata_%s_cut.hdf5" % result_source
+    h5f_path = fourier_cata_path + "fourier_cata.hdf5"
+    h5f_path_cut = data_path + "fourier_cata_old/fourier_cata_cut.hdf5"
 
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
@@ -361,23 +345,13 @@ if cmd == "select":
         odds = cata_data[:,odds_lb_f][cut_idx]
 
         mag = cata_data[:, mag_lb_f][cut_idx]
-        starflag = cata_data[:, starflag_lb_f][cut_idx]
 
-        # e1 = cata_data[:,e1_lb][cut_idx]
-        # e2 = cata_data[:,e2_lb][cut_idx]
-        # weight = cata_data[:,weight_lb][cut_idx]
-        # fitclass = cata_data[:,fitclass_lb][cut_idx]
-        # mask = cata_data[:,mask_lb][cut_idx]
-        # m_bias = cata_data[:,m_lb][cut_idx]
-        # c_bias = cata_data[:,c_lb][cut_idx]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS"]
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC",
-                 "STARGLAG", "Z_MIN", "Z_MAX", "ODDS"]
-            # , "E1", "E2", "WEIGHT", "FITCLASS",  "MASK", "M", "C", ]
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, starflag, z_min, z_max, odds]
-                 # e1, e2, weight, fitclass, mask, m_bias, c_bias]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, z_min, z_max, odds]
+
         data_num = len(redshift)
-
+        print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
 
     for area_id in range(area_num):
@@ -389,7 +363,7 @@ if cmd == "select":
         comm.Barrier()
     t2 = time.time()
     if rank == 0:
-        print(t2-t1, data_num)
+        print(t2-t1)
 ############################# Fourier_quad data cutoff ###########################################
 
 

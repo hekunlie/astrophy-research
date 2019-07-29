@@ -3,11 +3,11 @@
 #include<vector>
 
 #define max_data_col 40
-#define foregal_data_col 6
+#define foregal_data_col 5
 #define grid_data_col 5
-#define backgal_data_col 21
+#define backgal_data_col 20
 #define mg_bin_num 8
-#define vec_data_col 7
+
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 // it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
+	int vec_data_col = 6;
 #endif
 
 	int i, j, k, temp;
@@ -65,12 +66,13 @@ int main(int argc, char *argv[])
 
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
-
-	sprintf(result_path, "%sresult/%s/fourier_cata_old/", parent_path, foreground_name);
-	sprintf(h5f_path_grid, "%sfourier_cata_old/fourier_cata_grid.hdf5", data_path);
+	sprintf(result_path, "%sresult/%s/fourier_cata_new/", parent_path, foreground_name);
 
 	sprintf(h5f_res_path, "%sw_%d/radius_%d.hdf5", result_path, area_id, radius_label);
+
 	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
+
+	sprintf(h5f_path_grid, "%sfourier_cata_new/fourier_cata_grid.hdf5", data_path);
 
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
 	
@@ -127,9 +129,8 @@ int main(int argc, char *argv[])
 	MY_INT pair_count;// be carefull, the pair number may be too many, long or double 
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
-	double dist_len_integ, dist_source_integ, dist_len_integ_coeff;
 	double coeff, coeff_inv, coeff_rad_dist;
-	double crit_surf_density_com, crit_surf_density_com_integ;
+	double crit_surf_density_com;
 
 
 	int backgal_num;
@@ -169,18 +170,18 @@ int main(int argc, char *argv[])
 
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
-	int z_id = 5, dist_id = 6, dist_integ_id = 7;
-	int ra_id = 8, dec_id = 9, cos_dec_id = 10;
-	int mg1_id = 11, mg2_id = 12, mn_id = 13, mu_id = 14, mv_id = 15;
-	int zmin_lb = 16, zmax_lb = 17, odds_lb = 18;
-	int ra_bin_id = 19, dec_bin_id = 20;
-
+	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
+	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
+	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17;
+	int ra_bin_id = 18, dec_bin_id = 19;
+	int block_scale_id = 20, grid_shape_id = 21;
 
 	int shape[2];
 
 	char *names[max_data_col];
 	//backgal_data_col includes the data to "DEC_BIN",
-	for (i = 0; i < backgal_data_col; i++)
+	// "+2" for "block_scale" and "grid_shape"
+	for (i = 0; i < backgal_data_col+2; i++)
 	{
 		names[i] = new char[40];
 	}
@@ -192,7 +193,6 @@ int main(int argc, char *argv[])
 
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
-	sprintf(names[dist_integ_id], "DISTANCE_INTEG");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
 
-
+	sprintf(names[block_scale_id], "block_scale");
+	sprintf(names[grid_shape_id], "grid_shape");
 
 	sprintf(log_infom, "RANK: %d. Start area: w_%d, radius: %d", rank, area_id, radius_label);
 	write_log(log_path, log_infom);
@@ -294,7 +295,7 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	// read foreground information
-	// Z, DISTANCE, DISTANCE_INTEG, RA, DEC, COS_DEC
+	// Z, DISTANCE, RA, DEC, COS_DEC
 	for (i = grid_data_col; i < foregal_data_col + grid_data_col; i++)
 	{
 		sprintf(set_name, "/%s", names[i]);
@@ -326,7 +327,7 @@ int main(int argc, char *argv[])
 
 	block_mask = new int[grid_num] {};
 
-	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, DISTANCE_INTEG,  RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
+	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
 	// block_boundx, block_boundy
 	for (i = 0; i < backgal_data_col; i++)
 	{
@@ -396,12 +397,8 @@ int main(int argc, char *argv[])
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
 
-		// comoving distance
 		dist_len = foregal_data[dist_id][gal_id];
 		dist_len_coeff = 1. / dist_len / (1 + z_f);
-		// the integrate part of the comoving distance
-		dist_len_integ = foregal_data[dist_integ_id][gal_id];
-		dist_len_integ_coeff = 1. / dist_len_integ / (1 + z_f);
 
 		// the max searching radius depend on the redshift of lens 
 		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
@@ -450,10 +447,7 @@ int main(int argc, char *argv[])
 						ra_b = backgal_data[ra_id][ib];
 						dec_b = backgal_data[dec_id][ib];
 
-						// comoving distance
 						dist_source = backgal_data[dist_id][ib];
-						// the integrate part of the comoving distance
-						dist_source_integ = backgal_data[dist_integ_id][ib];
 
 						// times cos(dec) due to the different length the arc corresponding to the same delta R.A. at different Dec
 						diff_ra = (ra_b - ra_f)*foregal_data[cos_dec_id][gal_id];
@@ -469,9 +463,7 @@ int main(int argc, char *argv[])
 						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
 							pair_count_shared[rank] += 1;
-
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
-							crit_surf_density_com_integ = dist_source_integ / (dist_source_integ - dist_len_integ) *dist_len_integ_coeff;
 
 							// rotation for shear calculation, see the NOTE of gg_lensing for the detials 
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
@@ -496,7 +488,6 @@ int main(int argc, char *argv[])
 							data_cache.push_back(backgal_mn_tan);
 							data_cache.push_back(backgal_mu_tan);
 							data_cache.push_back(crit_surf_density_com);
-							data_cache.push_back(crit_surf_density_com_integ);
 							data_cache.push_back(diff_r);
 
 #else

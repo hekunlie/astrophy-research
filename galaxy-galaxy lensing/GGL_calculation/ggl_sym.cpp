@@ -32,7 +32,7 @@ int main(int argc, char ** argv)
 
 	char total_path[300], data_path[300], set_name[30], result_path[300];
 	char fore_source[50];
-	char log[300];
+	char logs[300];
 
 	int i, j, k;
 	double st1, st2;
@@ -51,14 +51,14 @@ int main(int argc, char ** argv)
 	double *my_mgt, *my_mgx, *my_mnut, *my_mnux, *mg;
 
 	int choice;
-	double mg1_bin[MG_BIN_NUM]{}, mg2_bin[MG_BIN_NUM]{};
+	double mg1_bin[MG_BIN_NUM+1]{}, mg2_bin[MG_BIN_NUM+1]{};
 	double *mg_bin;
 
 	int gh_num;
 	double gh_s, gh_e, dg, *gh;
-
-	double*total_chisq, chisq_temp;
 	double gt, gx, gt_sig, gx_sig;
+	double mg_max, mg_min;
+
 
 
 	// the foreground name
@@ -70,20 +70,27 @@ int main(int argc, char ** argv)
 	{
 		area_id[i - 3] = atoi(argv[i]);
 	}
+
+	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);
+
 	if (0 == rank)
 	{
-		std::cout << "Foreground: " << fore_source << std::endl;
-		std::cout << "Radius bin: " << radius_id << std::endl;
-		std::cout << "Area: ";
+		int radius_num;
+		double *radius_bin;
+		sprintf(data_path, "%sradius_bin.hdf5", total_path);
+		sprintf(set_name, "/radius_bin");
+		read_h5_datasize(data_path, set_name, radius_num);
+		radius_bin = new double[radius_num];
+		read_h5(data_path, set_name, radius_bin);
+
+		sprintf(logs, "Foreground: %s.\nRaidus_bin: [%.5f, %.5f].\nArea: ", fore_source, radius_bin[radius_id], radius_bin[radius_id + 1]);
+		std::cout << logs;
 		for (i = 0; i < area_num; i++)
 		{
 			std::cout << area_id[i]<<" ";
 		}
 		std::cout << std::endl;
 	}
-
-	sprintf(total_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);
-
 	
 	gh_s = -150 + 10 * radius_id;
 	gh_e = fabs(gh_s);
@@ -98,8 +105,8 @@ int main(int argc, char ** argv)
 	}
 	if (rank == 0)
 	{
-		std::cout << "The gh: ";
-		show_arr(gh, 1, gh_num);
+		//std::cout << "The gh: ";
+		//show_arr(gh, 1, gh_num);
 	}
 
 
@@ -112,8 +119,8 @@ int main(int argc, char ** argv)
 	// collect the data from each file
 	for (i = 0; i < area_num; i++)
 	{
-		sprintf(data_path, "%sw_%d/%d.hdf5", total_path, area_id[i], radius_id);
-		sprintf(set_name, "/data");
+		sprintf(data_path, "%sw_%d/radius_%d.hdf5", total_path, area_id[i], radius_id);
+		sprintf(set_name, "/pair_data");
 		read_h5_datasize(data_path, set_name, data_num[i]);
 		// each row contains G_t, G_x, N, U, Crit_ij
 		pair_num[i] = data_num[i] / DATA_COL;
@@ -124,7 +131,7 @@ int main(int argc, char ** argv)
 		{	
 			data[i] = new double[data_num[i]]{};
 			read_h5(data_path, set_name, data[i]);
-			std::cout << "Read " << pair_num[i] << " pairs in " << i << " area" << std::endl;
+			std::cout << "Read " << pair_num[i] << " pairs in " << i << "'th area" << std::endl;
 			if (i == area_num - 1)
 			{
 				std::cout <<"Total pair: "<< total_pair_num << std::endl;
@@ -188,7 +195,7 @@ int main(int argc, char ** argv)
 	MPI_Aint  size_chisq, size_mg_bin, size_pair_count;
 
 	size_chisq = 2*gh_num*MG_BIN_NUM;
-	size_mg_bin = 2*MG_BIN_NUM;
+	size_mg_bin = 2*(MG_BIN_NUM + 1);
 	size_pair_count = numprocs;
 
 	if (0 == rank)
@@ -218,25 +225,26 @@ int main(int argc, char ** argv)
 	if (rank == 0)
 	{
 		initialize_arr(total_chisq, 2*gh_num*MG_BIN_NUM, 0);
-		for (i = 0; i < MG_BIN_NUM; i++)
+		for (i = 0; i < MG_BIN_NUM+1; i++)
 		{
 			mg_bin[i] = mg1_bin[i];
-			mg_bin[i+MG_BIN_NUM] = mg2_bin[i];
+			mg_bin[i+MG_BIN_NUM+1] = mg2_bin[i];
 		}
 	}
 	initialize_arr(my_chisq, 2*gh_num*MG_BIN_NUM, 0);
 	MPI_Barrier(MPI_COMM_WORLD);
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	mg = new double[pair_count[rank]];
 	my_mgt = new double[pair_count[rank]];
 	my_mgx = new double[pair_count[rank]];
 	my_mnut = new double[pair_count[rank]];
 	my_mnux = new double[pair_count[rank]];
 
-	for (i = 0; i < MG_BIN_NUM; i++)
+	for (i = 0; i < MG_BIN_NUM+1; i++)
 	{
 		mg1_bin[i] = mg_bin[i];
-		mg2_bin[i] = mg_bin[i + MG_BIN_NUM];
+		mg2_bin[i] = mg_bin[i + MG_BIN_NUM+1];
 	}
 	if (rank == 0)
 	{
@@ -247,11 +255,19 @@ int main(int argc, char ** argv)
 			my_mnut[i] = All_mnut[i];
 			my_mnux[i] = All_mnux[i];
 		}
-		std::cout << "G1 bin: ";
-		show_arr(mg1_bin, 1, MG_BIN_NUM);
-		std::cout << "G2 bin: ";
-		show_arr(mg2_bin, 1, MG_BIN_NUM);
-		std::cout << "Num: ";
+		mg_min = *std::min_element(All_mgt, All_mgt + total_pair_num);
+		mg_max = *std::max_element(All_mgt, All_mgt + total_pair_num);
+		std::cout << "G1[" << mg_min << ", " << mg_max << "]" << " bin: " << std::endl;;
+		show_arr(mg1_bin, 1, MG_BIN_NUM+1);
+		show_arr(mg_bin, 1, MG_BIN_NUM + 1);
+
+		mg_min = *std::min_element(All_mgx, All_mgx + total_pair_num);
+		mg_max = *std::max_element(All_mgx, All_mgx + total_pair_num);
+		std::cout << "G1[" << mg_min << ", " << mg_max << "]" << " bin: " << std::endl;;
+		show_arr(mg2_bin, 1, MG_BIN_NUM+1);
+		show_arr(mg_bin+MG_BIN_NUM+1, 1, MG_BIN_NUM + 1);
+
+		std::cout << "Num of each thread: ";
 		show_arr(pair_count, 1, numprocs);
 		sum_arr(pair_count, numprocs, 0, numprocs, temp_num);
 		std::cout << "Total num: " << temp_num << " [" << total_pair_num << "]." << std::endl;
@@ -287,8 +303,13 @@ int main(int argc, char ** argv)
 	mysyn(All_mnux, my_mnux);
 #undef mysyn
 
+	if (rank == 0)
+	{
+		std::cout << "Begin chi calculation." << std::endl;
+	}
 	// calculate the chi square
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	st1 = clock();
 	for(i = 0; i < gh_num; i++)
 	{
@@ -312,7 +333,12 @@ int main(int argc, char ** argv)
 			my_chisq[(i + gh_num)*MG_BIN_NUM + k] += data_count[k];
 		}		
 	}
+	if (rank == 0)
+	{
+		std::cout << "Finish chi calculation." << std::endl;
+	}
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	for (i = 0; i < numprocs; i++)
 	{
 		if (i == rank)
@@ -321,8 +347,12 @@ int main(int argc, char ** argv)
 			{
 				total_chisq[j] += my_chisq[j];
 			}
-
 		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+	if (rank == 0)
+	{
+		std::cout << "Begin chi square calculation." << std::endl;
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 	st2 = clock();
@@ -342,10 +372,33 @@ int main(int argc, char ** argv)
 				temp_chi_t[j] = total_chisq[i*MG_BIN_NUM + j];
 				temp_chi_x[j] = total_chisq[(i + gh_num)*MG_BIN_NUM + j];
 			}
-			cal_chisq_1d(temp_chi_t, MG_BIN_NUM, final_chisq_t[i]);
-			cal_chisq_1d(temp_chi_x, MG_BIN_NUM, final_chisq_x[i]);
-		}
+			try
+			{
+				cal_chisq_1d(temp_chi_t, MG_BIN_NUM, final_chisq_t[i]);
+			}
+			catch (const char* msg)
+			{
+				std::cout << "Faliure in tangential shear chi sqaure calculation. " << std::endl;
+				std::cout << gh[i]<<" "<< msg << std::endl;
+				final_chisq_t[i] = -99;
+			}
+			try
+			{
+				cal_chisq_1d(temp_chi_x, MG_BIN_NUM, final_chisq_x[i]);
+			}
+			catch (const char* msg)
+			{
+				std::cout << "Faliure in tangential shear chi sqaure calculation. "<< std::endl;
+				std::cout << gh[i] << " " << msg << std::endl;
+				final_chisq_x[i] = -99;
+			}
 
+		}
+		//std::cout << "The tan chi square:";
+		//show_arr(final_chisq_t, 1, gh_num);
+		//std::cout << std::endl;
+		//std::cout << "The tan chi square:";
+		//show_arr(final_chisq_x, 1, gh_num);
 		try
 		{
 			fit_shear(gh, final_chisq_t, gh_num, signal[0], signal[1], 50);
@@ -383,6 +436,8 @@ int main(int argc, char ** argv)
 
 		sprintf(set_name, "/signal");
 		write_h5(result_path, set_name, signal, 4, 1, FALSE);
+		std::cout << "Signal: ";
+		show_arr(signal, 1, 4);
 	}
 
 

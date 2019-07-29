@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<mpi.h>
 
-#define backgal_data_col 19
+#define backgal_data_col 18
 #define grid_data_col 5
 #define max_data_col 30
 #define mg_bin_num 8
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
 	int mg1_id = 10, mg2_id = 11, mn_id = 12, mu_id = 13, mv_id = 14;
-	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17, dist_integ_id=18;
+	int zmin_lb = 15, zmax_lb = 16, odds_lb = 17;
 
 	// for the initial data
 	int num_ini, data_len;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
-	sprintf(names[dist_integ_id], "DISTANCE_INTEG");
+	
 
 	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
 	sprintf(h5f_path_src, "%sfourier_cata_new/fourier_cata_cut.hdf5", data_path);
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 
 		}		
 		st3 = clock();
-		sprintf(log_inform, "Rank %d w_%d: Built RA, Dec and boundaries bin (%.2f sec)", rank, area_id, (st3 - st2) / CLOCKS_PER_SEC);
+		sprintf(log_inform, "Rank %d w_%d: Built RA, Dec and boundaries bin (%.2f sec)", rank, area_id, count, (st3 - st2) / CLOCKS_PER_SEC);
 		write_log(log_path, log_inform);
 		if (0 == rank)
 		{			

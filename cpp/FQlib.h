@@ -438,10 +438,12 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
-void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh = 1.e-8);//checked
-/* calculate the comoving distance [ Mpc/h ].																															*/
-/*There are only matter and dark energy in the universe																											 */
-/* the precision_thresh is set to be 1.e-8 by default to reduce the difference with astropy.cosmology module (<0.001 Mpc) */
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh = 1.e-4, const bool integ_only=FALSE);//checked
+/* calculate the comoving distance [ Mpc/h ].																																	*/
+/*There are only matter and dark energy in the universe																													 */
+/* the precision_thresh is set to be 1.e-8 by default to reduce the difference with astropy.cosmology module (<0.001 Mpc)			*/
+/* integ_only: FALSE calculate the comoving distance,																														*/
+/*					   TRUE calculate the integrate part of the comoving distance																						*/												
 
 void log_bin(const double start, const double end, const int num, double * bins);
 /* the loggrithmical bin, including the start and end point
