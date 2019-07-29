@@ -3,10 +3,10 @@
 #include<vector>
 
 #define max_data_col 40
-#define foregal_data_col 5
+#define foregal_data_col 6
 #define grid_data_col 5
 #define backgal_data_col 22
-
+#define VEC_DATA_COL 10
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -35,11 +35,10 @@ int main(int argc, char *argv[])
 	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
-	int vec_data_col = 9;
 #endif
 
 	int i, j, k, temp;
-	char parent_path[250], data_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
+	char parent_path[250], data_path[250], result_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
 
@@ -51,9 +50,11 @@ int main(int argc, char *argv[])
 
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
-	sprintf(h5f_res_path, "%sresult/%s/cfht/w_%d/radius_%d.hdf5", parent_path, foreground_name, area_id, radius_label);
+	sprintf(result_path, "%sresult/", parent_path);
+
+	sprintf(h5f_res_path, "%s%s/cfht/w_%d/radius_%d.hdf5", result_path, foreground_name, area_id, radius_label);
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
-	sprintf(h5f_path_fore, "%sdata/foreground/%s/w_%d.hdf5", parent_path, foreground_name, area_id);
+	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
 	
 	//sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	//sprintf(data_path, "%sdata/", parent_path);
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 	//sprintf(h5f_path_fore, "%sdata/foreground/%s/w_%d.hdf5", parent_path, foreground_name, area_id);
 
 
-	sprintf(h5f_path_grid, "%scfht_cata_grid.hdf5", data_path);
+	sprintf(h5f_path_grid, "%scfht_cata/cfht_cata_grid.hdf5", data_path);
 
 	pts_info gal_info;
 
@@ -75,9 +76,9 @@ int main(int argc, char *argv[])
 	double *foregal_data[max_data_col];
 	MY_INT pair_count;// be carefull, the pair number may be too many, long or double 
 	double z_f, ra_f, dec_f;
-	double dist_len, dist_source, dist_len_coeff;
+	double dist_len, dist_integ_len, dist_source, dist_integ_source, dist_len_coeff, dist_integ_len_coeff;
 	double coeff, coeff_inv, coeff_rad_dist;
-	double crit_surf_density_com;
+	double crit_surf_density_com, crit_surf_density_com_integ;
 
 
 	int backgal_num;
@@ -114,9 +115,9 @@ int main(int argc, char *argv[])
 
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
-	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
-	int e1_id = 10, e2_id = 11, weight_id = 12, m_id = 13, c_id = 14;
-	int starflag_id = 15, zmin_lb = 16, zmax_lb = 17, odds_lb = 18, mag_lb = 19;
+	int z_id = 5, dist_id = 6, dist_integ_id=7, ra_id = 8, dec_id = 9, cos_dec_id = 10;
+	int e1_id = 11, e2_id = 12, weight_id = 13, m_id = 14, c_id = 15;
+	int  zmin_lb = 16, zmax_lb = 17, odds_lb = 18, mag_lb = 19;
 	int ra_bin_id = 20, dec_bin_id = 21;
 	int block_scale_id = 22, grid_shape_id = 23;
 
@@ -136,6 +137,7 @@ int main(int argc, char *argv[])
 
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
+	sprintf(names[dist_integ_id], "DISTANCE_INTEG");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
@@ -146,7 +148,6 @@ int main(int argc, char *argv[])
 	sprintf(names[m_id], "M");
 	sprintf(names[c_id], "C");
 
-	sprintf(names[starflag_id], "STARGLAG");
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
@@ -154,9 +155,6 @@ int main(int argc, char *argv[])
 
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
-
-	sprintf(names[block_scale_id], "block_scale");
-	sprintf(names[grid_shape_id], "grid_shape");
 
 	sprintf(log_infom, "RANK: %d. Start area: w_%d, radius: %d", rank, area_id, radius_label);
 	write_log(log_path, log_infom);
@@ -315,8 +313,8 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	coeff = 180/ Pi;
-	coeff_inv =  Pi / 180;
+	coeff = 180./ Pi;
+	coeff_inv =  Pi / 180.;
 	coeff_rad_dist = C_0_hat * 1000;
 
 	st1 = clock();
@@ -326,15 +324,15 @@ int main(int argc, char *argv[])
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
 
-		//find_near(redshifts, z_f, red_num, tag_f);
-		//dist_len = distances[tag_f];
+		// comoving distance
 		dist_len = foregal_data[dist_id][gal_id];
 		dist_len_coeff = 1. / dist_len / (1 + z_f);
+		// the integrate part of the comoving distance
+		dist_integ_len = foregal_data[dist_integ_id][gal_id];
+		dist_integ_len_coeff = 1. / dist_integ_len / (1 + z_f);
 
 		// the max searching radius depend on the redshift of lens  //	
-		// the max seperation of the source at the z = z_f  //
-		radius_e = radius_bin[radius_label + 1] / dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
-		radius_e_sq = radius_e * radius_e; // degree^2
+		radius_e = radius_bin[radius_label + 1] *coeff/ dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
 
 		// degree
 		ra_f = foregal_data[ra_id][gal_id];
@@ -380,6 +378,7 @@ int main(int argc, char *argv[])
 						dec_b = backgal_data[dec_id][ib];
 
 						dist_source = backgal_data[dist_id][ib];
+						dist_integ_source = backgal_data[dist_integ_id][ib];
 
 						// times cos(dec) due to the different length the arc corresponding to the same delta R.A. at different Dec
 						diff_ra = (ra_b - ra_f)*foregal_data[cos_dec_id][gal_id];
@@ -387,7 +386,7 @@ int main(int argc, char *argv[])
 						diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
 						// the seperation in comving coordinate, 
-						//diff_r = dist_source * sqrt(diff_theta_sq)*coeff_inv;
+						//diff_r = dist_len * sqrt(diff_theta_sq)*coeff_inv;
 
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
 						diff_r = dist_len * diff_theta;
@@ -396,6 +395,8 @@ int main(int argc, char *argv[])
 						{
 							pair_count_shared[rank] += 1;
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
+
+							crit_surf_density_com_integ = dist_integ_source / (dist_integ_source - dist_integ_len) *dist_integ_len_coeff;
 
 							// rotation for shear calculation, see the NOTE of gg_lensing for the detials 
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
@@ -422,6 +423,7 @@ int main(int argc, char *argv[])
 							data_cache.push_back(backgal_data[c_id][ib]);
 							data_cache.push_back(backgal_data[weight_id][ib]);
 							data_cache.push_back(crit_surf_density_com);
+							data_cache.push_back(crit_surf_density_com_integ);
 							data_cache.push_back(diff_r);
 
 #else
@@ -485,7 +487,7 @@ int main(int argc, char *argv[])
 	if (pair_count > 1)
 	{	
 		// final_buf will store the data of all the pairs
-		my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
+		my_data_buf = new double[pair_count_shared[rank] * VEC_DATA_COL]{};
 		// copy the data in the vector into the buffer 
 		if (!data_cache.empty())
 		{
@@ -501,7 +503,7 @@ int main(int argc, char *argv[])
 
 			for (i = 0; i < numprocs; i++)
 			{
-				num_of_thread[i] = pair_count_shared[i] * vec_data_col;
+				num_of_thread[i] = pair_count_shared[i] * VEC_DATA_COL;
 				for (j = 0; j < i; j++)
 				{
 					displ[i] += num_of_thread[j];
@@ -509,7 +511,7 @@ int main(int argc, char *argv[])
 			}
 			if (rank == 0)
 			{
-				final_buf = new double[pair_count * vec_data_col];
+				final_buf = new double[pair_count * VEC_DATA_COL];
 				//show_arr(displ, 1, numprocs);
 				//show_arr(num_of_thread, 1, numprocs);
 			}
@@ -529,9 +531,9 @@ int main(int argc, char *argv[])
 			{
 				//show_arr(final_buf, pair_count, vec_data_col);
 				sprintf(set_name, "/pair_data");
-				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, TRUE);
+				write_h5(h5f_res_path, set_name, final_buf, pair_count, VEC_DATA_COL, TRUE);
 
-				sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+				sprintf(temp_path, "%s%s/cfht/w_%d/radius_bin.hdf5", result_path, foreground_name, area_id);
 				sprintf(set_name, "/radius_bin");
 				write_h5(temp_path, set_name, radius_bin, radius_num+1, 1, TRUE);
 
@@ -542,9 +544,9 @@ int main(int argc, char *argv[])
 		{	
 			// only one cpu
 			sprintf(set_name, "/pair_data");
-			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, TRUE);
+			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, VEC_DATA_COL, TRUE);
 
-			sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(temp_path, "%s%s/cfht/w_%d/radius_bin.hdf5", result_path, foreground_name, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 		}
@@ -555,12 +557,12 @@ int main(int argc, char *argv[])
 	{
 		if (rank == 0)
 		{
-			my_data_buf = new double[vec_data_col];
-			initialize_arr(my_data_buf, vec_data_col, -1);
+			my_data_buf = new double[VEC_DATA_COL];
+			initialize_arr(my_data_buf, VEC_DATA_COL, -1);
 			sprintf(set_name, "/pair_data");
-			write_h5(h5f_res_path, set_name, my_data_buf, 1, vec_data_col, TRUE);
+			write_h5(h5f_res_path, set_name, my_data_buf, 1, VEC_DATA_COL, TRUE);
 
-			sprintf(temp_path, "%sresult/%s/cfht/w_%d/radius_bin.hdf5", parent_path, foreground_name, area_id);
+			sprintf(temp_path, "%s%s/cfht/w_%d/radius_bin.hdf5", result_path, foreground_name, area_id);
 			sprintf(set_name, "/radius_bin");
 			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
 

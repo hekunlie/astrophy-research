@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
 	char parent_path[250], data_path[250],result_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
+	char cata_name[30];
 
 	int radius_num;
 	double radius_s, radius_e, radius_e_sq;
@@ -66,8 +67,10 @@ int main(int argc, char *argv[])
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
 
-	sprintf(result_path, "%sresult/%s/fourier_cata_old/", parent_path, foreground_name);
-	sprintf(h5f_path_grid, "%sfourier_cata_old/fourier_cata_grid.hdf5", data_path);
+	sprintf(cata_name, "fourier_cata_new");
+	
+	sprintf(result_path, "%sresult/%s/%s/", parent_path, foreground_name, cata_name);
+	sprintf(h5f_path_grid, "%s%s/fourier_cata_grid.hdf5", data_path, cata_name);
 
 	sprintf(h5f_res_path, "%sw_%d/radius_%d.hdf5", result_path, area_id, radius_label);
 	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
@@ -405,7 +408,6 @@ int main(int argc, char *argv[])
 
 		// the max searching radius depend on the redshift of lens 
 		radius_e = radius_bin[radius_label + 1] * coeff / dist_len / foregal_data[cos_dec_id][gal_id] * 1.5; // degree
-		radius_e_sq = radius_e * radius_e; // degree^2
 
 		// degree
 		ra_f = foregal_data[ra_id][gal_id];

@@ -19,13 +19,14 @@ import time
 #           It will add the redshift parameters from CFHT catalog into the finial catalog.
 
 # select: select the galaxy
+# grid:
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 cmd = argv[1]
-cmds = ["collect", "select"]
+cmds = ["collect", "select", "grid"]
 
 if cmd not in cmds:
     if rank == 0:
@@ -295,6 +296,8 @@ if cmd == "collect":
 if cmd == "select":
     t1 = time.time()
 
+    block_scale = float(argv[2])
+
     h5f_path = fourier_cata_path + "fourier_cata.hdf5"
     h5f_path_cut = data_path + "fourier_cata_old/fourier_cata_cut.hdf5"
 
@@ -366,4 +369,66 @@ if cmd == "select":
         print(t2-t1)
 ############################# Fourier_quad data cutoff ###########################################
 
+
+
+############################# Fourier_quad data grid ###########################################
+
+
+if cmd == "grid":
+    t1 = time.time()
+
+    block_scale = float(argv[2])
+    margin = 0.1*block_scale
+
+    h5f_path_cut = data_path + "fourier_cata_old/fourier_cata_cut.hdf5"
+
+    if rank < area_num:
+
+        h5f = h5py.File(h5f_path_cut, "r")
+        ra = h5f["/w_%d/RA"%(rank+1)].value
+        dec = h5f["/w_%d/DEC"%(rank+1)].value
+        h5f.close()
+
+        total_num = ra.shape[0]
+        gal_label = numpy.arange(0,total_num)
+
+        # set up RA & DEC bin
+        ra_min, ra_max = ra.min()-margin, ra.max()+margin
+        dec_min, dec_max = dec.min()-margin, dec.max()+margin
+
+        nx = int((ra_max-ra_min)/block_scale) + 2
+        ny = int((dec_max-dec_min)/block_scale) + 2
+        grid_num = nx*ny
+
+        ra_bin = numpy.zeros((nx+1, 1))
+        dec_bin = numpy.zeros((ny+1, 1))
+        for i in range(nx+1):
+            ra_bin[i] = ra_min + i*block_scale
+        for i in range(ny+1):
+            dec_bin[i] = dec_min + i*block_scale
+        if ra_bin.max < ra_max:
+            print("Too less RA bins")
+            exit(0)
+        if dec_bin.max < dec_max:
+            print("Too less DEC bins")
+            exit(0)
+
+        # the boundary of each block
+        boundx = numpy.zeros((grid_num, 4))
+        boundy = numpy.zeros((grid_num, 4))
+
+        # galaxy count in each block
+        num_in_block = numpy.zeros(grid_num,1)
+
+        for i in range(ny):
+            for j in range(nx):
+                boundy[i*nx+j,0] = dec_min[i]
+                boundy[i*nx+j,1] = dec_min[i]
+                boundy[i*nx+j,2] = dec_min[i+1]
+                boundy[i*nx+j,3] = dec_min[i+1]
+
+                boundx[i*nx+j,0] = ra_bin[i]
+                boundx[i*nx+j,1] = ra_bin[i+1]
+                boundx[i*nx+j,2] = ra_bin[i]
+                boundx[i*nx+j,3] = ra_bin[i+1]
 

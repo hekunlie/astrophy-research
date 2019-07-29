@@ -12,7 +12,7 @@ import numpy
 from astropy.cosmology import FlatLambdaCDM
 import h5py
 from mpi4py import MPI
-
+import time
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -25,13 +25,32 @@ data_path = argv[2]
 set_name = argv[3]
 ch_num = int(argv[4])
 
+h = 0.7
+C_0_hat = 2.99792458
+H_0 = 100*h
+coeff = 1000*C_0_hat
+t1 = time.time()
+cosmos = FlatLambdaCDM(H_0, Om0=Omg_m0)
+
+# num = 100000
+# dz = 10./(num-1)
+# delta_dist = numpy.zeros((num,))
+#
+# for i in range(num):
+#     z = dz*i
+#     com_dist = cosmos.comoving_distance(z).value*h
+# t2 = time.time()
+# print(t2-t1)
+# exit()
+
 h5f = h5py.File(data_path,"r")
 redshift = h5f["%sZ"%set_name].value
 
 total_num = redshift.shape[0]
-# my_list = numpy.array(tool_box.allot([i for i in range(total_num)], cpus)[rank])
-my_list = [i for i in range(total_num)]
+my_list = numpy.array(tool_box.allot([i for i in range(total_num)], cpus)[rank])
 ch_pts = numpy.random.choice(my_list, ch_num, replace=False).tolist()
+
+# ch_pts = [i for i in range(total_num)]
 
 com_dist_file = h5f["%sDISTANCE"%set_name].value[ch_pts]
 com_dist_integ_file = h5f["%sDISTANCE_INTEG"%set_name].value[ch_pts]
@@ -39,18 +58,14 @@ redshift = redshift[ch_pts]
 
 h5f.close()
 
-h = 0.7
-C_0_hat = 2.99792458
-H_0 = 100*h
-coeff = 1000*C_0_hat
 
-cosmos = FlatLambdaCDM(H_0, Om0=Omg_m0)
 delta_dist = numpy.zeros((2, ch_num))
 astro_dist = numpy.zeros((2, ch_num))
-for i in range(ch_num):
+for i in range(1,ch_num):
+
     com_dist = cosmos.comoving_distance(redshift[i]).value*h
     integ = com_dist/coeff
-    print("%.5f, %.6f"%(redshift[i], com_dist_file[i] - com_dist))
+    print("%.7f, %.7f"%(redshift[i], com_dist_file[i] - com_dist))
     # delta_dist[0, i] = numpy.abs(com_dist_file[i] - com_dist)
     # delta_dist[1, i] = numpy.abs(com_dist_integ_file[i] - integ)
     #

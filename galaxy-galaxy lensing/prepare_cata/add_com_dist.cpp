@@ -30,10 +30,10 @@ int main(int argc, char *argv[])
 	sprintf(set_name, "/DISTANCE_INTEG");
 	read_h5(data_path, set_name, dist_integ_refer);
 
-	std::cout << redshift_refer[refer_num] << " " << dist_refer[refer_num] << " " << dist_integ_refer[refer_num]<<std::endl;
+	std::cout << redshift_refer[refer_num-1] << " " << dist_refer[refer_num-1] << " " << dist_integ_refer[refer_num-1]<<std::endl;
 
-	strcpy(data_path, argv[1]);
-	strcpy(target_set_name, argv[2]);
+	sprintf(data_path, "%s",argv[1]);
+	sprintf(target_set_name, "%s", argv[2]);
 
 	if (file_exist(data_path))
 	{
@@ -56,15 +56,15 @@ int main(int argc, char *argv[])
 
 				if (data_num > 100)
 				{
-					if (0 == i % (int)(data_num / 10))
+					if (0 == i % (int)(data_num / 20))
 					{
-						sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %.6f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k], k);
+						sprintf(inform, "Z: %.7f, (%.7f). Distance: %.7f, %.7f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k], k);
 						std::cout << inform << std::endl;
 					}
 				}
 				else
 				{
-					sprintf(inform, "Z: %7.5f, (%7.5f). Distance: %7.5f, %.6f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k],k);
+					sprintf(inform, "Z: %.7f, (%.7f). Distance: %.7f, %.7f. %d", redshift[i], redshift_refer[k], dist_refer[k], dist_integ_refer[k],k);
 					std::cout << inform << std::endl;
 				}
 			}

@@ -24,9 +24,9 @@ int main(int argc, char *argv[])
 	double st1, st2, st3, st4, st5, st6, st7, st8, sts, ste;
 
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
-	int z_id = 5, dist_id = 6, ra_id = 7, dec_id = 8, cos_dec_id = 9;
-	int e1_id = 10, e2_id = 11, weight_id = 12, m_id = 13, c_id = 14;
-	int starflag_id=15, zmin_lb = 16, zmax_lb = 17, odds_lb = 18, mag_lb = 19;
+	int z_id = 5, dist_id = 6, dist_integ_id = 7, ra_id = 8, dec_id = 9, cos_dec_id =10;
+	int e1_id = 11, e2_id = 12, weight_id = 13, m_id = 14, c_id = 15;
+	int zmin_lb = 16, zmax_lb = 17, odds_lb = 18, mag_lb = 19;
 
 	// for the initial data
 	int num_ini, data_len;
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
+	sprintf(names[dist_integ_id], "DISTANCE_INTEG");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
@@ -84,14 +85,13 @@ int main(int argc, char *argv[])
 	sprintf(names[m_id], "M");
 	sprintf(names[c_id], "C");
 
-	sprintf(names[starflag_id], "STARGLAG");
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
 	sprintf(names[mag_lb], "MAG");
 
 
-	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/");
+	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/cfht_cata/");
 	sprintf(h5f_path_src, "%scfht_cata_cut.hdf5", data_path);
 	sprintf(h5f_path_dst, "%scfht_cata_grid.hdf5", data_path);
 	sprintf(log_path, "/mnt/perc/hklee/CFHT/gg_lensing/log/grid_log_%d.dat", rank);

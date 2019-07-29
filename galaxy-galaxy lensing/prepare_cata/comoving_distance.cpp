@@ -4,7 +4,7 @@
 int main(int argc, char ** argv)
 {
 	/* calculate the comoving distance [Mpc/h]																*/
-	/*	argv[1]: Omega_m0, (Omega_lambda0 = 1 - Omega_m0)	 								  */
+	/*	argv[1]: Omega_m0, (Omega_lambda0 = 1 - Omega_m0)	 								   */
 	/*  argv[2]: Z_MAX, 0~ Z_MAX, the distance to be calculated                                   */
 	
 	int rank, numprocs, namelen;
@@ -21,11 +21,12 @@ int main(int argc, char ** argv)
 	double parameter[1];
 
 	double omega_m, omeg_lambda, z_max;
-	double distance, distance_integ, precision, z_step;
+	double distance, distance_integ, precision, z_precision, z_step;
 	double *redshift, *com_dist,*com_dist_integ;
 	double *my_redshift, *my_com_dist,*my_com_dist_integ;
 	int i, j, step;	
 	int num_step, m,n, my_num_i, my_num_e, my_num, total_num;
+	int z_step_int, z_int;// to achieve high precision
 	double st1, st2;
 
 	st1 = clock();
@@ -34,19 +35,23 @@ int main(int argc, char ** argv)
 	omega_m = atof(argv[1]);
 	omeg_lambda = 1 - omega_m;
 
-	// 0 ~ z_max
-	z_max = atof(argv[2]);
+
+	total_num = atof(argv[2]);
 	// precision for distance
-	precision = 0.00001;
-	// point num [0, Z_max]
-	total_num = 500000;
-	z_step = z_max / (total_num -1);
-	
+	precision = 0.000001;
+	// the precision of Z ~ 1e-5
+	z_step_int = 2;
+	z_precision = 1. / 100000;
+	z_step = z_step_int* z_precision;
+	// 0 ~ z_max
+	z_max = total_num* z_step;
 	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/redshift.hdf5");
 
 	sprintf(data_path, "/mnt/perc/hklee/CFHT/gg_lensing/data/redshift.hdf5");
 	if (rank == 0)
 	{
+		get_time(end_time, 50);
+		std::cout << "Start " <<end_time << std::endl;
 		std::cout <<"Z:  0 ~ "<<z_max<<" Z_step: "<<z_step<<".  Total num: " << total_num <<".  Precision:  "<<precision<<std::endl;
 	}
 
@@ -80,7 +85,7 @@ int main(int argc, char ** argv)
 	{
 		for (i = 0; i < total_num; i++)
 		{
-			redshift[i] = i * z_step;
+			redshift[i] = i * z_step_int*z_precision;
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
