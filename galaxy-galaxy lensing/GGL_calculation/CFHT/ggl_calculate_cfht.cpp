@@ -6,7 +6,7 @@
 #define foregal_data_col 6
 #define grid_data_col 5
 #define backgal_data_col 22
-#define VEC_DATA_COL 10
+#define VEC_DATA_COL 9
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 
 	sprintf(h5f_res_path, "%s%s/cfht/w_%d/radius_%d.hdf5", result_path, foreground_name, area_id, radius_label);
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
-	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
+	sprintf(h5f_path_fore, "%sforeground/%s/w_%d_1.hdf5", data_path, foreground_name, area_id);
 	
 	//sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	//sprintf(data_path, "%sdata/", parent_path);
@@ -370,9 +370,9 @@ int main(int argc, char *argv[])
 				{
 					z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
-
+					z_b = backgal_data[z_id][ib];
 					//if (backgal_data[z_id][ib] >= z_thresh)
-					if (backgal_data[z_id][ib] >= z_thresh and backgal_data[z_id][ib] > z_b_sig95)
+					if (z_b >= z_thresh and z_b > z_b_sig95)
 					{
 						ra_b = backgal_data[ra_id][ib];
 						dec_b = backgal_data[dec_id][ib];
@@ -406,25 +406,26 @@ int main(int argc, char *argv[])
 
 							//// the direction of R.A. is oppsite, actually,  e2 = -e2
 							//// tangential component, e_t =  e_1 *cos2\phi - e_2*sin2\phi
-							//backgal_e_t = backgal_data[e1_id][ib] * backgal_cos_2phi + backgal_data[e2_id][ib] * backgal_sin_2phi;
-							//data_cache.push_back(backgal_e_t);
-
+							backgal_e_t = backgal_data[e1_id][ib] * backgal_cos_2phi + backgal_data[e2_id][ib] * backgal_sin_2phi;
 							//// the cross component, e_x =  e_1 *sin2\phi + e_2*cos2\phi
-							//backgal_e_x = backgal_data[e1_id][ib] * backgal_sin_2phi - backgal_data[e2_id][ib] * backgal_cos_2phi;
-							//data_cache.push_back(backgal_e_x);
+							backgal_e_x = backgal_data[e1_id][ib] * backgal_sin_2phi - backgal_data[e2_id][ib] * backgal_cos_2phi;
 
-							data_cache.push_back(backgal_data[e1_id][ib]);
-							data_cache.push_back(backgal_data[e2_id][ib]);
-							data_cache.push_back(backgal_cos_2phi);
-							data_cache.push_back(backgal_sin_2phi);
+
+							data_cache.push_back(backgal_e_t);
+							data_cache.push_back(backgal_e_x);
+
 							// mutiplicative bias
 							data_cache.push_back(backgal_data[m_id][ib]);
 							// additive bias
 							data_cache.push_back(backgal_data[c_id][ib]);
+
 							data_cache.push_back(backgal_data[weight_id][ib]);
+
 							data_cache.push_back(crit_surf_density_com);
 							data_cache.push_back(crit_surf_density_com_integ);
+
 							data_cache.push_back(diff_r);
+							data_cache.push_back(z_b);
 
 #else
 

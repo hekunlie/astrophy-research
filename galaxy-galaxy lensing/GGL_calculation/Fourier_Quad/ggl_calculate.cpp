@@ -467,6 +467,7 @@ int main(int argc, char *argv[])
 						
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
 						diff_r = dist_len * diff_theta;
+						//diff_r = dist_len * sin(diff_theta);
 						//std::cout << radius_bin[radius_label] << " " << diff_r << " " << radius_bin[radius_label + 1] << " " << diff_theta << std::endl;
 						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
@@ -828,13 +829,15 @@ int main(int argc, char *argv[])
 
 	MPI_Win_free(&win_pair_count);
 	
-	sprintf(log_infom, "RANK: %d. Write file of Radius bin [%.4f,  %.4f] ---- end. ", rank, radius_bin[radius_label], radius_bin[radius_label + 1]);
+	sprintf(log_infom, "RANK: %d. Write file of Radius bin [%.4f,  %.4f] ---- end.", rank, radius_bin[radius_label], radius_bin[radius_label + 1]);
 	write_log(log_path, log_infom);
 	if (0 == rank)
 	{
 		char times[50];
 		get_time(times, 50);
-		std::cout << log_infom <<times<< std::endl;
+		std::cout << log_infom << std::endl;
+		std::cout << h5f_res_path << std::endl;
+		std::cout<< times << std::endl;
 	}
 
 
