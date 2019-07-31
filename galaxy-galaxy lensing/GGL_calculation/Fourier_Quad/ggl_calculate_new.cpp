@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 	/*		1. the sky area label																												*/
 	/*		2. the radius bin label, the search raidus																			*/
 	/*     3. the name of the foreground data set																			    */
-	   	 
+
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-// if the memory of the system could contain all the pairs
-// it will gather all the data and estimate the signal with SYM-PDF method
+	// if the memory of the system could contain all the pairs
+	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
 #endif
 
 	int i, j, k, temp;
-	char parent_path[250], data_path[250],result_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
+	char parent_path[250], data_path[250], result_path[250], log_path[250], h5f_path_grid[250], h5f_path_fore[250], h5f_res_path[250], temp_path[300];
 	char set_name[50], set_name_2[50], attrs_name[80], log_infom[300];
 	char foreground_name[50];
 	char cata_name[30];
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 	int radius_num;
 	double radius_s, radius_e, radius_e_sq;
 	double *radius_bin;
-	
+
 	// the controllers
 	int area_id = atoi(argv[1]);
 	int radius_label = atoi(argv[2]);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	radius_bin = new double[radius_num + 1]{};
 	log_bin(0.04, 15, radius_num + 1, radius_bin);
 
-	   
+
 	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/");
 	//sprintf(h5f_res_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/result/%s/fourier/w_%d/radius_%d.hdf5", foreground_name, area_id, radius_label);
 	//sprintf(log_path, "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/log/ggl_log_%d.dat", rank);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 	sprintf(data_path, "%sdata/", parent_path);
 
 	sprintf(cata_name, "fourier_cata_old");
-	
+
 	sprintf(result_path, "%sresult/%s/%s/", parent_path, foreground_name, cata_name);
 	sprintf(h5f_path_grid, "%s%s/fourier_cata_grid.hdf5", data_path, cata_name);
 
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
 
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
-	
+
 	// be careful with the boundary of the guess of critical density and shear 
 	double gh_crit_step = 0.001;
 	double gh_crit_left = -0.32 + 0.02 * radius_label;
@@ -136,14 +136,14 @@ int main(int argc, char *argv[])
 
 
 	int backgal_num;
-	double *backgal_data[max_data_col]; 
+	double *backgal_data[max_data_col];
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi;
 	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double backgal_mnu1_tan, backgal_mnu2_tan, backgal_mnu1_tan_c, backgal_mnu2_tan_c;
 	double z_b, z_thresh, z_b_sig95, z_b_odds;
 	double ra_b, dec_b;
 	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh = 0.1;
-	  
+
 	double *my_data_buf, *final_buf;
 	// the chi and the shear guess
 	int ig, ic, ig_label;
@@ -162,16 +162,16 @@ int main(int argc, char *argv[])
 	double *my_chi_crit_cross = new double[mg_bin_num*gh_crit_num];
 	double mg_t, mg_x;
 	int chi_bin_label;
-	
+
 	int grid_num, grid_ny, grid_nx;
 	int row, col, bin_label;
-	int block_id, block_s, block_e, ib;
+	int block_id, block_s, block_e, ib, ibb, ibg;
 	double block_scale[1];
 	int *block_mask;
 	int ra_bin_num, dec_bin_num;
 
 
-	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
+	int nib_id = 0, bs_id = 1, gib_id = 2, bdy_id = 3, bdx_id = 4;
 	int z_id = 5, dist_id = 6, dist_integ_id = 7;
 	int ra_id = 8, dec_id = 9, cos_dec_id = 10;
 	int mg1_id = 11, mg2_id = 12, mn_id = 13, mu_id = 14, mv_id = 15;
@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 	}
 	sprintf(names[nib_id], "num_in_block");
 	sprintf(names[bs_id], "block_start");
-	sprintf(names[be_id], "block_end");
+	sprintf(names[gib_id], "gal_in_block");
 	sprintf(names[bdy_id], "block_boundy");
 	sprintf(names[bdx_id], "block_boundx");
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
-	
+
 	sprintf(names[ra_bin_id], "RA_bin");
 	sprintf(names[dec_bin_id], "DEC_bin");
 
@@ -231,8 +231,8 @@ int main(int argc, char *argv[])
 	MPI_Aint size_chi_tan, size_chi_cross, size_chi_crit_tan, size_chi_crit_cross;
 
 	// [chi_tan, chi_cross]
-	size_chi_tan =  mg_bin_num*gh_num;
-	size_chi_cross = mg_bin_num*gh_num;
+	size_chi_tan = mg_bin_num * gh_num;
+	size_chi_cross = mg_bin_num * gh_num;
 	size_chi_crit_tan = mg_bin_num * gh_crit_num;
 	size_chi_crit_cross = mg_bin_num * gh_crit_num;
 #endif
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 	// initialization
 	if (0 == rank)
-	{	
+	{
 #if ! defined( SMALL_CATA)
 		initialize_arr(chi_tan_shared, mg_bin_num*gh_num, 0);
 		initialize_arr(chi_cross_shared, mg_bin_num*gh_num, 0);
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 		{
 			dec_bin_num = temp - 1;
 		}
-		backgal_data[i] = new double[temp]{};
+		backgal_data[i] = new double[temp] {};
 		read_h5(h5f_path_grid, set_name, backgal_data[i]);
 	}
 	//set_bin(backgal_data[mg1_id], backgal_num, mg_bin, mg_bin_num, 1000, 50000);
@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	   
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
-	{	
+	{
 		z_f = foregal_data[z_id][gal_id];
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
@@ -426,28 +426,29 @@ int main(int argc, char *argv[])
 		gal_info.nx = grid_nx;
 		gal_info.blocks_num = grid_num;
 		gal_info.scale = block_scale[0];
-		
+
 		// find the blocks needed //
 		initialize_arr(block_mask, grid_num, -1);
 		find_block(&gal_info, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
 
-		for (block_id = 0; block_id < grid_num; block_id++)
+		for (ib = 0; ib < grid_num; ib++)
 		{
-			if (block_mask[block_id] > -1)
+			if (block_mask[ib] > -1 and backgal_data[nib_id][ib]>0)
 			{
 				// the start and end point of the block //
 				// the start- & end-point					      //
-				block_s = backgal_data[bs_id][block_mask[block_id]];
-				block_e = backgal_data[be_id][block_mask[block_id]];
+				block_id = block_mask[ib];
+				block_s = backgal_data[bs_id][block_id];
 
 				//std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
-				for (ib = block_s; ib < block_e; ib++)
-				{	
+				for (ibb = 0; ibb < backgal_data[nib_id][block_id]; ibb++)
+				{
+					ibg = backgal_data[gib_id][ibb + backgal_data[bs_id][block_id]];
 					z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
 					z_b_odds = backgal_data[odds_lb][ib];
 					z_b = backgal_data[z_id][ib];
 					//if (backgal_data[z_id][ib] >= z_thresh)
-					if (z_b >= z_thresh and z_b > z_b_sig95 and z_b_odds> 0.5)
+					if (z_b >= z_thresh and z_b > z_b_sig95 and z_b_odds > 0.5)
 					{
 						ra_b = backgal_data[ra_id][ib];
 						dec_b = backgal_data[dec_id][ib];
@@ -464,7 +465,7 @@ int main(int argc, char *argv[])
 
 						// the seperation in comving coordinate, 
 						//diff_r = dist_len * sqrt(diff_theta_sq)*coeff_inv;
-						
+
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
 						diff_r = dist_len * diff_theta;
 						//std::cout << radius_bin[radius_label] << " " << diff_r << " " << radius_bin[radius_label + 1] << " " << diff_theta << std::endl;
@@ -481,7 +482,7 @@ int main(int argc, char *argv[])
 
 							backgal_sin_4phi = 2 * backgal_sin_2phi * backgal_cos_2phi;
 							backgal_cos_4phi = (backgal_cos_2phi + backgal_sin_2phi)*(backgal_cos_2phi - backgal_sin_2phi);
-							
+
 #if defined (SMALL_CATA)
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
 							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
@@ -534,11 +535,11 @@ int main(int argc, char *argv[])
 							{
 								mg_t = backgal_mg_tan - gh_crit[ig] * backgal_mnu1_tan;
 								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] +=1;
+								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] += 1;
 
 								mg_x = backgal_mg_cross - gh_crit[ig] * backgal_mnu2_tan;
 								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label]+=1;
+								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label] += 1;
 							}
 #endif
 						}
@@ -552,7 +553,7 @@ int main(int argc, char *argv[])
 		per_n = int((gal_id - my_gal_s) *1.0 / (my_gal_e - my_gal_s) * 100);
 
 		if (0 == process_per)
-		{	
+		{
 			sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %d%%. Time since begin: %.2f sec.", rank, area_id, per_n, (stgal - st1) / CLOCKS_PER_SEC);
 			if (0 == rank)
 			{
@@ -671,10 +672,10 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 	// merge the PDF of signal estimator into the shared buffer
-	for(i=0; i<numprocs; i++)
+	for (i = 0; i < numprocs; i++)
 	{
 		if (rank == i)
-		{				
+		{
 			for (j = 0; j < mg_bin_num*gh_num; j++)
 			{
 				chi_tan_shared[j] += my_chi_tan[j];
@@ -703,7 +704,7 @@ int main(int argc, char *argv[])
 		double crit_result[4];
 		// chi square of shear
 		for (i = 0; i < gh_num; i++)
-		{	
+		{
 			// tangential 
 			for (j = 0; j < mg_bin_num; j++)
 			{
@@ -715,7 +716,7 @@ int main(int argc, char *argv[])
 			}
 			catch (const char* msg)
 			{
-				std::cerr << "Rank: " << rank << ".  Tangential g_guess: " << i <<". "<< msg << std::endl;
+				std::cerr << "Rank: " << rank << ".  Tangential g_guess: " << i << ". " << msg << std::endl;
 				show_arr(chi_block, 1, mg_bin_num);
 				chi_temp = 0;
 			}
@@ -826,14 +827,14 @@ int main(int argc, char *argv[])
 #endif
 
 	MPI_Win_free(&win_pair_count);
-	
+
 	sprintf(log_infom, "RANK: %d. Write file of Radius bin [%.4f,  %.4f] ---- end. ", rank, radius_bin[radius_label], radius_bin[radius_label + 1]);
 	write_log(log_path, log_infom);
 	if (0 == rank)
 	{
 		char times[50];
 		get_time(times, 50);
-		std::cout << log_infom <<times<< std::endl;
+		std::cout << log_infom << times << std::endl;
 	}
 
 
