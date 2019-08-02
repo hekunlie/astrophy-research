@@ -2,12 +2,12 @@
 #include<mpi.h>
 #include<vector>
 
-#define max_data_col 40
-#define foregal_data_col 6
-#define grid_data_col 5
-#define backgal_data_col 21
-#define mg_bin_num 8
-#define vec_data_col 8
+#define MAX_DATA_COL 40
+#define FOREGAL_DATA_COL 6
+#define FQ_DATA_COL 5
+#define BACKGAL_DATA_COL 14
+#define MG_BIN_NUM 8
+#define VEC_DATA_COL 8
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	sprintf(cata_name, "fourier_cata_old");
 
 	sprintf(result_path, "%sresult/%s/%s/", parent_path, foreground_name, cata_name);
-	sprintf(h5f_path_grid, "%s%s/fourier_cata_grid.hdf5", data_path, cata_name);
+	sprintf(h5f_path_grid, "%s%s/fourier_cata_cut.hdf5", data_path, cata_name);
 
 	sprintf(h5f_res_path, "%sw_%d/radius_%d.hdf5", result_path, area_id, radius_label);
 	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
@@ -98,26 +98,6 @@ int main(int argc, char *argv[])
 		gh[i] = gh_left + gh_step * i;
 	}
 
-	//double gh_crit_step[13]{ 0.005, 0.005, 0.004, 0.002, 0.002, 0.001, 0.001, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002, 0.0002 };
-	//double gh_crit_left[13]{-0.4,  -0.25, -0.2, -0.1, -0.05, -0.05,  -0.03, -0.01, -0.01, -0.01, -0.01,  -0.01,  -0.01};
-	//double gh_crit_right[13]{0.4,  0.25,  0.2,  0.15,    0.1,     0.1,  0.08,   0.05,  0.05,   0.02,  0.02,  0.012,  0.012};
-	//int gh_crit_num = int((gh_crit_right[radius_label] -gh_crit_left[radius_label])/ gh_crit_step[radius_label])+1;
-	//double *gh_crit = new double[gh_crit_num];
-	//for (i = 0; i < gh_crit_num; i++)
-	//{
-	//	gh_crit[i] = gh_crit_left[radius_label] + gh_crit_step[radius_label] * i;
-	//}
-
-	//double gh_step[13]{ 0.0005, 0.0005, 0.0004, 0.0002, 0.0002, 0.0001, 0.0001, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002, 0.00002 };
-	//double gh_left[13]{ -0.04,  -0.025, -0.02, -0.01, -0.005, -0.005,  -0.003, -0.001, -0.001, -0.001, -0.001,  -0.001,  -0.001 };
-	//double gh_right[13]{ 0.04,  0.025,  0.02,  0.015,    0.01,     0.01,  0.008,   0.005,  0.005,   0.002,  0.002,  0.0012,  0.0012 };
-	//int gh_num = int((gh_right[radius_label] - gh_left[radius_label]) / gh_step[radius_label]) + 1;
-	//double *gh = new double[gh_num];
-	//for (i = 0; i < gh_crit_num; i++)
-	//{
-	//	gh[i] = gh_left[radius_label] + gh_step[radius_label] * i;
-	//}
-
 	pts_info gal_info;
 
 	double st_start, st_end, st1, st2, st3, st4, stgal;
@@ -126,17 +106,19 @@ int main(int argc, char *argv[])
 
 	int foregal_num;
 	int my_gal_s, my_gal_e, gal_id;
-	double *foregal_data[max_data_col];
 	MY_INT pair_count;// be carefull, the pair number may be too many, long or double 
+	double *foregal_data[MAX_DATA_COL];
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
 	double dist_len_integ, dist_source_integ, dist_len_integ_coeff;
 	double coeff, coeff_inv, coeff_rad_dist;
 	double crit_surf_density_com, crit_surf_density_com_integ;
 
-
+	// the catalog contains about ~ 10^7 galaxies, the "int" is safe
 	int backgal_num;
-	double *backgal_data[max_data_col];
+	int *num_in_block, *block_start, *gal_in_block;
+	double *ra_bin, *dec_bin, *block_boundx, *block_boundy;
+	double *backgal_data[MAX_DATA_COL];
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi;
 	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double backgal_mnu1_tan, backgal_mnu2_tan, backgal_mnu1_tan_c, backgal_mnu2_tan_c;
@@ -147,19 +129,19 @@ int main(int argc, char *argv[])
 	double *my_data_buf, *final_buf;
 	// the chi and the shear guess
 	int ig, ic, ig_label;
-	int mg_bin_num2 = mg_bin_num / 2;
+	int mg_bin_num2 = MG_BIN_NUM / 2;
 
 	// the bin of G1(2) for shear estimation
-	double *mg1_bin = new double[mg_bin_num + 1];
-	double *mg2_bin = new double[mg_bin_num + 1];
+	double *mg1_bin = new double[MG_BIN_NUM + 1];
+	double *mg2_bin = new double[MG_BIN_NUM + 1];
 
 	// chi of the signal from the all areas
 	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared, *pair_count_shared;
 	// chi square of the signal of each thread in each areas
-	double *my_chi_tan = new double[mg_bin_num*gh_num];
-	double *my_chi_cross = new double[mg_bin_num*gh_num];
-	double *my_chi_crit_tan = new double[mg_bin_num*gh_crit_num];
-	double *my_chi_crit_cross = new double[mg_bin_num*gh_crit_num];
+	double *my_chi_tan = new double[MG_BIN_NUM*gh_num];
+	double *my_chi_cross = new double[MG_BIN_NUM*gh_num];
+	double *my_chi_crit_tan = new double[MG_BIN_NUM*gh_crit_num];
+	double *my_chi_crit_cross = new double[MG_BIN_NUM*gh_crit_num];
 	double mg_t, mg_x;
 	int chi_bin_label;
 
@@ -170,28 +152,24 @@ int main(int argc, char *argv[])
 	int *block_mask;
 	int ra_bin_num, dec_bin_num;
 
-
-	int nib_id = 0, bs_id = 1, gib_id = 2, bdy_id = 3, bdx_id = 4;
-	int z_id = 5, dist_id = 6, dist_integ_id = 7;
-	int ra_id = 8, dec_id = 9, cos_dec_id = 10;
-	int mg1_id = 11, mg2_id = 12, mn_id = 13, mu_id = 14, mv_id = 15;
-	int zmin_lb = 16, zmax_lb = 17, odds_lb = 18;
-	int ra_bin_id = 19, dec_bin_id = 20;
-
+	int mg1_id = 0, mg2_id = 1, mn_id = 2, mu_id = 3, mv_id = 4;
+	int z_id = 5, dist_id = 6, dist_integ_id = 7, ra_id = 8, dec_id = 9, cos_dec_id = 10;
+	int zmin_lb = 11, zmax_lb = 12, odds_lb = 13;
 
 	int shape[2];
 
-	char *names[max_data_col];
-	//backgal_data_col includes the data to "DEC_BIN",
-	for (i = 0; i < backgal_data_col; i++)
+	char *names[MAX_DATA_COL];
+	//BACKGAL_DATA_COL includes the data to "DEC_BIN",
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
 	{
 		names[i] = new char[40];
 	}
-	sprintf(names[nib_id], "num_in_block");
-	sprintf(names[bs_id], "block_start");
-	sprintf(names[gib_id], "gal_in_block");
-	sprintf(names[bdy_id], "block_boundy");
-	sprintf(names[bdx_id], "block_boundx");
+
+	sprintf(names[mg1_id], "G1");
+	sprintf(names[mg2_id], "G2");
+	sprintf(names[mn_id], "N");
+	sprintf(names[mu_id], "U");
+	sprintf(names[mv_id], "V");
 
 	sprintf(names[z_id], "Z");
 	sprintf(names[dist_id], "DISTANCE");
@@ -200,21 +178,11 @@ int main(int argc, char *argv[])
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
 
-	sprintf(names[mg1_id], "G1");
-	sprintf(names[mg2_id], "G2");
-	sprintf(names[mn_id], "N");
-	sprintf(names[mu_id], "U");
-	sprintf(names[mv_id], "V");
-
 	sprintf(names[zmin_lb], "Z_MIN");
 	sprintf(names[zmax_lb], "Z_MAX");
 	sprintf(names[odds_lb], "ODDS");
 
-	sprintf(names[ra_bin_id], "RA_bin");
-	sprintf(names[dec_bin_id], "DEC_bin");
-
-
-
+	
 	sprintf(log_infom, "RANK: %d. Start area: w_%d, radius: %d", rank, area_id, radius_label);
 	write_log(log_path, log_infom);
 	if (0 == rank)
@@ -222,8 +190,8 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// the shared buffer for the total chi square of the signal
 #if ! defined(SMALL_CATA)
 
@@ -231,10 +199,10 @@ int main(int argc, char *argv[])
 	MPI_Aint size_chi_tan, size_chi_cross, size_chi_crit_tan, size_chi_crit_cross;
 
 	// [chi_tan, chi_cross]
-	size_chi_tan = mg_bin_num * gh_num;
-	size_chi_cross = mg_bin_num * gh_num;
-	size_chi_crit_tan = mg_bin_num * gh_crit_num;
-	size_chi_crit_cross = mg_bin_num * gh_crit_num;
+	size_chi_tan = MG_BIN_NUM * gh_num;
+	size_chi_cross = MG_BIN_NUM * gh_num;
+	size_chi_crit_tan = MG_BIN_NUM * gh_crit_num;
+	size_chi_crit_cross = MG_BIN_NUM * gh_crit_num;
 #endif
 	MPI_Win win_pair_count;
 	MPI_Aint  size_pair_count;
@@ -277,28 +245,27 @@ int main(int argc, char *argv[])
 	if (0 == rank)
 	{
 #if ! defined( SMALL_CATA)
-		initialize_arr(chi_tan_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_cross_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_crit_tan_shared, mg_bin_num*gh_crit_num, 0);
-		initialize_arr(chi_crit_cross_shared, mg_bin_num*gh_crit_num, 0);
+		initialize_arr(chi_tan_shared, MG_BIN_NUM*gh_num, 0);
+		initialize_arr(chi_cross_shared, MG_BIN_NUM*gh_num, 0);
+		initialize_arr(chi_crit_tan_shared, MG_BIN_NUM*gh_crit_num, 0);
+		initialize_arr(chi_crit_cross_shared, MG_BIN_NUM*gh_crit_num, 0);
 #endif
 		initialize_arr(pair_count_shared, numprocs, 0);
 	}
-	initialize_arr(my_chi_tan, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_cross, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_crit_tan, mg_bin_num*gh_crit_num, 0);
-	initialize_arr(my_chi_crit_cross, mg_bin_num*gh_crit_num, 0);
+	initialize_arr(my_chi_tan, MG_BIN_NUM*gh_num, 0);
+	initialize_arr(my_chi_cross, MG_BIN_NUM*gh_num, 0);
+	initialize_arr(my_chi_crit_tan, MG_BIN_NUM*gh_crit_num, 0);
+	initialize_arr(my_chi_crit_cross, MG_BIN_NUM*gh_crit_num, 0);
 	MPI_Barrier(MPI_COMM_WORLD);
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	// read foreground information
+	///////////////////////////////////////////    read foreground information  //////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Z, DISTANCE, DISTANCE_INTEG, RA, DEC, COS_DEC
-	for (i = grid_data_col; i < foregal_data_col + grid_data_col; i++)
+	for (i = FQ_DATA_COL; i < FOREGAL_DATA_COL + FQ_DATA_COL; i++)
 	{
 		sprintf(set_name, "/%s", names[i]);
 		read_h5_datasize(h5f_path_fore, set_name, foregal_num);
@@ -312,13 +279,23 @@ int main(int argc, char *argv[])
 	{
 		std::cout << log_infom << std::endl;
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	// read background information
+	///////////////////////////////////////////    read background information  //////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	// G1, G2, N, U, V, Z, DISTANCE, DISTANCE_INTEG,  RA, DEC, COS_DEC, Z_MIN, Z_MAX, ODDS, 
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
+	{
+		sprintf(set_name, "/w_%d/%s", area_id, names[i]);
+		read_h5_datasize(h5f_path_grid, set_name, backgal_num);
+		backgal_data[i] = new double[backgal_num] {};
+		read_h5(h5f_path_grid, set_name, backgal_data[i]);
+	}
+
 	sprintf(set_name, "/w_%d/grid_shape", area_id);
 	read_h5(h5f_path_grid, set_name, shape);
 	grid_ny = shape[0];
@@ -329,29 +306,41 @@ int main(int argc, char *argv[])
 
 	block_mask = new int[grid_num] {};
 
-	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, DISTANCE_INTEG,  RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
-	// block_boundx, block_boundy
-	for (i = 0; i < backgal_data_col; i++)
-	{
-		sprintf(set_name, "/w_%d/%s", area_id, names[i]);
-		read_h5_datasize(h5f_path_grid, set_name, temp);
+	num_in_block = new int[grid_num] {};
+	block_start = new int[grid_num] {};
+	gal_in_block = new int[backgal_num] {};
 
-		if (z_id == i)
-		{
-			backgal_num = temp;
-		}
-		if (ra_bin_id == i)
-		{
-			ra_bin_num = temp - 1;
-		}
-		if (dec_bin_id == i)
-		{
-			dec_bin_num = temp - 1;
-		}
-		backgal_data[i] = new double[temp] {};
-		read_h5(h5f_path_grid, set_name, backgal_data[i]);
-	}
-	//set_bin(backgal_data[mg1_id], backgal_num, mg_bin, mg_bin_num, 1000, 50000);
+	block_boundx = new double[grid_num * 4];
+	block_boundy = new double[grid_num * 4];
+	
+	sprintf(set_name, "/w_%d/num_in_block", area_id);
+	read_h5(h5f_path_grid, set_name, num_in_block);
+
+	sprintf(set_name, "/w_%d/block_start", area_id);
+	read_h5(h5f_path_grid, set_name, block_start);
+
+	sprintf(set_name, "/w_%d/gal_in_block", area_id);
+	read_h5(h5f_path_grid, set_name, gal_in_block);
+
+	sprintf(set_name, "/w_%d/RA_bin", area_id);
+	read_h5_datasize(h5f_path_grid, set_name, ra_bin_num);
+	ra_bin = new double[ra_bin_num];
+	ra_bin_num = ra_bin_num - 1;
+	read_h5(h5f_path_grid, set_name, ra_bin);
+
+	sprintf(set_name, "/w_%d/DEC_bin", area_id);
+	read_h5_datasize(h5f_path_grid, set_name, dec_bin_num);
+	dec_bin = new double[dec_bin_num];
+	dec_bin_num = dec_bin_num - 1;
+	read_h5(h5f_path_grid, set_name, dec_bin);
+
+	sprintf(set_name, "/w_%d/block_boundx", area_id);
+	read_h5(h5f_path_grid, set_name, block_boundx);
+
+	sprintf(set_name, "/w_%d/block_boundy", area_id);
+	read_h5(h5f_path_grid, set_name, block_boundy);
+
+	//set_bin(backgal_data[mg1_id], backgal_num, mg_bin, MG_BIN_NUM, 1000, 50000);
 	sprintf(set_name, "/w_1/mg1_bin");
 	read_h5(h5f_path_grid, set_name, mg1_bin);
 	sprintf(set_name, "/w_1/mg2_bin");
@@ -363,12 +352,12 @@ int main(int argc, char *argv[])
 	{
 		std::cout << log_infom << std::endl;
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	st1 = clock();
 	// task distribution
 	if (numprocs - 1 == rank)
@@ -414,7 +403,7 @@ int main(int argc, char *argv[])
 		dec_f = foregal_data[dec_id][gal_id];
 
 		// all the data has been aranged into blocks, find the block label of this foreground galaxy
-		histogram2d_s(dec_f, ra_f, backgal_data[dec_bin_id], backgal_data[ra_bin_id], dec_bin_num, ra_bin_num, bin_label);
+		histogram2d_s(dec_f, ra_f, dec_bin, ra_bin, dec_bin_num, ra_bin_num, bin_label);
 		row = bin_label / grid_nx;
 		col = bin_label % grid_nx;
 
@@ -429,34 +418,34 @@ int main(int argc, char *argv[])
 
 		// find the blocks needed //
 		initialize_arr(block_mask, grid_num, -1);
-		find_block(&gal_info, radius_e, backgal_data[bdy_id], backgal_data[bdx_id], block_mask);
+		find_block(&gal_info, radius_e, block_boundy, block_boundx, block_mask);
 
 		for (ib = 0; ib < grid_num; ib++)
 		{
-			if (block_mask[ib] > -1 and backgal_data[nib_id][ib]>0)
+			block_id = block_mask[ib];
+			if (block_mask[ib] > -1 and num_in_block[block_id]>0)
 			{
 				// the start and end point of the block //
 				// the start- & end-point					      //
-				block_id = block_mask[ib];
-				block_s = backgal_data[bs_id][block_id];
+				block_s = block_start[block_id];
 
 				//std::cout << block_mask[block_id] << " " << block_s << " " << block_e << std::endl;
-				for (ibb = 0; ibb < backgal_data[nib_id][block_id]; ibb++)
+				for (ibb = 0; ibb < num_in_block[block_id]; ibb++)
 				{
-					ibg = backgal_data[gib_id][ibb + backgal_data[bs_id][block_id]];
-					z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
-					z_b_odds = backgal_data[odds_lb][ib];
-					z_b = backgal_data[z_id][ib];
+					ibg = gal_in_block[block_s + ibb];
+					z_b_sig95 = z_f + (backgal_data[zmax_lb][ibg] - backgal_data[zmin_lb][ibg]) / 2;
+					z_b_odds = backgal_data[odds_lb][ibg];
+					z_b = backgal_data[z_id][ibg];
 					//if (backgal_data[z_id][ib] >= z_thresh)
 					if (z_b >= z_thresh and z_b > z_b_sig95 and z_b_odds > 0.5)
 					{
-						ra_b = backgal_data[ra_id][ib];
-						dec_b = backgal_data[dec_id][ib];
+						ra_b = backgal_data[ra_id][ibg];
+						dec_b = backgal_data[dec_id][ibg];
 
 						// comoving distance
-						dist_source = backgal_data[dist_id][ib];
+						dist_source = backgal_data[dist_id][ibg];
 						// the integrate part of the comoving distance
-						dist_source_integ = backgal_data[dist_integ_id][ib];
+						dist_source_integ = backgal_data[dist_integ_id][ibg];
 
 						// times cos(dec) due to the different length the arc corresponding to the same delta R.A. at different Dec
 						diff_ra = (ra_b - ra_f)*foregal_data[cos_dec_id][gal_id];
@@ -485,13 +474,13 @@ int main(int argc, char *argv[])
 
 #if defined (SMALL_CATA)
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
-							backgal_mg_tan = backgal_data[mg1_id][ib] * backgal_cos_2phi - backgal_data[mg2_id][ib] * backgal_sin_2phi;
+							backgal_mg_tan = backgal_data[mg1_id][ibg] * backgal_cos_2phi - backgal_data[mg2_id][ibg] * backgal_sin_2phi;
 							// the cross components
-							backgal_mg_cross = backgal_data[mg1_id][ib] * backgal_sin_2phi + backgal_data[mg2_id][ib] * backgal_cos_2phi;
+							backgal_mg_cross = backgal_data[mg1_id][ibg] * backgal_sin_2phi + backgal_data[mg2_id][ibg] * backgal_cos_2phi;
 							// scalar
-							backgal_mn_tan = backgal_data[mn_id][ib];
+							backgal_mn_tan = backgal_data[mn_id][ibg];
 							// U_t = (U+i*V)*EXP(4i\phi)] = U*cos4\phi - V*sin\4phi
-							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
+							backgal_mu_tan = backgal_data[mu_id][ibg] * backgal_cos_4phi - backgal_data[mv_id][ibg] * backgal_sin_4phi;
 
 							data_cache.push_back(backgal_mg_tan);
 							data_cache.push_back(backgal_mg_cross);
@@ -506,13 +495,13 @@ int main(int argc, char *argv[])
 							// G_t = (G_1 + i*G_2)*EXP(2i\phi) =  G_1 *cos2\phi - G_2*sin2\phi
 							// the direction of R.A. is oppsite, actually,  G_t =  G_1 *cos2\phi + G_2*sin2\phi
 							// \Sigma_crit *G_t(x)
-							backgal_mg_tan = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_cos_2phi + backgal_data[mg2_id][ib] * backgal_sin_2phi);
+							backgal_mg_tan = crit_surf_density_com * (backgal_data[mg1_id][ibg] * backgal_cos_2phi + backgal_data[mg2_id][ibg] * backgal_sin_2phi);
 							// the cross components
-							backgal_mg_cross = crit_surf_density_com * (backgal_data[mg1_id][ib] * backgal_sin_2phi - backgal_data[mg2_id][ib] * backgal_cos_2phi);
+							backgal_mg_cross = crit_surf_density_com * (backgal_data[mg1_id][ibg] * backgal_sin_2phi - backgal_data[mg2_id][ibg] * backgal_cos_2phi);
 							// scalar
-							backgal_mn_tan = backgal_data[mn_id][ib];
+							backgal_mn_tan = backgal_data[mn_id][ibg];
 							// U_t = Re[(U+i*V)*EXP(-4i\phi)] = U*cos4\phi + V*sin\4phi
-							backgal_mu_tan = backgal_data[mu_id][ib] * backgal_cos_4phi - backgal_data[mv_id][ib] * backgal_sin_4phi;
+							backgal_mu_tan = backgal_data[mu_id][ibg] * backgal_cos_4phi - backgal_data[mv_id][ibg] * backgal_sin_4phi;
 							backgal_mnu1_tan_c = crit_surf_density_com * (backgal_mn_tan + backgal_mu_tan);
 							backgal_mnu2_tan_c = crit_surf_density_com * (backgal_mn_tan - backgal_mu_tan);
 							backgal_mnu1_tan = backgal_mn_tan + backgal_mu_tan;
@@ -522,24 +511,24 @@ int main(int argc, char *argv[])
 							for (ig = 0; ig < gh_num; ig++)
 							{
 								mg_t = backgal_mg_tan - gh[ig] * backgal_mnu1_tan_c;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_tan[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_t, mg1_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_tan[ig*MG_BIN_NUM + chi_bin_label] += 1;
 
 								mg_x = backgal_mg_cross - gh[ig] * backgal_mnu2_tan_c;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_cross[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_x, mg2_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_cross[ig*MG_BIN_NUM + chi_bin_label] += 1;
 							}
 
 							// calculate the PDF of the estimator for 'shear*critical_surface_density'
 							for (ig = 0; ig < gh_crit_num; ig++)
 							{
 								mg_t = backgal_mg_tan - gh_crit[ig] * backgal_mnu1_tan;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_t, mg1_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_crit_tan[ig*MG_BIN_NUM + chi_bin_label] += 1;
 
 								mg_x = backgal_mg_cross - gh_crit[ig] * backgal_mnu2_tan;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_x, mg2_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_crit_cross[ig*MG_BIN_NUM + chi_bin_label] += 1;
 							}
 #endif
 						}
@@ -571,13 +560,18 @@ int main(int argc, char *argv[])
 #if defined(SMALL_CATA)
 	if (rank == 0)
 	{
+		sprintf(set_name, "/pair_count");
+		write_h5(h5f_res_path, set_name, pair_count_shared, numprocs, 1, TRUE);
+		sprintf(set_name, "/radius_bin");
+		write_h5(h5f_res_path, set_name, radius_bin, radius_num + 1, 1, FALSE);
+
 		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
 	}
 	if (pair_count > 1)
 	{
 		// final_buf will store the data of all the pairs
-		my_data_buf = new double[pair_count_shared[rank] * vec_data_col]{};
+		my_data_buf = new double[pair_count_shared[rank] * VEC_DATA_COL]{};
 		// copy the data in the vector into the buffer 
 		if (!data_cache.empty())
 		{
@@ -586,85 +580,64 @@ int main(int argc, char *argv[])
 
 		if (numprocs > 1)
 		{
-			// calculate the entry of each rank in the big buffer
-			MY_INT *displ = new MY_INT[numprocs]{};
-			MY_INT *num_of_thread = new MY_INT[numprocs]{};
-
-			for (i = 0; i < numprocs; i++)
+			if (pair_count <= 20000000)
 			{
-				num_of_thread[i] = pair_count_shared[i] * vec_data_col;
-				for (j = 0; j < i; j++)
+				// calculate the entry of each rank in the big buffer
+				int *displ = new int[numprocs]{};
+				int *num_of_thread = new int[numprocs]{};
+
+				for (i = 0; i < numprocs; i++)
 				{
-					displ[i] += num_of_thread[j];
+					num_of_thread[i] = pair_count_shared[i] * VEC_DATA_COL;
+					for (j = 0; j < i; j++)
+					{
+						displ[i] += num_of_thread[j];
+					}
+				}
+				if (rank == 0)
+				{
+					final_buf = new double[pair_count * VEC_DATA_COL];
+					//show_arr(displ, 1, numprocs);
+					//show_arr(num_of_thread, 1, numprocs);
+				}
+				MPI_Barrier(MPI_COMM_WORLD);
+
+				MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+				MPI_Barrier(MPI_COMM_WORLD);
+
+				if (rank == 0)
+				{
+					sprintf(set_name, "/pair_data_0");
+					write_h5(h5f_res_path, set_name, final_buf, pair_count, VEC_DATA_COL, FALSE);
+					delete[] final_buf;
 				}
 			}
-			if (rank == 0)
+			else
 			{
-				final_buf = new double[pair_count * vec_data_col];
-				//show_arr(displ, 1, numprocs);
-				//show_arr(num_of_thread, 1, numprocs);
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-
-			MPI_Gatherv(my_data_buf, num_of_thread[rank], MPI_DOUBLE, final_buf, num_of_thread, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-			MPI_Barrier(MPI_COMM_WORLD);
-
-			if (rank == 0)
-			{
-				// if mask == 1, the catalog can be used
-				sprintf(set_name, "/mask");
-				int *mask = new int[1];
-				mask[0] = 1;
-				write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
-
-				sprintf(set_name, "/pair_data");
-				write_h5(h5f_res_path, set_name, final_buf, pair_count, vec_data_col, FALSE);
-
-
-				sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
-				sprintf(set_name, "/radius_bin");
-				write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
-
-				delete[] final_buf;
+				for (i = 0; i < numprocs; i++)
+				{
+					if (i == rank)
+					{
+						if (pair_count_shared[rank] > 0)
+						{
+							sprintf(set_name, "/pair_data_%d", rank);
+							write_h5(h5f_res_path, set_name, my_data_buf, pair_count_shared[rank], VEC_DATA_COL, FALSE);
+						}
+					}
+					MPI_Barrier(MPI_COMM_WORLD);
+				}
 			}
 		}
 		else
 		{
-			// if mask == 1, the catalog can be used
-			sprintf(set_name, "/mask");
-			int *mask = new int[1];
-			mask[0] = 1;
-			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
-
-			sprintf(set_name, "/pair_data");
-			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, vec_data_col, FALSE);
-
-			sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
-			sprintf(set_name, "/radius_bin");
-			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
-
+			sprintf(set_name, "/pair_data_0");
+			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, VEC_DATA_COL, FALSE);
 		}
 		delete[] my_data_buf;
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-	else
-	{
-		if (rank == 0)
-		{
-			// if mask == 1, the catalog can be used
-			sprintf(set_name, "/mask");
-			int *mask = new int[1];
-			mask[0] = 0;
-			write_h5(h5f_res_path, set_name, mask, 1, 1, TRUE);
 
-			sprintf(temp_path, "%sw_%d/radius_bin.hdf5", result_path, area_id);
-			sprintf(set_name, "/radius_bin");
-			write_h5(temp_path, set_name, radius_bin, radius_num + 1, 1, TRUE);
-
-
-		}
-	}
 #else
 	if (rank == 0)
 	{
@@ -676,12 +649,12 @@ int main(int argc, char *argv[])
 	{
 		if (rank == i)
 		{
-			for (j = 0; j < mg_bin_num*gh_num; j++)
+			for (j = 0; j < MG_BIN_NUM*gh_num; j++)
 			{
 				chi_tan_shared[j] += my_chi_tan[j];
 				chi_cross_shared[j] += my_chi_cross[j];
 			}
-			for (j = 0; j < mg_bin_num*gh_crit_num; j++)
+			for (j = 0; j < MG_BIN_NUM*gh_crit_num; j++)
 			{
 				chi_crit_tan_shared[j] += my_chi_crit_tan[j];
 				chi_crit_cross_shared[j] += my_chi_crit_cross[j];
@@ -695,7 +668,7 @@ int main(int argc, char *argv[])
 	if (0 == rank)
 	{
 		// the chi square for fitting shear
-		long *chi_block = new long[mg_bin_num];
+		long *chi_block = new long[MG_BIN_NUM];
 		double *chisq_tan = new double[gh_num];
 		double *chisq_cross = new double[gh_num];
 		double *chisq_crit_tan = new double[gh_crit_num];
@@ -706,35 +679,35 @@ int main(int argc, char *argv[])
 		for (i = 0; i < gh_num; i++)
 		{
 			// tangential 
-			for (j = 0; j < mg_bin_num; j++)
+			for (j = 0; j < MG_BIN_NUM; j++)
 			{
-				chi_block[j] = chi_tan_shared[i*mg_bin_num + j];
+				chi_block[j] = chi_tan_shared[i*MG_BIN_NUM + j];
 			}
 			try
 			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
+				cal_chisq_1d(chi_block, MG_BIN_NUM, chi_temp);
 			}
 			catch (const char* msg)
 			{
 				std::cerr << "Rank: " << rank << ".  Tangential g_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
+				show_arr(chi_block, 1, MG_BIN_NUM);
 				chi_temp = 0;
 			}
 			chisq_tan[i] = chi_temp;
 
 			// cross
-			for (j = 0; j < mg_bin_num; j++)
+			for (j = 0; j < MG_BIN_NUM; j++)
 			{
-				chi_block[j] = chi_cross_shared[i*mg_bin_num + j];
+				chi_block[j] = chi_cross_shared[i*MG_BIN_NUM + j];
 			}
 			try
 			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
+				cal_chisq_1d(chi_block, MG_BIN_NUM, chi_temp);
 			}
 			catch (const char* msg)
 			{
 				std::cerr << "Rank: " << rank << ".  Cross g_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
+				show_arr(chi_block, 1, MG_BIN_NUM);
 				chi_temp = 0;
 			}
 			chisq_cross[i] = chi_temp;
@@ -742,34 +715,34 @@ int main(int argc, char *argv[])
 		// chi square of shear*critical_surface_density
 		for (i = 0; i < gh_crit_num; i++)
 		{	// tangential 
-			for (j = 0; j < mg_bin_num; j++)
+			for (j = 0; j < MG_BIN_NUM; j++)
 			{
-				chi_block[j] = chi_crit_tan_shared[i*mg_bin_num + j];
+				chi_block[j] = chi_crit_tan_shared[i*MG_BIN_NUM + j];
 			}
 			try
 			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
+				cal_chisq_1d(chi_block, MG_BIN_NUM, chi_temp);
 			}
 			catch (const char* msg)
 			{
 				std::cerr << "Rank: " << rank << ".  Tangential g_crit_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
+				show_arr(chi_block, 1, MG_BIN_NUM);
 				chi_temp = 0;
 			}
 			chisq_crit_tan[i] = chi_temp;
 			// cross
-			for (j = 0; j < mg_bin_num; j++)
+			for (j = 0; j < MG_BIN_NUM; j++)
 			{
-				chi_block[j] = chi_crit_cross_shared[i*mg_bin_num + j];
+				chi_block[j] = chi_crit_cross_shared[i*MG_BIN_NUM + j];
 			}
 			try
 			{
-				cal_chisq_1d(chi_block, mg_bin_num, chi_temp);
+				cal_chisq_1d(chi_block, MG_BIN_NUM, chi_temp);
 			}
 			catch (const char* msg)
 			{
 				std::cerr << "Rank: " << rank << ".  Cross g_crit_guess: " << i << ". " << msg << std::endl;
-				show_arr(chi_block, 1, mg_bin_num);
+				show_arr(chi_block, 1, MG_BIN_NUM);
 				chi_temp = 0;
 			}
 			chisq_crit_cross[i] = chi_temp;
@@ -777,14 +750,14 @@ int main(int argc, char *argv[])
 
 		// write the result to file
 		sprintf(set_name, "/chi_tan");
-		write_h5(h5f_res_path, set_name, chi_tan_shared, gh_num, mg_bin_num, TRUE);
+		write_h5(h5f_res_path, set_name, chi_tan_shared, gh_num, MG_BIN_NUM, TRUE);
 		sprintf(set_name, "/chi_cross");
-		write_h5(h5f_res_path, set_name, chi_cross_shared, gh_num, mg_bin_num, FALSE);
+		write_h5(h5f_res_path, set_name, chi_cross_shared, gh_num, MG_BIN_NUM, FALSE);
 
 		sprintf(set_name, "/chi_crit_tan");
-		write_h5(h5f_res_path, set_name, chi_crit_tan_shared, gh_crit_num, mg_bin_num, FALSE);
+		write_h5(h5f_res_path, set_name, chi_crit_tan_shared, gh_crit_num, MG_BIN_NUM, FALSE);
 		sprintf(set_name, "/chi_crit_cross");
-		write_h5(h5f_res_path, set_name, chi_crit_cross_shared, gh_crit_num, mg_bin_num, FALSE);
+		write_h5(h5f_res_path, set_name, chi_crit_cross_shared, gh_crit_num, MG_BIN_NUM, FALSE);
 
 		sprintf(set_name, "/chisq_tan");
 		write_h5(h5f_res_path, set_name, chisq_tan, gh_num, 1, FALSE);
@@ -838,15 +811,24 @@ int main(int argc, char *argv[])
 	}
 
 
-	for (i = 0; i < backgal_data_col; i++)
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
 	{
 		delete[] backgal_data[i];
 	}
-	for (i = grid_data_col; i < foregal_data_col + grid_data_col; i++)
+	for (i = FQ_DATA_COL; i < FOREGAL_DATA_COL + FQ_DATA_COL; i++)
 	{
 		delete[] foregal_data[i];
 	}
+	delete[] num_in_block;
+	delete[] block_boundx;
+	delete[] block_boundy;
+	delete[] gal_in_block;
+	delete[] block_start;
+
+	delete[] ra_bin;
+	delete[] dec_bin;
 	delete[] block_mask;
+
 	delete[] mg1_bin;
 	delete[] mg2_bin;
 	delete[] gh;

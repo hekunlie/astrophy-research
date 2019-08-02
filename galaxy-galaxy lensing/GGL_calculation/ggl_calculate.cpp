@@ -2,10 +2,10 @@
 #include<mpi.h>
 #include<vector>
 
-#define max_data_col 40
-#define foregal_data_col 6
-#define grid_data_col 5
-#define backgal_data_col 21
+#define MAX_DATA_COL 40
+#define FOREGAL_DATA_COL 6
+#define GRID_DATA_COL 5
+#define BACKGAL_DATA_COL 21
 #define mg_bin_num 8
 #define vec_data_col 8
 #define SMALL_CATA
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
 	int foregal_num;
 	int my_gal_s, my_gal_e, gal_id;
-	double *foregal_data[max_data_col];
+	double *foregal_data[MAX_DATA_COL];
 	MY_INT pair_count;// be carefull, the pair number may be too many, long or double 
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 
 
 	int backgal_num;
-	double *backgal_data[max_data_col]; 
+	double *backgal_data[MAX_DATA_COL]; 
 	double backgal_cos_2phi, backgal_sin_2phi, backgal_cos_4phi, backgal_sin_4phi;
 	double backgal_mg_tan, backgal_mg_cross, backgal_mn_tan, backgal_mu_tan;
 	double backgal_mnu1_tan, backgal_mnu2_tan, backgal_mnu1_tan_c, backgal_mnu2_tan_c;
@@ -147,19 +147,19 @@ int main(int argc, char *argv[])
 	double *my_data_buf, *final_buf;
 	// the chi and the shear guess
 	int ig, ic, ig_label;
-	int mg_bin_num2 = mg_bin_num / 2;
+	int mg_bin_num2 = MG_BIN_NUM / 2;
 
 	// the bin of G1(2) for shear estimation
-	double *mg1_bin = new double[mg_bin_num + 1];
-	double *mg2_bin = new double[mg_bin_num + 1];
+	double *mg1_bin = new double[MG_BIN_NUM + 1];
+	double *mg2_bin = new double[MG_BIN_NUM + 1];
 
 	// chi of the signal from the all areas
 	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared, *pair_count_shared;
 	// chi square of the signal of each thread in each areas
-	double *my_chi_tan = new double[mg_bin_num*gh_num];
-	double *my_chi_cross = new double[mg_bin_num*gh_num];
-	double *my_chi_crit_tan = new double[mg_bin_num*gh_crit_num];
-	double *my_chi_crit_cross = new double[mg_bin_num*gh_crit_num];
+	double *my_chi_tan = new double[MG_BIN_NUM*gh_num];
+	double *my_chi_cross = new double[MG_BIN_NUM*gh_num];
+	double *my_chi_crit_tan = new double[MG_BIN_NUM*gh_crit_num];
+	double *my_chi_crit_cross = new double[MG_BIN_NUM*gh_crit_num];
 	double mg_t, mg_x;
 	int chi_bin_label;
 	
@@ -170,20 +170,23 @@ int main(int argc, char *argv[])
 	int *block_mask;
 	int ra_bin_num, dec_bin_num;
 
-
+	// grid data
 	int nib_id = 0, bs_id = 1, be_id = 2, bdy_id = 3, bdx_id = 4;
-	int z_id = 5, dist_id = 6, dist_integ_id = 7;
-	int ra_id = 8, dec_id = 9, cos_dec_id = 10;
-	int mg1_id = 11, mg2_id = 12, mn_id = 13, mu_id = 14, mv_id = 15;
-	int zmin_lb = 16, zmax_lb = 17, odds_lb = 18;
-	int ra_bin_id = 19, dec_bin_id = 20;
+
+	// background data
+	int z_id = 1, dist_id = 2, dist_integ_id = 3;
+	int ra_id = 4, dec_id = 5, cos_dec_id = 6;
+	int mg1_id = 7, mg2_id = 8, mn_id = 9, mu_id = 10, mv_id = 11;
+	int zmin_lb = 12, zmax_lb = 13, odds_lb = 14;
+
+	int ra_bin_id = 15, dec_bin_id = 16;
 
 
 	int shape[2];
 
-	char *names[max_data_col];
-	//backgal_data_col includes the data to "DEC_BIN",
-	for (i = 0; i < backgal_data_col; i++)
+	char *names[MAX_DATA_COL];
+	//BACKGAL_DATA_COL includes the data to "DEC_BIN",
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
 	{
 		names[i] = new char[40];
 	}
@@ -231,10 +234,10 @@ int main(int argc, char *argv[])
 	MPI_Aint size_chi_tan, size_chi_cross, size_chi_crit_tan, size_chi_crit_cross;
 
 	// [chi_tan, chi_cross]
-	size_chi_tan =  mg_bin_num*gh_num;
-	size_chi_cross = mg_bin_num*gh_num;
-	size_chi_crit_tan = mg_bin_num * gh_crit_num;
-	size_chi_crit_cross = mg_bin_num * gh_crit_num;
+	size_chi_tan =  MG_BIN_NUM*gh_num;
+	size_chi_cross = MG_BIN_NUM*gh_num;
+	size_chi_crit_tan = MG_BIN_NUM * gh_crit_num;
+	size_chi_crit_cross = MG_BIN_NUM * gh_crit_num;
 #endif
 	MPI_Win win_pair_count;
 	MPI_Aint  size_pair_count;
@@ -277,17 +280,17 @@ int main(int argc, char *argv[])
 	if (0 == rank)
 	{	
 #if ! defined( SMALL_CATA)
-		initialize_arr(chi_tan_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_cross_shared, mg_bin_num*gh_num, 0);
-		initialize_arr(chi_crit_tan_shared, mg_bin_num*gh_crit_num, 0);
-		initialize_arr(chi_crit_cross_shared, mg_bin_num*gh_crit_num, 0);
+		initialize_arr(chi_tan_shared, MG_BIN_NUM*gh_num, 0);
+		initialize_arr(chi_cross_shared, MG_BIN_NUM*gh_num, 0);
+		initialize_arr(chi_crit_tan_shared, MG_BIN_NUM*gh_crit_num, 0);
+		initialize_arr(chi_crit_cross_shared, MG_BIN_NUM*gh_crit_num, 0);
 #endif
 		initialize_arr(pair_count_shared, numprocs, 0);
 	}
-	initialize_arr(my_chi_tan, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_cross, mg_bin_num*gh_num, 0);
-	initialize_arr(my_chi_crit_tan, mg_bin_num*gh_crit_num, 0);
-	initialize_arr(my_chi_crit_cross, mg_bin_num*gh_crit_num, 0);
+	initialize_arr(my_chi_tan, MG_BIN_NUM*gh_num, 0);
+	initialize_arr(my_chi_cross, MG_BIN_NUM*gh_num, 0);
+	initialize_arr(my_chi_crit_tan, MG_BIN_NUM*gh_crit_num, 0);
+	initialize_arr(my_chi_crit_cross, MG_BIN_NUM*gh_crit_num, 0);
 	MPI_Barrier(MPI_COMM_WORLD);
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,7 +301,7 @@ int main(int argc, char *argv[])
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	// read foreground information
 	// Z, DISTANCE, DISTANCE_INTEG, RA, DEC, COS_DEC
-	for (i = grid_data_col; i < foregal_data_col + grid_data_col; i++)
+	for (i = GRID_DATA_COL; i < FOREGAL_DATA_COL + GRID_DATA_COL; i++)
 	{
 		sprintf(set_name, "/%s", names[i]);
 		read_h5_datasize(h5f_path_fore, set_name, foregal_num);
@@ -331,7 +334,7 @@ int main(int argc, char *argv[])
 
 	// Z, Z_MIN, Z_MAX, ODDS,  DISTANCE, DISTANCE_INTEG,  RA, DEC,  G1, G2, N, U, V,  num_in_block,  block_start, block_end, 
 	// block_boundx, block_boundy
-	for (i = 0; i < backgal_data_col; i++)
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
 	{
 		sprintf(set_name, "/w_%d/%s", area_id, names[i]);
 		read_h5_datasize(h5f_path_grid, set_name, temp);
@@ -521,24 +524,24 @@ int main(int argc, char *argv[])
 							for (ig = 0; ig < gh_num; ig++)
 							{
 								mg_t = backgal_mg_tan - gh[ig] * backgal_mnu1_tan_c;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_tan[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_t, mg1_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_tan[ig*MG_BIN_NUM + chi_bin_label] += 1;
 
 								mg_x = backgal_mg_cross - gh[ig] * backgal_mnu2_tan_c;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_cross[ig*mg_bin_num + chi_bin_label] += 1;
+								histogram_s(mg_x, mg2_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_cross[ig*MG_BIN_NUM + chi_bin_label] += 1;
 							}
 
 							// calculate the PDF of the estimator for 'shear*critical_surface_density'
 							for (ig = 0; ig < gh_crit_num; ig++)
 							{
 								mg_t = backgal_mg_tan - gh_crit[ig] * backgal_mnu1_tan;
-								histogram_s(mg_t, mg1_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_tan[ig*mg_bin_num + chi_bin_label] +=1;
+								histogram_s(mg_t, mg1_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_crit_tan[ig*MG_BIN_NUM + chi_bin_label] +=1;
 
 								mg_x = backgal_mg_cross - gh_crit[ig] * backgal_mnu2_tan;
-								histogram_s(mg_x, mg2_bin, mg_bin_num, chi_bin_label);
-								my_chi_crit_cross[ig*mg_bin_num + chi_bin_label]+=1;
+								histogram_s(mg_x, mg2_bin, MG_BIN_NUM, chi_bin_label);
+								my_chi_crit_cross[ig*MG_BIN_NUM + chi_bin_label]+=1;
 							}
 #endif
 						}
@@ -675,12 +678,12 @@ int main(int argc, char *argv[])
 	{
 		if (rank == i)
 		{				
-			for (j = 0; j < mg_bin_num*gh_num; j++)
+			for (j = 0; j < MG_BIN_NUM*gh_num; j++)
 			{
 				chi_tan_shared[j] += my_chi_tan[j];
 				chi_cross_shared[j] += my_chi_cross[j];
 			}
-			for (j = 0; j < mg_bin_num*gh_crit_num; j++)
+			for (j = 0; j < MG_BIN_NUM*gh_crit_num; j++)
 			{
 				chi_crit_tan_shared[j] += my_chi_crit_tan[j];
 				chi_crit_cross_shared[j] += my_chi_crit_cross[j];
@@ -694,7 +697,7 @@ int main(int argc, char *argv[])
 	if (0 == rank)
 	{
 		// the chi square for fitting shear
-		long *chi_block = new long[mg_bin_num];
+		long *chi_block = new long[MG_BIN_NUM];
 		double *chisq_tan = new double[gh_num];
 		double *chisq_cross = new double[gh_num];
 		double *chisq_crit_tan = new double[gh_crit_num];
@@ -705,9 +708,9 @@ int main(int argc, char *argv[])
 		for (i = 0; i < gh_num; i++)
 		{	
 			// tangential 
-			for (j = 0; j < mg_bin_num; j++)
+			for (j = 0; j < MG_BIN_NUM; j++)
 			{
-				chi_block[j] = chi_tan_shared[i*mg_bin_num + j];
+				chi_block[j] = chi_tan_shared[i*MG_BIN_NUM + j];
 			}
 			try
 			{
@@ -837,11 +840,11 @@ int main(int argc, char *argv[])
 	}
 
 
-	for (i = 0; i < backgal_data_col; i++)
+	for (i = 0; i < BACKGAL_DATA_COL; i++)
 	{
 		delete[] backgal_data[i];
 	}
-	for (i = grid_data_col; i < foregal_data_col + grid_data_col; i++)
+	for (i = GRID_DATA_COL; i < FOREGAL_DATA_COL + GRID_DATA_COL; i++)
 	{
 		delete[] foregal_data[i];
 	}

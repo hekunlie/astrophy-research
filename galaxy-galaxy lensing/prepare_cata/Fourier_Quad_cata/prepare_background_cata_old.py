@@ -395,36 +395,38 @@ if cmd == "select":
         boundy = numpy.zeros((grid_num, 4))
 
         # galaxy count in each block
-        num_in_block = numpy.zeros((grid_num, 1), dtype=numpy.intc)
-        block_start = numpy.zeros((grid_num, 1), dtype=numpy.intc)
+        num_in_block = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        block_start = numpy.zeros((1, grid_num), dtype=numpy.intc)
         # the galaxy labels in the block
         gal_sequence = numpy.zeros((1, data_num), dtype=numpy.intc)
 
         for i in range(ny):
             idx_1 = dec >= dec_bin[i]
             idx_2 = dec < dec_bin[i+1]
+            idx_ = idx_1 & idx_2
+            sub_ra = ra[idx_]
+            sub_gal_label = gal_label[idx_]
+            ix = i*nx
             for j in range(nx):
+                tag = ix + j
 
-                tag = i*nx + j
-                boundy[i*nx+j,0] = dec_min[i]
-                boundy[i*nx+j,1] = dec_min[i]
-                boundy[i*nx+j,2] = dec_min[i+1]
-                boundy[i*nx+j,3] = dec_min[i+1]
+                boundy[tag,0] = dec_bin[i]
+                boundy[tag,1] = dec_bin[i]
+                boundy[tag,2] = dec_bin[i+1]
+                boundy[tag,3] = dec_bin[i+1]
 
-                boundx[i*nx+j,0] = ra_bin[i]
-                boundx[i*nx+j,1] = ra_bin[i+1]
-                boundx[i*nx+j,2] = ra_bin[i]
-                boundx[i*nx+j,3] = ra_bin[i+1]
+                boundx[tag,0] = ra_bin[j]
+                boundx[tag,1] = ra_bin[j+1]
+                boundx[tag,2] = ra_bin[j]
+                boundx[tag,3] = ra_bin[j+1]
 
-                idx_3 = ra >= ra_bin[i]
-                idx_4 = ra < ra_bin[i+1]
-                idx = idx_1 & idx_2 & idx_3 & idx_4
-
-                num_in_block[tag, 0] = idx.sum()
+                idx_3 = sub_ra >= ra_bin[j]
+                idx_4 = sub_ra < ra_bin[j+1]
+                idx = idx_3 & idx_4
+                num_in_block[0,tag] = idx.sum()
                 if tag > 0:
-                    block_start[tag, 0] = num_in_block[:tag-1,0].sum()
-
-                gal_sequence[0, block_start[tag, 0]: block_start[tag, 0]+num_in_block[tag,0]] = gal_label[idx]
+                    block_start[0,tag] = num_in_block[0,:tag-1].sum()
+                gal_sequence[0, block_start[0, tag]: block_start[0, tag]+num_in_block[0, tag]] = sub_gal_label[idx]
 
         print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
@@ -437,9 +439,15 @@ if cmd == "select":
 
             h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
             h5f["/w_%d/block_start" % (rank + 1)] = block_start
+            h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_sequence
+
             h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
             h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
-            h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_sequence
+            h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
+            h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
+
+            h5f["/w_%d/mg1_bin" % (rank + 1)] = mg1_bin
+            h5f["/w_%d/mg2_bin" % (rank + 1)] = mg2_bin
 
             for i in range(len(names)):
                 h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
@@ -448,5 +456,5 @@ if cmd == "select":
         comm.Barrier()
     t2 = time.time()
     if rank == 0:
-        print(t2-t1)
+        print("%.2f sec"%(t2-t1))
 ############################# Fourier_quad data cutoff ###########################################
