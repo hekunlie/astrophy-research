@@ -812,7 +812,9 @@ int main(int argc, char *argv[])
 	{
 		char times[50];
 		get_time(times, 50);
-		std::cout << log_infom << times << std::endl;
+		std::cout << log_infom << std::endl;
+		std::cout << h5f_res_path << std::endl;
+		std::cout<< times << std::endl;
 	}
 
 
