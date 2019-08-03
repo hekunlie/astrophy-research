@@ -38,7 +38,42 @@ int main(int argc, char ** argv)
 	double st1, st2;
 
 	int area_id[MAX_AREA]{}, area_num, radius_id;
-	
+	double *data[MAX_AREA];
+	int *pair_num, count;
+	int radius_num;
+	double *radius_bin;
+
+	// the foreground name
+	strcpy(fore_source, argv[1]);
+	// the radius label
+	radius_id = atoi(argv[2]);
+	area_num = argc - 3;
+	for (i = 3; i < argc; i++)
+	{
+		area_id[i - 3] = atoi(argv[i]);
+	}
+
+	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_old/", fore_source);
+
+
+	for (i = 0; i < area_num; i++)
+	{
+		// read the radius bin
+		sprintf(data_path, "%sw_%d/radius_0.hdf5", total_path, area_id);
+		sprintf(set_name, "/radius_bin");
+		read_h5_datasize(data_path, set_name, radius_num);
+		radius_bin = new double[radius_num];
+		read_h5(data_path, set_name, radius_bin);
+		radius_num = radius_num - 1;
+
+
+		for(j=0; j<radius_num; j++)
+		{
+
+		}
+	}
+
+
 	long m, n, my_gal_s, my_gal_e;
 	double *total_chisq;
 	MY_INT *my_chisq;
@@ -52,7 +87,7 @@ int main(int argc, char ** argv)
 
 
 
-	double *data[MAX_AREA];
+
 	double *All_mgt, *All_mgx, *All_mnut, *All_mnux;
 	double *my_mgt, *my_mgx, *my_mnut, *my_mnux, *mg;
 
@@ -60,47 +95,13 @@ int main(int argc, char ** argv)
 	double *my_chi_cross;
 
 	int choice;
-	double mg1_bin[MG_BIN_NUM+1]{}, mg2_bin[MG_BIN_NUM+1]{};
+	double mg1_bin[MG_BIN_NUM + 1]{}, mg2_bin[MG_BIN_NUM + 1]{};
 	double *mg_bin;
 
 	int gh_num;
 	double gh_s, gh_e, dg, *gh;
 	double gt, gx, gt_sig, gx_sig;
 	double mg_max, mg_min;
-
-
-
-	// the foreground name
-	strcpy(fore_source, argv[1]);
-	// the radius label
-	radius_id = atoi(argv[2]);
-	area_num = argc - 3;
-	for (i = 3; i < argc; i++)
-	{
-		area_id[i - 3] = atoi(argv[i]);
-	}
-
-	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);
-
-	if (0 == rank)
-	{
-		int radius_num;
-		double *radius_bin;
-		sprintf(data_path, "%sradius_bin.hdf5", total_path);
-		sprintf(set_name, "/radius_bin");
-		read_h5_datasize(data_path, set_name, radius_num);
-		radius_bin = new double[radius_num];
-		read_h5(data_path, set_name, radius_bin);
-
-		sprintf(logs, "Foreground: %s.\nRaidus_bin: [%.5f, %.5f].\nArea: ", fore_source, radius_bin[radius_id], radius_bin[radius_id + 1]);
-		std::cout << logs;
-		for (i = 0; i < area_num; i++)
-		{
-			std::cout << area_id[i]<<" ";
-		}
-		std::cout << std::endl;
-	}
-	
 	gh_s = -150 + 10 * radius_id;
 	gh_e = fabs(gh_s);
 

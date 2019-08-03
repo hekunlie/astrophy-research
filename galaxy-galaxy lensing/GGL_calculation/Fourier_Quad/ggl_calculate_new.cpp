@@ -1,13 +1,15 @@
 #include<FQlib.h>
 #include<mpi.h>
 #include<vector>
+#include<climits>
 
 #define MAX_DATA_COL 40
 #define FOREGAL_DATA_COL 6
 #define FQ_DATA_COL 5
 #define BACKGAL_DATA_COL 14
 #define MG_BIN_NUM 8
-#define VEC_DATA_COL 8
+#define VEC_DATA_COL 7
+#define MAX_PAIR 50000000
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -106,7 +108,8 @@ int main(int argc, char *argv[])
 
 	int foregal_num;
 	int my_gal_s, my_gal_e, gal_id;
-	MY_INT pair_count;// be carefull, the pair number may be too many, long or double 
+	long my_pair_count;
+	int total_pair_count;
 	double *foregal_data[MAX_DATA_COL];
 	double z_f, ra_f, dec_f;
 	double dist_len, dist_source, dist_len_coeff;
@@ -136,7 +139,8 @@ int main(int argc, char *argv[])
 	double *mg2_bin = new double[MG_BIN_NUM + 1];
 
 	// chi of the signal from the all areas
-	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared, *pair_count_shared;
+	MY_INT *chi_tan_shared, *chi_cross_shared, *chi_crit_tan_shared, *chi_crit_cross_shared;
+	int *pair_count_shared;
 	// chi square of the signal of each thread in each areas
 	double *my_chi_tan = new double[MG_BIN_NUM*gh_num];
 	double *my_chi_cross = new double[MG_BIN_NUM*gh_num];
@@ -207,8 +211,6 @@ int main(int argc, char *argv[])
 	MPI_Win win_pair_count;
 	MPI_Aint  size_pair_count;
 
-	size_pair_count = numprocs;
-
 	if (0 == rank)
 	{
 #if ! defined( SMALL_CATA)
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
 		MPI_Win_allocate_shared(size_chi_crit_tan * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_tan_shared, &win_chi_crit_tan_total);
 		MPI_Win_allocate_shared(size_chi_crit_cross * sizeof(double), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
 #endif
-		MPI_Win_allocate_shared(size_pair_count * sizeof(MY_INT), sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(2*numprocs * sizeof(int), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 	}
 	else
 	{
@@ -237,7 +239,7 @@ int main(int argc, char *argv[])
 		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &chi_crit_cross_shared, &win_chi_crit_cross_total);
 		MPI_Win_shared_query(win_chi_crit_cross_total, 0, &size_chi_crit_cross, &dispu_total, &chi_crit_cross_shared);
 #endif
-		MPI_Win_allocate_shared(0, sizeof(MY_INT), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -380,6 +382,7 @@ int main(int argc, char *argv[])
 
 	coeff = 180 / Pi;
 	coeff_inv = Pi / 180;
+	my_pair_count = 0;
 
 	st1 = clock();
 	for (gal_id = my_gal_s; gal_id < my_gal_e; gal_id++)
@@ -460,8 +463,7 @@ int main(int argc, char *argv[])
 						//std::cout << radius_bin[radius_label] << " " << diff_r << " " << radius_bin[radius_label + 1] << " " << diff_theta << std::endl;
 						if (radius_bin[radius_label] <= diff_r and diff_r < radius_bin[radius_label + 1])
 						{
-							pair_count_shared[rank] += 1;
-
+							my_pair_count += 1;
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
 							crit_surf_density_com_integ = dist_source_integ / (dist_source_integ - dist_len_integ) *dist_len_integ_coeff;
 
@@ -484,9 +486,8 @@ int main(int argc, char *argv[])
 
 							data_cache.push_back(backgal_mg_tan);
 							data_cache.push_back(backgal_mg_cross);
-							data_cache.push_back(backgal_mn_tan);
-							data_cache.push_back(backgal_mu_tan);
-							data_cache.push_back(crit_surf_density_com);
+							data_cache.push_back(backgal_mn_tan + backgal_mu_tan);
+							data_cache.push_back(backgal_mn_tan - backgal_mu_tan);
 							data_cache.push_back(crit_surf_density_com_integ);
 							data_cache.push_back(diff_r);
 							data_cache.push_back(z_b);
@@ -550,11 +551,15 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-
+	pair_count_shared[rank] = my_pair_count;
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	sum_arr(pair_count_shared, numprocs, 0, numprocs, pair_count);
-
+	sum_arr(pair_count_shared, numprocs, 0, numprocs, total_pair_count);
+	if (my_pair_count*VEC_DATA_COL >= INT_MAX or total_pair_count *VEC_DATA_COL>= INT_MAX)
+	{
+		std::cout << "INT overflow. Too many pairs." << std::endl;
+		exit(0);
+	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
 #if defined(SMALL_CATA)
@@ -565,10 +570,10 @@ int main(int argc, char *argv[])
 		sprintf(set_name, "/radius_bin");
 		write_h5(h5f_res_path, set_name, radius_bin, radius_num + 1, 1, FALSE);
 
-		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
+		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, total_pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
 	}
-	if (pair_count > 1)
+	if (total_pair_count > 1)
 	{
 		// final_buf will store the data of all the pairs
 		my_data_buf = new double[pair_count_shared[rank] * VEC_DATA_COL]{};
@@ -580,7 +585,7 @@ int main(int argc, char *argv[])
 
 		if (numprocs > 1)
 		{
-			if (pair_count <= 20000000)
+			if (total_pair_count <= MAX_PAIR)
 			{
 				// calculate the entry of each rank in the big buffer
 				int *displ = new int[numprocs]{};
@@ -596,7 +601,7 @@ int main(int argc, char *argv[])
 				}
 				if (rank == 0)
 				{
-					final_buf = new double[pair_count * VEC_DATA_COL];
+					final_buf = new double[total_pair_count * VEC_DATA_COL];
 					//show_arr(displ, 1, numprocs);
 					//show_arr(num_of_thread, 1, numprocs);
 				}
@@ -609,7 +614,7 @@ int main(int argc, char *argv[])
 				if (rank == 0)
 				{
 					sprintf(set_name, "/pair_data_0");
-					write_h5(h5f_res_path, set_name, final_buf, pair_count, VEC_DATA_COL, FALSE);
+					write_h5(h5f_res_path, set_name, final_buf, total_pair_count, VEC_DATA_COL, FALSE);
 					delete[] final_buf;
 				}
 			}
@@ -632,7 +637,7 @@ int main(int argc, char *argv[])
 		else
 		{
 			sprintf(set_name, "/pair_data_0");
-			write_h5(h5f_res_path, set_name, my_data_buf, pair_count, VEC_DATA_COL, FALSE);
+			write_h5(h5f_res_path, set_name, my_data_buf, total_pair_count, VEC_DATA_COL, FALSE);
 		}
 		delete[] my_data_buf;
 		MPI_Barrier(MPI_COMM_WORLD);
