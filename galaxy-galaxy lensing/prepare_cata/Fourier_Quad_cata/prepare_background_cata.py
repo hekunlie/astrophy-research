@@ -4,12 +4,14 @@ import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
 path.append('%s/work/mylib/'%my_home)
+from Fourier_Quad import Fourier_Quad
 import tool_box
 import h5py
 from mpi4py import MPI
 from sys import argv
 import numpy
 import time
+from subprocess import Popen
 
 
 # The new Fourier_Quad catalog differs from the old version!!!
@@ -296,13 +298,20 @@ if cmd == "collect":
 
 ############################# Fourier_quad data cutoff ###########################################
 if cmd == "select":
+
     t1 = time.time()
+
+    block_scale = float(argv[2])
+    margin = 0.1*block_scale
+
+    mg_bin_num = 8
 
     h5f_path = fourier_cata_path + "fourier_cata.hdf5"
     h5f_path_cut = data_path + "fourier_cata_new/fourier_cata_cut.hdf5"
 
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
+        h5f["/block_scale"] = numpy.array([block_scale],dtype=numpy.float64)
         h5f.close()
     comm.Barrier()
 
@@ -341,24 +350,112 @@ if cmd == "select":
 
         mag = cata_data[:, mag_lb][cut_idx]
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "COS_DEC",
-                 "Z_MIN", "Z_MAX", "ODDS"]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS"]
 
         datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, cos_dec, z_min, z_max, odds]
 
+        fq = Fourier_Quad(12,123)
+
+        mg1_bin = fq.set_bin(mg1, mg_bin_num, 10000)
+        mg2_bin = fq.set_bin(mg2, mg_bin_num, 10000)
+
         data_num = len(redshift)
+
+        total_num = ra.shape[0]
+        gal_label = numpy.arange(0,data_num)
+
+        # set up RA & DEC bin
+        ra_min, ra_max = ra.min()-margin, ra.max()+margin
+        dec_min, dec_max = dec.min()-margin, dec.max()+margin
+
+        nx = int((ra_max-ra_min)/block_scale) + 2
+        ny = int((dec_max-dec_min)/block_scale) + 2
+        grid_num = nx*ny
+        grid_shape = numpy.array([ny, nx], dtype=numpy.intc)
+
+        ra_bin = numpy.zeros((nx+1, 1))
+        dec_bin = numpy.zeros((ny+1, 1))
+        for i in range(nx+1):
+            ra_bin[i] = ra_min + i*block_scale
+        for i in range(ny+1):
+            dec_bin[i] = dec_min + i*block_scale
+        if ra_bin.max() < ra_max:
+            print("Too less RA bins")
+            exit(0)
+        if dec_bin.max() < dec_max:
+            print("Too less DEC bins")
+            exit(0)
+
+        # the boundary of each block
+        boundx = numpy.zeros((grid_num, 4))
+        boundy = numpy.zeros((grid_num, 4))
+
+        # galaxy count in each block
+        num_in_block = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        block_start = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        # the galaxy labels in the block
+        gal_sequence = numpy.zeros((1, data_num), dtype=numpy.intc)
+
+        for i in range(ny):
+            idx_1 = dec >= dec_bin[i]
+            idx_2 = dec < dec_bin[i+1]
+            idx_ = idx_1 & idx_2
+            sub_ra = ra[idx_]
+            sub_gal_label = gal_label[idx_]
+            ix = i*nx
+            for j in range(nx):
+                tag = ix + j
+
+                boundy[tag,0] = dec_bin[i]
+                boundy[tag,1] = dec_bin[i]
+                boundy[tag,2] = dec_bin[i+1]
+                boundy[tag,3] = dec_bin[i+1]
+
+                boundx[tag,0] = ra_bin[j]
+                boundx[tag,1] = ra_bin[j+1]
+                boundx[tag,2] = ra_bin[j]
+                boundx[tag,3] = ra_bin[j+1]
+
+                idx_3 = sub_ra >= ra_bin[j]
+                idx_4 = sub_ra < ra_bin[j+1]
+                idx = idx_3 & idx_4
+                num_in_block[0, tag] = idx.sum()
+                if tag > 0:
+                    block_start[0,tag] = num_in_block[0,:tag-1].sum()
+                gal_sequence[0, block_start[0, tag]: block_start[0, tag]+num_in_block[0, tag]] = sub_gal_label[idx]
+
         print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
 
     for area_id in range(area_num):
         if rank == area_id:
             h5f = h5py.File(h5f_path_cut, "r+")
+
+            h5f["/w_%d/grid_shape" % (rank + 1)] = grid_shape
+
+            h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
+            h5f["/w_%d/block_start" % (rank + 1)] = block_start
+            h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_sequence
+
+            h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
+            h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
+            h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
+            h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
+
+            h5f["/w_%d/mg1_bin" % (rank + 1)] = mg1_bin
+            h5f["/w_%d/mg2_bin" % (rank + 1)] = mg2_bin
+
             for i in range(len(names)):
                 h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
             h5f.close()
         comm.Barrier()
     t2 = time.time()
+    comm.Barrier()
     if rank == 0:
+        for i in range(area_num):
+            cmd = "../add_com_dist %s /w_%d/"%(h5f_path_cut, i+1)
+            a = Popen(cmd, shell=True)
+            a.wait()
         print(t2-t1)
 ############################# Fourier_quad data cutoff ###########################################
 

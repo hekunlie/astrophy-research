@@ -11,6 +11,7 @@ from mpi4py import MPI
 from sys import argv
 import numpy
 import time
+from subprocess import Popen
 
 
 # The new Fourier_Quad catalog differs from the old version!!!
@@ -455,6 +456,11 @@ if cmd == "select":
             h5f.close()
         comm.Barrier()
     t2 = time.time()
+    comm.Barrier()
     if rank == 0:
+        for i in range(area_num):
+            cmd = "../add_com_dist %s /w_%d/"%(h5f_path_cut, i+1)
+            a = Popen(cmd, shell=True)
+            a.wait()
         print("%.2f sec"%(t2-t1))
 ############################# Fourier_quad data cutoff ###########################################

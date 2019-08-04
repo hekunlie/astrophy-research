@@ -3181,7 +3181,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	// y = ax^2+bx + c
 
 	int i, count = 0;
-	double min_chi = chisq[0];
+	double min_chi = 10000;
 	double coeff[3];
 	if (d_chi > 0)
 	{
@@ -3189,7 +3189,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		// find the minimum
 		for (i = 0; i < num; i++)
 		{
-			if (chisq[i] < min_chi)
+			if (chisq[i] < min_chi and chisq[i] >=0)
 			{
 				min_chi = chisq[i];
 			}
@@ -3197,7 +3197,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		// find the width for fitting
 		for (i = 0; i < num; i++)
 		{
-			if (chisq[i] < min_chi + d_chi)
+			if (chisq[i] >= 0 and chisq[i] < min_chi + d_chi)
 			{
 				count++;
 				mask[i] = 1;
@@ -3238,7 +3238,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	}
 	if (coeff[2] < 0)
 	{
-		char err_log[100];
+		char err_log[35];
 		sprintf(err_log, "Bad shear fitting !!!");
 		throw err_log;
 	}

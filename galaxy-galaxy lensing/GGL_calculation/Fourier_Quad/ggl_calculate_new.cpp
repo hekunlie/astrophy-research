@@ -9,7 +9,7 @@
 #define BACKGAL_DATA_COL 14
 #define MG_BIN_NUM 8
 #define VEC_DATA_COL 7
-#define MAX_PAIR 50000000
+#define MAX_PAIR 20000000
 #define SMALL_CATA
 
 #ifdef SMALL_CATA
@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
 	// it will gather all the data and estimate the signal with SYM-PDF method
 #if defined (SMALL_CATA)
 	std::vector<double> data_cache;
+	int data_col[1];
 #endif
 
 	int i, j, k, temp;
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
 
-	sprintf(cata_name, "fourier_cata_old");
+	sprintf(cata_name, "fourier_cata_new");
 
 	sprintf(result_path, "%sresult/%s/%s/", parent_path, foreground_name, cata_name);
 	sprintf(h5f_path_grid, "%s%s/fourier_cata_cut.hdf5", data_path, cata_name);
@@ -129,6 +130,7 @@ int main(int argc, char *argv[])
 	double ra_b, dec_b;
 	double diff_ra, diff_dec, diff_r, diff_theta, diff_theta_sq, diff_z_thresh = 0.1;
 
+	int subset_num[1];
 	double *my_data_buf, *final_buf;
 	// the chi and the shear guess
 	int ig, ic, ig_label;
@@ -563,6 +565,7 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 
 #if defined(SMALL_CATA)
+
 	if (rank == 0)
 	{
 		sprintf(set_name, "/pair_count");
@@ -570,9 +573,20 @@ int main(int argc, char *argv[])
 		sprintf(set_name, "/radius_bin");
 		write_h5(h5f_res_path, set_name, radius_bin, radius_num + 1, 1, FALSE);
 
+		data_col[0] = VEC_DATA_COL;
+		sprintf(set_name, "/data_col");
+		write_h5(h5f_res_path, set_name, data_col, 1, 1, FALSE);
+
+		if (total_pair_count < 1)
+		{
+			subset_num[0] = 0;
+			sprintf(set_name, "/subset_num");
+			write_h5(h5f_res_path, set_name, subset_num, 1, 1, FALSE);
+		}
 		sprintf(log_infom, "RANK: %d. w_%d. %d galaxies have been found in Radius [%.4f, %.4f].", rank, area_id, total_pair_count, radius_bin[radius_label], radius_bin[radius_label + 1]);
 		std::cout << log_infom << std::endl;
 	}
+
 	if (total_pair_count > 1)
 	{
 		// final_buf will store the data of all the pairs
@@ -613,6 +627,11 @@ int main(int argc, char *argv[])
 
 				if (rank == 0)
 				{
+					// only one subset
+					subset_num[0] = 1;
+					sprintf(set_name, "/subset_num");
+					write_h5(h5f_res_path, set_name, subset_num, 1, 1, FALSE);
+
 					sprintf(set_name, "/pair_data_0");
 					write_h5(h5f_res_path, set_name, final_buf, total_pair_count, VEC_DATA_COL, FALSE);
 					delete[] final_buf;
@@ -620,6 +639,12 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
+				if (rank == 0)
+				{
+					subset_num[0] = numprocs;
+					sprintf(set_name, "/subset_num");
+					write_h5(h5f_res_path, set_name, subset_num, 1, 1, FALSE);
+				}
 				for (i = 0; i < numprocs; i++)
 				{
 					if (i == rank)
@@ -636,6 +661,10 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			subset_num[0] = 1;
+			sprintf(set_name, "/subset_num");
+			write_h5(h5f_res_path, set_name, subset_num, 1, 1, FALSE);
+
 			sprintf(set_name, "/pair_data_0");
 			write_h5(h5f_res_path, set_name, my_data_buf, total_pair_count, VEC_DATA_COL, FALSE);
 		}
