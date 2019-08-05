@@ -400,7 +400,15 @@ blockquote {
 <p>$$ \begin{aligned} \omega(0,z)\theta &amp;= \frac{c}{H_0}\alpha(0, z)\theta = \theta\alpha(0,z) \frac{c\times10^5 \rm{Km\cdot s^{-1}}}{100 h \rm{Km \cdot s^{-1}\cdot {Mpc}^{-1}}}  = R h^{-1} \rm{Mpc} \\ &amp;\Rightarrow \theta = \frac{R}{1000c\alpha(0,z)}\frac{180}{\pi} = \frac{0.18}{c\pi}\frac{R}{\alpha(0, z)}\end{aligned} $$</p>
 <p>The angular distance between \(z_1\) and \(z_2\) is</p>
 <p>$$D_A(z_1, z_2) = a(z_2)f_k(\omega(z_1,z_2)) = \frac{c}{H_0}a(z_2)[\alpha(0, z_2) - \alpha(0, z_1)]$$</p>
-<p>It is valid only for \(\omega_k \geq 0 \) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)</p>
+<p>It is valid only for \(\omega_k \geq 0 \) (see astro-ph/9905116 or Principles of Physical Cosmology pp 336–337, Peebles)
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br></p>
 <p>The critial surface density in comoving distance:</p>
 <table border="0">
  <tr>
@@ -448,6 +456,16 @@ blockquote {
    V^{\prime} &= U\sin(4\phi)  + V\cos(4\phi) \end{aligned}$$</td>
  </tr>
 </table>
+<h1 id="centernfw"><center>NFW:</h1>
+<p>Profile:</p>
+<p>$$ \rho(r)= \frac{\rho_s}{[\frac{r}{r_s}][1+\frac{r}{r_s}]^2}$$</p>
+<p>Mass:</p>
+<p>$$ \begin{aligned} M &amp;= \int_0^{2\pi}d\phi\int_0^{\pi}d\theta\ \sin\theta \int_0^{r_{\Delta}}dr\ r^2\frac{\rho_s}{ [ \frac{r}{r_s} ][ 1+\frac{r}{r_s} ]^2 } \\ &amp;= 4 \pi \rho_s r_s^3 \left[ \ln (1 + \frac{r}{r_s}) + \frac{1}{1+\frac{r}{r_s}} \right]<em>{r=0} \\ &amp;= 4\pi\rho_s r_s^3 \left[\ln(1+\frac{r</em>\Delta}{r_s}) + \frac{r_\Delta}{r_s +r_\Delta}\right] \end{aligned}$$</p>
+<p>Projected surface density:</p>
+<p>$$ \begin{aligned} \Sigma(\theta) &amp;= \int_{\alpha_1(\theta)}^{\alpha_2(\theta)}d\alpha\ \sin\alpha \int_{r_m}^{r_{\Delta}}dr\ r^2\frac{\rho_s}{[\frac{r}{r_s}][1+\frac{r}{r_s}]^2} \\
+&amp;= (\cos\alpha_1(\theta) - \cos\alpha_2(\theta))\ \rho_s r_s^3 \left[\ln(1+\frac{r}{r_s}) + \frac{1}{1+\frac{r}{r_s}}\right]\Bigg |<em>{r=r_m}^{r=r</em>\Delta}\end{aligned}$$</p>
+<br>
+<br>
 <table border="0">
  <tr>
     <td>g</b></td>

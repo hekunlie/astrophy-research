@@ -90,6 +90,23 @@ The rotation of the shear eastimators: \\(G_1\\), \\(G_2\\), \\(N\\), \\(U\\), \
  </tr>
 </table>
 
+# <center>NFW:
+Profile:
+
+ $$ \rho(r)= \frac{\rho_s}{[\frac{r}{r_s}][1+\frac{r}{r_s}]^2}$$
+
+Mass:
+
+ $$ \begin{aligned} M &= \int_0^{2\pi}d\phi\int_0^{\pi}d\theta\ \sin\theta \int_0^{r_{\Delta}}dr\ r^2\frac{\rho_s}{ [ \frac{r}{r_s} ][ 1+\frac{r}{r_s} ]^2 } \\\\ &= 4 \pi \rho_s r_s^3 \left[ \ln (1 + \frac{r}{r_s}) + \frac{1}{1+\frac{r}{r_s}} \right], r=0, r_{\Delta} \\\\ &= 4\pi\rho_s r_s^3 \left[\ln(1+\frac{r_\Delta}{r_s}) - \frac{r_\Delta}{r_s +r_\Delta}\right] \end{aligned}$$
+
+Projected surface density:
+
+$$ \begin{aligned} \Sigma(\theta) &= \int_{\alpha_1(\theta)}^{\alpha_2(\theta)}d\alpha\ \sin\alpha \int_{r_m}^{r_{\Delta}}dr \frac{\rho_s}{[\frac{r}{r_s}][1+\frac{r}{r_s}]^2} \\\\ &= [\cos\alpha_1(\theta) - \cos\alpha_2(\theta)]\ \rho_s r_s^3 \left[\ln(1+\frac{r}{r_s}) + \frac{1}{1+\frac{r}{r_s}}\right], r=r_m, r_{\Delta} \\\\
+& = [\cos\alpha_1(\theta) - \cos\alpha_2(\theta)]\ \rho_s r_s^3 \left[\ln(\frac{r_s + r_{\Delta}}{r_s + r_m}) + \frac{r_s}{r_s + r_{\Delta}}  - \frac{r_s}{r_s + r_m}\right]\end{aligned}$$
+
+<br>
+<br>
+
 <table border="0">
  <tr>
     <td>g</b></td>
@@ -165,3 +182,5 @@ Each source galaxy is just used once even though it may be identified as the sou
 ~~~
 
 1). Loop the foreground galaxy to calculate the tangential shear and the \\(\Delta \Sigma(R)\\)
+
+

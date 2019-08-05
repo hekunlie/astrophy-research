@@ -621,6 +621,42 @@ def shear2kappa(g1, g2):
     return (kappa_1 + kappa_2)/numpy.pi
 
 
+def NFW_profile(r, rhos, rs):
+    """
+    NFW profile: rho(r) = rhos/(r/rs)/(1+r/rs)^2
+    :param r: radius from halo center
+    :param rhos: parameter in NFW profile
+    :param rs: parameter in NFW profile
+    :return: rho(r)
+    """
+    return rhos/(r/rs)/(1+r/rs)**2
+
+
+def NFW_mass(rhos, rs, r_rho):
+    """
+    mass of a NFW haol
+    :param rhos: parameter in NFW profile
+    :param rs: parameter in NFW profile
+    :param r_rho: the radius in which the halo is defined
+    :return: mass
+    """
+    return 4*numpy*rhos*rs**3*(numpy.log(1+r_rho/rs) + r_rho/(rs + r_rho))
+
+
+def project_NFW(theta, dist, rhos, rs, r_rho):
+    """
+    the projected surface density
+    NFW profile: rho(r) = rhos/(r/rs)/(1+r/rs)^2
+    :param theta: the observed angle
+    :param dist: distance of halo
+    :param rhos: parameter in NFW profile
+    :param rs: parameter in NFW profile
+    :param r_rho: the radius in which the halo is defined
+    :return:
+    """
+    theta_part = 2*numpy.cos(theta)*numpy.sqrt(r_rho**2 - (dist*numpy.sin(theta))**2)
+    radius_part = rhos*rs**3*(numpy.log((rs+r_rho)/(rs+dist*numpy.sin(theta))) + rs/(rs+r_rho) - rs/(rs+dist*numpy.sin(theta)))
+    return theta_part*radius_part
 ################################################################
 # the methods relate to distribution of data
 ################################################################
