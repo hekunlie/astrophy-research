@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	sprintf(h5f_path_grid, "%s%s/fourier_cata_cut.hdf5", data_path, cata_name);
 
 	sprintf(h5f_res_path, "%sw_%d/radius_%d.hdf5", result_path, area_id, radius_label);
-	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
+	sprintf(h5f_path_fore, "%sforeground/%s/w_%d_2.hdf5", data_path, foreground_name, area_id);
 
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank);
 

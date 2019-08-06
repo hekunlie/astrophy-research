@@ -9,7 +9,7 @@ from plot_tool import Image_Plot
 import tool_box
 
 
-parent_path = "G:/cata_result/cfht/fore_bin_1/"
+parent_path = "F:/works/GGL/1/w1/"
 
 img = Image_Plot()
 img.subplots(1,1)

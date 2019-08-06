@@ -95,7 +95,7 @@ odds_lb_c = 18
 
 
 # cut off for the "select" option
-flux_alt_thresh = 4
+flux_alt_thresh = 5.5
 nstar_thresh = 12
 z_min, z_max = 0.0, 15
 ############################# Fourier_Quad Option ################################################
