@@ -51,7 +51,7 @@ def ln_gh_prior_slope(theta):
         if fit_range[i][0] <= theta[i] <= fit_range[i][1]:
             tag += 1
     if tag == num:
-        return numpy.exp(-(theta[0]**2+theta[1]**2+ theta[2]**2)/2/0.1/0.1)
+        return 0 #numpy.exp(-(theta[0]**2+theta[1]**2+ theta[2]**2)/2/0.1/0.1)
     else:
         return -numpy.inf
 
@@ -89,7 +89,7 @@ def lst_g_fit(theta, pos, bins, bin_num2, inverse, tag):
     return xi
 
 
-def ln_prob_g(theta, G, NU, bins, bin_num2, inverse, x, y, tag):
+def ln_prob_g(theta, G, NU, bins,bin_num2, inverse, x, y, tag):
     """
     tag = 1: for g1, G=G1, NU = N + U
     tag = 2: for g2, G=G2, NU = N - U
@@ -119,7 +119,7 @@ def ln_prob_g(theta, G, NU, bins, bin_num2, inverse, x, y, tag):
             return lp - xi
         return -numpy.inf
 
-def ln_prob_g_slope(theta, G, NU, bins, bin_num2, inverse, x, y):
+def ln_prob_g_slope(theta, G, NU, bins,  bin_label, bin_num2, inverse, x, y):
     """
     :param theta:
     :param G:
@@ -146,7 +146,7 @@ def ln_prob_g_slope(theta, G, NU, bins, bin_num2, inverse, x, y):
             znum = numpy.sum(idx1 & idx2)
             if znum > 0:
                 print("ZERO",znum)
-            xi = numpy.sum((n1 - n2)**2/(n1 + n2))*0.5
+            xi = numpy.sum((n1 - n2)**2/(n1 + n2))*0.5 + numpy.sum(num*bin_label)
             return lp - xi
         return -numpy.inf
 
