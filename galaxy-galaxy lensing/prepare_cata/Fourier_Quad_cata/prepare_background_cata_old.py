@@ -95,7 +95,7 @@ z_max_lb_c = 17
 odds_lb_c = 18
 
 # cut off
-flux_alt_thresh = 3.25
+flux_alt_thresh = 4.5
 nstar_thresh = 12
 total_area_thresh = 1
 field_g1_bound = 0.005

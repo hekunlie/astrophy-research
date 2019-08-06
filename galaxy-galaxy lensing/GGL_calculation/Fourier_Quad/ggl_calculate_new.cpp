@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	sprintf(data_path, "%sdata/", parent_path);
 
-	sprintf(cata_name, "fourier_cata_new");
+	sprintf(cata_name, "fourier_cata_old");
 
 	sprintf(result_path, "%sresult/%s/%s/", parent_path, foreground_name, cata_name);
 	sprintf(h5f_path_grid, "%s%s/fourier_cata_cut.hdf5", data_path, cata_name);
