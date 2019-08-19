@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
 
 	char total_path[300], data_path[300], set_name[30], result_path[300];
 	char fore_source[50];
-	char logs[300];
+	char logs[300], time_now[50];
 
 	int i, j, k;
 	double st1, st2, st3, st4, st5, st6, dt1, dt2, dt3;
@@ -88,6 +88,8 @@ int main(int argc, char ** argv)
 
 	if (rank == 0)
 	{
+		get_time(time_now, 50);
+		std::cout << time_now << std::endl;
 		if (area_num > 1)
 		{
 			sprintf(result_path, "%sresult/%s_result_total.hdf5", total_path, fore_source);
@@ -97,6 +99,8 @@ int main(int argc, char ** argv)
 			sprintf(result_path, "%sresult/%s_result_w_%d.hdf5", total_path, fore_source, areas[0]);
 		}
 		write_h5(result_path, set_name, radius_bin, 1, radius_num + 1, TRUE);
+		std::cout << std::endl;
+		std::cout << result_path << std::endl;
 	}
 
 	// the total pair count in each radius bin of all areas
@@ -507,9 +511,14 @@ int main(int argc, char ** argv)
 		show_arr(mean_dist, 1, radius_num);
 		std::cout << "Result:" << std::endl;
 		show_arr(final_result, 4, radius_num);
+
 	}
 	MPI_Win_free(&win_chisq);
-
+	if (rank == 0)
+	{
+		get_time(time_now, 50);
+		std::cout << time_now << std::endl;
+	}
 	MPI_Finalize();
 	return 0;
 }
