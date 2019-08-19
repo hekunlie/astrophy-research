@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
 		if (rank == 0) std::cout << areas[i - 2] << " ";
 	}
 
-	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);	
+	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_old/", fore_source);	
 
 	mgt_id = 0;
 	mgx_id = 1;
@@ -176,9 +176,9 @@ int main(int argc, char ** argv)
 		initialize_arr(mean_dist,  radius_num, 0);
 	}
 
-	double gh_guess[20]{ 130, 60, 50, 40, 30, 20, 20, 15,15,15,10,10,10,10,10,10,10,10,10,10};
+	double gh_guess[20]{ 130, 60, 50, 40,   30, 25, 20, 10,    4, 2, 2, 2,   2, 2, 2, 2,   2, 2, 2, 2};
 	
-	dg = 0.2;
+	dg = 0.1;
 	gh_num = int((gh_guess[0] *2) / dg) + 1;
 
 	MPI_Win win_chisq;
@@ -494,7 +494,7 @@ int main(int argc, char ** argv)
 			gx = final_result[radius_num*2 + radius_id];
 			gx_sig = final_result[radius_num*3 + radius_id];
 
-			sprintf(logs, "Radius: [%.4f, %.4f]. Time: %.2f sec\ngt: %.3f (%.4f), gx: %.3f (%.4f). mean R:%.5f Mpc/h\n", radius_bin[radius_id], radius_bin[radius_id+1] ,(st2-st1)/CLOCKS_PER_SEC,gt, gt_sig, gx, gx_sig, mean_dist[radius_id]);
+			sprintf(logs, "Radius %d: [%.4f, %.4f]. Time: %.2f sec\ngt: %.3f (%.4f), gx: %.3f (%.4f). mean R:%.5f Mpc/h\n", radius_id, radius_bin[radius_id], radius_bin[radius_id+1] ,(st2-st1)/CLOCKS_PER_SEC,gt, gt_sig, gx, gx_sig, mean_dist[radius_id]);
 			std::cout << logs << std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
