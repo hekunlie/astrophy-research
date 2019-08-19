@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
 		if (rank == 0) std::cout << areas[i - 2] << " ";
 	}
 
-	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_old/", fore_source);	
+	sprintf(total_path, "/mnt/perc/hklee/CFHT/gg_lensing/result/%s/fourier_cata_new/", fore_source);	
 
 	mgt_id = 0;
 	mgx_id = 1;
