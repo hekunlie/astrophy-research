@@ -7,8 +7,8 @@ from matplotlib.colors import ListedColormap
 
 class Image_Plot:
 
-    def __init__(self, fig_x=8, fig_y=6, fontsize=20, xy_lb_size=22, xy_tick_size=17,
-                 legend_size=17, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=8, pad_size=7):
+    def __init__(self, fig_x=8, fig_y=6, fontsize=20, xy_lb_size=17, xy_tick_size=17,
+                 legend_size=15, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=8, pad_size=7):
         self.fig_x = fig_x
         self.fig_y = fig_y
         self.fontsize = fontsize

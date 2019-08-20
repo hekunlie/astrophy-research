@@ -66,48 +66,56 @@ if cmd == "calculate":
         stack_count = 0
         for ia in range(3, argc):
             h5f = h5py.File(parent_result_path + "w_%d/radius_%d.hdf5"%(int(argv[ia]), ir), "r")
-            temp = h5f["/pair_data"].value
-            h5f.close()
+            sub_num = h5f["/subset_num"].value[0,0]
 
-            if temp[0,8] > -1:
-                if stack_count == 0:
-                    data = temp
-                else:
-                    data = numpy.row_stack((data, temp))
-                stack_count += 1
+            for i_sub in range(sub_num):
+                temp = h5f["/pair_data_%d"%i_sub].value
+
+                if temp.shape[0] > 0:
+                    if stack_count == 0:
+                        data = temp
+                    else:
+                        data = numpy.row_stack((data, temp))
+                    stack_count += 1
+            h5f.close()
 
         if stack_count > 0:
             pair_num = data.shape[0]
 
             e_t = data[:, 0]
-            # correct the additive bias c2
-            e_x = data[:, 1]# + data[:, 5]
-            # m & c bias
+            e_x = data[:, 1]
+            # m bias
             m_bias = data[:, 2]
-            c_bias = data[:, 3]
             # weight
-            weight_measure = data[:, 4]
-            # crit_ = data[:, 5]*coeff
-            crit = data[:, 6]
+            weight_measure = data[:, 3]
+            crit = data[:, 4]
             # radius from the center
-            dist = data[:, 7]
-            redshif = data[:, 8]
+            dist = data[:, 5]
+            redshif = data[:, 6]
 
             weight = weight_measure/crit**2
             weight_sum = weight.sum()
+            # weight_bias = weight * m_bias
+            # weight_sum = tool_box.accurate_sum(weight, 10000)
 
             # two kinds of correction
             corr_m = 1 + numpy.sum(weight * m_bias)/weight_sum
+            # corr_m = 1 + tool_box.accurate_sum(weight_bias, 10000)/weight_sum
             # corr_m = 1 + m_bias.mean()
 
-            delta_crit_et = e_t*crit*coeff
-            delta_crit_ex = e_x*crit*coeff
-            delta_sigma_t = numpy.sum(weight*delta_crit_et)/weight_sum/corr_m
-            delta_sigma_x = numpy.sum(weight*delta_crit_ex)/weight_sum/corr_m
+            delta_crit_et = e_t*crit*coeff*weight
+            delta_crit_ex = e_x*crit*coeff*weight
+
+            delta_sigma_t = numpy.sum(delta_crit_et)/weight_sum/corr_m
+            delta_sigma_x = numpy.sum(delta_crit_ex)/weight_sum/corr_m
+            # delta_sigma_t = tool_box.accurate_sum(delta_crit_et, 10000)/weight_sum/corr_m
+            # delta_sigma_x = tool_box.accurate_sum(delta_crit_ex, 10000)/weight_sum/corr_m
+
             # gamma_t = numpy.sum(weight*e_t)/weight_sum/corr_m
             # gamma_x = numpy.sum(weight*e_x)/weight_sum/corr_m
 
             r_mean = dist.mean()
+            # r_mean = tool_box.accurate_sum(dist, 1000)/dist.shape[0]
 
             result[crit_t_lb, ir] = delta_sigma_t
             result[crit_t_sig_lb, ir] = delta_crit_et.std()/numpy.sqrt(pair_num)
@@ -115,8 +123,8 @@ if cmd == "calculate":
             result[crit_x_sig_lb, ir] = delta_crit_ex.std()/numpy.sqrt(pair_num)
             result[trans_dist_lb, ir] = r_mean
 
-            print("[%.5f, %.5f], %d galaxy pairs at radius %f (%f)"%(radius_bin[ir],radius_bin[ir+1], pair_num,
-                                                                     r_mean,(radius_bin[ir]+radius_bin[ir+1])/2))
+            print("[%.5f, %.5f], %d galaxy pairs at radius %f (%f). ESD: %.3f (%.3f)"%(
+                radius_bin[ir],radius_bin[ir+1], pair_num, r_mean,(radius_bin[ir]+radius_bin[ir+1])/2,result[crit_t_lb, ir],result[crit_t_sig_lb, ir]))
         else:
             print("Skip [%.5f, %.5f], 0 galaxy pairs"%(radius_bin[ir],radius_bin[ir+1]))
     h5f = h5py.File(result_path,"w")
@@ -130,17 +138,18 @@ if cmd == "calculate":
     # img.axs[0][0].errorbar(result[r_lb], result[gt_lb], result[gt_lb + 1], c="C1", capsize=4, label="T", marker="s")
     # img.axs[0][0].errorbar(result[r_lb], result[gx_lb], result[gx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb], c="C1", capsize=4, label="T", marker="s")
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], c="C2", capsize=4, label="X", marker="s")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb],mfc="none", c="C1", capsize=4, label="T", marker="s")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], mfc="none", c="C2", capsize=4, label="X", marker="s")
 
     y_max = img.axs[0][0].set_ylim()[1]
-    ylims = (0.01, y_max*2)
+    ylims = (0.01, 180)
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
         w1_cfht_path = "../lensing_low/data.dat"
         if os.path.exists(w1_cfht_path):
             w1_data_cfht = numpy.loadtxt(w1_cfht_path)
-            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", capsize=4, label="w1, Lensing_low", marker="s")
+            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], mfc="none",
+                                   c="C4", capsize=4, label="w1, Lensing_low", marker="s")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)
@@ -149,15 +158,15 @@ if cmd == "calculate":
     img.axs[0][0].set_ylim(ylims)
     img.axs[0][0].set_xscale("log")
     xs = img.axs[0][0].set_xlim()
-    img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
+    # img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
     img.set_legend(0,0,loc="upper right")
 
-    for j in range(10):
-        img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.5, c="grey", alpha=0.5)
-        img.axs[0][0].plot([xs[0], xs[1]], [10 + 10*j, 10 + 10*j], linewidth=0.5,c="grey", alpha=0.5)
-        img.axs[0][0].plot([xs[0], xs[1]], [100 + 100*j, 100 + 100*j], linewidth=0.5,c="grey", alpha=0.5)
-
-    img.axs[0][0].set_xlim(xs[0], xs[1])
+    # for j in range(10):
+    #     img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.5, c="grey", alpha=0.5)
+    #     img.axs[0][0].plot([xs[0], xs[1]], [10 + 10*j, 10 + 10*j], linewidth=0.5,c="grey", alpha=0.5)
+    #     img.axs[0][0].plot([xs[0], xs[1]], [100 + 100*j, 100 + 100*j], linewidth=0.5,c="grey", alpha=0.5)
+    #
+    # img.axs[0][0].set_xlim(xs[0], xs[1])
 
     img.save_img(dens_pic_path + ".png")
     img.set_style_default()
@@ -188,36 +197,37 @@ if cmd == "plot":
     # img.axs[0][0].errorbar(result[r_lb], result[gx_lb], result[gx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
     img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb], c="C1", capsize=4,
-                           label="T", marker="s")
+                           label="T", mfc="none", marker="s")
     img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], c="C2", capsize=4,
-                           label="X", marker="s")
+                           label="X", mfc="none", marker="s")
 
     y_max = img.axs[0][0].set_ylim()[1]
-    ylims = (0.01, y_max*2)
+    ylims = (0.01, 180)
 
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
         w1_cfht_path = "../lensing_low/data.dat"
         if os.path.exists(w1_cfht_path):
             w1_data_cfht = numpy.loadtxt(w1_cfht_path)
-            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", capsize=4, label="w1, Lensing_low", marker="s")
+            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", mfc="none",
+                                   capsize=4, label="w1, Lensing_low", marker="s")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)
 
     img.axs[0][0].set_yscale("log")
-    # img.axs[0][0].set_ylim(ylims)
+    img.axs[0][0].set_ylim(ylims)
     img.axs[0][0].set_xscale("log")
     xs = img.axs[0][0].set_xlim()
-    img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
+    # img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
     img.set_legend(0,0,loc="upper right")
 
-    for j in range(10):
-        img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.7, c="grey", alpha=0.6)
-        img.axs[0][0].plot([xs[0], xs[1]], [10 + 10*j, 10 + 10*j], linewidth=0.7,c="grey", alpha=0.6)
-        img.axs[0][0].plot([xs[0], xs[1]], [100 + 100*j, 100 + 100*j], linewidth=0.7,c="grey", alpha=0.6)
-
-    img.axs[0][0].set_xlim(xs[0], xs[1])
+    # for j in range(10):
+    #     img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.7, c="grey", alpha=0.6)
+    #     img.axs[0][0].plot([xs[0], xs[1]], [10 + 10*j, 10 + 10*j], linewidth=0.7,c="grey", alpha=0.6)
+    #     img.axs[0][0].plot([xs[0], xs[1]], [100 + 100*j, 100 + 100*j], linewidth=0.7,c="grey", alpha=0.6)
+    #
+    # img.axs[0][0].set_xlim(xs[0], xs[1])
 
     img.save_img(dens_pic_path + ".png")
     img.set_style_default()

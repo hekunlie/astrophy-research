@@ -534,6 +534,15 @@ def data_fit(x_data, y_data, y_err):
     mc = numpy.dot(L1, R1)
     return mc[1], sig_m1, mc[0], sig_c1
 
+def accurate_sum(data, sub_size):
+    num = data.shape[0]
+    m, n = divmod(num, sub_size)
+    total = 0
+    for i in range(m):
+        total += data[i*sub_size: (i+1)*sub_size].sum()
+    total += data[m*sub_size:].sum()
+    return total
+
 def image_fft(image):
     return fft.fftshift(fft.fft2(image))
 

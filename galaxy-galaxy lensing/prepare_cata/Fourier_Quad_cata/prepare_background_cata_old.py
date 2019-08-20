@@ -75,6 +75,7 @@ mv_lb = int(para_items[10])
 # it would change as more parameters added into the file
 # the output of Fourier_quad pipeline contains 21 columns,
 # but there is an additional useless columns (22'th) added before...
+# the last column will be neglected in the merger
 data_col = 21
 
 add_col = 5
@@ -95,14 +96,19 @@ z_max_lb_c = 17
 odds_lb_c = 18
 
 # cut off
-flux_alt_thresh = 5.5
 nstar_thresh = 12
 total_area_thresh = 1
 field_g1_bound = 0.005
 field_g2_bound = 0.0075
 z_min, z_max = 0.0, 15
+
+flux_alt_thresh = 3.25
 c1_correction = -0.000578
 c2_correction = 0.000493
+
+# flux_alt_thresh = 5.5
+# c1_correction = -0.000473
+# c2_correction = 0.000493
 
 ############################# Fourier_Quad Option ################################################
 
@@ -168,7 +174,7 @@ if cmd == "collect":
                     new_data = numpy.zeros((f_sp[0], data_col + add_col), dtype=numpy.double) - 1
                     # the output of Fourier_quad pipeline contains 21 columns,
                     # but there is an additional useless columns (22'th) added before...
-                    new_data[:,:data_col] = f_data[:,:data_col]
+                    new_data[:,:data_col] = f_data[:,:data_col] # neglect the last column (useless)
 
                     # c_data = numpy.loadtxt(c_data_path)
                     h5f_c = h5py.File(c_data_path,"r")
@@ -366,7 +372,6 @@ if cmd == "select":
 
         data_num = len(redshift)
 
-        total_num = ra.shape[0]
         gal_label = numpy.arange(0,data_num)
 
         # set up RA & DEC bin

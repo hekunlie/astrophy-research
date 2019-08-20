@@ -555,7 +555,7 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	sum_arr(pair_count_shared, numprocs, 0, numprocs, total_pair_count);
-	if (my_pair_count*VEC_DATA_COL >= INT_MAX or total_pair_count *VEC_DATA_COL>= INT_MAX)
+	if (1.0*my_pair_count*VEC_DATA_COL >= INT_MAX or 1.0*total_pair_count *VEC_DATA_COL>= INT_MAX)
 	{
 		std::cout << "INT overflow. Too many pairs." << std::endl;
 		exit(0);
