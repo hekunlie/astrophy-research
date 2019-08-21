@@ -524,7 +524,7 @@ class Fourier_Quad:
                 bins = numpy.append(bound, numpy.append(bins, -bound))
         return bins
 
-    def G_bin(self, g, nu, g_h, bins, ig_num):  # checked 2017-7-9!!!
+    def get_chisq(self, g, nu, g_h, bins, bin_num2, inverse, ig_num):  # checked 2017-7-9!!!
         r"""
         to calculate the symmetry the shear estimators
         :param g: estimators from Fourier quad, 1-D numpy array
@@ -534,14 +534,29 @@ class Fourier_Quad:
         :param ig_num: the number of inner grid of bin to be neglected
         :return: chi square
         """
-        bin_num = len(bins) - 1
-        inverse = range(int(bin_num / 2 - 1), -1, -1)
         G_h = g - nu * g_h
         num = numpy.histogram(G_h, bins)[0]
-        n1 = num[0:int(bin_num / 2)][inverse]
-        n2 = num[int(bin_num / 2):]
+        n1 = num[0:bin_num2][inverse]
+        n2 = num[bin_num2:]
         xi = (n1 - n2) ** 2 / (n1 + n2)
         return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
+
+    def get_chisq_new(self, g, nu, g_h, bins, bin_num2, inverse, ig_num, num_exp):  # checked 2017-7-9!!!
+        r"""
+        to calculate the symmetry the shear estimators
+        :param g: estimators from Fourier quad, 1-D numpy array
+        :param nu: N + U for g1, N - U for g2, 1-D numpy array
+        :param g_h: pseudo shear (guess)
+        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
+        :param ig_num: the number of inner grid of bin to be neglected
+        :return: chi square
+        """
+        G_h = g - nu * g_h
+        num = numpy.histogram(G_h, bins)[0]
+        n1 = num[0:bin_num2][inverse]
+        n2 = num[bin_num2:]
+        xi = ((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2)
+        return numpy.sum(xi[:len(xi) - ig_num]) * 0.5
 
     def G_bin2d(self, mgs, mnus, g_corr, bins, resample=1, ig_nums=0):
         r"""
@@ -653,7 +668,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
+    def fmin_g_bk(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -784,9 +799,73 @@ class Fourier_Quad:
 
         return g_h, g_sig, coeff
 
+    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60, chi_gap=40, fig_ax=False):
+        """
+        G1 (G2): the shear estimator for g1 (g2),
+        N: shear estimator corresponding to the PSF correction
+        U: the term for PDF-SYM
+        V: the term for transformation
+        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
+        :param nu: N+U: for g1, N-U: for g2
+        :param bin_num:
+        :param ig_num:
+        :param pic_path:
+        :param left, right: the initial guess of shear
+        :return: estimated shear and sigma
+        """
+        bins = self.set_bin(g, bin_num, scale)
+
+        bin_num2 = int(bin_num * 0.5)
+        inverse = range(int(bin_num / 2 - 1), -1, -1)
+
+        iters = 0
+        change = 1
+        while change == 1:
+            change = 0
+            mc = (left + right) / 2.
+            mcl = left
+            mcr = right
+            fmc = self.get_chisq(g, nu, mc, bins, bin_num2, inverse, ig_num)
+            fmcl = self.get_chisq(g, nu, mcl, bins, bin_num2, inverse, ig_num)
+            fmcr = self.get_chisq(g, nu, mcr, bins, bin_num2, inverse, ig_num)
+            temp = fmc + chi_gap
+
+            if fmcl > temp:
+                left = (mc + mcl) / 2.
+                change = 1
+            if fmcr > temp:
+                right = (mc + mcr) / 2.
+                change = 1
+            iters += 1
+            if iters > 12:
+                break
+
+        fit_range = numpy.linspace(left, right, fit_num)
+        chi_sq = numpy.array([self.get_chisq(g, nu, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in fit_range])
+
+        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+
+        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
+        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
+        g_h = -coeff[1] / 2. / coeff[2]
+        g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
+
+        if fig_ax:
+            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=5)
+            fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
+            fig_ax.text(0.1, 0.9, '%d' % len(g), color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=10)
+            fig_ax.text(0.1, 0.8, '%.5f' % coeff[0], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=10)
+            fig_ax.text(0.1, 0.7, '%.5fx' % coeff[1], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=10)
+            fig_ax.text(0.1, 0.6, '%.5f$x^2$' % coeff[2], color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=10)
+
+        return g_h, g_sig, coeff
 
 
-    def fmin_g_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):
+    def find_shear_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -801,6 +880,14 @@ class Fourier_Quad:
         :return: estimated shear and sigma
         """
         bins = self.set_bin(g,bin_num,scale)
+
+        bin_num2 = int(bin_num * 0.5)
+        inverse = range(int(bin_num / 2 - 1), -1, -1)
+        num_ini = numpy.histogram(g, bins)[0]
+        n1 = num_ini[0:int(bin_num / 2)][inverse]
+        n2 = num_ini[int(bin_num / 2):]
+        num_exp = (n1 + n2) / 2
+
         iters = 0
         change = 1
         while change == 1:
@@ -808,9 +895,9 @@ class Fourier_Quad:
             mc = (left + right) / 2.
             mcl = left
             mcr = right
-            fmc = self.G_bin(g, nu, mc, bins, ig_num)
-            fmcl = self.G_bin(g, nu, mcl, bins, ig_num)
-            fmcr = self.G_bin(g, nu, mcr, bins, ig_num)
+            fmc = self.get_chisq_new(g, nu, mc, bins, bin_num2, inverse, ig_num, num_exp)
+            fmcl = self.get_chisq_new(g, nu, mcl, bins, bin_num2, inverse, ig_num, num_exp)
+            fmcr = self.get_chisq_new(g, nu, mcr, bins, bin_num2, inverse, ig_num, num_exp)
             temp = fmc + chi_gap
 
             if fmcl > temp:
@@ -824,7 +911,7 @@ class Fourier_Quad:
                 break
 
         fit_range = numpy.linspace(left, right, fit_num)
-        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
+        chi_sq = numpy.array([self.get_chisq_new(g, nu, g_hat, bins, bin_num2, inverse, ig_num, num_exp) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 

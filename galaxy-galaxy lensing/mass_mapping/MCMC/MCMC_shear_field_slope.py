@@ -101,10 +101,16 @@ elif shear_cmd == "g2":
     NU = mnu2
 else:
     exit()
+
+num_ini = numpy.histogram(MG, mg_bins)[0]
+n1 = num_ini[0:bin_num2][inverse]
+n2 = num_ini[bin_num2:]
+num_exp = (n1 + n2) / 2
+
 t1 = time.time()
 with Pool(ncpus) as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, MCMC_program.ln_prob_g_slope,
-                                    args=[MG, NU, mg_bins, bin_label, bin_num2, inverse, ra, dec],pool=pool)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, MCMC_program.ln_prob_g_slope_new,
+                                    args=[MG, NU, mg_bins, bin_num2, inverse, num_exp, ra, dec],pool=pool)
     pos, prob, state = sampler.run_mcmc(p0, step)
 t2 = time.time()
 print("Time:  %2.f sec"%(t2 - t1))

@@ -150,6 +150,37 @@ def ln_prob_g_slope(theta, G, NU, bins,  bin_label, bin_num2, inverse, x, y):
             return lp - xi
         return -numpy.inf
 
+def ln_prob_g_slope_new(theta, G, NU, bins, bin_num2, inverse, num_exp, x, y):
+    """
+    :param theta:
+    :param G:
+    :param NU:
+    :param bins:
+    :param bin_num2:
+    :param inverse:
+    :param x:
+    :param y:
+    :return:
+    """
+    lp = ln_gh_prior_slope(theta)
+    if not numpy.isfinite(lp):
+        return -numpy.inf
+    else:
+        g = shear_slope(theta, x, y)
+        if numpy.abs(g).max() <= 0.1:
+            G_h = G - NU * g
+            num = numpy.histogram(G_h, bins)[0]
+            n1 = num[0:bin_num2][inverse]
+            n2 = num[bin_num2:]
+            idx1 = n1 == 0
+            idx2 = n2 == 0
+            znum = numpy.sum(idx1 & idx2)
+            if znum > 0:
+                print("ZERO",znum)
+            xi = numpy.sum(((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2))*0.5
+            return lp - xi
+        return -numpy.inf
+
 def result_fun(params, ra, dec, radius):
     f_sub = radius/ numpy.pi / 2 / params[3][0] * numpy.exp(-((dec - params[1][0]) ** 2 + (ra - params[2][0]) ** 2) / 2 / params[3][0])
     f = params[0][0] * f_sub
