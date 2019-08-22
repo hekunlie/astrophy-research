@@ -150,7 +150,7 @@ def ln_prob_g_slope(theta, G, NU, bins,  bin_label, bin_num2, inverse, x, y):
             return lp - xi
         return -numpy.inf
 
-def ln_prob_g_slope_new(theta, G, NU, bins, bin_num2, inverse, num_exp, x, y):
+def ln_prob_g_slope_new(theta, G, NU, bins,bin_label, bin_num2, inverse, num_exp, x, y):
     """
     :param theta:
     :param G:
@@ -177,7 +177,7 @@ def ln_prob_g_slope_new(theta, G, NU, bins, bin_num2, inverse, num_exp, x, y):
             znum = numpy.sum(idx1 & idx2)
             if znum > 0:
                 print("ZERO",znum)
-            xi = numpy.sum(((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2))*0.5
+            xi = numpy.sum(((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2))*0.5 + numpy.sum(num*bin_label)
             return lp - xi
         return -numpy.inf
 

@@ -110,10 +110,11 @@ num_exp = (n1 + n2) / 2
 t1 = time.time()
 with Pool(ncpus) as pool:
     sampler = emcee.EnsembleSampler(nwalkers, ndim, MCMC_program.ln_prob_g_slope_new,
-                                    args=[MG, NU, mg_bins, bin_num2, inverse, num_exp, ra, dec],pool=pool)
+                                    args=[MG, NU, mg_bins, bin_label, bin_num2, inverse, num_exp, ra, dec], pool=pool)
     pos, prob, state = sampler.run_mcmc(p0, step)
 t2 = time.time()
 print("Time:  %2.f sec"%(t2 - t1))
+
 
 # Plot the walkers
 img = Image_Plot(fig_x=16, fig_y=4)
@@ -123,8 +124,10 @@ for i in range(nwalkers):
         img.axs[j][0].plot(range(step),sampler.chain[i, :, j], color='grey',alpha=0.6)
         img.axs[j][0].plot([0,step], [parameters[j], parameters[j]])
 pic_name = parent_path + "pic/%s_mcmc_walkers_nw_%d_stp_%d_expo_%d_slope.png"%(shear_cmd, nwalkers, step, expo_num)
-img.save_img(tool_box.file_name(pic_name))
+pic_name = tool_box.file_name(pic_name)
+img.save_img(pic_name)
 img.close_img()
+print("Walkers. %s"%pic_name)
 
 # Plot the panels
 samples = sampler.chain[:, 150:, :].reshape((-1, ndim))
@@ -133,7 +136,9 @@ corner_fig = plt.figure(figsize=(10, 10))
 fig = corner.corner(samples, labels=["$a1$", "$a2$", "$a3$"], truths=parameters,
                     quantiles=[0.16, 0.5, 0.84], show_titles=True, title_fmt=".4f", title_kwargs={"fontsize": 12})
 pic_name = parent_path + "pic/%s_mcmc_panel_nw_%d_stp_%d_expo_%d_slope.png"%(shear_cmd,nwalkers, step,expo_num)
-fig.savefig(tool_box.file_name(pic_name))
+pic_name = tool_box.file_name(pic_name)
+fig.savefig(pic_name)
+print("Panels. %s"%pic_name)
 
 fit_params = []
 pr = numpy.percentile(samples, [16, 50, 84], axis=0)
@@ -204,9 +209,10 @@ for i in range(2):
         img.set_label(i, j, 1, "R.A.[arcmin]",size=img.xy_lb_size-5)
         img.axs[i][j].set_title(titles[i*2+j])
 pic_name = parent_path + "pic/%s_mcmc_fit_expo_%d_slope.png"%(shear_cmd, expo_num)
-img.save_img(tool_box.file_name(pic_name))
+pic_name = tool_box.file_name(pic_name)
+img.save_img(pic_name)
 img.close_img()
-
+print("Fit. %s"%pic_name)
 
 
 

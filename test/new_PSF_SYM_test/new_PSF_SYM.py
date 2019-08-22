@@ -101,6 +101,18 @@ def shear_fit(x, y, fig_ax,label):
     return g_h, g_sig, coeff
 
 
+def get_exp_num(mg, bin_num):
+    bin_num2 = int(bin_num * 0.5)
+    bins = set_bin(mg, bin_num, 10)
+
+    inverse = range(int(bin_num2 - 1), -1, -1)
+    num_ini = numpy.histogram(mg, bins)[0]
+    n1 = num_ini[0:bin_num2][inverse]
+    n2 = num_ini[bin_num2:]
+    num_exp = (n1 + n2) / 2
+    return num_exp, inverse, bins
+
+
 result_row, result_col = 8, 10
 itemsize = MPI.DOUBLE.Get_size()
 element_num = result_row*result_col
@@ -187,65 +199,103 @@ fq = Fourier_Quad(12,13)
 
 data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/"
 h5f = h5py.File(data_path + "result/data/data_%d.hdf5"%rank,"r")
-data = h5f["/data"].value[:100000]
+data = h5f["/data"].value[:200000]
 mg1 = data[:,2]
 mg2 = data[:,3]
 mnu1 = data[:,4] + data[:,5]
 mnu2 = data[:,4] - data[:,5]
 
-gh1, gh1_sig = fq.find_shear(mg1, mnu1, 8)[:2]
-gh2, gh2_sig = fq.find_shear(mg2, mnu2, 8)[:2]
+# gh1, gh1_sig = fq.find_shear(mg1, mnu1, 8)[:2]
+# gh2, gh2_sig = fq.find_shear(mg2, mnu2, 8)[:2]
+#
+# gh1_new, gh1_sig_new = fq.find_shear_new(mg1, mnu1, 8)[:2]
+# gh2_new, gh2_sig_new = fq.find_shear_new(mg2, mnu2, 8)[:2]
+#
+#
+# result[0,rank] = gh1
+# result[1,rank] = gh1_sig
+# result[2,rank] = gh2
+# result[3,rank] = gh2_sig
+#
+# result[4,rank] = gh1_new
+# result[5,rank] = gh1_sig_new
+# result[6,rank] = gh2_new
+# result[7,rank] = gh2_sig_new
 
-gh1_new, gh1_sig_new = fq.find_shear_new(mg1, mnu1, 8)[:2]
-gh2_new, gh2_sig_new = fq.find_shear_new(mg2, mnu2, 8)[:2]
 
+fit_range = numpy.linspace(-0.1, 0.1, 200)
 
-result[0,rank] = gh1
-result[1,rank] = gh1_sig
-result[2,rank] = gh2
-result[3,rank] = gh2_sig
+bin_num = 8
+bin_num2 = int(bin_num*0.5)
 
-result[4,rank] = gh1_new
-result[5,rank] = gh1_sig_new
-result[6,rank] = gh2_new
-result[7,rank] = gh2_sig_new
+# G1
+num_exp1, inverse1, bins1 = get_exp_num(mg1, bin_num)
+# G2
+num_exp2, inverse2, bins2 = get_exp_num(mg2, bin_num)
+
+# original chi squared
+chi_sq1 = numpy.array([chisq(mg1, mnu1, g_hat, bins1, bin_num2, inverse1, 0) for g_hat in fit_range])
+chi_sq2 = numpy.array([chisq(mg2, mnu2, g_hat, bins2, bin_num2, inverse2, 0) for g_hat in fit_range])
+# new chi squared
+chi_sq1_new = numpy.array([chisq_new(mg1, mnu1, g_hat, bins1, bin_num2, inverse1, 0, num_exp1) for g_hat in fit_range])
+chi_sq2_new = numpy.array([chisq_new(mg2, mnu2, g_hat, bins2, bin_num2, inverse2, 0, num_exp2) for g_hat in fit_range])
+
+# plot
+img = Image_Plot()
+img.subplots(1, 2)
+
+shear_fit(fit_range, chi_sq1, img.axs[0][0],"$\chi^2$ of $g_1$")
+shear_fit(fit_range, chi_sq2, img.axs[0][0],"$\chi^2$ of $g_2$")
+
+shear_fit(fit_range, chi_sq1_new, img.axs[0][1],"$\chi^2$ of $g_1$")
+shear_fit(fit_range, chi_sq2_new, img.axs[0][1],"$\chi^2$ of $g_2$")
+
+titles = ["Original $\chi^2$", "New $\chi^2$"]
+for i in range(2):
+    img.set_label(0,i,0,"$\chi^2$")
+    img.set_label(0,i,1,"$\hat g$")
+    img.axs[0][i].legend(fontsize=img.legend_size)
+    img.axs[0][i].set_title(titles[i])
+
+img.save_img("chisq/chisq_%d.png"%rank)
+
 
 comm.Barrier()
 
-if rank == 0:
-
-    shear = numpy.loadtxt(data_path + "parameters/shear.dat")
-    g1 = shear[:result_col]
-    g2 = shear[result_col:]
-
-    img = Image_Plot()
-    img.subplots(1,2)
-
-    img.axs[0][0].errorbar(g1, result[0], result[1], fmt="none", capsize=4, marker="s", mfc="none",c="C2",label="Original $\chi^2$")
-    img.axs[0][0].scatter(g1, result[0], marker="s", c="C2")
-    img.axs[0][0].errorbar(g1, result[4], result[5], fmt="none", capsize=4, marker="s", mfc="none",c="C1",label="New $\chi^2$")
-    img.axs[0][0].scatter(g1, result[4], marker="s", c="C1")
-
-    img.axs[0][1].errorbar(g2, result[2], result[3], fmt="none",capsize=4, marker="s", mfc="none",c="C2",label="Original $\chi^2$")
-    img.axs[0][1].scatter(g2, result[2], marker="s", c="C2")
-    img.axs[0][1].errorbar(g2, result[6], result[7], fmt="none",capsize=4, marker="s", mfc="none",c="C1",label="New $\chi^2$")
-    img.axs[0][1].scatter(g2, result[6], marker="s", c="C1")
-
-    img.set_label(0,0,0,"$g_1$")
-    img.set_label(0,0,1,"$\hat g_1$")
-    img.set_label(0,1,0,"$g_2$")
-    img.set_label(0,1,1,"$\hat g_2$")
-    img.axs[0][0].legend(fontsize=img.legend_size)
-    img.axs[0][1].legend(fontsize=img.legend_size)
-    img.save_img("Galaxies_check.png")
-    img.close_img()
-
-    # sigma ratio
-    img = Image_Plot()
-    img.subplots(1,1)
-    img.axs[0][0].plot(range(result_col), result[1]/result[5], c="C2",label="$\sigma$ ratio of $g_1$")
-    img.axs[0][0].plot(range(result_col), result[3]/result[7], c="C1",label="$\sigma$ ratio of $g_2$")
-    img.set_label(0,0,0,"$\sigma_{ori} / \sigma_{new}$ ratio")
-    img.axs[0][0].legend(fontsize=img.legend_size)
-    img.save_img("Galaxies_check_sigma.png")
-    img.close_img()
+# if rank == 0:
+#
+#     shear = numpy.loadtxt(data_path + "parameters/shear.dat")
+#     g1 = shear[:result_col]
+#     g2 = shear[result_col:]
+#
+#     img = Image_Plot()
+#     img.subplots(1,2)
+#
+#     img.axs[0][0].errorbar(g1, result[0], result[1], fmt="none", capsize=4, marker="s", mfc="none",c="C2",label="Original $\chi^2$")
+#     img.axs[0][0].scatter(g1, result[0], marker="s", c="C2")
+#     img.axs[0][0].errorbar(g1, result[4], result[5], fmt="none", capsize=4, marker="s", mfc="none",c="C1",label="New $\chi^2$")
+#     img.axs[0][0].scatter(g1, result[4], marker="s", c="C1")
+#
+#     img.axs[0][1].errorbar(g2, result[2], result[3], fmt="none",capsize=4, marker="s", mfc="none",c="C2",label="Original $\chi^2$")
+#     img.axs[0][1].scatter(g2, result[2], marker="s", c="C2")
+#     img.axs[0][1].errorbar(g2, result[6], result[7], fmt="none",capsize=4, marker="s", mfc="none",c="C1",label="New $\chi^2$")
+#     img.axs[0][1].scatter(g2, result[6], marker="s", c="C1")
+#
+#     img.set_label(0,0,0,"$g_1$")
+#     img.set_label(0,0,1,"$\hat g_1$")
+#     img.set_label(0,1,0,"$g_2$")
+#     img.set_label(0,1,1,"$\hat g_2$")
+#     img.axs[0][0].legend(fontsize=img.legend_size)
+#     img.axs[0][1].legend(fontsize=img.legend_size)
+#     img.save_img("Galaxies_check.png")
+#     img.close_img()
+#
+#     # sigma ratio
+#     img = Image_Plot()
+#     img.subplots(1,1)
+#     img.axs[0][0].plot(range(result_col), result[1]/result[5], c="C2",label="$\sigma$ ratio of $g_1$")
+#     img.axs[0][0].plot(range(result_col), result[3]/result[7], c="C1",label="$\sigma$ ratio of $g_2$")
+#     img.set_label(0,0,0,"$\sigma_{ori} / \sigma_{new}$ ratio")
+#     img.axs[0][0].legend(fontsize=img.legend_size)
+#     img.save_img("Galaxies_check_sigma.png")
+#     img.close_img()
