@@ -239,7 +239,7 @@ if cmd == "select":
         h5f.close()
 
         # cut off
-        epsilon = 0.00001
+        epsilon = 0.0000001
 
         # weight > 0
         idx_weight = cata_data[:, weight_lb_c] > 0 - epsilon

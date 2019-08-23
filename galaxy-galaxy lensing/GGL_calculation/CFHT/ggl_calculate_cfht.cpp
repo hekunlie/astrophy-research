@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 	// Z, DISTANCE, DISTANCE_INTEG, RA, DEC, COS_DEC
 	for (i = LENS_FIT_COL; i < FOREGAL_DATA_COL + LENS_FIT_COL; i++)
 	{
-		sprintf(set_name, "/%s", names[i]);
+		sprintf(set_name, "/3/%s", names[i]);
 		read_h5_datasize(h5f_path_fore, set_name, foregal_num);
 
 		foregal_data[i] = new double[foregal_num];
@@ -470,9 +470,15 @@ int main(int argc, char *argv[])
 			}
 		}
 		stgal = clock();
-		process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
-		per_n = int((gal_id - my_gal_s) *1.0 / (my_gal_e - my_gal_s) * 100);
-
+		if (my_gal_e - my_gal_s > 10)
+		{
+			process_per = (gal_id - my_gal_s) % (int((my_gal_e - my_gal_s) *0.1));
+			per_n = int((gal_id - my_gal_s) *1.0 / (my_gal_e - my_gal_s) * 100);
+		}
+		else
+		{
+			per_n = gal_id;
+		}
 		if (0 == process_per)
 		{
 			sprintf(log_infom, "RANK: %d. w_%d. Looping foreground %d%%. Time since begin: %.2f sec.", rank, area_id, per_n, (stgal - st1) / CLOCKS_PER_SEC);
