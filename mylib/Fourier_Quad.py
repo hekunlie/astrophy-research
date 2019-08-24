@@ -558,6 +558,23 @@ class Fourier_Quad:
         xi = ((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2)
         return numpy.sum(xi[:len(xi) - ig_num]) * 0.5
 
+    def get_chisq_new_e(self, g, nu, g_h, bins, bin_num2, inverse, ig_num, num_exp):  # checked 2017-7-9!!!
+        r"""
+        to calculate the symmetry the shear estimators
+        :param g: estimators from Fourier quad, 1-D numpy array
+        :param nu: N + U for g1, N - U for g2, 1-D numpy array
+        :param g_h: pseudo shear (guess)
+        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
+        :param ig_num: the number of inner grid of bin to be neglected
+        :return: chi square
+        """
+        G_h = g - nu * g_h
+        num = numpy.histogram(G_h, bins)[0]
+        n1 = num[0:bin_num2][inverse]
+        n2 = num[bin_num2:]
+        xi = ((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (num_exp*2)
+        return numpy.sum(xi[:len(xi) - ig_num]) * 0.5
+
     def G_bin2d(self, mgs, mnus, g_corr, bins, resample=1, ig_nums=0):
         r"""
         to calculate the symmetry of two sets of shear estimators
