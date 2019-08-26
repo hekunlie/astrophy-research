@@ -1,5 +1,5 @@
 from sys import path
-path.append("E:/Github/astrophy-research/mylib")
+path.append("D:/Github/astrophy-research/mylib")
 from plot_tool import Image_Plot
 from Fourier_Quad import Fourier_Quad
 import numpy
@@ -8,13 +8,13 @@ from matplotlib import cm
 
 
 
+
+
 seed = 12114
-gal_num = 50000
-# x = numpy.random.uniform(-8, 8, gal_num)
-x = numpy.random.uniform(-8, 8, gal_num)
+total_num = 25000
+uni_num = 15000
+
 a1, a2 = 0, -0.01
-shear_slope_1d = a1 + a2*x
-print(shear_slope_1d.min(), shear_slope_1d.max())
 
 fq = Fourier_Quad(6,12)
 rng = numpy.random.RandomState(seed)
@@ -29,11 +29,34 @@ inverse_test = range(int(bin_num2_test - 1), -1, -1)
 
 hist_bin = 20
 
+# x = numpy.random.uniform(-8, 8, gal_num)
+x_asy = rng.uniform(0, 8, int(total_num - uni_num))
+x_uni = rng.uniform(-8, 8, uni_num)
+x = numpy.zeros((total_num,))
+
+x[:uni_num] = x_uni
+x[uni_num:] = x_asy
+
+shear_slope_1d = a1 + a2*x
+print(shear_slope_1d.min(), shear_slope_1d.max())
+
+# img = Image_Plot(fig_x=8,fig_y=8)
+# img.subplots(1,1)
+# nx, ny = 71, 71
+# a1_range = numpy.linspace(-0.1, 0.1, nx)
+# a2_range = numpy.linspace(-0.1, 0.1, ny)
+# for i in range(nx):
+#     for j in range(nx):
+#         img.axs[0][0].scatter(a1_range[i], a2_range[j],marker="s",s=10)
+# img.axs[0][0].set_xlim((-0.1156491701936468, 0.11153579987303396))
+# img.axs[0][0].set_ylim((-0.11758202200966764, 0.11207960506016676))
+# img.show_img()
+# exit()
 # simulation
-mg_ori = numpy.zeros((gal_num,))
-mg = numpy.zeros((gal_num,))
+mg_ori = numpy.zeros((total_num,))
+mg = numpy.zeros((total_num,))
 mnu = numpy.ones_like(mg)
-for i in range(gal_num):
+for i in range(total_num):
     mg_ori[i] = rng.normal(0, 0.3, 1)
     # mg[i] = rng.normal(shear_slope_1d[i], 0.3, 1)
     mg[i] = mg_ori[i] + shear_slope_1d[i]
@@ -102,6 +125,6 @@ for k in range(test_num):
     img.set_label(0,1,0,"X")
     img.axs[0][1].set_xlim(-0.9,0.9)
 
-    img.save_img("E:/works/Galaxy-Galaxy_lensing/mass_map/MCMC/new\move/%d.png"%k)
+    img.save_img("H:/GGL/1D_slope/move/%d.png"%k)
     # img.show_img()
     img.close_img()

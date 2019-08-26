@@ -50,12 +50,14 @@ def find_patch(arr,thresh):
         return 0, ny, 0, nx
 
 
-seed = 1214
-gal_num = 100000
 
-chisq_nm = "chisq.png"
-PDF_nm = "PDF.png"
-cache_nm = "chisq.npz"
+seed = 1214
+total_num = 250000
+uni_num = 150000
+
+chisq_nm = "chisq_asy.png"
+PDF_nm = "PDF_asy.png"
+cache_nm = "chisq_asy.npz"
 
 fq = Fourier_Quad(6,12)
 rng = numpy.random.RandomState(seed)
@@ -70,7 +72,7 @@ inverse_test = range(int(bin_num2_test - 1), -1, -1)
 
 hist_bin = 20
 
-nx, ny = 51, 51
+nx, ny = 71, 71
 a1_range = numpy.linspace(-0.1, 0.1, nx)
 a2_range = numpy.linspace(-0.1, 0.1, ny)
 # x,y in the phase space
@@ -80,7 +82,7 @@ itemsize = MPI.DOUBLE.Get_size()
 element_num = nx*ny
 if rank == 0:
     nbytes = element_num*itemsize
-    nbytes_gal = gal_num*itemsize
+    nbytes_gal = total_num*itemsize
 else:
     nbytes = 0
     nbytes_gal = 0
@@ -92,21 +94,26 @@ buf2, itemsize = win2.Shared_query(0)
 buf3, itemsize = win3.Shared_query(0)
 chisq = numpy.ndarray(buffer=buf1, dtype='d', shape=(ny,nx)) # array filled with zero
 chisq_new = numpy.ndarray(buffer=buf2, dtype='d', shape=(ny,nx)) # array filled with zero
-mg = numpy.ndarray(buffer=buf3, dtype='d', shape=(gal_num,)) # array filled with zero
+mg = numpy.ndarray(buffer=buf3, dtype='d', shape=(total_num,)) # array filled with zero
 
 comm.Barrier()
 
 
 # x = numpy.random.uniform(-8, 8, gal_num)
-x = rng.uniform(-8, 8, gal_num)
+x_asy = rng.uniform(0, 8, int(total_num - uni_num))
+x_uni = rng.uniform(-2, 8, uni_num)
+x = numpy.zeros((total_num,))
+x[:uni_num] = x_uni
+x[uni_num:] = x_asy
+
 a1, a2 = 0, -0.01
 shear_slope_1d = a1 + a2*x
 print(shear_slope_1d.min(), shear_slope_1d.max())
 
 if rank == 0:
     # simulation
-    mg_ori = numpy.zeros((gal_num,))
-    for i in range(gal_num):
+    mg_ori = numpy.zeros((total_num,))
+    for i in range(total_num):
         mg_ori[i] = rng.normal(0, 0.3, 1)
         mg[i] = rng.normal(shear_slope_1d[i], 0.3, 1)
         # mg[i] = mg_ori[i] + shear_slope_1d[i]
@@ -127,10 +134,11 @@ sub_task = tool_box.allot(task_list, cpus)[rank]
 
 for i in sub_task:
     m, n = divmod(i, nx)
-    gh = a1_range[m] + a2_range[n]*x
-    # [a1, a2]-axis
-    chisq[m,n] = fq.get_chisq_new_e(mg, mnu, gh, mg_bins, bin_num2,inverse, 0,num_exp)
+    gh = a1_range[n] + a2_range[m]*x
+    # [a2,a1]-axis
+    chisq[m,n] = fq.get_chisq(mg, mnu, gh, mg_bins, bin_num2,inverse, 0)
     chisq_new[m,n] = fq.get_chisq_new(mg, mnu, gh, mg_bins, bin_num2, inverse, 0, num_exp)
+
 comm.Barrier()
 
 if rank == 0:
@@ -176,13 +184,11 @@ if rank == 0:
     print(chisq.min(), chisq_new.min())
     print(chisq.max(), chisq_new.max())
 
-    chisq_cp = numpy.zeros_like(chisq)
-    chisq_new_cp = numpy.zeros_like(chisq)
-    chisq_cp[:,:] = chisq[:,:]
-    chisq_new_cp[:,:] = chisq_new[:,:]
+    chisq_project = numpy.zeros_like(chisq)
+    chisq_new_project = numpy.zeros_like(chisq)
 
-    marker_size = 50
-    show_chisq_value = 5
+    marker_size = 10
+    show_chisq_value = 15
 
     img = Image_Plot()
     img.subplots(2,2)
@@ -196,19 +202,21 @@ if rank == 0:
         for j in range(nx):
             # plot \chi (original) squared
             cl = cmap(norm(chisq[i, j]))
-            img.axs[0][0].scatter(a1_range[i], a2_range[j], marker="s",color=cl)#, s=marker_size)
+            img.axs[0][0].scatter(a1_range[i], a2_range[j], marker="s",color=cl, s=marker_size)
             # zoom in
             if chisq[i,j] <= show_chisq_value:
+                chisq_project[i, j] = chisq[i, j]
                 cl = cmap(norm_show(chisq[i, j]))
-                img.axs[1][0].scatter(a1_range[i], a2_range[j], marker="s", color=cl)#, s=marker_size)
+                img.axs[1][0].scatter(a1_range[i], a2_range[j], marker="s", color=cl, s=marker_size)
 
             # plot \chi (original) squared
             cl = cmap(norm_new(chisq_new[i,j]))
-            img.axs[0][1].scatter(a1_range[i], a2_range[j],  marker="s",color=cl)#, s=marker_size)
+            img.axs[0][1].scatter(a1_range[i], a2_range[j],  marker="s",color=cl, s=marker_size)
             # zoom in
             if chisq_new[i,j] <= show_chisq_value:
+                chisq_new_project[i, j] = chisq_new[i, j]
                 cl = cmap(norm_show(chisq_new[i, j]))
-                img.axs[1][1].scatter(a1_range[i], a2_range[j], marker="s", color=cl)#, s=marker_size)
+                img.axs[1][1].scatter(a1_range[i], a2_range[j], marker="s", color=cl, s=marker_size)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm_new = plt.cm.ScalarMappable(cmap=cmap, norm=norm_new)
@@ -227,11 +235,19 @@ if rank == 0:
         ys = img.axs[0][j].set_ylim()
         img.axs[1][j].set_xlim(xs)
         img.axs[1][j].set_ylim(ys)
+
+        img.axs[1][j].plot([a1,a1],[ys[0], ys[1]], c="C4", linewidth=1)
+        img.axs[1][j].plot([xs[0], xs[1]],[a2, a2], c="C4", linewidth=1)
+
         for i in range(2):
             img.set_label(0,j,i,"$a_%d$"%(2-i))
             img.set_label(1,j,i,"$a_%d$"%(2-i))
     img.save_img(chisq_nm)
     img.show_img()
+
+    img = Image_Plot()
+    img.subplots(2,2)
+    
 
 
 
