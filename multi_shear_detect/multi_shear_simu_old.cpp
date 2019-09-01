@@ -39,8 +39,8 @@ int main(int argc, char*argv[])
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 
-	size = 64;
-	total_chips = 100;
+	size = 50;
+	total_chips = 20;
 	gal_noise_sig = 10;
 	shear_pairs = 10;
 	stamp_nx = 100;
@@ -154,17 +154,9 @@ int main(int argc, char*argv[])
 
 				create_points(point, num_p, max_radius);
 				flux_i = flux[i*stamp_num + j] / num_p;
-				// for measuring the intrinsic ellipticity
-				// circle PSF
-				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
-				// elliptical PSF
-				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 				initialize_arr(gal, size*size, 0);
-				// circle PSF
 				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);
-				// elliptical PSF
-				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 				addnoise(gal, size*size, gal_noise_sig);
 

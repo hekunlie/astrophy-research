@@ -13,8 +13,8 @@ import h5py
 import MCMC_program
 
 
-parent_path = "/mnt/perc/hklee/CFHT/multi_shear/cluster_field/"
-envs_path = "%s/param.dat" % my_home
+parent_path = "/mnt/perc/hklee/shear_field/"
+envs_path = parent_path + "param.dat"
 
 # all the coordinates should be converted to the unit of arcmin
 # number of grid
@@ -29,9 +29,7 @@ pixel_scale = delta_ra/nx
 # galaxy number density
 dens_num = 75
 num_each_expo = dens_num*delta_ra*delta_dec
-expo_num = 50
-total_num = num_each_expo*expo_num
-print("%d galaxies each exposure. %d exposures."%(num_each_expo, expo_num))
+
 
 # the grid
 # x: ra, y: dec
@@ -64,8 +62,7 @@ contents = [['param', "grid_nx", '%d'%nx], ['param', "grid_ny", '%d'%ny],
             ['param', "RA", '%.2f'%delta_ra], ['param',"DEC", '%.2f'%delta_dec],
             ['param', "pixel_scale", '%.6f' % pixel_scale], ['param', "sigma", '%.4f' % sigma],
             ['param', "amplitude", '%.2f' % amplitude], ['param', "dx", '%.4f' % dx],
-            ['param', "dy", '%.2f' % dy], ['param', "density/arcmin^2", '%d' %dens_num],
-            ['param', "exposure", '%d'%expo_num]]
+            ['param', "dy", '%.2f' % dy], ['param', "density/arcmin^2", '%d' %dens_num]]
 path_items = tool_box.config(envs_path, ['add' for i in range(len(contents))], contents, True)
 
 
