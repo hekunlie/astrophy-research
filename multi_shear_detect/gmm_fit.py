@@ -1,18 +1,10 @@
 # import matplotlib
 # matplotlib.use("Agg")
 import numpy
-import matplotlib.pyplot as plt
-from numpy import fft
-import scipy
-from scipy.optimize import least_squares
 from sys import path
 path.append("E:/Github/astrophy-research/mylib")
 path.append("/home/hklee/work/mylib")
 from plot_tool import Image_Plot
-from Fourier_Quad import Fourier_Quad
-import tool_box
-import h5py
-from astropy.cosmology import FlatLambdaCDM
 import scipy
 from sklearn.mixture import GaussianMixture
 
