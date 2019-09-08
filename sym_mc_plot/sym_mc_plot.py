@@ -143,7 +143,7 @@ for tag, cut_s in enumerate(cutoff_scalar):
     # weight = select[cut][0][idx]
     # g1_h = numpy.mean(mg1[idx] / weight) / numpy.mean(mn[idx] / weight)
     # g1_sig = numpy.sqrt(numpy.mean((mg1[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
-    # g2_h = numpy.mean(mg2[idx] / weight) / numpy.mean(mn[idx] / weight)
+    # g2_h = numpy.mean(mg2[idx] / weight) / numpy.mean(mn[idx] / weight) 
     # g2_sig = numpy.sqrt(numpy.mean((mg2[idx] / weight) ** 2) / (numpy.mean(mn[idx] / weight)) ** 2) / numpy.sqrt(num)
 
     res_arr[:, tag] = numpy.array([g1_h, g1_sig, num, g2_h, g2_sig, num])
