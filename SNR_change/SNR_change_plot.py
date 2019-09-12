@@ -38,7 +38,7 @@ axs = []
 for i in range(4):
     ax = fig.add_subplot(141+i)
     if i == 0:
-        ax.set_ylabel("Change rate",fontsize=xy_lb_size)
+        ax.set_ylabel("Variation rate",fontsize=xy_lb_size)
     else:
         ax.set_yticklabels([])
 
@@ -120,13 +120,13 @@ for i in range(flux_num):
             snr_delta = (data[i*4+3] - snr_0) / snr_0
 
             deltas = [snr_delta, sex_mag_delta, sex_snr_delta, snr_auto_delta]
-            lbs = ["$P_{k0}$", "$MAG\_AUTO$", "$SNR\_S$", "$SNR\_A$"]
+            lbs = ["P$_{k0}$", "MAG_AUTO", "SNR$_S$", "SNR$_A$"]
             for select in range(4):
                 lb = "%s (%.2f)"%(lbs[select], snr_tradi_0)
                 # axs[select].plot(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], c=colors[i], ms=12, label=lb,
                 #          marker=markers[i],linestyle=' ',fillstyle='none')
                 axs[select].scatter(numpy.linspace(-0.06, 0.06, num)[idx], deltas[select][idx], edgecolor=colors[i],s=80, label=lb,
-                         marker=markers[i],facecolor="none",linewidths=3)
+                         marker=markers[i],facecolor="none",linewidths=2)
 
 ys = [0,0]
 for i in range(4):
@@ -147,11 +147,12 @@ for i in range(4):
     axs[i].legend(fontsize=legend_size, loc="best", frameon=False)
 plt.subplots_adjust(wspace=0, hspace=0)
 # pic_name = total_path + '/imgs/%s.pdf'%title
-pic_name = total_path + '/imgs/change.pdf'
+pic_name = 'change.pdf'
 plt.savefig(pic_name,bbox_inches='tight')
-plt.show()
+print(pic_name)
+# plt.show()
 plt.close()
 print(title)
-data_path = total_path + "/imgs/total.npz"
+data_path = total_path + "total.npz"
 numpy.savez(data_path, data_0, data)
 
