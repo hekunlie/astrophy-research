@@ -9,29 +9,43 @@ import gauss_fit_fun
 import h5py
 
 
-total_path = "E:/works/multi_shear/multi_shear_fit/1/"
+total_path = "E:/works/multi_shear/multi_shear_fit/4/"
 
 for i in range(40):
 
     h5f = h5py.File(total_path + "cache_%d.hdf5"%i, "r")
+
     err_1s = h5f["chisq_1"].value
     para_1s = h5f["/para_1"].value
+
     err_2s = h5f["chisq_2"].value
     para_2s = h5f["/para_2"].value
+
     signal = h5f["/signal"].value
     sigma = h5f["/sigma"].value
     x_fit = h5f["/x_fit"].value
     y_fit = h5f["/y_fit"].value
+
     h5f.close()
+
     err_1s.shape = (len(err_1s), 1)
     err_2s.shape = (len(err_2s), 1)
+    # print(para_1s.shape,para_2s.shape, len(para_1s))
+    # para_1s.shape = (len(para_1s), para_1s.shape[1])
+    # para_2s.shape = (len(para_2s), para_2s.shape[1])
+
     if i == 0:
         chisq_1 = err_1s
         chisq_2 = err_2s
+        all_para_1 = para_1s
+        all_para_2 = para_2s
     else:
         chisq_1 = numpy.row_stack((chisq_1, err_1s))
         chisq_2 = numpy.row_stack((chisq_2, err_2s))
+        all_para_1 = numpy.row_stack((all_para_1, para_1s))
+        all_para_2 = numpy.row_stack((all_para_2, para_2s))
     continue
+
     print("\n%d"%i)
     print("%d, %.4f, %.4f"%(err_1s.shape[0], err_1s.min(), err_1s.max()))
     print("%d, %.4f, %.4f"%(err_2s.shape[0], err_2s.min(), err_2s.max()))
@@ -126,22 +140,67 @@ for i in range(40):
     img.close_img()
     # img.show_img()
 
-numpy.savez(total_path + "chisq_cache.npz", chisq_1, chisq_2)
+# numpy.savez(total_path + "chisq_cache.npz", chisq_1, chisq_2)
 
+chisq_1.shape = (chisq_1.shape[0],)
+chisq_2.shape = (chisq_2.shape[0],)
+print(chisq_1.shape, all_para_1.shape, all_para_2.shape)
 
-print(chisq_1.shape)
-idx1 = chisq_1 <= 1
-idx2 = chisq_1 > 500
+idx1 = chisq_2 <= 0.02
+idx21 = chisq_2 >= 690
+idx22 = chisq_2 <= 700
+idx2 = idx21 & idx22
+idx3 = chisq_2 >= 700
 
-img = Image_Plot()
-img.subplots(1, 1)
-img.axs[0][0].hist(chisq_1[idx2], 100)
-img.axs[0][0].set_yscale("log")
+# img = Image_Plot(fig_x=9, fig_y=6)
+# img.subplots(1,3)
+# img.axs[0][0].hist(chisq_2[idx1], 100)
+# img.axs[0][1].hist(chisq_2[idx2], 100)
+# img.axs[0][2].hist(chisq_2[idx3], 100)
+# # img.axs[0][2].hist(chisq_1, 100)
+# img.axs[0][0].set_yscale("log")
+# img.axs[0][1].set_yscale("log")
+# img.axs[0][2].set_yscale("log")
+# img.show_img()
+#
+titles = ["weight_1", "mu_1", "sgima_1","weight_2", "mu_2", "sgima_2"]
+# img = Image_Plot()
+# img.subplots(3,6)
+# index = [idx1, idx2, idx3]
+# for i in range(3):
+#     for j in range(6):
+#         plt_data = all_para_2[:, j][index[i]]
+#         img.axs[i][j].hist(plt_data, 10)
+#         img.axs[i][j].set_title("%.4f <= %s <=%.4f"%(plt_data.min(), titles[j],plt_data.max()))
+#         img.axs[i][j].set_yscale("log")
+#
+# img.save_img(total_path + "para_hist.png")
+# img.show_img()
+
+img = Image_Plot(fig_x=6,fig_y=4)
+img.subplots(5,5)
+for i in range(5):
+    data_1 = all_para_2[:, i][idx1]
+    for j in range(i+1, 6):
+        print(titles[i], titles[j])
+        data_2 = all_para_2[:, j][idx1]
+        chisq = chisq_2[idx]
+        norm = img.figure.Normalize(vmin=numpy.min(chisq), vmax=numpy.max(chisq))
+        cmap = img.figure.get_cmap('YlOrRd')
+        img.axs[i][j-i-1].scatter(data_2, data_1, s=10)
+        img.set_label(i,j-i-1, 0, titles[i])
+        img.set_label(i,j-i-1, 1, titles[j])
+
+for i in range(5):
+    for j in range(4,4-i,-1):
+        print(i,j)
+        img.del_tick(i,j,[0,1], [0,1,2,3])
+img.subimg_adjust(0.27,0.27)
+img.save_img(total_path + "para_contour_.png")
 img.show_img()
-
-print(idx1.sum(), idx2.sum())
-print(chisq_1[idx1].min(), chisq_1[idx1].max())
-print(chisq_1[idx2].min(), chisq_1[idx2].max())
+# print(idx1.sum(), idx2.sum())
+# print(chisq_1[idx1].min(), chisq_1[idx1].max())
+# print(chisq_1[idx2].min(), chisq_1[idx2].max())
 
 
 

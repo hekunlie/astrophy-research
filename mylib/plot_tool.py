@@ -71,6 +71,23 @@ class Image_Plot:
             self.axs[iy][ix].xaxis.set_major_locator(loc)
             self.axs[iy][ix].xaxis.set_major_formatter(fmt)
 
+    def del_tick(self, iy, ix, axis_nm, box=None):
+        """not to show the axis"""
+        # delete the axis, but the box of axis will be preserved
+        # axis_nm must be a list, [0] or [0,1]...
+        for nm in axis_nm:
+            if nm == 0:
+                self.axs[iy][ix].get_yaxis().set_visible(False)
+            else:
+                self.axs[iy][ix].get_xaxis().set_visible(False)
+        # delete the side of the box of axis
+        # box must be a list of digits, 0 ~ 3
+        if box:
+            labels = ["left", "bottom", "right", "top"]
+            for nm in box:
+                self.axs[iy][ix].spines[labels[nm]].set_visible(False)
+
+
     def set_label(self, iy, ix, axis_nm, label, font="serif", size=None):
         if not size:
             size = self.xy_lb_size

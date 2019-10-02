@@ -67,12 +67,12 @@ fmt = '%2.f%%'
 fig_x = 6
 fig_y = fig_x * 4 / 6
 img = Image_Plot(fig_x=fig_x, fig_y=fig_y)
-img.subplots(2,4)
+img.subplots(1,4)
 
 
 locs = ["upper left", "lower left"]
 legend_loc = [(0.02, 0.97), (0.02, 0.08)]
-for m in range(2):
+for m in range(1):
     source = sources[m]
     g1 = shear["arr_0"][source]
     g2 = shear["arr_1"][source]
@@ -230,7 +230,6 @@ for m in range(2):
     for i in range(4):
         # img.axs[m][i].plot([plt_xs[0], plt_xs[1]], [0, 0], linestyle="--", c="grey")
 
-
         if i > 0:
             img.axs[m][i].set_yticklabels([])
         else:
@@ -245,13 +244,14 @@ for m in range(2):
             img.axs[m][i].set_ylabel(e_label, fontsize=img.xy_lb_size)
         dy = (plt_ys[1] - plt_ys[0])*0.05
         img.axs[m][i].set_ylim(plt_ys[0] - dy, plt_ys[1] + dy)
-        if m == 1:
-            text_y = -100
-            img.axs[m][i].set_xlabel("Bin label", fontsize=img.xy_lb_size)
-        else:
-            # img.axs[m][i].set_ylim(plt_ys[0], plt_ys[1])
-            text_y = 100
-            img.axs[m][i].set_xticklabels([])
+        img.axs[m][i].set_xlabel("Bin label", fontsize=img.xy_lb_size)
+        # if m == 1:
+        #     text_y = -100
+        #     img.axs[m][i].set_xlabel("Bin label", fontsize=img.xy_lb_size)
+        # else:
+        #     # img.axs[m][i].set_ylim(plt_ys[0], plt_ys[1])
+        #     text_y = 100
+        #     img.axs[m][i].set_xticklabels([])
 
         # img.axs[m][i].text(1.2, text_y, '$g_1$=%.2f'%g1, color='black', ha='left', va='center',  fontsize=img.legend_size)
 
