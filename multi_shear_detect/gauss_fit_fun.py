@@ -85,3 +85,38 @@ def img_text(ax, x, y, paras=None, strs_content=None, c="black", size=20):
         ax.text(x, y, strs, color=c, ha='left', va='center', transform=ax.transAxes, fontsize=size)
     if strs_content:
         ax.text(x, y, strs_content, color=c, ha='left', va='center', transform=ax.transAxes, fontsize=size)
+
+
+# Taylor series
+# d^n/du^n (f), u=0
+
+def df1(x,sig):
+    coeff = x/sig**2
+    return coeff
+
+def df2(x,sig):
+    coeff = (x**2 - sig**2)/sig**4
+    return coeff/2
+
+def df3(x,sig):
+    coeff = (x**3 - 3*(sig**2)*x)/sig**6
+    return coeff/numpy.math.factorial(3)
+
+def df4(x,sig):
+    coeff = (x**4 - 6*(sig**2)*(x**2) + 3*(sig**4))/sig**8
+    return coeff/numpy.math.factorial(4)
+
+def df5(x,sig):
+    coeff = (x**5 - 10*(sig**2)*(x**3) + 15*(sig**4)*x)/sig**10
+    return coeff/numpy.math.factorial(5)
+
+def df6(x,sig):
+    coeff = (x**6 - 15*(sig**2)*(x**4) + 45*(sig**4)*(x**2) - 15*(sig**6))/sig**12
+    return coeff/numpy.math.factorial(6)
+
+def fun_approx(n, x, mu, sig):
+    orders = [1, df1(x,sig), df2(x,sig), df3(x,sig), df4(x,sig), df5(x,sig), df6(x,sig)]
+    fun_fit = 0
+    for i in range(n+1):
+        fun_fit += orders[i]*mu**i
+    return fun_fit*gauss(x, 0, sig)
