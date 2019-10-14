@@ -28,13 +28,18 @@ pts_source = 0
 num = 11
 pixel_scale = 0.187
 
-flux = numpy.array([tool_box.mag_to_flux(21.5),tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
+if pts_source == 0:
+    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
+else:
+    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.5), tool_box.mag_to_flux(24.5)])
+
 flux_num = len(flux)
 noise_sig = 60
 
 detect_thresh = 2
 
 fq = Fourier_Quad(size, seed)
+fq_p = Fourier_Quad(size, 1760)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, noise_sig)
 
@@ -51,12 +56,24 @@ os.mkdir(img_path)
 
 # the SNR_S, SNR_A, MAG, PK0 of the original galaxy
 ori_data = numpy.zeros((flux_num*4, 4))
+# 4 blocks,each one is:
+# pk0, tra_SNR, 0, 0
+# SEX_SNR, tra_SNR, 0, 0
+# SNR_AUTO, tra_SNR, flux_auto, flux_err
+# MAG, tra_SNR, 0, 0
+
 data = numpy.zeros((flux_num*4, num))
+# "flux_num" blocks each column,each one is:
+# pk0
+# SEX_SNR
+# SNR_AUTO
+# SEX_MAG
+
 ext_data = numpy.zeros((3, num)) # for SNR_A
 
 pool = []
-
-rand_pts = fq.ran_pts(100, 9)
+pts_num = 100
+rand_pts = fq_p.ran_pts(num=pts_num, radius=10, ellip=0.8)
 
 print("Simulate")
 
@@ -82,7 +99,7 @@ for k in range(flux_num):
         ori_gal_img = img_0.array + noise
     # random walk galaxy
     else:
-        img_0 = fq.convolve_psf(rand_pts, 4, flux[k]/100, "Moffat")
+        img_0 = fq.convolve_psf(rand_pts, 4, flux[k]/pts_num, "Moffat")
         ori_gal_img = img_0 + noise
 
     path = img_path + "gal_pre_shear_%d.fits" %k
@@ -100,7 +117,7 @@ for k in range(flux_num):
             shear_gal_img = img_s.array + noise
         else:
             rand_pts_s = fq.shear(rand_pts, g1=input_g[i], g2=0)
-            img_s = fq.convolve_psf(rand_pts_s, 4, flux[k]/100, "Moffat")
+            img_s = fq.convolve_psf(rand_pts_s, 4, flux[k]/pts_num, "Moffat")
             shear_gal_img = img_s + noise
 
         pool.append(shear_gal_img)
@@ -152,7 +169,7 @@ for i in range(flux_num):
             print("%d: Not found"%i)
             ori_sex_snr, ori_snr_auto, ori_sex_mag, ori_flux_auto, ori_flux_err = -99, -99, -99, -99, -99
 
-        ori_data[i,0:2] = ori_pk0, snr_tradi_0
+        ori_data[i, 0:2] = ori_pk0, snr_tradi_0
         ori_data[i + flux_num, 0:2] = ori_sex_snr, snr_tradi_0
         ori_data[i + int(flux_num*2)] = ori_snr_auto, snr_tradi_0, ori_flux_auto, ori_flux_err # save additional parameters
         ori_data[i + int(flux_num*3),0:2] = ori_sex_mag, snr_tradi_0

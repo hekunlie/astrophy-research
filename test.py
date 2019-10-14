@@ -5,7 +5,7 @@ import os
 # my_home = os.popen("echo $HOME").readlines()[0][:-1]
 from sys import path
 # path.append('%s/work/fourier_quad/'%my_home)
-path.append("E:/Github/astrophy-research/mylib/")
+path.append("D:/Github/astrophy-research/mylib/")
 import time
 from Fourier_Quad import Fourier_Quad
 # # import galsim
@@ -18,23 +18,102 @@ import h5py
 from mpl_toolkits.mplot3d.axes3d import Axes3D, get_test_data
 from matplotlib import cm
 from numpy import fft
+import matplotlib.ticker as mtick
 import matplotlib
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
+from Fourier_Quad import Fourier_Quad
 
 
-result = numpy.load("E:/ggl/result.npz")["arr_0"]
+
+M = 1
+m = 2
+v = numpy.pi
+l = 4
+w = v/l
+t = numpy.linspace(0,16,201)
+M_x = M*v/(M+m)*t + m*l/(M+m)*numpy.sin(w*t)
+M_y = -m*l/(M+m)*numpy.cos(w*t)
+
+m_x = M*v/(M+m)*t - M*l/(M+m)*numpy.sin(w*t)
+m_y = M*l/(M+m)*numpy.cos(w*t)
+
 img = plot_tool.Image_Plot()
-img.plot_img(1, 1)
-gh = 10 ** numpy.linspace(numpy.log10(0.04), numpy.log10(15), 13)
-img.axs[0][0].errorbar(gh, numpy.abs(result[0]), result[1], label="T")
-
-img.axs[0][0].errorbar(gh, numpy.abs(result[2]), result[3], label="X")
-img.axs[0][0].set_xscale("log")
-img.axs[0][0].set_yscale("log")
+img.subplots(1,1)
+img.axs[0][0].plot(m_x,m_y,marker="o",label="m")
+img.axs[0][0].plot(M_x,M_y,marker="o",label="M")
+# img.axs[0][1].scatter(t,numpy.sqrt((M_x-m_x)**2 + (M_y-m_y)**2))
 img.axs[0][0].legend()
-img.axs[0][0].set_ylim(0.01,150)
+img.save_img("E:/Mm.png")
 img.show_img()
+exit()
+
+
+ch_num = 8
+cuts_num = 20
+x_coord = [i*2/cuts_num*100 for i in range(ch_num)]
+print(x_coord)
+ch = [i*2 for i in range(ch_num)]
+ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
+fmt = '%2.f%%'
+xticks = mtick.FormatStrFormatter(fmt)
+
+npz = numpy.load("E:/works/CFHT_tomo/all/cut_ext/flux_alt_s12_a1/total.npz")
+mc1 = npz["arr_0"][:,ch]
+mc2 = npz["arr_1"][:,ch]
+
+img = plot_tool.Image_Plot()
+img.subplots(1, 2)
+img.axs[0][0].errorbar(x_coord, mc1[0]-1, mc1[1],marker="s", mfc="none",linewidth=img.plt_line_width,capsize=img.cap_size, label="$m_1$")
+img.axs[0][0].errorbar(x_coord, mc2[0]-1, mc2[1], marker="s", mfc="none",linewidth=img.plt_line_width,capsize=img.cap_size, label="$m_2$")
+
+
+img.axs[0][1].errorbar(x_coord, mc1[2], mc1[3], marker="s", mfc="none",linewidth=img.plt_line_width,capsize=img.cap_size, label="$c_1$")
+img.axs[0][1].errorbar(x_coord, mc2[2], mc2[3], marker="s", mfc="none",linewidth=img.plt_line_width,capsize=img.cap_size, label="$c_2$")
+for i in range(2):
+    img.axs[0][i].xaxis.set_major_formatter(xticks)
+    xs = img.axs[0][i].set_xlim()
+    img.axs[0][i].plot([xs[0], xs[1]],[0,0],linestyle="--",c="grey")
+    img.axs[0][i].legend(fontsize=img.legend_size)
+img.set_label(0,0,0,"m")
+img.set_label(0,1,0,"c")
+img.set_label(0,0,1,"Cutoff percentage")
+img.set_label(0,1,1,"Cutoff percentage")
+img.subimg_adjust(h=0,w=0.26)
+# img.axs[0][1].legend(fontsize=img.legend_size)
+img.save_img("E:/cfht_cut.png")
+img.show_img()
+# seed = numpy.random.randint(1, 10000, 100)
+# pool = []
+# for i in range(10):
+#     for j in range(10):
+#         fq = Fourier_Quad(60,seed[i*10+j])
+#         pts_num = 300
+#         rand_pts = fq.ran_pts(num=pts_num, radius=9, ellip=0.8)
+#         img_s = fq.convolve_psf(rand_pts, 4, 100, "Moffat")
+#         pool.append(img_s)
+# gal = fq.stack(pool,10)
+my,mx = numpy.mgrid[0:48, 0:48]
+fq = Fourier_Quad(48,123)
+noise = fq.draw_noise(0,60)
+gal = tool_box.gauss_profile(48,8,24,24,0.8,0.7)*200000 + noise
+gal = tool_box.gauss_profile(48,3,24,24)*30000 + gal
+gal_p = numpy.sqrt(fq.pow_spec(gal))
+# img = plot_tool.Image_Plot()
+# img.subplots(1, 2)
+fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(1, 2, 1, projection='3d')
+ax.plot_surface(mx, my, gal, rstride=1, cstride=1, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
+ax = fig.add_subplot(1, 2, 2, projection='3d')
+ax.plot_surface(mx, my, gal_p, rstride=1, cstride=1, cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False)
+plt.show()
+# img.show_img()
+# img.close_img()
+# print(seed.reshape((10,10)))
+
+
 exit()
 
 h5f = h5py.File("E:/ggl_test_result.hdf5","r")

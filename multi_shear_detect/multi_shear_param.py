@@ -14,12 +14,12 @@ from Fourier_Quad import Fourier_Quad
 
 
 parent_path = "/mnt/perc/hklee/multi_shear_dectect/"
-shear_num = 10
-source_num = 800000
+shear_num = 3
+source_num = 1000000
 for i in range(shear_num):
 
     h5f = h5py.File(parent_path + "param_%d.hdf5"%i, "w")
-    mag = tool_box.mag_generator(source_num, 20, 24)
+    mag = tool_box.mag_generator(source_num, 22, 25)
     flux = tool_box.mag_to_flux(mag)
     h5f["/flux"] = flux
     h5f.close()

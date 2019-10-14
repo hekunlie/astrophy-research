@@ -20,7 +20,7 @@ int main(int argc, char**argv)
 	int total_data_num, my_num_st, my_num_ed;
 
 	double *shear, g1, g2;
-	int shear_num = 10;
+	int shear_num;
 	double *flux, flux_i;
 
 	int stamp_nx, stamp_ny, stamp_num;
@@ -52,7 +52,7 @@ int main(int argc, char**argv)
 	point_num = 80;
 	max_radius = 8;
 	
-	gal_noise_sigma = 10;
+	gal_noise_sigma = 70;
 
 	psf_type = 2;
 	psf_scale = 4;
@@ -65,8 +65,6 @@ int main(int argc, char**argv)
 	data_col = 7; // 5 shear estimators + g, x
 	total_data_num = data_row * data_col;
 
-	seed = 12313 + rank*10 + rank;
-
 	i = source_num / numprocs;
 	j = source_num % numprocs;
 	my_num_st = i * rank;
@@ -75,13 +73,13 @@ int main(int argc, char**argv)
 	{
 		my_num_ed += j;
 	}
-
-	shear = new double[2 * shear_num];
-	for (i = 0; i < shear_num; i++)
-	{
-		shear[i] = -0.05 + i * 0.01;
-		shear[i + shear_num] = 0.05 - i * 0.01;
-	}
+	shear_num = 3;
+	shear = new double[2 * shear_num]{-0.04,0.01,0.03,0.04,0.03,-0.02};
+	// for (i = 0; i < shear_num; i++)
+	// {
+	// 	shear[i] = -0.05 + i * 0.01;
+	// 	shear[i + shear_num] = 0.05 - i * 0.01;
+	// }
 
 
 
@@ -151,12 +149,12 @@ int main(int argc, char**argv)
 
 	
 	for (j = 0; j < shear_num; j++)
-	{
+	{			
 		if (rank == 0)
 		{
 			initialize_arr(result_data, total_data_num, 0);
 		}
-
+		seed = 1233 + rank*50 + rank + j;
 		gsl_initialize(seed);
 		k = 0;
 
