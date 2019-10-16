@@ -19,9 +19,9 @@
 int main(int argc, char *argv[])
 {
 	/* the macros should be adjusted in each case depends on how many columns will be read */
-	/* The input paremeters:																												*/
-	/*		1. the sky area label																												*/
-	/*		2. the radius bin label, the search raidus																			*/
+	/* The input paremeters:																									*/
+	/*		1. the sky area label																								*/
+	/*		2. the radius bin label, the search radius																			*/
 	/*     3. the name of the foreground data set																			    */
 
 	int rank, numprocs, namelen;
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 
 	int e1_id = 0, e2_id = 1, weight_id = 2, m_id = 3, c_id = 4;
 	int z_id = 5, dist_id = 6, dist_integ_id=7, ra_id = 8, dec_id = 9, cos_dec_id = 10;
-	int  zmin_lb = 11, zmax_lb = 12, odds_lb = 13;
+	int zmin_lb = 11, zmax_lb = 12, odds_lb = 13;
 
 	int shape[2];
 
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 
 #endif
 	MPI_Win win_pair_count;
-	MPI_Aint  size_pair_count;
+	MPI_Aint size_pair_count;
 
 	size_pair_count = numprocs;
 
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 		ra_f = foregal_data[ra_id][gal_id];
 		dec_f = foregal_data[dec_id][gal_id];
 
-		// all the data has been aranged into blocks, find the block label of this foreground galaxy
+		// all the data has been arranged into blocks, find the block label of this foreground galaxy
 		histogram2d_s(dec_f, ra_f, dec_bin, ra_bin, dec_bin_num, ra_bin_num, bin_label);
 		row = bin_label / grid_nx;
 		col = bin_label % grid_nx;
@@ -400,7 +400,7 @@ int main(int argc, char *argv[])
 						diff_dec = dec_b - dec_f;
 						diff_theta_sq = diff_ra * diff_ra + diff_dec * diff_dec; // degree^2
 
-						// the seperation in comving coordinate, 
+						// the seperation in comoving coordinate, 
 						//diff_r = dist_len * sqrt(diff_theta_sq)*coeff_inv;
 
 						separation(ra_b, dec_b, ra_f, dec_f, diff_theta);
@@ -413,7 +413,7 @@ int main(int argc, char *argv[])
 							crit_surf_density_com = dist_source / (dist_source - dist_len) *dist_len_coeff;
 							crit_surf_density_com_integ = dist_source_integ / (dist_source_integ - dist_integ_len) *dist_integ_len_coeff;
 
-							// rotation for shear calculation, see the NOTE of gg_lensing for the detials 
+							// rotation for shear calculation, see the NOTE of gg_lensing for the details 
 							backgal_sin_2phi = 2 * diff_ra*diff_dec / diff_theta_sq;
 							backgal_cos_2phi = (diff_dec - diff_ra)*(diff_ra + diff_dec) / diff_theta_sq;
 
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
 							data_cache.push_back(backgal_e_t);
 							data_cache.push_back(backgal_e_x);
 
-							// mutiplicative bias
+							// multiplicative bias
 							data_cache.push_back(backgal_data[m_id][ibg]);
 
 							data_cache.push_back(backgal_data[weight_id][ibg]);

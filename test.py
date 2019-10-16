@@ -24,8 +24,12 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 from Fourier_Quad import Fourier_Quad
 
+print(numpy.pi*(1.25**2))
+print(tool_box.mag_to_flux(23.85, zpt=22.5, exp_time=54, area=5, gain=3.85))
 
 
+
+exit()
 M = 1
 m = 2
 v = numpy.pi

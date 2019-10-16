@@ -266,7 +266,7 @@ if cmd == "select":
 
         ra = cata_data[:, ra_lb_c][cut_idx]
         dec = cata_data[:, dec_lb_c][cut_idx]
-        cos_dec = numpy.abs(numpy.cos((dec/180*numpy.pi)))
+        cos_dec = numpy.abs(numpy.cos((dec/180.*numpy.pi)))
 
         redshift = cata_data[:, z_lb_c][cut_idx]
         z_min = cata_data[:,z_min_lb_c][cut_idx]

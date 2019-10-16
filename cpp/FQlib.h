@@ -4,15 +4,15 @@
 #define FQLIB_H
 
 #pragma once
-#include <iostream>
+#include<iostream>
 #include<fstream>
 #include<sstream>
-#include <iomanip>
+#include<iomanip>
 #include<stdio.h>
 #include<string>
 #include<cstring>
-#include <ctime>
-#include <cmath>
+#include<ctime>
+#include<cmath>
 
 #include<stdlib.h>
 #include<sys/stat.h> // for stat()
@@ -35,7 +35,7 @@
 #include<hdf5.h>
 
 
-// something relates to the shear measurement and source dection
+// something relates to the shear measurement and source detection
 struct para
 {
 	int psf_size, psf_px, psf_py;

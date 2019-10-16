@@ -1,0 +1,40 @@
+\documentclass{article}
+\begin{document}
+
+\title{Galaxy-Galaxy lensing}
+
+There two similar pipelines for \textbf{CFHT} and \textbf{Fourier\_Quad}.
+
+\section{Distance}
+Firstly, the distance should be calculated. ``\textbf{calculate\_co-distance.py}'' calculates the comoving distance $(Mpc/h)$ and the integrate part in the distance calculate for the final GGL calculation. 
+The parameters should be specified in code. The data will be saved in a hdf5 file. The distances will be signed to the source catalog in ``\textbf{prepare\_background\_cata.py}''.
+
+\noindent``\textbf{/OM0\_H0\_C}'' contains a array of $\Omega_{m0}$, $H_0$, and $C_0(\sim 2.9)$.
+
+\noindent``\textbf{/Z}'' contains the redshifts ($0 \sim Z_{max}$).
+
+\noindent``\textbf{/DISTANCE}'' contains the distances ($Mpc/h$).
+
+\noindent``\textbf{/DISTANCE\_INTEG}'' the integrate part of the distance.
+
+\section{CFHT catalog}
+
+\subsection{Prepare data}
+\textbf{1.} ``\textbf{add\_ODD\_Z\_B.py}'' adds \textbf{Z\_MIN}, \textbf{Z\_MAX}, and \textbf{ODDS} (from the .csv files) to the \textbf{CFHT} catalog for source selection.
+It will create two new files (.hdf5 \& \_new.dat) that contains the added parameters.
+\\ \hspace*{\fill} \\
+\noindent The hdf5 file contains 3 arrays:
+
+\noindent``\textbf{/data}'': the catalog with the 3 added parameters. The column: \emph{``RA  DEC  Flag  FLUX\_RADIUS  e1  e2  weight  fitclass   SNratio  MASK  Z\_B  m  c2  LP\_Mi  star\_flag  MAG\_i  \textbf{Z\_B\_MIN  Z\_B\_MAX  ODDS}}''. The last three are added.
+
+\noindent``\textbf{/mask}'': it should be 1 for each source
+
+\noindent``\textbf{/dRA\_dDEC}'': delta RA and delta DEC, they should be very small for each source ( $< 10^{-5}$)
+\\ \hspace*{\fill} \\
+
+\noindent\textbf{2.} Run ``\textbf{prepare\_background\_cata.py}'' in ``\textbf{collect}'' mode with MPI to stack the data from each field. It creates the ``\textbf{cfht\_cata.hdf5}'' in the parent directory of the one contain the field catalog. The data in $i$-th area will be in ``/w\_i'' in the .hdf5 file. \textbf{If the catalog file (cfht\_cata.hdf5) doesn't exist, run it firstly!} Before this step, \textbf{CFHT} catalog contains 19 ($0\sim 18$) columns. After this the 19'th \& 20'th column are the PZ data from Dong FY.
+\\ \hspace*{\fill} \\
+
+\noindent\textbf{3.} Run ``\textbf{prepare\_background\_cata.py}'' in ``\textbf{select}'' mode with CPU's as the same number as the area. The result will be in \textbf{cfht\_cata\_cut.hdf5}. The cutoff should be specified in the code. The program will create a few additional data for GGL calculation (see the code). At the end, the first thread will call ``add\_com\_dist (add\_com\_dist.cpp)'' to sign distance to the source.
+
+\end{document}
