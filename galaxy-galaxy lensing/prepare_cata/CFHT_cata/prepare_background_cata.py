@@ -256,13 +256,21 @@ if cmd == "select":
         # Redshift
         idxz_1 = cata_data[:, z_lb_c] <= 15
         idxz_2 = cata_data[:, z_lb_c] >= 0
-        idxz_3 = cata_data[:, odds_lb_c] > 0.5 - epsilon
+        idxz_3 = cata_data[:, odds_lb_c] > 0.8 - epsilon
 
         # # the PZ selection criteria from Dong FY
         # idx_pz1 = numpy.abs(cata_data[:, pz1_lb] - 1) <= epsilon
         # idx_pz2 = cata_data[:, pz2_lb] <= 0.2
+        if rank == 2:
+            idxr1 = cata_data[:, ra_lb_c] < float(213.696611 + 1.5)
+            idxr2 = cata_data[:, ra_lb_c] > float(213.696611 - 1.5)
+            idxd1 = cata_data[:, dec_lb_c] > float(54.784321 - 1.5)
+            idxd2 = cata_data[:, dec_lb_c] < float(54.784321 + 1.5)
+            idx_ra_dec = idxr1 & idxr2 & idxd1 & idxd2
 
-        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+            cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3 & idx_ra_dec
+        else:
+            cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
 
         ra = cata_data[:, ra_lb_c][cut_idx]
         dec = cata_data[:, dec_lb_c][cut_idx]
@@ -325,40 +333,56 @@ if cmd == "select":
         # the boundary of each block
         boundx = numpy.zeros((grid_num, 4))
         boundy = numpy.zeros((grid_num, 4))
+        for i in range(ny):
+            ix = i * nx
+            for j in range(nx):
+                tag = ix + j
+                boundy[tag, 0] = dec_bin[i]
+                boundy[tag, 1] = dec_bin[i]
+                boundy[tag, 2] = dec_bin[i + 1]
+                boundy[tag, 3] = dec_bin[i + 1]
+
+                boundx[tag, 0] = ra_bin[j]
+                boundx[tag, 1] = ra_bin[j + 1]
+                boundx[tag, 2] = ra_bin[j]
+                boundx[tag, 3] = ra_bin[j + 1]
+
+        # # galaxy count in each block
+        # num_in_block = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        # block_start = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        # # the galaxy labels in the block
+        # gal_sequence = numpy.zeros((1, data_num), dtype=numpy.intc)
 
         # galaxy count in each block
-        num_in_block = numpy.zeros((1, grid_num), dtype=numpy.intc)
-        block_start = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        num_in_block = numpy.zeros((grid_num,), dtype=numpy.intc)
+        block_start = numpy.zeros((grid_num,), dtype=numpy.intc)
         # the galaxy labels in the block
-        gal_sequence = numpy.zeros((1, data_num), dtype=numpy.intc)
+        gal_sequence = numpy.zeros((data_num,), dtype=numpy.intc)
+        # block label of each gal
+        block_label = numpy.zeros((data_num, ),dtype=numpy.intc)
 
         for i in range(ny):
             idx_1 = dec >= dec_bin[i]
             idx_2 = dec < dec_bin[i+1]
-            idx_ = idx_1 & idx_2
-            sub_ra = ra[idx_]
-            sub_gal_label = gal_label[idx_]
+            idx_sub = idx_1 & idx_2
+            # sub_ra = ra[idx_sub]
+            # sub_block_label = block_label[idx_sub]
+            # sub_gal_label = gal_label[idx_sub]
             ix = i*nx
             for j in range(nx):
                 tag = ix + j
 
-                boundy[tag,0] = dec_bin[i]
-                boundy[tag,1] = dec_bin[i]
-                boundy[tag,2] = dec_bin[i+1]
-                boundy[tag,3] = dec_bin[i+1]
-
-                boundx[tag,0] = ra_bin[j]
-                boundx[tag,1] = ra_bin[j+1]
-                boundx[tag,2] = ra_bin[j]
-                boundx[tag,3] = ra_bin[j+1]
-
-                idx_3 = sub_ra >= ra_bin[j]
-                idx_4 = sub_ra < ra_bin[j+1]
-                idx = idx_3 & idx_4
-                num_in_block[0,tag] = idx.sum()
+                # idx_3 = sub_ra >= ra_bin[j]
+                # idx_4 = sub_ra < ra_bin[j+1]
+                idx_3 = ra >= ra_bin[j]
+                idx_4 = ra < ra_bin[j+1]
+                idx = idx_3 & idx_4 & idx_sub
+                num_in_block[tag] = idx.sum()
                 if tag > 0:
-                    block_start[0,tag] = num_in_block[0,:tag-1].sum()
-                gal_sequence[0, block_start[0, tag]: block_start[0, tag]+num_in_block[0, tag]] = sub_gal_label[idx]
+                    block_start[tag] = num_in_block[:tag-1].sum()
+                # gal_sequence[block_start[tag]: block_start[tag]+num_in_block[tag]] = sub_gal_label[idx]
+                gal_sequence[block_start[tag]: block_start[tag]+num_in_block[tag]] = gal_label[idx]
+                block_label[idx] = tag
 
         print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
     comm.Barrier()
@@ -372,6 +396,7 @@ if cmd == "select":
             h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
             h5f["/w_%d/block_start" % (rank + 1)] = block_start
             h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_sequence
+            h5f["/w_%d/block_label" % (rank + 1)] = block_label
 
             h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
             h5f["/w_%d/block_boundx" % (rank + 1)] = boundx

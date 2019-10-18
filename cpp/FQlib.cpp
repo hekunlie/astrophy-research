@@ -2864,7 +2864,7 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 	{
 		block_mask[i] = -1;
 	}
-
+	//std::cout<<nx_s<<" "<<nx_e<<" "<<ny_s<<" "<<ny_e<<std::endl;
 	for (i = ny_s; i < ny_e; i++)
 	{
 		lby = i * nx; // for speed
@@ -2893,6 +2893,7 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 			else
 			{
 				block_mask[seq] = lb;
+				std::cout<<lb/22<<" "<<lb%22<<std::endl;
 				seq++;
 			}
 		}

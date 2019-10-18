@@ -25,7 +25,7 @@ cmd = argv[2]
 parent_path = "/mnt/perc/hklee/CFHT/gg_lensing/"
 parent_result_path = parent_path + "result/%s/cfht/"%fore_source
 
-h5f = h5py.File(parent_result_path + "w_1/radius_bin.hdf5", "r")
+h5f = h5py.File(parent_result_path + "w_%s/radius_0.hdf5"%argv[3], "r")
 radius_bin = h5f["/radius_bin"].value[:,0]
 h5f.close()
 radius_num = radius_bin.shape[0]-1
@@ -66,17 +66,20 @@ if cmd == "calculate":
         stack_count = 0
         for ia in range(3, argc):
             h5f = h5py.File(parent_result_path + "w_%d/radius_%d.hdf5"%(int(argv[ia]), ir), "r")
-            sub_num = h5f["/subset_num"].value[0,0]
+            try:
+                sub_num = h5f["/subset_num"].value[0,0]
 
-            for i_sub in range(sub_num):
-                temp = h5f["/pair_data_%d"%i_sub].value
+                for i_sub in range(sub_num):
+                    temp = h5f["/pair_data_%d"%i_sub].value
 
-                if temp.shape[0] > 0:
-                    if stack_count == 0:
-                        data = temp
-                    else:
-                        data = numpy.row_stack((data, temp))
-                    stack_count += 1
+                    if temp.shape[0] > 0:
+                        if stack_count == 0:
+                            data = temp
+                        else:
+                            data = numpy.row_stack((data, temp))
+                        stack_count += 1
+            except:
+                pass
             h5f.close()
 
         if stack_count > 0:
@@ -88,12 +91,13 @@ if cmd == "calculate":
             m_bias = data[:, 2]
             # weight
             weight_measure = data[:, 3]
-            crit = data[:, 4]
+            crit_integ = data[:, 4]
+            crit = data[:, 5]
             # radius from the center
-            dist = data[:, 5]
-            redshif = data[:, 6]
+            dist = data[:, 6]
+            redshif = data[:, 7]
 
-            weight = weight_measure/crit**2
+            weight = weight_measure/crit_integ**2
             weight_sum = weight.sum()
             # weight_bias = weight * m_bias
             # weight_sum = tool_box.accurate_sum(weight, 10000)
@@ -103,8 +107,8 @@ if cmd == "calculate":
             # corr_m = 1 + tool_box.accurate_sum(weight_bias, 10000)/weight_sum
             # corr_m = 1 + m_bias.mean()
 
-            delta_crit_et = e_t*crit*coeff*weight
-            delta_crit_ex = e_x*crit*coeff*weight
+            delta_crit_et = e_t*crit_integ*coeff*weight
+            delta_crit_ex = e_x*crit_integ*coeff*weight
 
             delta_sigma_t = numpy.sum(delta_crit_et)/weight_sum/corr_m
             delta_sigma_x = numpy.sum(delta_crit_ex)/weight_sum/corr_m
@@ -138,18 +142,20 @@ if cmd == "calculate":
     # img.axs[0][0].errorbar(result[r_lb], result[gt_lb], result[gt_lb + 1], c="C1", capsize=4, label="T", marker="s")
     # img.axs[0][0].errorbar(result[r_lb], result[gx_lb], result[gx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb],mfc="none", c="C1", capsize=4, label="T", marker="s")
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], mfc="none", c="C2", capsize=4, label="X", marker="s")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb],
+                            c="C1", marker="s", capsize=4, mfc="none",fmt=" ",label="T")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1],
+                           c="C2", marker="s", capsize=4,mfc="none", fmt=" ",label="X")
 
     y_max = img.axs[0][0].set_ylim()[1]
-    ylims = (0.01, 180)
+    ylims = (0.1, 5000)
     # plot the line of "W1" extracted from "Lensing is low"
-    if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
+    if area_num == 1 and fore_source == "cmass":
         w1_cfht_path = "../lensing_low/data.dat"
         if os.path.exists(w1_cfht_path):
             w1_data_cfht = numpy.loadtxt(w1_cfht_path)
-            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], mfc="none",
-                                   c="C4", capsize=4, label="w1, Lensing_low", marker="s")
+            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], marker="s",
+                                   c="C4", capsize=4, mfc="none",fmt=" ", label="w1, Lensing_low")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)
@@ -196,10 +202,10 @@ if cmd == "plot":
     # img.axs[0][0].errorbar(result[r_lb], result[gt_lb], result[gt_lb + 1], c="C1", capsize=4, label="T", marker="s")
     # img.axs[0][0].errorbar(result[r_lb], result[gx_lb], result[gx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb], c="C1", capsize=4,
-                           label="T", mfc="none", marker="s")
-    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], c="C2", capsize=4,
-                           label="X", mfc="none", marker="s")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb], c="C1", mfc="none", marker="s",
+                           capsize=4,fmt=" ", label="T")
+    img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], c="C2", mfc="none", marker="s",
+                           capsize=4,fmt=" ", label="X")
 
     y_max = img.axs[0][0].set_ylim()[1]
     ylims = (0.01, 180)
@@ -210,7 +216,7 @@ if cmd == "plot":
         if os.path.exists(w1_cfht_path):
             w1_data_cfht = numpy.loadtxt(w1_cfht_path)
             img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", mfc="none",
-                                   capsize=4, label="w1, Lensing_low", marker="s")
+                                   capsize=4, marker="s", label="w1, Lensing_low",fmt=" ")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)
