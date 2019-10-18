@@ -359,7 +359,7 @@ if cmd == "select":
         # the galaxy labels in the block
         gal_sequence = numpy.zeros((data_num,), dtype=numpy.intc)
         # block label of each gal
-        block_label = numpy.zeros((data_num, ),dtype=numpy.intc)
+        block_label = numpy.zeros((data_num, ), dtype=numpy.intc)
 
         for i in range(ny):
             idx_1 = dec >= dec_bin[i]

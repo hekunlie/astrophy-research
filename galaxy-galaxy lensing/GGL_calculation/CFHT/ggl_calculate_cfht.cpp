@@ -422,9 +422,9 @@ int main(int argc, char *argv[])
 					z_b_sig95 = z_f + (backgal_data[zmax_lb][ibg] - backgal_data[zmin_lb][ibg]) / 2;
 					z_b_odds = backgal_data[odds_lb][ibg];
 					z_b = backgal_data[z_id][ibg];
-					if(block_id/22==9 and block_id%22==10)
+					if(block_id==208 and ibg > 20000)
 					{
-						std::cout<<ibg<<std::endl;
+						std::cout<<ibg<<" "<< num_in_block[block_id] <<std::endl;
 					}
 					//if (backgal_data[z_id][ib] >= z_thresh)
 					if (z_b >= z_thresh and z_b >= z_b_sig95)
@@ -541,14 +541,14 @@ int main(int argc, char *argv[])
 
 	sprintf(mask_path,"/home/hklee/transfer/mask.hdf5");
 	sprintf(set_name, "/mask_%d",radius_label);
-	// if(radius_label == 0)
-	// {
-	// 	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, TRUE);
-	// }
-	// else
-	// {
-	// 	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, FALSE);
-	// }
+	 //if(radius_label == 0)
+	 //{
+	 //	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, TRUE);
+	 //}
+	 //else
+	 //{
+	 //	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, FALSE);
+	 //}
 	
 	sum_arr(pair_count_shared, numprocs, 0, numprocs, total_pair_count);
 	if (1.0*my_pair_count*VEC_DATA_COL >= INT_MAX or 1.0*total_pair_count * VEC_DATA_COL >= INT_MAX)
