@@ -2893,7 +2893,6 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 			else
 			{
 				block_mask[seq] = lb;
-				std::cout<<lb/22<<" "<<lb%22<<std::endl;
 				seq++;
 			}
 		}

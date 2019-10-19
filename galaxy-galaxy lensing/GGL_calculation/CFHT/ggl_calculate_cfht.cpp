@@ -304,13 +304,13 @@ int main(int argc, char *argv[])
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
-
-	int *detect_mask = new int[backgal_num];
-	char mask_path[200];
-	for(i=0;i<backgal_num;i++)
-	{
-		detect_mask[i] = -1;
-	}
+	// FOR DEBUG THE DETECTION LABEL
+	// int *detect_mask = new int[backgal_num];
+	// char mask_path[200];
+	// for(i=0;i<backgal_num;i++)
+	// {
+	// 	detect_mask[i] = -1;
+	// }
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	st1 = clock();
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
 		std::cout << log_infom << std::endl;
 	}
 
-	rad_to_deg = 180 / Pi;
+	rad_to_deg = 180. / Pi;
 	deg_to_rad = Pi / 180;
 	my_pair_count = 0;
 
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 		// degree
 		ra_f = foregal_data[ra_id][gal_id];
 		dec_f = foregal_data[dec_id][gal_id];
-
+		std::cout<<ra_f<<" "<<dec_f<<std::endl;
 		// all the data has been arranged into blocks, find the block label of this foreground galaxy
 		histogram2d_s(dec_f, ra_f, dec_bin, ra_bin, dec_bin_num, ra_bin_num, bin_label);
 		row = bin_label / grid_nx;
@@ -377,37 +377,15 @@ int main(int argc, char *argv[])
 		find_block(&gal_info, radius_e, block_boundy, block_boundx, block_mask);
 
 		
-		if(radius_label == 6)
-		{	
-			std::cout<<"Radius "<<radius_e<<" "<<radius_bin[radius_label + 1] *rad_to_deg/ dist_len<<" "<<foregal_data[cos_dec_id][gal_id]<<std::endl;
-			ib = 21232;
-			z_b_sig95 = z_f + (backgal_data[zmax_lb][ib] - backgal_data[zmin_lb][ib]) / 2;
-			z_b_odds = backgal_data[odds_lb][ib];
-			z_b = backgal_data[z_id][ib];
-
-			separation( backgal_data[ra_id][ib], backgal_data[dec_id][ib], ra_f, dec_f, diff_theta);
-			diff_r = dist_len * diff_theta;
-			sprintf(log_infom, "%.6f,%.6f,%.6f,%.6f,%.8f,%.6f,%.6f", backgal_data[ra_id][ib], backgal_data[dec_id][ib],
-				ra_f, dec_f, diff_theta,diff_r,dist_len);
-			std::cout<<log_infom<<std::endl;
-			sprintf(log_infom, "%.6f,%.6f,%.6f,%.6f,%.6f", z_thresh,z_f,z_b, z_b_odds, z_b-z_b_sig95);
-			std::cout<<log_infom<<std::endl;
-			std::cout<<gal_info.idy<<" "<<gal_info.idx<<" "<<gal_info.y<<" "<<gal_info.x<<" "<<gal_info.x<<std::endl;
-			// std::cout<<ra_bin[0]<<" "<<ra_bin[ra_bin_num]<<" "<<dec_bin[0]<<" "<<dec_bin[dec_bin_num]<<" "<<gal_info.scale<<std::endl;
-			// std::cout<<ra_bin_num<<" "<<dec_bin_num<<std::endl;
-			// show_arr(ra_bin,1,ra_bin_num+1);
-			// show_arr(dec_bin,1,dec_bin_num+1);
-
-		}
 		for (ib = 0; ib < grid_num; ib++)
 		{
 			// the block id [i,j] = i*nx + j 
 			block_id = block_mask[ib];
-			if(block_mask[ib] > -1)
-			{	
-				std::cout<<ib<<" "<<block_id<<" "<<block_id/22<<" "<<block_id%22<<std::endl;
+			// if(block_mask[ib] > -1)
+			// {	
+			// 	std::cout<<ib<<" "<<block_id<<" "<<block_id/22<<" "<<block_id%22<<std::endl;
 				
-			}
+			// }
 			if (block_id > -1 and num_in_block[block_id] > 0)
 			{
 				// the start and end point of the block //
@@ -422,11 +400,7 @@ int main(int argc, char *argv[])
 					z_b_sig95 = z_f + (backgal_data[zmax_lb][ibg] - backgal_data[zmin_lb][ibg]) / 2;
 					z_b_odds = backgal_data[odds_lb][ibg];
 					z_b = backgal_data[z_id][ibg];
-					if(block_id==208 and ibg > 20000)
-					{
-						std::cout<<ibg<<" "<< num_in_block[block_id] <<std::endl;
-					}
-					//if (backgal_data[z_id][ib] >= z_thresh)
+
 					if (z_b >= z_thresh and z_b >= z_b_sig95)
 					{
 						ra_b = backgal_data[ra_id][ibg];
@@ -478,12 +452,8 @@ int main(int argc, char *argv[])
 
 							data_cache.push_back(diff_r);
 							data_cache.push_back(z_b);
-							// if(radius_label<6)
-							// {						
-							// 	sprintf(log_infom, "%.7f, %.7f, %.7f, %.7f", ra_b, dec_b,diff_theta,diff_r);
-							// 	std::cout<<log_infom<<std::endl;
-							// }
-							detect_mask[ibg] = radius_label;
+							// FOR DEBUG THE DETECTION LABEL
+							// detect_mask[ibg] = radius_label;
 
 #else
 
@@ -539,17 +509,19 @@ int main(int argc, char *argv[])
 	pair_count_shared[rank] = my_pair_count;
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	sprintf(mask_path,"/home/hklee/transfer/mask.hdf5");
-	sprintf(set_name, "/mask_%d",radius_label);
-	 //if(radius_label == 0)
-	 //{
-	 //	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, TRUE);
-	 //}
-	 //else
-	 //{
-	 //	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, FALSE);
-	 //}
-	
+	// FOR DEBUG THE DETECTION LABEL
+	// sprintf(mask_path,"/home/hklee/transfer/mask.hdf5");
+	// sprintf(set_name, "/mask_%d",radius_label);
+	//  if(radius_label == 0)
+	//  {
+	//  	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, TRUE);
+	//  }
+	//  else
+	//  {
+	//  	write_h5(mask_path, set_name, detect_mask, backgal_num, 1, FALSE);
+	//  }
+	// std::cout<<backgal_num<<" galaxies"<<std::endl;
+
 	sum_arr(pair_count_shared, numprocs, 0, numprocs, total_pair_count);
 	if (1.0*my_pair_count*VEC_DATA_COL >= INT_MAX or 1.0*total_pair_count * VEC_DATA_COL >= INT_MAX)
 	{

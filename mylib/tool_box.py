@@ -1434,3 +1434,6 @@ def config(path, cmd, contents, write=False):
                 with open(path, "w") as confile:
                     cobj.write(confile)
             return opt_vals
+
+def get_time_now():
+    return time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
