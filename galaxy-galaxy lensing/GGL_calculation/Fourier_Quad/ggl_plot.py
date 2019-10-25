@@ -1,10 +1,10 @@
 import h5py
 import numpy
 from sys import path
-path.append("E:/Github/astrophy-research/mylib")
+path.append("D:/Github/astrophy-research/mylib")
 from plot_tool import Image_Plot
 
-data_path = "E:/works/Galaxy-Galaxy_lensing/CLUSTER/3/"
+data_path = "D:/result/"
 
 img = Image_Plot()
 img.subplots(1,1)
@@ -12,8 +12,8 @@ img.subplots(1,1)
 ylabel = "$\Delta\Sigma \; [\\rm{h} \cdot \\rm{M_{\odot}} \cdot \\rm{pc^{-2}}]$"
 xlabel = "$\\rm{R} \; [\\rm{Mpc} \cdot \\rm{h^{-1}}]$"
 
-for i in range(1, 5):
-    h5f = h5py.File(data_path + "CFHT_cluster_result_w_%d.hdf5"%i,"r")
+for i in [1,3]:
+    h5f = h5py.File(data_path + "cmass_result_w_%d.hdf5"%i,"r")
     res = h5f["/result"].value
     dist = h5f["/mean_dist"].value[0]
     h5f.close()
@@ -23,7 +23,7 @@ for i in range(1, 5):
 img.axs[0][0].legend(fontsize=img.legend_size)
 img.axs[0][0].set_yscale("log")
 img.axs[0][0].set_xscale("log")
-img.axs[0][0].set_ylim(0.01,180)
+img.axs[0][0].set_ylim(0.01,200)
 img.set_label(0,0,0,ylabel,size=img.xy_lb_size)
 img.set_label(0,0,1,xlabel,size=img.xy_lb_size)
 img.save_img(data_path+"result.png")

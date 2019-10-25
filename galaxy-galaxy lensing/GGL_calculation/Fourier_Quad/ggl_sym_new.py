@@ -29,11 +29,11 @@ fore_source = argv[1]
 # "calculate" or "plot"
 cmd = argv[2]
 
-
+origin_data = "fourier_cata_old"
 parent_path = "/mnt/perc/hklee/CFHT/gg_lensing/"
-parent_result_path = parent_path + "result/%s/fourier_cata_new/"%fore_source
+parent_result_path = parent_path + "result/%s/%s/"%(fore_source,origin_data)
 
-h5f = h5py.File(parent_result_path + "w_1/radius_bin.hdf5", "r")
+h5f = h5py.File(parent_result_path + "w_%d/radius_0.hdf5"%int(argv[3]), "r")
 radius_bin = h5f["/radius_bin"].value[:,0]
 h5f.close()
 radius_num = radius_bin.shape[0]-1
@@ -65,6 +65,7 @@ trans_dist_lb = 4
 
 result_data_row = 5
 mg_bin_num = 8
+data_row = 13
 if cmd == "calculate":
     t1 = time.time()
     # the result array
@@ -178,7 +179,8 @@ if cmd == "calculate":
 if cmd == "plot":
     if rank == 0:
         h5f = h5py.File(result_path, "r")
-        result = h5f["/data"].value
+        result = h5f["/result"].value
+        dist = h5f["/mean_dist"].value[0]
         h5f.close()
 
         img = Image_Plot()
@@ -187,13 +189,13 @@ if cmd == "plot":
         # img.axs[0][0].errorbar(result[r_lb], result[gt_lb], result[gt_lb + 1], c="C1", capsize=4, label="T", marker="s")
         # img.axs[0][0].errorbar(result[r_lb], result[gx_lb], result[gx_lb + 1], c="C2", capsize=4, label="X", marker="s")
 
-        img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_t_lb], result[crit_t_sig_lb], c="C1", capsize=4,
-                               label="T", marker="s")
-        img.axs[0][0].errorbar(result[trans_dist_lb], result[crit_x_lb], result[crit_x_sig_lb + 1], c="C2", capsize=4,
-                               label="X", marker="s")
+        img.axs[0][0].errorbar(dist, result[0], result[1], c="C1", capsize=4,
+                               label="T", marker="s",fmt=" ",mfc="none")
+        img.axs[0][0].errorbar(dist, result[2], result[3], c="C2", capsize=4,
+                               label="X", marker="s",fmt=" ",mfc="none")
 
         y_max = img.axs[0][0].set_ylim()[1]
-        ylims = (0.01, y_max * 2)
+        ylims = (0.01, 300)
 
         # plot the line of "W1" extracted from "Lensing is low"
         if area_num == 1 and int(argv[3]) == 1:
@@ -201,7 +203,7 @@ if cmd == "plot":
             if os.path.exists(w1_cfht_path):
                 w1_data_cfht = numpy.loadtxt(w1_cfht_path)
                 img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", capsize=4,
-                                       label="w1, Lensing_low", marker="s")
+                                       label="w1, Lensing_low", marker="s",mfc="none",fmt=" ")
 
         img.set_label(0, 0, 0, ylabels[1])
         img.set_label(0, 0, 1, xlabel)
@@ -210,15 +212,16 @@ if cmd == "plot":
         # img.axs[0][0].set_ylim(ylims)
         img.axs[0][0].set_xscale("log")
         xs = img.axs[0][0].set_xlim()
-        img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
+        img.axs[0][0].set_ylim(ylims)
+        # img.axs[0][0].plot([xs[0], xs[1]], [0, 0], linestyle="--", linewidth=1, c="grey")
         img.set_legend(0, 0, loc="upper right")
 
-        for j in range(10):
-            img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.7, c="grey", alpha=0.6)
-            img.axs[0][0].plot([xs[0], xs[1]], [10 + 10 * j, 10 + 10 * j], linewidth=0.7, c="grey", alpha=0.6)
-            img.axs[0][0].plot([xs[0], xs[1]], [100 + 100 * j, 100 + 100 * j], linewidth=0.7, c="grey", alpha=0.6)
+        # for j in range(10):
+        #     img.axs[0][0].plot([xs[0], xs[1]], [j, j], linewidth=0.7, c="grey", alpha=0.6)
+        #     img.axs[0][0].plot([xs[0], xs[1]], [10 + 10 * j, 10 + 10 * j], linewidth=0.7, c="grey", alpha=0.6)
+        #     img.axs[0][0].plot([xs[0], xs[1]], [100 + 100 * j, 100 + 100 * j], linewidth=0.7, c="grey", alpha=0.6)
 
-        img.axs[0][0].set_xlim(xs[0], xs[1])
+        # img.axs[0][0].set_xlim(xs[0], xs[1])
 
         img.save_img(dens_pic_path + ".png")
         img.set_style_default()

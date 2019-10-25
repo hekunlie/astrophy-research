@@ -98,15 +98,15 @@ z_max_lb_c = 17
 odds_lb_c = 18
 
 # cut off
-flux_alt_thresh = 4.64
-nstar_thresh = 12
+flux_alt_thresh = 0
+nstar_thresh = 0
 total_area_thresh = 1
-field_g1_bound = 0.005
-field_g2_bound = 0.0075
+field_g1_bound = 1
+field_g2_bound = 1
 z_min, z_max = 0.0, 15
-c1_correction = -0.000475
-c2_correction = 0.000504
-odds_thresh = 0.3
+c1_correction = 0
+c2_correction = 0
+odds_thresh = 0
 ############################# Fourier_Quad Option ################################################
 
 
@@ -333,16 +333,17 @@ if cmd == "select":
         nstar_idx = cata_data[:, nstar_lb] >= nstar_thresh
         total_area_idx = cata_data[:, total_area_lb] >= total_area_thresh
         odds_idx = cata_data[:,odds_lb_f] >= odds_thresh
-        if rank == 2:
-            deg = 1.5
-            ra_f, dec_f = 213.696611, 54.784321
-            idxr1 = cata_data[:, ra_lb] >= ra_f - deg
-            idxr2 = cata_data[:, ra_lb] <= ra_f + deg
-            idxd1 = cata_data[:, dec_lb] >= dec_f - deg
-            idxd2 = cata_data[:, dec_lb] <= dec_f + deg
-            idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx & idxr1 & idxr2 & idxd1 & idxd2
-        else:
-            idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx
+        # if rank == 2:
+        #     deg = 1.5
+        #     ra_f, dec_f = 213.696611, 54.784321
+        #     idxr1 = cata_data[:, ra_lb] >= ra_f - deg
+        #     idxr2 = cata_data[:, ra_lb] <= ra_f + deg
+        #     idxd1 = cata_data[:, dec_lb] >= dec_f - deg
+        #     idxd2 = cata_data[:, dec_lb] <= dec_f + deg
+        #     idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx & idxr1 & idxr2 & idxd1 & idxd2
+        # else:
+
+        idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx
 
         fg1_idx = numpy.abs(cata_data[:, field_g1_lb]) <= field_g1_bound
         fg2_idx = numpy.abs(cata_data[:, field_g2_lb]) <= field_g2_bound
@@ -375,9 +376,11 @@ if cmd == "select":
 
         mag = cata_data[:, mag_lb_f][cut_idx]
 
-        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS"]
+        names = ["Z", "RA", "DEC", "G1", "G2", "N", "U", "V", "MAG", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS",
+                 "fg1","fg2","nstar","flux2","area"]
 
-        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, z_min, z_max, odds]
+        datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, z_min, z_max, odds,
+                 fg1,fg2,cata_data[:,nstar_lb],cata_data[:,flux_alt_lb], cata_data[:,total_area_lb]]
 
         fq = Fourier_Quad(12,123)
         mg1_bin = fq.set_bin(mg1, mg_bin_num, 10000)
@@ -485,7 +488,7 @@ if cmd == "select":
     comm.Barrier()
     if rank == 0:
         for i in range(area_num):
-            cmd = "../add_com_dist %s /w_%d/"%(h5f_path_cut, i+1)
+            cmd = "/home/hklee/work/CFHT/gg_lensing/prepare_cata/add_com_dist %s /w_%d/"%(h5f_path_cut, i+1)
             a = Popen(cmd, shell=True)
             a.wait()
         print("%s, %.2f sec"%(tool_box.get_time_now(),t2-t1))

@@ -98,6 +98,7 @@ odds_lb_c = 18
 flux_alt_thresh = 5.5
 nstar_thresh = 12
 z_min, z_max = 0.0, 15
+z_odd_thresh = 0.5
 ############################# Fourier_Quad Option ################################################
 
 
@@ -323,7 +324,7 @@ if cmd == "select":
         # cut off
         flux_alt_idx = cata_data[:, flux_alt_lb] >= flux_alt_thresh
         nstar_idx = cata_data[:, nstar_lb] >= nstar_thresh
-
+        odd_idx = cata_data[:,odds_lb] > z_odd_thresh
         idxz_1 = cata_data[:, z_lb] <= z_max
         idxz_2 = cata_data[:, z_lb] >= z_min
 
@@ -372,7 +373,7 @@ if cmd == "select":
         ny = int((dec_max-dec_min)/block_scale) + 2
         grid_num = nx*ny
         grid_shape = numpy.array([ny, nx], dtype=numpy.intc)
-
+        print(rank, ny, nx)
         ra_bin = numpy.zeros((nx+1, 1))
         dec_bin = numpy.zeros((ny+1, 1))
         for i in range(nx+1):
@@ -389,6 +390,7 @@ if cmd == "select":
         # the boundary of each block
         boundx = numpy.zeros((grid_num, 4))
         boundy = numpy.zeros((grid_num, 4))
+
         for i in range(ny):
             ix = i * nx
             for j in range(nx):

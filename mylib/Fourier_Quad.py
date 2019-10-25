@@ -816,7 +816,7 @@ class Fourier_Quad:
 
         return g_h, g_sig, coeff
 
-    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60, chi_gap=40, fig_ax=False):
+    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60, chi_gap=40, fig_ax=False,loc_fit=False):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -859,6 +859,12 @@ class Fourier_Quad:
 
         fit_range = numpy.linspace(left, right, fit_num)
         chi_sq = numpy.array([self.get_chisq(g, nu, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in fit_range])
+        if fig_ax:
+            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=5,c="k")
+        if loc_fit:
+            min_tag = numpy.where(chi_sq == chi_sq.min())[0][0]
+            chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
+            fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
@@ -868,7 +874,7 @@ class Fourier_Quad:
         g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 
         if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=5)
+            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
             fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
             fig_ax.text(0.1, 0.9, '%d' % len(g), color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=10)
@@ -877,6 +883,10 @@ class Fourier_Quad:
             fig_ax.text(0.1, 0.7, '%.5fx' % coeff[1], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=10)
             fig_ax.text(0.1, 0.6, '%.5f$x^2$' % coeff[2], color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=10)
+            fig_ax.text(0.4, 0.8, '%.5f' %g_h, color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=10)
+            fig_ax.text(0.4, 0.7, '%.5f' %g_sig, color='C3', ha='left', va='center',
                         transform=fig_ax.transAxes, fontsize=10)
 
         return g_h, g_sig, coeff

@@ -6,19 +6,15 @@
 #define MAX_AREA 20
 #define MG_BIN_NUM 8
 #define ALLOT_THRESH 500000 /* it's smaller than the number threshold, 20000000, for saving data separately */
-#define DIST
+#define CRIT_DENSITY 554.682135528
 
-#ifdef  DIST
-#define CRIT_DENS_COEFF 554.6821355281792
-#else
-#define CRIT_DENS_COEFF 1662895.2081868195
-#endif
 
 int main(int argc, char ** argv)
 {
-	/* crit_coeff is the coefficient of the critical density, see the note for details */
-	/* argv[1]: the file name of foreground source										*/											
-	/* argv[2] -- argv[n]: area labels, like 1,3, 4										*/
+	/* crit_coeff is the coefficient of the critical density, see the note for detials */
+	
+	/* argv[1]: the file name of foreground source												*/											
+	/* argv[2] -- argv[n]: area labels, like 1,3, 4														*/
 
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -269,8 +265,8 @@ int main(int argc, char ** argv)
 				}
 				for (i = 0; i < temp_row[ia]; i++)
 				{
-					mgt[data_row+i] = total_data[ia][i*data_col + mgt_id]* total_data[ia][i*data_col + crit_id]* CRIT_DENS_COEFF;
-					mgx[data_row + i] = total_data[ia][i*data_col + mgx_id] * total_data[ia][i*data_col + crit_id] * CRIT_DENS_COEFF;
+					mgt[data_row+i] = total_data[ia][i*data_col + mgt_id]* total_data[ia][i*data_col + crit_id]* CRIT_DENSITY;
+					mgx[data_row + i] = total_data[ia][i*data_col + mgx_id] * total_data[ia][i*data_col + crit_id] * CRIT_DENSITY;
 					mnut[data_row + i] = total_data[ia][i*data_col + mnut_id];
 					mnux[data_row + i] = total_data[ia][i*data_col + mnux_id];
 					dist_r[data_row + i] = total_data[ia][i*data_col + dist_id];
@@ -374,7 +370,7 @@ int main(int argc, char ** argv)
 						mgt = new double[data_row];
 						for (j = 0; j < data_row; j++)
 						{
-							mgt[j] = total_data[ia][j*data_col+mgt_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENS_COEFF;
+							mgt[j] = total_data[ia][j*data_col+mgt_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENSITY;
 						}
 
 						initialize_arr(mg_bin, MG_BIN_NUM + 1,0);
@@ -391,14 +387,14 @@ int main(int argc, char ** argv)
 						// tangential
 						for (j = 0; j < data_row; j++)
 						{
-							mg_temp = total_data[ia][j*data_col + mgt_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENS_COEFF - gh[ig]* total_data[ia][j*data_col + mnut_id];
+							mg_temp = total_data[ia][j*data_col + mgt_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENSITY - gh[ig]* total_data[ia][j*data_col + mnut_id];
 							histogram_s(mg_temp, mg_bin, MG_BIN_NUM, k);
 							total_chisq[ig*MG_BIN_NUM + k] += 1;
 						}
 						// cross
 						for (j = 0; j < data_row; j++)
 						{
-							mg_temp = total_data[ia][j*data_col+mgx_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENS_COEFF - gh[ig] * total_data[ia][j*data_col + mnux_id];
+							mg_temp = total_data[ia][j*data_col+mgx_id] * total_data[ia][j*data_col + crit_id] * CRIT_DENSITY - gh[ig] * total_data[ia][j*data_col + mnux_id];
 							histogram_s(mg_temp, mg_bin, MG_BIN_NUM, k);
 							total_chisq[(gh_num + ig)*MG_BIN_NUM + k] += 1;
 						}

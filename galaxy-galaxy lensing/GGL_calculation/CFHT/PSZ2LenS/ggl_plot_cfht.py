@@ -49,9 +49,7 @@ ylabels = ["$\gamma$", "$\Delta\Sigma \; [\\rm{h \cdot M_{\odot}} \cdot \\rm{pc^
 ylabels_r = "$\\rm{R}\Delta\Sigma \; [\\rm{10^6\ M_{\odot}} \cdot \\rm{pc^{-2}}]$"
 xlabel = "$\\rm{R} \; [\\rm{Mpc} \cdot \\rm{h^{-1}}]$"
 
-coeff_integ = 554.6821355281792
-coeff_dist = 1662895.2081868195
-
+coeff = 554.682135528
 # the catalog contains
 # e_t, e_x, m, c, weight, crit_density,
 # integrate part of crit_density, transverse distance and redshift of background
@@ -109,8 +107,8 @@ if cmd == "calculate":
             # corr_m = 1 + tool_box.accurate_sum(weight_bias, 10000)/weight_sum
             # corr_m = 1 + m_bias.mean()
 
-            delta_crit_et = e_t*crit_integ*coeff_integ*weight
-            delta_crit_ex = e_x*crit_integ*coeff_integ*weight
+            delta_crit_et = e_t*crit_integ*coeff*weight
+            delta_crit_ex = e_x*crit_integ*coeff*weight
 
             delta_sigma_t = numpy.sum(delta_crit_et)/weight_sum/corr_m
             delta_sigma_x = numpy.sum(delta_crit_ex)/weight_sum/corr_m
@@ -150,14 +148,14 @@ if cmd == "calculate":
                            c="C2", marker="s", capsize=4,mfc="none", fmt=" ",label="X")
 
     y_max = img.axs[0][0].set_ylim()[1]
-    ylims = (0.01, 200)
-    # plot the line of "W1" extracted from "Lensing is low"
-    if area_num == 1 and fore_source == "cmass":
-        w1_cfht_path = "../lensing_low/data.dat"
-        if os.path.exists(w1_cfht_path):
-            w1_data_cfht = numpy.loadtxt(w1_cfht_path)
-            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], marker="s",
-                                   c="C4", capsize=4, mfc="none",fmt=" ", label="w1, Lensing_low")
+    ylims = (0.1, 8000)
+    # plot the line extracted from the paper
+
+    w1_cfht_path = "/home/hklee/work/CFHT/gg_lensing/dens_cluster/data.dat"
+    if os.path.exists(w1_cfht_path):
+        dens_data = numpy.loadtxt(w1_cfht_path)
+        img.axs[0][0].errorbar(dens_data[0], dens_data[1], dens_data[2:4], marker="s",
+                               c="k", capsize=4, mfc="none",fmt=" ", label="Dens cluster")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)
@@ -210,15 +208,15 @@ if cmd == "plot":
                            capsize=4,fmt=" ", label="X")
 
     y_max = img.axs[0][0].set_ylim()[1]
-    ylims = (0.01, 200)
+    ylims = (0.1, 8000)
 
-    # plot the line of "W1" extracted from "Lensing is low"
-    if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
-        w1_cfht_path = "../lensing_low/data.dat"
-        if os.path.exists(w1_cfht_path):
-            w1_data_cfht = numpy.loadtxt(w1_cfht_path)
-            img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", mfc="none",
-                                   capsize=4, marker="s", label="w1, Lensing_low",fmt=" ")
+    # plot the line extracted from the paper
+
+    w1_cfht_path = "/home/hklee/work/CFHT/gg_lensing/dens_cluster/data.dat"
+    if os.path.exists(w1_cfht_path):
+        dens_data = numpy.loadtxt(w1_cfht_path)
+        img.axs[0][0].errorbar(dens_data[0], dens_data[1], dens_data[2:4], marker="s",
+                               c="k", capsize=4, mfc="none",fmt=" ", label="Dens cluster")
 
     img.set_label(0, 0, 0, ylabels[1])
     img.set_label(0, 0, 1, xlabel)

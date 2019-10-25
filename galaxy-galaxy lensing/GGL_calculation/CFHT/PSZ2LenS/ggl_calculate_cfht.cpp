@@ -16,9 +16,6 @@
 #define MY_INT long
 #endif // SMALL_CATA
 
-#define PHYSICAL_DIST // calculate in physical coordinate
-
-
 int main(int argc, char *argv[])
 {
 	/* the macros should be adjusted in each case depends on how many columns will be read */
@@ -63,7 +60,7 @@ int main(int argc, char *argv[])
 
 	sprintf(log_path, "%slog/ggl_log_%d.dat", parent_path, rank); 
 
-	sprintf(h5f_path_fore, "%sforeground/%s/w_%d.hdf5", data_path, foreground_name, area_id);
+	sprintf(h5f_path_fore, "%sforeground/%s/w_%d_3.hdf5", data_path, foreground_name, area_id);
 	
 	//sprintf(parent_path, "/mnt/perc/hklee/CFHT/gg_lensing/");
 	//sprintf(data_path, "%sdata/", parent_path);
@@ -121,14 +118,14 @@ int main(int argc, char *argv[])
 	double *radius_bin;
 
 	// source Z > len Z + diff_z_thresh
-	diff_z_thresh = 0.1;
+	diff_z_thresh = 0.05;
 
 
 	///////////////////////////////////// radius bin ////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
-	radius_num = 13;
+	radius_num = 24;
 	radius_bin = new double[radius_num + 1]{};
-	log_bin(0.04, 15, radius_num + 1, radius_bin);
+	log_bin(0.1, 25.12, radius_num + 1, radius_bin);
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////
 
@@ -151,17 +148,8 @@ int main(int argc, char *argv[])
 	sprintf(names[c_id], "C");
 
 	sprintf(names[z_id], "Z");
-
-#ifdef PHYSICAL_DIST
-// calculate in physical coordinate
-	sprintf(names[dist_id], "PHY_DISTANCE");
-	sprintf(names[dist_integ_id], "PHY_DISTANCE_INTEG");
-#else
-// calculate in comoving coordinate
-	sprintf(names[dist_id], "COM_DISTANCE");
-	sprintf(names[dist_integ_id], "COM_DISTANCE_INTEG");
-#endif
-
+	sprintf(names[dist_id], "DISTANCE");
+	sprintf(names[dist_integ_id], "DISTANCE_INTEG");
 	sprintf(names[ra_id], "RA");
 	sprintf(names[dec_id], "DEC");
 	sprintf(names[cos_dec_id], "COS_DEC");
@@ -356,22 +344,12 @@ int main(int argc, char *argv[])
 		// the source must be at z = z_f + diff_z_thresh
 		z_thresh = z_f + diff_z_thresh;
 
- #ifdef PHYSICAL_DIST
-		// physical distance
-		dist_len = foregal_data[dist_id][gal_id];
-		dist_len_coeff = 1. / dist_len * (1 + z_f);
-		// the integrate part of the physical distance
-		dist_integ_len = foregal_data[dist_integ_id][gal_id];
-		dist_integ_len_coeff = 1. / dist_integ_len * (1 + z_f);
- #else
 		// comoving distance
 		dist_len = foregal_data[dist_id][gal_id];
 		dist_len_coeff = 1. / dist_len / (1 + z_f);
 		// the integrate part of the comoving distance
 		dist_integ_len = foregal_data[dist_integ_id][gal_id];
 		dist_integ_len_coeff = 1. / dist_integ_len / (1 + z_f);
- #endif
-
 
 		// the max searching radius depend on the redshift of lens  //	
 		radius_e = radius_bin[radius_label + 1] *rad_to_deg/ dist_len / foregal_data[cos_dec_id][gal_id] * 2; // degree
