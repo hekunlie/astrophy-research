@@ -315,15 +315,15 @@ if cmd == "select":
     mg_bin_num = 8
 
     h5f_path = fourier_cata_path + "fourier_cata.hdf5"
-    h5f_path_cut = data_path + "%s/fourier_cata_cut.hdf5"%origin_data
+    h5f_path_cut = data_path + "%s/fourier_cata_cut_psz2.hdf5"%origin_data
 
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
         h5f["/block_scale"] = numpy.array([block_scale],dtype=numpy.float64)
         h5f.close()
     comm.Barrier()
+    if rank == 2:
 
-    if rank < area_num:
         h5f = h5py.File(h5f_path, "r")
         cata_data = h5f["/w_%d"%(rank+1)].value
         h5f.close()
@@ -334,13 +334,13 @@ if cmd == "select":
         total_area_idx = cata_data[:, total_area_lb] >= total_area_thresh
         odds_idx = cata_data[:,odds_lb_f] >= odds_thresh
         # if rank == 2:
-        #     deg = 1.5
-        #     ra_f, dec_f = 213.696611, 54.784321
-        #     idxr1 = cata_data[:, ra_lb] >= ra_f - deg
-        #     idxr2 = cata_data[:, ra_lb] <= ra_f + deg
-        #     idxd1 = cata_data[:, dec_lb] >= dec_f - deg
-        #     idxd2 = cata_data[:, dec_lb] <= dec_f + deg
-        #     idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx & idxr1 & idxr2 & idxd1 & idxd2
+        # deg = 5
+        # ra_f, dec_f = 213.696611, 54.784321
+        # idxr1 = cata_data[:, ra_lb] >= ra_f - deg
+        # idxr2 = cata_data[:, ra_lb] <= ra_f + deg
+        # idxd1 = cata_data[:, dec_lb] >= dec_f - deg
+        # idxd2 = cata_data[:, dec_lb] <= dec_f + deg
+        # idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx & idxr1 & idxr2 & idxd1 & idxd2
         # else:
 
         idx_select = flux_alt_idx & nstar_idx & total_area_idx & odds_idx
@@ -380,7 +380,7 @@ if cmd == "select":
                  "fg1","fg2","nstar","flux2","area"]
 
         datas = [redshift, ra, dec, mg1, mg2, mn, mu, mv, mag, cos_dec, z_min, z_max, odds,
-                 fg1,fg2,cata_data[:,nstar_lb],cata_data[:,flux_alt_lb], cata_data[:,total_area_lb]]
+                 fg1,fg2,cata_data[:,nstar_lb][cut_idx],cata_data[:,flux_alt_lb][cut_idx], cata_data[:,total_area_lb][cut_idx]]
 
         fq = Fourier_Quad(12,123)
         mg1_bin = fq.set_bin(mg1, mg_bin_num, 10000)
@@ -458,40 +458,37 @@ if cmd == "select":
                 block_label[idx] = tag
 
         print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
-    comm.Barrier()
 
-    for area_id in range(area_num):
-        if rank == area_id:
-            h5f = h5py.File(h5f_path_cut, "r+")
 
-            h5f["/w_%d/grid_shape" % (rank + 1)] = grid_shape
+        h5f = h5py.File(h5f_path_cut, "r+")
 
-            h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
-            h5f["/w_%d/block_start" % (rank + 1)] = block_start
-            h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_in_block
-            h5f["/w_%d/block_label" % (rank + 1)] = block_label
+        h5f["/w_%d/grid_shape" % (rank + 1)] = grid_shape
 
-            h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
-            h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
-            h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
-            h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
+        h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
+        h5f["/w_%d/block_start" % (rank + 1)] = block_start
+        h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_in_block
+        h5f["/w_%d/block_label" % (rank + 1)] = block_label
 
-            h5f["/w_%d/mg1_bin" % (rank + 1)] = mg1_bin
-            h5f["/w_%d/mg2_bin" % (rank + 1)] = mg2_bin
+        h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
+        h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
+        h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
+        h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
 
-            for i in range(len(names)):
-                h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
+        h5f["/w_%d/mg1_bin" % (rank + 1)] = mg1_bin
+        h5f["/w_%d/mg2_bin" % (rank + 1)] = mg2_bin
 
-            h5f.close()
-        comm.Barrier()
-    t2 = time.time()
-    comm.Barrier()
-    if rank == 0:
-        for i in range(area_num):
-            cmd = "/home/hklee/work/CFHT/gg_lensing/prepare_cata/add_com_dist %s /w_%d/"%(h5f_path_cut, i+1)
-            a = Popen(cmd, shell=True)
-            a.wait()
+        for i in range(len(names)):
+            h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
+
+        h5f.close()
+
+        t2 = time.time()
+
+        cmd = "/home/hklee/work/CFHT/gg_lensing/prepare_cata/add_com_dist %s /w_%d/"%(h5f_path_cut, rank+1)
+        a = Popen(cmd, shell=True)
+        a.wait()
         print("%s, %.2f sec"%(tool_box.get_time_now(),t2-t1))
         print(fourier_cata_path)
         print(h5f_path_cut)
+    comm.Barrier()
 ############################# Fourier_quad data cutoff ###########################################

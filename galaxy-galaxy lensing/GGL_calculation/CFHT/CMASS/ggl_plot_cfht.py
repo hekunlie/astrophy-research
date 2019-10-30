@@ -25,6 +25,8 @@ cmd = argv[2]
 parent_path = "/mnt/perc/hklee/CFHT/gg_lensing/"
 parent_result_path = parent_path + "result/%s/cfht/"%fore_source
 
+lens_low_path = '/home/hklee/work/CFHT/gg_lensing/lensing_low/data.dat'
+
 h5f = h5py.File(parent_result_path + "w_%s/radius_0.hdf5"%argv[3], "r")
 radius_bin = h5f["/radius_bin"].value[:,0]
 h5f.close()
@@ -85,6 +87,7 @@ if cmd == "calculate":
             h5f.close()
 
         if stack_count > 0:
+
             pair_num = data.shape[0]
 
             e_t = data[:, 0]
@@ -99,21 +102,27 @@ if cmd == "calculate":
             dist = data[:, 6]
             redshif = data[:, 7]
 
-            weight = weight_measure/crit_integ**2
+            # weight = weight_measure/crit_integ**2
+            weight = weight_measure/crit**2
             weight_sum = weight.sum()
             # weight_bias = weight * m_bias
             # weight_sum = tool_box.accurate_sum(weight, 10000)
 
-            # two kinds of correction
+            # correction
             corr_m = 1 + numpy.sum(weight * m_bias)/weight_sum
-            # corr_m = 1 + tool_box.accurate_sum(weight_bias, 10000)/weight_sum
-            # corr_m = 1 + m_bias.mean()
 
-            delta_crit_et = e_t*crit_integ*coeff_integ*weight
-            delta_crit_ex = e_x*crit_integ*coeff_integ*weight
+            # delta_crit_et = e_t*crit_integ*coeff_integ*weight
+            # delta_crit_ex = e_x*crit_integ*coeff_integ*weight
+
+            delta_crit_et = e_t*crit*coeff_dist*weight
+            delta_crit_ex = e_x*crit*coeff_dist*weight
 
             delta_sigma_t = numpy.sum(delta_crit_et)/weight_sum/corr_m
+            err_t = numpy.sum(e_t.std()*crit*coeff_dist*weight)/weight_sum/corr_m/numpy.sqrt(pair_num)
+
             delta_sigma_x = numpy.sum(delta_crit_ex)/weight_sum/corr_m
+            err_x = numpy.sum(e_x.std()*crit*coeff_dist*weight)/weight_sum/corr_m/numpy.sqrt(pair_num)
+
             # delta_sigma_t = tool_box.accurate_sum(delta_crit_et, 10000)/weight_sum/corr_m
             # delta_sigma_x = tool_box.accurate_sum(delta_crit_ex, 10000)/weight_sum/corr_m
 
@@ -124,9 +133,9 @@ if cmd == "calculate":
             # r_mean = tool_box.accurate_sum(dist, 1000)/dist.shape[0]
 
             result[crit_t_lb, ir] = delta_sigma_t
-            result[crit_t_sig_lb, ir] = delta_crit_et.std()/numpy.sqrt(pair_num)
+            result[crit_t_sig_lb, ir] = err_t
             result[crit_x_lb, ir] = delta_sigma_x
-            result[crit_x_sig_lb, ir] = delta_crit_ex.std()/numpy.sqrt(pair_num)
+            result[crit_x_sig_lb, ir] = err_x
             result[trans_dist_lb, ir] = r_mean
 
             print("[%.5f, %.5f], %d galaxy pairs at radius %f (%f). ESD: %.3f (%.3f)"%(
@@ -153,9 +162,8 @@ if cmd == "calculate":
     ylims = (0.01, 200)
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and fore_source == "cmass":
-        w1_cfht_path = "../lensing_low/data.dat"
-        if os.path.exists(w1_cfht_path):
-            w1_data_cfht = numpy.loadtxt(w1_cfht_path)
+        if os.path.exists(lens_low_path):
+            w1_data_cfht = numpy.loadtxt(lens_low_path)
             img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], marker="s",
                                    c="C4", capsize=4, mfc="none",fmt=" ", label="w1, Lensing_low")
 
@@ -214,9 +222,8 @@ if cmd == "plot":
 
     # plot the line of "W1" extracted from "Lensing is low"
     if area_num == 1 and int(argv[3]) == 1 and fore_source == "cmass":
-        w1_cfht_path = "../lensing_low/data.dat"
-        if os.path.exists(w1_cfht_path):
-            w1_data_cfht = numpy.loadtxt(w1_cfht_path)
+        if os.path.exists(lens_low_path):
+            w1_data_cfht = numpy.loadtxt(lens_low_path)
             img.axs[0][0].errorbar(w1_data_cfht[:, 0], w1_data_cfht[:, 1], w1_data_cfht[:, 2], c="C4", mfc="none",
                                    capsize=4, marker="s", label="w1, Lensing_low",fmt=" ")
 

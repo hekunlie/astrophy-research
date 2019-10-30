@@ -225,7 +225,7 @@ if cmd == "select":
     margin = 0.1*block_scale
 
     h5f_path = cfht_cata_path + "cfht_cata.hdf5"
-    h5f_path_cut = data_path + "cfht_cata/cfht_cata_cut_psz2.hdf5"
+    h5f_path_cut = data_path + "cfht_cata/cfht_cata_cut.hdf5"
 
     if rank == 0:
         h5f = h5py.File(h5f_path_cut, "w")
@@ -233,7 +233,7 @@ if cmd == "select":
         h5f.close()
     comm.Barrier()
 
-    if rank == 2:
+    if rank < area_num:
         h5f = h5py.File(h5f_path, "r")
         cata_data = h5f["/w_%d"%(rank+1)].value
         h5f.close()
@@ -245,38 +245,24 @@ if cmd == "select":
         idx_weight = cata_data[:, weight_lb_c] > 0 - epsilon
 
         # mask <= 1
-        idx_mask = cata_data[:, mask_lb_c] <= 10 + epsilon
+        idx_mask = cata_data[:, mask_lb_c] <= 1 + epsilon
 
         # FITCLASS = 0
-        idx_fitclass = numpy.abs(cata_data[:, fitclass_lb_c]) < 100 + epsilon
+        idx_fitclass = numpy.abs(cata_data[:, fitclass_lb_c]) < 0 + epsilon
 
         # MAG < 24.7
-        idx_mag = cata_data[:, mag_lb_c] < 100
+        idx_mag = cata_data[:, mag_lb_c] < 24.7
 
         # Redshift
         idxz_1 = cata_data[:, z_lb_c] <= 15
         idxz_2 = cata_data[:, z_lb_c] >= 0
-        idxz_3 = cata_data[:, odds_lb_c] > -0.5 - epsilon
+        idxz_3 = cata_data[:, odds_lb_c] > 0.5 - epsilon
 
         # # the PZ selection criteria from Dong FY
         # idx_pz1 = numpy.abs(cata_data[:, pz1_lb] - 1) <= epsilon
         # idx_pz2 = cata_data[:, pz2_lb] <= 0.2
 
-        # # DEBUG
-        # if rank == 2:
-        deg = 4
-        ra_f, dec_f = 213.696611, 54.784321
-        idxr1 = cata_data[:, ra_lb_c] < ra_f + deg
-        idxr2 = cata_data[:, ra_lb_c] > ra_f - deg
-        idxd1 = cata_data[:, dec_lb_c] > dec_f - deg
-        idxd2 = cata_data[:, dec_lb_c] < dec_f + deg
-        idx_ra_dec = idxr1 & idxr2 & idxd1 & idxd2
-
-        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3 & idx_ra_dec
-        # else:
-        #     cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
-
-        # cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
+        cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
 
         ra = cata_data[:, ra_lb_c][cut_idx]
         dec = cata_data[:, dec_lb_c][cut_idx]
@@ -294,23 +280,25 @@ if cmd == "select":
 
         e1 = cata_data[:,e1_lb_c][cut_idx]
         # the minus arises from the true RA-axis is in opposite direction
-        e2 = (cata_data[:,e2_lb_c][cut_idx] - c_bias)
+        # although, "The ellipticity coordinate system is aligned with the celestial sphere at the
+        # location of each galaxy."
+        e2 = -(cata_data[:,e2_lb_c][cut_idx] - c_bias)
 
         weight = cata_data[:,weight_lb_c][cut_idx]
 
-        starflag = cata_data[:, starflag_lb_c][cut_idx]
-
-        fitclass = cata_data[:,fitclass_lb_c][cut_idx]
-
-        mask = cata_data[:,mask_lb_c][cut_idx]
+        # starflag = cata_data[:, starflag_lb_c][cut_idx]
+        #
+        # fitclass = cata_data[:,fitclass_lb_c][cut_idx]
+        #
+        # mask = cata_data[:,mask_lb_c][cut_idx]
 
         data_num = len(redshift)
 
         names = ["Z", "RA", "DEC", "MAG", "COS_DEC", "Z_MIN", "Z_MAX", "ODDS",
-                 "E1", "E2", "WEIGHT", "M", "C", "FITCLASS", "MASK"]
+                 "E1", "E2", "WEIGHT", "M", "C"]
 
         datas = [redshift, ra, dec, mag, cos_dec, z_min, z_max, odds,
-                 e1, e2, weight, m_bias, c_bias, fitclass, mask]
+                 e1, e2, weight, m_bias, c_bias]
 
         # set up RA & DEC bin
         ra_min, ra_max = ra.min()-margin, ra.max()+margin
@@ -351,6 +339,11 @@ if cmd == "select":
                 boundx[tag, 2] = ra_bin[j]
                 boundx[tag, 3] = ra_bin[j + 1]
 
+        # # galaxy count in each block
+        # num_in_block = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        # block_start = numpy.zeros((1, grid_num), dtype=numpy.intc)
+        # # the galaxy labels in the block
+        # gal_sequence = numpy.zeros((1, data_num), dtype=numpy.intc)
 
         # galaxy count in each block
         num_in_block = numpy.zeros((grid_num,), dtype=numpy.intc)
@@ -380,33 +373,33 @@ if cmd == "select":
                 block_label[idx] = tag
 
         print("W%d: %d ==> %d"%(rank, cata_data.shape[0], data_num))
-
-
-
-        h5f = h5py.File(h5f_path_cut, "r+")
-
-        h5f["/w_%d/grid_shape" % (rank + 1)] = grid_shape
-
-        h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
-        h5f["/w_%d/block_start" % (rank + 1)] = block_start
-        h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_in_block
-        h5f["/w_%d/block_label" % (rank + 1)] = block_label
-
-        h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
-        h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
-        h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
-        h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
-
-        for i in range(len(names)):
-            h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
-        h5f.close()
-
-        t2 = time.time()
-
-
-        cmd = "/home/hklee/work/CFHT/gg_lensing/prepare_cata/add_com_dist %s /w_%d/" % (h5f_path_cut, rank + 1)
-        a = Popen(cmd, shell=True)
-        a.wait()
-        print("%s, %.2f sec"%(tool_box.get_time_now(),t2-t1))
     comm.Barrier()
+
+    for area_id in range(area_num):
+        if rank == area_id:
+            h5f = h5py.File(h5f_path_cut, "r+")
+
+            h5f["/w_%d/grid_shape" % (rank + 1)] = grid_shape
+
+            h5f["/w_%d/num_in_block" % (rank + 1)] = num_in_block
+            h5f["/w_%d/block_start" % (rank + 1)] = block_start
+            h5f["/w_%d/gal_in_block" % (rank + 1)] = gal_in_block
+            h5f["/w_%d/block_label" % (rank + 1)] = block_label
+
+            h5f["/w_%d/block_boundy" % (rank + 1)] = boundy
+            h5f["/w_%d/block_boundx" % (rank + 1)] = boundx
+            h5f["/w_%d/RA_bin" % (rank + 1)] = ra_bin
+            h5f["/w_%d/DEC_bin" % (rank + 1)] = dec_bin
+
+            for i in range(len(names)):
+                h5f["/w_%d/%s"%(rank+1,names[i])] = datas[i]
+            h5f.close()
+        comm.Barrier()
+    t2 = time.time()
+    if rank == 0:
+        for i in range(area_num):
+            cmd = "/home/hklee/work/CFHT/gg_lensing/prepare_cata/add_com_dist %s /w_%d/" % (h5f_path_cut, i + 1)
+            a = Popen(cmd, shell=True)
+            a.wait()
+        print("%s, %.2f sec"%(tool_box.get_time_now(),t2-t1))
 ############################# CFHTLenS catlog cutoff #############################################

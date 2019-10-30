@@ -39,10 +39,10 @@
 struct para
 {
 	int psf_size, psf_px, psf_py;
-	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thres = 0.0001;
+	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thresh = 0.0001;
 
 	int gal_size, gal_hsize, gal_px, gal_py;
-	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux;
+	double gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux,gal_effective_radius;
 	double gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig, gal_flux2_new;
 	double gal_size_ext[5];
 	double gal_flux_ext[5];
@@ -56,8 +56,8 @@ struct para
 	/*parameters for detection which should be initialized before */
 	int stamp_size; /* the stamp size for get_radius() */
 	int img_x, img_y; /* the size of chip image for the 'source_detector()' and galaxy_finder()*/
-	int area_thres=6; /* the minimun pixels for a detection */
-	double detect_thres; /* the threshold of pixel value of source */
+	int area_thresh=6; /* the minimun pixels for a detection */
+	double detect_thresh; /* the threshold of pixel value of source */
 	double noise_sig;
 	int max_source = 20; /* the maximum of sources allowed in each chip, changeable */
 	double max_distance= 8.;/* the max distance of peak away from the center of the source candidate */
@@ -303,8 +303,8 @@ void get_psf_radius(const float *psf_pow, para*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
-void source_detector(const double *source_img, int *soucrce_x, int*source_y, double *source_paras,para* paras, bool cross, int &detection, std::string &info);
-void source_detector(const float *source_img, int *soucrce_x, int*source_y, float *source_paras, para* paras, bool cross, int &detection, std::string &info);
+void source_detector(const double *source_img, int *source_x, int*source_y, double *source_paras,para* paras, bool cross, int &detection, std::string &info);
+void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, para* paras, bool cross, int &detection, std::string &info);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -312,17 +312,19 @@ void source_detector(const float *source_img, int *soucrce_x, int*source_y, floa
 	source_paras: the array to store the parameters of sources detected,
 						   8 elemets for each source, [....,area, peak_y, peak_x, peak_val, half_light_area, total_flux, half_light_flux, flux_sq,...]
 	cross: boolean, True for detection on the nearest four pixels, "+", upper, lower, left, right
-							False for detecion on the nearest eight pixels, "x" and "+"  
+							False for detection on the nearest eight pixels, "x" and "+"  
 	detection: int, the total number of detection 
-	info: the information of detecion
+	info: the information of detection
 */
 
 
 void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
 void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
-/* to indentify the galaxy on each stamp basing on source_detector(), because of many detections on it
+/* to identify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
+
+	needs: "stamp_size","max_distance","img_y", "img_x", "detect_thresh", "area_thresh", "max_source"
 */
 
 int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters);
@@ -499,8 +501,8 @@ void rand_shuffle(int *seq, int length);//checked
 void smooth(double *image, const double *coeffs, para *paras);//checked
 /* smooth all the region */
 void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);//checked
-/* the image will be repalced by the smoothed one. 
-	the psf_pow and the paras->psf_thres_pow are the mask and  threshold to label the region where to be smoothed
+/* the image will be replaced by the smoothed one. 
+	the psf_pow and the paras->psf_thresh_pow are the mask and  threshold to label the region where to be smoothed
 	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  
 */
 

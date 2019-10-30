@@ -4,7 +4,7 @@
 
 #define MAX_DATA_COL 20
 #define MAX_AREA 20
-#define MG_BIN_NUM 8
+#define MG_BIN_NUM 4
 #define ALLOT_THRESH 500000 /* it's smaller than the number threshold, 20000000, for saving data separately */
 #define DIST
 

@@ -347,9 +347,9 @@ int main(int argc, char *argv[])
 	read_h5(h5f_path_grid, set_name, block_boundy);
 
 	//set_bin(backgal_data[mg1_id], backgal_num, mg_bin, MG_BIN_NUM, 1000, 50000);
-	sprintf(set_name, "/w_1/mg1_bin");
+	sprintf(set_name, "/w_%d/mg1_bin",area_id);
 	read_h5(h5f_path_grid, set_name, mg1_bin);
-	sprintf(set_name, "/w_1/mg2_bin");
+	sprintf(set_name, "/w_%d/mg2_bin",area_id);
 	read_h5(h5f_path_grid, set_name, mg2_bin);
 
 	sprintf(log_infom, "RANK: %d. w_%d. Read background data. %d galaxies. %d grids (%d x %d)", rank, area_id, backgal_num, grid_num, grid_ny, grid_nx);

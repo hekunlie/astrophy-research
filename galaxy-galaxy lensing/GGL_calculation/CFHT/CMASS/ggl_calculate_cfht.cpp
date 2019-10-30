@@ -16,7 +16,7 @@
 #define MY_INT long
 #endif // SMALL_CATA
 
-#define PHYSICAL_DIST // calculate in physical coordinate
+//#define PHYSICAL_DIST // calculate in physical coordinate
 
 
 int main(int argc, char *argv[])

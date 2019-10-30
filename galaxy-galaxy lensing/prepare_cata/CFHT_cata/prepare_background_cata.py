@@ -262,18 +262,6 @@ if cmd == "select":
         # idx_pz1 = numpy.abs(cata_data[:, pz1_lb] - 1) <= epsilon
         # idx_pz2 = cata_data[:, pz2_lb] <= 0.2
 
-        # DEBUG
-        # if rank == 2:
-        #     idxr1 = cata_data[:, ra_lb_c] < 216.852112 + 2
-        #     idxr2 = cata_data[:, ra_lb_c] > 216.852112 - 2
-        #     idxd1 = cata_data[:, dec_lb_c] > 55.750253 - 2
-        #     idxd2 = cata_data[:, dec_lb_c] < 55.750253 + 2
-        #     idx_ra_dec = idxr1 & idxr2 & idxd1 & idxd2
-        #
-        #     cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3 & idx_ra_dec
-        # else:
-        #     cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
-
         cut_idx = idx_weight & idx_mask & idx_fitclass & idx_mag & idxz_1 & idxz_2 & idxz_3
 
         ra = cata_data[:, ra_lb_c][cut_idx]

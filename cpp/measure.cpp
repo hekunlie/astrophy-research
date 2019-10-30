@@ -31,7 +31,7 @@ int main(int argc, char*argv[])
 	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;
 	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=myid, detect_label, h;
-	double psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
+	double psf_thresh_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, ts, te, t1, t2, psf_peak = 0, temp_flux = 0;;
 
 	int cmd = 0;
 
@@ -69,8 +69,8 @@ int main(int argc, char*argv[])
 	all_paras.psf_noise_sig = psf_noise_sig;
 	all_paras.stamp_size = size;
 	all_paras.max_source = 30;
-	all_paras.area_thres = 5;
-	all_paras.detect_thres = gal_noise_sig * sig_level;
+	all_paras.area_thresh = 5;
+	all_paras.detect_thresh = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.max_distance = 6; // because the max half light radius of the galsim source is 5.5 pixels
@@ -115,13 +115,13 @@ int main(int argc, char*argv[])
 	//noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
 	//normalize_arr(ppsf, size);
 
-	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
+	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
 	gsl_free();
 
 	if (0 == myid)
 	{
-		std::cout << "PSF THRES: " << all_paras.psf_pow_thres << std::endl << all_paras.psf_hlr << std::endl;
+		std::cout << "PSF THRES: " << all_paras.psf_pow_thresh << std::endl << all_paras.psf_hlr << std::endl;
 	}
 
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)

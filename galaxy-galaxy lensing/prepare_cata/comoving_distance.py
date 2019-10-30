@@ -24,9 +24,9 @@ coeff = 1000 * C_0_hat / h
 
 cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 
-com_dist = cosmos.comoving_distance(z).value
+com_dist = cosmos.comoving_distance(z).value*h
 scale_len = radian * com_dist
 
-print("Z: %.5f. H0: %.3f. Omega_m: %.3f\nComoving dist: %f Mpc/h ( %f Mpc)\nAngular Diameter dist: %f Mpc."
-      % (z, H_0, omega_m0, com_dist * h, com_dist, com_dist / (1 + z)))
+print("Z: %.5f. H0: %.3f. Omega_m: %.3f\nComoving dist: %f Mpc/h ( %f Mpc)\nAngular Diameter dist: %f Mpc/h."
+      % (z, H_0, omega_m0, com_dist, com_dist/h, com_dist / (1 + z)))
 print("Separation angle: %.3f arcmin (%.5f rad) ~ %.5f Mpc" % (ang, radian, scale_len))

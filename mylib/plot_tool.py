@@ -71,6 +71,22 @@ class Image_Plot:
             self.axs[iy][ix].xaxis.set_major_locator(loc)
             self.axs[iy][ix].xaxis.set_major_formatter(fmt)
 
+    def share_axis(self,iy,ix,axis_nm):
+        if axis_nm == 0:
+            share_ax = self.axs[iy][ix].twiny()
+            share_ax.xaxis.set_tick_params(which="major", direction="in", length=self.tick_len,
+                                            width=self.axis_linewidth)
+            share_ax.xaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len * 0.6),
+                                            width=self.axis_linewidth)
+        else:
+            share_ax = self.axs[iy][ix].twinx()
+            share_ax.yaxis.set_tick_params(which="major", direction="in", length=self.tick_len,
+                                            width=self.axis_linewidth)
+            share_ax.yaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len * 0.6),
+                                            width=self.axis_linewidth)
+        share_ax.tick_params(direction='in', labelsize=self.xy_tick_size, top=True, right=True, pad=self.pad_size)
+        return share_ax
+
     def del_tick(self, iy, ix, axis_nm, box=None):
         """not to show the axis"""
         # delete the axis, but the box of axis will be preserved

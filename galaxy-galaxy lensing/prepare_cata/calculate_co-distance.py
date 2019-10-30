@@ -24,7 +24,7 @@ cpus = comm.Get_size()
 data_path = "/mnt/perc/hklee/CFHT/gg_lensing/data/redshift.hdf5"
 
 # parameters
-omega_m0 = 0.31
+omega_m0 = 0.30
 omega_lambda0 = 1 - omega_m0
 h = 0.7
 C_0_hat = 2.99792458
@@ -49,14 +49,15 @@ my_task = tool_box.allot(total_task, cpus)[rank]
 # shared buffer
 itemsize = MPI.DOUBLE.Get_size()
 if rank == 0:
-    nbytes = total_z*itemsize*4
+    nbytes = total_z*itemsize*3
 else:
     nbytes = 0
 
 win1 = MPI.Win.Allocate_shared(nbytes, itemsize, comm=comm)
 buf1, itemsize = win1.Shared_query(0)
 # comoving distance (Mpc/h), integrate part of co-distance
-data_buf = numpy.ndarray(buffer=buf1, dtype='d', shape=(total_z, 4))
+# angular diameter distance (Mpc/h) & the integrate part
+data_buf = numpy.ndarray(buffer=buf1, dtype='d', shape=(total_z, 3))
 comm.Barrier()
 
 # calculate
@@ -69,13 +70,16 @@ for i in my_task:
 
     # comoving distance [Mpc/h]
     data_buf[i,0] = com_dist.value*h
-    # the integrate in the comoving distance
-    data_buf[i,1] = com_dist.value*h/coeff
 
     # angular diameter distance [Mpc/h]
-    data_buf[i,2] = da_dist.value*h
-    # the integrate in the angular diameter distance
-    data_buf[i,3] = da_dist.value*h/coeff
+    data_buf[i,1] = da_dist.value*h
+
+    # the integrate part of the distance,
+    # it's the same for both co- & physical distance
+    data_buf[i,2] = com_dist.value*h/coeff
+
+
+
 
     if rank == 0:
         print(redshift[i], com_dist, data_buf[i])
@@ -90,14 +94,15 @@ if rank == 0:
     h5f["/OM0_H0_C"] = numpy.array([omega_m0, H_0, C_0_hat])
     h5f["/Z"] = redshift
     h5f["/COM_DISTANCE"] = data_buf[:,0]
-    h5f["/COM_DISTANCE_INTEG"] = data_buf[:,1]
-    h5f["/PHY_DISTANCE"] = data_buf[:,2]
-    h5f["/PHY_DISTANCE_INTEG"] = data_buf[:,3]
+    h5f["/PHY_DISTANCE"] = data_buf[:,1]
+    h5f["/DISTANCE_INTEG"] = data_buf[:,2]
+
     h5f.close()
 
     img = Image_Plot()
     img.subplots(1,2)
     img.axs[0][0].plot(redshift,data_buf[:,0])
-    img.axs[0][1].plot(redshift,data_buf[:,1])
+    img.axs[0][0].plot(redshift,data_buf[:,1],linestyle="dotted")
+    img.axs[0][1].plot(redshift,data_buf[:,2])
     img.save_img("test.png")
     img.close_img()
