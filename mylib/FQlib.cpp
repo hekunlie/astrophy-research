@@ -768,14 +768,27 @@ void write_h5(const char *filename, const char *set_name, const double*data, con
 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
-	hsize_t dims[2];
-	unsigned rank = 2;
-	dims[0] = row;
-	dims[1] = column;
-	
+	unsigned rank;
+
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 	group_id = H5Gopen1(file_id, name);
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
+
+    if(row == 1 or column == 1)
+    {
+        hsize_t dims[1];
+	    rank = 1;
+        dims[0] = column*row;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+    else
+	{
+        hsize_t dims[2];
+	    rank = 2;
+	    dims[0] = row;
+	    dims[1] = column;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+	
 	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
 	status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
@@ -851,13 +864,26 @@ void write_h5(const char *filename, const char *set_name, const float*data, cons
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
 	hsize_t dims[2];
-	unsigned rank = 2;
-	dims[0] = row;
-	dims[1] = column;
+	unsigned rank;
 
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 	group_id = H5Gopen1(file_id, name);
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
+
+    if(row == 1 or column == 1)
+    {
+        hsize_t dims[1];
+	    rank = 1;
+        dims[0] = column*row;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+    else
+	{
+        hsize_t dims[2];
+	    rank = 2;
+	    dims[0] = row;
+	    dims[1] = column;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
 	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_FLOAT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	status = H5Dwrite(dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 
@@ -932,13 +958,27 @@ void write_h5(const char *filename, const char *set_name, const int*data, const 
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
 	hsize_t dims[2];
-	unsigned rank = 2;
-	dims[0] = row;
-	dims[1] = column;
-
+	unsigned rank;
+	
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 	group_id = H5Gopen1(file_id, name);
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
+
+    if(row == 1 or column == 1)
+    {
+        hsize_t dims[1];
+	    rank = 1;
+        dims[0] = column*row;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+    else
+	{
+        hsize_t dims[2];
+	    rank = 2;
+	    dims[0] = row;
+	    dims[1] = column;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+
 	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_INT, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	status = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 
@@ -1014,13 +1054,27 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 	hid_t file_id, group_id, dataset_id, dataspace_id;
 	herr_t status;
 	hsize_t dims[2];
-	unsigned rank = 2;
-	dims[0] = row;
-	dims[1] = column;
+	unsigned rank;
 
 	file_id = H5Fopen(filename, H5F_ACC_RDWR, H5P_DEFAULT);
 	group_id = H5Gopen1(file_id, name);
-	dataspace_id = H5Screate_simple(rank, dims, NULL);
+
+    if(row == 1 or column == 1)
+    {
+        hsize_t dims[1];
+	    rank = 1;
+        dims[0] = column*row;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+    else
+	{
+        hsize_t dims[2];
+	    rank = 2;
+	    dims[0] = row;
+	    dims[1] = column;
+        dataspace_id = H5Screate_simple(rank, dims, NULL);
+    }
+	
 	dataset_id = H5Dcreate(group_id, new_name, H5T_NATIVE_LONG, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 	status = H5Dwrite(dataset_id, H5T_NATIVE_LONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
 
@@ -1872,6 +1926,40 @@ void get_psf_radius(const float *psf_pow, para*paras, const float scale)
 	delete[] cp_img;
 	delete[] col;
 	delete[] row;
+}
+
+
+void get_quad(const double *img, const int img_size, const double weight_sigma_sq, double &quad_size)
+{
+    // calculate the gaussian-weighted quadrupole of a galaxy or PSF image 
+    double temp_quad, temp_norm;
+    int i,j,m;
+    double ry_sq, r_sq;
+    double cen, wei_coeff,wei_img;
+    
+    // the image center
+    cen = img_size*0.5-0.5;
+
+    wei_coeff = 0.5/weight_sigma_sq;
+
+    temp_quad = 0;
+    temp_norm = 0;
+    for(i=0; i<img_size; i++)
+    {   
+        ry_sq = (i - cen)*(i-cen);
+        m = i*img_size;
+        for(j=0; j<img_size; j++)
+        {
+            r_sq = (j - cen)*(j-cen) + ry_sq;
+
+            wei_img = exp(-r_sq*wei_coeff)*img[m+j];
+   
+            temp_quad += wei_img*r_sq;
+            temp_norm += wei_img;
+        }
+    }
+    
+    quad_size = temp_quad/temp_norm;
 }
 
 
@@ -4444,6 +4532,21 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 		allocated_list[m] = label_list[m*portion + portion_label];
 	}
 }
+
+void task_alloc(const int task_num, const int portion, const int rank, int &my_start, int &my_end)
+{	
+	int i,j;
+   	i = task_num/portion;
+    j = task_num%portion;
+    my_start = rank*i;
+    my_end = (rank+1)*i;
+	//std::cout<<rank<<" "<<i<<" "<<j<<" "<<my_start<<" "<<my_end<<std::endl;
+    if(rank == portion -1)
+    {
+        my_end += j;
+    }
+}
+
 
 void show_arr(const double*arr, const int rows, const int cols)
 {

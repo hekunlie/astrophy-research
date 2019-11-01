@@ -206,7 +206,7 @@ void read_text(const std::string path, int *arr, const int read_lines);
 void write_text(const char*filename, double *data_buf, const int data_row, const int data_col, const int mode=0);
 void write_text(const char*filename, double *data_buf, const int data_row, const int data_col, const char * comment, const int mode=0);
 /* write array into file															*/
-/* mode: 0, trucate the file before writting							*/
+/* mode: 0, truncate the file before writting							*/
 /*				1, append to the end of the file							*/
 /* comment: something like "#....", write to the first line	*/	
 
@@ -220,7 +220,7 @@ void read_h5(const char *filename, const char *set_name, float *data);
 void read_h5(const char *filename, const char *set_name, int *data);//checked
 void read_h5(const char *filename, const char *set_name, long *data);//checked
 /* if the length of arr is longer than the data, the rest element  of "arr" will not be changed 
-	initializing the arr befero each reading is highly recommended.
+	initializing the arr before each reading is highly recommended.
 */
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, double *buff, std::string flag);//checked
 void read_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, float *buff, std::string flag);//checked
@@ -228,7 +228,7 @@ void read_h5_attrs(const char *filename, const char *set_name, const char *attrs
 
 void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const double *attrs_buffer, const int buffer_len, std::string flag);
 void write_h5_attrs(const char *filename, const char *set_name, const char *attrs_name, const int *attrs_buffer, const int buffer_len, std::string flag);
-/* the attributes must be attached to the non-root directory, or it will rasie the error "/".
+/* the attributes must be attached to the non-root directory, or it will raise the error "/".
 	flag: "d" for data set, "g" for data group
 */
 void create_h5_group(const char *filename, const char *set_name, const bool trunc);//checked
@@ -239,7 +239,7 @@ void write_h5(const char *filename, const char *set_name, const float *data, con
 void write_h5(const char *filename, const char *set_name, const int *data, const int row, const int column, const bool trunc);//checked
 void write_h5(const char *filename, const char *set_name,  const long *data, const int row, const int column, const bool trunc);//checked
 /* write the hdf5 file
-	if trunc == TRUE, the file will be truncated before data are writed into the file
+	if trunc == TRUE, the file will be truncated before data are writted into the file
 	else, write directly
 */
 
@@ -302,6 +302,11 @@ void get_psf_radius(const double *psf_pow, para*para, const double scale);
 void get_psf_radius(const float *psf_pow, para*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
+
+void get_quad(const double *img, const int img_size, const double weight_sigma_sq, double &quad_size);
+/* calculate the gaussian weighted quadrupole of the image   */
+/* weight_sigma_sq: the squared sigma of the gaussian weight */
+/* quad size := \Sum {weight*r^2*img} / \Sum {weight*img}      */
 
 void source_detector(const double *source_img, int *source_x, int*source_y, double *source_paras,para* paras, bool cross, int &detection, std::string &info);
 void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, para* paras, bool cross, int &detection, std::string &info);
@@ -448,7 +453,7 @@ void com_distance(const double low_z, const double high_z, const double omg_m, c
 /*					   TRUE calculate the integrate part of the comoving distance																						*/												
 
 void log_bin(const double start, const double end, const int num, double * bins);
-/* the loggrithmical bin, including the start and end point
+/* the logrithmical bin, including the start and end point
 	num: the number of bin borders
 */
 void linspace(const double start, const double end, const int num, double *bins);
@@ -638,6 +643,9 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	portion_label: int, "0" means the first part, which portion to be returned
 	allocated_list: array, the labels of the returned tasks	
 */
+
+void task_alloc(const int task_num, const int portion, const int rank, int &my_start, int &my_end);
+/* distribute the tasks */
 
 void show_arr(const double*arr, const int rows, const int cols);//checked
 void show_arr(const long*arr, const int rows, const int cols);//checked

@@ -184,12 +184,12 @@ int main(int argc, char *argv[])
 
 	if (0 == rank)
 	{
-		MPI_Win_allocate_shared(2*numprocs * sizeof(int), sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(2*numprocs * sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 	}
 	else
 	{
 		int dispu_total;
-		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &pair_count_shared, &win_pair_count);
 		MPI_Win_shared_query(win_pair_count, 0, &size_pair_count, &dispu_total, &pair_count_shared);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
