@@ -43,8 +43,6 @@ fq_p = Fourier_Quad(size, 1760)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, noise_sig)
 
-psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
-
 shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
 
@@ -54,20 +52,57 @@ if os.path.exists(total_path + "fits/%d/"%file_tag):
 img_path = total_path + "fits/%d/"%file_tag
 os.mkdir(img_path)
 
-# the SNR_S, SNR_A, MAG, PK0 of the original galaxy
-ori_data = numpy.zeros((flux_num*4, 4))
-# 4 blocks,each one is:
-# pk0, tra_SNR, 0, 0
-# SEX_SNR, tra_SNR, 0, 0
-# SNR_AUTO, tra_SNR, flux_auto, flux_err
-# MAG, tra_SNR, 0, 0
+if pts_source == 0:
+    psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
+    psf_img = galsim.ImageD(size, size)
+    psf.drawImage(image=psf_img, scale=pixel_scale)
+    psf_img = psf_img.array
+else:
+    psf_img = fq.cre_psf(4, model="Moffat")
 
-data = numpy.zeros((flux_num*4, num))
-# "flux_num" blocks each column,each one is:
-# pk0
-# SEX_SNR
+hdu = fits.PrimaryHDU(psf_img)
+hdu.writeto(total_path+"psf.fits",overwrite=True)
+idx = psf_img < psf_img.max()/2
+psf_img[idx] = 0
+idx = psf_img > 0
+psf_img[idx] = 1
+psf_radius = numpy.sqrt(psf_img.sum()/numpy.pi)
+psf_quad = tool_box.get_quad(psf_img,size,psf_radius)
+
+criterion_num = 5
+# the SNR_S, SNR_A, MAG, resolution factor, PK0 of the original galaxy
+ori_data = numpy.zeros((flux_num*criterion_num, 4))
+# flux_1: pk0, tra_SNR, 0, 0
+# flux_2: pk0, tra_SNR, 0, 0
+# flux_3: pk0, tra_SNR, 0, 0
+# ...
+# flux_1: SEX_SNR, tra_SNR, 0, 0
+# flux_2: SEX_SNR, tra_SNR, 0, 0
+# flux_3: SEX_SNR, tra_SNR, 0, 0
+# ...
+# flux_1: SNR_AUTO, tra_SNR, flux_auto, flux_err
+# ...
+# MAG, tra_SNR, 0, 0
+# ...
+# resolution factor,0,0
+# ...
+
+data = numpy.zeros((flux_num*criterion_num, num))
+# each column:
+# pk0 of flux_1
+# pk0 of flux_2
+# pk0 of flux_3
+# ...
+# SEX_SNR of flux_1
+# SEX_SNR of flux_2
+# SEX_SNR of flux_3
+# ...
 # SNR_AUTO
+# ...
 # SEX_MAG
+# ...
+# resolution factor
+# ...
 
 ext_data = numpy.zeros((3, num)) # for SNR_A
 
@@ -164,15 +199,20 @@ for i in range(flux_num):
             ori_flux_err = ori_gal_cata[2]
             ori_snr_auto = ori_flux_auto / ori_flux_err
             ori_sex_mag = ori_gal_cata[3]
+
+            ori_radius = numpy.sqrt(ori_gal_cata[4]/numpy.pi)
+            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)
+            ori_r_factor = 1 - psf_quad/(ori_gal_quad + psf_quad)
             print("%d: "%i, ori_gal_cata)
         except:
             print("%d: Not found"%i)
-            ori_sex_snr, ori_snr_auto, ori_sex_mag, ori_flux_auto, ori_flux_err = -99, -99, -99, -99, -99
+            ori_sex_snr, ori_snr_auto, ori_sex_mag, ori_flux_auto, ori_flux_err, ori_r_factor = -99, -99, -99, -99, -99,-99
 
         ori_data[i, 0:2] = ori_pk0, snr_tradi_0
         ori_data[i + flux_num, 0:2] = ori_sex_snr, snr_tradi_0
         ori_data[i + int(flux_num*2)] = ori_snr_auto, snr_tradi_0, ori_flux_auto, ori_flux_err # save additional parameters
         ori_data[i + int(flux_num*3),0:2] = ori_sex_mag, snr_tradi_0
+        ori_data[i + int(flux_num*4),0:2] = ori_r_factor, snr_tradi_0
 
         # measure each sheared galaxy
         for k in range(num):
@@ -192,8 +232,14 @@ for i in range(flux_num):
                 flux_err = cata_data[2]
                 snr_auto = flux_auto / flux_err
                 sex_mag = cata_data[3]
+
+                gal_radius = numpy.sqrt(cata_data[4] / numpy.pi)
+                gal_quad = tool_box.get_quad(gal_img, size, gal_radius)
+                r_factor = 1 - psf_quad / (gal_quad + psf_quad)
+
             except:
-                sex_snr, snr_auto, sex_mag, flux_auto, flux_err = -99,-99,-99,-99,-99
+                sex_snr, snr_auto, sex_mag, flux_auto, flux_err,r_factor = -99,-99,-99,-99,-99,-99
+
             gal_pow = fq.pow_spec(gal_img)
             pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)])/size/noise_sig
 
@@ -204,10 +250,11 @@ for i in range(flux_num):
             ext_data[1,k] = flux_auto
             ext_data[2,k] = flux_err
             data[i + int(flux_num*3), k] = sex_mag
+            data[i + int(flux_num*4), k] = r_factor
 
 result_path = img_path + "result.npz"
 numpy.savez(result_path, input_g, ori_data, data, ext_data)
 
 pic_path = total_path + "pic/change_%d.png"%file_tag
-cmd = "python SNR_change_plot.py %d %d %s %s"%(4, flux_num, result_path, pic_path)
+cmd = "python SNR_change_plot.py %d %d %s %s"%(5, flux_num, result_path, pic_path)
 os.system(cmd)

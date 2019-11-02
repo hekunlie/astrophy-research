@@ -15,14 +15,7 @@ from plot_tool import Image_Plot
 t1 = time.time()
 
 
-def get_quad(img, weight_size, size):
-    hsize = int(size/2)-0.5
-    my, mx = numpy.mgrid[0:size, 0:size]
-    r2 = (my-hsize)**2 + (mx-hsize)**2
-    img_w = numpy.exp(-r2/2/weight_size)*img
-    quad = numpy.sum(r2*img_w)
-    quad_norm = numpy.sum(img_w)
-    return quad/quad_norm
+
 
 size = 64
 num = 10000
@@ -40,7 +33,7 @@ quads = numpy.zeros((num,))
 for i in range(len(gals)):
     eff_radius = sex_data[i,3]/numpy.pi
     if eff_radius > 0:
-        quads[i] = get_quad(gals[i], eff_radius, size)
+        quads[i] = tool_box.get_quad(gals[i], eff_radius, size)
     # if i < 20:
     #     print(sex_data[i,3],eff_radius, quads[i])
 
