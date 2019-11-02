@@ -1,6 +1,6 @@
 import os
 my_home = os.popen("echo $HOME").readlines()[0][:-1]
-from sys import path
+from sys import path,argv
 path.append('%s/work/mylib/'%my_home)
 import time
 import tool_box
@@ -30,7 +30,7 @@ logger = tool_box.get_logger(log_path)
 
 t1 = time.time()
 
-for area_id in range(1,5):
+for area_id in range(int(argv[1]),int(argv[1])+1):
 
     if rank == 0:
 
@@ -52,7 +52,8 @@ for area_id in range(1,5):
 
     sub_src_list = comm.scatter(name_src_list, root=0)
 
-    old_file_header = "RA   DEC  Flag   FLUX_RADIUS  e1  e2  weight  fitclass   SNratio  MASK Z_B m   c2  LP_Mi   star_flag   MAG_i"
+    old_file_header = "RA   DEC  Flag   FLUX_RADIUS  e1  e2  weight  fitclass   " \
+                      "SNratio  MASK Z_B m   c2  LP_Mi   star_flag   MAG_i"
 
     new_file_header = "RA   DEC     Level   Flag    FLUX_RADIUS     CLASS_STAR      e1      e2      " \
                       "weight  fitclass    SNratio MASK    Z_B     Z_B_MIN Z_B_MAX ODDS    m       c2      LP_Mi   " \
@@ -65,6 +66,10 @@ for area_id in range(1,5):
     dst_ra_id, dst_dec_id = dst_index.index("RA"), dst_index.index("DEC")
 
     src_zb_id, dst_zb_id = src_index.index("Z_B"), dst_index.index("Z_B")
+
+    if rank == 0:
+        print(src_ra_id, src_dec_id,dst_ra_id, dst_dec_id, src_zb_id, dst_zb_id)
+
 
     h5f = h5py.File(cata_path + "new/w_%d.hdf5"%area_id, "r")
     area_data = h5f["/data"].value
@@ -97,10 +102,10 @@ for area_id in range(1,5):
         ra_min, ra_max = src_data[:,src_ra_id].min(),src_data[:,src_ra_id].max()
         dec_min, dec_max = src_data[:,src_dec_id].min(),src_data[:,src_dec_id].max()
 
-        idx1 = area_data[:,dst_ra_id] >= ra_min - 0.01
-        idx2 = area_data[:,dst_ra_id] <= ra_max + 0.01
-        idx3 = area_data[:,dst_dec_id] >= dec_min - 0.01
-        idx4 = area_data[:,dst_dec_id] <= dec_max + 0.01
+        idx1 = area_data[:,dst_ra_id] >= ra_min - 0.005
+        idx2 = area_data[:,dst_ra_id] <= ra_max + 0.005
+        idx3 = area_data[:,dst_dec_id] >= dec_min - 0.005
+        idx4 = area_data[:,dst_dec_id] <= dec_max + 0.005
 
         idx = idx1 & idx2 & idx3 & idx4
 
