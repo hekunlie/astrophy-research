@@ -17,8 +17,8 @@ class Fourier_Quad:
         self.rng = numpy.random.RandomState(seed)
         self.size = size
         self.alpha = (2.*numpy.pi/size)**4
-        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
-        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
+        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.-0.5
+        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.-0.5
         self.kx2 = self.mx*self.mx
         self.ky2 = self.my*self.my
         self.kxy = self.mx*self.my

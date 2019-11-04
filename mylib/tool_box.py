@@ -206,7 +206,7 @@ def get_quad(img, size, weight_sigma):
     img_w = numpy.exp(-r2/2/weight_sigma/weight_sigma)*img
     quad = numpy.sum(r2*img_w)
     quad_norm = numpy.sum(img_w)
-    return quad/quad_norm
+    return quad/quad_norm, numpy.exp(-r2/2/weight_sigma/weight_sigma), img_w
 
 
 def get_hlr(image, scale, size, thres=None):

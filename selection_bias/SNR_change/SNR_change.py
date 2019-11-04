@@ -67,7 +67,7 @@ psf_img[idx] = 0
 idx = psf_img > 0
 psf_img[idx] = 1
 psf_radius = numpy.sqrt(psf_img.sum()/numpy.pi)
-psf_quad = tool_box.get_quad(psf_img,size,psf_radius)
+psf_quad = tool_box.get_quad(psf_img,size,psf_radius)[0]
 
 criterion_num = 5
 # the SNR_S, SNR_A, MAG, resolution factor, PK0 of the original galaxy
@@ -201,8 +201,8 @@ for i in range(flux_num):
             ori_sex_mag = ori_gal_cata[3]
 
             ori_radius = numpy.sqrt(ori_gal_cata[4]/numpy.pi)
-            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)
-            ori_r_factor = 1 - psf_quad/(ori_gal_quad + psf_quad)
+            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)[0]
+            ori_r_factor = ori_gal_quad #1 - psf_quad/(ori_gal_quad + psf_quad)
             print("%d: "%i, ori_gal_cata)
         except:
             print("%d: Not found"%i)
@@ -234,8 +234,8 @@ for i in range(flux_num):
                 sex_mag = cata_data[3]
 
                 gal_radius = numpy.sqrt(cata_data[4] / numpy.pi)
-                gal_quad = tool_box.get_quad(gal_img, size, gal_radius)
-                r_factor = 1 - psf_quad / (gal_quad + psf_quad)
+                gal_quad = tool_box.get_quad(gal_img, size, gal_radius)[0]
+                r_factor = gal_quad #1 - psf_quad / (gal_quad + psf_quad)
 
             except:
                 sex_snr, snr_auto, sex_mag, flux_auto, flux_err,r_factor = -99,-99,-99,-99,-99,-99
