@@ -26,7 +26,7 @@ if cmd == "stack":
     pic_path_pdf = "./imgs/stack_result.pdf"
 
     flux_num = 3
-    snr_num = 4
+    snr_num = 5
     shear_num = 11
 
     # for the traditional SNR stacking
@@ -98,7 +98,7 @@ if cmd == "stack":
     markers = ['o', 'v', 's', 'h', 'd', 'p', "4", "*", "X", "^", ">", "+"]
     colors = ["C%d" % i for i in range(10)]
 
-    labels = ["P$_{k0}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO"]
+    labels = ["P$_{k0}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO","Resolution factor"]
 
     fmt = '%2.f%%'
 
@@ -120,7 +120,7 @@ if cmd == "stack":
                                       marker=markers[j], facecolor="none", linewidths=img.plt_line_width)
 
     ys = [0,0]
-    for i in range(4):
+    for i in range(snr_num):
         ys_ = img.axs[0][i].set_ylim()
         if ys_[1] > ys[1]:
             ys[1] = ys_[1]
@@ -129,9 +129,9 @@ if cmd == "stack":
     x_ticks = numpy.linspace(-0.06, 0.06, 5)
     y_ticks = numpy.linspace(-0.03, 0.03, 5)
 
-    for i in range(4):
+    for i in range(snr_num):
         img.axs[0][i].set_ylim(-0.032, 0.032)
-        img.axs[0][i].set_xlim(-0.075,0.075)
+        img.axs[0][i].set_xlim(-0.075, 0.075)
         img.axs[0][i].set_xticks(x_ticks)
         img.axs[0][i].set_yticks(y_ticks)
         img.axs[0][i].set_xlabel("$g_1$", fontsize=img.xy_lb_size)

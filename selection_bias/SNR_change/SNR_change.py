@@ -201,7 +201,7 @@ for i in range(flux_num):
             ori_sex_mag = ori_gal_cata[3]
 
             ori_radius = numpy.sqrt(ori_gal_cata[4]/numpy.pi)
-            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)[0]
+            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius/2)[0]
             ori_r_factor = ori_gal_quad #1 - psf_quad/(ori_gal_quad + psf_quad)
             print("%d: "%i, ori_gal_cata)
         except:
@@ -234,7 +234,7 @@ for i in range(flux_num):
                 sex_mag = cata_data[3]
 
                 gal_radius = numpy.sqrt(cata_data[4] / numpy.pi)
-                gal_quad = tool_box.get_quad(gal_img, size, gal_radius)[0]
+                gal_quad = tool_box.get_quad(gal_img, size, gal_radius/2)[0]
                 r_factor = gal_quad #1 - psf_quad / (gal_quad + psf_quad)
 
             except:
