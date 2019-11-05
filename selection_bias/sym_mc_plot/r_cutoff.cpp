@@ -6,7 +6,7 @@ int main(int argc, char**argv)
     /* Resolution factor cutoff */
     /* argv[1]: the the name of total directory of the data				 */
     /* argv[2]: filter name, like sex2_2 ...							*/
-
+	/* argv[3]: name of selection criterion */
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -46,11 +46,12 @@ int main(int argc, char**argv)
 	}
 
 	char total_path[200], mask_path[200], selection_path[200], data_path[200], shear_path[200],log_inform[200], set_name[30];
-    char source_name[50], filter_name[50];
+    char source_name[50], filter_name[50], select_name[50];
 
 
 	std::strcpy(source_name, argv[1]);
 	std::strcpy(filter_name, argv[2]);
+	std::strcpy(select_name, argv[3]);
 
     sprintf(total_path,"/mnt/perc/hklee/selection_bias/%s", source_name);
     sprintf(shear_path,"%s/parameters/shear.dat",total_path);
@@ -91,10 +92,9 @@ int main(int argc, char**argv)
     ///////////////////////////////////////////////////////////////////////////////
 
 
-	double *data = new double[total_data_num*data_col];
-
-	int *mask = new int[total_data_num];
-    double *selection = new double[total_data_num];
+	double *data;
+	int *mask; 
+    double *selection; 
 
 	double *mg1, *mg2, *mnu1, *mnu2;
 	double gh1, gh1_sig, gh2, gh2_sig;
@@ -141,6 +141,11 @@ int main(int argc, char**argv)
 	////////////////// read all the data and calculate the cutoff thresholds /////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	sprintf(set_name, "/data");
+	
+	data = new double[total_data_num*data_col];
+	mask = new int[total_data_num];
+    selection = new double[total_data_num];
+
 	if (0 == rank)
 	{
 		double *data_cut = new double[total_data_num*shear_num];		
@@ -153,7 +158,7 @@ int main(int argc, char**argv)
 			sprintf(mask_path, "%s/result/data/%s/mask_%d.hdf5", total_path, filter_name, i);
 			read_h5(mask_path, set_name, mask);
 
-			sprintf(selection_path, "%s/result/data/%s/Rfacotr_%d.hdf5", total_path, filter_name, i);
+			sprintf(selection_path, "%s/result/data/%s/%s_%d.hdf5", total_path, filter_name, select_name, i);
 			read_h5(selection_path, set_name, selection);
 
 			std::cout << selection_path << std::endl;
@@ -183,59 +188,57 @@ int main(int argc, char**argv)
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
+	//if(rank == 0)
+	//{
+	//	show_arr(cut_scale,1, cut_num);
+	//	std::cout<<cell_st<<" "<<cell_ed<<std::endl;
+	//}
+
 	st2 = clock();
-	
+
 	shear_change = -1;
 	for (i = cell_st; i < cell_ed; i++)
 	{	
-        source_count = 0;
         my_shear = i/cut_num;
         my_cut = i % cut_num;
 
-        if(rank == numprocs-1)
-        {std::cout << i << " " << my_shear << " " << my_cut << std::endl;}
-
-        initialize_arr(mask, total_data_num, 0);
+        //if(rank == 0)
+        //{std::cout << i << " " << my_shear << " " << my_cut << std::endl;}
 
         // if in different shear point, reload the file of that point
         if (my_shear != shear_change)
         {
+			initialize_arr(mask, total_data_num, 0);
+
             shear_change = my_shear;
 
             // read detection mask
             sprintf(mask_path, "%s/result/data/%s/mask_%d.hdf5", total_path, filter_name, my_shear);
             read_h5(mask_path, set_name, mask);
-            
+            //if(rank==0){std::cout<<mask_path<<std::endl;}
+
             // read the shear measurement result G1, G2 ....
             sprintf(data_path, "%s/result/data/data_%d.hdf5", total_path, my_shear);
             read_h5(data_path, set_name, data);
+            //if(rank==0){std::cout<<data_path<<std::endl;}
 
             // read selection criterion
-			sprintf(selection_path, "%s/result/data/%s/Rfacotr_%d.hdf5", total_path, filter_name, my_shear);
+			sprintf(selection_path, "%s/result/data/%s/%s_%d.hdf5", total_path, filter_name,select_name, my_shear);
 			read_h5(selection_path, set_name, selection);
+			//if(rank==0){std::cout<<selection_path<<std::endl;}
 
-            for (j = 0; j < total_data_num; j++)
-            {
-                if (mask[j] > 0 and selection_path[j] >= cut_scale[my_cut])
-                {
-                    mask_s[j] = 1;
-                    source_count++;
-                }
-            }
         }
-        else
-        {
-            for (j = 0; j < total_data_num; j++)
-            {
-                label = cutoffs[criterion_label].idx_in_cata + j * cutoffs[criterion_label].data_col;
-                if (mask[j] > 0 and data_select[cata_label][label] >= cut_scale[my_cut])
-                {
-                    mask_s[j] = 1;
-                    source_count++;
-                }
-            }
-        }
-        
+
+        source_count = 0;
+		for (j = 0; j < total_data_num; j++)
+		{
+			if (mask[j] > 0 and selection[j] >= cut_scale[my_cut])
+			{
+				source_count++;
+			}
+		}
+		//if(rank ==0){std::cout<<cut_scale[my_cut]<<" "<<source_count<<std::endl;}
+		        
         mg1 = new double[source_count];
         mg2 = new double[source_count];
         mnu1 = new double[source_count];
@@ -244,7 +247,7 @@ int main(int argc, char**argv)
         source_count = 0;
         for (j = 0; j < total_data_num; j++)
         {
-            if (mask_s[j] > 0)
+            if (mask[j] > 0 and selection[j] >= cut_scale[my_cut])
             {
                 mg1[source_count] = data[j*data_col + mg1_idx];
                 mg2[source_count] = data[j*data_col + mg2_idx];
@@ -258,7 +261,6 @@ int main(int argc, char**argv)
         find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
         //std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
 
-
         shear_result[my_shear * 4 * cut_num + my_cut] = gh1;
         shear_result[my_shear * 4 * cut_num + cut_num + my_cut] = gh1_sig;
         shear_result[my_shear * 4 * cut_num + cut_num * 2 + my_cut] = gh2;
@@ -270,10 +272,13 @@ int main(int argc, char**argv)
         delete[] mg2;
         delete[] mnu1;
         delete[] mnu2;
-
+		
 	}
+	delete[] mask;
+	delete[] selection;
+	delete[] data;
 	MPI_Barrier(MPI_COMM_WORLD);
-	/*st3 = clock();
+	st3 = clock();
 
 	if (0 == rank)
 	{
@@ -312,7 +317,7 @@ int main(int argc, char**argv)
 		}
 		
 		// save the cutoff scales
-		sprintf(data_path, "%sresult/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
+		sprintf(data_path, "%s/result/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
 		sprintf(set_name, "/cut_scale");
 		write_h5(data_path, set_name, cut_scale, 1, cut_num, TRUE);
 		sprintf(set_name, "/mc1");
@@ -338,10 +343,7 @@ int main(int argc, char**argv)
 	{
 		std::cout << (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << std::endl;
 	}
-	delete[] data;
-	delete[] tasks;
-	delete[] my_task;
-    */
+    
     MPI_Win_free(&win_shear);
     MPI_Win_free(&win_cut_scale);
     MPI_Win_free(&win_num);

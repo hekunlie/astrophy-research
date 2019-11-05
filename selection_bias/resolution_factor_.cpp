@@ -66,7 +66,7 @@ int main(int argc, char**argv)
     strcpy(source_name,argv[1]);
     total_chips = 1000;
     
-    sprintf(total_path,"/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/",source_name);
+    sprintf(total_path,"/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s",source_name);
     sprintf(log_path,"logs/%d.dat", rank);
     
     for(i=0;i<SEX_NUM;i++)
@@ -125,7 +125,7 @@ int main(int argc, char**argv)
     {   
         st1 = clock();
 
-        sprintf(sex_data_path, "%sresult/data/%s/sex_%d.hdf5",total_path, sex_folder, shear_id);
+        sprintf(sex_data_path, "%s/result/data/%s/sex_%d.hdf5",total_path, sex_folder, shear_id);
         sprintf(set_name,"/data");
         read_h5(sex_data_path, set_name, sex_data);
 
@@ -146,7 +146,7 @@ int main(int argc, char**argv)
             sprintf(log_inform,"%04d. %s",k, time_now);
             write_log(log_path, log_inform);
 
-            sprintf(img_path,"%s%d/gal_chip_%04d.fits",total_path, shear_id, k);
+            sprintf(img_path,"%s/%d/gal_chip_%04d.fits",total_path, shear_id, k);
             read_fits(img_path, img);
 
             for(i=0;i<ny;i++)
@@ -178,7 +178,7 @@ int main(int argc, char**argv)
         // write the data to disk
         if(rank == 0)
         {
-            sprintf(result_path,"%sresult/data/%s/Rfacotr_%d.hdf5",total_path,sex_folder,shear_id);
+            sprintf(result_path,"%s/result/data/%s/Rfactor_%d.hdf5",total_path,sex_folder,shear_id);
             write_h5(result_path, set_name,final_data,final_data_size,1,true);
             get_time(time_now,50);
             std::cout<<result_path<<std::endl;

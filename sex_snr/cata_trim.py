@@ -44,28 +44,44 @@ for f_nm in filter_name:
     final_data = numpy.zeros((data.shape[0], 4))
     # print(final_data.shape, data[:, mag_auto_idx].shape, data.shape, len(data))
 
-    # magnitude
-    final_data[:, 0] = -data[:, mag_auto_idx]
-
-    # snr
-    final_data[:, 1] = data[:, snr_idx]
-
-    mask = numpy.ones((len(data), 1), dtype=numpy.intc)
+    mask = numpy.ones((len(data), 0), dtype=numpy.intc)
     idx = data[:,snr_idx] <= 0
     mask[idx] = 0
 
-    # snr_auto
-    data[:,flux_err_idx][idx] = 1
-    final_data[:, 2] = data[:,flux_auto_idx]/data[:,flux_err_idx]
+    # h5path = total_path + "result/data/%s/sex_%d.hdf5"%(f_nm, rank)
+    # h5f = h5py.File(h5path, "w")
+    # h5f["/data"] = final_data
+    # h5f.close()
 
-    # area
-    final_data[:, 3] = data[:,area_idx]
 
-    h5path = total_path + "result/data/%s/sex_%d.hdf5"%(f_nm, rank)
+    # new since 2019-11-5
+    # magnitude
+    h5path = total_path + "result/data/%s/Mag_%d.hdf5"%(f_nm, rank)
     h5f = h5py.File(h5path, "w")
-    h5f["/data"] = final_data
+    h5f["/data"] = -data[:, mag_auto_idx]
     h5f.close()
 
+    # snr
+    h5path = total_path + "result/data/%s/Snrs_%d.hdf5"%(f_nm, rank)
+    h5f = h5py.File(h5path, "w")
+    h5f["/data"] = data[:, snr_idx]
+    h5f.close()
+
+    # snr_auto
+    data[:,flux_err_idx][idx] = 1
+    h5path = total_path + "result/data/%s/Snra_%d.hdf5"%(f_nm, rank)
+    h5f = h5py.File(h5path, "w")
+    h5f["/data"] = data[:,flux_auto_idx]/data[:,flux_err_idx]
+    h5f.close()
+
+    # area
+    data[:,flux_err_idx][idx] = 1
+    h5path = total_path + "result/data/%s/area_%d.hdf5"%(f_nm, rank)
+    h5f = h5py.File(h5path, "w")
+    h5f["/data"] = data[:,area_idx]
+    h5f.close()
+
+    # mask
     h5path = total_path + "result/data/%s/mask_%d.hdf5"%(f_nm, rank)
     h5f = h5py.File(h5path, "w")
     h5f["/data"] = mask
