@@ -13,8 +13,8 @@ cmd = argv[1]
 # generate the galaxy & measurement
 num = int(argv[2])
 if cmd == "run":
-    for i in range(num):
-        cmd = "python SNR_change.py 100 0.7 0.5 0.6 0.7 %d %d"%(1230+i, i)
+    for i in range(282,282+1):
+        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d"%(1230+i, i)
         a = Popen(cmd, shell=True)
         a.wait()
 

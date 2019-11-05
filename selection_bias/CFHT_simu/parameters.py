@@ -249,6 +249,8 @@ f["/btr"] = btr
 f.close()
 
 comm.Barrier()
+# checking
+# if it shows a "m" or "c", run the code again with different seed
 if rank == 0:
     shears = numpy.loadtxt(para_path + "shear.dat")
     g1_t = shears[:cpus]
@@ -260,6 +262,6 @@ if rank == 0:
     print(sig_e[:,0])
     print(mean_e[:,1])
     print(sig_e[:,1])
-    print("m1: %.5f(%.5f), c1: %.6f(%.6f)"%(mc1[0], mc1[1], mc1[2], mc1[3]))
-    print("m2: %.5f(%.5f), c2: %.6f(%.6f)"%(mc2[0], mc2[1], mc2[2], mc2[3]))
+    print("m1*10^3: %.5f(%.5f), c1*10^4: %.6f(%.6f)"%(mc1[0]*1000, mc1[1]*1000, mc1[2]*10000, mc1[3]*10000))
+    print("m2*10^3: %.5f(%.5f), c2*10^4: %.6f(%.6f)"%(mc2[0]*1000, mc2[1]*1000, mc2[2]*10000, mc2[3]*10000))
 comm.Barrier()

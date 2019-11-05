@@ -197,6 +197,7 @@ void read_text(const char *filename, double *data_buf, const int data_col, const
 /* the function itself does not check the type of the content in the file,					*/
 /* so nothing except the data and the first line of annotation should be in the file	*/
 
+void read_text(const std::string path, double *arr, const int start_line, const int read_lines, const int read_cols);
 void read_text(const std::string path, double *arr, const int read_lines);//checked
 void read_text(const std::string path, float *arr, const int read_lines);
 void read_text(const std::string path, int *arr, const int read_lines);

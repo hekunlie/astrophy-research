@@ -47,8 +47,6 @@ shear_beta = numpy.linspace(0, numpy.pi, num)
 input_g = numpy.linspace(-0.06, 0.06, num)
 
 total_path = "./imgs/"
-if os.path.exists(total_path + "fits/%d/"%file_tag):
-    file_tag += 1
 img_path = total_path + "fits/%d/"%file_tag
 os.mkdir(img_path)
 
@@ -177,7 +175,7 @@ for i in range(flux_num):
     # the pk0
     ori_pow = fq.pow_spec(ori_gal)
     ori_pk0 = numpy.sqrt(ori_pow[int(size/2), int(size/2)])/size/noise_sig
-
+    print(i)
     # detect the source
     detect_0 = tool_box.stamp_detector(ori_gal, size, size, 5, 5.5, detect_thresh*noise_sig)
 
@@ -201,7 +199,7 @@ for i in range(flux_num):
             ori_sex_mag = ori_gal_cata[3]
 
             ori_radius = numpy.sqrt(ori_gal_cata[4]/numpy.pi)
-            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius/2)[0]
+            ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)[0]
             ori_r_factor = ori_gal_quad #1 - psf_quad/(ori_gal_quad + psf_quad)
             print("%d: "%i, ori_gal_cata)
         except:
@@ -234,7 +232,7 @@ for i in range(flux_num):
                 sex_mag = cata_data[3]
 
                 gal_radius = numpy.sqrt(cata_data[4] / numpy.pi)
-                gal_quad = tool_box.get_quad(gal_img, size, gal_radius/2)[0]
+                gal_quad = tool_box.get_quad(gal_img, size, gal_radius)[0]
                 r_factor = gal_quad #1 - psf_quad / (gal_quad + psf_quad)
 
             except:

@@ -45,7 +45,8 @@ def stamp_detector(image, xsize, ysize, area_thres, radius, noise_level):
     :param noise_level: pixel value for a detection
     :return:
     """
-    objs = source_detector(image, xsize, ysize, area_thres, noise_level)
+    objs = source_detector(image, xsize, ysize, area_thres, noise_level,False)
+    # return objs
 
     if len(objs) > 0:
         peaks = []
@@ -54,16 +55,21 @@ def stamp_detector(image, xsize, ysize, area_thres, radius, noise_level):
         for tag, obj in enumerate(objs):
             peak = 0
             xp, yp = 0, 0
+            xm, ym = 0, 0
             for xy in obj:
-                if image[xy[0], xy[1]] >= peak:
+                if image[xy[0], xy[1]] > peak:
                     peak = image[xy[0], xy[1]]
                     yp, xp = xy[0], xy[1]
-            r_sq = (xp-xsize*0.5)*(xp-xsize*0.5) + (yp-ysize*0.5)*(yp-ysize*0.5)
+                xm += xy[0]
+                ym += xy[1]
+            xm = xm/len(obj)
+            ym = ym/len(obj)
+            # r_sq = (xp-xsize*0.5+0.5)*(xp-xsize*0.5+0.5) + (yp-ysize*0.5+0.5)*(yp-ysize*0.5+0.5)
+            r_sq = (xm-xsize*0.5+0.5)*(xm-xsize*0.5+0.5) + (ym-ysize*0.5+0.5)*(ym-ysize*0.5+0.5)
             if r_sq <= radius*radius:
                 peaks.append(peak)
                 areas.append(len(obj))
                 targets.append(obj)
-
         seq = areas.index(max(areas))
         mask = numpy.zeros_like(image)
         for xy in targets[seq]:

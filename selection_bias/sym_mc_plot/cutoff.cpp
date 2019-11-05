@@ -40,6 +40,9 @@ int main(int argc, char**argv)
 	int data_s_col = 4, data_f_col = 10;// column of the sex mesurement results and our own "snr" measurement results
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5;
 
+	double chi_check[30];
+	int chi_fit_num  = 30;
+
 	shear_num = 10;
 	cut_num = 10;
 	total_cutoff_cells = shear_num * cut_num;
@@ -315,8 +318,8 @@ int main(int argc, char**argv)
 				}
 			}
 
-			find_shear(mg1, mnu1, source_count, 12, gh1, gh1_sig, 20000);
-			find_shear(mg2, mnu2, source_count, 12, gh2, gh2_sig, 20000);
+			find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
+			find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
 			//std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
 
 
