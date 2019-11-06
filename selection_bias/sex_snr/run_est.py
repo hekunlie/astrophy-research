@@ -7,7 +7,7 @@ import numpy
 import tool_box
 import time
 
-sources = ["dimmerm"]
+sources = ["dimmer"]
 max_radius = 6
 cpus = 40
 num = 40
@@ -27,9 +27,9 @@ for source in sources:
     noise_sig = float(para_items[0])
     shear_num = int(para_items[1])
 
-    while True:
-        if os.path.exists("%s/work/test/job/%s/finish.dat"%(my_home, source)):
-            break
+    # while True:
+    #     if os.path.exists("%s/work/test/job/%s/finish.dat"%(my_home, source)):
+    #         break
 
 
     # while True:
@@ -39,12 +39,12 @@ for source in sources:
     #         if os.path.exists("%s/work/test/job/%s/finish_%d.dat"%(my_home, source, i)):
     #             jobs[i, 0] = 1
 
-    filter_names = ["sex2_4", "sex3_4", "sex4_4",
-                    "sex2_2", "sex3_2", "sex4_2",
-                    "sex2_1.5", "sex3_1.5", "sex4_1.5"]
-    gauss_filters = ["gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7",
-                     "gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7",
-                     "gauss_2.0_5x5", "gauss_3.0_5x5", "gauss_4.0_7x7"]
+    filter_names = ["sex2_4", "sex4_4",
+                    "sex2_2", "sex4_2",
+                    "sex2_1.5", "sex4_1.5"]
+    gauss_filters = ["gauss_2.0_5x5",  "gauss_4.0_7x7",
+                     "gauss_2.0_5x5",  "gauss_4.0_7x7",
+                     "gauss_2.0_5x5",  "gauss_4.0_7x7"]
 
     for ii, filter_name in enumerate(filter_names):
         # change the filter
@@ -72,9 +72,9 @@ for source in sources:
         a = Popen(cmd, shell=True)
         a.wait()
 
-    cmd = "mpirun -np %d python cata_trim.py %s" % (shear_num, source)
-    a = Popen(cmd, shell=True)
-    a.wait()
+    # cmd = "mpirun -np %d python cata_trim.py %s" % (shear_num, source)
+    # a = Popen(cmd, shell=True)
+    # a.wait()
 
 t2 = time.time()
 print("SNR EST: ",sources, cpus, t2-t1)

@@ -7,17 +7,17 @@ import tool_box
 import shutil
 
 
-sect, source, cmd = argv[1], argv[2], argv[3]
+total_path = argv[1]
+cmd = argv[2]
 
-envs_path = "%s/work/envs/envs.dat"%my_home
-get_contents = [['%s'%sect, "%s_path"% source, '1'],['%s'%sect, "%s_path_result"%source, '1'],
-                ['%s'%sect, "%s_path_para"%source, '1'],['%s'%sect, "%s_path_log"%source, '1']]
-path_items = tool_box.config(envs_path,['get','get','get','get'], get_contents)
-total_path, result_path, para_path, log_path = path_items
+
+result_path = total_path + "/result/"
+para_path = total_path + "/parameters/"
+log_path = total_path + "/logs/"
 
 
 sex_filters = ["sex2_4", "sex3_4", "sex4_4","sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
-cut_nm = ["mag_auto", "sex_snr", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5"]
+cut_nm = ["mag_auto", "snr_sex", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5","rfactor"]
 
 if cmd == "cut":
     cut_path = result_path + "cuts/"

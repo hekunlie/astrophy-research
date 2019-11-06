@@ -28,12 +28,12 @@ int main(int argc, char**argv)
 	int data_col; 
 	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5;
 
-	double chi_check[30];// be the same as chi_fit_num
+	double chi_check[40];// be the 2Xchi_fit_num
 	int chi_fit_num;
 
     total_data_num = 10000000;// the total number of source in one shear point
     data_col = 7;// column of the shear mesurement results
-    chi_fit_num  = 30;
+    chi_fit_num  = 20;
 
 	shear_num = 10;
 	cut_num = 10;
@@ -45,7 +45,7 @@ int main(int argc, char**argv)
 		exit(0);
 	}
 
-	char total_path[200], mask_path[200], selection_path[200], data_path[200], shear_path[200],log_inform[200], set_name[30];
+	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300],log_inform[300], set_name[30];
     char source_name[50], filter_name[50], select_name[50];
 
 
@@ -55,7 +55,6 @@ int main(int argc, char**argv)
 
     sprintf(total_path,"/mnt/perc/hklee/selection_bias/%s", source_name);
     sprintf(shear_path,"%s/parameters/shear.dat",total_path);
-
     //std::cout<<total_path<<" "<<shear_path<<" "<<std::endl;
 
 	double *shear = new double[shear_num * 2];
@@ -181,18 +180,20 @@ int main(int argc, char**argv)
 			cut_scale[i] = data_cut[i*cut_step];
 		}
 
-		//show_arr(cut_scale, 1, cut_num);
+		show_arr(cut_scale, 1, cut_num);
         //std::cout<<source_count<<std::endl;
 		delete[] data_cut;
 
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	//if(rank == 0)
-	//{
-	//	show_arr(cut_scale,1, cut_num);
-	//	std::cout<<cell_st<<" "<<cell_ed<<std::endl;
-	//}
+	if(rank == 0)
+	{
+		//show_arr(cut_scale,1, cut_num);
+		//std::cout<<cell_st<<" "<<cell_ed<<std::endl;
+		std::cout<<"Cutting off"<<std::endl;
+
+	}
 
 	st2 = clock();
 
@@ -259,7 +260,7 @@ int main(int argc, char**argv)
 
         find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
         find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
-        //std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
+        // //std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
 
         shear_result[my_shear * 4 * cut_num + my_cut] = gh1;
         shear_result[my_shear * 4 * cut_num + cut_num + my_cut] = gh1_sig;
@@ -281,7 +282,11 @@ int main(int argc, char**argv)
 	st3 = clock();
 
 	if (0 == rank)
-	{
+	{			
+		show_arr(source_num, shear_num, cut_num);
+		std::cout<<(st2-st1)/CLOCKS_PER_SEC<<" "<<(st3-st2)/CLOCKS_PER_SEC<<std::endl;
+		std::cout<<"Fitting"<<std::endl;
+
 		double *fit_gh1 = new double[shear_num];
 		double *fit_gh1_sig = new double[shear_num];
 
@@ -316,18 +321,24 @@ int main(int argc, char**argv)
 			mc2_array[i + cut_num * 3] = coeff[1];//c_sig
 		}
 		
+		sprintf(result_path, "%s/result/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
+
 		// save the cutoff scales
-		sprintf(data_path, "%s/result/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
 		sprintf(set_name, "/cut_scale");
-		write_h5(data_path, set_name, cut_scale, 1, cut_num, TRUE);
+		write_h5(result_path, set_name, cut_scale, 1, cut_num, TRUE);
 		sprintf(set_name, "/mc1");
-		write_h5(data_path, set_name, mc1_array, 4, cut_num, FALSE);
+		write_h5(result_path, set_name, mc1_array, 4, cut_num, FALSE);
 		sprintf(set_name, "/mc2");
-		write_h5(data_path, set_name, mc2_array, 4, cut_num, FALSE);
+		write_h5(result_path, set_name, mc2_array, 4, cut_num, FALSE);
 		sprintf(set_name, "/shear");
-		write_h5(data_path, set_name, shear_result, shear_num, 4*cut_num, FALSE);
+		write_h5(result_path, set_name, shear_result, shear_num, 4*cut_num, FALSE);
 		sprintf(set_name, "/num");
-		write_h5(data_path, set_name, source_num, shear_num, cut_num, FALSE);
+		write_h5(result_path, set_name, source_num, shear_num, cut_num, FALSE);
+		sprintf(set_name, "/g1");
+		write_h5(result_path, set_name, g1_true, 1, shear_num, FALSE);
+		sprintf(set_name, "/g2");
+		write_h5(result_path, set_name, g2_true, 1, shear_num, FALSE);
+		std::cout<<"Write to "<<result_path<<std::endl;
 
 		delete[] fit_gh1;
 		delete[] fit_gh1_sig;

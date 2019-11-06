@@ -30,7 +30,7 @@ int main(int argc, char**argv)
     strcpy(sex_folder,argv[2]);
     total_chips = atoi(argv[3]);
     
-    sprintf(total_path,"/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/",source_name);
+    sprintf(total_path,"/mnt/ddnfs/data_users/hkli/%s/",source_name);
     sprintf(log_path,"logs/%d.dat", rank);
     
     double *img, *stamp;
@@ -59,8 +59,7 @@ int main(int argc, char**argv)
     stamp = new double[size*size];
 
     sex_row = 10000000;
-    sex_col = 4;
-    sex_data = new double[sex_row*sex_col];
+    sex_data = new double[sex_row];
 
 
     MPI_Win win_final_data;
@@ -101,7 +100,7 @@ int main(int argc, char**argv)
     {   
         st1 = clock();
 
-        sprintf(sex_data_path, "%sresult/data/%s/sex_%d.hdf5",total_path, sex_folder, shear_id);
+        sprintf(sex_data_path, "%sresult/data/%s/area_%d.hdf5",total_path, sex_folder, shear_id);
         sprintf(set_name,"/data");
         read_h5(sex_data_path, set_name, sex_data);
 
@@ -133,9 +132,9 @@ int main(int argc, char**argv)
                     gal_label = k*nx*ny + tag;
                     segment(img, stamp, tag, size, nx, ny);
                     // \pi * r^2 = pixel number
-                    eff_radius_sq = sex_data[gal_label*sex_col + 3]/Pi;           
+                    eff_radius_sq = sex_data[gal_label]/Pi;           
             
-                    if (eff_radius_sq > 0.00001)            
+                    if (eff_radius_sq > 0.000001)            
                     {
                         get_quad(stamp, size, eff_radius_sq, gal_quad);
                         final_data[gal_label] = gal_quad;
@@ -154,7 +153,7 @@ int main(int argc, char**argv)
         // write the data to disk
         if(rank == 0)
         {
-            sprintf(result_path,"%sresult/data/%s/Rfacotr_%d.hdf5",total_path,sex_folder,shear_id);
+            sprintf(result_path,"%sresult/data/%s/rfactor_%d.hdf5",total_path,sex_folder,shear_id);
             write_h5(result_path, set_name,final_data,final_data_size,1,true);
             get_time(time_now,50);
             std::cout<<result_path<<std::endl;

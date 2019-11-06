@@ -422,7 +422,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	data_num: data number
 	bin_num: must be even number, bin number, >= 4
 	gh (gh_sig): the result, g and sigma of g
-	chi_check: store the chi squares for checking, length >= chi_fit_num.
+	chi_check: store the chi squares for checking, length = 2*chi_fit_num.
 	chi_fit_num: the number of point in the final interval of signal for fitting.
 	choice: if > 0, "randomly" choose a sub-sample to set up the bin for shear estimation to save time
 	max_scale: by which the boundary of the bins (the first and last elements) will be multiplied to include all data points.
