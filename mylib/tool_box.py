@@ -1002,55 +1002,29 @@ def find_block(scale, radius_s, radius_e, ny, nx, pts_y, pts_x, block_ny, block_
     return blocks_found
 
 
-def mcplot(x1_data, y1_data, y1_data_err,y1_num, x2_data, y2_data, y2_data_err,y2_num, e1mc, e2mc, cut_start, cut_end, xylim, path=None,show=False):
+def mcplot(x, y, y_err, y_num, e1mc, cut_start_end, xylim, fig_ax):
     # "x_data' is the 'x'
     # 'y_data' is an (3,n) array "[[y's],[dy's],[num's]]
-    fig = plt.figure(figsize=(20, 10))
-    ax = fig.add_subplot(121)
-    ax.errorbar(x1_data, y1_data, y1_data_err, ecolor='black', elinewidth=1, fmt='none', capsize=2)
-    ax.plot(x1_data, e1mc[0] * x1_data + e1mc[2], color='red')
-    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
-    ax.scatter(x1_data, y1_data, c='black')
 
-    for j in range(len(x1_data)):
-        ax.text(x1_data[j], y1_data[j], str(round(y1_num[j] / 1000, 1)) + "K", color="red")
-    ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0] - 1, 6)) + '$\pm$' + str(round(e1mc[1], 6)), color='green', ha='left',
-            va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6)) + '$\pm$' + str(round(e1mc[3], 6)), color='green', ha='left',
-            va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, "[ " + cut_start + ", " + cut_end + "]", color='green', ha='left', va='center', transform=ax.transAxes,
-            fontsize=20)
-    plt.xlabel('True  g1', fontsize=20)
-    plt.ylabel('Est  g1', fontsize=20)
-    plt.legend(fontsize=15)
-    plt.ylim(xylim[0], xylim[1])
-    plt.xlim(xylim[0], xylim[1])
+    fig_ax.errorbar(x, y, y_err, ecolor='C1', fmt=' ', capsize=4)
+    fig_ax.plot(x, e1mc[0] * x + e1mc[2], color='k')
+    fig_ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
+    fig_ax.scatter(x, y, c='black')
 
-    # plot g2 line
-    ax = fig.add_subplot(122)
-    ax.errorbar(x2_data, y2_data, y2_data_err, ecolor='black', elinewidth=1, fmt='none', capsize=2)
-    ax.plot(x2_data, e2mc[0] * x2_data + e2mc[2], color='red')
-    ax.plot([-0.1, 0.1], [-0.1, 0.1], label='y=x', color='blue')
-    ax.scatter(x2_data, y2_data, c='black')
-    for j in range(len(x2_data)):
-        ax.text(x2_data[j], y2_data[j], str(round(y2_num[j] / 1000, 1)) + "K", color="red")
-    ax.text(0.1, 0.85, 'm=' + str(round(e2mc[0] - 1, 6)) + '$\pm$' + str(round(e2mc[1], 6)), color='green', ha='left',
-            va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.8, 'c=' + str(round(e2mc[2], 6)) + '$\pm$' + str(round(e2mc[3], 6)), color='green', ha='left',
-            va='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.1, 0.75, "[ " + cut_start + ", " + cut_end + "]", color='green', ha='left', va='center', transform=ax.transAxes,
-            fontsize=20)
-    plt.xlabel('True  g2', fontsize=20)
-    plt.ylabel('Est  g2', fontsize=20)
-    plt.legend(fontsize=15)
-    plt.ylim(xylim[2], xylim[3])
-    plt.xlim(xylim[2], xylim[3])
+    for j in range(len(x)):
+        fig_ax.text(x[j], y[j], str(round(y_num[j] / 1000, 1)) + "K", color="red")
+    fig_ax.text(0.1, 0.85, 'm=' + str(round(e1mc[0], 6)) + '$\pm$' + str(round(e1mc[1], 6)), color='green', ha='left',
+            va='center', transform=fig_ax.transAxes, fontsize=20)
+    fig_ax.text(0.1, 0.8, 'c=' + str(round(e1mc[2], 6)) + '$\pm$' + str(round(e1mc[3], 6)), color='green', ha='left',
+            va='center', transform=fig_ax.transAxes, fontsize=20)
+    fig_ax.text(0.1, 0.75, "[ " + cut_start_end[0] + ", " + cut_start_end[1] + "]", color='green', ha='left', va='center',
+                transform=fig_ax.transAxes, fontsize=20)
+    fig_ax.set_xlabel('True  g1', fontsize=20)
+    fig_ax.set_ylabel('Est  g1', fontsize=20)
+    fig_ax.legend(fontsize=15)
+    fig_ax.set_ylim(xylim[0], xylim[1])
+    fig_ax.set_xlim(xylim[0], xylim[1])
 
-    if path is not None:
-        plt.savefig(path)
-    if show:
-        plt.show()
-    plt.close()
 
 def mc_compare(x, mc1_list, mc2_list, labels, cap=4, ms=20, linewidth=2, margin=0.1,
                pic_path=None, multi_fig=True, size=(10,10),show=False):

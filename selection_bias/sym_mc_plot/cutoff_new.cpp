@@ -6,7 +6,7 @@ int main(int argc, char**argv)
     /* Resolution factor cutoff */
     /* argv[1]: the the name of total directory of the data				 */
     /* argv[2]: filter name, like sex2_2 ...							*/
-	/* argv[3]: name of selection criterion */
+	/* argv[3]: name of selection criterion 							*/
 	int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -47,15 +47,17 @@ int main(int argc, char**argv)
 
 	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300],log_inform[300], set_name[30];
     char source_name[50], filter_name[50], select_name[50];
+	std::string select_name_s;
 
-
-	std::strcpy(source_name, argv[1]);
+	std::strcpy(total_path, argv[1]);
 	std::strcpy(filter_name, argv[2]);
 	std::strcpy(select_name, argv[3]);
+	char_to_str(select_name, select_name_s);
 
-    sprintf(total_path,"/mnt/perc/hklee/selection_bias/%s", source_name);
+    //sprintf(total_path,"/mnt/perc/hklee/selection_bias/%s", source_name);
     sprintf(shear_path,"%s/parameters/shear.dat",total_path);
-    //std::cout<<total_path<<" "<<shear_path<<" "<<std::endl;
+	if(rank==0)
+    std::cout<<total_path<<" "<<shear_path<<" "<<std::endl;
 
 	double *shear = new double[shear_num * 2];
 	double *g1_true, *g2_true;
@@ -161,13 +163,26 @@ int main(int argc, char**argv)
 			read_h5(selection_path, set_name, selection);
 
 			std::cout << selection_path << std::endl;
-
-			for (j = 0; j < total_data_num; j++)
+			if(select_name_s == "mag_auto")
 			{
-				if (mask[j] > 0 and selection[j] > 0)
-				{
-					data_cut[source_count] = selection[j];
-					source_count++;
+				for (j = 0; j < total_data_num; j++)
+				{	
+					if (mask[j] > 0)
+					{
+						data_cut[source_count] = selection[j];
+						source_count++;
+					}				
+				}
+			}
+			else
+			{
+				for (j = 0; j < total_data_num; j++)
+				{	
+					if (mask[j] > 0 and selection[j] > 0)
+					{
+						data_cut[source_count] = selection[j];
+						source_count++;
+					}				
 				}
 			}
 		}
@@ -258,8 +273,26 @@ int main(int argc, char**argv)
             }
         }
 
-        find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
-        find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
+		try
+        {
+			find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
+		}
+		catch(const char *msg)
+		{
+			char err_inform[300];
+			sprintf(err_inform,"g1, %d, %d, %d, %s",my_shear, my_cut, source_count, msg);
+			std::cerr<<err_inform<<std::endl;
+		}
+		try
+        {
+			find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
+		}
+		catch(const char *msg)
+		{
+			char err_inform[300];
+			sprintf(err_inform,"g2, %d, %d, %d, %s",my_shear, my_cut, source_count, msg);
+			std::cerr<<err_inform<<std::endl;
+		}
         // //std::cout << my_task[i] << " " << my_shear << " " << my_cut << g1_true[my_shear] << " " << gh1 << g2_true[my_shear]<<" "<<gh2<<" "<<source_count << std::endl;
 
         shear_result[my_shear * 4 * cut_num + my_cut] = gh1;

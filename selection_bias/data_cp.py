@@ -1,18 +1,19 @@
 from subprocess import Popen
 import os
+from sys import argv
 
 
-sources = ["pts_bright", "pts_dimmer", "galsim_bright", "galsim_dimmer"]
+sources = [argv[1]]
 sex_nms = ["sex4_4", "sex4_2","sex4_1.5", "sex2_4","sex2_2", "sex2_1.5"]
 
 data_nms = []
 for i in range(10):
 
-    data_nms.append("rfacotr_%d.hdf5"%i)
+    data_nms.append("rfactor_%d.hdf5"%i)
     data_nms.append("mask_%d.hdf5"%i)
 
     data_nms.append("area_%d.hdf5"%i)
-    data_nms.append("mag_atuo_%d.hdf5"%i)
+    data_nms.append("mag_auto_%d.hdf5"%i)
     data_nms.append("snr_sex_%d.hdf5"%i)
     data_nms.append("snr_auto_%d.hdf5"%i)
 

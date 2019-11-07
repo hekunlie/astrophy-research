@@ -3043,14 +3043,15 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 		cal_chisq_1d(num_in_bin, bin_num, result);
 	}
 	catch(const char *msg)
-	{
+	{	
 		std::cout << "g_guess: " << gh << std::endl;
 		std::cout << "Num: " << std::endl;
 		show_arr(num_in_bin, 1, bin_num);
 		std::cout << "Bin: " << std::endl;
 		show_arr(bins, 1, bin_num + 1);
-		std::cerr << msg << std::endl;
-		throw "Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d) !!!";
+		char err_inform[200];
+		sprintf(err_inform,"%s, Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d)!!!",msg);
+		throw err_inform;
 	}
 
 	delete[] num_in_bin;
@@ -3248,10 +3249,16 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		gh_mid = (left + right) *0.5;
 		gh_left = left;
 		gh_right = right;
-
-		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
 		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
 
 		if (chi_left > chi_mid + chi_gap)
@@ -3280,8 +3287,15 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		gh_fit[i] = left + step * i;
 	}
 	for (i = 0; i < chi_num_fit; i++)
-	{
-		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+	{	
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
 		chisq_fit[i] = chi_right;
 		if (chi_check)
 		{	// for checking
