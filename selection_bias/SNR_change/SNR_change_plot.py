@@ -33,7 +33,7 @@ img.subplots(1, img_num)
 markers = ['o','v','s','h','d','p',"4","*","X","^",">","+"]
 colors = ["C%d"%i for i in range(10)]
 
-labels = ["P$_{k0}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO", "Resolution factor"]
+labels = ["P$_{k0}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO", "Resolution"]
 
 fmt = '%2.f%%'
 

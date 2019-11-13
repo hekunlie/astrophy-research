@@ -17,10 +17,13 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
 # calculate the shear of the whole sample
-source_nm = argv[1]
-total_path = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/"%source_nm
+# source_nm = argv[1]
+# total_path = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/"%source_nm
 
-shear = numpy.load(total_path + "parameters/shear.npz")
+total_path = argv[1]
+source_nm = total_path.split("/")[-1]
+
+shear = numpy.load(total_path + "/parameters/shear.npz")
 try:
     g1 = shear["arr_0"][:,0]
     g2 = shear["arr_1"][:,0]
@@ -42,7 +45,7 @@ buf1, itemsize = win1.Shared_query(0)
 result = numpy.ndarray(buffer=buf1, dtype='d', shape=(4, element_num)) # array filled with zero
 
 # read data
-data_path = total_path + "result/data/data_%d.hdf5"%rank
+data_path = total_path + "/result/data/data_%d.hdf5"%rank
 h5f = h5py.File(data_path, "r")
 data = h5f["/data"].value
 h5f.close()
@@ -69,7 +72,7 @@ if rank == 0:
     mc1[0] = mc1[0] - 1
     mc2[0] = mc2[0] - 1
 
-    result_path = total_path + "result/data/shear_result.hdf5"
+    result_path = total_path + "/result/data/shear_result.hdf5"
     h5f = h5py.File(result_path,"w")
     h5f["/mc1"] = mc1
     h5f["/mc2"] = mc2

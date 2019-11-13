@@ -163,7 +163,7 @@ int main(int argc, char**argv)
 			read_h5(selection_path, set_name, selection);
 
 			std::cout << selection_path << std::endl;
-			if(select_name_s == "mag_auto")
+			if(select_name_s == "mag_auto" or select_name_s == "mag_true")
 			{
 				for (j = 0; j < total_data_num; j++)
 				{	

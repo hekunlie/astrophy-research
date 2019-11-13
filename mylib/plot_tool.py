@@ -7,10 +7,12 @@ from matplotlib.colors import ListedColormap
 
 class Image_Plot:
 
-    def __init__(self, fig_x=8, fig_y=6, fontsize=20, xy_lb_size=17, xy_tick_size=17,
-                 legend_size=15, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=8, pad_size=7):
+    def __init__(self, fig_x=5, fig_y=4, fontsize=20, xy_lb_size=17, xy_tick_size=17,
+                 legend_size=15, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=8, pad_size=7,xpad=0.1,ypad=0.1):
         self.fig_x = fig_x
         self.fig_y = fig_y
+        self.xpad = xpad
+        self.ypad = ypad
         self.fontsize = fontsize
         self.xy_lb_size = xy_lb_size
         self.xy_tick_size = xy_tick_size
@@ -22,6 +24,8 @@ class Image_Plot:
         self.pad_size = pad_size
         self.figure = None
         self.axs = None
+        self.row = None
+        self.col = None
 
     def set_style_default(self):
         matplotlib.style.use('default')
@@ -31,26 +35,54 @@ class Image_Plot:
         plt.rcParams['font.family'] = font_style
 
     def subplots(self, ny, nx):
+
+        dx = 1 / ( nx * (1 + self.xpad) + self.xpad)
+        dy = 1 / (ny * (1 + self.ypad) + self.ypad)
+
+        # fig = plt.figure( figsize=(fx/dx, fy/dy))
+        # axs = [ fig.add_axes( [ j * dx* (1+xpad)+ dx*xpad,\
+        #                         (ny-1-i) * dy*(1+ypad)+dy*ypad, \
+        #                       dx, dy ]) \
+        #         for i in range(ny)\
+        #             for j in range(nx) ]
+
+        self.row = ny
+        self.col = nx
         # fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
-        fig = plt.figure(figsize=(int(nx * self.fig_x), int(ny * self.fig_y)))
+
+        fig = plt.figure(figsize=(self.fig_x/dx, self.fig_y/dy))
         sub_fig = [[] for i in range(ny)]
         for i in range(ny):
             for j in range(nx):
-                ax = fig.add_subplot(ny, nx, i*nx+j+1)
+                ax = fig.add_axes([j * dx* (1+self.xpad)+ dx*self.xpad,(ny-1-i)*dy*(1+self.ypad)+dy*self.ypad, dx, dy])
                 sub_fig[i].append(ax)
                 sub_fig[i][j].tick_params(direction='in', labelsize=self.xy_tick_size, top=True, right=True, pad=self.pad_size)
 
-                for axis in ["bottom", "left", "top", "right"]:
-                    # the line width of the frame
-                    sub_fig[i][j].spines[axis].set_linewidth(self.axis_linewidth)
-                sub_fig[i][j].xaxis.set_tick_params(which="major", direction="in", length=self.tick_len, width=self.axis_linewidth)
-                sub_fig[i][j].xaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len*0.6), width=self.axis_linewidth)
-                sub_fig[i][j].yaxis.set_tick_params(which="major", direction="in", length=self.tick_len, width=self.axis_linewidth)
-                sub_fig[i][j].yaxis.set_tick_params(which="minor", direction="in", length=int(self.tick_len*0.6), width=self.axis_linewidth)
-                sub_fig[i][j].tick_params(right=True, which='minor')
-                sub_fig[i][j].tick_params(top=True, which='minor')
         self.figure = fig
         self.axs = sub_fig
+
+    def axis_type(self, axis_nm, spine, tick_len=None, tick_width=None, direction="in"):
+
+        if not tick_len:
+            tick_len = self.tick_len
+        if not tick_width:
+            tick_width = self.tick_len*0.6
+
+        for axis in ["bottom", "left", "top", "right"]:
+            # the line width of the frame
+            for i in range(self.row):
+                for j in range(self.col):
+                    self.axs[i][j].spines[axis].set_linewidth(tick_width)
+                    if axis_nm == 0:
+                        self.axs[i][j].yaxis.set_tick_params(which=spine, direction=direction,
+                                                             length=tick_len, width=tick_width)
+                    else:
+                        self.axs[i][j].xaxis.set_tick_params(which=spine, direction=direction,
+                                                             length=tick_len, width=tick_width)
+
+                    self.axs[i][j].tick_params(right=True, which='minor')
+                    self.axs[i][j].tick_params(top=True, which='minor')
+
 
     def axis_major_formatter(self, iy, ix, axis_nm, fmt):
         ticks_form = mtick.FormatStrFormatter(fmt)

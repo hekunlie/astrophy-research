@@ -16,8 +16,8 @@ para_path = total_path + "/parameters/"
 log_path = total_path + "/logs/"
 
 
-sex_filters = ["sex2_4", "sex3_4", "sex4_4","sex2_2", "sex3_2", "sex4_2", "sex2_1.5", "sex3_1.5", "sex4_1.5"]
-cut_nm = ["mag_auto", "snr_sex", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5","rfactor"]
+sex_filters = ["sex2_4", "sex4_4", "sex2_2", "sex4_2", "sex2_1.5",  "sex4_1.5"]
+cut_nm = ["mag_auto", "snr_sex", "snr_auto",  "flux2_ex1", "flux2_ex2", "flux2_ex3", "flux2_ex4", "flux2_ex5","rfactor","mag_true"]
 
 if cmd == "cut":
     cut_path = result_path + "cuts/"
@@ -64,7 +64,7 @@ if cmd == "data":
 
 if cmd == "all":
     for i in range(14):
-        img_path = total_path + "%d/"%i
+        img_path = total_path + "/%d/"%i
         if not os.path.exists(img_path):
             os.makedirs(img_path)
 
@@ -74,8 +74,8 @@ if cmd == "all":
     if not os.path.exists(para_path + "pic/"):
         os.makedirs(para_path + "pic/")
 
-    if not os.path.exists(total_path + "logs/"):
-        os.makedirs(total_path + "logs/")
+    if not os.path.exists(total_path + "/logs/"):
+        os.makedirs(total_path + "/logs/")
 
     if not os.path.exists(result_path + "data/data_2.0sig/"):
         os.makedirs(result_path + "data/data_2.0sig/")

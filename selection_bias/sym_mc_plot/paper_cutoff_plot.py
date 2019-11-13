@@ -13,11 +13,11 @@ import h5py
 
 matplotlib.rcParams["font.family"] = "serif"
 
-source_b = "galsim_bright"
-source_f = "galsim_dimmer"
+source_b = "pts_bright"
+source_f = "pts_dimmer"
 # final pic name
-pic_nm = "gal_mc.pdf"
-
+pic_nm = "pts_mc.pdf"
+pic_nm_png = pic_nm.split(".")[0]+".png"
 # the bright source
 total_path_1 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_b
 data_path_1 = total_path_1 + "cuts/sym/sex2_1.5/"
@@ -25,8 +25,8 @@ data_path_1 = total_path_1 + "cuts/sym/sex2_1.5/"
 total_path_2 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_f
 data_path_2 = total_path_2 + "cuts/sym/sex2_1.5/"
 
-names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "SNR$_A$"]
-files = ["flux2_ex1", "mag_auto", "flux2_ex5", "sex_snr", "snr_auto"]
+names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "Resolution"]
+files = ["flux2_ex1", "mag_auto", "mag_true", "snr_sex", "rfactor"]
 colors = ["C0", "C2", "C1", "C3", "C4"]
 ch_num = 9
 cuts_num = 10
@@ -37,12 +37,21 @@ ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$
 fmt = '%2.f%%'
 xticks = mtick.FormatStrFormatter(fmt)
 
-img = Image_Plot(fig_x=8, fig_y=5)
+img = Image_Plot(fig_x=6, fig_y=4, ypad=0.2, xpad=0.2)
 img.subplots(2,2)
-# img.set_style_default()
-# img.set_style()
-# dys = [(-0.2, 1), (-0.2, 1), (-0.4, 0.5), (-0.4, 0.5)]
-dys = [(-0.1, 0.35), (-0.1, 0.3), (0, 0.1), (0, 0.1)]
+img.axis_type(0,"major",tick_len=8, tick_width=2)
+img.axis_type(1,"major",tick_len=8, tick_width=2)
+
+
+# pts sample
+text_pos = [[6, 1.],[6, 1.],[6, 1.6],[6, 1.6]]
+sample_name = ["PI sample","PI sample","PII sample","PII sample"]
+xy_lims = [(-3.5, 1.5),(-3.1, 1.5),(-4.98, 2.3),(-4.9, 2.3)]
+
+# galsim sample
+# text_pos = [[6, 0.7],[6, 0.7],[6, 0.7],[6, 0.7]]
+# sample_name = ["GI sample","GI sample","GII sample","GII sample"]
+# xy_lims = [(-1.1, 1.1),(-1.1, 1.1),(-2, 1.1),(-2, 1.1)]
 
 for j in range(4):
 
@@ -69,21 +78,40 @@ for j in range(4):
         mc = h5f["/mc%d"%(col+1)].value[:,ch]
         h5f.close()
 
-        img.axs[row][col].errorbar(x_coord, 100 * mc[0], 100 * mc[1], c=colors[i], linewidth=img.plt_line_width,
-                    capsize=img.cap_size, label=names[i], marker="o",mfc="none")
+        img.axs[row][col].errorbar(x_coord, 100 * mc[0], 100 * mc[1], c=colors[i], linewidth=img.plt_line_width-0.25,
+                    capsize=img.cap_size, label=names[i], marker="d",mfc="none")
 
     xs = img.axs[row][col].set_xlim()
     ys = img.axs[row][col].set_ylim()
     img.axs[row][col].plot([xs[0], 100], [0, 0], linewidth=img.plt_line_width, c="grey", linestyle="--")
     img.axs[row][col].set_xlim(xs[0], xs[1])
 
-    img.axs[row][col].set_ylim(ys[0] + dys[j][0], ys[1] + dys[j][1])
+    # img.axs[row][col].set_ylim(ys[0] + dys[j][0], ys[1] + dys[j][1])
+    # img.axs[row][col].set_ylim((-6.5,4.5))
 
     img.axs[row][col].xaxis.set_major_formatter(xticks)
     img.axs[row][col].set_xlabel("Cutoff percentage", fontsize=img.xy_lb_size)
     img.axs[row][col].set_ylabel(ylabels[j], fontsize=img.xy_lb_size)
-    img.axs[row][col].legend(ncol=2, loc="best", fontsize=img.legend_size, frameon=False)#, bbox_to_anchor=legend_pos[j]
-img.figure.subplots_adjust(hspace=0.25, wspace=0.25)
+    # img.axs[row][col].set_xlabel("Cutoff percentage", fontsize=img.xy_lb_size)
+    # if j == 0 or j == 2:
+    #     img.axs[row][col].set_ylabel("m$\\times 10^2$", fontsize=img.xy_lb_size)
+    #     img.axs[row][col].set_yticklabels([])
+
+    if j == 0:
+        img.axs[row][col].legend(ncol=6, fontsize=img.legend_size, loc='upper left', bbox_to_anchor=(0.15,1.15))
+
+    img.axs[row][col].set_ylim(xy_lims[j])
+    img.axs[row][col].text(text_pos[j][0], text_pos[j][1], sample_name[j], color='k', ha='left', va='center',
+                           fontsize=img.legend_size - 1,fontweight="medium")
+
+    # if j ==2 or j == 3:
+    #     img.axs[row][col].set_xlabel("Cutoff percentage", fontsize=img.xy_lb_size)
+    # else:
+    #     img.axs[row][col].set_xticklabels([])
+
+
+# img.figure.subplots_adjust(hspace=0.25, wspace=0.25)
 img.save_img(pic_nm)
+img.save_img(pic_nm_png)
 
 

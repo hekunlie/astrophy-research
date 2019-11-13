@@ -12,11 +12,13 @@ from sys import argv
 import h5py
 
 
+# separate the data into pieces for conve
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
+# the directory
 total_path = argv[1]
 
 filter_name = ["sex2_4", "sex2_2", "sex2_1.5", "sex4_4", "sex4_2", "sex4_1.5"]
@@ -54,6 +56,17 @@ for nm in filter_name:
     mask = numpy.ones((len(data), ), dtype=numpy.intc)
     idx = data[:,snr_idx] <= 0
     mask[idx] = 0
+
+    # true magnitude
+    h5path = total_path + "/parameters/para_%d.hdf5"%rank
+    h5f = h5py.File(h5path,"r")
+    mag_true = h5f["/mag"].value
+    mag_true.shape = (mag_true.shape[0],)
+    h5f.close()
+    h5path = total_path + "/result/data/%s/mag_true_%d.hdf5"%(nm,rank)
+    h5f = h5py.File(h5path,"w")
+    h5f["/data"] = -mag_true
+    h5f.close()
 
     # magnitude
     h5path = total_path + "/result/data/%s/mag_auto_%d.hdf5"%(nm, rank)
