@@ -1,5 +1,5 @@
 #include<FQlib.h>
-
+#include<hk_iolib.h>
 // assign the comoving/physical distance to the data according to their redshifts
 // argv[1]: directory to the data file
 

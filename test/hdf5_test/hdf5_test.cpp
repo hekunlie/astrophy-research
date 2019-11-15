@@ -1,4 +1,5 @@
 #include<FQlib.h>
+#include<hk_iolib.h>
 
 void read_h5_datasize_(const char *filename, const char *set_name, int &elem_num)
 {

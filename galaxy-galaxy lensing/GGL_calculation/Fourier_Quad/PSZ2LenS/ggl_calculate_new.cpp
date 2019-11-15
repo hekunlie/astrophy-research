@@ -2,6 +2,7 @@
 #include<mpi.h>
 #include<vector>
 #include<climits>
+#include<hk_iolib.h>
 
 #define MAX_DATA_COL 40
 #define FOREGAL_DATA_COL 6

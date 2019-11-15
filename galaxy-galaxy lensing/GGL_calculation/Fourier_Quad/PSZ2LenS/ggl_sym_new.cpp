@@ -1,6 +1,7 @@
 #include<FQlib.h>
 #include<mpi.h>
 #include<vector>
+#include<hk_iolib.h>
 
 #define MAX_DATA_COL 20
 #define MAX_AREA 20

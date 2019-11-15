@@ -1,12 +1,13 @@
 #include<FQlib.h>
 #include<mpi.h>
 #include<vector>
+#include<hk_iolib.h>
 
 #define MAX_DATA_COL 40
 #define FOREGAL_DATA_COL 6
 #define GRID_DATA_COL 5
 #define BACKGAL_DATA_COL 21
-#define mg_bin_num 8
+#define MG_BIN_NUM 8
 #define vec_data_col 8
 #define SMALL_CATA
 

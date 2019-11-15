@@ -1,4 +1,5 @@
 #include <FQlib.h>
+#include<hk_iolib.h>
 
 void write_h5_test(const char *filename, const char *set_name, const double*data, const int row, const int column, const bool trunc)
 {
