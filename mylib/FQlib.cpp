@@ -215,19 +215,19 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 	}
 }
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, para *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, para *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
 	 rotate is the radian in units of pi/4,
-	 scale is the scale length of PSF,
-	 psf=1 means the Gaussian PSF, psf=2 means the Moffat PSF	*/
+	 psf_scale is the scale length of PSF,
+	 psf_type=1 means the Gaussian PSF, psf_type=2 means the Moffat PSF	*/
 	int i, j, k, m;
 	double r1, r2, n, flux_g, flux_m;
 	// |rot1, - rot2 |
 	// |rot2,  rot1  |
 	double rot1 = cos(rotate*Pi / 4.), rot2 = sin(rotate*Pi / 4.), val, rs, rd;
-	rd = 1. / scale / scale;  // scale of PSF	
+	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
 	double cent;
 	cent = size / 2 - 0.5;
 
@@ -252,8 +252,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	}
 
 	/*  convolve PSF and draw the image */
-	flux_g = flux / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
-	flux_m = flux / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4);   /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+	flux_g = flux / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 	for (k = 0; k < num_p; k++)
 	{
 		for (i = 0; i < size; i++)  /* y coordinate */
@@ -262,7 +262,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 			for (j = 0; j < size; j++) /* x coordinate */
 			{
 				rs = r1 + (j - points_r[k])*(j - points_r[k])*rd;
-				if (psf == 1)  // Gaussian PSF
+				if (psf_type == 1)  // Gaussian PSF
 				{
 					if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
 				}
@@ -281,13 +281,13 @@ void convolve(double *in_img, const double * points, const double flux, const in
 }
 
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, para *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, const double ellip, const double theta, const double amplitude, para *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
 	 rotate is the radian in units of pi/4,
-	 scale is the scale length of PSF,
-	 psf=1 means the Gaussian PSF, psf=2 means the Moffat PSF	*/
+	 psf_scale is the scale length of PSF,
+	 psf_type=1 means the Gaussian PSF, psf_type=2 means the Moffat PSF	*/
 	int i, j, k, m;
 	double r1, r2, n, flux_norm;
 	double ry1, ry2, rx1, rx2;
@@ -303,7 +303,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	// |rot1, - rot2 |
 	// |rot2,  rot1  |
 	double rot1 = cos(rotate*Pi / 4.), rot2 = sin(rotate*Pi / 4.), val, rs, rd;
-	rd = 1. / scale / scale;  // scale of PSF	
+	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
 
 	double *points_r = new double[num_p * 2];
 	/* rotate and shear */
@@ -339,7 +339,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 				r1 = psf_rot_1 * (j - points_r[k]) + ry1;
 				r2 = -psf_rot_2 * (j - points_r[k]) + ry2;
 				rs = (r1*r1 + r2*r2*q)*rd;
-				if (psf == 1)  // Gaussian PSF
+				if (psf_type == 1)  // Gaussian PSF
 				{
 					if (rs <= 9) in_img[i*size + j] += flux_norm * exp(-rs * 0.5);
 				}
@@ -3254,17 +3254,14 @@ void separation(const double RA1, const double DEC1, const double RA2, const dou
 	double diff_dec_rad, diff_ra_rad;
 	double cos_dec1, cos_dec2, sin_dec1, sin_dec2, cos_diff_ra, sin_diff_ra;
 	double m, m1,m2, n;
-	double deg2rad = 1. / 180 * Pi;
 
-	dec1_rad = DEC1 * deg2rad;
-	dec2_rad = DEC2 * deg2rad;
-	ra1_rad = RA1 * deg2rad;
-	ra2_rad = RA2 * deg2rad;
-	diff_ra_rad = ra2_rad - ra1_rad;
+	dec1_rad = DEC1 * DEG2RAD;
+	dec2_rad = DEC2 * DEG2RAD;
+
+	diff_ra_rad = (RA1 - RA2)* DEG2RAD;
 
 	cos_dec1 = cos(dec1_rad);
 	cos_dec2 = cos(dec2_rad);
-
 	sin_dec1 = sin(dec1_rad);
 	sin_dec2 = sin(dec2_rad);
 

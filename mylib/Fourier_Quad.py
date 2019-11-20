@@ -17,8 +17,8 @@ class Fourier_Quad:
         self.rng = numpy.random.RandomState(seed)
         self.size = size
         self.alpha = (2.*numpy.pi/size)**4
-        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.-0.5
-        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.-0.5
+        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
+        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
         self.kx2 = self.mx*self.mx
         self.ky2 = self.my*self.my
         self.kxy = self.mx*self.my
@@ -147,7 +147,7 @@ class Fourier_Quad:
         return numpy.dot(rot_matrix, pos)
 
     def shear(self, pos, g1, g2):
-        return numpy.dot(numpy.array(([(1+g1), g2], [g2, (1-g1)])), pos)
+        return numpy.dot(numpy.array(([1+g1, g2], [g2, 1-g1])), pos)
 
     def rotation(self, e1, e2, theta):
         """

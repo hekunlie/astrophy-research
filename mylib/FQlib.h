@@ -92,7 +92,7 @@ struct pts_info
 
 
 const double Pi = 3.1415926535897932384626433832795;
-
+const double DEG2RAD = 1./180*Pi;
 const double C_0_hat = 2.99792458; // 10^8
 const double C_0 = 2.99792458*1.e8;// speed of light m/s
 
@@ -472,6 +472,7 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
 /* calculate the separation angle between two points on the sphere */
 /* RA & DEC in unit of degree */
+/* https://en.wikipedia.org/wiki/Great-circle_distance */
 
 void find_near(const double *arr, const double tar_val, const int arr_len, int & label);//checked
 /* find the label of the element in "arr" which is the nearest to "tar_val" */
