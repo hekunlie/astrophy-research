@@ -38,7 +38,7 @@ for i in range(2,lib_num):
             cmd += "%s/work/mylib/%s.cpp " %(my_home, argv[i])
       if "hk_mpi" in argv[i]:
             cmd += "%s/work/mylib/%s.cpp " % (my_home, argv[i])
-          
+
 cmd += " %s -lm -o %s %s "%(links,final_program_name,cpp_std)
 print(cmd)
 a = Popen(cmd, shell=True)
