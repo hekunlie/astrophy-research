@@ -25,7 +25,9 @@ int main(int argc, char*argv[])
 	char parent_path[100], chip_path[150], para_path[150], shear_path[150], result_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_name[50];
 
-	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj/hklee/work/selection_bias/bias_check/data");
+//	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj/hklee/work/selection_bias/bias_check/data");
+	sprintf(parent_path, "/mnt/perc/hklee/bias_check");
+	
 	//strcpy(parent_path, argv[1]);
 	std::ifstream fin;
 	std::string str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
@@ -36,7 +38,8 @@ int main(int argc, char*argv[])
 	int i, j, k, ib;
 	int sss1, sss2, seed;
 
-	int num_p, max_radius, size, shear_pairs;
+	int num_p, size, shear_pairs;
+	double max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
@@ -89,9 +92,6 @@ int main(int argc, char*argv[])
 	double *pnoise = new double[img_len]();
 	double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
 
-	float *fft_img_in = new float[img_len]{};
-	float *fft_img_out = new float[img_len]{};
-
 	// the shear estimators data matrix  
 	double *total_data,*sub_data;
 	double *total_flux, *sub_flux;
@@ -116,15 +116,18 @@ int main(int argc, char*argv[])
 	}
 	sub_chip_num = scatter_count[rank];
 	// the start- & end-label of chip of each thread
+	chip_st = 0;
 	for(i=0;i<rank;i++)
 	{
 		chip_st += scatter_count[i];
 	}
 	chip_ed = chip_st+scatter_count[rank];
+	
 	// the final data from all the source in one shear point
 	total_data_row = total_chips * stamp_num;
 	// the sub-data from the source processed by each thread
 	sub_data_row = sub_chip_num * stamp_num;
+
 	for(i=0;i<numprocs;i++)
 	{
 		// the real count of galaxies for each thread
@@ -145,16 +148,7 @@ int main(int argc, char*argv[])
 
 	// create PSF
 	create_psf(psf, psf_scale, size, psf_type);
-	for(i=0;i<img_len;i++)
-	{
-		fft_img_in[i] = psf[i];
-	}
-	//pow_spec(psf, ppsf, size, size);
-	pow_spec(fft_img_in,fft_img_out,size,size);
-	for(i=0;i<img_len;i++)
-	{
-		ppsf[i] = fft_img_out[i];
-	}
+	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
 	// std::cout<<rank<<std::endl;
@@ -170,10 +164,10 @@ int main(int argc, char*argv[])
 		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << " PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius << ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
-		sprintf(buffer, "%s/psf.hdf5", parent_path);
+		sprintf(buffer, "!%s/psf.psf", parent_path);
 		sprintf(set_name, "/data");
-		write_h5(buffer,set_name,psf,size, size, true);
-		//write_fits(buffer,psf, size, size);
+		//write_h5(buffer,set_name,psf,size, size, true);
+		write_fits(buffer,psf, size, size);
 		std::cout<<"Chip Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
@@ -231,7 +225,7 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-
+					
 			// initialize GSL
 			seed = shear_id*500000 + rank*50000 + i*5;
 			gsl_initialize(seed);
@@ -261,17 +255,8 @@ int main(int argc, char*argv[])
 				initialize_arr(gal, size*size, 0);
 				initialize_arr(pgal, size*size, 0);
 
-				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);
-				for(i=0;i<img_len;i++)
-				{
-					fft_img_in[i] = gal[i];
-				}
-				pow_spec(fft_img_in,fft_img_out,size,size);
-				for(i=0;i<img_len;i++)
-				{
-					pgal[i] = fft_img_out[i];
-				}			
-				//pow_spec(gal, pgal, size, size);
+				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);	
+				pow_spec(gal, pgal, size, size);
 				shear_est(pgal, ppsf, &all_paras);
 
 				sub_data[row + j * shear_data_cols + 0] = all_paras.n1;
@@ -296,28 +281,10 @@ int main(int argc, char*argv[])
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
 #endif
-				for(i=0;i<img_len;i++)
-				{
-					fft_img_in[i] = gal[i];
-				}
-				pow_spec(fft_img_in,fft_img_out,size,size);
-				for(i=0;i<img_len;i++)
-				{
-					pgal[i] = fft_img_out[i];
-				}
-				//pow_spec(gal, pgal, size, size);
 
+				pow_spec(gal, pgal, size, size);
 				addnoise(noise, size*size, gal_noise_sig);
-				for(i=0;i<img_len;i++)
-				{
-					fft_img_in[i] = noise[i];
-				}
-				pow_spec(fft_img_in,fft_img_out,size,size);
-				for(i=0;i<img_len;i++)
-				{
-					pnoise[i] = fft_img_out[i];
-				}	
-				//pow_spec(noise, pnoise, size, size);
+				pow_spec(noise, pnoise, size, size);
 
 				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
 				shear_est(pgal, ppsf, &all_paras);
@@ -333,10 +300,10 @@ int main(int argc, char*argv[])
 #ifdef IMG_CHECK_LABEL
 			if(i == IMG_CHECK_LABEL)
 			{
-				sprintf(chip_path, "%s/%d/gal_chip_%05d.hdf5", parent_path, shear_id, i);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d.fits", parent_path, shear_id, i);
 				sprintf(set_name,"/data");
-				write_h5(chip_path, set_name,big_img, stamp_nx*size, stamp_nx*size,true);
-				//write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
+				//write_h5(chip_path, set_name,big_img, stamp_nx*size, stamp_nx*size,true);
+				write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
 			}
 #endif
 			t2 = clock();
