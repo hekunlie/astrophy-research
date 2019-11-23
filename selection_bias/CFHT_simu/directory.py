@@ -3,12 +3,12 @@ from sys import path, argv
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 path.append('%s/work/mylib/'%my_home)
 path.append('E:/Github/astrophy-research/mylib/')
-import tool_box
 import shutil
 
 
 total_path = argv[1]
-cmd = argv[2]
+shear_point = int(argv[2])
+cmd = argv[3]
 
 
 result_path = total_path + "/result/"
@@ -63,7 +63,7 @@ if cmd == "data":
         print("Build: %scat/" % sex_path)
 
 if cmd == "all":
-    for i in range(14):
+    for i in range(shear_point):
         img_path = total_path + "/%d/"%i
         if not os.path.exists(img_path):
             os.makedirs(img_path)

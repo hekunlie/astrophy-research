@@ -79,3 +79,4 @@ for shear_id in range(shear_st, shear_ed):
 
 
 comm.Barrier()
+MPI.Finalize()
