@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	num = atoi(argv[1]);
 	sub_num = num/numprocs;
 
-	double *send_buf;
+	double *send_buf, *re_gather_buf;
 	double *recv_buf = new double[sub_num] {};
 	int *disp = new int[num];
 	int *send_num = new int[numprocs];
@@ -42,12 +42,18 @@ int main(int argc, char **argv)
 	{
 		send_num[i] = sub_num;
  	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	
+	
+	t1 = clock();
+
 
 	// scatter
-	MPI_Barrier(MPI_COMM_WORLD);
-	t1 = clock();
-	//MPI_Scatterv(sendbuf, send_num, disp, MPI_DOUBLE, recvbuf, num, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	my_Scatterv(send_buf, send_num, numprocs, rank, recv_buf);
+	if(rank == 0)
+	{
+		std::cout<<"Scatter"<<std::endl;
+	}
+	my_Scatterv(send_buf, send_num, recv_buf, numprocs, rank);
 	sum_arr(recv_buf, sub_num, 0, sub_num, s);
 	for (i = 0; i < numprocs; i++)
 	{
@@ -60,33 +66,60 @@ int main(int argc, char **argv)
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
 
+
+	// gather the data scattered before from each threads
+	if(rank == numprocs-1)
+	{
+		re_gather_buf = new double[num]();
+	}
+	my_Gatherv(recv_buf, send_num, re_gather_buf, numprocs, rank, numprocs-1);
+
+	if(rank == numprocs -1)
+	{
+		for(i=0;i<numprocs;i++)
+		{	
+			s=0;
+			sum_arr(&re_gather_buf[i*sub_num],sub_num, 0, sub_num, s);
+			std::cout<<"Sum of each sub-array: "<<s<<std::endl;
+		}
+	}
+
+
 	// send & receive
+	if(rank == 0)
+	{
+		std::cout<<"Sned & Recv"<<std::endl;
+	}
+	double send_val_d, *rev_vals_d;
+	int send_val_i, *rev_vals_i;
+
+	send_val_d = rank+1;
+	send_val_i = rank+1;
+
+	if(rank == numprocs-1)
+	{
+		rev_vals_d = new double[numprocs];
+		rev_vals_i = new int[numprocs];
+	}
+	my_Send_Recv(send_val_d, rev_vals_d,numprocs, rank, numprocs-1);
+	my_Send_Recv(send_val_i, rev_vals_i,numprocs, rank, numprocs-1);
+	if(rank == numprocs-1)
+	{
+		for(i=0;i<numprocs;i++)
+		{
+			std::cout<<"Rev Double: "<<rev_vals_d[i]<<" Real: "<<i+1<<std::endl;
+			std::cout<<"Rev Int: "<<rev_vals_i[i]<<" Real: "<<i+1<<std::endl;
+
+		}
+	}
+
 	t2 = clock();
-	// if (rank == 0)
-	// {
-	// 	for (i = 1; i < numprocs; i++)
-	// 	{
-	// 		MPI_Send(sendbuf, num, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
-	// 	}
-	// }
-	// else
-	// {
-	// 	MPI_Recv(sendbuf, num, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
-	// }
 
-	// for (i = 0; i < numprocs; i++)
-	// {
-	// 	if (rank == i)
-	// 	{
-	// 		sum_arr(sendbuf, num, 0, num, s);
-	// 		std::cout << s << std::endl;
-	// 	}
-	// 	MPI_Barrier(MPI_COMM_WORLD);
-	// }
-	// MPI_Barrier(MPI_COMM_WORLD);
 
-	t3 = clock();
-
-	std::cout << (t2 - t1) / CLOCKS_PER_SEC<<" "<<(t3 - t2) / CLOCKS_PER_SEC << std::endl;
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(rank == 0)
+	{
+		std::cout <<"Finish "<< (t2 - t1) / CLOCKS_PER_SEC<<" Sec"<<std::endl;
+	}
 	return 0;
 }
