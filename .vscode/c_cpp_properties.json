@@ -6,7 +6,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "D:/GitHub/astrophy-research/**",
-                "D:/GitHub/astrophy-research/cpp/include/**",
+                "D:/GitHub/astrophy-research/mylib/**",
                 "D:/ProgramData/MinGW/mingw64/**"
             ],
             "defines": [

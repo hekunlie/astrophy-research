@@ -90,42 +90,50 @@ int main(int argc, char*argv[])
 	// the shear estimators data matrix  
 	double *total_data,*sub_data;
 	double *total_flux, *sub_flux;
-	int *send_count;
+	int *scatter_count,*gather_count;
+
+	// for scatterring the flux to each thread
+	scatter_count = new int[numprocs]{};
+	// for the gatherv when finish in each shear point
+	gather_count = new int[numprocs]{};
 
 	///////////////////// task distribution /////////////////////////////////////
 	sub_chip_num = total_chips / numprocs;
 	j = total_chips%numprocs;
-	// for scatterring the flux to each thread
-	send_count = new int[numprocs]{};
 	for(i=0;i<numprocs;i++)
 	{
-		send_count[i] = sub_chip_num;
+		scatter_count[i] = sub_chip_num;
 	}
 	for(i=0;i<j;i++)
-	{
-		send_count[i] += 1;
+	{	
+		// the chip number
+		scatter_count[i] += 1;
 	}
-	sub_chip_num = send_count[rank];
+	sub_chip_num = scatter_count[rank];
+	// the start- & end-label of chip of each thread
 	for(i=0;i<rank;i++)
 	{
-		chip_st += send_count[i];
+		chip_st += scatter_count[i];
 	}
-	chip_ed = chip_st+send_count[rank];
+	chip_ed = chip_st+scatter_count[rank];
 	// the final data from all the source in one shear point
 	total_data_row = total_chips * stamp_num;
 	// the sub-data from the source processed by each thread
 	sub_data_row = sub_chip_num * stamp_num;
 	for(i=0;i<numprocs;i++)
 	{
-		send_count[i] *= stamp_num;
+		// the real count of galaxies for each thread
+		scatter_count[i] *= stamp_num;
+		// the real amount of data of each thread
+		gather_count[i] = scatter_count[i]*shear_data_cols;
 	}
-	sub_data = new double[sub_data_row*shear_data_cols]();
+	sub_data = new double[gather_count[rank]]{};
 	if (0 == rank)
 	{
 		total_flux = new double[total_data_row]{};
 		total_data = new double[total_data_row*shear_data_cols]{};
 	}
-	sub_flux = new double[sub_data_row]{};
+	sub_flux = new double[scatter_count[rank]]{};
 
 	// read shear
 	read_text(str_shear_path, shear, 2*shear_pairs);
@@ -134,25 +142,31 @@ int main(int argc, char*argv[])
 	create_psf(psf, psf_scale, size, psf_type);
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
+
+	// std::cout<<rank<<std::endl;
+	// show_arr(scatter_count,1,numprocs);
+	// std::cout<<"---------------------------------------------------------------------------"<<std::endl;
+	
 	if (0 == rank)
 	{	
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		std::cout << parent_path << std::endl;
 		std::cout<<"Shear num: "<<shear_pairs<<std::endl;
+		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
+		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << " PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius << ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
-		std::cout << "Total chip: " << total_chips << ", Total cpus: " << numprocs << ", Stamp size: " << size << std::endl;
 		sprintf(buffer, "!%s/psf.fits", parent_path);
 		write_fits(buffer,psf, size, size);
 		std::cout<<"Chip Num of each thread: ";
-		show_arr(send_count,1,numprocs);
+		show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
 	}
 	for(i=0;i<numprocs;i++)
 	{
 		if(i == rank)
 		{
-			std::cout<<rank<<" "<<chip_st<<" "<<chip_ed<<" "<<sub_data_row<<std::endl;
+			std::cout<<rank<<" "<<chip_st<<" "<<chip_ed<<" "<<scatter_count[i]<<" "<<gather_count[i]<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
@@ -181,7 +195,7 @@ int main(int argc, char*argv[])
 			sprintf(set_name, "/flux");
 			read_h5(para_path, set_name, total_flux);
 		}
-		my_Scatterv(total_flux, send_count, sub_flux, numprocs, rank);
+		my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
 
 		// sprintf(para_path, "%s/parameters/para_%d_check_%d.hdf5", parent_path, shear_id,rank);
 		// sprintf(set_name, "/data");
@@ -294,17 +308,23 @@ int main(int argc, char*argv[])
 		if (rank == 0)
 		{
 			sprintf(buffer, "rank %d: done in %g \n", rank, (te - ts) / CLOCKS_PER_SEC);
-			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 			std::cout << buffer<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
+		sprintf(result_path, "%s/result/data/data_%d_%d_check.hdf5", parent_path, shear_id,rank);
 		sprintf(set_name, "/data");
-		MPI_Gather(sub_data, sub_data_row*shear_data_cols, MPI_DOUBLE, total_data, sub_data_row*shear_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		write_h5(result_path, set_name, sub_data, sub_data_row,shear_data_cols,true);
+
+		sprintf(set_name, "/data");
+		//MPI_Gather(sub_data, sub_data_row*shear_data_cols, MPI_DOUBLE, total_data, sub_data_row*shear_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		my_Gatherv(sub_data, gather_count, total_data, numprocs, rank);
+
 		if (0 == rank)
 		{
 			sprintf(result_path, "%s/result/data/data_%d.hdf5", parent_path, shear_id);
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, TRUE);
+			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}
 
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -329,8 +349,9 @@ int main(int argc, char*argv[])
 	delete[] sub_data;
 	delete[] shear;
 	delete[] sub_flux;
-	delete[] send_count;
-		
+	delete[] scatter_count;
+	delete[] gather_count;
+	
 	MPI_Finalize();
 	return 0;
 }
