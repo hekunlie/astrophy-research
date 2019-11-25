@@ -268,8 +268,8 @@ void cal_chisq_1d(const int *hist_num,  const int bin_num, const int num, double
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20,
-	const int choice=0, const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
+const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -387,7 +387,7 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 	fx_err: array, uncertainty (\sigma), of which the reciprocal will be the weights of data points.
 	data_num: the number of data points
 	coeffs: array[4], [c, sig_c, m, sig_m]. 
-	weight: 1 for weighted version, others for fitting directly without weigths
+	weight: 1 for weighted version, others for fitting directly without weights
 */
 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs);//checked

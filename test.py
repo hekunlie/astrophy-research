@@ -24,32 +24,15 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 from Fourier_Quad import Fourier_Quad
 
-print(numpy.pi*(1.25**2))
-print(tool_box.mag_to_flux(23.85, zpt=22.5, exp_time=54, area=5, gain=3.85))
+x = numpy.linspace(0,10,11)
+plt.figure(figsize=(8,6))
+for i in range(10):
+    plt.plot(x,x+i*2,linewidth=4,c="C%d"%i, label="C%d"%i)
+plt.legend(ncol=3)
+plt.savefig("D:/line_color.png")
+plt.show()
 
 
-
-exit()
-M = 1
-m = 2
-v = numpy.pi
-l = 4
-w = v/l
-t = numpy.linspace(0,16,201)
-M_x = M*v/(M+m)*t + m*l/(M+m)*numpy.sin(w*t)
-M_y = -m*l/(M+m)*numpy.cos(w*t)
-
-m_x = M*v/(M+m)*t - M*l/(M+m)*numpy.sin(w*t)
-m_y = M*l/(M+m)*numpy.cos(w*t)
-
-img = plot_tool.Image_Plot()
-img.subplots(1,1)
-img.axs[0][0].plot(m_x,m_y,marker="o",label="m")
-img.axs[0][0].plot(M_x,M_y,marker="o",label="M")
-# img.axs[0][1].scatter(t,numpy.sqrt((M_x-m_x)**2 + (M_y-m_y)**2))
-img.axs[0][0].legend()
-img.save_img("E:/Mm.png")
-img.show_img()
 exit()
 
 

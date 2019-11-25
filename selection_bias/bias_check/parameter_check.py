@@ -35,6 +35,7 @@ radius_s, radius_e = float(paras[4]), float(paras[5])
 shear_num = int(paras[6])
 stamp_num = 10000
 
+time.sleep(rank*0.05)
 seed_ini = numpy.random.randint(1, 1000000, size=cpus)[rank]
 rng_ini = numpy.random.RandomState(seed_ini)
 seeds = rng_ini.randint(0, 100000, size=2000)
