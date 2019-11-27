@@ -7,7 +7,7 @@ int main(int argc, char **argv)
     int seed;
     int pts_num ;
     double max_radius;
-    double flux_per_pt;
+    double flux_per_pt, noise_sig;
     int size;
     double g1, g2;
 
@@ -23,17 +23,23 @@ int main(int argc, char **argv)
     size = 64;
     psf_scale = 4;
     psf_type = 2;
-    pts_num = 100;
-    flux_per_pt = 10;
+    pts_num = 60;
     max_radius = 10;
     all_para.stamp_size = size;
-
+    
     rotation_times = 4;
-    num_scale = 1;
+
     // input g1, g2
-    g1 = atof(argv[1]);
-    g2 = atof(argv[2]);
-    seed = atoi(argv[3]);
+    seed = atoi(argv[1]);
+    g1 = atof(argv[2]);
+    g2 = atof(argv[3]);
+    num_scale = atoi(argv[4]);
+    flux_per_pt = atof(argv[5]);
+    noise_sig = atof(argv[6]);
+    char inform[300];
+    sprintf(inform, "Seed: %d, g1: %.5f, g2: %.5f, Num_pts: %d, Flux_per_pt: %.5f, Noise sigma: %.5f",seed, g1, g2, pts_num, flux_per_pt, noise_sig);
+    std::cout<<inform<<std::endl;
+
     gsl_initialize(seed);
 
     double *pts = new double[2*pts_num]();
@@ -43,6 +49,8 @@ int main(int argc, char **argv)
     double *psf_img = new double[size*size]();
     double *gal_img_pow = new double[size*size]();
     double *psf_img_pow = new double[size*size]();
+    double *noise = new double[size*size]{};
+    double *pnoise = new double[size*size]{};
 
     // create random points(x,y)
     create_points(pts,pts_num, max_radius);
@@ -68,12 +76,22 @@ int main(int argc, char **argv)
         {   
             initialize_arr(gal_img,size*size,0);
             initialize_arr(gal_img_pow,size*size,0);
+            initialize_arr(noise, size*size, 0);
+            initialize_arr(pnoise, size*size, 0);
 
             // draw the galaxy image        
             convolve(gal_img, pts, flux_per_pt, size, pts_num, i, psf_scale, g1, g2, psf_type, 1, &all_para);
 
+            addnoise(gal_img, size*size, noise_sig);
             // power spectrum
             pow_spec(gal_img, gal_img_pow, size, size);
+
+            addnoise(noise, size*size, noise_sig);
+            pow_spec(noise, pnoise, size,size);
+
+            noise_subtraction(gal_img_pow, pnoise, &all_para, 1, 0);
+
+
             shear_est(gal_img_pow, psf_img_pow, &all_para);
 
             mg1[tag+i] = all_para.n1;
@@ -98,7 +116,6 @@ int main(int argc, char **argv)
     est_g1 = g1_s/n_s;
     est_g2 = g2_s/n_s;
 
-    char inform[200];
     sprintf(inform,"Est g1: %8.5f, g2: %8.5f\nTrue g1: %8.5f, g2: %8.5f\ndiff g1: %8.5f, g2: %8.5f",
             est_g1,est_g2, g1, g2, g1-est_g1, g2-est_g2);
     std::cout<<inform<<std::endl;

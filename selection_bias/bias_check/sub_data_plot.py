@@ -6,14 +6,25 @@ path.append("D:/GitHub/astrophy-research/mylib")
 from plot_tool import Image_Plot
 import numpy
 import h5py
-
+import shutil
 
 parent_path = argv[1]
-h5f = h5py.File(parent_path+"/result.hdf5","r")
+
+path_list = parent_path.split("/")
+nl = len(path_list)
+src_tag = path_list[nl-1]
+total_path = "/".join(path_list[:nl-1])
+
+src_result_path = parent_path+"/result.hdf5"
+dst_result_path = total_path+"/results/result_%s.hdf5"%src_tag
+
+h5f = h5py.File(src_result_path,"r")
 mc = h5f["/mc"].value
 data = h5f["/data"].value
 h5f.close()
+shutil.copyfile(src_result_path, dst_result_path)
 print(mc)
+
 h5f = h5py.File(parent_path +"/shear.hdf5","r")
 g1 = h5f["/g1"].value
 g2 = h5f["/g2"].value
@@ -73,5 +84,6 @@ for i in range(0,2):
         img.axs[0][i].legend(fontsize=img.legend_size, ncol=2, frameon=False, loc="upper left",
                              bbox_to_anchor=(0.7, 1.15))
         ax_share.legend(fontsize=img.legend_size, ncol=2, loc="upper left", frameon=False, bbox_to_anchor=(1.13, 1.16))
-lb = parent_path.split("_")[-1]
-img.save_img(parent_path + "result.png")
+
+pic_nm = total_path + "/results/result_%s.png"%src_tag
+img.save_img(pic_nm)

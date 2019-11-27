@@ -121,5 +121,6 @@ int main(int argc, char **argv)
 	{
 		std::cout <<"Finish "<< (t2 - t1) / CLOCKS_PER_SEC<<" Sec"<<std::endl;
 	}
+	MPI_Finalize();
 	return 0;
 }

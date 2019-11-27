@@ -111,8 +111,9 @@ const double One_Mpc = 3.085677581*1.e22;// meter
 const double M_sun_hat = 1.9885;
 const double M_sun = 1.9885*1.e30;//Kg
 
-extern const gsl_rng_type *T;
-extern gsl_rng *rng;
+extern const gsl_rng_type *T0,*T1, *T2, *T3;
+extern gsl_rng *rng0, *rng1, *rng2, *rng3; 
+extern int GSL_SETUP_LABEL;
 extern std::ofstream loggers;
 
 
@@ -142,8 +143,8 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 /********************************************************************************************************************************************/
 /* operations on the image */
 /********************************************************************************************************************************************/
-void create_points(double *point, const int num_p, const double radius);
-void create_epoints(double *point, const int num_p, const double ellip);
+void create_points(double *point, const int num_p, const double radius, const gsl_rng *gsl_rand_rng);
+void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
 void create_psf(double*in_img, const double scale, const int size, const int psf);
 void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const double amplitude, const int psf);
@@ -206,10 +207,6 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 	return: the area of the extended source
 */
 
-void addnoise(double *image, const int pixel_num, const double sigma);//checked
-void addnoise(float *image, const int pixel_num, const float sigma);//checked
-/* add Gaussian noise to an array */
-
 void initialize_arr(long *arr, const int length, const long x);
 void initialize_arr(double *arr, const int length, const double x);//checked
 void initialize_arr(float *arr, const int length, const float x);//checked
@@ -221,8 +218,6 @@ void normalize_arr(float *arr, const int size);//checked
 /* normalize the PSF power spectrum,
 	divide each pixel by the peak 
 */
-
-
 
 /********************************************************************************************************************************************/
 /* Fourier Quad */
@@ -319,46 +314,7 @@ void log_bin(const double start, const double end, const int num, double * bins)
 void linspace(const double start, const double end, const int num, double *bins);
 /* numpy.linspace(st, ed, num), include the end point*/
 
-/********************************************************************************************************************************************/
-/* random */
-/********************************************************************************************************************************************/
 
-void rand_gauss(const double sigma, const double mean, double &rand_n);//checked
-/* return a double from the normal distribution with sigma and mean. 
-*/
-
-void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result);//checked
-/* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
-
-	cov: array, the covariance matrix
-	mu: array, the means
-	num: int, the dimensions k
-	result: array, the k numbers
-*/
-
-void rand_uniform(const double start, const double end, double &rand_n);
-/* return a double, [ start, end ), with a unifrom distribution.
-*/
-
-void rand_shuffle(double *seq, int length);//checked
-void rand_shuffle(float *seq, int length);//checked
-void rand_shuffle(int *seq, int length);//checked
-/* 	shuffle the value of the elements for choosing elements without repeating.
-	then one can choose arbitrary elements from the disordered array.
-	
-	seq: array
-	length: the length of the array
-	
-	i.e.  seq contains value in [a,b], then one can shuffle it with this method,
-		  and choose n-elements from it as the random-chosen labels of other array.
-		  
-		  rand_shuffle(seq, length);
-		  for(i=0;i<..;i++)
-		  {	....
-			some_method(array[seq[i]]);
-			....
-		  }
-*/
 
 /********************************************************************************************************************************************/
 /* fitting */
@@ -567,11 +523,63 @@ void get_time(char *str_time, int length);
 
 /*double qucik_exp(double x, double precision, para* paras);*/
 
-/********************************************************************************************************************************************/
-/* GSL library */
-/********************************************************************************************************************************************/
-void gsl_initialize(int seed);
-void gsl_free();
+
+/************************************* random *********************************************************/
+
+/**************************************** GSL *********************************************************/
+// if use GSL, you must setup the gsl_env.
+// then initialize the gsl_rng, gsl_initialize(gsl_rng),
+// it will also call gsl_setup() if the gsl_env has not been setup
+// finally, you must free the gsl_rng by calling gsl_free(gsl_rng)
+void gsl_setup();
+void gsl_initialize(int seed, const int rng_label);
+// three gsl_rng_type, T1, T2 and T3, and three gsl_rng, rng1, rng2 and rng3
+// have been created.
+// call gsl_initialize() to initialize they.
+// type: 0 T0 & rng0, 1 T1 & rng1, 2 T2 & rng2, 3 T3 & rng3
+void gsl_free(const int rng_label);
+
+void addnoise(double *image, const int pixel_num, const double sigma, const gsl_rng *gsl_rand_rng);//checked
+void addnoise(float *image, const int pixel_num, const float sigma, const gsl_rng *gsl_rand_rng);//checked
+/* add Gaussian noise to an array */
+
+void rand_gauss(const double sigma, const double mean, double &rand_n, const gsl_rng *gsl_rand_rng);//checked
+/* return a double from the normal distribution with sigma and mean. 
+*/
+
+void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result, const gsl_rng *gsl_rand_rng);//checked
+/* calling the gsl_ran_multivariate_gaussian() to generate the k-dimensional multivariate Gaussian 
+
+	cov: array, the covariance matrix
+	mu: array, the means
+	num: int, the dimensions k
+	result: array, the k numbers
+*/
+
+void rand_uniform(const double start, const double end, double &rand_n, const gsl_rng *gsl_rand_rng);
+/* return a double, [ start, end ), with a unifrom distribution.
+*/
+
+void rand_shuffle(double *seq, int length, const gsl_rng *gsl_rand_rng);//checked
+void rand_shuffle(float *seq, int length, const gsl_rng *gsl_rand_rng);//checked
+void rand_shuffle(int *seq, int length, const gsl_rng *gsl_rand_rng);//checked
+/* 	shuffle the value of the elements for choosing elements without repeating.
+	then one can choose arbitrary elements from the disordered array.
+	
+	seq: array
+	length: the length of the array
+	
+	i.e.  seq contains value in [a,b], then one can shuffle it with this method,
+		  and choose n-elements from it as the random-chosen labels of other array.
+		  
+		  rand_shuffle(seq, length);
+		  for(i=0;i<..;i++)
+		  {	....
+			some_method(array[seq[i]]);
+			....
+		  }
+*/
+
 
 #endif // !FQLIB_H
 

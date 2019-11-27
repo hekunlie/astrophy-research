@@ -24,15 +24,31 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 from Fourier_Quad import Fourier_Quad
 
-x = numpy.linspace(0,10,11)
-plt.figure(figsize=(8,6))
-for i in range(10):
-    plt.plot(x,x+i*2,linewidth=4,c="C%d"%i, label="C%d"%i)
-plt.legend(ncol=3)
-plt.savefig("D:/line_color.png")
+h5f = h5py.File("E:\works\Group_meeting\\2019-11-25-shear_bias_checking\\shear.hdf5","r")
+g1 = h5f["/g1"].value
+g2 = h5f["/g2"].value
+h5f.close()
+h5f = h5py.File("E:\works\Group_meeting\\2019-11-25-shear_bias_checking\\result_data_all.hdf5","r")
+chisq = h5f["/chisq"].value
+data = h5f["/data"].value
+mc = h5f["/mc"].value
+h5f.close()
+x = numpy.arange(0,20)
+print(chisq.shape)
+dg1 = g1 - data[:,0]
+dg2 = g2 - data[:,2]
+plt.scatter(x,dg1,c="C1",label="dg1")
+plt.scatter(x,dg2,c="C2",label="dg2")
+plt.legend()
 plt.show()
+chisq_t = chisq[1,:20]
+gh = chisq[1,20:40]
+plt.scatter(gh,chisq_t,c="C1",label="dg1")
 
-
+plt.legend()
+plt.show()
+print(g1[1])
+print(data[1,0])
 exit()
 
 

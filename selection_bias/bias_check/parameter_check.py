@@ -62,11 +62,14 @@ for shear_id in range(shear_st, shear_ed):
     flux, mag = numpy.zeros((chip_num*stamp_num, )),numpy.zeros((chip_num*stamp_num, ))
     for i in range(loops):
         time.sleep(rank * 0.05)
-        mag_i = tool_box.mag_generator(num_i*stamp_num, mag_s, mag_e)
+        # mag_i = tool_box.mag_generator(num_i*stamp_num, mag_s, mag_e)
+        mag_i = numpy.ones((num_i*stamp_num,))*mag_e
         flux_i = tool_box.mag_to_flux(mag_i)
         sp, ep = i*num_i*stamp_num, (i+1)*num_i*stamp_num
         mag[sp: ep] = mag_i
         flux[sp: ep] = flux_i
+
+        print(rank,mag.mean(), mag.max(),mag.min())
 
     plt.figure(figsize=(8,6))
     f["/flux"] = flux

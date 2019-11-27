@@ -26,6 +26,8 @@ int main(int argc, char*argv[])
 	char buffer[200], log_inform[250], set_name[50];
 
 	sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check");
+	sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check");
+
 	//strcpy(parent_path, argv[1]);
 	std::ifstream fin;
 	std::string str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
@@ -45,7 +47,7 @@ int main(int argc, char*argv[])
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 
-	num_p = 100;
+	num_p = 80;
 	max_radius=9;
 	stamp_num = 10000;
 	shear_data_cols = 8;
@@ -223,7 +225,9 @@ int main(int argc, char*argv[])
 			}
 
 			// initialize GSL
-			gsl_initialize(seed);
+			gsl_initialize(seed,0);
+			gsl_initialize(seed,2);
+			gsl_initialize(seed,3);
 			seed += seed_step;
 
 #ifdef IMG_CHECK_LABEL
@@ -239,7 +243,7 @@ int main(int argc, char*argv[])
 				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 				
 				initialize_arr(point, num_p * 2, 0);
-				create_points(point, num_p, max_radius);
+				create_points(point, num_p, max_radius, rng0);
 				
 
 				///////////////// Noise free /////////////////////////
@@ -271,7 +275,7 @@ int main(int argc, char*argv[])
 				initialize_arr(pnoise, size*size, 0);
 				initialize_arr(pgal, size*size, 0);
 
-				addnoise(gal, size*size, gal_noise_sig);
+				addnoise(gal, size*size, gal_noise_sig, rng3);
 
 #ifdef IMG_CHECK_LABEL
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
@@ -279,7 +283,7 @@ int main(int argc, char*argv[])
 #endif
 				pow_spec(gal, pgal, size, size);
 
-				addnoise(noise, size*size, gal_noise_sig);
+				addnoise(noise, size*size, gal_noise_sig,rng2);
 				pow_spec(noise, pnoise, size, size);
 
 				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
@@ -291,7 +295,10 @@ int main(int argc, char*argv[])
 				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
 
 			}
-			gsl_free();
+			gsl_free(0);
+			gsl_free(2);
+			gsl_free(3);
+
 
 #ifdef IMG_CHECK_LABEL
 			if(i == IMG_CHECK_LABEL)

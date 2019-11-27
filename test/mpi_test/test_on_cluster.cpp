@@ -28,8 +28,8 @@ int main(int argc, char **argv)
 
     char inform[200];
     char log_path[200];
-    sprintf(log_path,"logs.dat")
-    sprintf()
+    sprintf(log_path,"logs.dat");
+
     MPI_Finalize();
     return 0;
 }

@@ -1,8 +1,8 @@
 ﻿#include "FQlib.h"
 
-const gsl_rng_type *T;
-gsl_rng *rng;
-
+const gsl_rng_type *T0, *T1, *T2, *T3;
+gsl_rng *rng0, *rng1, *rng2, *rng3;
+int GSL_SETUP_LABEL=0;
 
 
 /********************************************************************************************************************************************/
@@ -14,7 +14,7 @@ void stack(double *container, const double *stamp, const int tag, const int size
 	int i, j, m;
 	/* 'container' is the container of 'row'*'col' stamps which is array with 'size'*'size' pixels.
 	'tag' is the tag of the stamp in all stamps.
-	the (i,j)'th pixel of stamp will loacte at '(tag - tag%col)/col*size*col*size + i*n*size + tag%col8size + j' */
+	the (i,j)'th pixel of stamp will locate at '(tag - tag%col)/col*size*col*size + i*n*size + tag%col8size + j' */
 	m = (tag - tag%col)*size*size + tag%col*size;
 	for (i = 0; i < size; i++)
 	{
@@ -97,20 +97,21 @@ void segment(const int *chip, int *stamp, const int tag, const int size, const i
 }
 
 
-void create_points(double *point, const int num_p, const double radius)
+void create_points(double *point, const int num_p, const double radius, const gsl_rng *gsl_rand_rng)
 {	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
 	int i;
 	double x = 0., y = 0., xm = 0., ym = 0., theta, step;
 
 	for (i = 0; i < num_p; i++)
 	{
-		theta = 2.*Pi*gsl_rng_uniform(rng);
-		x += cos(theta);
-		y += sin(theta);
+		theta = 2.*Pi*gsl_rng_uniform(gsl_rand_rng);
+		//step = 1*gsl_rng_uniform(rng);
+		x += cos(theta);//*step;
+		y += sin(theta);//*step;
 		if (x*x + y*y > radius*radius)
 		{
-			x = cos(theta);
-			y = sin(theta);
+			x = cos(theta);//*step;
+			y = sin(theta);//*step;
 		}
 		point[i] = x;
 		point[i + num_p] = y;
@@ -125,19 +126,19 @@ void create_points(double *point, const int num_p, const double radius)
 	}
 }
 
-void create_epoints(double *point, const int num_p, const double ellip)
+void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng)
 {
 	int i = 0;
 	double theta, beta, radius, r1, r2, b, y, x;
-	radius = 5 + 4 * gsl_rng_uniform(rng);
+	radius = 5 + 4 * gsl_rng_uniform(gsl_rand_rng);
 	b = sqrt((1 - ellip) / (1 + ellip))*radius;
-	beta = 2 * Pi*gsl_rng_uniform(rng);
+	beta = 2 * Pi*gsl_rng_uniform(gsl_rand_rng);
 	r1 = cos(beta);
 	r2 = sin(beta);
 	while (i < num_p)
 	{
-		x = gsl_ran_gaussian(rng, radius);
-		y = gsl_ran_gaussian(rng, b);
+		x = gsl_ran_gaussian(gsl_rand_rng, radius);
+		y = gsl_ran_gaussian(gsl_rand_rng, b);
 		if (x*x / (radius*radius) + y*y / (b*b) <= 1)
 		{
 			point[i] = x*r1 - y*r2;
@@ -1372,23 +1373,6 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 }
 
 
-void addnoise(double *image, const int pixel_num, const double sigma)
-{
-	for (int i = 0; i < pixel_num; i++)
-	{
-		image[i] = image[i] + gsl_ran_gaussian(rng, sigma);
-	}
-}
-
-void addnoise(float *image, const int pixel_num, const float sigma)
-{
-	for (int i = 0; i < pixel_num; i++)
-	{
-		image[i] = image[i] + gsl_ran_gaussian(rng, sigma);
-	}
-}
-
-
 void initialize_arr(long *arr, const int length, const long x)
 {/* will set all the elements to x */
 	for (int i = 0; i < length; i++)
@@ -1587,7 +1571,7 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 void shear_est(double *gal_img, double *psf_img, para *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
-	/* if there's no backgroud noise, a array of '0' should be inputted */
+	/* if there's no background noise, a array of '0' should be inputted */
 	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
 	double mp1=0., mp2=0.;
 	int i, j, k, size;
@@ -2341,89 +2325,6 @@ void linspace(const double start, const double end, const int num, double *bins)
 		bins[i] = start + i * diff;
 	}
 }
-
-
-/********************************************************************************************************************************************/
-/* random */
-/********************************************************************************************************************************************/
-void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result)
-{	
-	int i, j;
-	gsl_matrix *covs = gsl_matrix_alloc(num, num);
-	gsl_vector *mus = gsl_vector_alloc(num);
-	gsl_vector *res = gsl_vector_alloc(num);
-
-	for (i = 0; i < num; i++)
-	{
-		gsl_vector_set(mus, i, mu[i]);
-		for (j = 0; j < num; j++)
-		{
-			gsl_matrix_set(covs, i, j, cov[i*num + j]);
-			//std::cout << gsl_matrix_get(covs, i, j) << ", ";
-		}
-		//std::cout << std::endl;
-	}
-
-	gsl_linalg_cholesky_decomp(covs);
-	gsl_ran_multivariate_gaussian(rng, mus, covs, res);
-
-	for (i = 0; i < num; i++)
-	{
-		result[i] = gsl_vector_get(res, i);
-	}
-
-	gsl_matrix_free(covs);
-	gsl_vector_free(mus);
-	gsl_vector_free(res);
-}
-
-void rand_gauss(double sigma, double mean, double &rand_n)
-{
-	rand_n = gsl_ran_gaussian(rng, sigma) + mean;
-}
-
-void rand_uniform(double start, double end, double &rand_n)
-{
-	double unif_vars;
-	rand_n = gsl_ran_flat(rng, start, end);
-}
-
-void rand_shuffle(double *seq, int length)
-{
-	int rand_i;
-	double rand_n;
-	for (int i = 0; i < length-1; i++)
-	{	
-		rand_uniform(0, length, rand_n);
-		rand_i = int(rand_n);
-		std::swap(seq[i], seq[rand_i]);
-	}
-}
-
-void rand_shuffle(float *seq, int length)
-{
-	int rand_i;
-	double rand_n;
-	for (int i = 0; i < length-1; i++)
-	{
-		rand_uniform(0, length, rand_n);
-		rand_i = int(rand_n);
-		std::swap(seq[i], seq[rand_i]);
-	}
-}
-
-void rand_shuffle(int *seq, int length)
-{
-	int rand_i;
-	double rand_n;
-	for (int i = 0; i < length - 1; i++)
-	{
-		rand_uniform(0, length, rand_n);
-		rand_i = int(rand_n);
-		std::swap(seq[i], seq[rand_i]);
-	}
-}
-
 
 
 /********************************************************************************************************************************************/
@@ -3935,22 +3836,166 @@ void get_time(char *str_time, int length)
 }
 
 
+/******************************************* random **********************************************************/
 
-/********************************************************************************************************************************************/
-/* GSL library */
-/********************************************************************************************************************************************/
-void gsl_initialize(int seed)
+void rand_shuffle(double *seq, int length, const gsl_rng *gsl_rand_rng)
 {
-	gsl_rng_env_setup();
-	//gsl_rng_default_seed = seed;
-	//T = gsl_rng_mt19937;
-	T = gsl_rng_ranlxs0;
-	rng = gsl_rng_alloc(T);
-	gsl_rng_set(rng, seed);
+	int rand_i;
+	double rand_n;
+	for (int i = 0; i < length-1; i++)
+	{	
+		rand_uniform(0, length, rand_n, gsl_rand_rng);
+		rand_i = int(rand_n);
+		std::swap(seq[i], seq[rand_i]);
+	}
 }
 
-void gsl_free()
+void rand_shuffle(float *seq, int length, const gsl_rng *gsl_rand_rng)
 {
-	gsl_rng_free(rng);
+	int rand_i;
+	double rand_n;
+	for (int i = 0; i < length-1; i++)
+	{
+		rand_uniform(0, length, rand_n, gsl_rand_rng);
+		rand_i = int(rand_n);
+		std::swap(seq[i], seq[rand_i]);
+	}
 }
+
+void rand_shuffle(int *seq, int length, const gsl_rng *gsl_rand_rng)
+{
+	int rand_i;
+	double rand_n;
+	for (int i = 0; i < length - 1; i++)
+	{
+		rand_uniform(0, length, rand_n, gsl_rand_rng);
+		rand_i = int(rand_n);
+		std::swap(seq[i], seq[rand_i]);
+	}
+}
+
+/************************* GSL ***********************************/
+// if use GSL, you must call gsl_setup() firtstly
+// then initialize the gsl_rng, gsl_initialize(gsl_rng)
+// finally, you must free the gsl_rng by calling gsl_free(gsl_rng)
+void gsl_setup()
+{	
+	if(GSL_SETUP_LABEL == 0)
+	{
+		gsl_rng_env_setup();
+		GSL_SETUP_LABEL = 1;
+	}
+}
+
+void gsl_initialize(int seed, const int rng_label)
+{
+	gsl_setup();
+
+	if(rng_label==0)
+	{
+		T0 = gsl_rng_ranlxs0;
+		rng0 = gsl_rng_alloc(T0);
+		gsl_rng_set(rng0, seed);
+	}
+	if(rng_label==1)
+	{
+		T1 = gsl_rng_ranlxs1;
+		rng1 = gsl_rng_alloc(T1);
+		gsl_rng_set(rng1, seed);
+	}
+	if(rng_label==2)
+	{
+		T2 = gsl_rng_ranlxs2;
+		rng2 = gsl_rng_alloc(T2);
+		gsl_rng_set(rng2, seed);
+	}
+	if(rng_label==3)
+	{
+		T3 = gsl_rng_mt19937;
+		rng3 = gsl_rng_alloc(T3);
+		gsl_rng_set(rng3, seed);
+	}
+}
+
+void gsl_free(const int rng_label)
+{	
+	if(rng_label==0)
+	{
+		gsl_rng_free(rng0);
+	}
+	if(rng_label==1)
+	{
+		gsl_rng_free(rng1);
+	}
+	if(rng_label==2)
+	{
+		gsl_rng_free(rng2);
+	}
+	if(rng_label==3)
+	{
+		gsl_rng_free(rng3);
+	}	
+}
+
+void addnoise(double *image, const int pixel_num, const double sigma, const gsl_rng *gsl_rand_rng)
+{
+	for (int i = 0; i < pixel_num; i++)
+	{
+		image[i] = image[i] + gsl_ran_gaussian(gsl_rand_rng, sigma);
+	}
+}
+
+void addnoise(float *image, const int pixel_num, const float sigma, const gsl_rng *gsl_rand_rng)
+{
+	for (int i = 0; i < pixel_num; i++)
+	{
+		image[i] = image[i] + gsl_ran_gaussian(gsl_rand_rng, sigma);
+	}
+}
+
+
+void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result, const gsl_rng *gsl_rand_rng)
+{	
+	int i, j;
+	gsl_matrix *covs = gsl_matrix_alloc(num, num);
+	gsl_vector *mus = gsl_vector_alloc(num);
+	gsl_vector *res = gsl_vector_alloc(num);
+
+	for (i = 0; i < num; i++)
+	{
+		gsl_vector_set(mus, i, mu[i]);
+		for (j = 0; j < num; j++)
+		{
+			gsl_matrix_set(covs, i, j, cov[i*num + j]);
+			//std::cout << gsl_matrix_get(covs, i, j) << ", ";
+		}
+		//std::cout << std::endl;
+	}
+
+	gsl_linalg_cholesky_decomp(covs);
+	gsl_ran_multivariate_gaussian(gsl_rand_rng, mus, covs, res);
+
+	for (i = 0; i < num; i++)
+	{
+		result[i] = gsl_vector_get(res, i);
+	}
+
+	gsl_matrix_free(covs);
+	gsl_vector_free(mus);
+	gsl_vector_free(res);
+}
+
+void rand_gauss(double sigma, double mean, double &rand_n, const gsl_rng *gsl_rand_rng)
+{
+	rand_n = gsl_ran_gaussian(gsl_rand_rng, sigma) + mean;
+}
+
+void rand_uniform(double start, double end, double &rand_n, const gsl_rng *gsl_rand_rng)
+{
+	rand_n = gsl_ran_flat(gsl_rand_rng, start, end);
+}
+
+
+
+
 

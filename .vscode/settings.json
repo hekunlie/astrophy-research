@@ -49,6 +49,8 @@
         "numeric": "cpp",
         "random": "cpp",
         "ratio": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "complex": "cpp",
+        "valarray": "cpp"
     }
 }
