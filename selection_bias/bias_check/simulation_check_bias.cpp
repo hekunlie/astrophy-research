@@ -217,9 +217,9 @@ int main(int argc, char*argv[])
 		{
 			t1 = clock();
 
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start.", rank,shear_id, i);
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed:%d", rank,shear_id, i, seed);
 			write_log(log_path, log_inform);
-			if (0 == rank)
+			if (rank < 10)
 			{
 				std::cout << log_inform << std::endl;
 			}
@@ -286,7 +286,7 @@ int main(int argc, char*argv[])
 				addnoise(noise, size*size, gal_noise_sig,rng2);
 				pow_spec(noise, pnoise, size, size);
 
-				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
+				noise_subtraction(pgal, pnoise, &all_paras, 1, 0);
 				shear_est(pgal, ppsf, &all_paras);
 
 				sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
