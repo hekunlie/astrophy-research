@@ -219,7 +219,7 @@ int main(int argc, char*argv[])
 
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed:%d", rank,shear_id, i, seed);
 			write_log(log_path, log_inform);
-			if (rank < 10)
+			if (rank == 0)
 			{
 				std::cout << log_inform << std::endl;
 			}
