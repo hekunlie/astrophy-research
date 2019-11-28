@@ -816,7 +816,7 @@ class Fourier_Quad:
 
         return g_h, g_sig, coeff
 
-    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60, chi_gap=40, fig_ax=False,loc_fit=False):
+    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=60, chi_gap=40, fig_ax=False,loc_fit=False):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -834,7 +834,7 @@ class Fourier_Quad:
 
         bin_num2 = int(bin_num * 0.5)
         inverse = range(int(bin_num / 2 - 1), -1, -1)
-
+        print(bins.shape)
         iters = 0
         change = 1
         while change == 1:
@@ -960,6 +960,16 @@ class Fourier_Quad:
         return g_h, g_sig, coeff
 
 
+    def find_shear_mean(self, G, N, weight=None):
+        num = G.shape[0]
+
+        g = numpy.sum(G)/numpy.sum(N)
+        if weight:
+            g_sig = numpy.sqrt(numpy.mean((G*weight)**2)/(numpy.mean(N*weight))**2)/numpy.sqrt(num)
+        else:
+            g_sig = numpy.sqrt(numpy.mean(G**2)/numpy.mean(N)**2)/numpy.sqrt(num)
+
+        return g, g_sig
 
 
 

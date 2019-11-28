@@ -1,11 +1,15 @@
-﻿#include <stdlib.h>
-#include <hk_mpi.h>
-#include "FQlib.h"
-#include<cstdio>
+#include<FQlib.h>
+#include<hk_mpi.h>
 #include<hk_iolib.h>
-
 #define IMG_CHECK_LABEL 2
 
+void arr_add(double *arr1, const double*arr2,const int length)
+{
+    for(int i=0;i<length;i++)
+    {
+        arr1[i] += arr2[i];
+    }
+}
 int main(int argc, char*argv[])
 {	
 	/* it is designed to run on the cluster (should save the memory) */
@@ -25,8 +29,8 @@ int main(int argc, char*argv[])
 	char parent_path[100], chip_path[150], para_path[150], shear_path[150], result_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_name[50];
 
-	sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check");
-	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check");
+	//sprintf(parent_path, "/mnt/perc/hklee/bias_check_noise_effect");
+	sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check_noise_effect");
 
 	//strcpy(parent_path, argv[1]);
 	std::ifstream fin;
@@ -40,7 +44,7 @@ int main(int argc, char*argv[])
 	int rotation;
 
 	int num_p, size, shear_pairs;
-	double max_radius;
+    double max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
@@ -49,11 +53,11 @@ int main(int argc, char*argv[])
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 
-	rotation = 1;
+	rotation = atoi(argv[1]);
 	num_p = 80;
-	max_radius=9;
+	max_radius= 9;
 	stamp_num = 10000;
-	shear_data_cols = 8;
+	shear_data_cols = 16;
 
 	psf_type=2;
 	psf_scale = 4;
@@ -62,17 +66,14 @@ int main(int argc, char*argv[])
 	sig_level = 1.5;
 	psf_noise_sig = 0;
 
-	char_to_str(parent_path, str_data_path);
-	str_para_path = str_data_path + "/parameters/para.ini";
-	str_shear_path = str_data_path + "/parameters/shear.dat";
 	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
 
-	read_para(str_para_path, str_stampsize, size);
-	read_para(str_para_path, str_total_num, total_chips);
-	read_para(str_para_path, str_noise, gal_noise_sig);
-	read_para(str_para_path, str_shear_num, shear_pairs);
-	read_para(str_para_path, str_nx, stamp_nx);
 
+    size = 64;
+    total_chips = 100;
+    gal_noise_sig = 60;
+    shear_pairs = 3;
+    stamp_nx = 100;
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
@@ -88,8 +89,15 @@ int main(int argc, char*argv[])
 	double *pgal = new double[size*size]();
 	double *psf = new double[size*size]();
 	double *ppsf = new double[size*size]();
-	double *noise = new double[size*size]();
-	double *pnoise = new double[size*size]();
+
+	double *noise_1 = new double[size*size]();
+	double *pnoise_1 = new double[size*size]();
+
+    double *noise_2 = new double[size*size]();
+	double *pnoise_2 = new double[size*size]();
+
+	double *pnoise_residual = new double[size*size]();
+
 	double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
 
 	// the shear estimators data matrix  
@@ -142,7 +150,14 @@ int main(int argc, char*argv[])
 	sub_flux = new double[scatter_count[rank]]{};
 
 	// read shear
-	read_text(str_shear_path, shear, 2*shear_pairs);
+	//read_text(str_shear_path, shear, 2*shear_pairs);
+    
+    shear[0] = -0.04;
+    shear[1] = 0;
+    shear[2] = 0.04;
+    shear[3] = 0.04;
+    shear[4] = -0.04;
+    shear[5] = 0;
 
 	// create PSF
 	create_psf(psf, psf_scale, size, psf_type);
@@ -158,6 +173,7 @@ int main(int argc, char*argv[])
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		std::cout << parent_path << std::endl;
 		std::cout<<"Shear num: "<<shear_pairs<<std::endl;
+        std::cout<<"Rotation: "<<rotation<<std::endl;
 		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
 		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << " PSF HLR: " << all_paras.psf_hlr << std::endl;
@@ -180,7 +196,7 @@ int main(int argc, char*argv[])
 	// seed distribution, different thread gets different seed
 	seed_step = 2;
 	sss1 = 2*seed_step*shear_pairs*scatter_count[0]/stamp_num;
-	seed = sss1*rank + 1;
+	seed = sss1*rank + 1+500;
 
 	// loop the shear points
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
@@ -202,11 +218,11 @@ int main(int argc, char*argv[])
 		{
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 			std::cout<<"g1: "<<g1<<" g2: "<<g2<<std::endl;
-			sprintf(para_path, "%s/parameters/para_%d.hdf5", parent_path, shear_id);
-			sprintf(set_name, "/flux");
-			read_h5(para_path, set_name, total_flux);
+			//sprintf(para_path, "%s/parameters/para_%d.hdf5", parent_path, shear_id);
+			//sprintf(set_name, "/flux");
+			//read_h5(para_path, set_name, total_flux);
 		}
-		my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
+		//my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
 
 		// sprintf(para_path, "%s/parameters/para_%d_check_%d.hdf5", parent_path, shear_id,rank);
 		// sprintf(set_name, "/data");
@@ -228,9 +244,9 @@ int main(int argc, char*argv[])
 			}
 
 			// initialize GSL
-			gsl_initialize(seed,0);
+			gsl_initialize(seed,1);
 			gsl_initialize(seed,2);
-			gsl_initialize(seed,3);
+			//gsl_initialize(seed,3);
 			seed += seed_step;
 
 #ifdef IMG_CHECK_LABEL
@@ -243,10 +259,10 @@ int main(int argc, char*argv[])
 			for (j = 0; j < stamp_num; j++)
 			{	
 
-				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
+				flux_i = 9000./ num_p;//sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 				
 				initialize_arr(point, num_p * 2, 0);
-				create_points(point, num_p, max_radius, rng0);
+				create_points(point, num_p, max_radius, rng1);
 				
 
 				///////////////// Noise free /////////////////////////
@@ -268,39 +284,72 @@ int main(int argc, char*argv[])
 				sub_data[row + j * shear_data_cols + 3] = all_paras.du;
 
 
-				////////////////// noisy image //////////////////////
+				////////////////// pure noise image //////////////////////
 				all_paras.n1 = 0;
 				all_paras.n2 = 0;
 				all_paras.dn = 0;
 				all_paras.du = 0;
 
-				initialize_arr(noise, size*size, 0);
-				initialize_arr(pnoise, size*size, 0);
-				initialize_arr(pgal, size*size, 0);
+				initialize_arr(noise_1, size*size, 0);
+				initialize_arr(pnoise_1, size*size, 0);
+                initialize_arr(noise_2, size*size, 0);
+				initialize_arr(pnoise_2, size*size, 0);
+				initialize_arr(pnoise_residual, size*size, 0);
 
-				addnoise(gal, size*size, gal_noise_sig, rng3);
+				addnoise(noise_1, size*size, gal_noise_sig, rng2);
+				addnoise(noise_2, size*size, gal_noise_sig, rng2);
+
+                pow_spec(noise_1, pnoise_1, size, size);
+                pow_spec(noise_2, pnoise_2, size, size);
+
+                // directly measure on noise power spectrum
+                shear_est(pnoise_1, ppsf, &all_paras);
+                sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
+				sub_data[row + j * shear_data_cols + 5] = all_paras.n2;
+				sub_data[row + j * shear_data_cols + 6] = all_paras.dn;
+				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
+
+                all_paras.n1 = 0;
+				all_paras.n2 = 0;
+				all_paras.dn = 0;
+				all_paras.du = 0;
+                // measure on the noise power spectrum residual
+                noise_subtraction(pnoise_1, pnoise_2, &all_paras, 1, 0);
+                shear_est(pnoise_1, ppsf, &all_paras);
+
+                sub_data[row + j * shear_data_cols + 8] = all_paras.n1;
+				sub_data[row + j * shear_data_cols + 9] = all_paras.n2;
+				sub_data[row + j * shear_data_cols + 10] = all_paras.dn;
+				sub_data[row + j * shear_data_cols + 11] = all_paras.du;
+
+
+                ////////////////// noisy image //////////////////////
+				all_paras.n1 = 0;
+				all_paras.n2 = 0;
+				all_paras.dn = 0;
+				all_paras.du = 0;
+                initialize_arr(pgal, size*size, 0);
+
+                arr_add(gal, noise_1, size*size);
+				pow_spec(gal, pgal, size, size);
+				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 0);
 
 #ifdef IMG_CHECK_LABEL
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
 #endif
-				pow_spec(gal, pgal, size, size);
 
-				addnoise(noise, size*size, gal_noise_sig,rng2);
-				pow_spec(noise, pnoise, size, size);
-
-				noise_subtraction(pgal, pnoise, &all_paras, 1, 0);
 				shear_est(pgal, ppsf, &all_paras);
 
-				sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 5] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 6] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
+				sub_data[row + j * shear_data_cols + 12] = all_paras.n1;
+				sub_data[row + j * shear_data_cols + 13] = all_paras.n2;
+				sub_data[row + j * shear_data_cols + 14] = all_paras.dn;
+				sub_data[row + j * shear_data_cols + 15] = all_paras.du;
 
 			}
-			gsl_free(0);
+			gsl_free(1);
 			gsl_free(2);
-			gsl_free(3);
+			//gsl_free(3);
 
 
 #ifdef IMG_CHECK_LABEL
@@ -338,7 +387,7 @@ int main(int argc, char*argv[])
 
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/result/data/data_%d.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/result/data/data_rotation_%d/data_%d.hdf5", parent_path, rotation, shear_id);
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}
@@ -360,8 +409,11 @@ int main(int argc, char*argv[])
 	delete[] pgal;
 	delete[] psf;
 	delete[] ppsf;
-	delete[] noise;
-	delete[] pnoise;
+	delete[] noise_1;
+	delete[] pnoise_1;
+    delete[] noise_2;
+	delete[] pnoise_2;
+    delete[] pnoise_residual;
 	delete[] sub_data;
 	delete[] shear;
 	delete[] sub_flux;

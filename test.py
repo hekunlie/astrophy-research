@@ -24,31 +24,45 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from astropy.cosmology import LambdaCDM
 from Fourier_Quad import Fourier_Quad
 
-h5f = h5py.File("E:\works\Group_meeting\\2019-11-25-shear_bias_checking\\shear.hdf5","r")
-g1 = h5f["/g1"].value
-g2 = h5f["/g2"].value
-h5f.close()
-h5f = h5py.File("E:\works\Group_meeting\\2019-11-25-shear_bias_checking\\result_data_all.hdf5","r")
-chisq = h5f["/chisq"].value
-data = h5f["/data"].value
-mc = h5f["/mc"].value
-h5f.close()
-x = numpy.arange(0,20)
-print(chisq.shape)
-dg1 = g1 - data[:,0]
-dg2 = g2 - data[:,2]
-plt.scatter(x,dg1,c="C1",label="dg1")
-plt.scatter(x,dg2,c="C2",label="dg2")
-plt.legend()
-plt.show()
-chisq_t = chisq[1,:20]
-gh = chisq[1,20:40]
-plt.scatter(gh,chisq_t,c="C1",label="dg1")
 
-plt.legend()
-plt.show()
-print(g1[1])
-print(data[1,0])
+fq = Fourier_Quad(12,124)
+g1 = numpy.array([-0.04, 0, 0.04])
+g2 = numpy.array([0.04, -0.04, 0])
+shear_num = g1.shape[0]
+
+sub_num = 4
+data_col = 4
+result_g1 = numpy.zeros((shear_num, data_col*sub_num))
+result_g2 = numpy.zeros((shear_num, data_col*sub_num))
+
+for tag in range(shear_num):
+    h5f = h5py.File("D:\\result\data\\data_%d.hdf5"%tag,"r")
+    data = h5f["/data"].value
+    print(data.shape)
+    h5f.close()
+
+    # data_noise_free = data[:,:4]
+    # data_noise_power = data[:,4:8]
+    # data_noise_residual = data[:,8:12]
+    # data_normal = data[:,12:]
+    # datas = [data_noise_free, data_noise_power, data_noise_residual, data_normal]
+    data_nms = ["Noise-free", "Noise_power", "Noise_residual", "Normal"]
+
+    for i in range(sub_num):
+        mg1 = data[:,sub_num*i]
+        mg2 = data[:,sub_num*i + 1]
+        mn = data[:,sub_num*i + 2]
+        mu = data[:,sub_num*i + 3]
+        mnu1 = mn + mu
+        mnu2 = mn - mu
+        g1_mean, g1_sig_mean = fq.find_shear_mean(mg1, mn)
+        g2_mean, g2_sig_mean = fq.find_shear_mean(mg2, mn)
+        g1_sym, g1_sig_sym = fq.find_shear(mg1, mnu1, 8)[:2]
+        g2_sym, g2_sig_sym = fq.find_shear(mg2, mnu2, 8)[:2]
+        result_g1[tag,i*sub_num:(i+1)*sub_num] = g1_mean, g1_sig_mean,g1_sym, g1_sig_sym
+        result_g2[tag,i*sub_num:(i+1)*sub_num] = g2_mean, g2_sig_mean,g2_sym, g2_sig_sym
+
+img = Image
 exit()
 
 

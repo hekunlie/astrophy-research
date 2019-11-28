@@ -13,11 +13,11 @@ img = Image_Plot(fig_x=6,fig_y=8, ypad=0.1)
 img.subplots(1,2)
 img.set_style()
 
-color_tag = [0,6]
+color_tag = [0,6,12]
 
 x = numpy.linspace(-1, 1, 100)
 pts_size = 7
-for i in range(12):
+for i in range(16):
 
     h5f = h5py.File(parent_path+"/result_%d.hdf5"%i,"r")
     mc = h5f["/mc"].value
@@ -65,7 +65,7 @@ for i in range(2):
     img.axs[0][i].set_ylim(0, tag+3)
     img.axs[0][i].set_yticklabels([])
 
-img.axs[0][0].set_xlim(-0.0061,0.0061)
+img.axs[0][0].set_xlim(-0.008,0.0061)
 img.axs[0][1].set_xlim(-0.92,0.92)
 
 
