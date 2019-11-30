@@ -816,6 +816,18 @@ class Fourier_Quad:
 
         return g_h, g_sig, coeff
 
+    def get_chisq_range(self, G, NU, bin_num, signal_guess, ig_num=0, scale=1.1, limited=None):
+        bins = self.set_bin(G, bin_num, scale)
+
+        bin_num2 = int(bin_num * 0.5)
+        inverse = range(int(bin_num / 2 - 1), -1, -1)
+        chi_sq = numpy.array([self.get_chisq(G, NU, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in signal_guess])
+        if limited:
+            idx = chi_sq <= limited
+            return signal_guess[idx], chi_sq[idx]
+        else:
+            return signal_guess, chi_sq
+
     def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=60, chi_gap=40, fig_ax=False,loc_fit=False):
         """
         G1 (G2): the shear estimator for g1 (g2),

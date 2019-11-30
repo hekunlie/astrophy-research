@@ -38,7 +38,10 @@ int main(int argc, char*argv[])
 	std::string dect_info;
 	std::string str_data_path,str_para_path,str_shear_path;
 
-
+	char_to_str(parent_path, str_data_path);
+	str_para_path = str_data_path + "/parameters/para.ini";
+	str_shear_path = str_data_path + "/parameters/shear.dat";
+	
 	int i, j, k, ib;
 	int sss1, sss2, seed, seed_step;
 	int rotation;
@@ -70,9 +73,9 @@ int main(int argc, char*argv[])
 
 
     size = 64;
-    total_chips = 100;
+    total_chips = 500;
     gal_noise_sig = 60;
-    shear_pairs = 3;
+    shear_pairs = 15;
     stamp_nx = 100;
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
@@ -150,15 +153,8 @@ int main(int argc, char*argv[])
 	sub_flux = new double[scatter_count[rank]]{};
 
 	// read shear
-	//read_text(str_shear_path, shear, 2*shear_pairs);
+	read_text(str_shear_path, shear, 2*shear_pairs);
     
-    shear[0] = -0.04;
-    shear[1] = 0;
-    shear[2] = 0.04;
-    shear[3] = 0.04;
-    shear[4] = -0.04;
-    shear[5] = 0;
-
 	// create PSF
 	create_psf(psf, psf_scale, size, psf_type);
 	pow_spec(psf, ppsf, size, size);
@@ -196,7 +192,7 @@ int main(int argc, char*argv[])
 	// seed distribution, different thread gets different seed
 	seed_step = 2;
 	sss1 = 2*seed_step*shear_pairs*scatter_count[0]/stamp_num;
-	seed = sss1*rank + 1+500;
+	seed = sss1*rank + 1+50000;
 
 	// loop the shear points
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
@@ -244,9 +240,9 @@ int main(int argc, char*argv[])
 			}
 
 			// initialize GSL
+			gsl_initialize(seed,0);
 			gsl_initialize(seed,1);
 			gsl_initialize(seed,2);
-			//gsl_initialize(seed,3);
 			seed += seed_step;
 
 #ifdef IMG_CHECK_LABEL
@@ -261,29 +257,6 @@ int main(int argc, char*argv[])
 
 				flux_i = 9000./ num_p;//sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 				
-				initialize_arr(point, num_p * 2, 0);
-				create_points(point, num_p, max_radius, rng1);
-				
-
-				///////////////// Noise free /////////////////////////
-				all_paras.n1 = 0;
-				all_paras.n2 = 0;
-				all_paras.dn = 0;
-				all_paras.du = 0;
-
-				initialize_arr(gal, size*size, 0);
-				initialize_arr(pgal, size*size, 0);
-
-				convolve(gal, point, flux_i, size, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);			
-				pow_spec(gal, pgal, size, size);
-				shear_est(pgal, ppsf, &all_paras);
-
-				sub_data[row + j * shear_data_cols + 0] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 3] = all_paras.du;
-
-
 				////////////////// pure noise image //////////////////////
 				all_paras.n1 = 0;
 				all_paras.n2 = 0;
@@ -296,7 +269,7 @@ int main(int argc, char*argv[])
 				initialize_arr(pnoise_2, size*size, 0);
 				initialize_arr(pnoise_residual, size*size, 0);
 
-				addnoise(noise_1, size*size, gal_noise_sig, rng2);
+				addnoise(noise_1, size*size, gal_noise_sig, rng1);
 				addnoise(noise_2, size*size, gal_noise_sig, rng2);
 
                 pow_spec(noise_1, pnoise_1, size, size);
@@ -304,10 +277,10 @@ int main(int argc, char*argv[])
 
                 // directly measure on noise power spectrum
                 shear_est(pnoise_1, ppsf, &all_paras);
-                sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 5] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 6] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
+                sub_data[row + j * shear_data_cols + 0] = all_paras.n1;
+				sub_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_data[row + j * shear_data_cols + 3] = all_paras.du;
 
                 all_paras.n1 = 0;
 				all_paras.n2 = 0;
@@ -317,7 +290,29 @@ int main(int argc, char*argv[])
                 noise_subtraction(pnoise_1, pnoise_2, &all_paras, 1, 0);
                 shear_est(pnoise_1, ppsf, &all_paras);
 
-                sub_data[row + j * shear_data_cols + 8] = all_paras.n1;
+                sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
+				sub_data[row + j * shear_data_cols + 5] = all_paras.n2;
+				sub_data[row + j * shear_data_cols + 6] = all_paras.dn;
+				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
+
+
+				///////////////// Noise free /////////////////////////
+				all_paras.n1 = 0;
+				all_paras.n2 = 0;
+				all_paras.dn = 0;
+				all_paras.du = 0;
+				
+				initialize_arr(point, num_p * 2, 0);
+				
+				initialize_arr(gal, size*size, 0);
+				initialize_arr(pgal, size*size, 0);
+				
+				create_points(point, num_p, max_radius, rng0);
+				convolve(gal, point, flux_i, size, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);			
+				pow_spec(gal, pgal, size, size);
+				shear_est(pgal, ppsf, &all_paras);
+
+				sub_data[row + j * shear_data_cols + 8] = all_paras.n1;
 				sub_data[row + j * shear_data_cols + 9] = all_paras.n2;
 				sub_data[row + j * shear_data_cols + 10] = all_paras.dn;
 				sub_data[row + j * shear_data_cols + 11] = all_paras.du;
@@ -347,9 +342,9 @@ int main(int argc, char*argv[])
 				sub_data[row + j * shear_data_cols + 15] = all_paras.du;
 
 			}
+			gsl_free(0);
 			gsl_free(1);
 			gsl_free(2);
-			//gsl_free(3);
 
 
 #ifdef IMG_CHECK_LABEL
