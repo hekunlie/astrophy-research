@@ -220,7 +220,7 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 	}
 }
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, para *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -286,7 +286,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 }
 
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, const double ellip, const double theta, const double amplitude, para *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -463,7 +463,7 @@ void pow_spec(const float *in_img, float *out_img, const int column, const int r
 }
 
 
-void get_radius(double *in_img, para *paras, double scale, int type, double sig_level)
+void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level)
 {	 /* will not change the inputted array */
 	/* the image should be larger than 12*12 */
 	/* setting scale = infinity ,  one can obtain the area of the signal */
@@ -590,7 +590,7 @@ void get_radius(double *in_img, para *paras, double scale, int type, double sig_
 }
 
 
-void get_psf_radius(const double *psf_pow, para*paras, const double scale)
+void get_psf_radius(const double *psf_pow, fq_paras*paras, const double scale)
 {
 	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
 	double max = 0;
@@ -668,7 +668,7 @@ void get_psf_radius(const double *psf_pow, para*paras, const double scale)
 	delete[] row;
 }
 
-void get_psf_radius(const float *psf_pow, para*paras, const float scale)
+void get_psf_radius(const float *psf_pow, fq_paras*paras, const float scale)
 {
 	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
 	float max = 0;
@@ -783,7 +783,7 @@ void get_quad(const double *img, const int img_size, const double weight_sigma_s
 }
 
 
-void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, para*paras, bool cross, int &detection, std::string &info)
+void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -944,7 +944,7 @@ void source_detector(const double *source_img, int *source_x, int*source_y, doub
 	detection = s_num;
 }
 
-void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, para*paras, bool cross, int &detection, std::string &info)
+void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -1096,7 +1096,7 @@ void source_detector(const float *source_img, int *source_x, int*source_y, float
 }
 
 
-void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info)
+void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
 {	
 	// find the galaxies in a stamp !!
 
@@ -1231,7 +1231,7 @@ void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool c
 	detect_label = detect;
 }
 
-void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info)
+void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
 {
 	int elem_unit = 8; // the number of parameters for each source detected 
 	int source_num, area = 0, hlr_area, yp, xp;
@@ -1323,7 +1323,7 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cr
 	detect_label = detect;
 }
 
-int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters)
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, fq_paras *paras, const int iters)
 {
 	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
 	int *cp_y = new int[size*size]{};
@@ -1469,7 +1469,7 @@ void normalize_arr(float * arr, const int size)
 /* Fourier Quad */
 /********************************************************************************************************************************************/
 
-void snr_est(const double *image, para *paras, int fit)
+void snr_est(const double *image, fq_paras *paras, int fit)
 {	/* will not change the inputted array */
 	/* estimate the snr in Fourier space */
 	double n = 0, noise;
@@ -1511,7 +1511,7 @@ void snr_est(const double *image, para *paras, int fit)
 	}
 }
 
-void possion_subtraction(double *arr, para *paras, int edge)
+void possion_subtraction(double *arr, fq_paras *paras, int edge)
 {
 	int i, j,size = paras->stamp_size;
 	double noise = 0;
@@ -1536,7 +1536,7 @@ void possion_subtraction(double *arr, para *paras, int edge)
 	}
 }
 
-void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion)
+void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion)
 {
 	int i, j, size = paras->stamp_size;
 	double inoise = 0, pnoise=0;
@@ -1576,7 +1576,7 @@ void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const 
 	}
 }
 
-void shear_est(double *gal_img, double *psf_img, para *paras)
+void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no background noise, a array of '0' should be inputted */
@@ -1629,7 +1629,7 @@ void shear_est(double *gal_img, double *psf_img, para *paras)
 }
 
 
-void ellip_est(const double *gal_img, const int size, para*paras)
+void ellip_est(const double *gal_img, const int size, fq_paras*paras)
 {
 	int i, j, sizeh = size*0.5;
 	double x, y, y2, xg, q11 =0, q12=0, q22=0;
@@ -2338,7 +2338,7 @@ void linspace(const double start, const double end, const int num, double *bins)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
-void smooth(double *image,  const double *coeffs, para*paras)//be careful of the memset()
+void smooth(double *image,  const double *coeffs, fq_paras*paras)//be careful of the memset()
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
@@ -2409,7 +2409,7 @@ void smooth(double *image,  const double *coeffs, para*paras)//be careful of the
 	delete[] temp;
 }
 
-void smooth(double *image, const double* psf_pow, const double *coeffs, para*paras)//be careful of the memset()
+void smooth(double *image, const double* psf_pow, const double *coeffs, fq_paras*paras)//be careful of the memset()
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
@@ -2486,7 +2486,7 @@ void smooth(double *image, const double* psf_pow, const double *coeffs, para*par
 	delete[] temp;
 }
 
-void smooth_real(double *image, const double *coeffs, para*paras)//be careful of the memset()
+void smooth_real(double *image, const double *coeffs, fq_paras*paras)//be careful of the memset()
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
 	int i, j, m, n, q, p, pk = 0, tag, cen, coe, jx, iy, size = paras->stamp_size;
@@ -2553,7 +2553,7 @@ void smooth_real(double *image, const double *coeffs, para*paras)//be careful of
 	delete[] temp;
 }
 
-void hyperfit_5(const double *data, double *fit_paras, para *paras)
+void hyperfit_5(const double *data, double *fit_paras, fq_paras *paras)
 {
 	double temp = 0;
 
@@ -3361,7 +3361,7 @@ void show_arr(const int*arr, const int rows, const int cols)
 	}
 }
 
-void initialize_para(para *paras)
+void initialize_para(fq_paras *paras)
 {	
 	paras->gal_size = 0;
 	paras->gal_hsize = 0;

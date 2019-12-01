@@ -36,7 +36,7 @@
 
 
 // something relates to the shear measurement and source detection
-struct para
+struct fq_paras
 {
 	int psf_size, psf_px, psf_py;
 	double psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thresh = 0.0001;
@@ -150,17 +150,17 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const double amplitude, const int psf);
 
 void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, 
-	const double g1, const double g2, const int psf, const int flag, para *paras);
+	const double g1, const double g2, const int psf, const int flag, fq_paras *paras);
 
 void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, 
-	const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, para *paras);
+	const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);
 
-void get_radius(double *in_img, para *paras, double scale, int type, double sig_level);
-void get_psf_radius(const double *psf_pow, para*para, const double scale);
-void get_psf_radius(const float *psf_pow, para*para, const float scale);
+void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level);
+void get_psf_radius(const double *psf_pow, fq_paras*para, const double scale);
+void get_psf_radius(const float *psf_pow, fq_paras*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
@@ -169,8 +169,8 @@ void get_quad(const double *img, const int img_size, const double weight_sigma_s
 /* weight_sigma_sq: the squared sigma of the gaussian weight */
 /* quad size := \Sum {weight*r^2*img} / \Sum {weight*img}      */
 
-void source_detector(const double *source_img, int *source_x, int*source_y, double *source_paras,para* paras, bool cross, int &detection, std::string &info);
-void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, para* paras, bool cross, int &detection, std::string &info);
+void source_detector(const double *source_img, int *source_x, int*source_y, double *source_paras,fq_paras* paras, bool cross, int &detection, std::string &info);
+void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, fq_paras* paras, bool cross, int &detection, std::string &info);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -184,8 +184,8 @@ void source_detector(const float *source_img, int *source_x, int*source_y, float
 */
 
 
-void galaxy_finder(const double *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
-void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cross, int &detect_label, std::string &info);
+void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info);
+void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info);
 /* to identify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
@@ -193,8 +193,8 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, para *paras, bool cr
 	needs: "stamp_size","max_distance","img_y", "img_x", "detect_thresh", "area_thresh", "max_source"
 */
 
-int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, para *paras, const int iters);
-/*	"stamp_size" in the structure paras will be used !!! 
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, fq_paras *paras, const int iters);
+/*	"stamp_size" in the structure fq_paras will be used !!! 
 
 	extend the border of a source galaxy by 1 pixel each time
 	the coordinates source_x(y), will be copied to a new array.
@@ -222,14 +222,14 @@ void normalize_arr(float *arr, const int size);//checked
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
-void snr_est(const double *image, para *paras, int fit);//checked
+void snr_est(const double *image, fq_paras *paras, int fit);//checked
 /* if fit=2 for both flux2 and flux_alt estimations
 	else just estimate the flux2
 */
-void possion_subtraction(double *image_pow, para *paras, int edge);//checked
-void noise_subtraction(double *image_pow, double *noise_pow, para *paras, const int edge, const int possion);//checked
-void shear_est(double *gal_img, double *psf_img, para *paras);//checked
-void ellip_est(const double *gal_img, const int size, para*paras);
+void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
+void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
+void shear_est(double *gal_img, double *psf_img, fq_paras *paras);//checked
+void ellip_est(const double *gal_img, const int size, fq_paras*paras);
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
 void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask);//checked
@@ -319,18 +319,18 @@ void linspace(const double start, const double end, const int num, double *bins)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
-void smooth(double *image, const double *coeffs, para *paras);//checked
+void smooth(double *image, const double *coeffs, fq_paras *paras);//checked
 /* smooth all the region */
-void smooth(double *image, const double *psf_pow, const double *coeffs, para *paras);//checked
+void smooth(double *image, const double *psf_pow, const double *coeffs, fq_paras *paras);//checked
 /* the image will be replaced by the smoothed one. 
-	the psf_pow and the paras->psf_thresh_pow are the mask and  threshold to label the region where to be smoothed
+	the psf_pow and the fq_paras->psf_thresh_pow are the mask and  threshold to label the region where to be smoothed
 	to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  
 */
 
-void smooth_real(double*image, const double *coeffs, para *paras);
+void smooth_real(double*image, const double *coeffs, fq_paras *paras);
 /* smooth the image by fitting a polynomial */
 
-void hyperfit_5(const double *data, double*fit_para, para *paras);//checked
+void hyperfit_5(const double *data, double*fit_para, fq_paras *paras);//checked
 
 void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs);//checked
 /* fit y = a1 +a2*x +a3*x^2 + a4*x^3 ... */
@@ -470,7 +470,7 @@ void show_arr(const int*arr, const int rows, const int cols);//checked
 void show_arr(const float*arr, const int rows, const int cols);//checked
 /* print the elements on the screen
 */
-void initialize_para(para *paras);
+void initialize_para(fq_paras *paras);
 /* set the "gal_" parameters zero */
 
 void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale, int choice=0); //checked

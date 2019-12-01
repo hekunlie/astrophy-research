@@ -1,18 +1,15 @@
-import numpy
 import h5py
 from mpi4py import MPI
 from sys import path,argv
 path.append("/home/hklee/work/mylib")
 import tool_box
-import shutil
-import os
 
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-shear_num = 15
+shear_num = 7
 n, m = divmod(shear_num, numprocs)
 tasks = [i for i in range(shear_num)]
 
@@ -26,7 +23,9 @@ total_path = argv[1]
 # # name of the sub-data file
 # sep_data_nm = argv[4]
 
-dst_nms = ["noise_free.hdf5", "noise_pow.hdf5", "noise_residual.hdf5","noisy_img.hdf5"]
+dst_nms = ["gauss_noise_1.hdf5", "gauss_noise_2.hdf5", "gauss_noise_residual.hdf5",
+           "moffat_noise_1.hdf5", "moffat_noise_2.hdf5", "moffat_noise_residual.hdf5"]
+
 for ig in my_task:
     src_path = total_path + "/data_%d.hdf5"%ig
     h5f = h5py.File(src_path, "r")
@@ -34,7 +33,7 @@ for ig in my_task:
     h5f.close()
     print("Reading total data of shear %d"%ig,total_data_ig.shape)
 
-    for i in range(4):
+    for i in range(len(dst_nms)):
         dst_path = total_path + "/data_%d_%s"%(ig,dst_nms[i])
         h5f = h5py.File(dst_path,"w")
         h5f["/data"] = total_data_ig[:,i*4:(i+1)*4]

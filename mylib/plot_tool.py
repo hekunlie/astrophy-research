@@ -147,10 +147,10 @@ class Image_Plot:
                 self.axs[iy][ix].spines[labels[nm]].set_visible(False)
 
 
-    def set_label(self, iy, ix, axis_nm, label, font="serif", size=None):
-        if not size:
-            size = self.xy_lb_size
-        fontdict = {'family': font, 'size': size}
+    def set_label(self, iy, ix, axis_nm, label, font="serif", fontsize=None):
+        if not fontsize:
+            fontsize = self.xy_lb_size
+        fontdict = {'family': font, 'size': fontsize}
         if axis_nm == 1:
             self.axs[iy][ix].set_xlabel(label, fontdict=fontdict)
         else:

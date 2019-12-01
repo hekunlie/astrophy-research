@@ -20,7 +20,7 @@ int main(int argc, char*argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-	para all_paras;
+	fq_paras all_paras;
 
 	char parent_path[100], chip_path[150], para_path[150], shear_path[150], result_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_name[50];
