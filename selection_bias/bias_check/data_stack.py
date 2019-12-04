@@ -1,8 +1,9 @@
 import numpy
 import h5py
 from mpi4py import MPI
-from sys import path
+from sys import path,argv
 path.append("/home/hklee/work/mylib")
+path.append("/home/hkli/work/mylib")
 import tool_box
 
 
@@ -10,7 +11,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-shear_num = 15
+shear_num = 11
 n,m = divmod(shear_num,numprocs)
 tasks = [i for i in range(shear_num)]
 
@@ -18,15 +19,15 @@ my_task = tool_box.allot(tasks,numprocs)[rank]
 
 print(rank, my_task)
 
-sub_num = 5000000
-total_data = numpy.zeros((sub_num*4,16))
+sub_num = 300000
+total_data = numpy.zeros((sub_num*4,4))
 entry = [(0,sub_num),(sub_num,2*sub_num),(2*sub_num, 3*sub_num),(3*sub_num, 4*sub_num)]
 
-parent_path = "/mnt/perc/hklee/bias_check/result/data_collection/data_rotation"
+parent_path = argv[1]
 
 for ig in my_task:
     for i in range(len(entry)):
-        data_path = parent_path + "/data_rotation_%d/data_%d.hdf5"%(i, ig)
+        data_path = parent_path + "/data_rotation_%d/data_%d_noisy.hdf5"%(i, ig)
         h5f = h5py.File(data_path,"r")
         temp = h5f["/data"].value
         sp = temp.shape
@@ -39,7 +40,7 @@ for ig in my_task:
     sp = total_data.shape
     print("Write total data shear %d data %d, (%d, %d)"%(ig, ig, sp[0],sp[1]))
 
-    total_data_path = parent_path + "/data_all/data_%d.hdf5" % ig
+    total_data_path = parent_path + "/data_all/data_%d_noisy.hdf5" % ig
     h5f = h5py.File(total_data_path, "w")
     h5f["/data"] = total_data
     h5f.close()

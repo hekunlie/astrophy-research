@@ -59,7 +59,7 @@ int main(int argc, char**argv)
     strcpy(parent_path, argv[1]);
     data_row = atoi(argv[2])*10000;
     data_col = atoi(argv[3]);
-
+    shear_num = 20;
 
     data = new double[data_row*data_col];
     mg1 = new double[data_row];
@@ -72,7 +72,7 @@ int main(int argc, char**argv)
     chi_send_count = new int[numprocs]{};
 
     // shear point distribution
-    shear_num = 20;
+    
     i = shear_num/numprocs;
     j = shear_num%numprocs;
     for(k=0;k<numprocs;k++)
@@ -132,7 +132,7 @@ int main(int argc, char**argv)
     sprintf(set_name,"/data");
     for(i=shear_st;i<shear_ed;i++)
     {   
-        sprintf(data_path,"%s/data_%d.hdf5",parent_path, i);
+        sprintf(data_path,"%s/data_%d_noise_free.hdf5",parent_path, i);
         read_h5(data_path, set_name, data);
 
         for(k=0;k<numprocs;k++)

@@ -14,7 +14,7 @@ numprocs = comm.Get_size()
 
 fq = Fourier_Quad(12,124)
 
-shear_num = 13
+shear_num = 20
 n, m = divmod(shear_num, numprocs)
 tasks = [i for i in range(shear_num)]
 
@@ -32,8 +32,8 @@ dst_nms = ["gauss_noise_1", "gauss_noise_2", "gauss_noise_residual",
            "moffat_noise_1", "moffat_noise_2", "moffat_noise_residual"]
 
 guess_num = 31
-g_range = [[-0.002,0.002],[-0.002,0.002],[-0.1,0.1],
-           [-0.002,0.002],[-0.002,0.002],[-0.1,0.1]]
+g_range = [[-0.0005,0.0005],[-0.0005,0.0005],[-0.1,0.1],
+           [-0.0005,0.0005],[-0.0005,0.0005],[-0.1,0.1]]
 
 sub_num = 10
 result = numpy.zeros((4, guess_num))
@@ -83,8 +83,8 @@ for ig in my_task:
             sub_result[2*sub_num] = shear_guess
 
             for j in range(sub_num):
-                g1_hat, g1_chisq = fq.get_chisq_range(mg1[i*sub_row:(i+1)*sub_row], mnu1[i*sub_row:(i+1)*sub_row], 8, shear_guess)
-                g2_hat, g2_chisq = fq.get_chisq_range(mg2[i*sub_row:(i+1)*sub_row], mnu2[i*sub_row:(i+1)*sub_row], 8, shear_guess)
+                g1_hat, g1_chisq = fq.get_chisq_range(mg1[j*sub_row:(j+1)*sub_row], mnu1[j*sub_row:(j+1)*sub_row], 8, shear_guess)
+                g2_hat, g2_chisq = fq.get_chisq_range(mg2[j*sub_row:(j+1)*sub_row], mnu2[j*sub_row:(j+1)*sub_row], 8, shear_guess)
 
                 sub_result[j] = g1_chisq
                 sub_result[j+sub_num] = g2_chisq

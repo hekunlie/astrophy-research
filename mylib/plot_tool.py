@@ -123,10 +123,10 @@ class Image_Plot:
         if not text_fontsize:
             text_fontsize = self.legend_size
         if ax_trans:
-            self.axs[iy][ix].text(y, x, text, color=text_color, ha=ha,  va=va,
+            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha,  va=va,
                               transform=self.axs[iy][ix].transAxes, fontsize=text_fontsize)
         else:
-            self.axs[iy][ix].text(y, x, text, color=text_color, ha=ha, va=va,
+            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va,
                                   transform=self.axs[iy][ix].transAxes, fontsize=text_fontsize)
 
 

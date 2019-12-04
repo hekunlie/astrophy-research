@@ -118,6 +118,11 @@ void create_points(double *point, const int num_p, const double radius, const gs
 		xm += x;
 		ym += y;
 	}
+	
+	//theta = 2.*Pi*gsl_rng_uniform(gsl_rand_rng);
+	//x = cos(theta);
+	//y = sin(theta);
+
 	/* move the mass center of the points cluster to (0,0) */
 	for (i = 0; i < num_p; i++)
 	{

@@ -2,6 +2,7 @@
 #include<hk_mpi.h>
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
+//#define FLUX_PDF 
 
 void arr_add(double *arr1, const double*arr2,const int length)
 {
@@ -29,21 +30,18 @@ int main(int argc, char*argv[])
 	char parent_path[100], chip_path[150], para_path[150], shear_path[150], result_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_name[50];
 
-	//sprintf(parent_path, "/mnt/perc/hklee/bias_check_noise_effect");
-	sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check_noise_effect");
+	//sprintf(parent_path, "/mnt/perc/hklee/bias_check");
+	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check_noise_effect");
+	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/data");
 
 	//strcpy(parent_path, argv[1]);
-	std::ifstream fin;
-	std::string str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
-	std::string dect_info;
-	std::string str_data_path,str_para_path,str_shear_path;
+	std::string str_data_path,str_shear_path;
 
 	char_to_str(parent_path, str_data_path);
-	str_para_path = str_data_path + "/parameters/para.ini";
 	str_shear_path = str_data_path + "/parameters/shear.dat";
 	
 	int i, j, k, ib;
-	int sss1, sss2, seed, seed_step;
+	int sss1, sss2, seed_pts, seed_n1, seed_n2, seed_step;
 	int rotation;
 
 	int num_p, size, shear_pairs;
@@ -57,10 +55,12 @@ int main(int argc, char*argv[])
 	double psf_ellip, psf_ang, psf_norm_factor;
 
 	rotation = atoi(argv[1]);
-	num_p = 80;
+	num_p = 60;
 	max_radius= 9;
 	stamp_num = 10000;
-	shear_data_cols = 16;
+	shear_data_cols = 4;
+
+    shear_pairs = 17;
 
 	psf_type=2;
 	psf_scale = 4;
@@ -68,43 +68,45 @@ int main(int argc, char*argv[])
 	temp_s = rank;
 	sig_level = 1.5;
 	psf_noise_sig = 0;
-
-	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
-
-
-    size = 64;
-    total_chips = 500;
     gal_noise_sig = 60;
-    shear_pairs = 15;
+
+	size = 64;
+    total_chips = 10000;
     stamp_nx = 100;
+
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	// because the max half light radius of the galsim source is 5.5 pixels
 	all_paras.max_distance = max_radius; 
 
+	sprintf(log_path, "%s/logs/%02d_R%d.dat", parent_path, rank, rotation);
+
 #ifdef IMG_CHECK_LABEL	
-	double *big_img = new double[stamp_nx*stamp_nx*size*size]();
+	double *big_img = new double[stamp_nx*stamp_nx*size*size]{};
 #endif
 
-	double *point = new double[2 * num_p]();
-	double *gal = new double[size*size]();
-	double *pgal = new double[size*size]();
-	double *psf = new double[size*size]();
-	double *ppsf = new double[size*size]();
+	double *point = new double[2 * num_p]{};
 
-	double *noise_1 = new double[size*size]();
-	double *pnoise_1 = new double[size*size]();
+	double *gal = new double[size*size]{};
+	double *pgal = new double[size*size]{};
 
-    double *noise_2 = new double[size*size]();
-	double *pnoise_2 = new double[size*size]();
+	double *psf = new double[size*size]{};
+	double *ppsf = new double[size*size]{};
 
-	double *pnoise_residual = new double[size*size]();
+	double *noise_1 = new double[size*size]{};
+	double *pnoise_1 = new double[size*size]{};
 
-	double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
+    double *noise_2 = new double[size*size]{};
+	double *pnoise_2 = new double[size*size]{};
+
+	double *shear = new double[2 * shear_pairs]{}; // [...g1,...,..g2,...]
 
 	// the shear estimators data matrix  
-	double *total_data,*sub_data;
+	double *total_data,*sub_noisy_data;
+	double *sub_noise_free_data;
+	double *sub_noise_residual_data;
+
 	double *total_flux, *sub_flux;
 	int *scatter_count,*gather_count;
 
@@ -144,14 +146,28 @@ int main(int argc, char*argv[])
 		// the real amount of data of each thread
 		gather_count[i] = scatter_count[i]*shear_data_cols;
 	}
-	sub_data = new double[gather_count[rank]]{};
+	sub_noisy_data = new double[gather_count[rank]]{};
+	sub_noise_free_data = new double[gather_count[rank]]{};
+	sub_noise_residual_data = new double[gather_count[rank]]{};
+
+		// seed distribution, different thread gets different seed
+	seed_step = 2;
+	sss1 = 4*seed_step*shear_pairs*scatter_count[0]/stamp_num;
+	seed_pts = sss1*rank + 1 + 100;
+	seed_n1 = sss1*rank + 1 + 20100*(rotation+1);
+	seed_n2 = sss1*rank + 1 + 200100*(rotation+1);
+
 	if (0 == rank)
 	{
+#ifdef FLUX_PDF
 		total_flux = new double[total_data_row]{};
+#endif
 		total_data = new double[total_data_row*shear_data_cols]{};
 	}
-	sub_flux = new double[scatter_count[rank]]{};
 
+#ifdef FLUX_PDF
+	sub_flux = new double[scatter_count[rank]]{};
+#endif
 	// read shear
 	read_text(str_shear_path, shear, 2*shear_pairs);
     
@@ -184,15 +200,11 @@ int main(int argc, char*argv[])
 	{
 		if(i == rank)
 		{
-			std::cout<<rank<<" "<<chip_st<<" "<<chip_ed<<" "<<scatter_count[i]<<" "<<gather_count[i]<<std::endl;
+			std::cout<<rank<<" "<<chip_st<<" "<<chip_ed<<" "<<seed_pts<<" "<<seed_n1<<" "<<seed_n2<<" "<<scatter_count[i]<<" "<<gather_count[i]<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
-	// seed distribution, different thread gets different seed
-	seed_step = 2;
-	sss1 = 2*seed_step*shear_pairs*scatter_count[0]/stamp_num;
-	seed = sss1*rank + 1+50000;
 
 	// loop the shear points
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
@@ -214,17 +226,15 @@ int main(int argc, char*argv[])
 		{
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 			std::cout<<"g1: "<<g1<<" g2: "<<g2<<std::endl;
-			//sprintf(para_path, "%s/parameters/para_%d.hdf5", parent_path, shear_id);
-			//sprintf(set_name, "/flux");
-			//read_h5(para_path, set_name, total_flux);
+#ifdef FLUX_PDF
+			sprintf(para_path, "%s/parameters/para_%d.hdf5", parent_path, shear_id);
+			sprintf(set_name, "/flux");
+			read_h5(para_path, set_name, total_flux);
+#endif
 		}
-		//my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
-
-		// sprintf(para_path, "%s/parameters/para_%d_check_%d.hdf5", parent_path, shear_id,rank);
-		// sprintf(set_name, "/data");
-		// write_h5(para_path, set_name, sub_flux, sub_data_row,1,true);
-
-
+#ifdef FLUX_PDF
+		my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
+#endif
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		// loop the chips
@@ -232,7 +242,7 @@ int main(int argc, char*argv[])
 		{
 			t1 = clock();
 
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed:%d", rank,shear_id, i, seed);
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed: %d, %d, %d", rank,shear_id, i, seed_pts, seed_n1, seed_n2);
 			write_log(log_path, log_inform);
 			if (rank == 0)
 			{
@@ -240,10 +250,13 @@ int main(int argc, char*argv[])
 			}
 
 			// initialize GSL
-			gsl_initialize(seed,0);
-			gsl_initialize(seed,1);
-			gsl_initialize(seed,2);
-			seed += seed_step;
+			gsl_initialize(seed_pts,0);
+			gsl_initialize(seed_n1,1);
+			gsl_initialize(seed_n2,2);
+			seed_pts += seed_step;
+			seed_n1 += seed_step;
+			seed_n2 += seed_step;
+
 
 #ifdef IMG_CHECK_LABEL
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
@@ -254,20 +267,16 @@ int main(int argc, char*argv[])
 			// loop the stamps
 			for (j = 0; j < stamp_num; j++)
 			{	
-
-				flux_i = 9000./ num_p;//sub_flux[(i-chip_st)*stamp_num + j] / num_p;
-				
+#ifdef FLUX_PDF
+				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
+#else	
+				flux_i = 9000./ num_p;
+#endif
 				////////////////// pure noise image //////////////////////
-				all_paras.n1 = 0;
-				all_paras.n2 = 0;
-				all_paras.dn = 0;
-				all_paras.du = 0;
-
 				initialize_arr(noise_1, size*size, 0);
 				initialize_arr(pnoise_1, size*size, 0);
                 initialize_arr(noise_2, size*size, 0);
 				initialize_arr(pnoise_2, size*size, 0);
-				initialize_arr(pnoise_residual, size*size, 0);
 
 				addnoise(noise_1, size*size, gal_noise_sig, rng1);
 				addnoise(noise_2, size*size, gal_noise_sig, rng2);
@@ -275,33 +284,18 @@ int main(int argc, char*argv[])
                 pow_spec(noise_1, pnoise_1, size, size);
                 pow_spec(noise_2, pnoise_2, size, size);
 
-                // directly measure on noise power spectrum
-                shear_est(pnoise_1, ppsf, &all_paras);
-                sub_data[row + j * shear_data_cols + 0] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 3] = all_paras.du;
 
-                all_paras.n1 = 0;
-				all_paras.n2 = 0;
-				all_paras.dn = 0;
-				all_paras.du = 0;
                 // measure on the noise power spectrum residual
                 noise_subtraction(pnoise_1, pnoise_2, &all_paras, 1, 0);
                 shear_est(pnoise_1, ppsf, &all_paras);
 
-                sub_data[row + j * shear_data_cols + 4] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 5] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 6] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 7] = all_paras.du;
+                sub_noise_residual_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_noise_residual_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_noise_residual_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
 
 
-				///////////////// Noise free /////////////////////////
-				all_paras.n1 = 0;
-				all_paras.n2 = 0;
-				all_paras.dn = 0;
-				all_paras.du = 0;
-				
+				///////////////// Noise free /////////////////////////		
 				initialize_arr(point, num_p * 2, 0);
 				
 				initialize_arr(gal, size*size, 0);
@@ -312,22 +306,18 @@ int main(int argc, char*argv[])
 				pow_spec(gal, pgal, size, size);
 				shear_est(pgal, ppsf, &all_paras);
 
-				sub_data[row + j * shear_data_cols + 8] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 9] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 10] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 11] = all_paras.du;
+				sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
 
 
                 ////////////////// noisy image //////////////////////
-				all_paras.n1 = 0;
-				all_paras.n2 = 0;
-				all_paras.dn = 0;
-				all_paras.du = 0;
                 initialize_arr(pgal, size*size, 0);
 
                 arr_add(gal, noise_1, size*size);
 				pow_spec(gal, pgal, size, size);
-				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 0);
+				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 1);
 
 #ifdef IMG_CHECK_LABEL
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
@@ -336,10 +326,10 @@ int main(int argc, char*argv[])
 
 				shear_est(pgal, ppsf, &all_paras);
 
-				sub_data[row + j * shear_data_cols + 12] = all_paras.n1;
-				sub_data[row + j * shear_data_cols + 13] = all_paras.n2;
-				sub_data[row + j * shear_data_cols + 14] = all_paras.dn;
-				sub_data[row + j * shear_data_cols + 15] = all_paras.du;
+				sub_noisy_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_noisy_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_noisy_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_noisy_data[row + j * shear_data_cols + 3] = all_paras.du;
 
 			}
 			gsl_free(0);
@@ -350,7 +340,7 @@ int main(int argc, char*argv[])
 #ifdef IMG_CHECK_LABEL
 			if(i == IMG_CHECK_LABEL)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d.fits", parent_path, shear_id, i);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d.fits", parent_path, shear_id, i, rotation);
 				write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
 			}
 #endif
@@ -364,41 +354,55 @@ int main(int argc, char*argv[])
 		}	
 		// finish the chip loop
 
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
+		if (0 == rank)
+		{
+			sprintf(set_name, "/data");
+			sprintf(result_path, "%s/result/data/data_rotation_%d/data_%d_noise_free.hdf5", parent_path, rotation, shear_id);
+			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		my_Gatherv(sub_noise_residual_data, gather_count, total_data, numprocs, rank);
+		if (0 == rank)
+		{
+			sprintf(result_path, "%s/result/data/data_rotation_%d/data_%d_noise_residual.hdf5", parent_path, rotation, shear_id);
+			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+
+		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
+		if (0 == rank)
+		{
+			sprintf(result_path, "%s/result/data/data_rotation_%d/data_%d_noisy.hdf5", parent_path, rotation, shear_id);
+			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 		te = clock();
 		if (rank == 0)
 		{
 			sprintf(buffer, "rank %d: done in %g \n", rank, (te - ts) / CLOCKS_PER_SEC);
 			std::cout << buffer<<std::endl;
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		//sprintf(result_path, "%s/result/data/data_%d_%d_check.hdf5", parent_path, shear_id,rank);
-		//sprintf(set_name, "/data");
-		//write_h5(result_path, set_name, sub_data, sub_data_row,shear_data_cols,true);
-
-		sprintf(set_name, "/data");
-		//MPI_Gather(sub_data, sub_data_row*shear_data_cols, MPI_DOUBLE, total_data, sub_data_row*shear_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		my_Gatherv(sub_data, gather_count, total_data, numprocs, rank);
-
-		if (0 == rank)
-		{
-			sprintf(result_path, "%s/result/data/data_rotation_%d/data_%d.hdf5", parent_path, rotation, shear_id);
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
-		}
-
-		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 	if (0 == rank)
-	{
+	{	
+		std::cout<<parent_path<<std::endl;
 		std::cout << "FINISH ALL JOBS" << std::endl;
 		delete[] total_data;
+#ifdef FLUX_PDF
 		delete[] total_flux;
+#endif
 	}
+
 #ifdef IMG_CHECK_LABEL
 	delete[] big_img;
 #endif
+
 	delete[] point;
 	delete[] gal;
 	delete[] pgal;
@@ -408,10 +412,13 @@ int main(int argc, char*argv[])
 	delete[] pnoise_1;
     delete[] noise_2;
 	delete[] pnoise_2;
-    delete[] pnoise_residual;
-	delete[] sub_data;
+	delete[] sub_noise_free_data;
+	delete[] sub_noise_residual_data;
+	delete[] sub_noisy_data;
 	delete[] shear;
+#ifdef FLUX_PDF
 	delete[] sub_flux;
+#endif
 	delete[] scatter_count;
 	delete[] gather_count;
 	

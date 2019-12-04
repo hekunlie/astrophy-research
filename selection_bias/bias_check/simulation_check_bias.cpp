@@ -80,17 +80,17 @@ int main(int argc, char*argv[])
 	all_paras.max_distance = max_radius; 
 
 #ifdef IMG_CHECK_LABEL	
-	double *big_img = new double[stamp_nx*stamp_nx*size*size]();
+	double *big_img = new double[stamp_nx*stamp_nx*size*size]{};
 #endif
 
-	double *point = new double[2 * num_p]();
-	double *gal = new double[size*size]();
-	double *pgal = new double[size*size]();
-	double *psf = new double[size*size]();
-	double *ppsf = new double[size*size]();
-	double *noise = new double[size*size]();
-	double *pnoise = new double[size*size]();
-	double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
+	double *point = new double[2 * num_p]{};
+	double *gal = new double[size*size]{};
+	double *pgal = new double[size*size]{};
+	double *psf = new double[size*size]{};
+	double *ppsf = new double[size*size]{};
+	double *noise = new double[size*size]{};
+	double *pnoise = new double[size*size]{};
+	double *shear = new double[2 * shear_pairs]{}; // [...g1,...,..g2,...]
 
 	// the shear estimators data matrix  
 	double *total_data,*sub_data;

@@ -846,7 +846,7 @@ class Fourier_Quad:
 
         bin_num2 = int(bin_num * 0.5)
         inverse = range(int(bin_num / 2 - 1), -1, -1)
-        print(bins.shape)
+
         iters = 0
         change = 1
         while change == 1:
