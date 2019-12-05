@@ -525,6 +525,16 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, ybloc
 
     return fit_paras
 
+def mc_f(x,m,c):
+    return (1+m)*x +c
+def data_fit_scipy(x_data, y_data, y_err):
+    popt, pcov = scipy.optimize.curve_fit(mc_f, x_data, y_data, sigma=y_err)
+    return popt[0], numpy.sqrt(numpy.diag(pcov))[0], popt[1], numpy.sqrt(numpy.diag(pcov))[1]
+
+def data_fit_numpy(x_data, y_data, y_err):
+    p, v = numpy.polyfit(x=x_data,y=y_data,deg=1,w=1./y_err,cov=True)
+    return p[0],numpy.sqrt(numpy.diag(v))[0],p[1],numpy.sqrt(numpy.diag(v))[1]
+
 def data_fit(x_data, y_data, y_err):
     """
     Y = A*X ,   y = m*x+c

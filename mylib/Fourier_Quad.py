@@ -685,7 +685,7 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def fmin_g_bk(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
+    def find_shear_bk(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -700,6 +700,8 @@ class Fourier_Quad:
         :return: estimated shear and sigma
         """
         bins = self.set_bin(g, bin_num,scale)
+        bin_num2 = int(bin_num * 0.5)
+        inverse = range(int(bin_num / 2 - 1), -1, -1)
         same = 0
         iters = 0
         # m1 chi square & left & left chi square & right & right chi square
@@ -710,11 +712,11 @@ class Fourier_Quad:
             m1 = (left + right) / 2.
             m2 = (m1 + left) / 2.
             m3 = (m1 + right) / 2.
-            fL = self.G_bin(g, nu, left, bins, ig_num)
-            fR = self.G_bin(g, nu, right, bins, ig_num)
-            fm1 = self.G_bin(g, nu, m1, bins, ig_num)
-            fm2 = self.G_bin(g, nu, m2, bins, ig_num)
-            fm3 = self.G_bin(g, nu, m3, bins, ig_num)
+            fL = self.get_chisq(g, nu, left, bins, bin_num2, inverse, ig_num)
+            fR = self.get_chisq(g, nu, right, bins, bin_num2, inverse, ig_num)
+            fm1 = self.get_chisq(g, nu, m1, bins, bin_num2, inverse, ig_num)
+            fm2 = self.get_chisq(g, nu, m2, bins, bin_num2, inverse, ig_num)
+            fm3 = self.get_chisq(g, nu, m3, bins, bin_num2, inverse, ig_num)
             values = [fL, fm2, fm1, fm3, fR]
             points = [left, m2, m1, m3, right]
             records[iters, ] = fm1, left, fL, right, fR
@@ -801,18 +803,21 @@ class Fourier_Quad:
             right = 2*m1 - left
 
         fit_range = numpy.linspace(left, right, fit_num)
-        chi_sq = numpy.array([self.G_bin(g, nu, g_hat, bins, ig_num) for g_hat in fit_range])
+        chi_sq = numpy.array([self.get_chisq(g, nu, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in fit_range])
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
         # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
         # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
-        g_h = -coeff[1] / 2. / coeff[2]
+        # g_h = -coeff[1] / 2. / coeff[2]
         g_sig = 0.70710678118/numpy.sqrt(coeff[2])
 
         if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq)
-            fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2)
+            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
+            fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
+            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
+            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=15)
 
         return g_h, g_sig, coeff
 
@@ -888,19 +893,9 @@ class Fourier_Quad:
         if fig_ax:
             fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
             fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
-            fig_ax.text(0.1, 0.9, '%d' % len(g), color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=10)
-            fig_ax.text(0.1, 0.8, '%.5f' % coeff[0], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=10)
-            fig_ax.text(0.1, 0.7, '%.5fx' % coeff[1], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=10)
-            fig_ax.text(0.1, 0.6, '%.5f$x^2$' % coeff[2], color='C3', ha='left', va='center',
-                        transform=fig_ax.transAxes, fontsize=10)
-            fig_ax.text(0.4, 0.8, '%.5f' %g_h, color='C3', ha='left', va='center',
-                        transform=fig_ax.transAxes, fontsize=10)
-            fig_ax.text(0.4, 0.7, '%.5f' %g_sig, color='C3', ha='left', va='center',
-                        transform=fig_ax.transAxes, fontsize=10)
-
+            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
+            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=15)
         return g_h, g_sig, coeff
 
 
@@ -962,12 +957,9 @@ class Fourier_Quad:
         if fig_ax:
             fig_ax.scatter(fit_range, chi_sq, alpha=0.7,s=5)
             fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2,alpha=0.7)
-            fig_ax.text(0.1, 0.9, '%d'%len(g), color='C3', ha='left',  va='center', transform=fig_ax.transAxes, fontsize=10)
-            fig_ax.text(0.1, 0.8, '%.5f'%coeff[0], color='C3', ha='left', va='center', transform=fig_ax.transAxes,fontsize=10)
-            fig_ax.text(0.1, 0.7, '%.5fx' % coeff[1], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                    fontsize=10)
-            fig_ax.text(0.1, 0.6, '%.5f$x^2$' % coeff[2], color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                    fontsize=10)
+            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
+            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                        fontsize=15)
 
         return g_h, g_sig, coeff
 

@@ -2030,6 +2030,63 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 }
 
 
+void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale)
+{
+	// if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
+	// it's better to sum the sub-block and then add the these quantities together.
+
+	int i,j, m,n;
+
+	double mg_mean, mg_sq_mean, mn_mean, mg_sum, mn_sum;
+	double sub_sum1, sub_sum2, sub_sum3;;
+
+	double s1= 1./scale;
+	
+	int *num_in_block = new int[sub_block_num];
+	int *block_st = new int[sub_block_num];
+
+	m = data_num/sub_block_num;
+	n = data_num%sub_block_num;
+
+	for(i=0;i<sub_block_num;i++)
+	{
+		block_st[i] = 0;
+
+		num_in_block[i] = m;
+		if(i<n)num_in_block[i] += 1;
+
+		for(j=0;j<i;j++)
+		{
+			block_st[i] += num_in_block[j];
+		}
+	}
+
+	mg_mean = 0;
+	mg_sq_mean = 0;
+	mn_mean = 0;
+	for(i=0;i<sub_block_num;i++)
+	{
+		sub_sum1 = 0;
+		sub_sum2 = 0;
+		sub_sum3 = 0;
+
+		for(j=block_st[i];j<block_st[i]+num_in_block[i];j++)
+		{
+			sub_sum1 += mg[j]*s1;
+			sub_sum2 += mn[j]*s1;
+			sub_sum3 += (mg[j]*s1)*(mg[j]*s1);
+		}
+		mg_mean += sub_sum1*(scale/data_num);
+		mn_mean += sub_sum2*(scale/data_num);
+		mg_sq_mean += sub_sum3*(scale*scale/data_num);
+	}
+
+	gh = mg_mean/mn_mean;
+	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_num);
+
+	delete[] num_in_block;
+	delete[] block_st;
+}
 
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,	const int chi_num_fit, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {

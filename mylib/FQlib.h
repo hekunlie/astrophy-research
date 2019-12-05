@@ -259,8 +259,13 @@ void cal_chisq_1d(const double *hist_num,  const int bin_num, double &result);
 void cal_chisq_1d(const long *hist_num, const int bin_num, double &result);
 void cal_chisq_1d(const int *hist_num,  const int bin_num,  double &result);//checked
 void cal_chisq_1d(const int *hist_num,  const int bin_num, const int num, double &result);//checked
-/* calculate the 1d chi square using the histogram of G1(2) for the shear eastimation 
+/* calculate the 1d chi square using the histogram of G1(2) for the shear estimation 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
+*/
+
+void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale=1);
+/* 	if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
+	it's better to sum the sub-block and then add the these quantities together.
 */
 
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20, const int choice=0, 

@@ -9,7 +9,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-shear_num = 7
+shear_num = int(argv[2])
 n, m = divmod(shear_num, numprocs)
 tasks = [i for i in range(shear_num)]
 
@@ -22,9 +22,10 @@ total_path = argv[1]
 # col_st, col_ed = int(argv[2]), int(argv[3])
 # # name of the sub-data file
 # sep_data_nm = argv[4]
-
-dst_nms = ["gauss_noise_1.hdf5", "gauss_noise_2.hdf5", "gauss_noise_residual.hdf5",
-           "moffat_noise_1.hdf5", "moffat_noise_2.hdf5", "moffat_noise_residual.hdf5"]
+#
+# dst_nms = ["gauss_noise_1.hdf5", "gauss_noise_2.hdf5", "gauss_noise_residual.hdf5",
+#            "moffat_noise_1.hdf5", "moffat_noise_2.hdf5", "moffat_noise_residual.hdf5"]
+dst_nms = ["noise_free.hdf5", "noisy_img.hdf5"]
 
 for ig in my_task:
     src_path = total_path + "/data_%d.hdf5"%ig

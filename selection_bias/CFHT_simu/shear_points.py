@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # data_path, shear_num = argv[1], int(argv[2])
 
-shear_num = 17
+shear_num = 11
 data_path = "D:/"
 
 g1 = numpy.linspace(-0.02, 0.02, shear_num)

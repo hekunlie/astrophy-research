@@ -2,7 +2,7 @@
 #include<hk_mpi.h>
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
-//#define FLUX_PDF 
+#define FLUX_PDF 
 
 void arr_add(double *arr1, const double*arr2,const int length)
 {
@@ -55,12 +55,12 @@ int main(int argc, char*argv[])
 	double psf_ellip, psf_ang, psf_norm_factor;
 
 	rotation = atoi(argv[1]);
-	num_p = 60;
+	num_p = 100;
 	max_radius= 9;
 	stamp_num = 10000;
 	shear_data_cols = 4;
 
-    shear_pairs = 17;
+    shear_pairs = 11;
 
 	psf_type=2;
 	psf_scale = 4;
@@ -154,8 +154,8 @@ int main(int argc, char*argv[])
 	seed_step = 2;
 	sss1 = 4*seed_step*shear_pairs*scatter_count[0]/stamp_num;
 	seed_pts = sss1*rank + 1 + 100;
-	seed_n1 = sss1*rank + 1 + 20100*(rotation+1);
-	seed_n2 = sss1*rank + 1 + 200100*(rotation+1);
+	seed_n1 = sss1*rank + 1 + 100100*(rotation+1);
+	seed_n2 = sss1*rank + 1 + 300100*(rotation+1);
 
 	if (0 == rank)
 	{
