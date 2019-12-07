@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use("Agg")
 import numpy
 import h5py
 from sys import argv, path
@@ -17,7 +19,7 @@ cmd = argv[1]
 shear_num = int(argv[2])
 total_path = argv[3]
 noise_type = argv[4]
-
+mg_bin_num = 8
 data_type = "/data_%d_"+"%s.hdf5"%noise_type
 result_name = total_path + "/result/result_%s.hdf5"%noise_type
 img_check_name = total_path + "/result/data_%d_"+"%s.png"%noise_type
@@ -145,9 +147,9 @@ if cmd == "calculate":
         g1_mean, g1_sig_mean = fq.find_shear_mean(mg1, mn)
         g2_mean, g2_sig_mean = fq.find_shear_mean(mg2, mn)
 
-        g1_sym, g1_sig_sym = fq.find_shear(mg1, mnu1, 8, left=left, right=right, fit_num=20, chi_gap=30,
+        g1_sym, g1_sig_sym = fq.find_shear_bk(mg1, mnu1, mg_bin_num, left=left, right=right, fit_num=20, chi_gap=30,
                                            fig_ax=img_check.axs[0][0])[:2]
-        g2_sym, g2_sig_sym = fq.find_shear(mg2, mnu2, 8, left=left, right=right, fit_num=20, chi_gap=30,
+        g2_sym, g2_sig_sym = fq.find_shear_bk(mg2, mnu2, mg_bin_num, left=left, right=right, fit_num=20, chi_gap=30,
                                            fig_ax=img_check.axs[0][1])[:2]
 
         img_check.save_img(img_check_name%ig)
@@ -167,14 +169,14 @@ if cmd == "calculate":
 
     if rank == 0:
 
-        mc1 = tool_box.data_fit_numpy(mean_result_array[0], mean_result_array[1], mean_result_array[2])
+        mc1 = tool_box.data_fit(mean_result_array[0], mean_result_array[1], mean_result_array[2])
         mean_mc_array[0] = mc1[0]-1, mc1[1], mc1[2], mc1[3]
-        mc2 = tool_box.data_fit_numpy(mean_result_array[3], mean_result_array[4], mean_result_array[5])
+        mc2 = tool_box.data_fit(mean_result_array[3], mean_result_array[4], mean_result_array[5])
         mean_mc_array[1] = mc2[0]-1, mc2[1], mc2[2], mc2[3]
 
-        mc1 = tool_box.data_fit_numpy(sym_result_array[0], sym_result_array[1], sym_result_array[2])
+        mc1 = tool_box.data_fit(sym_result_array[0], sym_result_array[1], sym_result_array[2])
         sym_mc_array[0] = mc1[0]-1, mc1[1], mc1[2], mc1[3]
-        mc2 = tool_box.data_fit_numpy(sym_result_array[3], sym_result_array[4], sym_result_array[5])
+        mc2 = tool_box.data_fit(sym_result_array[3], sym_result_array[4], sym_result_array[5])
         sym_mc_array[1] = mc2[0]-1, mc2[1], mc2[2], mc2[3]
 
         h5f = h5py.File(result_name,"w")
@@ -204,6 +206,21 @@ else:
 
         mc_plot(mean_result_array, mean_mc_array,sym_result_array, sym_mc_array, result_img_name)
 
+        print("Mean:")
+        print(mean_mc_array)
+
+        print("SYM:")
+        print(sym_mc_array)
+
+        mc1 = tool_box.data_fit(mean_result_array[0], mean_result_array[1], mean_result_array[2])
+        mean_mc_array[0] = mc1[0]-1, mc1[1], mc1[2], mc1[3]
+        mc2 = tool_box.data_fit(mean_result_array[3], mean_result_array[4], mean_result_array[5])
+        mean_mc_array[1] = mc2[0]-1, mc2[1], mc2[2], mc2[3]
+
+        mc1 = tool_box.data_fit(sym_result_array[0], sym_result_array[1], sym_result_array[2])
+        sym_mc_array[0] = mc1[0]-1, mc1[1], mc1[2], mc1[3]
+        mc2 = tool_box.data_fit(sym_result_array[3], sym_result_array[4], sym_result_array[5])
+        sym_mc_array[1] = mc2[0]-1, mc2[1], mc2[2], mc2[3]
         print("Mean:")
         print(mean_mc_array)
 

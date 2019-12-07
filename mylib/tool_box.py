@@ -529,6 +529,7 @@ def mc_f(x,m,c):
     return (1+m)*x +c
 def data_fit_scipy(x_data, y_data, y_err):
     popt, pcov = scipy.optimize.curve_fit(mc_f, x_data, y_data, sigma=y_err)
+    #print(pcov)
     return popt[0], numpy.sqrt(numpy.diag(pcov))[0], popt[1], numpy.sqrt(numpy.diag(pcov))[1]
 
 def data_fit_numpy(x_data, y_data, y_err):

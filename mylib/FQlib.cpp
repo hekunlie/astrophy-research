@@ -2088,64 +2088,226 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	delete[] block_st;
 }
 
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, const int choice,const double max_scale)
+{
+	int i, j, k;
+	double step,chisq;
+
+	double *bins = new double[bin_num + 1];
+	double *gh_fit = new double[chi_fit_num];
+	double *chisq_fit = new double[chi_fit_num];
+
+
+	//double st1, st2, st3, st4, st5, st6;
+	//st1 = clock();
+	// set the bins for G1(2)
+	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
+	//std::cout<<"Bin:"<<std::endl;
+	//show_arr(bins, 1, bin_num + 1);
+
+	step = (right - left) / (chi_fit_num - 1);
+	for (i = 0; i < chi_fit_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	//std::cout<<"gh_fit"<<std::endl;
+	//show_arr(gh_fit,1,chi_fit_num);
+	for (i = 0; i < chi_fit_num; i++)
+	{	
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chisq);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		chisq_fit[i] = chisq;
+		if (chi_check)
+		{	// for checking
+			chi_check[i] = chisq;
+			chi_check[chi_fit_num + i] = gh_fit[i];
+		}
+	}
+	
+	//st4 = clock();
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, -1);
+
+	delete[] gh_fit;
+	delete[] chisq_fit;
+	delete[] bins;
+}
+
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,	const int chi_num_fit, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
-	
+	int max_iters = 12;
+
 	double *bins = new double[bin_num + 1];
-	double *temp = new double[data_num];
 	double *gh_fit = new double[chi_num_fit];
 	double *chisq_fit = new double[chi_num_fit];
 
+	// record the each g_left, chisq_left, g_right, chisq_right
+	int record_col = 4;
+	int left_tag=-1, right_tag=-1;
+	double fit_max_chisq;
+	double *search_vals = new double[(max_iters+1)*record_col]{};
+
 	int same = 0, iters = 0, change = 1;
 	double left = ini_left, right = ini_right, step;
-	double chi_left, chi_right, chi_mid;
-	double gh_left, gh_right, gh_mid;
+	double chi_left, chi_right, chi_mid, chi_left_mid, chi_right_mid;
+	double gh_left, gh_right, gh_mid, gh_left_mid, gh_right_mid;
+	double chisq_r1, chisq_r2;
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
 	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
 	//show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
-	while (change == 1)
+	// while (change == 1)
+	// {		
+	// 	change = 0;
+	// 	gh_mid = (left + right) *0.5;
+	// 	gh_left = left;
+	// 	gh_right = right;
+
+	// 	try
+	// 	{
+	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+	// 	}
+	// 	catch(const char *msg)
+	// 	{
+	// 		throw msg;
+	// 	}
+	// 	search_vals[iters*record_col] = gh_left;
+	// 	search_vals[iters*record_col+1] = chi_left;
+	// 	search_vals[iters*record_col+2] = gh_right;
+	// 	search_vals[iters*record_col+3] = chi_right;
+
+	// 	//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
+
+	// 	if (chi_left > chi_mid + chi_gap)
+	// 	{
+	// 		left = (gh_mid + gh_left) *0.5;
+	// 		change = 1;
+	// 	}
+	// 	if (chi_right > chi_mid + chi_gap)
+	// 	{
+	// 		right = (gh_mid + gh_right)*0.5;
+	// 		change = 1;
+	// 	}
+
+	// 	iters += 1;
+	// 	if (iters > max_iters)
+	// 	{
+	// 		break;
+	// 	}
+	// }
+	while (iters<=max_iters)
 	{		
-		change = 0;
 		gh_mid = (left + right) *0.5;
 		gh_left = left;
 		gh_right = right;
+		gh_left_mid = (gh_mid + gh_left)*0.5;
+		gh_right_mid = (gh_mid + gh_right)*0.5;
+
 		try
 		{
 			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left_mid, chi_left_mid);
 			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right_mid, chi_right_mid);
 			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
 		}
 		catch(const char *msg)
 		{
 			throw msg;
 		}
+
+		search_vals[iters*record_col] = left;
+		search_vals[iters*record_col+1] = chi_left;
+		search_vals[iters*record_col+2] = right;
+		search_vals[iters*record_col+3] = chi_right;
+		
 		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
-
-		if (chi_left > chi_mid + chi_gap)
+		if(chi_left <= chi_left_mid and chi_left < chi_mid and chi_left < chi_right_mid and chi_left < chi_right)
 		{
-			left = (gh_mid + gh_left) *0.5;
-			change = 1;
+			right = gh_left_mid;
+			chisq_r1 = chi_left;
+			chisq_r2 = chi_left_mid;
 		}
-		if (chi_right > chi_mid + chi_gap)
+		if(chi_left_mid <= chi_left and chi_left_mid <= chi_mid and chi_left_mid < chi_right_mid and chi_left_mid < chi_right)
 		{
-			right = (gh_mid + gh_right)*0.5;
-			change = 1;
+			right = gh_mid;
+			chisq_r1 = chi_left;
+			chisq_r2 = chi_mid;
 		}
-
+		if(chi_mid < chi_left and chi_mid <= chi_left_mid and chi_mid <= chi_right_mid and chi_mid < chi_right)
+		{
+			left = gh_left_mid;
+			right = gh_right_mid;
+			chisq_r1 = chi_left_mid;
+			chisq_r2 = chi_right_mid;
+		}
+		if(chi_right_mid < chi_left and chi_right_mid < chi_left_mid and chi_right_mid <= chi_mid and chi_right_mid <= chi_right)
+		{
+			left = gh_mid;
+			chisq_r1 = chi_mid;
+			chisq_r2 = chi_right;
+		}
+		if(chi_right < chi_left and chi_right < chi_left_mid and chi_right < chi_mid and chi_right <= chi_right_mid)
+		{
+			left = gh_right_mid;
+			chisq_r1 = chi_right_mid;
+			chisq_r2 = chi_right;
+		}	
 		iters += 1;
-		if (iters > 12)
-		{
+		if(fabs(left - right)<= 0.01)
+		{	
+			chi_left = chisq_r1;
+			chi_right = chisq_r2;
+			//std::cout<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<iters<<std::endl;
 			break;
-		}
+		}		
 	}
-	
+	if(iters <=0)
+	{
+		std::cout<<"Error! Can't find the fitting range!!!";
+		exit(0);
+	}
 	//std::cout << iters<<" "<< left << " " << right << std::endl;
 	//st3 = clock();
-	step = (right - left) / chi_num_fit;
+
+	// find the max chi_squared for fitting
+	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
+	
+	//std::cout<<"fit max "<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<fit_max_chisq<<" "<<chi_gap<<std::endl;
+
+	// for(i=0; i<iters; i++)
+	// {	
+	// 	if(search_vals[i*record_col+1] <= fit_max_chisq and left_tag < 0)
+	// 	{
+	// 		left_tag = i;			
+	// 	}
+	// 	if(search_vals[i*record_col+3] <= fit_max_chisq and right_tag < 0)
+	// 	{
+	// 		right_tag = i;
+	// 	}
+	// 	//std::cout<<left_tag<<" "<<right_tag<<std::endl;
+	// 	//show_arr(&search_vals[i*record_col],1,4);
+	// }
+
+	// if(left_tag < 0){left = search_vals[(iters-1)*record_col];}
+	// else{left = search_vals[left_tag*record_col];}
+
+	// if(right_tag < 0){right = search_vals[(iters-1)*record_col+2];}
+	// else{right = search_vals[right_tag*record_col+2];}
+
+	//std::cout<<left<<" "<<right<<std::endl;
+
+	step = (right - left) / (chi_num_fit - 1);
 	for (i = 0; i < chi_num_fit; i++)
 	{
 		gh_fit[i] = left + step * i;
@@ -2169,14 +2331,14 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_num_fit, gh, gh_sig, chi_gap);
+	fit_shear(gh_fit, chisq_fit, chi_num_fit, gh, gh_sig, -1);
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
 	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
 	delete[] gh_fit;
 	delete[] chisq_fit;
-	delete[] temp;
 	delete[] bins;
+	delete[] search_vals;
 }
 
 void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double d_chi)
