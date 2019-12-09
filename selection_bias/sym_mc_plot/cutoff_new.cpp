@@ -100,6 +100,7 @@ int main(int argc, char**argv)
 
 	double *mg1, *mg2, *mnu1, *mnu2;
 	double gh1, gh1_sig, gh2, gh2_sig;
+	double left, right;
 
 	double *cut_scale, *shear_result;
 	int *source_num;
@@ -279,7 +280,9 @@ int main(int argc, char**argv)
 			//find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
 
 			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
-			//find_shear_fit(mg1, mnu1, source_count, 8, chi_fit_num, chi_check, gh1-0.02, gh1+0.02, gh1, gh1_sig);
+			left = gh1 - 0.025;
+			right = gh1 + 0.025;
+			find_shear_fit(mg1, mnu1, source_count, 8, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
 		}
 		catch(const char *msg)
 		{
@@ -292,7 +295,9 @@ int main(int argc, char**argv)
 			//find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
 
 			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
-			//find_shear_fit(mg2, mnu2, source_count, 8, chi_fit_num, chi_check, gh2-0.02, gh2+0.02, gh2, gh2_sig);
+			left = gh2 - 0.025;
+			right = gh2 + 0.025;
+			find_shear_fit(mg2, mnu2, source_count, 8, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
 		}
 		catch(const char *msg)
 		{
