@@ -3,9 +3,8 @@
 #include<sstream>
 #include <ctime>
 #include <stdlib.h>
-#include "mpi.h"
+#include <hk_mpi.h>
 #include "FQlib.h"
-#include<hdf5.h>
 #include<cstdio>
 #include<string>
 #include<hk_iolib.h>
@@ -20,7 +19,7 @@ int main(int argc, char*argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-	para all_paras;
+	fq_paras all_paras;
 
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
@@ -35,7 +34,7 @@ int main(int argc, char*argv[])
 	std::string str_shear_path = str_data_path + "parameters/shear.dat";
 	sprintf(log_path, "%slogs/m_%02d.dat", data_path, rank);
 	
-	int num_p = 100, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
+	int num_p = 60, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;		
 	int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2, temp_s=rank, detect_label;
 	double max_radius=9, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
@@ -160,7 +159,7 @@ int main(int argc, char*argv[])
 
 			seed = rank * i + shear_id + 15115+i+temp_s;
 			temp_s++;
-			gsl_initialize(seed + i);
+			gsl_initialize(seed + i, 0);
 
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 
@@ -183,7 +182,7 @@ int main(int argc, char*argv[])
 				initialize_arr(pnoise, size*size, 0);
 				initialize_para(&all_paras);
 
-				create_points(point, num_p, max_radius);
+				create_points(point, num_p, max_radius, rng0);
 				flux_i = flux[i*stamp_num + j] / num_p;
 				// for measuring the intrinsic ellipticity
 				// circle PSF
@@ -197,7 +196,7 @@ int main(int argc, char*argv[])
 				// elliptical PSF
 				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
-				addnoise(gal, size*size, gal_noise_sig);
+				addnoise(gal, size*size, gal_noise_sig, rng0);
 
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 
@@ -207,7 +206,7 @@ int main(int argc, char*argv[])
 
 				snr_est(pgal, &all_paras, 2);
 
-				addnoise(noise, size*size, gal_noise_sig);
+				addnoise(noise, size*size, gal_noise_sig, rng0);
 				pow_spec(noise, pnoise, size, size);
 
 				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
@@ -234,7 +233,7 @@ int main(int argc, char*argv[])
 				data_s[row_s + j * snr_para_data_cols + 9] = detect_label;
 
 			}
-			gsl_free();
+			gsl_free(0);
 
 			// float array for saving disk volume
 			for (ib = 0; ib < stamp_nx*stamp_nx*size*size; ib++)

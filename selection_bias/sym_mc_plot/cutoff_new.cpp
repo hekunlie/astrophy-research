@@ -1,5 +1,6 @@
 #include<FQlib.h>
-#include<mpi.h>
+#include<hk_iolib.h>
+#include<hk_mpi.h>
 
 int main(int argc, char**argv)
 {
@@ -275,7 +276,10 @@ int main(int argc, char**argv)
 
 		try
         {
-			find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
+			//find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
+
+			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
+			//find_shear_fit(mg1, mnu1, source_count, 8, chi_fit_num, chi_check, gh1-0.02, gh1+0.02, gh1, gh1_sig);
 		}
 		catch(const char *msg)
 		{
@@ -285,7 +289,10 @@ int main(int argc, char**argv)
 		}
 		try
         {
-			find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
+			//find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
+
+			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
+			//find_shear_fit(mg2, mnu2, source_count, 8, chi_fit_num, chi_check, gh2-0.02, gh2+0.02, gh2, gh2_sig);
 		}
 		catch(const char *msg)
 		{
@@ -354,6 +361,10 @@ int main(int argc, char**argv)
 			mc2_array[i + cut_num * 3] = coeff[1];//c_sig
 		}
 		
+		std::cout<<"Result: "<<std::endl;
+		show_arr(mc1_array, 4, cut_num);
+		show_arr(mc2_array, 4, cut_num);
+
 		sprintf(result_path, "%s/result/cuts/sym/%s/%s/total.hdf5", total_path, filter_name, select_name);
 
 		// save the cutoff scales

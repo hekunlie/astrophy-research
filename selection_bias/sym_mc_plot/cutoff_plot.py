@@ -25,12 +25,10 @@ def mcplot(x, y, y_err, y_num, mc, cut_start, xylim, fig_ax):
 
     for j in range(len(x)):
         fig_ax.text(x[j], y[j], str(round(y_num[j] / 1000, 1)) + "K", color="red")
-    fig_ax.text(0.1, 0.85, 'm=' + str(round(mc[0], 6)) + '$\pm$' + str(round(mc[1], 6)), color='green', ha='left',
-            va='center', transform=fig_ax.transAxes, fontsize=20)
-    fig_ax.text(0.1, 0.8, 'c=' + str(round(mc[2], 6)) + '$\pm$' + str(round(mc[3], 6)), color='green', ha='left',
-            va='center', transform=fig_ax.transAxes, fontsize=20)
-    fig_ax.text(0.1, 0.75, " $\geq$ %.5f"%cut_start, color='green', ha='left', va='center',
-                transform=fig_ax.transAxes, fontsize=20)
+
+    text_str = 'm=%.6f (%.6f)\nc=%.6f (%.6f)\n$\geq$%.5f'%(mc[0], mc[1],mc[2],mc[3],cut_start)
+    fig_ax.text(0.1, 0.85,text_str , color='green', ha='left', va='center', transform=fig_ax.transAxes, fontsize=15)
+
     fig_ax.set_xlabel('True  g', fontsize=20)
     fig_ax.set_ylabel('Est  g', fontsize=20)
     fig_ax.legend(fontsize=15)
@@ -63,11 +61,11 @@ plt_range = [g1_plt_s, g1_plt_e, g2_plt_s, g2_plt_e]
 file_path = total_path + "/result/cuts/sym/%s/%s/"%(filter_name, select_name)
 h5f = h5py.File(file_path + "total.hdf5","r")
 
-mc1 = h5f["/mc1"].value
-mc2 = h5f["/mc2"].value
-results = h5f["/shear"].value
-num = h5f["/num"].value
-cut_scale = h5f["/cut_scale"].value
+mc1 = h5f["/mc1"][()]
+mc2 = h5f["/mc2"][()]
+results = h5f["/shear"][()]
+num = h5f["/num"][()]
+cut_scale = h5f["/cut_scale"][()]
 h5f.close()
 
 # the row labels are corresponding to the shears
@@ -102,7 +100,7 @@ pic_path = file_path + "cut_%d%s.png"%(rank, pic_mc)
 # if rank == 0:
 #     print(results)
 #     print(results.shape)
-img = Image_Plot(fig_x=10,fig_y=10)
+img = Image_Plot(fig_x=6,fig_y=5)
 img.subplots(1,2)
 
 mcplot(g1, results[:,rank], results[:,rank+cut_num], num[:,rank], e1mc,

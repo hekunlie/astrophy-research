@@ -268,7 +268,7 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	it's better to sum the sub-block and then add the these quantities together.
 */
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,const int choice=0,const double max_scale=100.);
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,const int choice=0,const double max_scale=100.);
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 // checked

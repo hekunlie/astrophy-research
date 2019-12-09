@@ -8,20 +8,21 @@ import numpy
 import h5py
 
 
-parent_path = "E:/works/Group_meeting/2019-11-25-shear_bias_checking"
+parent_path = "E:/works/Group_meeting/2019-11-25-shear_bias_checking/result/data_from_pi/3"
 img = Image_Plot(fig_x=6,fig_y=8, ypad=0.1)
 img.subplots(1,2)
 img.set_style()
 
-color_tag = [0,6,12]
+color_tag = [0]
 
 x = numpy.linspace(-1, 1, 100)
 pts_size = 7
-for i in range(16):
-
-    h5f = h5py.File(parent_path+"/result_%d.hdf5"%i,"r")
-    mc = h5f["/mc"].value
-    data = h5f["/data"].value
+for i in range(12):
+    if i>0:
+        h5f = h5py.File(parent_path+"/%d/result_noisy_bin_num_40.hdf5"%(i-1),"r")
+    else:
+        h5f = h5py.File(parent_path + "/result_all/result_noisy.hdf5", "r")
+    mc = h5f["/sym_mc"].value
     h5f.close()
 
     tag = 3*i + 2
@@ -33,9 +34,9 @@ for i in range(16):
     # m
     img.axs[0][0].fill_between(x, tag - 0.8, tag + 1.2, facecolor='grey', alpha=0.3)
 
-    img.axs[0][0].errorbar(mc[0,2]-1, tag, xerr=mc[0,3],c=color,
+    img.axs[0][0].errorbar(mc[0,0], tag, xerr=mc[0,1],c=color,
                            marker="v",mfc="none",capsize=img.cap_size,ms=pts_size)
-    img.axs[0][0].errorbar(mc[0,6]-1, tag+0.6, xerr=mc[0,7],c=color,
+    img.axs[0][0].errorbar(mc[1,0]-1, tag+0.6, xerr=mc[1,1],c=color,
                            marker="o",mfc="none",capsize=img.cap_size,ms=pts_size)
 
     img.axs[0][0].errorbar(mc[1,2]-1, tag, xerr=mc[1,3],c=color,
