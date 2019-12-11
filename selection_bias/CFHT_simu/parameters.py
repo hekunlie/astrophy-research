@@ -13,16 +13,13 @@ from mpi4py import MPI
 import h5py
 import time
 
-sect, source,loops = argv[1], argv[2], int(argv[3])
+para_path, loops = argv[1], int(argv[2])
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-envs_path = "%s/work/envs/envs.dat"%my_home
-para_path = tool_box.config(envs_path,["get"],[["%s"%sect,"%s_path_para"%source,"0"]])[0]
-
-para_ini_path = para_path+"para.ini"
+para_ini_path = para_path+"/para.ini"
 paras = tool_box.config(para_ini_path,["get",'get',"get",'get',"get",'get'],
                         [["para","total_num","0"],["para","stamp_size","0"],
                         ["para", "mag_s", "0"],["para","mag_e","0"],
@@ -40,8 +37,8 @@ comm.Barrier()
 pic = para_path + "/pic/ellip_%d.png"%rank
 plt.figure(figsize=(16,16))
 
-h5_path = para_path+'para_%d.hdf5'%rank
-para_logs_path = para_path + "logs/logs_%d.dat"%rank
+h5_path = para_path+'/para_%d.hdf5'%rank
+para_logs_path = para_path + "/logs/logs_%d.dat"%rank
 logger = tool_box.get_logger(para_logs_path)
 log_inform = "RANK: %d, LOOP: %d, TOTAL NUM: %d, NUM in LOOP: %d, " \
              "SIZEL %d, MAG: %f ~ %f, RADIUS: %.2f ~ %.2f\n"%(rank, loops, num, num_i, size, mag_s, mag_e, radius_s, radius_e)
@@ -252,7 +249,7 @@ comm.Barrier()
 # checking
 # if it shows a "m" or "c", run the code again with different seed
 if rank == 0:
-    shears = numpy.loadtxt(para_path + "shear.dat")
+    shears = numpy.loadtxt(para_path + "/shear.dat")
     g1_t = shears[:cpus]
     g2_t = shears[cpus:2*cpus]
 

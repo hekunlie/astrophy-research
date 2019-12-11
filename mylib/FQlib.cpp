@@ -163,7 +163,7 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
-	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+	flux_m = 1. / (Pi*scale*scale*(1. - pow(17, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 
 	rd = 1. / scale / scale;
 	for (i = 0; i < size; i++)
@@ -178,7 +178,7 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 			}
 			else              // Moffat PSF
 			{
-				if (rs <= 9.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+				if (rs <= 16.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 			}
 		}
 	}
@@ -236,7 +236,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	double r1, r2, n, flux_g, flux_m;
 	// |rot1, - rot2 |
 	// |rot2,  rot1  |
-	double rot1 = cos(rotate*Pi / 4.), rot2 = sin(rotate*Pi / 4.), val, rs, rd;
+	double rot1, rot2, val, rs, rd;
 	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
 	//double cent = size*0.5 - 0.5;
 	double cent = size*0.5;
@@ -244,7 +244,9 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	double *points_r = new double[num_p * 2];
 	/* rotate and shear */
 	if (rotate != 0)
-	{
+	{	
+		rot1 = cos(rotate*Pi / 4.);
+		rot2 = sin(rotate*Pi / 4.);
 		for (i = 0; i < num_p; i++)
 		{
 			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2*points[i + num_p]) + g2*(rot2 * points[i] + rot1*points[i + num_p]) + cent;
@@ -263,7 +265,10 @@ void convolve(double *in_img, const double * points, const double flux, const in
 
 	/*  convolve PSF and draw the image */
 	flux_g = flux / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
-	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+	/* \int_{0}^{alpha*rd}  PSF(r)_{moffat} = Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), beta = 3.5 for moffat*/
+	//flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
+	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(17, -2.5))*0.4);   /*  alpha = 4, beta = 3.5 */
+	
 	for (k = 0; k < num_p; k++)
 	{
 		for (i = 0; i < size; i++)  /* y coordinate */
@@ -278,7 +283,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 				}
 				else				// Moffat PSF
 				{
-					if (rs <= 9) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+					if (rs <= 16) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 				}
 			}
 		}
@@ -2164,114 +2169,114 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
 	//show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
-	while (change == 1)
-	{		
-		change = 0;
-		gh_mid = (left + right) *0.5;
-		gh_left = left;
-		gh_right = right;
-
-		try
-		{
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
-		}
-		catch(const char *msg)
-		{
-			throw msg;
-		}
-		search_vals[iters*record_col] = gh_left;
-		search_vals[iters*record_col+1] = chi_left;
-		search_vals[iters*record_col+2] = gh_right;
-		search_vals[iters*record_col+3] = chi_right;
-
-		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
-
-		if (chi_left > chi_mid + chi_gap)
-		{
-			left = (gh_mid + gh_left) *0.5;
-			change = 1;
-		}
-		if (chi_right > chi_mid + chi_gap)
-		{
-			right = (gh_mid + gh_right)*0.5;
-			change = 1;
-		}
-
-		iters += 1;
-		if (iters > max_iters)
-		{
-			break;
-		}
-	}
-	// while (iters<=max_iters)
+	// while (change == 1)
 	// {		
+	// 	change = 0;
 	// 	gh_mid = (left + right) *0.5;
 	// 	gh_left = left;
 	// 	gh_right = right;
-	// 	gh_left_mid = (gh_mid + gh_left)*0.5;
-	// 	gh_right_mid = (gh_mid + gh_right)*0.5;
 
 	// 	try
 	// 	{
 	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left_mid, chi_left_mid);
 	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right_mid, chi_right_mid);
 	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
 	// 	}
 	// 	catch(const char *msg)
 	// 	{
 	// 		throw msg;
 	// 	}
-
-	// 	search_vals[iters*record_col] = left;
+	// 	search_vals[iters*record_col] = gh_left;
 	// 	search_vals[iters*record_col+1] = chi_left;
-	// 	search_vals[iters*record_col+2] = right;
+	// 	search_vals[iters*record_col+2] = gh_right;
 	// 	search_vals[iters*record_col+3] = chi_right;
-		
+
 	// 	//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
-	// 	if(chi_left <= chi_left_mid and chi_left < chi_mid and chi_left < chi_right_mid and chi_left < chi_right)
+
+	// 	if (chi_left > chi_mid + chi_gap)
 	// 	{
-	// 		right = gh_left_mid;
-	// 		chisq_r1 = chi_left;
-	// 		chisq_r2 = chi_left_mid;
+	// 		left = (gh_mid + gh_left) *0.5;
+	// 		change = 1;
 	// 	}
-	// 	if(chi_left_mid <= chi_left and chi_left_mid <= chi_mid and chi_left_mid < chi_right_mid and chi_left_mid < chi_right)
+	// 	if (chi_right > chi_mid + chi_gap)
 	// 	{
-	// 		right = gh_mid;
-	// 		chisq_r1 = chi_left;
-	// 		chisq_r2 = chi_mid;
+	// 		right = (gh_mid + gh_right)*0.5;
+	// 		change = 1;
 	// 	}
-	// 	if(chi_mid < chi_left and chi_mid <= chi_left_mid and chi_mid <= chi_right_mid and chi_mid < chi_right)
-	// 	{
-	// 		left = gh_left_mid;
-	// 		right = gh_right_mid;
-	// 		chisq_r1 = chi_left_mid;
-	// 		chisq_r2 = chi_right_mid;
-	// 	}
-	// 	if(chi_right_mid < chi_left and chi_right_mid < chi_left_mid and chi_right_mid <= chi_mid and chi_right_mid <= chi_right)
-	// 	{
-	// 		left = gh_mid;
-	// 		chisq_r1 = chi_mid;
-	// 		chisq_r2 = chi_right;
-	// 	}
-	// 	if(chi_right < chi_left and chi_right < chi_left_mid and chi_right < chi_mid and chi_right <= chi_right_mid)
-	// 	{
-	// 		left = gh_right_mid;
-	// 		chisq_r1 = chi_right_mid;
-	// 		chisq_r2 = chi_right;
-	// 	}	
+
 	// 	iters += 1;
-	// 	if(fabs(left - right)<= 0.01)
-	// 	{	
-	// 		chi_left = chisq_r1;
-	// 		chi_right = chisq_r2;
-	// 		//std::cout<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<iters<<std::endl;
+	// 	if (iters > max_iters)
+	// 	{
 	// 		break;
-	// 	}		
+	// 	}
 	// }
+	while (iters<=max_iters)
+	{		
+		gh_mid = (left + right) *0.5;
+		gh_left = left;
+		gh_right = right;
+		gh_left_mid = (gh_mid + gh_left)*0.5;
+		gh_right_mid = (gh_mid + gh_right)*0.5;
+
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left_mid, chi_left_mid);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right_mid, chi_right_mid);
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+
+		search_vals[iters*record_col] = left;
+		search_vals[iters*record_col+1] = chi_left;
+		search_vals[iters*record_col+2] = right;
+		search_vals[iters*record_col+3] = chi_right;
+		
+		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
+		if(chi_left <= chi_left_mid and chi_left < chi_mid and chi_left < chi_right_mid and chi_left < chi_right)
+		{
+			right = gh_left_mid;
+			chisq_r1 = chi_left;
+			chisq_r2 = chi_left_mid;
+		}
+		if(chi_left_mid <= chi_left and chi_left_mid <= chi_mid and chi_left_mid < chi_right_mid and chi_left_mid < chi_right)
+		{
+			right = gh_mid;
+			chisq_r1 = chi_left;
+			chisq_r2 = chi_mid;
+		}
+		if(chi_mid < chi_left and chi_mid <= chi_left_mid and chi_mid <= chi_right_mid and chi_mid < chi_right)
+		{
+			left = gh_left_mid;
+			right = gh_right_mid;
+			chisq_r1 = chi_left_mid;
+			chisq_r2 = chi_right_mid;
+		}
+		if(chi_right_mid < chi_left and chi_right_mid < chi_left_mid and chi_right_mid <= chi_mid and chi_right_mid <= chi_right)
+		{
+			left = gh_mid;
+			chisq_r1 = chi_mid;
+			chisq_r2 = chi_right;
+		}
+		if(chi_right < chi_left and chi_right < chi_left_mid and chi_right < chi_mid and chi_right <= chi_right_mid)
+		{
+			left = gh_right_mid;
+			chisq_r1 = chi_right_mid;
+			chisq_r2 = chi_right;
+		}	
+		iters += 1;
+		if(fabs(left - right)<= 0.01)
+		{	
+			chi_left = chisq_r1;
+			chi_right = chisq_r2;
+			//std::cout<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<iters<<std::endl;
+			break;
+		}		
+	}
 	if(iters <=0)
 	{
 		std::cout<<"Error! Can't find the fitting range!!!";

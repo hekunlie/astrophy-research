@@ -92,14 +92,18 @@ if cmd == "stack":
     numpy.savez("./imgs/stack_result.npz", shears, result_stack, snr_stack)
 
     # plot
-    img = Image_Plot(fig_x=6, fig_y=4,ypad=0)
+    img = Image_Plot(fig_x=6, fig_y=4, ypad=0,xpad=0)
     img.subplots(2, 2)
     img.axis_type(0, "major")
     img.axis_type(1, "major")
     markers = ['o', 'v', 's', 'h', 'd', 'p', "4", "*", "X", "^", ">", "+"]
     colors = ["C%d" % i for i in range(10)]
-    plot_data = []
-    labels = ["P$_{k0}}$", "SNR$_S$", "SNR$_A$", "MAG_AUTO", "Resolution"]
+    plot_data = [result_stack[: flux_num],
+                 result_stack[3*flux_num: 4*flux_num],
+                 result_stack[2*flux_num: 3*flux_num],
+                 result_stack[flux_num: 2*flux_num],
+                 result_stack[4*flux_num: 5*flux_num]]
+    labels = ["P$_{k0}}$",  "MAG_AUTO", "SNR$_A$",  "SNR$_S$", "Resolution"]
 
     fmt = '%2.f%%'
 
@@ -132,23 +136,23 @@ if cmd == "stack":
             m, n = divmod(i-1, 2)
         for j in range(flux_num):
             snr_0 = snr_stack[j]
-            var_rate = result_stack[j + i * flux_num]
+            var_rate = plot_data[i][j]
+            #var_rate = result_stack[j + i * flux_num]
             # print(i,j,j + i * flux_num, snr_0)
             if snr_0 > 0:
                 idx = var_rate > -100
                 lb = "SNR = %.2f"%snr_0
                 img.axs[m][n].scatter(shears[idx], var_rate[idx], edgecolor=colors[j], s=80, label=lb,
                                       marker=markers[j], facecolor="none", linewidths=img.plt_line_width)
-        if i == 0 :
-            text_x, text_y = 0.045, 0.028
+        if i == 0:
+            text_x, text_y = 0.8, 0.9
         elif i == 1:
-            text_x, text_y = 0.04, 0.028
+            text_x, text_y = 0.7, 0.9
         elif i == 3:
-            text_x, text_y = 0.02, 0.028
+            text_x, text_y = 0.8, 0.9
         else:
-            text_x, text_y = 0, 0.028
-        img.axs[m][n].text(text_x, text_y, labels[i], color='k', ha='left', va='center',
-                           fontsize=img.legend_size+3)
+            text_x, text_y = 0.6, 0.9
+        img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size+3)
     ys = [0,0]
     for i in range(4):
         m, n = divmod(i, 2)
@@ -158,15 +162,18 @@ if cmd == "stack":
         if ys_[0] < ys[0]:
             ys[0] = ys_[0]
     x_ticks = numpy.linspace(-0.06, 0.06, 5)
-    y_ticks = numpy.linspace(-0.03, 0.03, 5)
 
     for i in range(4):
         m,n = divmod(i,2)
-
-        img.axs[m][n].set_ylim(-0.032, 0.036)
+        if i < 2:
+            img.axs[m][n].set_ylim(-0.0033, 0.0033)
+            img.axs[m][n].set_yticks(numpy.linspace(-0.003, 0.003, 5))
+        else:
+            img.axs[m][n].set_ylim(-0.032, 0.036)
+            img.axs[m][n].set_yticks(numpy.linspace(-0.03, 0.03, 5))
         img.axs[m][n].set_xlim(-0.075, 0.075)
         img.axs[m][n].set_xticks(x_ticks)
-        img.axs[m][n].set_yticks(y_ticks)
+
         if i == 0:
             img.axs[m][n].legend(fontsize=img.legend_size+1, loc="upper left", frameon=False)
 

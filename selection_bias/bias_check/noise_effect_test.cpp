@@ -150,7 +150,7 @@ int main(int argc, char*argv[])
 	sub_noise_free_data = new double[gather_count[rank]]{};
 	sub_noise_residual_data = new double[gather_count[rank]]{};
 
-		// seed distribution, different thread gets different seed
+	// seed distribution, different thread gets different seed
 	seed_step = 2;
 	sss1 = 4*seed_step*shear_pairs*scatter_count[0]/stamp_num;
 	seed_pts = sss1*rank + 1 + 100;

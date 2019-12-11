@@ -13,17 +13,17 @@ import h5py
 
 matplotlib.rcParams["font.family"] = "serif"
 
-source_b = "pts_bright"
-source_f = "pts_dimmer"
+source_b = "galsim_bright"
+source_f = "galsim_dimmer"
 # final pic name
-pic_nm = "pts_mc.pdf"
+pic_nm = "gal_mc.pdf"
 pic_nm_png = pic_nm.split(".")[0]+".png"
 # the bright source
 total_path_1 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_b
-data_path_1 = total_path_1 + "cuts/sym/sex2_1.5/"
+data_path_1 = total_path_1 + "cuts_2019_12_9/sym/sex2_1.5/"
 # the faint source
 total_path_2 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_f
-data_path_2 = total_path_2 + "cuts/sym/sex2_1.5/"
+data_path_2 = total_path_2 + "cuts_2019_12_9/sym/sex2_1.5/"
 
 names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "Resolution"]
 files = ["flux2_ex1", "mag_auto", "mag_true", "snr_sex", "rfactor"]
@@ -44,14 +44,14 @@ img.axis_type(1,"major",tick_len=8, tick_width=2)
 
 
 # pts sample
-text_pos = [[6, 1.],[6, 1.],[6, 1.6],[6, 1.6]]
-sample_name = ["PI sample","PI sample","PII sample","PII sample"]
-xy_lims = [(-3.5, 1.5),(-3.1, 1.5),(-4.98, 2.3),(-4.9, 2.3)]
+# text_pos = [[6, 1.],[6, 1.],[6, 1.6],[6, 1.6]]
+# sample_name = ["PI sample","PI sample","PII sample","PII sample"]
+# xy_lims = [(-2.9, 1.4),(-2.9, 1.8),(-4.98, 2.6),(-4.9, 2.6)]
 
 # galsim sample
-# text_pos = [[6, 0.7],[6, 0.7],[6, 0.7],[6, 0.7]]
-# sample_name = ["GI sample","GI sample","GII sample","GII sample"]
-# xy_lims = [(-1.1, 1.1),(-1.1, 1.1),(-2, 1.1),(-2, 1.1)]
+text_pos = [[6, 0.7],[6, 0.7],[6, 0.7],[6, 0.7]]
+sample_name = ["GI sample","GI sample","GII sample","GII sample"]
+xy_lims = [(-0.85, 0.9),(-0.91, 0.9),(-2, 1.1),(-2, 1.1)]
 
 for j in range(4):
 
@@ -60,7 +60,7 @@ for j in range(4):
         h5f_all = h5py.File(total_path_1 + "data/shear_result.hdf5", "r")
     else:
         h5f_all = h5py.File(total_path_2 + "data/shear_result.hdf5", "r")
-    mc_all = h5f_all["/mc%d" % (col + 1)].value
+    mc_all = h5f_all["/mc%d" % (col + 1)][()]
     h5f_all.close()
 
     img.axs[row][col].errorbar(x_coord[0], mc_all[0]*100, mc_all[1]*100, c="grey", capsize=img.cap_size,
@@ -75,7 +75,7 @@ for j in range(4):
             # data = numpy.load(data_path_2 + files[i] + "/total.npz")
             h5f = h5py.File(data_path_2 + files[i] + "/total.hdf5", "r")
 
-        mc = h5f["/mc%d"%(col+1)].value[:,ch]
+        mc = h5f["/mc%d"%(col+1)][()][:,ch]
         h5f.close()
 
         img.axs[row][col].errorbar(x_coord, 100 * mc[0], 100 * mc[1], c=colors[i], linewidth=img.plt_line_width-0.25,

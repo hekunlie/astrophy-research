@@ -203,8 +203,8 @@ int main(int argc, char**argv)
         // PDF_SYM
         try
         {
-            //find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chi_check, chi_check_num);
-            find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
+            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chi_check, chi_check_num);
+            //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g1[(i-shear_st)*2*chi_check_num + k] = chi_check[k];
@@ -219,8 +219,8 @@ int main(int argc, char**argv)
         right_guess = gh2 + fit_range[fit_range_label];
         try
         {
-            //find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chi_check, chi_check_num);
-            find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
+            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chi_check, chi_check_num);
+            //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g2[(i-shear_st)*2*chi_check_num + k] = chi_check[k];
@@ -317,7 +317,7 @@ int main(int argc, char**argv)
         std::cout<<"PDF_SYM: m & c"<<std::endl;
         show_arr(pdf_mc, 2, 4);
 
-        sprintf(result_path, "%s/result/result_bin_num_%d_fit_%d.hdf5", parent_path,  mg_bin_num, fit_range_label);
+        sprintf(result_path, "%s/shear_result.hdf5", parent_path,  mg_bin_num, fit_range_label);
         //sprintf(result_path, "%s/result/result_%s_bin_num_%d.hdf5", parent_path, data_type, mg_bin_num);
 
         
@@ -331,7 +331,7 @@ int main(int argc, char**argv)
             result_arr[5*shear_num + i] = result_all_mean[i*result_col+3];
         }        
         sprintf(set_name,"/mean_result");
-        //write_h5(result_path, set_name, result_arr, 6, shear_num, true);
+        write_h5(result_path, set_name, result_arr, 6, shear_num, true);
 
         for (i=0;i<shear_num;i++)
         {
@@ -343,15 +343,19 @@ int main(int argc, char**argv)
             result_arr[5*shear_num + i] = result_all_pdf[i*result_col+3];
         }
         sprintf(set_name,"/sym_result");
-        //write_h5(result_path, set_name, result_arr, 6, shear_num, false);
+        write_h5(result_path, set_name, result_arr, 6, shear_num, false);
         sprintf(set_name,"/mean_mc");
-        //write_h5(result_path,set_name, mean_mc, 2, 4, false);
+        write_h5(result_path,set_name, mean_mc, 2, 4, false);
         sprintf(set_name,"/sym_mc");
-        //write_h5(result_path,set_name, pdf_mc, 2, 4, false);
+        write_h5(result_path,set_name, pdf_mc, 2, 4, false);
+        sprintf(set_name,"/mc1");
+        write_h5(result_path,set_name, pdf_mc, 1, 4, false);
+        sprintf(set_name,"/mc2");
+        write_h5(result_path,set_name, &pdf_mc[4], 1, 4, false);
         sprintf(set_name,"/chisq_g1");
-        //write_h5(result_path,set_name, total_chi_check_g1, shear_num, 2*chi_check_num, false);
+        write_h5(result_path,set_name, total_chi_check_g1, shear_num, 2*chi_check_num, false);
         sprintf(set_name,"/chisq_g2");
-        //write_h5(result_path,set_name, total_chi_check_g2, shear_num, 2*chi_check_num, false);
+        write_h5(result_path,set_name, total_chi_check_g2, shear_num, 2*chi_check_num, false);
 
         delete[] result_arr;
         delete[] mean_mc;

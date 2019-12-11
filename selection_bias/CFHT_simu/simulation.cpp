@@ -28,43 +28,62 @@ int main(int argc, char*argv[])
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 	
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/simu_test/";
-	std::string str_paraf_path = str_data_path + "parameters/para.ini";
-	std::string str_shear_path = str_data_path + "parameters/shear.dat";
-	sprintf(log_path, "%slogs/m_%02d.dat", data_path, rank);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test_1");
+	//sprintf(data_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/simu/simu_test_1");
+
+	std::string str_data_path;
+	char_to_str(data_path, str_data_path);
+	sprintf(shear_path,"%s/parameters/shear.hdf5",data_path);	
+	std::string str_para_path = str_data_path + "/parameters/para.ini";
+	sprintf(log_path, "%s/logs/m_%02d.dat", data_path, rank);
 	
-	int num_p = 60, size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
-	int stamp_num = 10000, stamp_nx, shear_esti_data_cols = 7, snr_para_data_cols = 10;		
-	int row, row_s, seed, chip_id_s, chip_id_e, shear_id, psf_type = 2, temp_s=rank, detect_label;
-	double max_radius=9, psf_scale=4., psf_thres_scale = 2., sig_level = 1.5, psf_noise_sig = 0, gal_noise_sig, psf_peak = 0, flux_i, mag_i;
 	int i, j, k, ib;
 	int sss1, sss2;
+	int seed, seed_step;
+
+	int total_chips, chip_num, shear_pairs, data_row, total_data_row;
+	int stamp_num, stamp_nx, size, num_p;		
+	int row, row_s, shear_esti_data_cols, snr_para_data_cols;
+	int chip_id_s, chip_id_e, shear_id, psf_type, temp_s, detect_label;
+	double max_radius, psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, psf_peak, flux_i, mag_i;
+
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 
-	if (0 == rank)
-	{
-		for (i = 0; i < numprocs; i++)
-		{
-			sprintf(finish_path, "/home/hkli/work/test/job/debug/finish_%d.dat", i);
-			if (remove(finish_path))
-			{
-				std::cout << "REMOVE: " << finish_path << std::endl;
-			}
-			else
-			{
-				std::cout << "FAILURE REMOVE: " << finish_path << std::endl;
-			}
-		}
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	num_p = 50;
+	stamp_num = 10000;
+	shear_esti_data_cols = 7;
+	snr_para_data_cols = 10;
 
-	read_para(str_paraf_path, str_stampsize, size);
-	read_para(str_paraf_path, str_total_num, total_chips);
-	read_para(str_paraf_path, str_noise, gal_noise_sig);
-	read_para(str_paraf_path, str_shear_num, shear_pairs);
-	read_para(str_paraf_path, str_nx, stamp_nx);
+	max_radius=8;
+	psf_scale=4.;
+	psf_type = 2;
+	psf_thresh_scale = 2.;
+	sig_level = 1.5;
+	psf_noise_sig = 0;
+	psf_peak = 0;
+	// if (0 == rank)
+	// {
+	// 	for (i = 0; i < numprocs; i++)
+	// 	{
+	// 		sprintf(finish_path, "/home/hkli/work/test/job/debug/finish_%d.dat", i);
+	// 		if (remove(finish_path))
+	// 		{
+	// 			std::cout << "REMOVE: " << finish_path << std::endl;
+	// 		}
+	// 		else
+	// 		{
+	// 			std::cout << "FAILURE REMOVE: " << finish_path << std::endl;
+	// 		}
+	// 	}
+	// }
+	// MPI_Barrier(MPI_COMM_WORLD);
+
+	read_para(str_para_path, str_stampsize, size);
+	read_para(str_para_path, str_total_num, total_chips);
+	read_para(str_para_path, str_noise, gal_noise_sig);
+	read_para(str_para_path, str_shear_num, shear_pairs);
+	read_para(str_para_path, str_nx, stamp_nx);
 
 	chip_num = total_chips / numprocs;
 	total_data_row = total_chips * stamp_num;
@@ -85,22 +104,22 @@ int main(int argc, char*argv[])
 
 	initialize_para(&all_paras);
 	
-	double *big_img = new double[stamp_nx*stamp_nx*size*size]();
-	float *big_img_buffer = new float[stamp_nx*stamp_nx*size*size]();
-	double *point = new double[2 * num_p]();
-	double *gal = new double[size*size]();
-	double *pgal = new double[size*size]();
-	double *psf = new double[size*size]();
-	double *ppsf = new double[size*size]();
-	double *noise = new double[size*size]();
-	double *pnoise = new double[size*size]();
-	double *shear = new double[2 * shear_pairs](); // [...g1,...,..g2,...]
-	int *mask = new int[size*size]();
+	double *big_img = new double[stamp_nx*stamp_nx*size*size]{};
+	float *big_img_buffer = new float[stamp_nx*stamp_nx*size*size]{};
+	double *point = new double[2 * num_p]{};
+	double *gal = new double[size*size]{};
+	double *pgal = new double[size*size]{};
+	double *psf = new double[size*size]{};
+	double *ppsf = new double[size*size]{};
+	double *noise = new double[size*size]{};
+	double *pnoise = new double[size*size]{};
+	double *shear = new double[2 * shear_pairs]{}; // [...g1,...,..g2,...]
+	int *mask = new int[size*size]{};
 
 	// the shear estimators data matrix  
-	double *data = new double[data_row*shear_esti_data_cols]();
+	double *data = new double[data_row*shear_esti_data_cols]{};
 	// the snr parameters data matrix 
-	double *data_s = new double[data_row*snr_para_data_cols]();
+	double *data_s = new double[data_row*snr_para_data_cols]{};
 	double *recvbuf, *recvbuf_s;
 	double *flux = new double[total_data_row];
 	double *mag = new double[total_data_row];
@@ -110,7 +129,12 @@ int main(int argc, char*argv[])
 		recvbuf_s = new double[total_chips*stamp_num*snr_para_data_cols];
 	}
 
-	read_text(str_shear_path, shear, 2*shear_pairs);
+	double *g1_t = new double[shear_pairs]{};
+	double *g2_t = new double[shear_pairs]{};
+	sprintf(set_1,"/g1");
+	read_h5(shear_path, set_1, g1_t);
+	sprintf(set_1,"/g2");
+	read_h5(shear_path, set_1, g2_t);
 
 	// circle PSF
 	create_psf(psf, psf_scale, size, psf_type);
@@ -122,7 +146,7 @@ int main(int argc, char*argv[])
 	//create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
 
 	pow_spec(psf, ppsf, size, size);
-	get_psf_radius(ppsf, &all_paras, psf_thres_scale);
+	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 	if (0 == rank)
 	{
 		std::cout << data_path << std::endl;
@@ -133,43 +157,47 @@ int main(int argc, char*argv[])
 		write_fits(buffer,psf, size, size);
 	}
 
+	seed_step = 2;
+	sss1 = 4*seed_step*shear_pairs*total_chips;
+	seed = sss1*rank + 1 + 7000;
+
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{
 		ts = clock();
 
-		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f ", size, total_chips, numprocs, num_p, gal_noise_sig);
+		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f", size, total_chips, numprocs, num_p, gal_noise_sig);
 		write_log(log_path, log_inform);
 		sprintf(log_inform, "PSF scale: %.2f, max radius: %.2f", psf_scale, max_radius);
 		write_log(log_path, log_inform);
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d", rank, shear_id, chip_id_s, chip_id_e);
 		write_log(log_path, log_inform);
 
-		sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
+		sprintf(para_path, "%s/parameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_1, "/flux");
 		sprintf(set_2, "/mag");
 		read_h5(para_path, set_1, flux);
 		read_h5(para_path, set_2, mag);
 
-		g1 = shear[shear_id];
-		g2 = shear[shear_id + shear_pairs];
+		g1 = g1_t[shear_id];
+		g2 = g2_t[shear_id];
 
 		for (i = chip_id_s; i < chip_id_e; i++)
 		{
 			t1 = clock();
-
-			seed = rank * i + shear_id + 15115+i+temp_s;
-			temp_s++;
-			gsl_initialize(seed + i, 0);
+			
+			gsl_initialize(seed, 0);
+			gsl_initialize(seed, 1);
 
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %04d, start.", rank,shear_id, i);
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d: (%.4f, %.4f), chip: %04d, seed: %d. start.", rank, shear_id, g1, g2, i, seed);
 			write_log(log_path, log_inform);
 			if (0 == rank)
 			{
 				std::cout << log_inform << std::endl;
 			}
 
+			seed += seed_step;
 			row = (i - chip_id_s) *stamp_num*shear_esti_data_cols;
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;
 
@@ -186,7 +214,7 @@ int main(int argc, char*argv[])
 				flux_i = flux[i*stamp_num + j] / num_p;
 				// for measuring the intrinsic ellipticity
 				// circle PSF
-				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
+				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, &all_paras);
 				// elliptical PSF
 				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
@@ -196,7 +224,7 @@ int main(int argc, char*argv[])
 				// elliptical PSF
 				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
-				addnoise(gal, size*size, gal_noise_sig, rng0);
+				addnoise(gal, size*size, gal_noise_sig, rng1);
 
 				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
 
@@ -206,14 +234,14 @@ int main(int argc, char*argv[])
 
 				snr_est(pgal, &all_paras, 2);
 
-				addnoise(noise, size*size, gal_noise_sig, rng0);
+				addnoise(noise, size*size, gal_noise_sig, rng1);
 				pow_spec(noise, pnoise, size, size);
 
 				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
 				shear_est(pgal, ppsf, &all_paras);
 
-				data[row + j * shear_esti_data_cols + 0] = all_paras.gal_e1;
-				data[row + j * shear_esti_data_cols + 1] = all_paras.gal_e2;
+				data[row + j * shear_esti_data_cols + 0] = 0;
+				data[row + j * shear_esti_data_cols + 1] = 0;
 				data[row + j * shear_esti_data_cols + 2] = all_paras.n1;
 				data[row + j * shear_esti_data_cols + 3] = all_paras.n2;
 				data[row + j * shear_esti_data_cols + 4] = all_paras.dn;
@@ -234,13 +262,14 @@ int main(int argc, char*argv[])
 
 			}
 			gsl_free(0);
+			gsl_free(1);
 
 			// float array for saving disk volume
 			for (ib = 0; ib < stamp_nx*stamp_nx*size*size; ib++)
 			{
 				big_img_buffer[ib] = big_img[ib];
 			}
-			sprintf(chip_path, "!%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
+			sprintf(chip_path, "!%s/%d/gal_chip_%04d.fits", data_path, shear_id, i);
 			write_fits(chip_path, big_img_buffer, stamp_nx*size, stamp_nx*size);
 
 			t2 = clock();
@@ -263,7 +292,7 @@ int main(int argc, char*argv[])
 		MPI_Gather(data, data_row*shear_esti_data_cols, MPI_DOUBLE, recvbuf, data_row*shear_esti_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == rank)
 		{
-			sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
+			sprintf(h5_path, "%s/result/data/data_%d.hdf5", data_path, shear_id);
 			write_h5(h5_path, set_1, recvbuf, total_data_row, shear_esti_data_cols, TRUE);
 		}
 
@@ -272,13 +301,13 @@ int main(int argc, char*argv[])
 		MPI_Gather(data_s, data_row*snr_para_data_cols, MPI_DOUBLE, recvbuf_s, data_row*snr_para_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == rank)
 		{
-			sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
+			sprintf(snr_h5_path, "%s/result/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
 			write_h5(snr_h5_path, set_1, recvbuf_s, total_data_row, snr_para_data_cols, TRUE);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-	sprintf(log_path, "/home/hkli/work/test/job/debug/finish_%d.dat", rank);
-	write_log(log_path, log_path);
+	// sprintf(log_path, "/home/hkli/work/test/job/debug/finish_%d.dat", rank);
+	// write_log(log_path, log_path);
 
 	if (0 == rank)
 	{
