@@ -46,10 +46,11 @@ filter_name = argv[2]
 select_name = argv[3]
 
 
-shear_path = total_path + "/parameters/shear.npz"
-g1 = numpy.load(shear_path)["arr_0"]
-g2 = numpy.load(shear_path)["arr_1"]
-
+shear_path = total_path + "/parameters/shear.hdf5"
+h5f = h5py.File(shear_path,"r")
+g1 = h5f["/g1"][()]
+g2 = h5f["/g2"][()]
+h5f.close()
 # range of plot
 g1_extr = [g1.min(), g1.max()]
 g2_extr = [g2.min(), g2.max()]

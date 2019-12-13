@@ -22,18 +22,15 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-cmd, source, sex_filter, max_distance = argv[1], argv[2], argv[3], float(argv[4])
+cmd, total_path, sex_filter, max_distance = argv[1], argv[2], argv[3], float(argv[4])
 
-ini_path = "%s/work/envs/envs.dat"%my_home
 log_name = "./m2_log.dat"
 logger = tool_box.get_logger(log_name)
-total_path, para_path = tool_box.config(ini_path, ['get', 'get'],
-                                                   [['selection_bias', "%s_path"%source, '1'],
-                                                    ['selection_bias', "%s_path_para"%source, '1']])
-
-para_contents = [["para","total_num",1], ["para","stamp_size",1],
-                 ["para", "stamp_col", 1], ["para","shear_num",1]]
-para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get'], para_contents)
+para_path = total_path + "/parameters"
+# print(total_path, para_path)
+para_contents = [["para", "total_num", 1], ["para", "stamp_size", 1],
+                 ["para", "stamp_col", 1], ["para", "shear_num", 1]]
+para_items = tool_box.config(para_path+"/para.ini", ['get', 'get', 'get', 'get'], para_contents)
 
 chip_num = int(para_items[0])
 size = int(para_items[1])
@@ -52,16 +49,16 @@ x_idx = 5
 y_idx = 6
 if rank == 0:
     log = "START: operation: %s, source: %s, code: %s"\
-          %(argv[1], total_path.split("/")[-2], argv[0])
+          %(argv[1], total_path.split("/")[-1], argv[0])
     logger.info(log)
 
-total_fits_path = [total_path + "%d/gal_chip_%04d.fits"%(i, j) for i in range(shear_num) for j in range(chip_num)]
-total_cat_paths = [total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j)
+total_fits_path = [total_path + "/%d/gal_chip_%04d.fits"%(i, j) for i in range(shear_num) for j in range(chip_num)]
+total_cat_paths = [total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j)
                    for i in range(shear_num) for j in range(chip_num)]
 allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
 allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
 if rank == 0:
-    cat_path = total_path + "result/data/%s/cat/"%sex_filter
+    cat_path = total_path + "/result/data/%s/cat/"%sex_filter
     if not os.path.exists(cat_path):
         os.mkdir(cat_path)
 comm.Barrier()
@@ -77,18 +74,18 @@ if cmd == "snr":
         a.wait()
 
 if cmd == "add" and rank < shear_num:
-    snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
+    snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * gal_num, 7))
     for i in range(chip_num):
-        cat_path = total_path + "result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
+        cat_path = total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
-        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, size/2-0.5, size/2-0.5,6, 5, 4, max_distance)
+        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, size/2, size/2, 6, 5, 4, max_distance)
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
     numpy.savez(snr_data_path, snr_data)
 
 if cmd == "check" and rank < shear_num:
     # check
-    check_path = total_path + "result/data/check/%s/"%sex_filter
+    check_path = total_path + "/result/data/check/%s/"%sex_filter
     if rank == 0:
         if not os.path.exists(check_path):
             # os.removedirs(check_path)
@@ -100,13 +97,13 @@ if cmd == "check" and rank < shear_num:
     # so a judge of the 'cmd' is not need
     comm.Barrier()
 
-    input_para_path = para_path + "para_%d.hdf5"%rank
+    input_para_path = para_path + "/para_%d.hdf5"%rank
     para_h5 = h5py.File(input_para_path, "r")
     input_mag = para_h5["/mag"].value
     input_flux = para_h5["/flux"].value
     para_h5.close()
 
-    snr_data_path = total_path + "result/data/%s/sex_%d.npz" %(sex_filter, rank)
+    snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.load(snr_data_path)["arr_0"]
     sex_snr = snr_data[:, snr_idx]
     sex_mag = snr_data[:, mag_auto_idx]
@@ -139,7 +136,7 @@ if cmd == "check" and rank < shear_num:
     plt.xlabel("INPUT MAG")
 
     sig_level = float(sex_filter.split("_")[1])
-    meas_para_path = total_path + "result/data/data_%.1fsig/data_%d.hdf5" % (sig_level, rank)
+    meas_para_path = total_path + "/result/data/data_%.1fsig/data_%d.hdf5" % (sig_level, rank)
     if os.path.exists(meas_para_path):
         meas_para = h5py.File(meas_para_path, "r")
         f_data = meas_para["data"].value
@@ -178,8 +175,8 @@ if cmd == "check" and rank < shear_num:
     print(cmd, rank)
 t2 = time.time()
 if rank == 0:
-    log = "END:   operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
-          %(argv[1], total_path.split("/")[-2], max_distance, size, sex_filter, t2-t1, argv[0])
+    log = "END. operation: %s, source: %s, max radius: %.2f, stamp size: %d, filter: %s, time: %.2f, code: %s"\
+          %(argv[1], total_path.split("/")[-1], max_distance, size, sex_filter, t2-t1, argv[0])
     logger.info(log)
 
 

@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<hk_iolib.h>
 #include<hk_mpi.h>
-#define PDF_SYM_RANGE
+#define PDF_SYM
 
 int main(int argc, char**argv)
 {
@@ -283,11 +283,11 @@ int main(int argc, char**argv)
 			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
 			left = gh1 - 0.025;
 			right = gh1 + 0.025;
-			find_shear_fit(mg1, mnu1, source_count, 8, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
+			find_shear_fit(mg1, mnu1, source_count, 40, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
 #endif
 #ifdef PDF_SYM
 			if(i == 0){std::cout<<"PDF_SYM"<<std::endl;}	
-			find_shear(mg1, mnu1, source_count, 8, gh1, gh1_sig, chi_check, chi_fit_num);
+			find_shear(mg1, mnu1, source_count, 40, gh1, gh1_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN	
 			if(i == 0){std::cout<<"MEAN"<<std::endl;}		
@@ -306,10 +306,10 @@ int main(int argc, char**argv)
 			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
 			left = gh2 - 0.025;
 			right = gh2 + 0.025;
-			find_shear_fit(mg2, mnu2, source_count, 8, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
+			find_shear_fit(mg2, mnu2, source_count, 40, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
 #endif
 #ifdef PDF_SYM
-			find_shear(mg2, mnu2, source_count, 8, gh2, gh2_sig, chi_check, chi_fit_num);
+			find_shear(mg2, mnu2, source_count, 40, gh2, gh2_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN
 			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);

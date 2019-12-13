@@ -7,10 +7,10 @@ import os
 # total_path = "/mnt/perc/hklee/selection_bias/"
 total_path = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/"
 
-sources = ["galsim_dimmer", "pts_bright", "pts_dimmer"]
+sources = ["pts_bright_new", "pts_dimmer_new"]
 
 filter_name = ["sex2_1.5", "sex4_1.5", "sex2_2", "sex4_2", "sex2_4", "sex4_4"]
-cuts = ["mag_true"]#"mag_auto", "rfactor", "flux2_ex1", "flux2_ex2", "flux2_ex3", "snr_sex","snr_auto"]
+cuts = ["mag_true", "mag_auto", "rfactor", "flux2_ex1", "flux2_ex2", "flux2_ex3", "snr_sex","snr_auto"]
 
 
 for s, source in enumerate(sources):
@@ -18,7 +18,7 @@ for s, source in enumerate(sources):
         for i in range(len(cuts)):
 
             t1 = time.time()
-            cmd = "mpirun -np 20 /home/hkli/work/selection_bias/sym_mc_plot/cutoff %s %s %s"%\
+            cmd = "mpirun -np 50 /home/hkli/work/selection_bias/sym_mc_plot/cutoff %s %s %s"%\
                   (total_path+source, filter_name[f], cuts[i])
             print("START: %s"%source)
             a = Popen(cmd, shell=True)
@@ -27,6 +27,6 @@ for s, source in enumerate(sources):
             print("END: %s, %.2f sec"%(source, t2-t1))
 
             print("Plot %s %s %s"%(source,filter_name[f],cuts[i]))
-            cmd = " mpirun -np 10 python cutoff_plot.py %s%s %s %s"%(total_path,source,filter_name[f],cuts[i])
+            cmd = " mpirun -np 10 python cutoff_plot.py %s%s %s %s"%(total_path, source,filter_name[f],cuts[i])
             a = Popen(cmd, shell=True)
             a.wait()

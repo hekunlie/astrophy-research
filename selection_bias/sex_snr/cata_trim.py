@@ -36,7 +36,7 @@ y_idx = 6
 
 fourier_path = "%s/result/data/data_1.5sig/data_%d.hdf5"%(total_path,rank)
 h5f = h5py.File(fourier_path,"r")
-fourier_data = h5f["/data"].value
+fourier_data = h5f["/data"][()]
 h5f.close()
 
 pk0 = fourier_data[:,4]

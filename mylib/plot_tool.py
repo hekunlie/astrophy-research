@@ -126,8 +126,7 @@ class Image_Plot:
             self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha,  va=va,
                               transform=self.axs[iy][ix].transAxes, fontsize=text_fontsize)
         else:
-            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va,
-                                  transform=self.axs[iy][ix].transAxes, fontsize=text_fontsize)
+            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va, fontsize=text_fontsize)
 
 
     def del_tick(self, iy, ix, axis_nm, box=None):

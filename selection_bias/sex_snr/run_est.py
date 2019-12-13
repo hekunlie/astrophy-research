@@ -7,22 +7,19 @@ import numpy
 import tool_box
 import time
 
-sources = ["dimmer"]
+sources = ["/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/pts_dimmer_new",
+           "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/pts_bright_new"]
 max_radius = 6
-cpus = 40
+cpus = 60
 num = 40
 jobs = numpy.zeros((num, 1))
 
 t1 = time.time()
 for source in sources:
 
-    envs_path = "%s/work/envs/envs.dat" % my_home
-    get_contents = [['selection_bias', "%s_path_para" % source, '1']]
-    para_path = tool_box.config(envs_path, ['get'], get_contents)[0]
-
     # the parameters
     para_contents = [["para", "noise_sig", 1], ["para","shear_num",1]]
-    para_items = tool_box.config(para_path + "para.ini", ['get',"get"], para_contents)
+    para_items = tool_box.config(source + "/parameters/para.ini", ['get',"get"], para_contents)
 
     noise_sig = float(para_items[0])
     shear_num = int(para_items[1])
@@ -63,7 +60,7 @@ for source in sources:
         a.wait()
 
         # add the data in .cat files to the final catalogs
-        cmd = "mpirun -np %d python snr_est.py add %s %s %.1f"%(shear_num,source, filter_name, max_radius)
+        cmd = "mpirun -np %d python snr_est.py add %s %s %.1f"%(shear_num, source, filter_name, max_radius)
         a = Popen(cmd, shell=True)
         a.wait()
 
@@ -72,9 +69,9 @@ for source in sources:
         a = Popen(cmd, shell=True)
         a.wait()
 
-    # cmd = "mpirun -np %d python cata_trim.py %s" % (shear_num, source)
-    # a = Popen(cmd, shell=True)
-    # a.wait()
+    cmd = "mpirun -np %d python cata_trim.py %s" % (shear_num, source)
+    a = Popen(cmd, shell=True)
+    a.wait()
 
 t2 = time.time()
 print("SNR EST: ",sources, cpus, t2-t1)

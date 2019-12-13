@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 
 # data_path, shear_num = argv[1], int(argv[2])
 
-shear_num = 11
+shear_num = 51
 data_path = "D:/"
 
-g1 = numpy.linspace(-0.02, 0.02, shear_num)
-g2 = numpy.linspace(-0.02, 0.02, shear_num)
-
+g1 = numpy.linspace(-0.05, 0.05, shear_num)
+g2 = numpy.linspace(-0.05, 0.05, shear_num)
+print(g1)
 numpy.random.shuffle(g1)
 print(g1)
 numpy.random.shuffle(g2)
