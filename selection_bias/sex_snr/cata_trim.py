@@ -60,7 +60,7 @@ for nm in filter_name:
     # true magnitude
     h5path = total_path + "/parameters/para_%d.hdf5"%rank
     h5f = h5py.File(h5path,"r")
-    mag_true = h5f["/mag"].value
+    mag_true = h5f["/mag"][()]
     mag_true.shape = (mag_true.shape[0],)
     h5f.close()
     h5path = total_path + "/result/data/%s/mag_true_%d.hdf5"%(nm,rank)
