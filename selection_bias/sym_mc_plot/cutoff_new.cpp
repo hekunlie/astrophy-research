@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<hk_iolib.h>
 #include<hk_mpi.h>
-#define PDF_SYM_RANGE
+#define PDF_SYM
 
 int main(int argc, char**argv)
 {
