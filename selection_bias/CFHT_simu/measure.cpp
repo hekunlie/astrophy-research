@@ -1,12 +1,7 @@
-﻿#include <cstring>
-#include<sstream>
-#include <ctime>
-#include <stdlib.h>
-#include "mpi.h"
-#include<hdf5.h>
-#include<stdio.h>
-#include<string>
-#include "FQlib.h"
+﻿#include<stdlib.h>
+#include<hk_mpi.h>
+#include<hk_iolib.h>
+#include<FQlib.h>
 
 int main(int argc, char*argv[])
 {
@@ -17,14 +12,15 @@ int main(int argc, char*argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
-	para all_paras;
+
+	fq_paras all_paras;
 	std::ifstream fin;
 	std::string s, str_stampsize = "stamp_size", str_total_num = "total_num", str_noise = "noise_sig", str_shear_num = "shear_num", str_nx = "stamp_col";
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/");
-	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/selection_bias_real_dimmer/";
-	std::string str_paraf_path = str_data_path + "parameters/para.ini";
-	sprintf(log_path, "%slogs/m_%02d.dat", data_path, myid);
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/galsim_dimmer");
+	std::string str_data_path = "/mnt/ddnfs/data_users/hkli/galsim_dimmer";
+	std::string str_para_path = str_data_path + "/parameters/para.ini";
+	sprintf(log_path, "%s/logs/m_%02d.dat", data_path, myid);
 
 	std::string detect_info;
 
@@ -35,11 +31,11 @@ int main(int argc, char*argv[])
 
 	int cmd = 0;
 
-	read_para(str_paraf_path, str_stampsize, size);
-	read_para(str_paraf_path, str_total_num, total_chips);
-	read_para(str_paraf_path, str_noise, gal_noise_sig);
-	read_para(str_paraf_path, str_shear_num, shear_pairs);
-	read_para(str_paraf_path, str_nx, stamp_nx);
+	read_para(str_para_path, str_stampsize, size);
+	read_para(str_para_path, str_total_num, total_chips);
+	read_para(str_para_path, str_noise, gal_noise_sig);
+	read_para(str_para_path, str_shear_num, shear_pairs);
+	read_para(str_para_path, str_nx, stamp_nx);
 
 	chip_num = total_chips / numprocs;
 	total_data_row = total_chips * stamp_num;
@@ -61,7 +57,7 @@ int main(int argc, char*argv[])
 			std::cout << "OPERATION: detect , SIG_LEVEL: " << sig_level << " sigma(" << gal_noise_sig << ")" << std::endl;
 		}
 		std::cout << "Total chip: " << total_chips<<", Total cpus: "<<numprocs <<", Stamp size: "<<size <<std::endl;
-		sprintf(log_inform, "RANK: %03d,  thread: %d, total cips: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
+		sprintf(log_inform, "RANK: %03d,  thread: %d, total cpus: %d, individual chip: %d , size：%d, stamp_col: %d", myid, numprocs, total_chips, chip_num, size, stamp_nx);
 		write_log(log_path, log_inform);
 	}
 
@@ -101,12 +97,12 @@ int main(int argc, char*argv[])
 	//sprintf(set_name, "/data");
 	//read_h5(coeff_path, set_name, coeff, NULL, NULL, NULL, NULL);
 
-	sprintf(chip_path, "%spsf.fits", data_path);
+	sprintf(chip_path, "%s/psf.fits", data_path);
 	read_fits(chip_path, psf);
 	pow_spec(psf, ppsf, size, size);
 
-	seed = 12300;
-	gsl_initialize(seed);	
+	seed = 120;
+	gsl_initialize(seed,0);	
 
 	//addnoise(noise, size*size, gal_noise_sig);
 	//pow_spec(noise, pnoise, size, size);	
@@ -117,11 +113,11 @@ int main(int argc, char*argv[])
 
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
-	gsl_free();
+	gsl_free(0);
 
 	if (0 == myid)
 	{
-		std::cout << "PSF THRES: " << all_paras.psf_pow_thresh << std::endl << all_paras.psf_hlr << std::endl;
+		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << std::endl << all_paras.psf_hlr << std::endl;
 	}
 
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
@@ -130,7 +126,7 @@ int main(int argc, char*argv[])
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d, total chips: %d (%d cpus)", myid, shear_id, chip_id_s, chip_id_e, total_chips, numprocs);
 		write_log(log_path, log_inform);
 		
-		sprintf(para_path, "%sparameters/para_%d.hdf5", data_path, shear_id);
+		sprintf(para_path, "%s/parameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_name, "/mag");
 		read_h5(para_path, set_name, mag);
 		
@@ -148,7 +144,7 @@ int main(int argc, char*argv[])
 		{
 			seed = myid * i + shear_id + 1+ i + temp_s;
 			temp_s++;
-			gsl_initialize(seed);
+			gsl_initialize(seed,0);
 			t1 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip start...", myid, shear_id, i);
 			write_log(log_path, log_inform);
@@ -157,7 +153,7 @@ int main(int argc, char*argv[])
 				std::cout << log_inform << std::endl;
 			}
 
-			sprintf(chip_path, "%s%d/gal_chip_%04d.fits", data_path, shear_id, i);
+			sprintf(chip_path, "%s/%d/gal_chip_%04d.fits", data_path, shear_id, i);
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 			initialize_arr(check_img, stamp_nx*stamp_nx*size*size, 0);
 
@@ -189,7 +185,7 @@ int main(int argc, char*argv[])
 
 				if (cmd == 0)
 				{
-					addnoise(noise, size*size, gal_noise_sig);
+					addnoise(noise, size*size, gal_noise_sig, rng0);
 					pow_spec(noise, pnoise, size, size);
 					//smooth(pnoise, ppsf, coeff, &all_paras);
 					//smooth(pgal, ppsf, coeff, &all_paras);
@@ -227,7 +223,7 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-			gsl_free();
+			gsl_free(0);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		sprintf(set_name, "/data");
@@ -237,7 +233,7 @@ int main(int argc, char*argv[])
 			MPI_Gather(data, data_row*shear_esti_data_cols, MPI_DOUBLE, recvbuf, data_row*shear_esti_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			if (0 == myid)
 			{
-				sprintf(h5_path, "%sresult/data/data_%d.hdf5", data_path, shear_id);
+				sprintf(h5_path, "%s/result/data/data_%d.hdf5", data_path, shear_id);
 				write_h5(h5_path, set_name, recvbuf, total_data_row, shear_esti_data_cols,TRUE);
 			}
 		}
@@ -246,7 +242,7 @@ int main(int argc, char*argv[])
 		MPI_Gather(data_s, data_row*snr_para_data_cols, MPI_DOUBLE, recvbuf_s, data_row*snr_para_data_cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		if (0 == myid)
 		{
-			sprintf(snr_h5_path, "%sresult/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
+			sprintf(snr_h5_path, "%s/result/data/data_%.1fsig/data_%d.hdf5", data_path, sig_level, shear_id);
 			write_h5(snr_h5_path, set_name, recvbuf_s, total_data_row, snr_para_data_cols, TRUE);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
