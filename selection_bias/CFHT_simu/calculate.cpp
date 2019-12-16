@@ -317,7 +317,7 @@ int main(int argc, char**argv)
         std::cout<<"PDF_SYM: m & c"<<std::endl;
         show_arr(pdf_mc, 2, 4);
 
-        sprintf(result_path, "%s/shear_result.hdf5", parent_path,  mg_bin_num, fit_range_label);
+        sprintf(result_path, "%s/shear_result.hdf5", parent_path);
         //sprintf(result_path, "%s/result/result_%s_bin_num_%d.hdf5", parent_path, data_type, mg_bin_num);
 
         

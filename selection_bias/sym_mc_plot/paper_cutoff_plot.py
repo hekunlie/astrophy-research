@@ -16,14 +16,19 @@ matplotlib.rcParams["font.family"] = "serif"
 source_b = "galsim_bright"
 source_f = "galsim_dimmer"
 # final pic name
-pic_nm = "gal_mc.pdf"
+pic_nm = "gal_mc_original_pdf.pdf"
 pic_nm_png = pic_nm.split(".")[0]+".png"
+# the file name
+file_name = "cuts_bk_2019_12_9_original_pdf/"
+sex_filter_name = "sym/sex2_1.5/"
+# result file of all source
+shear_result_all = file_name + "shear_result.hdf5"
 # the bright source
 total_path_1 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_b
-data_path_1 = total_path_1 + "cuts_2019_12_9/sym/sex2_1.5/"
+data_path_1 = total_path_1 + file_name + sex_filter_name
 # the faint source
 total_path_2 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_f
-data_path_2 = total_path_2 + "cuts_2019_12_9/sym/sex2_1.5/"
+data_path_2 = total_path_2 + file_name + sex_filter_name
 
 names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "Resolution"]
 files = ["flux2_ex1", "mag_auto", "mag_true", "snr_sex", "rfactor"]
@@ -43,7 +48,7 @@ img.axis_type(0,"major",tick_len=8, tick_width=2)
 img.axis_type(1,"major",tick_len=8, tick_width=2)
 
 
-# pts sample
+# # pts sample
 # text_pos = [[6, 1.],[6, 1.],[6, 1.6],[6, 1.6]]
 # sample_name = ["PI sample","PI sample","PII sample","PII sample"]
 # xy_lims = [(-2.9, 1.4),(-2.9, 1.8),(-4.98, 2.6),(-4.9, 2.6)]
@@ -57,9 +62,9 @@ for j in range(4):
 
     row, col = divmod(j, 2)
     if row == 0:
-        h5f_all = h5py.File(total_path_1 + "data/shear_result.hdf5", "r")
+        h5f_all = h5py.File(total_path_1 + shear_result_all, "r")
     else:
-        h5f_all = h5py.File(total_path_2 + "data/shear_result.hdf5", "r")
+        h5f_all = h5py.File(total_path_2 + shear_result_all, "r")
     mc_all = h5f_all["/mc%d" % (col + 1)][()]
     h5f_all.close()
 
@@ -98,7 +103,7 @@ for j in range(4):
     #     img.axs[row][col].set_yticklabels([])
 
     if j == 0:
-        img.axs[row][col].legend(ncol=6, fontsize=img.legend_size, loc='upper left', bbox_to_anchor=(0.15,1.15))
+        img.axs[row][col].legend(ncol=6, fontsize=img.legend_size-2,loc='upper left', bbox_to_anchor=(0.11,1.17))
 
     img.axs[row][col].set_ylim(xy_lims[j])
     img.axs[row][col].text(text_pos[j][0], text_pos[j][1], sample_name[j], color='k', ha='left', va='center',

@@ -418,6 +418,9 @@ class Fourier_Quad:
                 arr[j*self.size:(j+1)*self.size, i*self.size:(i+1)*self.size] = image_array[tag]
         return arr
 
+    def stack_new(self, image_array, stamp, iy, ix):
+        image_array[iy * self.size:(iy + 1) * self.size, ix * self.size:(ix + 1) * self.size] = stamp
+
     def fit(self, star_stamp, noise_stamp, star_data, mode=1):
         psf_pool = self.segment(star_stamp)
         noise_pool = self.segment(noise_stamp)

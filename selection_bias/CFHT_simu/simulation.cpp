@@ -153,7 +153,7 @@ int main(int argc, char*argv[])
 		std::cout << "PSF THRES: " << all_paras.psf_pow_thresh << "PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius << ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 		std::cout << "Total chip: " << total_chips << ", Total cpus: " << numprocs << ", Stamp size: " << size << std::endl;
-		sprintf(buffer, "!%spsf.fits", data_path);
+		sprintf(buffer, "!%s/psf.fits", data_path);
 		write_fits(buffer,psf, size, size);
 	}
 

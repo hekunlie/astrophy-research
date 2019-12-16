@@ -18,20 +18,18 @@ cpus = comm.Get_size()
 
 ts = time.clock()
 
-source = argv[1]
+total_path = argv[1]
+source = total_path.split("/")[-1]
+result_path = total_path + "/result"
+para_path = total_path + "/parameters"
+log_path = total_path + "/logs"
 
-envs_path = "%s/work/envs/envs.dat" % my_home
-get_contents = [['selection_bias', "%s_path" % source, '1'], ['selection_bias', "%s_path_result" % source, '1'],
-                ['selection_bias', "%s_path_para" % source, '1'], ['selection_bias', "%s_path_log" % source, '1']]
-path_items = tool_box.config(envs_path, ['get', 'get', 'get', 'get'], get_contents)
-total_path, result_path, para_path, log_path = path_items
-
-logger = tool_box.get_logger(log_path + "%d_logs.dat" % rank)
+logger = tool_box.get_logger(log_path + "/%d_logs.dat" % rank)
 
 # the parameters
 para_contents = [["para","total_num",1], ["para","stamp_size",1], ["para", "stamp_col", 1], ["para","shear_num",1],
                  ["para","noise_sig",1], ["para", "pixel_scale", 1]]
-para_items = tool_box.config(para_path+"para.ini", ['get', 'get', 'get', 'get', 'get', 'get'], para_contents)
+para_items = tool_box.config(para_path+"/para.ini", ['get', 'get', 'get', 'get', 'get', 'get'], para_contents)
 
 total_chips_num = int(para_items[0])
 stamp_size = int(para_items[1])
@@ -41,29 +39,29 @@ noise_sig = int(para_items[4])
 pixel_scale = float(para_items[5])
 stamp_num = 10000
 
-finish_path = "%s/work/test/job/%s/finish_%d.dat"%(my_home, source, rank)
-if rank == 0:
-    indicator = "%s/work/test/job/%s"%(my_home, source)
-    if os.path.exists(indicator):
-        shutil.rmtree(indicator)
-    os.makedirs(indicator)
-comm.Barrier()
+# finish_path = "%s/work/test/job/%s/finish_%d.dat"%(my_home, source, rank)
+# if rank == 0:
+#     indicator = "%s/work/test/job/%s"%(my_home, source)
+#     if os.path.exists(indicator):
+#         shutil.rmtree(indicator)
+#     os.makedirs(indicator)
+# comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
 seed_ini = numpy.random.randint(1, 1000000, size=cpus)[rank]
-rng_ini = numpy.random.RandomState(seed_ini)
-seeds = rng_ini.randint(0, 10000000, size=100000)
+rng_ini = numpy.random.RandomState(seed_ini+rank)
+seeds = rng_ini.randint(0, 10000000, size=100000)+1
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seeds[0])
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.8)#.shear(g=0.05, beta=0.25*numpy.pi*galsim.radians)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4)#.shear(g=0.05, beta=0.25*numpy.pi*galsim.radians)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
     hdu = fits.PrimaryHDU(psf_img.array)
-    psf_path = total_path + 'psf.fits'
+    psf_path = total_path + '/psf.fits'
     hdu.writeto(psf_path, overwrite=True)
     logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
                 %(source,stamp_size, pixel_scale, noise_sig, total_chips_num))
@@ -74,20 +72,28 @@ chip_tags = [i for i in range(total_chips_num)]
 chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
 
 counts = 0
-for shear_id in range(shear_num):
-    shear_cata = para_path + "shear.npz"
-    shear = numpy.load(shear_cata)
-    g1 = shear["arr_0"][shear_id]
-    g2 = shear["arr_1"][shear_id]
 
-    paras = para_path + "para_%d.hdf5" % shear_id
-    f = h5py.File(paras, 'r')
-    e1s = f["/e1"].value
-    e2s = f["/e2"].value
-    radius = f["/radius"].value
-    flux = f["/flux"].value
-    fbt = f['/btr'].value
-    gal_profile = f["/type"].value
+shear_cata = para_path + "/shear.hdf5"
+h5f = h5py.File(shear_cata, "r")
+g1_input = h5f["/g1"][()]
+g2_input = h5f["/g2"][()]
+h5f.close()
+
+img_buffer = numpy.zeros((ny, nx))
+for shear_id in range(shear_num):
+
+    g1 = g1_input[shear_id]
+    g2 = g2_input[shear_id]
+
+    paras = para_path + "/para_%d.hdf5" % shear_id
+    h5f = h5py.File(paras, 'r')
+    e1s = h5f["/e1"][()]
+    e2s = h5f["/e2"][()]
+    radius = h5f["/radius"][()]
+    flux = h5f["/flux"][()]
+    fbt = h5f['/btr'][()]
+    gal_profile = h5f["/type"][()]
+    h5f.close()
 
     # for checking
     logger.info("SHEAR ID: %02d, RANk: %02d, e1s: %.3f, e2s: %.3f, radius: %.2f, fbt: %.2f"
@@ -100,21 +106,21 @@ for shear_id in range(shear_num):
         rng = numpy.random.RandomState(seeds[counts])
         counts += 1
 
-        chip_path = total_path + "%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
+        chip_path = total_path + "/%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
         gal_pool = []
         logger.info("SHEAR ID: %02d, Start the %04d's chip.." % (shear_id, chip_tag))
 
         para_n = chip_tag * stamp_num
 
         for k in range(stamp_num):
-            e1 = e1s[para_n + k, 0]
-            e2 = e2s[para_n + k, 0]
-            gal_flux = flux[para_n + k, 0]
-            ra = radius[para_n + k, 0]
-            btr = fbt[para_n + k, 0]
+            e1 = e1s[para_n + k]
+            e2 = e2s[para_n + k]
+            gal_flux = flux[para_n + k]
+            ra = radius[para_n + k]
+            btr = fbt[para_n + k]
 
             # regular galaxy
-            c_profile = gal_profile[para_n + k, 0]
+            c_profile = gal_profile[para_n + k]
             if c_profile == 1:
                 gal = galsim.DeVaucouleurs(half_light_radius=ra, trunc=4.5 * ra,flux=1.0)
             else:
@@ -134,19 +140,20 @@ for shear_id in range(shear_num):
 
             img = galsim.ImageD(stamp_size, stamp_size)
             gal_c.drawImage(image=img, scale=pixel_scale)
-            gal_pool.append(img.array)
+            # gal_pool.append(img.array)
+            iy, ix = divmod(k, stamp_col)
+            fq.stack_new(img_buffer, img.array, iy, ix)
 
         noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
-        big_chip = fq.stack(gal_pool, stamp_col) + noise_img
-        big_chip = numpy.float32(big_chip)
+        big_chip = numpy.float32(img_buffer + noise_img)
         hdu = fits.PrimaryHDU(big_chip)
         hdu.writeto(chip_path, overwrite=True)
         t2 = time.clock()
         logger.info("SHEAR ID: %02d, Finish the %04d's chip in %.2f sec" % (shear_id, chip_tag, t2 - t1))
 
 
-with open(finish_path, "w") as f:
-    f.write("done")
+# with open(finish_path, "w") as f:
+#     f.write("done")
 
 te = time.clock()
 logger.info("Used %.2f sec. %s" % (te - ts, total_path))

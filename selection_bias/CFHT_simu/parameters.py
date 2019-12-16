@@ -43,7 +43,7 @@ logger = tool_box.get_logger(para_logs_path)
 log_inform = "RANK: %d, LOOP: %d, TOTAL NUM: %d, NUM in LOOP: %d, " \
              "SIZEL %d, MAG: %f ~ %f, RADIUS: %.2f ~ %.2f\n"%(rank, loops, num, num_i, size, mag_s, mag_e, radius_s, radius_e)
 logger.info(log_inform)
-f = h5py.File(h5_path,"w")
+h5f = h5py.File(h5_path,"w")
 
 
 itemsize = MPI.DOUBLE.Get_size()
@@ -173,10 +173,10 @@ for i in range(cpus):
         print("Rank: %3d, mean(e1): %10.6f, std: %.4f, mean(e2): %10.6f, std: %.4f, max: %.5f, %.5f"
               %(rank, numpy.mean(e1), numpy.std(e1), numpy.mean(e2), numpy.std(e2), numpy.max(e1), numpy.max(e2)))
         comm.Barrier()
-f["/e1"] = e1
-f["/e2"] = e2
-f["/e"] = e
-f["/type"] = gal_type
+h5f["/e1"] = e1[:,0]
+h5f["/e2"] = e2[:,0]
+h5f["/e"] = e[:,0]
+h5f["/type"] = gal_type[:,0]
 
 mean_e[rank,0] = e1.mean()
 mean_e[rank,1] = e2.mean()
@@ -196,8 +196,8 @@ for i in range(loops):
     log_inform = "MAGNITUDE loop: %d, min(mag): %.2f, max(mag): %.2f\n"%(i, mag_i.min(), mag_i.max())
     logger.info(log_inform)
 
-f["/flux"] = flux
-f["/mag"] = mag
+h5f["/flux"] = flux[:,0]
+h5f["/mag"] = mag[:,0]
 plt.subplot(337)
 plt.title("MAG")
 plt.hist(mag, 100)
@@ -219,7 +219,7 @@ for i in range(loops):
 
     log_inform = "RADIUS loop: %d, min: %.2f, max: %.2f\n"%(i, radius_i.min(), radius_i.max())
     logger.info(log_inform)
-f["/radius"] = radius
+h5f["/radius"] = radius[:,0]
 plt.subplot(338)
 plt.title("Radius")
 plt.hist(radius, 100)
@@ -242,16 +242,17 @@ plt.hist(btr, 100)
 plt.savefig(pic)
 plt.close()
 
-f["/btr"] = btr
-f.close()
+h5f["/btr"] = btr[:,0]
+h5f.close()
 
 comm.Barrier()
 # checking
 # if it shows a "m" or "c", run the code again with different seed
 if rank == 0:
-    shears = numpy.loadtxt(para_path + "/shear.dat")
-    g1_t = shears[:cpus]
-    g2_t = shears[cpus:2*cpus]
+    h5f = h5py.File(para_path + "/shear.hdf5")
+    g1_t = h5f["/g1"][()]
+    g2_t = h5f["/g2"][()]
+    h5f.close()
 
     mc1 = tool_box.data_fit(g1_t, mean_e[:,0], sig_e[:,0]/numpy.sqrt(num*stamp_num))
     mc2 = tool_box.data_fit(g2_t, mean_e[:,1], sig_e[:,1]/numpy.sqrt(num*stamp_num))
