@@ -143,7 +143,7 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 /********************************************************************************************************************************************/
 /* operations on the image */
 /********************************************************************************************************************************************/
-void create_points(double *point, const int num_p, const double radius, const gsl_rng *gsl_rand_rng);
+void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
 void create_psf(double*in_img, const double scale, const int size, const int psf);

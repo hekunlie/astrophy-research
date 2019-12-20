@@ -81,11 +81,15 @@ g2_input = h5f["/g2"][()]
 h5f.close()
 
 img_buffer = numpy.zeros((ny, nx))
+
+max_writer = 20
+my_rank_range = divmod(rank, max_writer)[0]
+max_range = divmod(cpus, max_writer)[0]+1
+
 for shear_id in range(shear_num):
 
     g1 = g1_input[shear_id]
     g2 = g2_input[shear_id]
-
     paras = para_path + "/para_%d.hdf5" % shear_id
     h5f = h5py.File(paras, 'r')
     e1s = h5f["/e1"][()]
@@ -95,12 +99,25 @@ for shear_id in range(shear_num):
     fbt = h5f['/btr'][()]
     gal_profile = h5f["/type"][()]
     h5f.close()
+    # for m in range(max_range):
+    #     if m == my_rank_range:
+    #         paras = para_path + "/para_%d.hdf5" % shear_id
+    #         h5f = h5py.File(paras, 'r')
+    #         e1s = h5f["/e1"][()]
+    #         e2s = h5f["/e2"][()]
+    #         radius = h5f["/radius"][()]
+    #         flux = h5f["/flux"][()]
+    #         fbt = h5f['/btr'][()]
+    #         gal_profile = h5f["/type"][()]
+    #         h5f.close()
+    #     comm.Barrier()
+    # comm.Barrier()
 
     # for checking
     logger.info("SHEAR ID: %02d, RANk: %02d, e1s: %.3f, e2s: %.3f, radius: %.2f, fbt: %.2f"
                 %(shear_id, rank, e1s[int(0.5*total_gal_num)], e2s[int(0.9*total_gal_num)],
                   radius[int(0.1*total_gal_num)], fbt[int(0.99*total_gal_num)]))
-
+    img_buffer[:,:]=0
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
@@ -108,7 +125,7 @@ for shear_id in range(shear_num):
         counts += 1
 
         chip_path = total_path + "/%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
-        gal_pool = []
+        #gal_pool = []
         logger.info("SHEAR ID: %02d, Start the %04d's chip. seed: %.d" % (shear_id, chip_tag,seeds[counts]))
 
         para_n = chip_tag * stamp_num
@@ -145,14 +162,25 @@ for shear_id in range(shear_num):
             iy, ix = divmod(k, stamp_col)
             fq.stack_new(img_buffer, img.array, iy, ix)
 
-        noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
+        # noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
         # big_chip = numpy.float32(img_buffer + noise_img)
-        big_chip = img_buffer + noise_img
-        hdu = fits.PrimaryHDU(big_chip)
+        # big_chip = img_buffer + noise_img
+        hdu = fits.PrimaryHDU(img_buffer)
         hdu.writeto(chip_path, overwrite=True)
+        # h5f = h5py.File(chip_path,"w")
+        # h5f["/data"] = img_buffer
+        # h5f.close()
         t2 = time.clock()
         logger.info("SHEAR ID: %02d, Finish the %04d's chip in %.2f sec" % (shear_id, chip_tag, t2 - t1))
-
+    #     for m in range(max_range):
+    #         if m == my_rank_range:
+    #             hdu = fits.PrimaryHDU(img_buffer)
+    #             hdu.writeto(chip_path, overwrite=True)
+    #             t2 = time.clock()
+    #             logger.info("SHEAR ID: %02d, Finish the %04d's chip in %.2f sec" % (shear_id, chip_tag, t2 - t1))
+    #         comm.Barrier()
+    #
+    # comm.Barrier()
 
 # with open(finish_path, "w") as f:
 #     f.write("done")

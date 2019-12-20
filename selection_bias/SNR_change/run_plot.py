@@ -92,8 +92,10 @@ if cmd == "stack":
     numpy.savez("./imgs/stack_result.npz", shears, result_stack, snr_stack)
 
     # plot
-    img = Image_Plot(fig_x=6, fig_y=4, ypad=0,xpad=0)
+    img = Image_Plot(fig_x=6, fig_y=4, ypad=0.22,xpad=0)
     img.subplots(2, 2)
+    img.set_style_default()
+    img.set_style()
     img.axis_type(0, "major")
     img.axis_type(1, "major")
     markers = ['o', 'v', 's', 'h', 'd', 'p', "4", "*", "X", "^", ">", "+"]
@@ -120,11 +122,12 @@ if cmd == "stack":
             img.axs[m][n].set_ylabel("Variation rate", fontsize=img.xy_lb_size+2)
         else:
             img.axs[m][n].set_yticklabels([])
-        if m == 0:
-            img.axs[m][n].set_xticklabels([])
+        # if m == 0:
+        #     img.axs[m][n].set_xticklabels([])
 
-        if i == 3 or i == 4:
-            img.axs[m][n].set_xlabel("$g_1$", fontsize=img.xy_lb_size+2)
+        # if i == 3 or i == 4:
+        #     img.axs[m][n].set_xlabel("$g_1$", fontsize=img.xy_lb_size+2)
+        img.axs[m][n].set_xlabel("$g_1$", fontsize=img.xy_lb_size+2)
 
 
     for i in range(snr_num):
@@ -147,7 +150,7 @@ if cmd == "stack":
         if i == 0:
             text_x, text_y = 0.8, 0.9
         elif i == 1:
-            text_x, text_y = 0.7, 0.9
+            text_x, text_y = 0.68, 0.9
         elif i == 3:
             text_x, text_y = 0.8, 0.9
         else:

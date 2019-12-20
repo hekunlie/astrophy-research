@@ -97,21 +97,21 @@ void segment(const int *chip, int *stamp, const int tag, const int size, const i
 }
 
 
-void create_points(double *point, const int num_p, const double radius, const gsl_rng *gsl_rand_rng)
+void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng)
 {	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
 	int i;
-	double x = 0., y = 0., xm = 0., ym = 0., theta, step;
+	double x = 0., y = 0., xm = 0., ym = 0., theta;
 
 	for (i = 0; i < num_p; i++)
 	{
 		theta = 2.*Pi*gsl_rng_uniform(gsl_rand_rng);
 		//step = 1*gsl_rng_uniform(rng);
-		x += cos(theta);//*step;
-		y += sin(theta);//*step;
+		x += cos(theta)*step;
+		y += sin(theta)*step;
 		if (x*x + y*y > radius*radius)
 		{
-			x = cos(theta);//*step;
-			y = sin(theta);//*step;
+			x = cos(theta)*step;
+			y = sin(theta)*step;
 		}
 		point[i] = x;
 		point[i + num_p] = y;
@@ -124,10 +124,12 @@ void create_points(double *point, const int num_p, const double radius, const gs
 	//y = sin(theta);
 
 	/* move the mass center of the points cluster to (0,0) */
+	xm /= num_p;
+	ym /= num_p;
 	for (i = 0; i < num_p; i++)
 	{
-		point[i] = point[i] - xm / num_p;
-		point[i + num_p] = point[i + num_p] - ym / num_p;
+		point[i] = point[i] - xm;
+		point[i + num_p] = point[i + num_p] - ym;
 	}
 }
 
@@ -163,7 +165,7 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
-	flux_m = 1. / (Pi*scale*scale*(1. - pow(17, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
 
 	rd = 1. / scale / scale;
 	for (i = 0; i < size; i++)
@@ -178,7 +180,7 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 			}
 			else              // Moffat PSF
 			{
-				if (rs <= 16.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+				if (rs <= 9.) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 			}
 		}
 	}
@@ -266,8 +268,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	/*  convolve PSF and draw the image */
 	flux_g = flux / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	/* \int_{0}^{alpha*rd}  PSF(r)_{moffat} = Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), beta = 3.5 for moffat*/
-	//flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
-	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(17, -2.5))*0.4);   /*  alpha = 4, beta = 3.5 */
+	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
+	//flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(17, -2.5))*0.4);   /*  alpha = 4, beta = 3.5 */
 	
 	for (k = 0; k < num_p; k++)
 	{
@@ -283,7 +285,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 				}
 				else				// Moffat PSF
 				{
-					if (rs <= 16) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+					if (rs <= 9) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
 				}
 			}
 		}

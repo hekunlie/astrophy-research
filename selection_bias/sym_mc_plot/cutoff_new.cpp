@@ -32,10 +32,24 @@ int main(int argc, char**argv)
 
 	double chi_check[40];// be the 2Xchi_fit_num
 	int chi_fit_num;
+	int mg_bin_num;
+
+	double *data;
+	int *mask; 
+    double *selection; 
+
+	double *mg1, *mg2, *mnu1, *mnu2;
+	double gh1, gh1_sig, gh2, gh2_sig;
+	double left, right, delta_g;
+
+	double *cut_scale, *shear_result;
+	int *source_num;
 
     total_data_num = 10000000;// the total number of source in one shear point
     data_col = 7;// column of the shear mesurement results
     chi_fit_num  = 20;
+	mg_bin_num = 20;
+	delta_g = 0.02;
 
 	shear_num = 10;
 	cut_num = 10;
@@ -94,17 +108,6 @@ int main(int argc, char**argv)
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
 
-
-	double *data;
-	int *mask; 
-    double *selection; 
-
-	double *mg1, *mg2, *mnu1, *mnu2;
-	double gh1, gh1_sig, gh2, gh2_sig;
-	double left, right;
-
-	double *cut_scale, *shear_result;
-	int *source_num;
 
 	MPI_Win win_cut_scale, win_shear, win_num;
 	MPI_Aint scale_size, shear_size, num_size;
@@ -281,13 +284,13 @@ int main(int argc, char**argv)
 #ifdef PDF_SYM_RANGE
 			if(i == 0){std::cout<<"PDF_SYM Range fit"<<std::endl;}
 			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
-			left = gh1 - 0.015;
-			right = gh1 + 0.015;
-			find_shear_fit(mg1, mnu1, source_count, 40, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
+			left = gh1 - delta_g;
+			right = gh1 + delta_g;
+			find_shear_fit(mg1, mnu1, source_count, mg_bin_num, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
 #endif
 #ifdef PDF_SYM
 			if(i == 0){std::cout<<"PDF_SYM"<<std::endl;}	
-			find_shear(mg1, mnu1, source_count, 40, gh1, gh1_sig, chi_check, chi_fit_num);
+			find_shear(mg1, mnu1, source_count, mg_bin_num, gh1, gh1_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN	
 			if(i == 0){std::cout<<"MEAN"<<std::endl;}		
@@ -304,12 +307,12 @@ int main(int argc, char**argv)
         {
 #ifdef PDF_SYM_RANGE
 			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
-			left = gh2 - 0.015;
-			right = gh2 + 0.015;
-			find_shear_fit(mg2, mnu2, source_count, 40, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
+			left = gh2 - delta_g;
+			right = gh2 + delta_g;
+			find_shear_fit(mg2, mnu2, source_count, mg_bin_num, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
 #endif
 #ifdef PDF_SYM
-			find_shear(mg2, mnu2, source_count, 40, gh2, gh2_sig, chi_check, chi_fit_num);
+			find_shear(mg2, mnu2, source_count, mg_bin_num, gh2, gh2_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN
 			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
