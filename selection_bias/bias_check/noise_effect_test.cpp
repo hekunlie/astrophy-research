@@ -59,8 +59,8 @@ int main(int argc, char*argv[])
 	pts_step = atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
-	num_p = 50;
-	max_radius= 12;
+	num_p = 60;
+	max_radius= 10;
 	stamp_num = 10000;
 	shear_data_cols = 4;
 
@@ -74,7 +74,7 @@ int main(int argc, char*argv[])
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 64;
+	size = 48;
     total_chips = 1000;
     stamp_nx = 100;
 
@@ -87,7 +87,9 @@ int main(int argc, char*argv[])
 	sprintf(log_path, "%s/logs/%02d_R%d_S%.2f.dat", parent_path, rank, rotation, pts_step);
 
 #ifdef IMG_CHECK_LABEL	
-	double *big_img = new double[stamp_nx*stamp_nx*size*size]{};
+	double *big_img_noisy = new double[stamp_nx*stamp_nx*size*size]{};
+	double *big_img_noise_free = new double[stamp_nx*stamp_nx*size*size]{};
+
 #endif
 
 	double *point = new double[2 * num_p]{};
@@ -157,9 +159,9 @@ int main(int argc, char*argv[])
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
 	sss1 = 1*seed_step*shear_pairs*scatter_count[0]/stamp_num;
-	seed_pts = sss1*rank + 1 + 200000;
-	seed_n1 = sss1*rank + 1 + 800100*(rotation+1);
-	seed_n2 = sss1*rank + 1 + 1300100*(rotation+1);
+	seed_pts = sss1*rank + 1 + 350000;
+	seed_n1 = sss1*rank + 1 + 400100*(rotation+1);
+	seed_n2 = sss1*rank + 1 + 2300100*(rotation+1);
 
 	if (0 == rank)
 	{
@@ -263,7 +265,8 @@ int main(int argc, char*argv[])
 
 
 #ifdef IMG_CHECK_LABEL
-			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
+			initialize_arr(big_img_noisy, stamp_nx*stamp_nx*size*size, 0);
+			initialize_arr(big_img_noise_free, stamp_nx*stamp_nx*size*size, 0);
 #endif
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
@@ -306,7 +309,11 @@ int main(int argc, char*argv[])
 				initialize_arr(pgal, size*size, 0);
 				
 				create_points(point, num_p, max_radius, pts_step, rng0);
-				convolve(gal, point, flux_i, size, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);			
+				convolve(gal, point, flux_i, size, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);
+#ifdef IMG_CHECK_LABEL
+				stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
+				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
+#endif			
 				pow_spec(gal, pgal, size, size);
 				shear_est(pgal, ppsf, &all_paras);
 
@@ -330,7 +337,7 @@ int main(int argc, char*argv[])
 				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 1);
 
 #ifdef IMG_CHECK_LABEL
-				stack(big_img, gal, j, size, stamp_nx, stamp_nx);
+				stack(big_img_noisy, gal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
 #endif
 
@@ -350,8 +357,10 @@ int main(int argc, char*argv[])
 #ifdef IMG_CHECK_LABEL
 			if(i == IMG_CHECK_LABEL)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d_step_%.2f.fits", parent_path, shear_id, i, rotation, pts_step);
-				write_fits(chip_path, big_img, stamp_nx*size, stamp_nx*size);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d_step_%.2f_noise_free.fits", parent_path, shear_id, i, rotation, pts_step);
+				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d_step_%.2f_noisy.fits", parent_path, shear_id, i, rotation, pts_step);
+				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
 			}
 #endif
 			t2 = clock();
@@ -410,7 +419,9 @@ int main(int argc, char*argv[])
 	}
 
 #ifdef IMG_CHECK_LABEL
-	delete[] big_img;
+	delete[] big_img_noise_free;
+	delete[] big_img_noisy;
+
 #endif
 
 	delete[] point;
