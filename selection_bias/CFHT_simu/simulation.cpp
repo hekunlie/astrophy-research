@@ -1,12 +1,6 @@
-﻿#include <cmath>
-#include <cstring>
-#include<sstream>
-#include <ctime>
-#include <stdlib.h>
-#include <hk_mpi.h>
+﻿#include <hk_mpi.h>
 #include "FQlib.h"
 #include<cstdio>
-#include<string>
 #include<hk_iolib.h>
 
 int main(int argc, char*argv[])
@@ -28,7 +22,8 @@ int main(int argc, char*argv[])
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], shear_path[150],h5_path[150], log_path[150];
 	char buffer[200], log_inform[250], set_1[50], set_2[50], finish_path[150];
 	
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test_1");
+	strcpy(data_path,argv[1]);
+	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/simu_test_1");
 	//sprintf(data_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/simu/simu_test_1");
 
 	std::string str_data_path;
@@ -49,13 +44,15 @@ int main(int argc, char*argv[])
 
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
+	double pts_step;
 
-	num_p = 50;
+	num_p = 60;
+	pts_step = 2.5;
 	stamp_num = 10000;
 	shear_esti_data_cols = 7;
 	snr_para_data_cols = 10;
 
-	max_radius=8;
+	max_radius=10;
 	psf_scale=4.;
 	psf_type = 2;
 	psf_thresh_scale = 2.;
@@ -137,13 +134,13 @@ int main(int argc, char*argv[])
 	read_h5(shear_path, set_1, g2_t);
 
 	// circle PSF
-	//create_psf(psf, psf_scale, size, psf_type);
+	create_psf(psf, psf_scale, size, psf_type);
 
 	// elliptical PSF, e = 0.05, position angle = Pi/4
-	psf_ellip = 0.05;
-	psf_ang = Pi / 4;
-	psf_norm_factor = 19.0643; // by numercal integrate
-	create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
+	//psf_ellip = 0.05;
+	//psf_ang = Pi / 4;
+	//psf_norm_factor = 19.0643; // by numercal integrate
+	//create_psf(psf, psf_scale, size, psf_ellip, psf_ang, psf_norm_factor, psf_type);
 
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
@@ -158,8 +155,8 @@ int main(int argc, char*argv[])
 	}
 
 	seed_step = 2;
-	sss1 = 4*seed_step*shear_pairs*total_chips;
-	seed = sss1*rank + 1 + 5000;
+	sss1 = 3*seed_step*shear_pairs*total_chips;
+	seed = sss1*rank + 1 + 200000;
 
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{
@@ -210,7 +207,7 @@ int main(int argc, char*argv[])
 				initialize_arr(pnoise, size*size, 0);
 				initialize_para(&all_paras);
 
-				create_points(point, num_p, max_radius, rng0);
+				create_points(point, num_p, max_radius, pts_step, rng0);
 				flux_i = flux[i*stamp_num + j] / num_p;
 				// for measuring the intrinsic ellipticity
 				// circle PSF
@@ -220,9 +217,9 @@ int main(int argc, char*argv[])
 
 				initialize_arr(gal, size*size, 0);
 				// circle PSF
-				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
+				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
 				// elliptical PSF
-				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
+				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
 				addnoise(gal, size*size, gal_noise_sig, rng1);
 

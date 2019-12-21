@@ -160,8 +160,8 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	int i, j;
 	double rs, r1, val, flux_g, flux_m, rd;
 	double cent;
-	//cent = size*0.5 - 0.5;
-	cent = size*0.5 ;
+	cent = size*0.5 - 0.5;
+	//cent = size*0.5 ;
 
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
@@ -193,8 +193,8 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 	double cent, q, rot_1, rot_2;
 	double r1, r2, ry1, ry2;
 
-	//cent = size*0.5 - 0.5;
-	cent = size*0.5;
+	cent = size*0.5 - 0.5;
+	//cent = size*0.5;
 
 
 	rot_1 = cos(theta);
@@ -240,8 +240,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	// |rot2,  rot1  |
 	double rot1, rot2, val, rs, rd;
 	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
-	//double cent = size*0.5 - 0.5;
-	double cent = size*0.5;
+	double cent = size*0.5 - 0.5;
+	//double cent = size*0.5;
 
 	double *points_r = new double[num_p * 2];
 	/* rotate and shear */
@@ -310,8 +310,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	double ry1, ry2, rx1, rx2;
 	double psf_rot_1, psf_rot_2, q;
 	
-	//double cent= size *0.5 - 0.5;
-	double cent= size *0.5;
+	double cent= size *0.5 - 0.5;
+	//double cent= size *0.5;
 	// rotation of psf
 	psf_rot_1 = cos(theta);
 	psf_rot_2 = sin(theta);
@@ -769,8 +769,8 @@ void get_quad(const double *img, const int img_size, const double weight_sigma_s
     double cen, wei_coeff,wei_img;
     
     // the image center
-    //cen = img_size*0.5-0.5;
-    cen = img_size*0.5;
+    cen = img_size*0.5-0.5;
+    //cen = img_size*0.5;
 
     wei_coeff = 0.5/weight_sigma_sq;
 
