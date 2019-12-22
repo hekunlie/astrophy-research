@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 shear_num = 10
 data_path = "D:/"
 
-g1 = numpy.linspace(-0.04, 0.04, shear_num)
-g2 = numpy.linspace(-0.04, 0.04, shear_num)
+g1 = numpy.linspace(-0.03, 0.03, shear_num)
+g2 = numpy.linspace(-0.03, 0.03, shear_num)
 print(g1)
 numpy.random.shuffle(g1)
 print(g1)
