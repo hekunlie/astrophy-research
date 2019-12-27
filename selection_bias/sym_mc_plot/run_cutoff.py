@@ -30,6 +30,6 @@ for s, source in enumerate(sources):
         #     a.wait()
 
         print("Plot comparison")
-        cmd = "python cutoff_plot_compare.py %s %s" % (total_path+source+"/result/cuts/sym", filter_name[f])
+        cmd = "python cutoff_plot_compare.py %s %s" % (total_path+source, filter_name[f])
         a = Popen(cmd, shell=True)
         a.wait()

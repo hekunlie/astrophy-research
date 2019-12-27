@@ -155,14 +155,10 @@ void create_epoints(double *point, const int num_p, const double ellip, const gs
 	}
 }
 
-void create_psf(double*in_img, const double scale, const int size, const int psf)
+void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf)
 {
 	int i, j;
 	double rs, r1, val, flux_g, flux_m, rd;
-	double cent;
-	cent = size*0.5 - 0.5;
-	//cent = size*0.5 ;
-
 
 	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
@@ -170,10 +166,10 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	rd = 1. / scale / scale;
 	for (i = 0; i < size; i++)
 	{
-		r1 = (i - cent)*(i - cent)*rd;
+		r1 = (i - img_cent)*(i - img_cent)*rd;
 		for (j = 0; j < size; j++)
 		{
-			rs = r1 + (j - cent)*(j - cent)*rd;
+			rs = r1 + (j - img_cent)*(j - img_cent)*rd;
 			if (psf == 1)  // Gaussian PSF
 			{
 				if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
@@ -186,16 +182,12 @@ void create_psf(double*in_img, const double scale, const int size, const int psf
 	}
 }
 
-void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const double amplitude, const int psf)
+void create_psf(double*in_img, const double scale, const int size, const double img_cent, const double ellip, const double theta, const double amplitude, const int psf)
 {
 	int i, j;
 	double rs, val, flux_norm, rd;
-	double cent, q, rot_1, rot_2;
+	double  q, rot_1, rot_2;
 	double r1, r2, ry1, ry2;
-
-	cent = size*0.5 - 0.5;
-	//cent = size*0.5;
-
 
 	rot_1 = cos(theta);
 	rot_2 = sin(theta);
@@ -206,13 +198,13 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 
 	for (i = 0; i < size; i++)
 	{
-		ry1 =  rot_2 * (i - cent);
-		ry2 =  rot_1 * (i - cent);
+		ry1 =  rot_2 * (i - img_cent);
+		ry2 =  rot_1 * (i - img_cent);
 
 		for (j = 0; j < size; j++)
 		{
-			r1 = rot_1 * (j - cent) + ry1;
-			r2 = - rot_2 * (j - cent) + ry2;
+			r1 = rot_1 * (j - img_cent) + ry1;
+			r2 = - rot_2 * (j - img_cent) + ry2;
 			rs = r1 * r1*rd + r2 * r2*rd*q;
 
 			if (psf == 1)  // Gaussian PSF
@@ -227,7 +219,7 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 	}
 }
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, fq_paras *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -240,8 +232,6 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	// |rot2,  rot1  |
 	double rot1, rot2, val, rs, rd;
 	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
-	double cent = size*0.5 - 0.5;
-	//double cent = size*0.5;
 
 	double *points_r = new double[num_p * 2];
 	/* rotate and shear */
@@ -251,8 +241,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 		rot2 = sin(rotate*Pi / 4.);
 		for (i = 0; i < num_p; i++)
 		{
-			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2*points[i + num_p]) + g2*(rot2 * points[i] + rot1*points[i + num_p]) + cent;
-			points_r[i + num_p] = g2*(rot1 * points[i] - rot2*points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1*points[i + num_p]) + cent;
+			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2*points[i + num_p]) + g2*(rot2 * points[i] + rot1*points[i + num_p]) + img_cent;
+			points_r[i + num_p] = g2*(rot1 * points[i] - rot2*points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1*points[i + num_p]) + img_cent;
 		}
 	}
 	else
@@ -260,8 +250,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 		/* shear the profile and move the center to image center */
 		for (i = 0; i < num_p; i++)
 		{
-			points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + cent;
-			points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + cent;
+			points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + img_cent;
+			points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + img_cent;
 		}
 	}
 
@@ -298,7 +288,7 @@ void convolve(double *in_img, const double * points, const double flux, const in
 }
 
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras)
+void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -310,8 +300,6 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	double ry1, ry2, rx1, rx2;
 	double psf_rot_1, psf_rot_2, q;
 	
-	double cent= size *0.5 - 0.5;
-	//double cent= size *0.5;
 	// rotation of psf
 	psf_rot_1 = cos(theta);
 	psf_rot_2 = sin(theta);
@@ -329,8 +317,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 	{
 		for (i = 0; i < num_p; i++)
 		{
-			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2 * points[i + num_p]) + g2 * (rot2 * points[i] + rot1 * points[i + num_p]) + cent;
-			points_r[i + num_p] = g2 * (rot1 * points[i] - rot2 * points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1 * points[i + num_p]) + cent;
+			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2 * points[i + num_p]) + g2 * (rot2 * points[i] + rot1 * points[i + num_p]) + img_cent;
+			points_r[i + num_p] = g2 * (rot1 * points[i] - rot2 * points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1 * points[i + num_p]) + img_cent;
 		}
 	}
 	else
@@ -338,8 +326,8 @@ void convolve(double *in_img, const double * points, const double flux, const in
 		/* shear the profile and move the center to image center */
 		for (i = 0; i < num_p; i++)
 		{
-			points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + cent;
-			points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + cent;
+			points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + img_cent;
+			points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + img_cent;
 		}
 	}
 
@@ -760,17 +748,14 @@ void get_psf_radius(const float *psf_pow, fq_paras*paras, const float scale)
 }
 
 
-void get_quad(const double *img, const int img_size, const double weight_sigma_sq, double &quad_size)
+void get_quad(const double *img, const int img_size, const double img_cent, const double weight_sigma_sq, double &quad_size)
 {
     // calculate the gaussian-weighted quadrupole of a galaxy or PSF image 
     double temp_quad, temp_norm;
     int i,j,m;
     double ry_sq, r_sq;
-    double cen, wei_coeff,wei_img;
+    double wei_coeff,wei_img;
     
-    // the image center
-    cen = img_size*0.5-0.5;
-    //cen = img_size*0.5;
 
     wei_coeff = 0.5/weight_sigma_sq;
 
@@ -778,11 +763,11 @@ void get_quad(const double *img, const int img_size, const double weight_sigma_s
     temp_norm = 0;
     for(i=0; i<img_size; i++)
     {   
-        ry_sq = (i - cen)*(i-cen);
+        ry_sq = (i - img_cent)*(i-img_cent);
         m = i*img_size;
         for(j=0; j<img_size; j++)
         {
-            r_sq = (j - cen)*(j-cen) + ry_sq;
+            r_sq = (j - img_cent)*(j-img_cent) + ry_sq;
 
             wei_img = exp(-r_sq*wei_coeff)*img[m+j];
    

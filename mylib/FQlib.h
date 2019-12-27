@@ -54,7 +54,8 @@ struct fq_paras
 
 
 	/*parameters for detection which should be initialized before */
-	int stamp_size; /* the stamp size for get_radius() */
+	int stamp_size; /* the stamp size,  for get_radius() */
+	double stamp_cent;
 	int img_x, img_y; /* the size of chip image for the 'source_detector()' and galaxy_finder()*/
 	int area_thresh=6; /* the minimun pixels for a detection */
 	double detect_thresh; /* the threshold of pixel value of source */
@@ -146,13 +147,13 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
-void create_psf(double*in_img, const double scale, const int size, const int psf);
-void create_psf(double*in_img, const double scale, const int size, const double ellip, const double theta, const double amplitude, const int psf);
+void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf);
+void create_psf(double*in_img, const double scale, const int size, const double img_cent, const double ellip, const double theta, const double amplitude, const int psf);
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, 
+void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double scale, 
 	const double g1, const double g2, const int psf, const int flag, fq_paras *paras);
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const int num_p, const int rotate, const double scale, 
+void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double scale, 
 	const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
@@ -164,7 +165,7 @@ void get_psf_radius(const float *psf_pow, fq_paras*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
-void get_quad(const double *img, const int img_size, const double weight_sigma_sq, double &quad_size);
+void get_quad(const double *img, const int img_size, const double img_cent, const double weight_sigma_sq, double &quad_size);
 /* calculate the gaussian weighted quadrupole of the image   */
 /* weight_sigma_sq: the squared sigma of the gaussian weight */
 /* quad size := \Sum {weight*r^2*img} / \Sum {weight*img}      */

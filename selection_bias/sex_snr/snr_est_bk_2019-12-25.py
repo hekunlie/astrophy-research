@@ -29,15 +29,13 @@ logger = tool_box.get_logger(log_name)
 para_path = total_path + "/parameters"
 # print(total_path, para_path)
 para_contents = [["para", "total_num", 1], ["para", "stamp_size", 1],
-                 ["para", "stamp_col", 1], ["para", "shear_num", 1],
-                 ["para", "noise_sig", 1]]
-para_items = tool_box.config(para_path+"/para.ini", ['get', 'get', 'get', 'get','get'], para_contents)
+                 ["para", "stamp_col", 1], ["para", "shear_num", 1]]
+para_items = tool_box.config(para_path+"/para.ini", ['get', 'get', 'get', 'get'], para_contents)
 
 chip_num = int(para_items[0])
 size = int(para_items[1])
 columns = int(para_items[2])
 shear_num = int(para_items[3])
-noise_sig = float(para_items[4])
 
 area_thresh = 5
 gal_num = 10000
@@ -49,146 +47,43 @@ mag_auto_idx = 3
 area_idx = 4
 x_idx = 5
 y_idx = 6
-
 if rank == 0:
     log = "START: operation: %s, source: %s, code: %s"\
           %(argv[1], total_path.split("/")[-1], argv[0])
     logger.info(log)
 
+total_fits_path = [total_path + "/%d/gal_chip_%04d.fits"%(i, j) for i in range(shear_num) for j in range(chip_num)]
+total_cat_paths = [total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter,i, j)
+                   for i in range(shear_num) for j in range(chip_num)]
+allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
+allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
+if rank == 0:
+    cat_path = total_path + "/result/data/%s/cat/"%sex_filter
+    if not os.path.exists(cat_path):
+        os.mkdir(cat_path)
+comm.Barrier()
+
 if cmd == "snr":
-    ##################################### measure SNR ######################################################
-    # this section will call sextractor to detect the source in fits files
-
-    filter_names = ["sex2_4", "sex4_4",
-                    "sex2_2", "sex4_2",
-                    "sex2_1.5", "sex4_1.5"]
-    gauss_filters = ["gauss_2.0_5x5", "gauss_4.0_7x7",
-                     "gauss_2.0_5x5", "gauss_4.0_7x7",
-                     "gauss_2.0_5x5", "gauss_4.0_7x7"]
-
-    if sex_filter not in filter_names:
-        print("%s not found in "%sex_filter, filter_names)
-        raise KeyError
-
-    total_fits_path = [total_path + "/%d/gal_chip_%04d.fits" % (i, j) for i in range(shear_num) for j in
-                       range(chip_num)]
-    total_cat_paths = [total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat" % (sex_filter, i, j)
-                       for i in range(shear_num) for j in range(chip_num)]
-    allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
-    allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
-
-    if rank == 0:
-        with open("./default.sex_ori", "r") as f:
-            contents = f.readlines()
-        sig_level = float(sex_filter.split("_")[1])*noise_sig
-        contents[16] = "DETECT_THRESH    %.2f          # <sigmas> or <threshold>,<ZP> in mag.arcsec-2\n"%sig_level
-        contents[18] = "ANALYSIS_THRESH  %.2f          # <sigmas> or <threshold>,<ZP> in mag.arcsec-2\n"%sig_level
-        contents[23] = "FILTER_NAME      %s.conv   # name of the file containing the filter\n"%gauss_filters[filter_names.index(sex_filter)]
-        with open("./default.sex", "w") as f:
-            f.writelines(contents)
-
-        cat_path = total_path + "/result/data/%s/cat/" % sex_filter
-        if not os.path.exists(cat_path):
-            os.mkdir(cat_path)
-        logger.info("%s, %s"%(sex_filter,gauss_filters[filter_names.index(sex_filter)]))
-        # print(sex_filter,gauss_filters[filter_names.index(sex_filter)])
-        # time.sleep(30)
-    comm.Barrier()
-
     for ii, chip_path in enumerate(allot_fits_path):
         cat_path = allot_cat_path[ii]
+        # print(rank, cat_path)
         # remove the previous cat file
         if os.path.exists(cat_path):
             os.remove(cat_path)
-        comm = "sex %s -CATALOG_NAME %s" % (chip_path, cat_path)
+        comm = 'sex %s -CATALOG_NAME %s ' % (chip_path, cat_path)
         a = Popen(comm, shell=True)
         a.wait()
 
-
-##################################### add to catalog ######################################################
 if cmd == "add" and rank < shear_num:
-    # each rank only operate shear_id == rank !!!
     snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * gal_num, 7))
-    cent = size/2. - 0.5
     for i in range(chip_num):
         cat_path = total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
-        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, cent, cent, y_idx, x_idx, area_idx, max_distance)
+        sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, size/2, size/2,6, 5, 4, max_distance)
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
     numpy.savez(snr_data_path, snr_data)
 
-    # if the Pk0 data don't exist, measure them first
-    fourier_path = "%s/result/data/data_1.5sig/data_%d.hdf5" % (total_path, rank)
-    h5f = h5py.File(fourier_path, "r")
-    fourier_data = h5f["/data"][()]
-    h5f.close()
-
-    # Pk0
-    h5path = total_path + "/result/data/%s/flux2_ex1_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = fourier_data[:, 4]
-    h5f.close()
-
-    # Pk0_fit
-    h5path = total_path + "/result/data/%s/flux2_ex2_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = fourier_data[:, 5]
-    h5f.close()
-
-    # max(Pk0,Pk0_fit)
-    h5path = total_path + "/result/data/%s/flux2_ex3_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = fourier_data[:, 6]
-    h5f.close()
-
-    # mask
-    mask = numpy.ones((chip_num * gal_num,), dtype=numpy.intc)
-    idx = snr_data[:, snr_idx] <= 0
-    mask[idx] = 0
-    h5path = total_path + "/result/data/%s/mask_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = mask
-    h5f.close()
-
-    # true magnitude
-    h5path = total_path + "/parameters/para_%d.hdf5" % rank
-    h5f = h5py.File(h5path, "r")
-    mag_true = h5f["/mag"][()]
-    mag_true.shape = (mag_true.shape[0],)
-    h5f.close()
-    h5path = total_path + "/result/data/%s/mag_true_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = -mag_true
-    h5f.close()
-
-    # magnitude
-    h5path = total_path + "/result/data/%s/mag_auto_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = -snr_data[:, mag_auto_idx]
-    h5f.close()
-
-    # snr
-    h5path = total_path + "/result/data/%s/snr_sex_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = snr_data[:, snr_idx]
-    h5f.close()
-
-    # snr_auto
-    snr_data[:, flux_err_idx][idx] = 1
-    h5path = total_path + "/result/data/%s/snr_auto_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = snr_data[:, flux_auto_idx] / snr_data[:, flux_err_idx]
-    h5f.close()
-
-    # area
-    h5path = total_path + "/result/data/%s/area_%d.hdf5" % (sex_filter, rank)
-    h5f = h5py.File(h5path, "w")
-    h5f["/data"] = snr_data[:, area_idx]
-    h5f.close()
-
-
-##################################### check ######################################################
 if cmd == "check" and rank < shear_num:
     # check
     check_path = total_path + "/result/data/check/%s/"%sex_filter
@@ -205,8 +100,8 @@ if cmd == "check" and rank < shear_num:
 
     input_para_path = para_path + "/para_%d.hdf5"%rank
     para_h5 = h5py.File(input_para_path, "r")
-    input_mag = para_h5["/mag"][()]
-    input_flux = para_h5["/flux"][()]
+    input_mag = para_h5["/mag"].value
+    input_flux = para_h5["/flux"].value
     para_h5.close()
 
     snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)

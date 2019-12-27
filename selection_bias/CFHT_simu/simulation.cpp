@@ -34,25 +34,27 @@ int main(int argc, char*argv[])
 	
 	int i, j, k, ib;
 	int sss1, sss2;
-	int seed, seed_step;
+	int seed, seed_step, seed_ini;
 
 	int total_chips, chip_num, shear_pairs, data_row, total_data_row;
 	int stamp_num, stamp_nx, size, num_p;		
 	int row, row_s, shear_esti_data_cols, snr_para_data_cols;
 	int chip_id_s, chip_id_e, shear_id, psf_type, temp_s, detect_label;
 	double max_radius, psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, psf_peak, flux_i, mag_i;
+	double stamp_cent;
 
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 	double pts_step;
 
-	num_p = 60;
-	pts_step = 2.5;
+	seed_ini = atoi(argv[2]);
+	num_p = 35;
+	pts_step = 1.8;
 	stamp_num = 10000;
 	shear_esti_data_cols = 7;
 	snr_para_data_cols = 10;
 
-	max_radius=10;
+	max_radius=8;
 	psf_scale=4.;
 	psf_type = 2;
 	psf_thresh_scale = 2.;
@@ -81,6 +83,8 @@ int main(int argc, char*argv[])
 	read_para(str_para_path, str_noise, gal_noise_sig);
 	read_para(str_para_path, str_shear_num, shear_pairs);
 	read_para(str_para_path, str_nx, stamp_nx);
+	
+	stamp_cent = size*0.5-0.5;
 
 	chip_num = total_chips / numprocs;
 	total_data_row = total_chips * stamp_num;
@@ -134,7 +138,7 @@ int main(int argc, char*argv[])
 	read_h5(shear_path, set_1, g2_t);
 
 	// circle PSF
-	create_psf(psf, psf_scale, size, psf_type);
+	create_psf(psf, psf_scale, size, stamp_cent, psf_type);
 
 	// elliptical PSF, e = 0.05, position angle = Pi/4
 	//psf_ellip = 0.05;
@@ -147,16 +151,16 @@ int main(int argc, char*argv[])
 	if (0 == rank)
 	{
 		std::cout << data_path << std::endl;
-		std::cout << "PSF THRES: " << all_paras.psf_pow_thresh << "PSF HLR: " << all_paras.psf_hlr << std::endl;
-		std::cout <<"MAX RADIUS: "<< max_radius << ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
+		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << "PSF HLR: " << all_paras.psf_hlr << std::endl;
+		std::cout <<"MAX RADIUS: "<< max_radius << ", Step: "<<pts_step<<", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 		std::cout << "Total chip: " << total_chips << ", Total cpus: " << numprocs << ", Stamp size: " << size << std::endl;
 		sprintf(buffer, "!%s/psf.fits", data_path);
 		write_fits(buffer,psf, size, size);
 	}
 
 	seed_step = 2;
-	sss1 = 3*seed_step*shear_pairs*total_chips;
-	seed = sss1*rank + 1 + 200000;
+	sss1 = 2*seed_step*shear_pairs*(total_chips/numprocs+1);
+	seed = sss1*rank + 1 + seed_ini;
 
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{
@@ -217,7 +221,7 @@ int main(int argc, char*argv[])
 
 				initialize_arr(gal, size*size, 0);
 				// circle PSF
-				convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
+				convolve(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type, 1, &all_paras);					
 				// elliptical PSF
 				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, g1, g2, psf_type, 1, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 

@@ -19,7 +19,7 @@ int main(int argc, char*argv[])
 	std::string s, str_stampsize, str_total_num, str_noise, str_shear_num, str_nx;
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
 	
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/galsim_dimmer");
+	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/galsim_dimmer_epsf");
 	char_to_str(data_path, str_data_path);
 	sprintf(log_path, "%s/logs/m_%02d.dat", data_path, rank);
 	str_para_path = str_data_path + "/parameters/para.ini";

@@ -13,6 +13,11 @@ import matplotlib.ticker as mtick
 total_path = argv[1]
 filter_name = argv[2]
 
+h5f = h5py.File(total_path + "/result/data/%s/mask_0.hdf5"%filter_name,"r")
+mask = h5f["/data"][()]
+h5f.close()
+detect_rate = 1.0*mask.sum()/mask.shape[0]
+
 files = ["mag_true", "mag_auto", "rfactor", "flux2_ex1", "flux2_ex2", "flux2_ex3", "snr_sex"]
 file_legend = ["mag_true", "mag_auto", "resolution", "Pk0_1", "Pk0_2", "Pk0_3", "snr_sex"]
 colors = ["C%d"%i for i in range(len(files))]
@@ -21,7 +26,8 @@ fmt = '%2.f%%'
 xticks = mtick.FormatStrFormatter(fmt)
 ylabels = ["$m_1[10^{-2}]$", "$c_1[10^{-4}]$","$m_2[10^{-2}]$", "$c_2[10^{-4}]$"]
 
-pic_path = total_path + "/%s/compare_%s.png"%(filter_name, filter_name)
+# pic_path = total_path + "/%s/compare_%s.png"%(filter_name, filter_name)
+pic_path = total_path + "/result/cuts/sym/%s/compare_%s.png"%(filter_name,filter_name)
 ch_num = 10
 x_coord = [i * 10 for i in range(ch_num)]
 ch = [i for i in range(ch_num)]
@@ -30,7 +36,7 @@ img = Image_Plot(fig_x=6,fig_y=4, xpad=0.25, ypad=0.25,plt_line_width=1.5)
 img.subplots(2,2)
 
 for tag, nm in enumerate(files):
-    file_path = total_path + "/%s/%s/total.hdf5"%(filter_name,nm)
+    file_path = total_path + "/result/cuts/sym/%s/%s/total.hdf5"%(filter_name,nm)
     try:
         h5f = h5py.File(file_path,"r")
         mc1 = h5f["/mc1"][()]
@@ -50,6 +56,7 @@ for tag, nm in enumerate(files):
     except:
         print("Can't find the file!", file_path)
 
+
 for i in range(2):
     for j in range(2):
         xs = img.axs[i][j].set_xlim()
@@ -59,7 +66,16 @@ for i in range(2):
         img.axs[i][j].set_xlabel("Cutoff percentage", fontsize=img.xy_lb_size)
         tag = 2*i+j
         img.axs[i][j].set_ylabel(ylabels[tag], fontsize=img.xy_lb_size)
+        ys = img.axs[i][j].set_ylim()
+        if j == 0:
+            y1 = max(ys[0], -3.1)
+            y2 = min(ys[1], 3.1)
+        else:
+            y1 = max(ys[0], -2.1)
+            y2 = min(ys[1], 2.1)
+        img.axs[i][j].set_ylim((y1,y2))
 
+img.axs[0][0].set_title("Detection: %.2f%%"%detect_rate*100)
 img.axs[0][0].legend(fontsize=img.legend_size-2,ncol=len(files),loc="lower left", bbox_to_anchor=(0.01,1.02))
 img.save_img(pic_path)
 img.show_img()

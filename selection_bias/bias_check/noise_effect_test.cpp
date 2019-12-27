@@ -2,7 +2,7 @@
 #include<hk_mpi.h>
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
-//#define FLUX_PDF
+#define FLUX_PDF
 
 void arr_add(double *arr1, const double*arr2,const int length)
 {
@@ -32,7 +32,7 @@ int main(int argc, char*argv[])
 
 	//sprintf(parent_path, "/mnt/perc/hklee/bias_check");
 	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check/data_from_pi/step_test");
-	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/step_test");
+	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/bright_end_test");
 
 	//strcpy(parent_path, argv[1]);
 	std::string str_data_path,str_shear_path;
@@ -49,18 +49,18 @@ int main(int argc, char*argv[])
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
-
+	int seed_ini;
 	double psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
 
 	double pts_step;
-
-	pts_step = atof(argv[1]);
+	seed_ini = atoi(argv[1]);
+	pts_step = 1.8;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
-	num_p = 60;
-	max_radius= 10;
+	num_p = 40;
+	max_radius= 8;
 	stamp_num = 10000;
 	shear_data_cols = 4;
 
@@ -74,7 +74,7 @@ int main(int argc, char*argv[])
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 48;
+	size = 50;
     total_chips = 1000;
     stamp_nx = 100;
 
@@ -158,10 +158,10 @@ int main(int argc, char*argv[])
 
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
-	sss1 = 1*seed_step*shear_pairs*scatter_count[0]/stamp_num;
-	seed_pts = sss1*rank + 1 + 350000;
-	seed_n1 = sss1*rank + 1 + 400100*(rotation+1);
-	seed_n2 = sss1*rank + 1 + 2300100*(rotation+1);
+	sss1 = 2*seed_step*shear_pairs*total_chips;
+	seed_pts = sss1*rank + 1 + seed_ini;//35000;
+	seed_n1 = sss1*rank + 1 + seed_ini*2;// 4001*(rotation+1);
+	seed_n2 = sss1*rank + 1 + seed_ini*4;//2300*(rotation+1);
 
 	if (0 == rank)
 	{
@@ -328,10 +328,10 @@ int main(int argc, char*argv[])
 				initialize_arr(noise_2, size*size, 0);
 				initialize_arr(pnoise_2, size*size, 0);
 
-				addnoise(gal, size*size, gal_noise_sig, rng1);
+				addnoise(gal, size*size, gal_noise_sig, rng0);
 				pow_spec(gal, pgal, size, size);
 
-				addnoise(noise_2, size*size, gal_noise_sig, rng1);
+				addnoise(noise_2, size*size, gal_noise_sig, rng0);
                 pow_spec(noise_2, pnoise_2, size, size);
 
 				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 1);
@@ -379,7 +379,7 @@ int main(int argc, char*argv[])
 		if (0 == rank)
 		{
 			sprintf(set_name, "/data");
-			sprintf(result_path, "%s/result/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
+			sprintf(result_path, "%s/result/data/data_%d_noise_free.hdf5", parent_path, shear_id);
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -395,7 +395,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/result/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
+			sprintf(result_path, "%s/result/data/data_%d_noisy_cpp.hdf5", parent_path,shear_id);
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}

@@ -57,7 +57,7 @@ ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seeds[0])
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4)#.shear(g=0.05, beta=0.25*numpy.pi*galsim.radians)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4).shear(g1=0.06,g2=0)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -88,12 +88,12 @@ for shear_id in range(shear_num):
 
     paras = para_path + "/para_%d.hdf5" % shear_id
     h5f = h5py.File(paras, 'r')
-    e1s = h5f["/e1"][()]
-    e2s = h5f["/e2"][()]
-    radius = h5f["/radius"][()]
-    flux = h5f["/flux"][()]
-    fbt = h5f['/btr'][()]
-    gal_profile = h5f["/type"][()]
+    e1s = h5f["/e1"][()][:,0]
+    e2s = h5f["/e2"][()][:,0]
+    radius = h5f["/radius"][()][:,0]
+    flux = h5f["/flux"][()][:,0]
+    fbt = h5f['/btr'][()][:,0]
+    gal_profile = h5f["/type"][()][:,0]
     h5f.close()
 
     # for checking
@@ -146,8 +146,8 @@ for shear_id in range(shear_num):
             fq.stack_new(img_buffer, img.array, iy, ix)
 
         noise_img = rng.normal(0, noise_sig, nx * ny).reshape((ny, nx))
-        # big_chip = numpy.float32(img_buffer + noise_img)
-        big_chip = img_buffer + noise_img
+        big_chip = numpy.float32(img_buffer + noise_img)
+        # big_chip = img_buffer + noise_img
         hdu = fits.PrimaryHDU(big_chip)
         hdu.writeto(chip_path, overwrite=True)
         t2 = time.clock()
