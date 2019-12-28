@@ -111,12 +111,14 @@ if cmd == "add" and rank < shear_num:
     snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * gal_num, 7))
     cent = size/2. - 0.5
+    logger.info("%02d start..."%rank)
     for i in range(chip_num):
         cat_path = total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
         sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, cent, cent, y_idx, x_idx, area_idx, max_distance)
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
     numpy.savez(snr_data_path, snr_data)
+    logger.info("%02d Begin to write to disk..."%rank)
 
     # if the Pk0 data don't exist, measure them first
     fourier_path = "%s/result/data/data_1.5sig/data_%d.hdf5" % (total_path, rank)
@@ -187,6 +189,7 @@ if cmd == "add" and rank < shear_num:
     h5f["/data"] = snr_data[:, area_idx]
     h5f.close()
 
+    logger.info("%02d Begin to write to disk..." % rank)
 
 ##################################### check ######################################################
 if cmd == "check" and rank < shear_num:

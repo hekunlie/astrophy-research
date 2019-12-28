@@ -1,4 +1,5 @@
 #include <FQlib.h>
+#include<hk_iolib.h>
 
 void get_quad_(const double *img, const int img_size, const double weight_sigma_sq, double &quad_size,int tag, char*inform)
 {
@@ -47,6 +48,7 @@ int main(int argc, char **argv)
     int i,j,k,tag;
     int nx, ny, size;
     int sex_row, sex_col;
+    double img_cent;
 
     double st1, st2;
 
@@ -56,7 +58,8 @@ int main(int argc, char **argv)
     int quad_tag;
     char inform[40];
 
-    size = 64;
+    size = 50;
+    img_cent = size*0.5 - 0.5;
     nx = 100;
     ny = 100;
 
@@ -88,7 +91,7 @@ int main(int argc, char **argv)
     
             if (eff_radius_sq > 0)            
             {
-                get_quad(stamp, size, eff_radius_sq, gal_quad);
+                get_quad(stamp, size, img_cent, eff_radius_sq, gal_quad);
                 data[tag] = gal_quad;
             }
 

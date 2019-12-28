@@ -206,7 +206,7 @@ def edge_extend(mask, ysize, xsize, obj_list, extend_step):
 
 
 def get_quad(img, size, weight_sigma):
-    cen = size/2 - 0.5
+    cen = size/2. - 0.5
     my, mx = numpy.mgrid[0:size, 0:size]
     r2 = (my - cen)**2 + (mx - cen)**2
     img_w = numpy.exp(-r2/2/weight_sigma/weight_sigma)*img

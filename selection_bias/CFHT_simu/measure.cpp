@@ -18,8 +18,18 @@ int main(int argc, char*argv[])
 	std::string str_data_path, str_para_path, detect_info;
 	std::string s, str_stampsize, str_total_num, str_noise, str_shear_num, str_nx;
 	char data_path[100], chip_path[150], snr_h5_path[150], para_path[150], buffer[200], h5_path[150], set_name[50], log_path[150], log_inform[250],coeff_path[50];
-	
-	sprintf(data_path, "/mnt/ddnfs/data_users/hkli/galsim_dimmer_epsf");
+
+	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
+	int stamp_num, stamp_nx, shear_data_cols, snr_para_data_cols;
+	int i, j, k=0, row, row_s, chip_id_s, chip_id_e, shear_id, temp_s=rank, detect_label, h;
+	double psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, ts, te, t1, t2, psf_peak, temp_flux;
+	int seed_ini, seed, seed_step;
+	int cmd = 0;
+
+	//sprintf(data_path, "/mnt/ddnfs/data_users/hkli/galsim_dimmer_epsf");
+	strcpy(data_path,argv[1]);
+	seed_ini = atoi(argv[2]);
+
 	char_to_str(data_path, str_data_path);
 	sprintf(log_path, "%s/logs/m_%02d.dat", data_path, rank);
 	str_para_path = str_data_path + "/parameters/para.ini";
@@ -30,12 +40,7 @@ int main(int argc, char*argv[])
 	str_shear_num = "shear_num";
 	str_nx = "stamp_col";
 
-	int size, total_chips, chip_num, shear_pairs, data_row, total_data_row;
-	int stamp_num, stamp_nx, shear_data_cols, snr_para_data_cols;
-	int i, j, k=0, row, row_s, seed, chip_id_s, chip_id_e, shear_id, temp_s=rank, detect_label, h;
-	double psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, ts, te, t1, t2, psf_peak, temp_flux;
 
-	int cmd = 0;
 	stamp_num = 10000;
 	shear_data_cols = 7;
 	snr_para_data_cols = 10;
@@ -115,8 +120,8 @@ int main(int argc, char*argv[])
 	read_fits(chip_path, psf);
 	pow_spec(psf, ppsf, size, size);
 
-	seed = 120;
-	gsl_initialize(seed,0);	
+	// seed = 120;
+	// gsl_initialize(seed,0);	
 
 	//addnoise(noise, size*size, gal_noise_sig);
 	//pow_spec(noise, pnoise, size, size);	
@@ -124,14 +129,16 @@ int main(int argc, char*argv[])
 	//smooth(pnoise, coeff, &all_paras);		
 	//noise_subtraction(ppsf, pnoise, &all_paras, 1, 1);	
 	//normalize_arr(ppsf, size);
-
+	// gsl_free(0);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
-	gsl_free(0);
+	seed_step = 2;
+	i = 2*seed_step*shear_pairs*(total_chips/numprocs+1);
+	seed = i*rank + 1 + seed_ini;
 
 	if (0 == rank)
 	{
-		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << std::endl << all_paras.psf_hlr << std::endl;
+		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh <<" "<< all_paras.psf_hlr << std::endl;
 	}
 
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
@@ -146,7 +153,7 @@ int main(int argc, char*argv[])
 		
 		if (0 == rank)
 		{
-			
+			std::cout<<log_inform<<std::endl;
 			initialize_arr(recvbuf, total_chips*stamp_num*shear_data_cols, 0);
 			initialize_arr(recvbuf_s, total_chips*stamp_num*snr_para_data_cols, 0);
 		}
@@ -156,26 +163,25 @@ int main(int argc, char*argv[])
 
 		for (i = chip_id_s; i < chip_id_e; i++)
 		{
-			seed = rank * i + shear_id + 1+ i + temp_s;
-			temp_s++;
-			gsl_initialize(seed,0);
 			t1 = clock();
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip start...", rank, shear_id, i);
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d: %04d 's chip start. Seed: %d", rank, shear_id, i, seed);
 			write_log(log_path, log_inform);
 			if (0 == rank)
 			{
 				std::cout << log_inform << std::endl;
 			}
+			gsl_initialize(seed, 1);
+			seed += seed_step;
 
 			sprintf(chip_path, "%s/%d/gal_chip_%04d.fits", data_path, shear_id, i);
 			initialize_arr(big_img, stamp_nx*stamp_nx*size*size, 0);
 			initialize_arr(check_img, stamp_nx*stamp_nx*size*size, 0);
-
+			
 			read_fits(chip_path, big_img);
 
 			row = (i - chip_id_s) *stamp_num*shear_data_cols;
 			row_s = (i - chip_id_s) *stamp_num*snr_para_data_cols;
-
+			
 			for (j = 0; j < stamp_num; j++)			
 			{				
 				initialize_arr(noise, size*size, 0);
@@ -191,15 +197,15 @@ int main(int argc, char*argv[])
 
 				galaxy_finder(gal, mask, &all_paras, false, detect_label, detect_info);
 				// check
-				if (i<chip_id_s+2 && 0 == rank && 0 == shear_id)
-				{
-					stack(check_img, mask, j, size, stamp_nx, stamp_nx);
-				}
+				// if (i<chip_id_s+2 && 0 == rank && 0 == shear_id)
+				// {
+				// 	stack(check_img, mask, j, size, stamp_nx, stamp_nx);
+				// }
 				snr_est(pgal, &all_paras, 2);
 
 				if (cmd == 0)
 				{
-					addnoise(noise, size*size, gal_noise_sig, rng0);
+					addnoise(noise, size*size, gal_noise_sig, rng1);
 					pow_spec(noise, pnoise, size, size);
 					//smooth(pnoise, ppsf, coeff, &all_paras);
 					//smooth(pgal, ppsf, coeff, &all_paras);
@@ -237,7 +243,7 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-			gsl_free(0);
+			gsl_free(1);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		sprintf(set_name, "/data");

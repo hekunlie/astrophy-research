@@ -775,8 +775,8 @@ void get_quad(const double *img, const int img_size, const double img_cent, cons
             temp_norm += wei_img;
         }
     }
-    
-    quad_size = temp_quad/temp_norm;
+    if(temp_norm == 0){quad_size = 0;}
+	else{quad_size = temp_quad/temp_norm;}    
 }
 
 
@@ -3493,6 +3493,32 @@ void task_alloc(const int task_num, const int portion, const int rank, int &my_s
     }
 }
 
+void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count, int *entry_for_gather)
+{
+    int i,j,m,n;
+    m = total_task_num/division_num;
+    n = total_task_num%division_num;
+
+    for(i=0;i<division_num;i++)
+    {
+        task_count[i] = m;
+        if(i<n){task_count[i] +=1;}
+    }
+    m=0;
+    n=0;
+    for(i=0;i<division_num;i++)
+    {   
+        m=0;
+        for(j=0;j<i;j++)
+        {
+            m+=task_count[j];
+        }
+        entry_for_gather[i]=m;
+    }
+    n = m+task_count[my_part_id];
+    my_st_id = entry_for_gather[my_part_id];
+    my_ed_id = my_st_id + task_count[my_part_id];
+}
 
 void show_arr(const double*arr, const int rows, const int cols)
 {
