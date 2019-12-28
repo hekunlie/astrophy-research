@@ -20,13 +20,8 @@ int main(int argc, char**argv)
 	double st1, st2, st3, st4;
 	st1 = clock();
 
-	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300],log_inform[300], set_name[30];
-    char source_name[50], filter_name[50], select_name[50];
-	std::string select_name_s;
-
 	int i, j, k;
 	int my_shear, my_cut, cell_st, cell_ed, shear_change;
-	int *cell_each_thread, *cell_entry;
 	int shear_num, cut_num, total_cutoff_cells, sub_cutoff_cells;
 
 	int source_count, label, cut_step, cata_label;
@@ -46,8 +41,7 @@ int main(int argc, char**argv)
 	double *mg1, *mg2, *mnu1, *mnu2;
 	double gh1, gh1_sig, gh2, gh2_sig;
 	double left, right, delta_g;
-	
-	double *g1_true, *g2_true, *shear;
+
 	double *cut_scale, *shear_result;
 	int *source_num;
 
@@ -67,23 +61,35 @@ int main(int argc, char**argv)
 		exit(0);
 	}
 
+	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300],log_inform[300], set_name[30];
+    char source_name[50], filter_name[50], select_name[50];
+	std::string select_name_s;
+
 	std::strcpy(total_path, argv[1]);
 	std::strcpy(filter_name, argv[2]);
 	std::strcpy(select_name, argv[3]);
 	char_to_str(select_name, select_name_s);
 
     //sprintf(total_path,"/mnt/perc/hklee/selection_bias/%s", source_name);
-    sprintf(shear_path,"%s/parameters/shear.hdf5",total_path);
+    sprintf(shear_path,"%s/parameters/shear.dat",total_path);
 	if(rank==0)
     std::cout<<total_path<<" "<<shear_path<<" "<<std::endl;
 
+	double *shear = new double[shear_num * 2];
+	double *g1_true, *g2_true;
 	g1_true = new double[shear_num];
 	g2_true = new double[shear_num];
-	sprintf(set_name, "/g1");
-	read_h5(shear_path, set_name, g1_true);
-	sprintf(set_name, "/g2");
-	read_h5(shear_path, set_name, g2_true);
+    std::string shear_path_s;
+    char_to_str(shear_path,shear_path_s);
 
+
+	read_text(shear_path_s, shear, 2 * shear_num);
+    
+	for (i = 0; i < shear_num; i++)
+	{
+		g1_true[i] = shear[i];
+		g2_true[i] = shear[i + shear_num];
+	}	
 
 	////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////// task distribution ///////////////////////////////
@@ -91,15 +97,53 @@ int main(int argc, char**argv)
 	//  shear_1
 	//  shear_2
 	//		..
-	cell_each_thread = new int[numprocs]{};
-	cell_entry = new int[numprocs]{};
-
-	task_alloc(total_cutoff_cells, numprocs, rank, cell_st, cell_ed, cell_each_thread, cell_entry);
-
+    i = total_cutoff_cells/numprocs;
+    j = total_cutoff_cells%numprocs;
+    cell_st = i*rank;
+    cell_ed = i*(rank+1);
+    if(rank == numprocs-1)
+    {
+        cell_ed += j;
+    }
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
 
 
+	MPI_Win win_cut_scale, win_shear, win_num;
+	MPI_Aint scale_size, shear_size, num_size;
+
+	shear_size = shear_num * cut_num * 4 * sizeof(double);
+	scale_size = cut_num * sizeof(double);
+	num_size = shear_num * cut_num * sizeof(int);
+
+	if (0 == rank)
+	{	
+		// win_shear stores the block [ [g1_cut1, g1_cut2, g1_cut3, ...], 
+        //                              [g1_sig,......], 
+        //                              [g2,..........], 
+        //                              [g2_sig,......]], 4*cut_num elements, there are "shear_num" blocks
+		MPI_Win_allocate_shared(shear_size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &shear_result, &win_shear);
+		// win_cut_scale stores the cutoff thresholds 10 elements.
+		MPI_Win_allocate_shared(scale_size, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &cut_scale, &win_cut_scale);
+        // stores the source number of each cutoff step of each shear point
+        // [[num_cut1, num_cut2, ...], of shear point 0
+        //  [num_cut1, num_cut2, ...], of shear point 1
+        //  ....]
+		MPI_Win_allocate_shared(num_size, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &source_num, &win_num);
+	}
+	else
+	{
+		int disp_unit_s, disp_unit_c, disp_unit_num;
+
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &shear_result, &win_shear);
+		MPI_Win_shared_query(win_shear, 0, &shear_size, &disp_unit_s, &shear_result);
+
+		MPI_Win_allocate_shared(0, sizeof(double), MPI_INFO_NULL, MPI_COMM_WORLD, &cut_scale, &win_cut_scale);
+		MPI_Win_shared_query(win_cut_scale, 0, &scale_size, &disp_unit_c, &cut_scale);
+
+		MPI_Win_allocate_shared(0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &source_num, &win_num);
+		MPI_Win_shared_query(win_num, 0, &num_size, &disp_unit_num, &source_num);
+	}
 
 	////////////////// read all the data and calculate the cutoff thresholds /////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,6 +422,10 @@ int main(int argc, char**argv)
 	{
 		std::cout << (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << std::endl;
 	}
+    
+    MPI_Win_free(&win_shear);
+    MPI_Win_free(&win_cut_scale);
+    MPI_Win_free(&win_num);
 
 	MPI_Finalize();
 	return 0;
