@@ -51,8 +51,8 @@ x_idx = 5
 y_idx = 6
 
 if rank == 0:
-    log = "START: operation: %s, source: %s, code: %s"\
-          %(argv[1], total_path.split("/")[-1], argv[0])
+    log = "START: operation: %s, source: %s, code: %s, shear num: %d"\
+          %(argv[1], total_path.split("/")[-1], argv[0], shear_num)
     logger.info(log)
 
 if cmd == "snr":

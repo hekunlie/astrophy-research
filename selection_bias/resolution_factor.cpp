@@ -181,7 +181,7 @@ int main(int argc, char**argv)
             if(rank == 0)
             { 
                 std::cout<<"writting to disk"<<std::endl;
-                sprintf(result_path,"%s/result/data/%s/rfactor_%d_new.hdf5",total_path,sex_folder[n],shear_id);
+                sprintf(result_path,"%s/result/data/%s/rfactor_%d.hdf5",total_path,sex_folder[n],shear_id);
                 write_h5(result_path, set_name,final_data,final_data_size,1,true);
                 get_time(time_now,50);
                 std::cout<<result_path<<std::endl;

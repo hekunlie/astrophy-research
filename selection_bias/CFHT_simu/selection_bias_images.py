@@ -48,10 +48,8 @@ stamp_num = 10000
 # comm.Barrier()
 
 total_gal_num = total_chips_num * stamp_num
-time.sleep(rank+0.05)
-seed_ini = numpy.random.randint(1, 1000000, size=cpus)[rank]
-rng_ini = numpy.random.RandomState(seed_ini+rank)
-seeds = rng_ini.randint(1, 10000000, size=1000000)
+rng_ini = numpy.random.RandomState(1+rank)
+seeds = rng_ini.randint(1, 10000000, size=10000000)
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
 fq = Fourier_Quad(stamp_size, seeds[0])
@@ -66,7 +64,7 @@ if rank == 0:
     hdu.writeto(psf_path, overwrite=True)
     logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
                 %(source,stamp_size, pixel_scale, noise_sig, total_chips_num))
-logger.info("seed: %d"%seed_ini)
+logger.info("seed: %d"%(1+rank))
 
 # task allocation
 chip_tags = [i for i in range(total_chips_num)]

@@ -48,13 +48,13 @@ int main(int argc, char*argv[])
 	double pts_step;
 
 	seed_ini = atoi(argv[2]);
-	num_p = 35;
-	pts_step = 1.8;
+	num_p = 30;
+	pts_step = 2.5;
 	stamp_num = 10000;
 	shear_esti_data_cols = 7;
 	snr_para_data_cols = 10;
 
-	max_radius=8;
+	max_radius=7;
 	psf_scale=4.;
 	psf_type = 2;
 	psf_thresh_scale = 2.;
@@ -211,7 +211,7 @@ int main(int argc, char*argv[])
 				initialize_arr(pnoise, size*size, 0);
 				initialize_para(&all_paras);
 
-				create_points(point, num_p, max_radius, pts_step, rng0);
+				create_points(point, num_p, max_radius, pts_step, rng1);
 				flux_i = flux[i*stamp_num + j] / num_p;
 				// for measuring the intrinsic ellipticity
 				// circle PSF

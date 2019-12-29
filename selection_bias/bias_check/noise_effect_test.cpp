@@ -32,7 +32,7 @@ int main(int argc, char*argv[])
 
 	//sprintf(parent_path, "/mnt/perc/hklee/bias_check");
 	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check/data_from_pi/step_test");
-	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/bright_end_test");
+	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/step_test");
 
 	//strcpy(parent_path, argv[1]);
 	std::string str_data_path,str_shear_path;
@@ -53,14 +53,15 @@ int main(int argc, char*argv[])
 	double psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, psf_ang, psf_norm_factor;
-
+	double img_cent;
 	double pts_step;
-	seed_ini = atoi(argv[1]);
-	pts_step = 1.8;//atof(argv[1]);
+
+	seed_ini = atoi(argv[2]);
+	pts_step = atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
-	num_p = 40;
-	max_radius= 8;
+	num_p = 30;
+	max_radius= 7;
 	stamp_num = 10000;
 	shear_data_cols = 4;
 
@@ -74,7 +75,8 @@ int main(int argc, char*argv[])
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 50;
+	size = 48;
+	img_cent = size*0.5 - 0.5;
     total_chips = 1000;
     stamp_nx = 100;
 
@@ -178,7 +180,7 @@ int main(int argc, char*argv[])
 	read_text(str_shear_path, shear, 2*shear_pairs);
     
 	// create PSF
-	create_psf(psf, psf_scale, size, psf_type);
+	create_psf(psf, psf_scale, size, img_cent, psf_type);
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
@@ -308,8 +310,8 @@ int main(int argc, char*argv[])
 				initialize_arr(gal, size*size, 0);
 				initialize_arr(pgal, size*size, 0);
 				
-				create_points(point, num_p, max_radius, pts_step, rng0);
-				convolve(gal, point, flux_i, size, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);
+				create_points(point, num_p, max_radius, pts_step, rng1);
+				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);
 #ifdef IMG_CHECK_LABEL
 				stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
@@ -328,10 +330,10 @@ int main(int argc, char*argv[])
 				initialize_arr(noise_2, size*size, 0);
 				initialize_arr(pnoise_2, size*size, 0);
 
-				addnoise(gal, size*size, gal_noise_sig, rng0);
+				addnoise(gal, size*size, gal_noise_sig, rng1);
 				pow_spec(gal, pgal, size, size);
 
-				addnoise(noise_2, size*size, gal_noise_sig, rng0);
+				addnoise(noise_2, size*size, gal_noise_sig, rng1);
                 pow_spec(noise_2, pnoise_2, size, size);
 
 				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 1);
@@ -379,7 +381,7 @@ int main(int argc, char*argv[])
 		if (0 == rank)
 		{
 			sprintf(set_name, "/data");
-			sprintf(result_path, "%s/result/data/data_%d_noise_free.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -395,7 +397,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/result/data/data_%d_noisy_cpp.hdf5", parent_path,shear_id);
+			sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}
