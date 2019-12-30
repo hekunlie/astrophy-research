@@ -19,6 +19,8 @@ cpus = comm.Get_size()
 ts = time.clock()
 
 total_path = argv[1]
+seed_ini = int(argv[2])
+
 source = total_path.split("/")[-1]
 result_path = total_path + "/result"
 para_path = total_path + "/parameters"
@@ -46,23 +48,25 @@ stamp_num = 10000
 #         shutil.rmtree(indicator)
 #     os.makedirs(indicator)
 # comm.Barrier()
-
 total_gal_num = total_chips_num * stamp_num
-rng_ini = numpy.random.RandomState(1+rank)
-seeds = rng_ini.randint(1, 10000000, size=10000000)
+
+seed_step = 2
+seed_span = 2*seed_step*shear_num*(divmod(total_chips_num,cpus)[0]+1)
+seed = seed_span*rank + 1 + seed_ini
+
 
 ny, nx = stamp_col * stamp_size, stamp_col * stamp_size
-fq = Fourier_Quad(stamp_size, seeds[0])
+fq = Fourier_Quad(stamp_size, seed)
 
 # PSF
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4).shear(g1=0.06,g2=0)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4)#.shear(g1=0.06,g2=0)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
     hdu = fits.PrimaryHDU(psf_img.array)
     psf_path = total_path + '/psf.fits'
     hdu.writeto(psf_path, overwrite=True)
-    logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total galaxy number: %d"
+    logger.info("desti: %s, size: %d, pixel_scale: %.3f, noise_sig: %.2f, total chips: %d"
                 %(source,stamp_size, pixel_scale, noise_sig, total_chips_num))
 logger.info("seed: %d"%(1+rank))
 
@@ -86,12 +90,12 @@ for shear_id in range(shear_num):
 
     paras = para_path + "/para_%d.hdf5" % shear_id
     h5f = h5py.File(paras, 'r')
-    e1s = h5f["/e1"][()][:,0]
-    e2s = h5f["/e2"][()][:,0]
-    radius = h5f["/radius"][()][:,0]
-    flux = h5f["/flux"][()][:,0]
-    fbt = h5f['/btr'][()][:,0]
-    gal_profile = h5f["/type"][()][:,0]
+    e1s = h5f["/e1"][()]
+    e2s = h5f["/e2"][()]
+    radius = h5f["/radius"][()]
+    flux = h5f["/flux"][()]
+    fbt = h5f['/btr'][()]
+    gal_profile = h5f["/type"][()]
     h5f.close()
 
     # for checking
@@ -102,12 +106,12 @@ for shear_id in range(shear_num):
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
-        rng = numpy.random.RandomState(seeds[counts])
-        counts += 1
-
         chip_path = total_path + "/%s/gal_chip_%04d.fits" % (shear_id, chip_tag)
-        gal_pool = []
-        logger.info("SHEAR ID: %02d, Start the %04d's chip. seed: %.d" % (shear_id, chip_tag,seeds[counts]))
+
+        rng = numpy.random.RandomState(seed)
+        #gal_pool = []
+        logger.info("SHEAR ID: %02d, Start the %04d's chip. seed: %.d" % (shear_id, chip_tag,seed))
+        seed += seed_step
 
         para_n = chip_tag * stamp_num
 
