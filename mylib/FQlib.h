@@ -147,14 +147,14 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
-void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf);
-void create_psf(double*in_img, const double scale, const int size, const double img_cent, const double ellip, const double theta, const double amplitude, const int psf);
+void create_psf(double*in_img, const double psf_scale, const int size, const double img_cent, const int psf);
+void create_psf_e(double*in_img, const double psf_scale, const int size, const double img_cent, const double ellip, const double theta, const int psf);
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double scale, 
-	const double g1, const double g2, const int psf, const int flag, fq_paras *paras);
+void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
+	const double g1, const double g2, const int psf);
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double scale, 
-	const double g1, const double g2, const int psf, const int flag, const double ellip, const double theta, const double amplitude, fq_paras *paras);
+void convolve_e(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
+	const double g1, const double g2, const int psf, const double ellip, const double theta);
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row);
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);

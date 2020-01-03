@@ -72,7 +72,7 @@ if cmd == "snr":
 
     total_fits_path = [total_path + "/%d/gal_chip_%04d.fits" % (i, j) for i in range(shear_num) for j in
                        range(chip_num)]
-    total_cat_paths = [total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat" % (sex_filter, i, j)
+    total_cat_paths = [total_path + "/result/sex_cat/%s/cat/%d_gal_chip_%04d.fits.cat" % (sex_filter, i, j)
                        for i in range(shear_num) for j in range(chip_num)]
     allot_fits_path = tool_box.allot(total_fits_path, cpus)[rank]
     allot_cat_path = tool_box.allot(total_cat_paths, cpus)[rank]
@@ -87,9 +87,11 @@ if cmd == "snr":
         with open("./default.sex", "w") as f:
             f.writelines(contents)
 
-        cat_path = total_path + "/result/data/%s/cat/" % sex_filter
-        if not os.path.exists(cat_path):
-            os.mkdir(cat_path)
+        cat_path = total_path + "/result/sex_cat/%s/cat/"%sex_filter
+        try:
+            os.makedirs(cat_path)
+        except:
+            pass
         logger.info("%s, %s"%(sex_filter,gauss_filters[filter_names.index(sex_filter)]))
         # print(sex_filter,gauss_filters[filter_names.index(sex_filter)])
         # time.sleep(30)
@@ -108,12 +110,12 @@ if cmd == "snr":
 ##################################### add to catalog ######################################################
 if cmd == "add" and rank < shear_num:
     # each rank only operate shear_id == rank !!!
-    snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
+    snr_data_path = total_path + "/result/sex_cat/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.zeros((chip_num * gal_num, 7))
     cent = size/2. - 0.5
     logger.info("%02d start..."%rank)
     for i in range(chip_num):
-        cat_path = total_path + "/result/data/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
+        cat_path = total_path + "/result/sex_cat/%s/cat/%d_gal_chip_%04d.fits.cat"%(sex_filter, rank, i)
         cata_data = numpy.loadtxt(cat_path)
         sex_data = tool_box.back_to_block(cata_data, gal_num, columns, size, size, cent, cent, y_idx, x_idx, area_idx, max_distance)
         snr_data[i * gal_num: (i + 1) * gal_num] = sex_data
@@ -194,7 +196,7 @@ if cmd == "add" and rank < shear_num:
 ##################################### check ######################################################
 if cmd == "check" and rank < shear_num:
     # check
-    check_path = total_path + "/result/data/check/%s/"%sex_filter
+    check_path = total_path + "/result/sex_cat/check/%s/"%sex_filter
     if rank == 0:
         if not os.path.exists(check_path):
             # os.removedirs(check_path)
@@ -212,7 +214,7 @@ if cmd == "check" and rank < shear_num:
     input_flux = para_h5["/flux"][()]
     para_h5.close()
 
-    snr_data_path = total_path + "/result/data/%s/sex_%d.npz" %(sex_filter, rank)
+    snr_data_path = total_path + "/result/sex_cat/%s/sex_%d.npz" %(sex_filter, rank)
     snr_data = numpy.load(snr_data_path)["arr_0"]
     sex_snr = snr_data[:, snr_idx]
     sex_mag = snr_data[:, mag_auto_idx]

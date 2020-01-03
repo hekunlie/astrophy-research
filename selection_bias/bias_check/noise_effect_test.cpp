@@ -2,7 +2,8 @@
 #include<hk_mpi.h>
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
-#define FLUX_PDF
+#define FLUX_PDF_UNI
+#define EPSF
 
 void arr_add(double *arr1, const double*arr2,const int length)
 {
@@ -32,9 +33,9 @@ int main(int argc, char*argv[])
 
 	//sprintf(parent_path, "/mnt/perc/hklee/bias_check");
 	//sprintf(parent_path, "/mnt/ddnfs/data_users/hkli/bias_check/data_from_pi/step_test");
-	sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/step_test");
+	//sprintf(parent_path, "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/selection_bias/bias_check/step_test");
 
-	//strcpy(parent_path, argv[1]);
+	strcpy(parent_path, argv[1]);
 	std::string str_data_path,str_shear_path;
 
 	char_to_str(parent_path, str_data_path);
@@ -50,14 +51,15 @@ int main(int argc, char*argv[])
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
 	int seed_ini;
+
 	double psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	double g1, g2, ts, te, t1, t2;
-	double psf_ellip, psf_ang, psf_norm_factor;
+	double psf_ellip, ellip_theta;
 	double img_cent;
 	double pts_step;
 
 	seed_ini = atoi(argv[2]);
-	pts_step = atof(argv[1]);
+	pts_step = 2.5;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
 	num_p = 30;
@@ -69,15 +71,17 @@ int main(int argc, char*argv[])
 
 	psf_type=2;
 	psf_scale = 4;
+	psf_ellip = 0.1;
+	ellip_theta = Pi*0.25;
 	psf_thresh_scale = 2.;
 	temp_s = rank;
 	sig_level = 1.5;
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 48;
+	size = 60;
 	img_cent = size*0.5 - 0.5;
-    total_chips = 1000;
+    total_chips = 2000;
     stamp_nx = 100;
 
 	all_paras.stamp_size = size;
@@ -179,8 +183,12 @@ int main(int argc, char*argv[])
 	// read shear
 	read_text(str_shear_path, shear, 2*shear_pairs);
     
+#ifdef EPSF
+	create_psf_e(psf, psf_scale, size, img_cent, psf_ellip, ellip_theta, psf_type);
+#else
 	// create PSF
 	create_psf(psf, psf_scale, size, img_cent, psf_type);
+#endif
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 
@@ -198,7 +206,11 @@ int main(int argc, char*argv[])
 		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << " PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
+#ifdef EPSF
+		sprintf(buffer, "!%s/epsf.fits", parent_path);
+#else
 		sprintf(buffer, "!%s/psf.fits", parent_path);
+#endif
 		write_fits(buffer,psf, size, size);
 		std::cout<<"Chip Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
@@ -279,39 +291,21 @@ int main(int argc, char*argv[])
 #ifdef FLUX_PDF
 				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 #else	
-				flux_i = 9000./ num_p;
+				flux_i = 20000./ num_p;
 #endif
-				// ////////////////// pure noise image //////////////////////
-				// initialize_arr(noise_1, size*size, 0);
-				// initialize_arr(pnoise_1, size*size, 0);
-                // initialize_arr(noise_2, size*size, 0);
-				// initialize_arr(pnoise_2, size*size, 0);
-
-				// addnoise(noise_1, size*size, gal_noise_sig, rng1);
-				// addnoise(noise_2, size*size, gal_noise_sig, rng2);
-
-                // pow_spec(noise_1, pnoise_1, size, size);
-                // pow_spec(noise_2, pnoise_2, size, size);
-
-
-                // // measure on the noise power spectrum residual
-                // noise_subtraction(pnoise_1, pnoise_2, &all_paras, 1, 0);
-                // shear_est(pnoise_1, ppsf, &all_paras);
-
-                // sub_noise_residual_data[row + j * shear_data_cols] = all_paras.n1;
-				// sub_noise_residual_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_noise_residual_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
-
 
 				///////////////// Noise free /////////////////////////		
 				initialize_arr(point, num_p * 2, 0);
 				
-				initialize_arr(gal, size*size, 0);
 				initialize_arr(pgal, size*size, 0);
 				
 				create_points(point, num_p, max_radius, pts_step, rng1);
-				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type, 1, &all_paras);
+#ifdef EPSF
+				convolve_e(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
+#else
+				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
+#endif
+
 #ifdef IMG_CHECK_LABEL
 				stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
@@ -381,23 +375,26 @@ int main(int argc, char*argv[])
 		if (0 == rank)
 		{
 			sprintf(set_name, "/data");
-			sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
+			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
+#ifdef EPSF
+			sprintf(result_path, "%s/result/data/data_%d_noise_free_epsf.hdf5", parent_path, shear_id);
+#else
+			sprintf(result_path, "%s/result/data/data_%d_noise_free.hdf5", parent_path, shear_id);
+#endif
+
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		// my_Gatherv(sub_noise_residual_data, gather_count, total_data, numprocs, rank);
-		// if (0 == rank)
-		// {
-		// 	sprintf(result_path, "%s/result/data_%.2f/data_%d_noise_residual.hdf5", parent_path, pts_step, shear_id);
-		// 	write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-		// }
-		// MPI_Barrier(MPI_COMM_WORLD);
-
 		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
+			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
+#ifdef EPSF
+			sprintf(result_path, "%s/result/data/data_%d_noisy_cpp_epsf.hdf5", parent_path, shear_id);
+#else
+			sprintf(result_path, "%s/result/data/data_%d_noisy_cpp.hdf5", parent_path, shear_id);
+#endif
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}

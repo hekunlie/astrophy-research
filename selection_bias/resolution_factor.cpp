@@ -55,12 +55,12 @@ int main(int argc, char**argv)
     int quad_tag;
     char inform[40];
 
-    shear_num = 10;
-    size = 50;
+    shear_num = 14;
+    size = 48;
     img_cent = size*0.5 - 0.5;
     nx = 100;
     ny = 100;
-    total_chips = 1000;
+    total_chips = 2000;
     sex_row = nx*ny*total_chips;
     final_data_size = nx*ny*total_chips;
 

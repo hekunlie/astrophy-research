@@ -84,19 +84,21 @@ if cmd == "all":
     if not os.path.exists(result_path + "data/data_4.0sig/"):
         os.makedirs(result_path + "data/data_4.0sig/")
 
-    if not os.path.exists(result_path + "data/check/"):
-        os.makedirs(result_path + "data/check/")
+    if not os.path.exists(result_path + "sex_cat/check/"):
+        os.makedirs(result_path + "sex_cat/check/")
 
     if not os.path.exists(result_path + "pic/"):
         os.makedirs(result_path + "pic/")
 
     cut_path = result_path + "cuts/"
     for sub_sex in sex_filters:
-        sex_path = result_path + "data/%s/"%sub_sex
+        sex_path = result_path + "sex_cat/%s/"%sub_sex
+        if not os.path.exists(result_path + "data/%s"%sub_sex):
+            os.makedirs(result_path + "data/%s"%sub_sex)
         if not os.path.exists(sex_path + "cat/"):
             os.makedirs(sex_path + "cat/")
 
-        sex_check = result_path + "data/check/%s/" % sub_sex
+        sex_check = result_path + "sex_cat/check/%s/" % sub_sex
         if not os.path.exists(sex_check):
             os.makedirs(sex_check)
 
