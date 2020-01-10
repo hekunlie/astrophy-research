@@ -45,8 +45,11 @@ int main(int argc, char**argv)
     double gh1, gh1_sig, gh2, gh2_sig;
 
     int mg_bin_num;
+    double *mg_bins;
     int chi_check_num;
+    int chisq_num;
     double *chi_check;
+    double *chisq1, *chisq2, *shear_for_chi;
     double left_guess, right_guess;
     int fit_range_label;
     double fit_range[9]{0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.040, 0.045};
@@ -58,6 +61,7 @@ int main(int argc, char**argv)
     int data_col, data_row;
     int result_col;
     double *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
+    
 
     // for results
     int sub_num;
@@ -67,6 +71,7 @@ int main(int argc, char**argv)
 
     // data shape
     strcpy(parent_path, argv[1]);
+    strcpy(data_type, argv[2]);
     //sprintf(parent_path,"/mnt/ddnfs/data_users/hkli/bias_check/result/data/data_rotation_0");
     shear_num = atoi(argv[3]);
     data_row = atoi(argv[4])*10000;
@@ -75,9 +80,10 @@ int main(int argc, char**argv)
     mg_bin_num = 20;//atoi(argv[4]);
     fit_range_label = 0;
     chi_check_num =20;
+    chisq_num = 61;
     left_guess = -0.1;
     right_guess = 0.1;
-    strcpy(data_type, argv[2]);
+    
 
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, data_type);
@@ -103,8 +109,15 @@ int main(int argc, char**argv)
     send_count = new int[numprocs]{};
     chi_send_count = new int[numprocs]{};
 
+    mg_bins = new double[mg_bin_num+1]{};
     chi_check = new double[2*chi_check_num]{};
-
+    chisq1 = new double[chisq_num]{};
+    chisq2 = new double[chisq_num]{};
+    shear_for_chi = new double[chisq_num]{};
+    for(i=0;i<chisq_num;i++)
+    {
+        shear_for_chi[i] = 0.2/(chisq_num-1)*i - 0.1;
+    }
     // shear point distribution
     //exit(0);
     i = shear_num/numprocs;
@@ -140,7 +153,7 @@ int main(int argc, char**argv)
     if(rank == 0)
     {
         show_arr(shear_point, 1, numprocs);
-        std::cout<<"Bin_num "<<mg_bin_num<<" Fit range: +-"<<fit_range[fit_range_label]<<" data:"<<parent_path<<" "<<std::endl;
+        std::cout<<"Bin_num "<<mg_bin_num<<" data:"<<parent_path<<" "<<std::endl;
     }
 
     sub_chi_check_g1 = new double[(shear_ed - shear_st)*chi_check_num*2];
@@ -241,6 +254,38 @@ int main(int argc, char**argv)
         result_sub_pdf[(i-shear_st)*result_col + 2] = gh2;
         result_sub_pdf[(i-shear_st)*result_col + 3] = gh2_sig;
 
+        set_bin(mg1, data_row, mg_bins, mg_bin_num, 100);
+        show_arr(mg_bins,1,mg_bin_num+1);
+        for (k = 0; k < chisq_num; k++)
+        {	
+            try
+            {
+                chisq_Gbin_1d(mg1, mnu1, data_row, mg_bins, mg_bin_num, shear_for_chi[k], left_guess);
+            }
+            catch(const char *msg)
+            {
+                throw msg;
+            }
+            chisq1[k] = left_guess;
+            
+            try
+            {
+                chisq_Gbin_1d(mg2, mnu2, data_row, mg_bins, mg_bin_num, shear_for_chi[k], left_guess);
+            }
+            catch(const char *msg)
+            {
+                throw msg;
+            }
+            chisq2[k] = left_guess;
+        }
+
+        sprintf(set_name,"/chisq1");
+        sprintf(data_path,"%s/chi_%d_%s.hdf5",parent_path, i, data_type);
+        write_h5(data_path, set_name, chisq1, chisq_num, 1, true);
+        sprintf(set_name,"/chisq2");
+        write_h5(data_path, set_name, chisq2, chisq_num, 1, false);
+        sprintf(set_name,"/g");
+        write_h5(data_path, set_name, shear_for_chi, chisq_num, 1, false);
         sprintf(inform, "%03d, PDF. g1: %9.6f, %9.6f (%8.6f), g2: %9.6f, %9.6f (%8.6f).",rank, g1_t[i], gh1,gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
 
@@ -374,7 +419,7 @@ int main(int argc, char**argv)
 
         get_time(time_now, 40);
         std::cout<<time_now<<std::endl;
-        std::cout<<"Bin_num "<<mg_bin_num<<" Fit range: +-"<< fit_range[fit_range_label]<<" "<<result_path<<std::endl;
+        std::cout<<"Bin_num "<<mg_bin_num<<fit_range[fit_range_label]<<" "<<result_path<<std::endl;
 
     }
     

@@ -103,6 +103,16 @@ class Image_Plot:
             self.axs[iy][ix].xaxis.set_major_locator(loc)
             self.axs[iy][ix].xaxis.set_major_formatter(fmt)
 
+    def set_ticklabel_str(self, iy, ix, axis_nm, loc, labels):
+        # y-axis
+        if axis_nm == 0:
+            self.axs[iy][ix].set_yticks(loc)
+            self.axs[iy][ix].set_yticklabels(labels)
+        # x-axis
+        else:
+            self.axs[iy][ix].set_xticks(loc)
+            self.axs[iy][ix].set_xticklabels(labels)
+
     def share_axis(self,iy,ix,axis_nm):
         if axis_nm == 0:
             share_ax = self.axs[iy][ix].twiny()

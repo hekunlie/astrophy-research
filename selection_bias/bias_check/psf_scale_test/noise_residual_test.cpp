@@ -57,14 +57,12 @@ int main(int argc, char*argv[])
 	double psf_ellip, ellip_theta;
 	double img_cent;
 	double pts_step;
-	double psf_cal_levels[4]{0.001, 0.0001, 0.00001, 0.000001};
-	int psf_thresh_id;
-	int flux_level;
+	double psf_scales[7]{1.6, 2, 2.5, 3, 4, 6, 7};
+	int psf_scale_id;
 
 	seed_ini = atoi(argv[2]);
-	flux_level = atoi(argv[3]);
-	psf_thresh_id = 3;//atoi(argv[3]); 
-	pts_step = 1.;//atof(argv[1]);
+	psf_scale_id = atoi(argv[3]); 
+	pts_step = 1;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
 	num_p = 30;
@@ -75,16 +73,17 @@ int main(int argc, char*argv[])
     shear_pairs = 10;
 
 	psf_type=2;
-	psf_scale = 4;
+	psf_scale = psf_scales[psf_scale_id];
 	psf_ellip = 0.1;
-	ellip_theta = Pi*0.25;
+
+	ellip_theta = 0;
 	psf_thresh_scale = 2.;
 	temp_s = rank;
 	sig_level = 1.5;
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 60;
+	size = 64;
 	img_cent = size*0.5 - 0.5;
     total_chips = 2000;
     stamp_nx = 100;
@@ -95,7 +94,7 @@ int main(int argc, char*argv[])
 	// because the max half light radius of the galsim source is 5.5 pixels
 	all_paras.max_distance = max_radius; 
 
-	sprintf(log_path, "%s/logs/%02d_R%d_S%.2f.dat", parent_path, rank, rotation, pts_step);
+	sprintf(log_path, "%s/logs/%02d_S%.2f.dat", parent_path, rank, pts_step);
 
 #ifdef IMG_CHECK_LABEL	
 	double *big_img_noisy = new double[stamp_nx*stamp_nx*size*size]{};
@@ -196,7 +195,7 @@ int main(int argc, char*argv[])
 #endif
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
-	all_paras.psf_pow_thresh =  psf_cal_levels[psf_thresh_id];
+
 
 	// std::cout<<rank<<std::endl;
 	// show_arr(scatter_count,1,numprocs);
@@ -209,13 +208,13 @@ int main(int argc, char*argv[])
 		std::cout<<"Shear num: "<<shear_pairs<<std::endl;
         std::cout<<"Rotation: "<<rotation<<std::endl;
 		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
-		std::cout << "Total cpus: " << numprocs <<" FLux: "<<flux_level*9000<<std::endl;
-		std::cout << "PSF THRESH: " << all_paras.psf_pow_thresh << " PSF HLR: " << all_paras.psf_hlr << std::endl;
+		std::cout << "Total cpus: " << numprocs << std::endl;
+		std::cout <<"PSF Scale: "<<psf_scale<< "PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 #ifdef EPSF
-		sprintf(buffer, "!%s/epsf.fits", parent_path);
+		sprintf(buffer, "!%s/epsf_%.2f.fits", parent_path,psf_scale);
 #else
-		sprintf(buffer, "!%s/psf.fits", parent_path);
+		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
 #endif
 		write_fits(buffer,psf, size, size);
 		std::cout<<"Chip Num of each thread: ";
@@ -242,7 +241,7 @@ int main(int argc, char*argv[])
 
 		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f ", size, total_chips, numprocs, num_p, gal_noise_sig);
 		write_log(log_path, log_inform);
-		sprintf(log_inform, "PSF scale: %.2f, max radius: %.2f, Step: %.4f, flux: %.2f", psf_scale, max_radius, pts_step, flux_level*9000);
+		sprintf(log_inform, "PSF scale: %.2f, max radius: %.2f, Step: %.4f", psf_scale, max_radius, pts_step);
 		write_log(log_path, log_inform);
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d", rank, shear_id, chip_st, chip_ed);
 		write_log(log_path, log_inform);
@@ -297,7 +296,7 @@ int main(int argc, char*argv[])
 #ifdef FLUX_PDF
 				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 #else	
-				flux_i = flux_level*9000./ num_p;
+				flux_i = 7000./ num_p;
 #endif
 
 				///////////////// Noise free /////////////////////////		
@@ -311,12 +310,12 @@ int main(int argc, char*argv[])
 #else
 				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
 #endif
+				pow_spec(gal, pgal, size, size);
 
 #ifdef IMG_CHECK_LABEL
-				stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
+				stack(big_img_noise_free, pgal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
 #endif			
-				pow_spec(gal, pgal, size, size);
 				shear_est(pgal, ppsf, &all_paras);
 
 				sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
@@ -339,7 +338,7 @@ int main(int argc, char*argv[])
 				noise_subtraction(pgal, pnoise_2, &all_paras, 1, 1);
 
 #ifdef IMG_CHECK_LABEL
-				stack(big_img_noisy, gal, j, size, stamp_nx, stamp_nx);
+				stack(big_img_noisy, pgal, j, size, stamp_nx, stamp_nx);
 				//std::cout<<flux_i<<" "<<sub_flux[(i-chip_st)*stamp_num + j]<<std::endl;
 #endif
 
@@ -359,9 +358,9 @@ int main(int argc, char*argv[])
 #ifdef IMG_CHECK_LABEL
 			if(i == IMG_CHECK_LABEL)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d_step_%.2f_noise_free_%d.fits", parent_path, shear_id, i, rotation, pts_step,flux_level);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_free.fits", parent_path, shear_id, i, pts_step, psf_scale);
 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_r%d_step_%.2f_noisy_%d.fits", parent_path, shear_id, i, rotation, pts_step,flux_level);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noisy.fits", parent_path, shear_id, i, pts_step, psf_scale);
 				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
 			}
 #endif
@@ -383,9 +382,9 @@ int main(int argc, char*argv[])
 			sprintf(set_name, "/data");
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free_epsf.hdf5", parent_path,flux_level, shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free_epsf.hdf5", parent_path,psf_scale_id,shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free.hdf5", parent_path,psf_thresh_id, shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free.hdf5", parent_path, psf_scale_id,shear_id);
 #endif
 
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
@@ -397,9 +396,9 @@ int main(int argc, char*argv[])
 		{
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp_epsf.hdf5", parent_path,flux_level, shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp_epsf.hdf5", parent_path,psf_scale_id, shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp.hdf5", parent_path,psf_thresh_id, shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp.hdf5", parent_path, psf_scale_id,shear_id);
 #endif
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;

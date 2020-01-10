@@ -359,11 +359,13 @@ def gaussnosie_fit(data, bin_num):
     :return:
     """
     num, bins = numpy.histogram(data, bin_num)
-    num = num/numpy.sum(num)
-    mp = numpy.where(num == numpy.max(num))[0][0]
-    coeff, coerr = curve_fit(f=exp_fun, xdata=bins[1:], ydata=num)
+    # num = num/numpy.sum(num)
+    # mp = numpy.where(num == numpy.max(num))[0][0]
+    fit_x = (bins[1:]+bins[:bin_num])/2
+    coeff, coerr = curve_fit(f=exp_fun, xdata=fit_x, ydata=num)
     # the fitted sigma can be negative
-    return coeff, coerr, bins, num
+    fit_func = exp_fun(fit_x, coeff[0],coeff[1],coeff[2])
+    return fit_x, fit_func, num, bins, coeff, coerr
 
 
 def gauss_fit(x, f, method='scipy'):
@@ -569,6 +571,32 @@ def accurate_sum(data, sub_size):
         total += data[i*sub_size: (i+1)*sub_size].sum()
     total += data[m*sub_size:].sum()
     return total
+
+def pow_test(img):
+    size = img.shape[0]
+    cent = int(size/2)
+    inverse = range(cent-2,-1,-1)
+    mask = numpy.ones_like(img)
+
+    a = numpy.flip(numpy.flip(img[1:cent+1,1:cent],0),1)
+    b = numpy.flip(numpy.flip(img[1:cent,cent:],0),1)
+    c = img[cent+1:,1:cent+1]
+    d = img[cent:, cent+1:]
+
+    mask[1:cent+1,1:cent] = a -d
+    mask[cent:, cent+1:] = a -d
+
+    mask[1:cent,cent:] = b - c
+    mask[cent+1:,1:cent+1] = b - c
+
+    a = img[1:cent,0] - img[cent+1:,0][inverse]
+    mask[1:cent,0] = a
+    mask[cent+1:,0] = a
+
+    a = img[0,1:cent] - img[0,cent + 1:][inverse]
+    mask[0,1:cent] = a
+    mask[0,cent+1:] = a
+    return mask
 
 def image_fft(image):
     return fft.fftshift(fft.fft2(image))

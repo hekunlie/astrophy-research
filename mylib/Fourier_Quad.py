@@ -105,7 +105,7 @@ class Fourier_Quad:
         w_temp = numpy.exp(-(self.mx**2 + self.my**2)/radius**2)
         return w_temp, 1./radius
 
-    def ran_pts(self, num, radius, ellip=0, alpha=0, g=None):
+    def ran_pts(self, num, radius, step=1, ellip=0, alpha=0, g=None):
         """
         create random points within a ellipse
         :param num: point number
@@ -120,8 +120,8 @@ class Fourier_Quad:
         cov1, cov2 = numpy.cos(alpha), numpy.sin(alpha)
         xy_coord = numpy.zeros((2, num))
         theta = self.rng.uniform(0., 2 * numpy.pi, num)
-        xn = numpy.cos(theta)
-        yn = numpy.sin(theta)
+        xn = numpy.cos(theta)*step
+        yn = numpy.sin(theta)*step
         x = 0.
         y = 0.
         for n in range(num):
@@ -897,7 +897,7 @@ class Fourier_Quad:
             fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
             fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
             text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
-            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+            fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=15)
         return g_h, g_sig, coeff
 
@@ -961,7 +961,7 @@ class Fourier_Quad:
             fig_ax.scatter(fit_range, chi_sq, alpha=0.7,s=5)
             fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2,alpha=0.7)
             text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
-            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+            fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=15)
 
         return g_h, g_sig, coeff

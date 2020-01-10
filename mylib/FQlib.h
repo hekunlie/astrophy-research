@@ -550,6 +550,7 @@ void gsl_free(const int rng_label);
 void addnoise(double *image, const int pixel_num, const double sigma, const gsl_rng *gsl_rand_rng);//checked
 void addnoise(float *image, const int pixel_num, const float sigma, const gsl_rng *gsl_rand_rng);//checked
 /* add Gaussian noise to an array */
+void noise2pow(double *pow_img, const int size, const double sigma, gsl_rng *gsl_rand_rng);
 
 void rand_gauss(const double sigma, const double mean, double &rand_n, const gsl_rng *gsl_rand_rng);//checked
 /* return a double from the normal distribution with sigma and mean. 

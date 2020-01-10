@@ -1618,6 +1618,9 @@ void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 
 	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
 	/* beta is the beta_square in the estimators */
+	// use the hlr/1.414 of the PSF as the sigma of the target PSF
+	// then the hlr of the target PSF will be smaller than the PSF
+	// HLR = hlr/1.414*1.177 < hlr
 	beta = 1./ paras->psf_hlr / paras->psf_hlr;
 	
 	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken into account
@@ -4219,6 +4222,63 @@ void gsl_free(const int rng_label)
 	{
 		gsl_rng_free(rng3);
 	}	
+}
+
+void noise2pow(double *pow_img, const int size, const double sigma, gsl_rng *gsl_rand_rng)
+{
+    int i,j, kx1, ky1, kx2, ky2;
+    int cent;
+    double noise;
+    cent = size*0.5;
+
+    for(i=1;i<cent;i++) // y
+    {
+        ky1 = (cent + i)*size;
+        ky2 = (cent - i)*size;
+
+        // ky = size/2
+        rand_gauss(sigma, 0, noise, gsl_rand_rng);
+        pow_img[cent*size + cent+i] += noise;
+        pow_img[cent*size + cent- i] += noise;
+
+        // kx = size/2
+        rand_gauss(sigma, 0, noise, gsl_rand_rng);
+        pow_img[ky1 + cent] += noise;
+        pow_img[ky2 + cent] += noise;
+
+        // ky = 0, kx = [1, size]
+        rand_gauss(sigma, 0, noise, gsl_rand_rng);
+        pow_img[cent + i] += noise;
+        pow_img[cent - i] += noise;
+
+        // kx=0, ky = [1, size]
+        rand_gauss(sigma, 0, noise, gsl_rand_rng);
+        pow_img[ky1] += noise;
+        pow_img[ky2] += noise;
+
+        for(j=1;j<cent;j++) // x
+        {
+            kx1 = cent + j;
+            kx2 = cent - j;
+
+            rand_gauss(sigma, 0, noise, gsl_rand_rng);
+            pow_img[ky1 + kx1] += noise;
+            pow_img[ky2 + kx2] += noise;
+            
+            rand_gauss(sigma, 0, noise, gsl_rand_rng);
+            pow_img[ky1 + kx2] += noise;
+            pow_img[ky2 + kx1] += noise;
+        }
+    }
+
+    rand_gauss(sigma, 0, noise, gsl_rand_rng);
+    pow_img[0] += noise; // [0,0]
+    rand_gauss(sigma, 0, noise, gsl_rand_rng);
+    pow_img[cent] += noise; // [0, size/2]
+    rand_gauss(sigma, 0, noise, gsl_rand_rng);
+    pow_img[cent*size] += noise; // [size/2, 0]
+    rand_gauss(sigma, 0, noise, gsl_rand_rng);
+    pow_img[cent*size + cent] += noise; // [size/2, size/2]
 }
 
 void addnoise(double *image, const int pixel_num, const double sigma, const gsl_rng *gsl_rand_rng)

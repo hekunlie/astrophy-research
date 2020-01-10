@@ -106,7 +106,7 @@ ext_data = numpy.zeros((3, num)) # for SNR_A
 
 pool = []
 pts_num = 100
-rand_pts = fq_p.ran_pts(num=pts_num, radius=10, ellip=0.8)
+rand_pts = fq_p.ran_pts(num=pts_num, radius=7)
 
 print("Simulate")
 
