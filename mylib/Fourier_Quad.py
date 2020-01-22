@@ -142,6 +142,41 @@ class Fourier_Quad:
         else:
             return xy_coord
 
+    def ran_pts_e(self, num, radius, step=2.5, xy_ratio=1.):
+        """
+        create random points within a ellipse
+        :param num: point number
+        :param radius: max radius for a point from the center
+        :param ellip: ellipticity
+        :param alpha: radian, the angle between the major-axis and x-axis
+        :param g: shear, tuple or list or something can indexed by g[0] and g[1]
+        :return: (2,num) numpy array, the points
+        """
+        r2 = radius ** 2
+        xy_coord = numpy.zeros((2, num))
+        theta = self.rng.uniform(0., 2 * numpy.pi, num)
+        if xy_ratio >= 1:
+            xn = numpy.cos(theta) * step * xy_ratio
+            yn = numpy.sin(theta) * step
+        else:
+            xn = numpy.cos(theta) * step
+            yn = numpy.sin(theta) * step / xy_ratio
+        x = 0.
+        y = 0.
+        for n in range(num):
+            x += xn[n]
+            y += yn[n]
+            if x ** 2 + y ** 2 > r2:
+                x = xn[n]
+                y = yn[n]
+            xy_coord[0, n] = x
+            xy_coord[1, n] = y
+
+        xy_coord[0] = xy_coord[0] - numpy.mean(xy_coord[0])
+        xy_coord[1] = xy_coord[1] - numpy.mean(xy_coord[1])
+
+        return xy_coord
+
     def rotate(self, pos, theta):
         rot_matrix = numpy.array([[numpy.cos(theta), -numpy.sin(theta)], [numpy.sin(theta), numpy.cos(theta)]])
         return numpy.dot(rot_matrix, pos)

@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
@@ -15,19 +15,20 @@ matplotlib.rcParams["font.family"] = "serif"
 
 source_b = "galsim_bright"
 source_f = "galsim_dimmer"
+parent_path = "D:/cut"
 # final pic name
-pic_nm = "gal_mc_original_pdf.pdf"
+pic_nm = "/gal_mc.pdf"
 pic_nm_png = pic_nm.split(".")[0]+".png"
 # the file name
-file_name = "cuts_bk_2019_12_9_original_pdf/"
+file_name = "cuts_pi/"
 sex_filter_name = "sym/sex2_1.5/"
 # result file of all source
 shear_result_all = file_name + "shear_result.hdf5"
 # the bright source
-total_path_1 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_b
+total_path_1 = parent_path + "/%s/result/"%source_b
 data_path_1 = total_path_1 + file_name + sex_filter_name
 # the faint source
-total_path_2 = "/mnt/ddnfs/data_users/hkli/selection_bias/paper_data/%s/result/"%source_f
+total_path_2 = parent_path + "/%s/result/"%source_f
 data_path_2 = total_path_2 + file_name + sex_filter_name
 
 names = ["P$_{k0}$", "MAG_AUTO", "MAG$_{true}$", "SNR$_S$", "Resolution"]
@@ -48,15 +49,15 @@ img.axis_type(0,"major",tick_len=8, tick_width=2)
 img.axis_type(1,"major",tick_len=8, tick_width=2)
 
 
-# # pts sample
-# text_pos = [[6, 1.],[6, 1.],[6, 1.6],[6, 1.6]]
+# # # pts sample
+# text_pos = [[6, 1.6],[6, 1.6],[6, 1.6],[6, 1.6]]
 # sample_name = ["PI sample","PI sample","PII sample","PII sample"]
-# xy_lims = [(-2.9, 1.4),(-2.9, 1.8),(-4.98, 2.6),(-4.9, 2.6)]
+# xy_lims = [(-2.1, 2.1),(-2.1, 2.1),(-4.2, 2.6),(-4.2, 2.6)]
 
 # galsim sample
-text_pos = [[6, 0.7],[6, 0.7],[6, 0.7],[6, 0.7]]
+text_pos = [[6, 1.3],[6, 1.3],[6, 1.2],[6, 1.2]]
 sample_name = ["GI sample","GI sample","GII sample","GII sample"]
-xy_lims = [(-0.85, 0.9),(-0.91, 0.9),(-2, 1.1),(-2, 1.1)]
+xy_lims = [(-1.2, 1.8),(-1.2, 1.8),(-3.1, 1.8),(-3.1, 1.8)]
 
 for j in range(4):
 
@@ -116,7 +117,8 @@ for j in range(4):
 
 
 # img.figure.subplots_adjust(hspace=0.25, wspace=0.25)
-img.save_img(pic_nm)
-img.save_img(pic_nm_png)
 
+img.save_img(parent_path + pic_nm)
+img.save_img(parent_path + pic_nm_png)
 
+img.show_img()

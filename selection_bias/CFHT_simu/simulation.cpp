@@ -63,22 +63,6 @@ int main(int argc, char*argv[])
 	psf_peak = 0;
 	psf_ellip = 0.1;
 	ellip_theta = Pi*0.25; 
-	// if (0 == rank)
-	// {
-	// 	for (i = 0; i < numprocs; i++)
-	// 	{
-	// 		sprintf(finish_path, "/home/hkli/work/test/job/debug/finish_%d.dat", i);
-	// 		if (remove(finish_path))
-	// 		{
-	// 			std::cout << "REMOVE: " << finish_path << std::endl;
-	// 		}
-	// 		else
-	// 		{
-	// 			std::cout << "FAILURE REMOVE: " << finish_path << std::endl;
-	// 		}
-	// 	}
-	// }
-	// MPI_Barrier(MPI_COMM_WORLD);
 
 	read_para(str_para_path, str_stampsize, size);
 	read_para(str_para_path, str_total_num, total_chips);
@@ -140,10 +124,10 @@ int main(int argc, char*argv[])
 	read_h5(shear_path, set_1, g2_t);
 
 	// circle PSF
-	create_psf(psf, psf_scale, size, stamp_cent, psf_type);
+	//create_psf(psf, psf_scale, size, stamp_cent, psf_type);
 
 	// elliptical PSF
-	//create_psf_e(psf, psf_scale, size, stamp_cent, psf_ellip, ellip_theta, psf_type);
+	create_psf_e(psf, psf_scale, size, stamp_cent, psf_ellip, ellip_theta, psf_type);
 
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
@@ -219,9 +203,9 @@ int main(int argc, char*argv[])
 
 				
 				// circle PSF
-				convolve(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type);					
+				//convolve(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type);					
 				// elliptical PSF
-				//convolve_e(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
+				convolve_e(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
 
 				addnoise(gal, size*size, gal_noise_sig, rng1);
 

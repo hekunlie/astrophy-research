@@ -31,7 +31,7 @@ pixel_scale = 0.187
 if pts_source == 0:
     flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
 else:
-    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.5), tool_box.mag_to_flux(24.5)])
+    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
 
 flux_num = len(flux)
 noise_sig = 60
@@ -39,7 +39,7 @@ noise_sig = 60
 detect_thresh = 2
 
 fq = Fourier_Quad(size, seed)
-fq_p = Fourier_Quad(size, 1760)
+fq_p = Fourier_Quad(size, 2810)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, noise_sig)
 
@@ -106,7 +106,7 @@ ext_data = numpy.zeros((3, num)) # for SNR_A
 
 pool = []
 pts_num = 100
-rand_pts = fq_p.ran_pts(num=pts_num, radius=7)
+rand_pts = fq_p.ran_pts_e(num=pts_num, radius=7, step=1, xy_ratio=3)
 
 print("Simulate")
 
