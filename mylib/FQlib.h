@@ -229,7 +229,10 @@ void snr_est(const double *image, fq_paras *paras, int fit);//checked
 */
 void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
+
 void shear_est(double *gal_img, double *psf_img, fq_paras *paras);//checked
+void shear_est_w(double *gal_img, double *psf_img, fq_paras *paras);//checked
+
 void ellip_est(const double *gal_img, const int size, fq_paras*paras);
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
@@ -248,6 +251,9 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	gh: the guess of shear
 	bins: the bin for G1(2) , which must be set up (call set_bin()) before , for chi square calculation
 	chisq: the chi square with shear guess, gh
+*/
+void chisq_Gbin_1d(const double *mg,const int data_num, const double *bins, const int bin_num, double &result);
+/* 	new for PDF_SYM
 */
 
 void cal_chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
@@ -360,8 +366,8 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
 	
 	!!! one should be very careful with problem of the precision that comes from the larger power gap between
-	!!! the maximum and minimum in the matrix A (the square matrix from least square). So, one should shift and rescale the "x" and "y" before fiiting.
-	!!! if the coordinates have been shifted and scaled, the orignal f(x,y) should be calculated at new (x,y)
+	!!! the maximum and minimum in the matrix A (the square matrix from least square). So, one should shift and rescale the "x" and "y" before fitting.
+	!!! if the coordinates have been shifted and scaled, the original f(x,y) should be calculated at new (x,y)
 
 	x(y) : array, coordinates
 	fxy: array, the measured value at (x,y)

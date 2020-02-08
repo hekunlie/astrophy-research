@@ -1662,6 +1662,60 @@ void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 
 }
 
+void shear_est_w(double *gal_img, double *psf_img, fq_paras *paras)
+{	 /* will not change the inputted array */
+	 /* all the inputted images are the powerspectrums */
+	/* if there's no background noise, a array of '0' should be inputted */
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
+	double mp1=0., mp2=0.;
+	int i, j, k, size;
+	size = paras->stamp_size;
+
+	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
+	/* beta is the beta_square in the estimators */
+	// use the hlr/1.414 of the PSF as the sigma of the target PSF
+	// then the hlr of the target PSF will be smaller than the PSF
+	// HLR = hlr/1.414*1.177 < hlr
+	beta = 1./ paras->psf_hlr / paras->psf_hlr;
+	
+	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken into account
+	thresh = paras->psf_pow_thresh;
+
+	for (i = 0; i < size; i++)//y coordinates
+	{
+		ky = i - size*0.5;
+		for (j = 0; j < size; j++) // x coordinates
+		{
+			kx = j - size*0.5;
+			if (psf_img[i*size + j] >= thresh)
+			{	
+				k2 = kx*kx + ky*ky;
+				k4 = k2*k2;
+				kx2 = kx*kx;
+				ky2 = ky*ky;
+
+				tk = exp( - 2*k2 * beta ) / psf_img[i*size + j] * gal_img[i*size + j] * alpha;
+				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
+				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
+				mg2 += -kx*ky*tk;
+				mn += ( k2 - 0.5*beta*k4 ) * tk;
+				mu += (k4  - 8 *kx2*ky2)*tk * (-0.5*beta);
+				mv += kx*ky*(kx2-ky2)* tk * (-2.* beta);
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+			}
+		}
+	}
+
+	paras->n1 = mg1;
+	paras->n2 = mg2;
+	paras->dn = mn;
+	paras->du = mu;
+	paras->dv = mv;
+	//paras->dp1 = mp1;
+	//paras->dp2 = mp2;
+
+}
 
 void ellip_est(const double *gal_img, const int size, fq_paras*paras)
 {
@@ -1893,6 +1947,30 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 
 	delete[] num_in_bin;
 	delete[] temp;
+}
+
+void chisq_Gbin_1d(const double *mg, const int data_num, const double *bins, const int bin_num, double &result)
+{
+	int i, j, k;
+
+	int *num_in_bin = new int[bin_num];
+
+	histogram(mg, bins, num_in_bin, data_num, bin_num);
+	try
+	{
+		cal_chisq_1d(num_in_bin, bin_num, result);
+	}
+	catch(const char *msg)
+	{	
+		std::cout << "Num: " << std::endl;
+		show_arr(num_in_bin, 1, bin_num);
+		std::cout << "Bin: " << std::endl;
+		show_arr(bins, 1, bin_num + 1);
+		char err_inform[200];
+		sprintf(err_inform,"%s, Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d)!!!",msg);
+		throw err_inform;
+	}
+	delete[] num_in_bin;
 }
 
 

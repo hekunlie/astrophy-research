@@ -40,7 +40,7 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, noise=None, F=False):
+    def shear_est(self, gal_image, psf_image, weight, noise=None, F=False):
         r"""
         Before the shear_est(), the get_hlr() should be called to get the half light radius of the PSF, and it will
         assigned to the self.hlr for shear_est() automatically. The get_hlr() should be called when the PSF changes.
@@ -50,7 +50,8 @@ class Fourier_Quad:
         :param F: boolean, False for PSF image, True for PSF Power spectrum
         :return: estimators of shear
         """
-        gal_ps = self.pow_spec(gal_image)
+        # gal_ps = self.pow_spec(gal_image)
+        gal_ps = gal_image
         # gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
@@ -69,10 +70,10 @@ class Fourier_Quad:
         # hlr = self.get_radius_new(psf_ps, 2)[0]
         wb, beta = self.wbeta(self.hlr)
         maxi = numpy.max(psf_ps)
-        idx = psf_ps < maxi / 10000.
+        idx = psf_ps < maxi / 100000.
         wb[idx] = 0
         psf_ps[idx] = 1.
-        tk = wb/psf_ps * gal_ps
+        tk = wb/psf_ps * gal_ps*wb#*weight
 
         # ky, kx = self.my, self.mx
         # #
