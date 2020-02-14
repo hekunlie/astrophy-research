@@ -231,7 +231,6 @@ void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
 
 void shear_est(double *gal_img, double *psf_img, fq_paras *paras);//checked
-void shear_est_w(double *gal_img, double *psf_img, fq_paras *paras);//checked
 
 void ellip_est(const double *gal_img, const int size, fq_paras*paras);
 

@@ -46,13 +46,17 @@ int main(int argc, char*argv[])
 	double g1, g2, ts, te, t1, t2;
 	double psf_ellip, ellip_theta, psf_norm_factor;
 	double pts_step;
+	int psf_ellip_label;
 
 	seed_ini = atoi(argv[2]);
 	num_p = 30;
-	pts_step = 2.5;
+	pts_step = 1;
 	stamp_num = 10000;
 	shear_esti_data_cols = 7;
 	snr_para_data_cols = 10;
+
+	// 0 circle PSF, 1 elliptical PSF
+	psf_ellip_label = 0;
 
 	max_radius=7;
 	psf_scale=4.;
@@ -123,11 +127,16 @@ int main(int argc, char*argv[])
 	sprintf(set_1,"/g2");
 	read_h5(shear_path, set_1, g2_t);
 
-	// circle PSF
-	//create_psf(psf, psf_scale, size, stamp_cent, psf_type);
-
-	// elliptical PSF
-	create_psf_e(psf, psf_scale, size, stamp_cent, psf_ellip, ellip_theta, psf_type);
+	if(psf_ellip_label == 0)	
+	{
+		// circle PSF
+		create_psf(psf, psf_scale, size, stamp_cent, psf_type);
+	}
+	else
+	{
+		// elliptical PSF
+		create_psf_e(psf, psf_scale, size, stamp_cent, psf_ellip, ellip_theta, psf_type);
+	}
 
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
@@ -201,11 +210,16 @@ int main(int argc, char*argv[])
 				// elliptical PSF
 				//convolve(gal, point, flux_i, size, num_p, 0, psf_scale, 0, 0, psf_type, 0, psf_ellip, psf_ang, psf_norm_factor, &all_paras);
 
-				
-				// circle PSF
-				//convolve(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type);					
-				// elliptical PSF
-				convolve_e(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
+				if(psf_ellip_label == 0)
+				{
+					// circle PSF
+					convolve(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type);					
+				}
+				else
+				{
+					// elliptical PSF
+					convolve_e(gal, point, flux_i, size, stamp_cent, num_p, 0, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
+				}				
 
 				addnoise(gal, size*size, gal_noise_sig, rng1);
 
@@ -223,7 +237,7 @@ int main(int argc, char*argv[])
 				noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
 				shear_est(pgal, ppsf, &all_paras);
 
-				data[row + j * shear_esti_data_cols + 0] = 0;
+				data[row + j * shear_esti_data_cols + 0] = flux[i*stamp_num + j];
 				data[row + j * shear_esti_data_cols + 1] = 0;
 				data[row + j * shear_esti_data_cols + 2] = all_paras.n1;
 				data[row + j * shear_esti_data_cols + 3] = all_paras.n2;

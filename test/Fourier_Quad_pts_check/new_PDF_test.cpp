@@ -457,7 +457,7 @@ void find_shear_dipole_2d(const double *mg1, const double *mg2, const double *mn
 //,const int chi_grid_num, double *g1_grid, double* g2_grid, double* chisq_grid
 void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const double *mu, const int data_num, const int bin_num, 
                         double &gh1, double &gh1_sig,double &gh2, double &gh2_sig, const int chi_grid_num,double *g1_grid, double *g2_grid,
-                        double *chisq1_grid, double *chisq2_grid)
+                        double *chisq1_grid, double *chisq2_grid, double  g1_true, double  g2_true, double delta_g,double* coeff_check)
 
 {
     int i, j, k;
@@ -478,39 +478,40 @@ void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const
     double *coeff = new double[6];
 
     double *mg = new double[data_num];
-
+    double *temp = new double[data_num];
     double *mg_bin = new double[bin_num+1]{};
 
 
-    set_bin(mg1, data_num, mg_bin, bin_num, 100);
+    
+    
+    char inform[200];
+
     //show_arr(radius_bin,1, bin_num+1);
     //std::cout<<std::endl;
     
        
     // dg = 0.005
-    dg = 0.01;
+    dg = delta_g;
 
     // for g1
-    find_shear_mean(mg1, mn, data_num, g1, g1_sig, 1000, 100);
-    for(i=0;i<chi_grid_num;i++) // y G1
+    set_bin(mg1, data_num, mg_bin, bin_num, 100);
+    find_shear_mean(mg1, mn, data_num, g1, g1_sig, 100, 1);
+    for(i=0;i<chi_grid_num;i++) // y 
     {   
         m = g1 - dg + dg*2/(chi_grid_num-1)*i;        
 
-        for(k=0;k<data_num;k++){mg[k] = mg1[k] - m*mn[k];}
+        for(k=0;k<data_num;k++){temp[k] = mg1[k] - m*mn[k];}
 
-        for(j=0;j<chi_grid_num;j++) // x G2
+        for(j=0;j<chi_grid_num;j++) // x 
         {   
             tag = i*chi_grid_num+j;
 
-            n = g1 - dg + dg*2/(chi_grid_num-1)*j;
+            n = g1 - dg*2 + dg*4/(chi_grid_num-1)*j;
 
             gh1_fit[tag] = m;
             gh2_fit[tag] = n;
             
-            for(k=0;k<data_num;k++)
-            {
-                mg[k] -= n*mu[k]; 
-            }
+            for(k=0;k<data_num;k++){mg[k] = temp[k] -n*mu[k];}
             
             histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
             cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
@@ -527,32 +528,30 @@ void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const
     poly_fit_2d(gh1_fit, gh2_fit, chisq1_fit, chi_grid_num*chi_grid_num, 2, coeff);
     gh1 = -coeff[1]/2/coeff[3];
     gh1_sig = sqrt(0.5/coeff[3]);
-
+    for(i=0;i<6;i++){coeff_check[i] = coeff[i];}
     // gh2 = -coeff[2]/2/coeff[5];
     // gh2_sig = sqrt(0.5/coeff[5]);
     
 
     // for g2
-    find_shear_mean(mg2, mn, data_num, g2, g2_sig, 1000, 100);
-    for(i=0;i<chi_grid_num;i++) // y G1
+    set_bin(mg2, data_num, mg_bin, bin_num, 100);
+    find_shear_mean(mg2, mn, data_num, g2, g2_sig, 100, 1);
+    for(i=0;i<chi_grid_num;i++) // y 
     {   
         m = g2 - dg + dg*2/(chi_grid_num-1)*i;        
 
-        for(k=0;k<data_num;k++){mg[k] = mg2[k] - m*mn[k];}
+        for(k=0;k<data_num;k++){temp[k] = mg2[k] - m*mn[k];}
 
-        for(j=0;j<chi_grid_num;j++) // x G2
+        for(j=0;j<chi_grid_num;j++) // x 
         {   
             tag = i*chi_grid_num+j;
 
-            n = g2 - dg + dg*2/(chi_grid_num-1)*j;
+            n = g2 - dg*2 + dg*4/(chi_grid_num-1)*j;
 
             gh1_fit[tag] = m;
             gh2_fit[tag] = n;
             
-            for(k=0;k<data_num;k++)
-            {
-                mg[k] += n*mu[k]; 
-            }
+            for(k=0;k<data_num;k++){mg[k] = temp[k] + n*mu[k];}
             
             histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
             cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
@@ -569,7 +568,9 @@ void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const
     poly_fit_2d(gh1_fit, gh2_fit, chisq2_fit, chi_grid_num*chi_grid_num, 2, coeff);
     gh2 = -coeff[1]/2/coeff[3];
     gh2_sig = sqrt(0.5/coeff[3]);
-
+    for(i=0;i<6;i++){coeff_check[i+6] = coeff[i];}
+    // sprintf(inform,"%9.6f %9.6f (%9.6f) %9.6f %9.6f (%9.6f)",g1_true, g1, g1_sig, g2_true, g2, g2_sig);
+    // std::cout<<inform<<std::endl;
     // gh2 = -coeff[2]/2/coeff[5];
     // gh2_sig = sqrt(0.5/coeff[5]);
 
@@ -580,6 +581,8 @@ void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const
     delete[] chisq1_fit;
     delete[] chisq2_fit;
     delete[] coeff;
+    delete[] temp;
+    delete[] mg;
 }
 
 int main(int argc, char**argv)
@@ -593,8 +596,9 @@ int main(int argc, char**argv)
 	MPI_Get_processor_name(processor_name, &namelen);
 
     char parent_path[200], data_path[200], set_name[30], data_name[40], result_path[200];
-    char inform[200];
+    char inform[300];
     char data_nm[30];
+    char time_now[50],time_now_1[50];
 
     double *data, *mg1, *mg2, *mn, *mu,  *mnu1, *mnu2;
     double *check = new double[40];
@@ -615,6 +619,11 @@ int main(int argc, char**argv)
     ratio = atoi(argv[3]);
     gh_grid_num = atoi(argv[4]);
 
+    int add_time, add_scale;
+    add_time = 100;//atoi(argv[5]);
+    add_scale = 100;//atoi(argv[6]);
+    double delta_g;
+    delta_g = atof(argv[5]);
 
     int i,j,k,shear_num;
     int data_row = 20000000, sub_row;
@@ -625,16 +634,19 @@ int main(int argc, char**argv)
     gh2_grid = new double[gh_grid_num*gh_grid_num*2];
     chisq1_grid = new double[gh_grid_num*gh_grid_num];
     chisq2_grid = new double[gh_grid_num*gh_grid_num];
+    double *coeff_check = new double[12];
 
     sub_row = data_row/ratio;
 
     data = new double[data_row*4];
-    mg1 = new double[sub_row*4];
-    mg2 = new double[sub_row*4];
-    mn = new double[sub_row*4];
-    mu = new double[sub_row*4];
-    mnu1 = new double[sub_row*4];
-    mnu2 = new double[sub_row*4];
+    mg1 = new double[sub_row];
+    mg2 = new double[sub_row];
+    mn = new double[sub_row];
+    mu = new double[sub_row];
+    mnu1 = new double[sub_row];
+    mnu2 = new double[sub_row];
+
+    sprintf(result_path, "%s/new_pdf_%.3f.hdf5",parent_path, delta_g);
 
     sprintf(data_path, "%s/shear.hdf5", parent_path);
     
@@ -657,15 +669,15 @@ int main(int argc, char**argv)
     {   
         show_arr(g1t, 1, shear_num);
         show_arr(g2t, 1, shear_num);
-        std::cout<<std::endl;
+        std::cout<<rank<<" "<<sub_row<<" "<<gh_grid_num<<std::endl;
     }
-    std::cout<<rank<<" "<<sub_row<<" "<<gh_grid_num<<std::endl;
+    
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Win win_shear, win_chisq_check;
 	MPI_Aint shear_size, chisq_size;
 
-	shear_size = shear_num * 4*sizeof(double);
+	shear_size = shear_num *4*sizeof(double);
     chisq_size = 2*shear_num*20*2*sizeof(double);
 	if (0 == rank)
 	{	
@@ -692,30 +704,34 @@ int main(int argc, char**argv)
         mg2[i] = data[i*4+1];
         mn[i] = data[i*4+2];
         mu[i] = data[i*4+3];
-        mnu1[i] = data[i*4+2] + data[i*4+3];
-        mnu2[i] = data[i*4+2] - data[i*4+3];
+
+        mnu1[i] = mn[i] + mu[i];
+        mnu2[i] = mn[i] - mu[i];
     }
     if(rank==0){std::cout<<"Read data"<<std::endl;}
     MPI_Barrier(MPI_COMM_WORLD);
 
     //////////////////////// average ////////////////////////
-    find_shear_mean(mg1, mn, sub_row, g1, g1_sig, 10, 1);
-    find_shear_mean(mg2, mn, sub_row, g2, g2_sig, 10, 1);
+    find_shear_mean(mg1, mn, sub_row, g1, g1_sig, add_time, add_scale);
+    find_shear_mean(mg2, mn, sub_row, g2, g2_sig, add_time, add_scale);
     shear_result[rank] = g1;
     shear_result[rank + shear_num] = g1_sig;
     shear_result[rank + shear_num*2] = g2;
     shear_result[rank + shear_num*3] = g2_sig;
+    MPI_Barrier(MPI_COMM_WORLD);
     for(i=0;i<numprocs;i++)
     {
         if(i ==  rank)
         {   
-            sprintf(inform, "Ave g1: %8.6f (%8.6f), g2: %8.6f (%8.6f)", g1, g1_sig, g2, g2_sig);
+            sprintf(inform, "Ave g1: (true %9.6f) %9.6f (%9.6f), g2: (true %9.6f) %9.6f (%9.6f)", g1t[rank],g1, g1_sig, g2t[rank], g2, g2_sig);
             std::cout<<inform<<std::endl;
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0)
+
+    if(rank == numprocs-1)
     {
         for(k=0;k<2;k++)
         {
@@ -742,67 +758,71 @@ int main(int argc, char**argv)
 
 
 
-    /////////////////////  PDF //////////////////////////
-    find_shear(mg1, mnu1, sub_row, 10, g1, g1_sig, check);
-    for(i=0;i<40;i++){chisq_check[rank*40 + i] = check[i];}
-    find_shear(mg2, mnu2, sub_row, 10, g2, g2_sig, check);
-    for(i=0;i<40;i++){chisq_check[shear_num * 40 + rank*40 + i] = check[i];}
+    // /////////////////////  PDF //////////////////////////
+    // find_shear(mg1, mnu1, sub_row, 10, g1, g1_sig, check);
+    // // for(i=0;i<40;i++){chisq_check[rank*40 + i] = check[i];}
+    // find_shear(mg2, mnu2, sub_row, 10, g2, g2_sig, check);
+    // // for(i=0;i<40;i++){chisq_check[shear_num * 40 + rank*40 + i] = check[i];}
     
-    shear_result[rank] = g1;
-    shear_result[rank + shear_num] = g1_sig;
-    shear_result[rank + shear_num*2] = g2;
-    shear_result[rank + shear_num*3] = g2_sig;
+    // shear_result[rank] = g1;
+    // shear_result[rank + shear_num] = g1_sig;
+    // shear_result[rank + shear_num*2] = g2;
+    // shear_result[rank + shear_num*3] = g2_sig;
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // for(i=0;i<numprocs;i++)
+    // {
+    //     if(i ==  rank)
+    //     {   
+    //         sprintf(inform, "PDF g1: (true %9.6f) %9.6f (%9.6f), g2: (true %9.6f) %9.6f (%9.6f)", g1t[rank],g1, g1_sig, g2t[rank], g2, g2_sig);
+    //         std::cout<<inform<<std::endl;
+    //     }
+    //     MPI_Barrier(MPI_COMM_WORLD);
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // get_time(time_now,50);
     
-    for(i=0;i<numprocs;i++)
-    {
-        if(i ==  rank)
-        {   
-            sprintf(inform, "PDF g1: %8.6f (%8.6f), g2: %8.6f (%8.6f)", g1, g1_sig, g2, g2_sig);
-            std::cout<<inform<<std::endl;
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0)
-    {
-        for(k=0;k<2;k++)
-        {
-            for(j=0;j<shear_num;j++)
-            {
-                fit_val[j] = shear_result[j + k*shear_num*2];
-                fit_err[j] = shear_result[j + shear_num + k*shear_num*2];
-            }
-            if(k ==0){poly_fit_1d(g1t, fit_val, fit_err, shear_num, mc, 1);}
-            else{poly_fit_1d(g2t, fit_val, fit_err, shear_num, mc, 1);}
+    // if(rank == numprocs-1)
+    // {   
+    //     // get_time(time_now_1,50);
+    //     // std::cout<<rank<<" "<<time_now_1<<std::endl;
+    //     for(k=0;k<2;k++)
+    //     {
+    //         for(j=0;j<shear_num;j++)
+    //         {
+    //             fit_val[j] = shear_result[j + k*shear_num*2];
+    //             fit_err[j] = shear_result[j + shear_num + k*shear_num*2];
+    //         }
+    //         if(k ==0){poly_fit_1d(g1t, fit_val, fit_err, shear_num, mc, 1);}
+    //         else{poly_fit_1d(g2t, fit_val, fit_err, shear_num, mc, 1);}
 
-            mc_all[k*4] = mc[2]-1;// m
-            mc_all[k*4 + 1] = mc[3];// m_sig
-            mc_all[k*4 + 2] = mc[0];// c
-            mc_all[k*4 + 3] = mc[1];// c_sig
-        }
-        std::cout<<"PDF m & c:"<<std::endl;
-        show_arr(mc_all,2,4);
-        std::cout<<std::endl;
+    //         mc_all[k*4] = mc[2]-1;// m
+    //         mc_all[k*4 + 1] = mc[3];// m_sig
+    //         mc_all[k*4 + 2] = mc[0];// c
+    //         mc_all[k*4 + 3] = mc[1];// c_sig
+    //     }
+    //     std::cout<<"PDF m & c:"<<std::endl;
+    //     show_arr(mc_all,2,4);
+    //     std::cout<<std::endl;
         
-        sprintf(result_path, "%s/new_pdf.hdf5",parent_path);
-        sprintf(set_name, "/PDF/shear");
-        write_h5(result_path, set_name, shear_result, 4, shear_num, true);
-        sprintf(set_name, "/PDF/chisq");
-        write_h5(result_path, set_name, chisq_check, 2*shear_num, 40, false);
-        sprintf(set_name, "/PDF/mc");
-        write_h5(result_path, set_name, mc_all, 2, 4, false);
         
-        initialize_arr(shear_result, 4*shear_num, 0);
-        initialize_arr(chisq_check, 2*shear_num*40,0);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    //     sprintf(set_name, "/PDF/shear");
+    //     write_h5(result_path, set_name, shear_result, 4, shear_num, true);
+    //     sprintf(set_name, "/PDF/chisq");
+    //     write_h5(result_path, set_name, chisq_check, 2*shear_num, 40, false);
+    //     sprintf(set_name, "/PDF/mc");
+    //     write_h5(result_path, set_name, mc_all, 2, 4, false);
+        
+    //     initialize_arr(shear_result, 4*shear_num, 0);
+    //     initialize_arr(chisq_check, 2*shear_num*40,0);
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
+    // std::cout<<rank<<time_now<<std::endl;
 
 
-
-    //////////////////  PDF-dipole ///////////////////////////////
-    // find_shear_dipole(mg1, mg2, mn, sub_row, 10, g1, g1_sig, g2, g2_sig, check1, check2);
-    // find_shear_dipole_2d(mg1, mg2, mn, sub_row, 10, g1, g1_sig, g2, g2_sig, gh_grid_num, gh1_grid, gh2_grid, chisq_grid);
-    find_shear_2d(mg1, mg2, mn, mu, sub_row, 10, g1, g1_sig, g2, g2_sig, gh_grid_num,gh1_grid, gh2_grid, chisq1_grid, chisq2_grid);
+    // //////////////////  PDF-dipole ///////////////////////////////
+    // // find_shear_dipole(mg1, mg2, mn, sub_row, 10, g1, g1_sig, g2, g2_sig, check1, check2);
+    // // find_shear_dipole_2d(mg1, mg2, mn, sub_row, 10, g1, g1_sig, g2, g2_sig, gh_grid_num, gh1_grid, gh2_grid, chisq_grid);
+    find_shear_2d(mg1, mg2, mn, mu, sub_row, 10, g1, g1_sig, g2, g2_sig, gh_grid_num,gh1_grid, gh2_grid, chisq1_grid, chisq2_grid,g1t[rank],g2t[rank], delta_g, coeff_check);
     
     shear_result[rank] = g1;
     shear_result[rank + shear_num] = g1_sig;
@@ -817,16 +837,14 @@ int main(int argc, char**argv)
     {
         if(i ==  rank)
         {   
-            sprintf(inform, "PDF-dipole g1: %8.6f (%8.6f), g2: %8.6f (%8.6f)", g1, g1_sig, g2, g2_sig);
+            sprintf(inform, "PDF_new g1: (true %9.6f) %9.6f (%9.6f), g2: (true %9.6f) %9.6f (%9.6f)", g1t[rank],g1, g1_sig, g2t[rank], g2, g2_sig);
             std::cout<<inform<<std::endl;
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    sprintf(result_path, "%s/new_pdf.hdf5",parent_path);
-
-    if(rank == 0)
+    if(rank == numprocs-1)
     {
         for(k=0;k<2;k++)
         {
@@ -843,16 +861,15 @@ int main(int argc, char**argv)
             mc_all[k*4 + 2] = mc[0];// c
             mc_all[k*4 + 3] = mc[1];// c_sig
         }
-        std::cout<<"PDF-dipole m & c:"<<std::endl;
+        std::cout<<"PDF_new m & c:"<<std::endl;
         show_arr(mc_all,2,4);
         std::cout<<std::endl;
         
-        
-        sprintf(set_name, "/PDF_dipole/shear");
-        write_h5(result_path, set_name, shear_result, 4, shear_num, false);
-        sprintf(set_name, "/PDF_dipole/chisq");
+        sprintf(set_name, "/PDF_new/shear");
+        write_h5(result_path, set_name, shear_result, 4, shear_num, true);
+        sprintf(set_name, "/PDF_new/chisq");
         write_h5(result_path, set_name, chisq_check, 2*shear_num, 40, false);
-        sprintf(set_name, "/PDF_dipole/mc");
+        sprintf(set_name, "/PDF_new/mc");
         write_h5(result_path, set_name, mc_all, 2, 4, false);
 
         initialize_arr(shear_result, 4*shear_num, 0);
@@ -863,14 +880,16 @@ int main(int argc, char**argv)
     {
         if(i == rank)
         {
-            sprintf(set_name, "/PDF_dipole/%d/gh1_grid", rank);
+            sprintf(set_name, "/PDF_new/%d/gh1_grid", rank);
             write_h5(result_path, set_name, gh1_grid, gh_grid_num*2, gh_grid_num, false);
-            sprintf(set_name, "/PDF_dipole/%d/gh2_grid", rank);
+            sprintf(set_name, "/PDF_new/%d/gh2_grid", rank);
             write_h5(result_path, set_name, gh2_grid, gh_grid_num*2, gh_grid_num, false);
-            sprintf(set_name, "/PDF_dipole/%d/chisq1_grid", rank);
+            sprintf(set_name, "/PDF_new/%d/chisq1_grid", rank);
             write_h5(result_path, set_name, chisq1_grid, gh_grid_num, gh_grid_num, false);
-            sprintf(set_name, "/PDF_dipole/%d/chisq2_grid", rank);
+            sprintf(set_name, "/PDF_new/%d/chisq2_grid", rank);
             write_h5(result_path, set_name, chisq2_grid, gh_grid_num, gh_grid_num, false);
+            sprintf(set_name, "/PDF_new/%d/coeff", rank);
+            write_h5(result_path, set_name, coeff_check, 2, 6, false);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }

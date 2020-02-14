@@ -13,8 +13,8 @@ import h5py
 
 matplotlib.rcParams["font.family"] = "serif"
 
-source_b = "galsim_bright"
-source_f = "galsim_dimmer"
+source_b = "pts_bright_large_g"
+source_f = "pts_dimmer_large_g"
 parent_path = "D:/cut"
 # final pic name
 pic_nm = "/gal_mc.pdf"

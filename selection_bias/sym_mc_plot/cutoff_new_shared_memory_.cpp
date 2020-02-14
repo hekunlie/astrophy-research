@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<hk_iolib.h>
 #include<hk_mpi.h>
-#define MEAN
+#define PDF_SYM
 
 int main(int argc, char**argv)
 {
@@ -28,16 +28,30 @@ int main(int argc, char**argv)
 
 	int total_data_num;
 	int data_col; 
-	int weight_idx = 0, mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5;
+	int mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5;
 
 	double chi_check[40];// be the 2Xchi_fit_num
 	int chi_fit_num;
+	int mg_bin_num;
 
-    total_data_num = 20000000;// the total number of source in one shear point
+	double *data;
+	int *mask; 
+    double *selection; 
+
+	double *mg1, *mg2, *mnu1, *mnu2;
+	double gh1, gh1_sig, gh2, gh2_sig;
+	double left, right, delta_g;
+
+	double *cut_scale, *shear_result;
+	int *source_num;
+
+    total_data_num = 10000000;// the total number of source in one shear point
     data_col = 7;// column of the shear mesurement results
     chi_fit_num  = 20;
+	mg_bin_num = 20;
+	delta_g = 0.02;
 
-	shear_num = 14;
+	shear_num = 10;
 	cut_num = 10;
 	total_cutoff_cells = shear_num * cut_num;
 
@@ -94,18 +108,6 @@ int main(int argc, char**argv)
     ///////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////
 
-
-	double *data;
-	int *mask; 
-    double *selection; 
-
-	double weight;
-	double *mg1, *mg2, *mn, *mnu1, *mnu2;
-	double gh1, gh1_sig, gh2, gh2_sig;
-	double left, right;
-
-	double *cut_scale, *shear_result;
-	int *source_num;
 
 	MPI_Win win_cut_scale, win_shear, win_num;
 	MPI_Aint scale_size, shear_size, num_size;
@@ -261,7 +263,6 @@ int main(int argc, char**argv)
 		        
         mg1 = new double[source_count];
         mg2 = new double[source_count];
-		mn = new double[source_count];
         mnu1 = new double[source_count];
         mnu2 = new double[source_count];
 
@@ -269,31 +270,31 @@ int main(int argc, char**argv)
         for (j = 0; j < total_data_num; j++)
         {
             if (mask[j] > 0 and selection[j] >= cut_scale[my_cut])
-            {	
-#ifdef MEAN
-				weight = 1./data[j*data_col + weight_idx]/data[j*data_col + weight_idx];
-#else
-				weight = 1;
-#endif
-                mg1[source_count] = data[j*data_col + mg1_idx]*weight;
-                mg2[source_count] = data[j*data_col + mg2_idx]*weight;
-				mn[source_count] = data[j*data_col + mn_idx]*weight;
-                mnu1[source_count] = (data[j*data_col + mn_idx] + data[j*data_col + mu_idx])*weight;
-                mnu2[source_count] = (data[j*data_col + mn_idx] - data[j*data_col + mu_idx])*weight;
+            {
+                mg1[source_count] = data[j*data_col + mg1_idx];
+                mg2[source_count] = data[j*data_col + mg2_idx];
+                mnu1[source_count] = data[j*data_col + mn_idx] + data[j*data_col + mu_idx];
+                mnu2[source_count] = data[j*data_col + mn_idx] - data[j*data_col + mu_idx];
                 source_count++;
             }
         }
 
 		try
         {
-
+#ifdef PDF_SYM_RANGE
+			if(i == 0){std::cout<<"PDF_SYM Range fit"<<std::endl;}
+			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
+			left = gh1 - delta_g;
+			right = gh1 + delta_g;
+			find_shear_fit(mg1, mnu1, source_count, mg_bin_num, chi_fit_num, chi_check, left, right, gh1, gh1_sig);
+#endif
 #ifdef PDF_SYM
 			if(i == 0){std::cout<<"PDF_SYM"<<std::endl;}	
-			find_shear(mg1, mnu1, source_count, 20, gh1, gh1_sig, chi_check, chi_fit_num);
+			find_shear(mg1, mnu1, source_count, mg_bin_num, gh1, gh1_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN	
 			if(i == 0){std::cout<<"MEAN"<<std::endl;}		
-			find_shear_mean(mg1, mn, source_count, gh1, gh1_sig, 100);
+			find_shear_mean(mg1, mnu1, source_count, gh1, gh1_sig, 100);
 #endif
 		}
 		catch(const char *msg)
@@ -304,12 +305,17 @@ int main(int argc, char**argv)
 		}
 		try
         {
-
+#ifdef PDF_SYM_RANGE
+			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
+			left = gh2 - delta_g;
+			right = gh2 + delta_g;
+			find_shear_fit(mg2, mnu2, source_count, mg_bin_num, chi_fit_num, chi_check, left, right, gh2, gh2_sig);
+#endif
 #ifdef PDF_SYM
-			find_shear(mg2, mnu2, source_count, 20, gh2, gh2_sig, chi_check, chi_fit_num);
+			find_shear(mg2, mnu2, source_count, mg_bin_num, gh2, gh2_sig, chi_check, chi_fit_num);
 #endif
 #ifdef MEAN
-			find_shear_mean(mg2, mn, source_count, gh2, gh2_sig, 100);
+			find_shear_mean(mg2, mnu2, source_count, gh2, gh2_sig, 100);
 #endif
 		}
 		catch(const char *msg)
@@ -331,7 +337,6 @@ int main(int argc, char**argv)
         delete[] mg2;
         delete[] mnu1;
         delete[] mnu2;
-		delete[] mn;
 		
 	}
 	delete[] mask;
