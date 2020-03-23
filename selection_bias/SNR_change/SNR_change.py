@@ -21,17 +21,16 @@ btr = float(argv[4])
 ra = float(argv[5])
 seed = int(argv[6])
 file_tag = int(argv[7])
+source_label = argv[8]
 # seed = 52405 # used in the paper
-
-pts_source = 0
 
 num = 11
 pixel_scale = 0.187
 
-if pts_source == 0:
-    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
-else:
-    flux = numpy.array([tool_box.mag_to_flux(21.5), tool_box.mag_to_flux(22.2), tool_box.mag_to_flux(24.1)])
+if source_label == "galsim":
+    flux = numpy.array([tool_box.mag_to_flux(22.4),tool_box.mag_to_flux(23), tool_box.mag_to_flux(23.6), tool_box.mag_to_flux(24.1)])
+else:    
+    flux = numpy.array([tool_box.mag_to_flux(23.2),tool_box.mag_to_flux(23.85), tool_box.mag_to_flux(24.3), tool_box.mag_to_flux(24.4)])
 
 flux_num = len(flux)
 noise_sig = 60
@@ -50,7 +49,7 @@ total_path = "./imgs/"
 img_path = total_path + "fits/%d/"%file_tag
 os.mkdir(img_path)
 
-if pts_source == 0:
+if source_label == "galsim":
     psf = galsim.Moffat(beta=3.5, fwhm=psf_r, flux=1.0, trunc=psf_r*3)
     psf_img = galsim.ImageD(size, size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
@@ -113,7 +112,7 @@ print("Simulate")
 for k in range(flux_num):
     # draw the pre-sheared galaxy
     # galsim galaxy
-    if pts_source == 0:
+    if source_label == "galsim":
         # rng = galsim.BaseDeviate(12300000)
         # knot = galsim.randwalk.RandomWalk(npoints=60, half_light_radius=ra, flux=1, rng=rng)
         bulge = galsim.Sersic(half_light_radius=ra, n=4, trunc=4.5 * ra)  # be careful
@@ -142,7 +141,7 @@ for k in range(flux_num):
 
     # the sheared galaxy
     for i in range(num):
-        if pts_source == 0:
+        if source_label == "galsim":
             gal_s = gal_f.shear(g1=input_g[i], g2=0)#beta=shear_beta[i]*galsim.radians)
             gal_s_c = galsim.Convolve([gal_s, psf])
             img_s = galsim.ImageD(size, size)

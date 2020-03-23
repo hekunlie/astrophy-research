@@ -8,7 +8,7 @@ from matplotlib.colors import ListedColormap
 class Image_Plot:
 
     def __init__(self, fig_x=5, fig_y=4, xpad=0.1, ypad=0.1, fontsize=18, xy_lb_size=18, xy_tick_size=18,
-                 legend_size=18, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=6, pad_size=7):
+                 legend_size=18, axis_linewidth=2, plt_line_width=2, cap_size=4, tick_len=6, pad_size=7, pts_size=2):
         self.fig_x = fig_x
         self.fig_y = fig_y
         self.xpad = xpad
@@ -22,6 +22,7 @@ class Image_Plot:
         self.cap_size = cap_size
         self.tick_len = tick_len
         self.pad_size = pad_size
+        self.pts_size = pts_size
         self.figure = None
         self.axs = None
         self.row = None
@@ -83,6 +84,11 @@ class Image_Plot:
                     self.axs[i][j].tick_params(right=True, which='minor')
                     self.axs[i][j].tick_params(top=True, which='minor')
 
+    def axis_sci_ticklabel(self, iy, ix, axis_nm, limits=(0,1)):
+        if axis_nm == 0:
+            self.axs[iy][ix].yaxis.get_major_formatter().set_powerlimits(limits)
+        else:
+            self.axs[iy][ix].xaxis.get_major_formatter().set_powerlimits(limits)
 
     def axis_major_formatter(self, iy, ix, axis_nm, fmt):
         ticks_form = mtick.FormatStrFormatter(fmt)

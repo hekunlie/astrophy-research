@@ -28,19 +28,27 @@ print(fq.hlr)
 
 pts = fq.ran_pts(pst_num, max_radius)
 
-# gal_img1 = fq.convolve_psf(pts, psf_scale, gal_flux, psf_type)
-# gal_img2 = fq.convolve_psf(pts, psf_scale, gal_flux*100, psf_type)
-#
-# img = Image_Plot()
-# img.subplots(1,3)
-# fig = img.axs[0][0].imshow(gal_img1)
-# img.figure.colorbar(fig,ax=img.axs[0][0])
-# fig = img.axs[0][1].imshow(gal_img2)
-# img.figure.colorbar(fig,ax=img.axs[0][1])
-# fig = img.axs[0][2].imshow(gal_img2/gal_img1)
-# img.figure.colorbar(fig,ax=img.axs[0][2])
-# img.show_img()
+gal_flux = 100
+gal_img1 = fq.convolve_psf(pts, psf_scale, gal_flux, psf_type)
+gal_img1_p = fq.pow_spec(gal_img1)
+gal_img2 = fq.convolve_psf(pts, psf_scale, gal_flux*100, psf_type)
+gal_img2_p = fq.pow_spec(gal_img2)
 
+mgs1 = fq.shear_est(gal_img1_p, psf_pow, 1, F=True)
+mgs2 = fq.shear_est(gal_img2_p, psf_pow, 1, F=True)
+print(numpy.array(mgs1)/numpy.array(mgs2))
+
+img = Image_Plot()
+img.subplots(1,3)
+fig = img.axs[0][0].imshow(gal_img1_p)
+img.figure.colorbar(fig,ax=img.axs[0][0])
+fig = img.axs[0][1].imshow(gal_img2_p)
+img.figure.colorbar(fig,ax=img.axs[0][1])
+fig = img.axs[0][2].imshow(gal_img2_p/gal_img1_p)
+img.figure.colorbar(fig,ax=img.axs[0][2])
+img.show_img()
+
+exit()
 shear_estimator = numpy.zeros((4, 5))
 
 num_scale = 1

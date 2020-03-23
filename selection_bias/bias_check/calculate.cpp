@@ -46,7 +46,7 @@ int main(int argc, char**argv)
 
     int mg_bin_num;
     int chi_check_num;
-    double *chi_check;
+    double *chi_check, chisq_min_fit;
     double left_guess, right_guess;
     int fit_range_label;
     double fit_range[9]{0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.040, 0.045};
@@ -208,7 +208,7 @@ int main(int argc, char**argv)
         // PDF_SYM
         try
         {
-            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chi_check, chi_check_num);
+            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit, chi_check, chi_check_num);
             //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -224,7 +224,7 @@ int main(int argc, char**argv)
         right_guess = gh2 + fit_range[fit_range_label];
         try
         {
-            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chi_check, chi_check_num);
+            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig,chisq_min_fit, chi_check, chi_check_num);
             //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {

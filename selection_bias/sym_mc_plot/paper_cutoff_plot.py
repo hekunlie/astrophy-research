@@ -13,14 +13,14 @@ import h5py
 
 matplotlib.rcParams["font.family"] = "serif"
 
-source_b = "pts_bright_large_g"
-source_f = "pts_dimmer_large_g"
-parent_path = "D:/cut"
+source_b = "galsim_bright_epsf"
+source_f = "pts_bright_epsf"
+parent_path = "D:/cut/large_g"
 # final pic name
-pic_nm = "/gal_mc.pdf"
+pic_nm = "/epsf_mc.pdf"
 pic_nm_png = pic_nm.split(".")[0]+".png"
 # the file name
-file_name = "cuts_pi/"
+file_name = "cuts/"
 sex_filter_name = "sym/sex2_1.5/"
 # result file of all source
 shear_result_all = file_name + "shear_result.hdf5"
@@ -38,26 +38,33 @@ ch_num = 9
 cuts_num = 10
 x_coord = [i * cuts_num for i in range(ch_num)]
 ch = [i for i in range(ch_num)]
-ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
+# ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
+
+ylabels = ["c$_1 \\times 10^3$", "c$_2 \\times 10^3$", "c$_1 \\times 10^3$", "c$_2 \\times 10^3$"]
 
 fmt = '%2.f%%'
 xticks = mtick.FormatStrFormatter(fmt)
 
-img = Image_Plot(fig_x=6, fig_y=4, ypad=0.2, xpad=0.2)
+img = Image_Plot(fig_x=6, fig_y=4, ypad=0.25, xpad=0.25,pts_size=5,cap_size=2)
 img.subplots(2,2)
 img.axis_type(0,"major",tick_len=8, tick_width=2)
 img.axis_type(1,"major",tick_len=8, tick_width=2)
 
 
-# # # pts sample
-# text_pos = [[6, 1.6],[6, 1.6],[6, 1.6],[6, 1.6]]
+# pts sample
+# text_pos = [[50, 2.5],[50, 2.5],[50, 2.2],[50, 2.2]]
 # sample_name = ["PI sample","PI sample","PII sample","PII sample"]
-# xy_lims = [(-2.1, 2.1),(-2.1, 2.1),(-4.2, 2.6),(-4.2, 2.6)]
+# xy_lims = [(-4.1, 3.7),(-4.1, 3.7),(-6.5, 3.7),(-6.5, 3.7)]
 
 # galsim sample
-text_pos = [[6, 1.3],[6, 1.3],[6, 1.2],[6, 1.2]]
-sample_name = ["GI sample","GI sample","GII sample","GII sample"]
-xy_lims = [(-1.2, 1.8),(-1.2, 1.8),(-3.1, 1.8),(-3.1, 1.8)]
+# text_pos = [[6, 1],[6, 1],[6, 1.2],[6, 1.2]]
+# sample_name = ["GI sample","GI sample","GII sample","GII sample"]
+# xy_lims = [(-1.9, 2.2),(-1.9, 2.2),(-3.6, 2.2),(-3.6, 2.2)]
+
+# epsf sample
+text_pos = [[3, 0.075],[55, 0.25],[3, 0.065],[55, 0.6]]
+sample_name = ["GI sample","GI sample","PI sample","PI sample"]
+xy_lims = [(-0.042, 0.092),(-0.33, 0.33),(-0.12,0.092),(-0.71, 0.78)]
 
 for j in range(4):
 
@@ -69,8 +76,11 @@ for j in range(4):
     mc_all = h5f_all["/mc%d" % (col + 1)][()]
     h5f_all.close()
 
-    img.axs[row][col].errorbar(x_coord[0], mc_all[0]*100, mc_all[1]*100, c="grey", capsize=img.cap_size,
-                               marker="o", mfc="none", label="All sources",linewidth=img.plt_line_width)
+    # img.axs[row][col].errorbar(x_coord[0], mc_all[0]*100, mc_all[1]*100, c="grey", capsize=img.cap_size,
+    #                            marker="s", mfc="none", label="All sources",linewidth=img.plt_line_width,ms=img.pts_size)
+
+    img.axs[row][col].errorbar(x_coord[0], mc_all[2]*1000, mc_all[3]*1000, c="grey", capsize=img.cap_size,
+                               marker="s", mfc="none", label="All sources",linewidth=img.plt_line_width,ms=img.pts_size)
     for i in range(len(files)):
         if row == 0:
             #             bright source
@@ -84,8 +94,11 @@ for j in range(4):
         mc = h5f["/mc%d"%(col+1)][()][:,ch]
         h5f.close()
 
-        img.axs[row][col].errorbar(x_coord, 100 * mc[0], 100 * mc[1], c=colors[i], linewidth=img.plt_line_width-0.25,
-                    capsize=img.cap_size, label=names[i], marker="d",mfc="none")
+        # img.axs[row][col].errorbar(x_coord, 100 * mc[0], 100 * mc[1], c=colors[i], linewidth=img.plt_line_width-0.25,
+        #             capsize=img.cap_size, label=names[i], marker="o",mfc="none",ms=img.pts_size)
+
+        img.axs[row][col].errorbar(x_coord, 1000 * mc[2], 1000 * mc[3], c=colors[i], linewidth=img.plt_line_width-0.25,
+                    capsize=img.cap_size, label=names[i], marker="o",mfc="none",ms=img.pts_size)
 
     xs = img.axs[row][col].set_xlim()
     ys = img.axs[row][col].set_ylim()

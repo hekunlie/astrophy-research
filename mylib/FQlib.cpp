@@ -2141,7 +2141,7 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	delete[] block_st;
 }
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, const int choice,const double max_scale)
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, double &chisq_min_fit, const int choice,const double max_scale)
 {
 	int i, j, k;
 	double step,chisq;
@@ -2184,26 +2184,27 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
 
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] bins;
 }
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,	const int chi_num_fit, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check,	const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	int max_iters = 12;
+	int temp_num;
 
 	double *bins = new double[bin_num + 1];
-	double *gh_fit = new double[chi_num_fit];
-	double *chisq_fit = new double[chi_num_fit];
+	double *gh_fit = new double[chi_fit_num];
+	double *chisq_fit = new double[chi_fit_num];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
 	int left_tag=-1, right_tag=-1;
-	double fit_max_chisq;
+	double fit_max_chisq, new_end;
 	double *search_vals = new double[(max_iters+1)*record_col]{};
 
 	int same = 0, iters = 0, change = 1;
@@ -2359,13 +2360,38 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	// else{right = search_vals[right_tag*record_col+2];}
 
 	//std::cout<<left<<" "<<right<<std::endl;
-
-	step = (right - left) / (chi_num_fit - 1);
-	for (i = 0; i < chi_num_fit; i++)
+	temp_num = 15;
+	step = (right - left) / (temp_num - 1);
+	for (i = 0; i < temp_num; i++)
 	{
 		gh_fit[i] = left + step * i;
 	}
-	for (i = 0; i < chi_num_fit; i++)
+	for (i = 0; i < temp_num; i++)
+	{	
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		chisq_fit[i] = chi_right;
+	}
+	//st4 = clock();
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+
+	// to get a more symmetrical interval for fitting
+	new_end = std::max(gh-left, right-gh);
+	
+	left = gh - new_end;
+	step = 2*new_end / (chi_fit_num - 1);
+
+	for (i = 0; i < chi_fit_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	for (i = 0; i < chi_fit_num; i++)
 	{	
 		try
 		{
@@ -2379,12 +2405,13 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		if (chi_check)
 		{	// for checking
 			chi_check[i] = chi_right;
-			chi_check[chi_num_fit + i] = gh_fit[i];
+			chi_check[chi_fit_num + i] = gh_fit[i];
 		}
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_num_fit, gh, gh_sig, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
 	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
@@ -2394,7 +2421,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	delete[] search_vals;
 }
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double d_chi)
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2+bx + c
@@ -2464,10 +2491,24 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	gh = -coeff[1] / coeff[2]*0.5;
 	gh_sig = sqrt(0.5 / coeff[2]);
 
+	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
 
 }
 
+void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output)
+{
+	double cos2theta, sin2theta, cos4theta, sin4theta;
+	cos2theta = cos(2*theta);
+	sin2theta = sin(2*theta);
+	cos4theta = cos(4*theta);
+	sin4theta = sin(4*theta);
+	output[0] = mg1*cos2theta - mg2*sin2theta;
+	output[1] = mg1*sin2theta + mg2*cos2theta;
+	output[2] = mn;
+	output[3] = mu*cos4theta - mv*sin4theta;
+	output[4] = mu*sin4theta + mv*cos4theta;
 
+}
 
 /********************************************************************************************************************************************/
 /* cosmology */

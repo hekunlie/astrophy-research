@@ -26,7 +26,7 @@ int main(int argc, char**argv)
 
 	int source_count, label, cut_step, cata_label;
 
-	int total_data_num;
+	int total_data_num, sub_data_num;
 	int data_col; 
 	int weight_idx = 0, mg1_idx = 2, mg2_idx = 3, mn_idx = 4, mu_idx = 5;
 
@@ -34,6 +34,7 @@ int main(int argc, char**argv)
 	int chi_fit_num;
 
     total_data_num = 20000000;// the total number of source in one shear point
+	sub_data_num = 10000000;
     data_col = 7;// column of the shear mesurement results
     chi_fit_num  = 20;
 
@@ -47,8 +48,7 @@ int main(int argc, char**argv)
 		exit(0);
 	}
 
-	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300], weight_path[300];
-	char log_inform[300], set_name[30];
+	char total_path[300], mask_path[300], selection_path[300], data_path[300], result_path[300], shear_path[300],log_inform[300], set_name[30];
     char source_name[50], filter_name[50], select_name[50];
 	std::string select_name_s;
 
@@ -101,7 +101,7 @@ int main(int argc, char**argv)
     double *selection; 
 
 	double weight;
-	double *mg1, *mg2, *mn, *mnu1, *mnu2, *flux_weight;
+	double *mg1, *mg2, *mn, *mnu1, *mnu2;
 	double gh1, gh1_sig, gh2, gh2_sig;
 	double left, right;
 
@@ -151,7 +151,6 @@ int main(int argc, char**argv)
 	data = new double[total_data_num*data_col];
 	mask = new int[total_data_num];
     selection = new double[total_data_num];
-	flux_weight = new double[total_data_num];
 
 	if (0 == rank)
 	{
@@ -244,11 +243,6 @@ int main(int argc, char**argv)
             read_h5(data_path, set_name, data);
             //if(rank==0){std::cout<<data_path<<std::endl;}
 
-            // read the weight
-            sprintf(data_path, "%s/result/data/%s/flux2_ex2_%d.hdf5", total_path, filter_name, my_shear);
-            read_h5(data_path, set_name, flux_weight);
-            //if(rank==0){std::cout<<data_path<<std::endl;}
-
             // read selection criterion
 			sprintf(selection_path, "%s/result/data/%s/%s_%d.hdf5", total_path, filter_name,select_name, my_shear);
 			read_h5(selection_path, set_name, selection);
@@ -257,7 +251,8 @@ int main(int argc, char**argv)
         }
 
         source_count = 0;
-		for (j = 0; j < total_data_num; j++)
+		// "sub_data_num" only use a sub-sample
+		for (j = 0; j < sub_data_num; j++)
 		{
 			if (mask[j] > 0 and selection[j] >= cut_scale[my_cut])
 			{
@@ -273,13 +268,13 @@ int main(int argc, char**argv)
         mnu2 = new double[source_count];
 
         source_count = 0;
-        for (j = 0; j < total_data_num; j++)
+		// "sub_data_num" only use a sub-sample
+        for (j = 0; j < sub_data_num; j++)
         {
             if (mask[j] > 0 and selection[j] >= cut_scale[my_cut])
             {	
 #ifdef MEAN
-				
-				weight = 1./flux_weight[j];
+				weight = 1./data[j*data_col + weight_idx]/data[j*data_col + weight_idx];
 #else
 				weight = 1;
 #endif

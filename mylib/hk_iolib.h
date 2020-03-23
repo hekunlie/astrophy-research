@@ -21,6 +21,7 @@
 
 void char_to_str(const char *char_in, std::string &string_out);//checked
 /* convert a char to string */
+void char_stack(char **char_in, const int chars_num, char *char_out,std::string linker="_");
 
 bool file_exist(const char *filename);//checked
 /* check the existence of a file , will called by create_h5_group()*/

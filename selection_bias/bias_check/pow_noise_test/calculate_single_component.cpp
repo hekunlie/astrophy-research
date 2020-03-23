@@ -49,11 +49,9 @@ int main(int argc, char**argv)
     int chi_check_num;
     int chisq_num;
     double *chi_check;
-    double *chisq1, *chisq2, *shear_for_chi,chisq_min_fit;
+    double *chisq1, *chisq2, *shear_for_chi, chisq_min_fit;
     double left_guess, right_guess;
-    int fit_range_label;
-    double fit_range[9]{0.005, 0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.040, 0.045};
-
+  
     double *total_chi_check_g1, *sub_chi_check_g1;
     double *total_chi_check_g2, *sub_chi_check_g2;
     int *chi_send_count;
@@ -61,7 +59,7 @@ int main(int argc, char**argv)
     int data_col, data_row;
     int result_col;
     double *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
-    
+    double weight;
 
     // for results
     int sub_num;
@@ -72,13 +70,12 @@ int main(int argc, char**argv)
     // data shape
     strcpy(parent_path, argv[1]);
     strcpy(data_type, argv[2]);
-    //sprintf(parent_path,"/mnt/ddnfs/data_users/hkli/bias_check/result/data/data_rotation_0");
-    shear_num = atoi(argv[3]);
-    data_row = atoi(argv[4])*10000;
-    data_col = 4;// G1, G2, N, U
+    shear_num = 22;//atoi(argv[3]);
+    data_row = 2000*10000;//atoi(argv[4])*10000;
+
+    data_col = 5;// G1, G2, N, U
     result_col = 4;// g1, g1_sig, g2, g2_sig
-    mg_bin_num = 20;//atoi(argv[4]);
-    fit_range_label = 0;
+    mg_bin_num = 10;//atoi(argv[4]);
     chi_check_num =20;
     chisq_num = 101;
     left_guess = -0.1;
@@ -87,16 +84,6 @@ int main(int argc, char**argv)
 
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, data_type);
-
-    // MPI_Barrier(MPI_COMM_WORLD);
-    // for(i=0;i<numprocs;i++)
-    // {
-    //     if(i == rank)
-    //     {
-    //         std::cout<<rank<<" "<<data_row<<" "<<data_col<<std::endl;
-    //     }
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    // }
 
     data = new double[data_row*data_col];
     mg1 = new double[data_row];
@@ -185,15 +172,6 @@ int main(int argc, char**argv)
     {   
         sprintf(data_path,"%s/data_%d_%s.hdf5",parent_path, i, data_type);
         read_h5(data_path, set_name, data);
-
-        // for(k=0;k<numprocs;k++)
-        // {
-        //     if(k == rank)
-        //     {
-        //         std::cout<<rank<<" shear: "<<k<<" g1: "<<g1_t[k]<<" g2: "<<g2_t[k]<<std::endl;
-        //     }
-        //     MPI_Barrier(MPI_COMM_WORLD);
-        // }
         
         // read data
         for(k=0;k<data_row;k++)
@@ -213,15 +191,13 @@ int main(int argc, char**argv)
         result_sub_mean[(i-shear_st)*result_col + 1] = gh1_sig;
         result_sub_mean[(i-shear_st)*result_col + 2] = gh2;
         result_sub_mean[(i-shear_st)*result_col + 3] = gh2_sig;
-        sprintf(inform, "%03d, Ave. g1: %9.6f, %9.6f (%8.6f), g2: %9.6f, %9.6f (%8.6f).", rank,g1_t[i], gh1,gh1_sig,g2_t[i],gh2,gh2_sig);
+        sprintf(inform, "%03d, Ave. True g1: %9.6f, Est.: %9.6f (%8.6f), True g2: %9.6f, Est.: %9.6f (%8.6f).", rank, g1_t[i], gh1, gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
 
-        left_guess = gh1 - fit_range[fit_range_label];
-        right_guess = gh1 + fit_range[fit_range_label];
         // PDF_SYM
         try
         {
-            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit, chi_check, chi_check_num);
+            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -233,11 +209,9 @@ int main(int argc, char**argv)
             std::cout<<rank<<" "<<i<<" PDF of g1 is going wrong"<<std::endl;
         }
 
-        left_guess = gh2 - fit_range[fit_range_label];
-        right_guess = gh2 + fit_range[fit_range_label];
         try
         {
-            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chisq_min_fit, chi_check, chi_check_num);
+            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -254,37 +228,7 @@ int main(int argc, char**argv)
         result_sub_pdf[(i-shear_st)*result_col + 2] = gh2;
         result_sub_pdf[(i-shear_st)*result_col + 3] = gh2_sig;
 
-        set_bin(mg1, data_row, mg_bins, mg_bin_num, 100);
-        for (k = 0; k < chisq_num; k++)
-        {	
-            try
-            {
-                chisq_Gbin_1d(mg1, mnu1, data_row, mg_bins, mg_bin_num, shear_for_chi[k], left_guess);
-            }
-            catch(const char *msg)
-            {
-                throw msg;
-            }
-            chisq1[k] = left_guess;
-            
-            try
-            {
-                chisq_Gbin_1d(mg2, mnu2, data_row, mg_bins, mg_bin_num, shear_for_chi[k], left_guess);
-            }
-            catch(const char *msg)
-            {
-                throw msg;
-            }
-            chisq2[k] = left_guess;
-        }
-
-        sprintf(set_name,"/chisq1");
-        sprintf(data_path,"%s/chi_%d_%s.hdf5",parent_path, i, data_type);
-        write_h5(data_path, set_name, chisq1, chisq_num, 1, true);
-        sprintf(set_name,"/chisq2");
-        write_h5(data_path, set_name, chisq2, chisq_num, 1, false);
-
-        sprintf(inform, "%03d, PDF. g1: %9.6f, %9.6f (%8.6f), g2: %9.6f, %9.6f (%8.6f).",rank, g1_t[i], gh1,gh1_sig,g2_t[i],gh2,gh2_sig);
+        sprintf(inform, "%03d, PDF. True g1: %9.6f, Est.: %9.6f (%8.6f), True g2: %9.6f, Est.: %9.6f (%8.6f).",rank, g1_t[i], gh1,gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
 
     }
@@ -343,6 +287,22 @@ int main(int argc, char**argv)
             mean_mc[k*4 + 2] = mc[0];// c
             mean_mc[k*4 + 3] = mc[1];// c_sig
         }
+        std::cout<<"AVERAGE: m & c"<<std::endl;
+        show_arr(mean_mc, 2, 4);
+        
+        for (i=0;i<shear_num;i++)
+        {
+            result_arr[i] = g1_t[i];          
+            result_arr[shear_num + i] = result_all_mean[i*result_col];
+            result_arr[2*shear_num + i] = result_all_mean[i*result_col+1];
+            result_arr[3*shear_num + i] = g2_t[i];
+            result_arr[4*shear_num + i] = result_all_mean[i*result_col+2];
+            result_arr[5*shear_num + i] = result_all_mean[i*result_col+3];
+        }        
+        sprintf(set_name,"/mean_result");
+        write_h5(result_path, set_name, result_arr, 6, shear_num, true);
+        sprintf(set_name,"/mean_mc");
+        write_h5(result_path,set_name, mean_mc, 2, 4, false);
 
         // PDF_SYM
         for(k=0;k<2;k++)
@@ -360,27 +320,12 @@ int main(int argc, char**argv)
             pdf_mc[k*4 + 2] = mc[0];// c
             pdf_mc[k*4 + 3] = mc[1];// c_sig
         }
-        std::cout<<"AVERAGE: m & c"<<std::endl;
-        show_arr(mean_mc, 2, 4);
+
         std::cout<<"PDF_SYM: m & c"<<std::endl;
         show_arr(pdf_mc, 2, 4);
 
         
         //sprintf(result_path, "%s/result/result_%s_bin_num_%d.hdf5", parent_path, data_type, mg_bin_num);
-
-        
-        for (i=0;i<shear_num;i++)
-        {
-            result_arr[i] = g1_t[i];          
-            result_arr[shear_num + i] = result_all_mean[i*result_col];
-            result_arr[2*shear_num + i] = result_all_mean[i*result_col+1];
-            result_arr[3*shear_num + i] = g2_t[i];
-            result_arr[4*shear_num + i] = result_all_mean[i*result_col+2];
-            result_arr[5*shear_num + i] = result_all_mean[i*result_col+3];
-        }        
-        sprintf(set_name,"/mean_result");
-        write_h5(result_path, set_name, result_arr, 6, shear_num, true);
-
         for (i=0;i<shear_num;i++)
         {
             result_arr[i] = g1_t[i];          
@@ -392,8 +337,6 @@ int main(int argc, char**argv)
         }
         sprintf(set_name,"/sym_result");
         write_h5(result_path, set_name, result_arr, 6, shear_num, false);
-        sprintf(set_name,"/mean_mc");
-        write_h5(result_path,set_name, mean_mc, 2, 4, false);
         sprintf(set_name,"/sym_mc");
         write_h5(result_path,set_name, pdf_mc, 2, 4, false);
         sprintf(set_name,"/mc1");
@@ -417,7 +360,7 @@ int main(int argc, char**argv)
 
         get_time(time_now, 40);
         std::cout<<time_now<<std::endl;
-        std::cout<<"Bin_num "<<mg_bin_num<<fit_range[fit_range_label]<<" "<<result_path<<std::endl;
+        std::cout<<"Bin_num "<<mg_bin_num<<" "<<result_path<<std::endl;
 
     }
     

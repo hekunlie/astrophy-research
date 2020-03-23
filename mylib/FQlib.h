@@ -274,8 +274,8 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	it's better to sum the sub-block and then add the these quantities together.
 */
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,const int choice=0,const double max_scale=100.);
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
@@ -297,7 +297,7 @@ const double max_scale=100., const double ini_left = -0.1, const double ini_righ
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 */
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double chi_gap = 40);// checked
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double chi_gap = 40);// checked
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
@@ -308,7 +308,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 				  if < 0, all the points will be used for fitting.
 */
 
-
+void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/

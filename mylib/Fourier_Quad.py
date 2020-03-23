@@ -846,8 +846,8 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
-        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
-        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
+        # y = a1 + a2*x a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = \sqrt(1/2/a3)
         # g_h = -coeff[1] / 2. / coeff[2]
         g_sig = 0.70710678118/numpy.sqrt(coeff[2])
 
@@ -924,8 +924,8 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
-        # y = a1 + a2*x + a3*x^2 = a2(x+a1/2/a2)^2 +...
-        # gh = - a1/2/a2, gh_sig = 1/ sqrt(1/2/a2)
+        # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2]
         g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 

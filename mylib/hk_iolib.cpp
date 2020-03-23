@@ -13,6 +13,18 @@ void char_to_str( const char *char_in, std::string &string_out)
 	string_out = media.str();
 }
 
+void char_stack(char **char_in, const int chars_num, char *char_out,std::string linker)
+{
+    std::string ss, temp;
+    char_to_str(char_in[0],ss);
+    for(int i=1; i<chars_num; i++)
+    {   
+        char_to_str(char_in[i],temp);
+	    ss += linker + temp;
+    }
+    strcpy(char_out, ss.c_str());
+}
+
 void write_log(char*filename, char *inform)
 {
 	char time_now[40];

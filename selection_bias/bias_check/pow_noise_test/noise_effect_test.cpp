@@ -2,7 +2,7 @@
 #include<hk_mpi.h>
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
-#define FLUX_PDF
+#define FLUX_UNI
 #define EPSF
 
 void arr_add(double *arr1, const double*arr2,const int length)
@@ -38,8 +38,7 @@ int main(int argc, char*argv[])
 	strcpy(parent_path, argv[1]);
 	std::string str_data_path,str_shear_path;
 
-	char_to_str(parent_path, str_data_path);
-	str_shear_path = str_data_path + "/parameters/shear.dat";
+	sprintf(shear_path, "%s/shear.hdf5", parent_path);
 	
 	int i, j, k, ib;
 	int sss1, sss2, seed_pts, seed_n1, seed_n2, seed_step;
@@ -59,8 +58,11 @@ int main(int argc, char*argv[])
 	double pts_step;
 	double psf_scales[7]{1.6, 2, 2.5, 3, 4, 6, 7};
 	int psf_scale_id;
+	int flux_scale;
 
-	seed_ini = atoi(argv[2]);
+	
+	flux_scale = atoi(argv[2]);
+	seed_ini = flux_scale*1000000;//atoi(argv[2]);
 	psf_scale_id = 4;//atoi(argv[3]); 
 	pts_step = 1;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
@@ -71,7 +73,7 @@ int main(int argc, char*argv[])
 	shear_data_cols = 8;
 	snr_data_cols = 3;
 
-    shear_pairs = 15;
+    shear_pairs = 10;
 
 	psf_type = 2;
 	psf_scale = psf_scales[psf_scale_id];
@@ -84,9 +86,9 @@ int main(int argc, char*argv[])
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 48;
+	size = 50;
 	img_cent = size*0.5 - 0.5;
-    total_chips = 10000;
+    total_chips = 700;
     stamp_nx = 100;
 
 	all_paras.stamp_size = size;
@@ -102,6 +104,9 @@ int main(int argc, char*argv[])
 	double *big_img_noise_free = new double[stamp_nx*stamp_nx*size*size]{};
 
 #endif
+
+	double *g1t = new double[shear_pairs];
+	double *g2t = new double[shear_pairs];
 
 	double *point = new double[2 * num_p]{};
 
@@ -191,7 +196,10 @@ int main(int argc, char*argv[])
 	sub_flux = new double[scatter_count[rank]]{};
 #endif
 	// read shear
-	read_text(str_shear_path, shear, 2*shear_pairs);
+	sprintf(set_name,"/g1");
+	read_h5(shear_path,set_name,g1t);
+	sprintf(set_name,"/g2");
+	read_h5(shear_path,set_name,g2t);
     
 #ifdef EPSF
 	create_psf_e(psf, psf_scale, size, img_cent, psf_ellip, ellip_theta, psf_type);
@@ -242,8 +250,8 @@ int main(int argc, char*argv[])
 	{
 		ts = clock();
 
-		g1 = shear[shear_id];
-		g2 = shear[shear_id + shear_pairs];
+		g1 = g1t[shear_id];
+		g2 = g2t[shear_id];
 
 		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f ", size, total_chips, numprocs, num_p, gal_noise_sig);
 		write_log(log_path, log_inform);
@@ -273,7 +281,7 @@ int main(int argc, char*argv[])
 		{
 			t1 = clock();
 
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed: %d, %d, %d", rank,shear_id, i, seed_pts, seed_n1, seed_n2);
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. flux_scale: %d. seed: %d, %d, %d.", rank,shear_id, i, flux_scale, seed_pts, seed_n1, seed_n2);
 			write_log(log_path, log_inform);
 			if (rank == 0)
 			{
@@ -302,7 +310,7 @@ int main(int argc, char*argv[])
 #ifdef FLUX_PDF
 				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
 #else	
-				flux_i = 7000./ num_p;
+				flux_i = 7000./ num_p*flux_scale;
 #endif
 
 				///////////////// Noise free /////////////////////////		
@@ -376,11 +384,11 @@ int main(int argc, char*argv[])
 
 
 #ifdef IMG_CHECK_LABEL
-			if(i == IMG_CHECK_LABEL)
+			if(i == IMG_CHECK_LABEL and shear_id==0)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_free.fits", parent_path, shear_id, i, pts_step, psf_scale);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_free_%d.fits", parent_path, shear_id, i, pts_step, psf_scale,flux_scale);
 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noisy.fits", parent_path, shear_id, i, pts_step, psf_scale);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noisy_%d.fits", parent_path, shear_id, i, pts_step, psf_scale, flux_scale);
 				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
 			}
 #endif
@@ -402,9 +410,9 @@ int main(int argc, char*argv[])
 			sprintf(set_name, "/data");
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d_noise_free_epsf.hdf5", parent_path,shear_id);
+			sprintf(result_path, "%s/result_%d/data_%d_noise_free.hdf5", parent_path, flux_scale, shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d_noise_free.hdf5", parent_path,,shear_id);
+			sprintf(result_path, "%s/result_%d/data_%d_noise_free.hdf5", parent_path, flux_scale, shear_id);
 #endif
 
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
@@ -416,9 +424,9 @@ int main(int argc, char*argv[])
 		{
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d_noisy_cpp_epsf.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/result_%d/data_%d_noisy.hdf5", parent_path, flux_scale, shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d_noisy_cpp.hdf5", parent_path ,shear_id);
+			sprintf(result_path, "%s/result_%d/data_%d_noisy.hdf5", parent_path , flux_scale, shear_id);
 #endif
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;

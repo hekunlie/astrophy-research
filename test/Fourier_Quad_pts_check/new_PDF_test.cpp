@@ -24,7 +24,179 @@ void task_alloc(const int total_task_num, const int division_num, const int my_p
     my_ed_id = n;
 }
 
+//,const int chi_grid_num, double *g1_grid, double* g2_grid, double* chisq_grid
+void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const double *mu, const int data_num, const int bin_num, 
+                        double &gh1, double &gh1_sig,double &gh2, double &gh2_sig, const int chi_grid_num,double *g1_grid, double *g2_grid,
+                        double *chisq1_grid, double *chisq2_grid, double  g1_true, double  g2_true, double delta_g,double* coeff_check)
 
+{
+    int i, j, k;
+    int change, iters, tag;
+    double g1, g1_sig, g2, g2_sig;
+    double m, n;
+    double dgn, dgu;
+
+    int *num_in_bin = new int[bin_num];
+
+    double *gh1_fit = new double[chi_grid_num*chi_grid_num];
+    double *gh2_fit = new double[chi_grid_num*chi_grid_num];
+    double *chisq1_fit = new double[chi_grid_num*chi_grid_num];
+    double *chisq2_fit = new double[chi_grid_num*chi_grid_num];
+    double *fit_x, *fit_y, *fit_z;
+    int fit_num1, fit_num2;
+    double chisq_ij, chisq_thresh;
+
+    double *coeff = new double[6];
+
+    double *mg = new double[data_num];
+    double *temp = new double[data_num];
+    double *mg_bin = new double[bin_num+1]{};  
+    
+    char inform[200];
+
+    //show_arr(radius_bin,1, bin_num+1);
+    //std::cout<<std::endl;
+    
+       
+    // dg = 0.005
+    dgn = delta_g;
+    dgu = delta_g*5;
+    chisq_thresh = 30;
+    // for g1
+    set_bin(mg1, data_num, mg_bin, bin_num, 100);
+    find_shear_mean(mg1, mn, data_num, g1, g1_sig, 100, 1);
+    for(i=0;i<chi_grid_num;i++) // y 
+    {   
+        m = g1 - dgn + dgn*2/(chi_grid_num-1)*i;        
+
+        for(k=0;k<data_num;k++){temp[k]=mg1[k]-mn[k]*m;}
+
+        for(j=0;j<chi_grid_num;j++) // x 
+        {   
+            tag = i*chi_grid_num+j;
+
+            n = g1 - dgu + dgu*2/(chi_grid_num-1)*j;
+
+            gh1_fit[tag] = m;
+            gh2_fit[tag] = n;
+            
+            for(k=0;k<data_num;k++){mg[k] = temp[k]- n*mu[k];}
+            
+            histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
+            cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
+            chisq1_fit[tag] = chisq_ij;
+        }
+    }
+    fit_num1 = 0;
+    for(i=0; i<chi_grid_num*chi_grid_num; i++)
+    {
+        g1_grid[i] = gh1_fit[i];
+        g1_grid[i+chi_grid_num*chi_grid_num] = gh2_fit[i];
+        chisq1_grid[i] = chisq1_fit[i];
+        if(chisq1_fit[i] <= chisq_thresh)
+        {
+            fit_num1 ++;
+        }
+    }
+    fit_x = new double[fit_num1];
+    fit_y = new double[fit_num1];
+    fit_z = new double[fit_num1];
+    fit_num1 = 0;
+    for(i=0; i<chi_grid_num*chi_grid_num; i++)
+    {
+        if(chisq1_fit[i] <= chisq_thresh)
+        {
+            fit_x[fit_num1] = gh1_fit[i];
+            fit_y[fit_num1] = gh2_fit[i];
+            fit_z[fit_num1] = chisq1_fit[i];
+            fit_num1 ++;
+        }
+    }
+
+    poly_fit_2d(fit_x, fit_y, fit_z, fit_num1, 2, coeff);
+    gh1 = -coeff[1]/2/coeff[3];
+    gh1_sig = sqrt(0.5/coeff[3]);
+    for(i=0;i<6;i++){coeff_check[i] = coeff[i];}
+    // gh2 = -coeff[2]/2/coeff[5];
+    // gh2_sig = sqrt(0.5/coeff[5]);
+    delete[] fit_x;
+    delete[] fit_y;
+    delete[] fit_z;
+
+    // for g2
+    set_bin(mg2, data_num, mg_bin, bin_num, 100);
+    find_shear_mean(mg2, mn, data_num, g2, g2_sig, 100, 1);
+    for(i=0;i<chi_grid_num;i++) // y 
+    {   
+        m = g2 - dgn + dgn*2/(chi_grid_num-1)*i; 
+
+        for(k=0;k<data_num;k++){temp[k]=mg2[k]-mn[k]*m;}
+
+        for(j=0;j<chi_grid_num;j++) // x 
+        {   
+            tag = i*chi_grid_num+j;
+
+            n = g2 - dgu + dgu*2/(chi_grid_num-1)*j;
+
+            gh1_fit[tag] = m;
+            gh2_fit[tag] = n;
+            
+            for(k=0;k<data_num;k++){mg[k] = temp[k] - n*mu[k];}
+            
+            histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
+            cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
+            chisq2_fit[tag] = chisq_ij;
+        }
+    }
+
+    fit_num2 = 0;
+    for(i=0; i<chi_grid_num*chi_grid_num; i++)
+    {
+        g2_grid[i] = gh1_fit[i];
+        g2_grid[i+chi_grid_num*chi_grid_num] = gh2_fit[i];
+        chisq2_grid[i] = chisq2_fit[i];
+        if(chisq2_fit[i] <= chisq_thresh)
+        {
+            fit_num2 ++;
+        }
+    }
+    fit_x = new double[fit_num2];
+    fit_y = new double[fit_num2];
+    fit_z = new double[fit_num2];
+    fit_num2 = 0;
+    for(i=0; i<chi_grid_num*chi_grid_num; i++)
+    {
+        if(chisq2_fit[i] <= chisq_thresh)
+        {
+            fit_x[fit_num2] = gh1_fit[i];
+            fit_y[fit_num2] = gh2_fit[i];
+            fit_z[fit_num2] = chisq2_fit[i];
+            fit_num2 ++;
+        }
+    }
+
+    poly_fit_2d(fit_x, fit_y, fit_z, fit_num2, 2, coeff);
+    gh2 = -coeff[1]/2/coeff[3];
+    gh2_sig = sqrt(0.5/coeff[3]);
+    for(i=0;i<6;i++){coeff_check[i+6] = coeff[i];}
+    sprintf(inform,"%9.6f %9.6f (%9.6f) %9.6f %9.6f (%9.6f) %d %d",g1_true, g1, g1_sig, g2_true, g2, g2_sig,fit_num1,fit_num2);
+    std::cout<<inform<<std::endl;
+    // gh2 = -coeff[2]/2/coeff[5];
+    // gh2_sig = sqrt(0.5/coeff[5]);
+
+    delete[] fit_x;
+    delete[] fit_y;
+    delete[] fit_z;
+
+    delete[] num_in_bin;
+    delete[] gh1_fit;
+    delete[] gh2_fit;
+    delete[] chisq1_fit;
+    delete[] chisq2_fit;
+    delete[] coeff;
+    delete[] temp;
+    delete[] mg;
+}
 
 void set_radius_bin(double *radius_arr, const int data_num, double * bins, const int bin_num, const double max_scale)
 {
@@ -454,136 +626,7 @@ void find_shear_dipole_2d(const double *mg1, const double *mg2, const double *mn
     delete[] coeff;
 }
 
-//,const int chi_grid_num, double *g1_grid, double* g2_grid, double* chisq_grid
-void find_shear_2d(const double *mg1, const double* mg2, const double *mn, const double *mu, const int data_num, const int bin_num, 
-                        double &gh1, double &gh1_sig,double &gh2, double &gh2_sig, const int chi_grid_num,double *g1_grid, double *g2_grid,
-                        double *chisq1_grid, double *chisq2_grid, double  g1_true, double  g2_true, double delta_g,double* coeff_check)
 
-{
-    int i, j, k;
-    int change, iters, tag;
-    double g1, g1_sig, g2, g2_sig;
-    double m, n;
-    double dg;
-
-    int *num_in_bin = new int[bin_num];
-
-    double *gh1_fit = new double[chi_grid_num*chi_grid_num];
-    double *gh2_fit = new double[chi_grid_num*chi_grid_num];
-    double *chisq1_fit = new double[chi_grid_num*chi_grid_num];
-    double *chisq2_fit = new double[chi_grid_num*chi_grid_num];
-
-    double chisq_ij;
-
-    double *coeff = new double[6];
-
-    double *mg = new double[data_num];
-    double *temp = new double[data_num];
-    double *mg_bin = new double[bin_num+1]{};
-
-
-    
-    
-    char inform[200];
-
-    //show_arr(radius_bin,1, bin_num+1);
-    //std::cout<<std::endl;
-    
-       
-    // dg = 0.005
-    dg = delta_g;
-
-    // for g1
-    set_bin(mg1, data_num, mg_bin, bin_num, 100);
-    find_shear_mean(mg1, mn, data_num, g1, g1_sig, 100, 1);
-    for(i=0;i<chi_grid_num;i++) // y 
-    {   
-        m = g1 - dg + dg*2/(chi_grid_num-1)*i;        
-
-        for(k=0;k<data_num;k++){temp[k] = mg1[k] - m*mn[k];}
-
-        for(j=0;j<chi_grid_num;j++) // x 
-        {   
-            tag = i*chi_grid_num+j;
-
-            n = g1 - dg*2 + dg*4/(chi_grid_num-1)*j;
-
-            gh1_fit[tag] = m;
-            gh2_fit[tag] = n;
-            
-            for(k=0;k<data_num;k++){mg[k] = temp[k] -n*mu[k];}
-            
-            histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
-            cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
-            chisq1_fit[tag] = chisq_ij;
-        }
-    }
-
-    for(i=0; i<chi_grid_num*chi_grid_num; i++)
-    {
-        g1_grid[i] = gh1_fit[i];
-        g1_grid[i+chi_grid_num*chi_grid_num] = gh2_fit[i];
-        chisq1_grid[i] = chisq1_fit[i];
-    }
-    poly_fit_2d(gh1_fit, gh2_fit, chisq1_fit, chi_grid_num*chi_grid_num, 2, coeff);
-    gh1 = -coeff[1]/2/coeff[3];
-    gh1_sig = sqrt(0.5/coeff[3]);
-    for(i=0;i<6;i++){coeff_check[i] = coeff[i];}
-    // gh2 = -coeff[2]/2/coeff[5];
-    // gh2_sig = sqrt(0.5/coeff[5]);
-    
-
-    // for g2
-    set_bin(mg2, data_num, mg_bin, bin_num, 100);
-    find_shear_mean(mg2, mn, data_num, g2, g2_sig, 100, 1);
-    for(i=0;i<chi_grid_num;i++) // y 
-    {   
-        m = g2 - dg + dg*2/(chi_grid_num-1)*i;        
-
-        for(k=0;k<data_num;k++){temp[k] = mg2[k] - m*mn[k];}
-
-        for(j=0;j<chi_grid_num;j++) // x 
-        {   
-            tag = i*chi_grid_num+j;
-
-            n = g2 - dg*2 + dg*4/(chi_grid_num-1)*j;
-
-            gh1_fit[tag] = m;
-            gh2_fit[tag] = n;
-            
-            for(k=0;k<data_num;k++){mg[k] = temp[k] + n*mu[k];}
-            
-            histogram(mg, mg_bin, num_in_bin, data_num, bin_num);
-            cal_chisq_1d(num_in_bin, bin_num, chisq_ij);        
-            chisq2_fit[tag] = chisq_ij;
-        }
-    }
-
-    for(i=0; i<chi_grid_num*chi_grid_num; i++)
-    {
-        g2_grid[i] = gh1_fit[i];
-        g2_grid[i+chi_grid_num*chi_grid_num] = gh2_fit[i];
-        chisq2_grid[i] = chisq2_fit[i];
-    }
-    poly_fit_2d(gh1_fit, gh2_fit, chisq2_fit, chi_grid_num*chi_grid_num, 2, coeff);
-    gh2 = -coeff[1]/2/coeff[3];
-    gh2_sig = sqrt(0.5/coeff[3]);
-    for(i=0;i<6;i++){coeff_check[i+6] = coeff[i];}
-    // sprintf(inform,"%9.6f %9.6f (%9.6f) %9.6f %9.6f (%9.6f)",g1_true, g1, g1_sig, g2_true, g2, g2_sig);
-    // std::cout<<inform<<std::endl;
-    // gh2 = -coeff[2]/2/coeff[5];
-    // gh2_sig = sqrt(0.5/coeff[5]);
-
-
-    delete[] num_in_bin;
-    delete[] gh1_fit;
-    delete[] gh2_fit;
-    delete[] chisq1_fit;
-    delete[] chisq2_fit;
-    delete[] coeff;
-    delete[] temp;
-    delete[] mg;
-}
 
 int main(int argc, char**argv)
 {   
