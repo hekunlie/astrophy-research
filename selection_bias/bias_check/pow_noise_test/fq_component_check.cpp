@@ -99,7 +99,7 @@ int main(int argc, char*argv[])
 	int psf_scale_id;
 
 	seed_ini = atoi(argv[2]);
-	psf_scale_id = atoi(argv[3]); 
+	psf_scale_id = 4;//atoi(argv[3]); 
 	pts_step = 1;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
@@ -179,6 +179,8 @@ int main(int argc, char*argv[])
     double *sub_noisy_data;
 	double *sub_cross_term_estimate;
 	double *sub_noise_cross_term_estimate;
+	double *sub_noise_residual_term_estimate;	
+
 
 	double *total_flux, *sub_flux;
 	int *scatter_count,*gather_count;
@@ -226,6 +228,7 @@ int main(int argc, char*argv[])
 	sub_noisy_data = new double[gather_count[rank]]{};
 	sub_cross_term_estimate = new double[gather_count[rank]]{};
 	sub_noise_cross_term_estimate = new double[gather_count[rank]]{};
+	sub_noise_residual_term_estimate = new double[gather_count[rank]]{};
 
 
 
@@ -466,7 +469,7 @@ int main(int argc, char*argv[])
 				initialize_arr(noise_3, img_len, 0);
 				initialize_arr(pnoise_3, img_len, 0);
 
-				addnoise(noise_3, img_len, gal_noise_sig,rng2);
+				addnoise(noise_3, img_len, gal_noise_sig, rng2);
 				pow_spec(noise_3, pnoise_3, size, size);
 
 				arr_add(noise_1, noise_2, noise_3, img_len);
@@ -482,6 +485,16 @@ int main(int argc, char*argv[])
 				sub_noise_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
 				sub_noise_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
 
+
+				/////////////////////////// estimate noise-residual term /////////////////////////////////
+				arr_deduct(noise_pow_diff, pnoise_2, pnoise_3, img_len);
+				shear_est(noise_pow_diff, ppsf, &all_paras);
+				
+				sub_noise_residual_term_estimate[row + j * shear_data_cols] = all_paras.n1;
+				sub_noise_residual_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_noise_residual_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_noise_residual_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_noise_residual_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
 			}
 			gsl_free(0);
 			gsl_free(1);
@@ -597,6 +610,19 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
+
+		my_Gatherv(sub_noise_residual_term_estimate, gather_count, total_data, numprocs, rank);
+		if (0 == rank)
+		{
+#ifdef EPSF
+			sprintf(result_path, "%s/result/data_%d/data_%d_noise_diff_estimate_epsf.hdf5", parent_path,psf_scale_id, shear_id);
+#else
+			sprintf(result_path, "%s/result/data_%d/data_%d_noise_diff_estimate_epsf.hdf5", parent_path, psf_scale_id,shear_id);
+#endif
+			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		te = clock();
 		if (rank == 0)

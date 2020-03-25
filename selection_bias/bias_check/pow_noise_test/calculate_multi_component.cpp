@@ -59,7 +59,7 @@ int main(int argc, char**argv)
 
     int data_col, data_row;
     int result_col;
-    double *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
+    double *data,*data_2, *data_3, *mg1, *mg2,*mn,*mnu1, *mnu2;
     double weight;
 
     // for results
@@ -87,15 +87,20 @@ int main(int argc, char**argv)
     rotation = new double[5];
 
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
-    sprintf(result_path, "%s/shear_result_%s_rotate_%s_minus_%s.hdf5", parent_path, data_type_1,data_type_2, data_type_3);
-    // sprintf(result_path, "%s/shear_result_%s_rotate_%s.hdf5", parent_path, data_type_1, data_type_2);
+    // sprintf(result_path, "%s/shear_result_%s_rotate_%s_minus_%s.hdf5", parent_path, data_type_1,data_type_2, data_type_3);
+    sprintf(result_path, "%s/shear_result_N_add_rotate_estCT_minus_estNnCT.hdf5", parent_path);
+    // sprintf(result_path, "%s/shear_result_NF_NR_CT_add_rotate_NR_rotate_CT.hdf5", parent_path);
 
-    data = new double[data_row*data_col];
-    mg1 = new double[data_row];
-    mg2 = new double[data_row];
-    mn = new double[data_row];
-    mnu1 = new double[data_row];
-    mnu2 = new double[data_row];
+    data = new double[data_row*data_col]{};
+    data_2 = new double[data_row*data_col]{};
+    data_3 = new double[data_row*data_col]{};
+
+
+    mg1 = new double[data_row]{};
+    mg2 = new double[data_row]{};
+    mn = new double[data_row]{};
+    mnu1 = new double[data_row]{};
+    mnu2 = new double[data_row]{};
 
     shear_point = new int[numprocs]{};
     send_count = new int[numprocs]{};
@@ -165,6 +170,7 @@ int main(int argc, char**argv)
     sprintf(set_name,"/g2");
     read_h5(shear_path, set_name,g2_t);
 
+
     // read and calculate
     sprintf(set_name,"/data");
     for(i=shear_st;i<shear_ed;i++)
@@ -173,7 +179,9 @@ int main(int argc, char**argv)
         read_h5(data_path_1, set_name, data);
         // read data
         if(rank == 0)
-        {
+        {   
+            get_time(time_now, 40);
+            std::cout<<time_now<<std::endl;
             std::cout<<data_path_1<<std::endl;
         }
         for(k=0;k<data_row;k++)
@@ -186,38 +194,55 @@ int main(int argc, char**argv)
         }
 
         sprintf(data_path_2,"%s/data_%d_%s.hdf5",parent_path, i, data_type_2);
-        read_h5(data_path_2, set_name, data);
+        read_h5(data_path_2, set_name, data_2);
         // read data
         if(rank == 0)
         {
             std::cout<<data_path_2<<std::endl;
         }
-        for(k=0;k<data_row;k++)
-        {
-            estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-            mg1[k] = mg1[k] + rotation[0];
-            mg2[k] = mg2[k] + rotation[1];
-            mn[k] = mn[k] + rotation[2];
-            mnu1[k] = mnu1[k] + rotation[2] + rotation[3];
-            mnu2[k] = mnu2[k] + rotation[2] - rotation[3];
-        }
-        
         sprintf(data_path_3,"%s/data_%d_%s.hdf5",parent_path, i, data_type_3);
-        read_h5(data_path_3, set_name, data);
+        read_h5(data_path_3, set_name, data_3);
         // read data
         if(rank == 0)
         {
             std::cout<<data_path_3<<std::endl;
         }
         for(k=0;k<data_row;k++)
-        {   
-            estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-            mg1[k] = mg1[k] - rotation[0];
-            mg2[k] = mg2[k] - rotation[1];
-            mn[k] = mn[k] - rotation[2];
-            mnu1[k] = mnu1[k] - (rotation[2] + rotation[3]);
-            mnu2[k] = mnu2[k] - (rotation[2] - rotation[3]);
+        {
+            data_2[k] -= data_3[k];
         }
+        for(k=0;k<data_row;k++)
+        {
+            // mg1[k] = mg1[k] + data[k*data_col];
+            // mg2[k] = mg2[k] + data[k*data_col + 1];
+            // mn[k] = mn[k] + data[k*data_col + 2];
+            // mnu1[k] = mnu1[k] + (data[k*data_col + 2] + data[k*data_col + 3]);
+            // mnu2[k] = mnu2[k] + (data[k*data_col + 2] - data[k*data_col + 3]);
+
+            estimator_rotation(Pi/2, data_2[k*data_col],data_2[k*data_col+1],data_2[k*data_col+2],data_2[k*data_col+3],data_2[k*data_col+4],rotation);
+            mg1[k] = mg1[k] + rotation[0];
+            mg2[k] = mg2[k] + rotation[1];
+            mn[k] = mn[k] + rotation[2];
+            mnu1[k] = mnu1[k] + (rotation[2] + rotation[3]);
+            mnu2[k] = mnu2[k] + (rotation[2] - rotation[3]);
+        }
+        
+
+        // for(k=0;k<data_row;k++)
+        // {   
+
+        //     mg1[k] = mg1[k] - data[k*data_col];
+        //     mg2[k] = mg2[k] - data[k*data_col + 1];
+        //     mn[k] = mn[k] - data[k*data_col + 2];
+        //     mnu1[k] = mnu1[k] - (data[k*data_col + 2] + data[k*data_col + 3]);
+        //     mnu2[k] = mnu2[k] - (data[k*data_col + 2] - data[k*data_col + 3]);
+        //     // estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
+        //     // mg1[k] = mg1[k] - rotation[0];
+        //     // mg2[k] = mg2[k] - rotation[1];
+        //     // mn[k] = mn[k] - rotation[2];
+        //     // mnu1[k] = mnu1[k] - (rotation[2] + rotation[3]);
+        //     // mnu2[k] = mnu2[k] - (rotation[2] - rotation[3]);
+        // }
 
 
         // MEAN

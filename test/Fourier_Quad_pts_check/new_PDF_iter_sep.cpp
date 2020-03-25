@@ -58,7 +58,7 @@ int main(int argc, char**argv)
 
     int i, j, k, tag;
     int shear_num, shear_id;
-    int data_row = 7000000, sub_row, data_col;
+    int data_row = 20000000, sub_row, data_col;
     double g1, g1_sig, g2, g2_sig;
 
     double *check_temp;
@@ -74,14 +74,14 @@ int main(int argc, char**argv)
 
     int ratio;
     int add_time, add_scale;
-    add_time = 100;//atoi(argv[5]);
-    add_scale = 100;//atoi(argv[6]);
+    add_time = 20;//atoi(argv[5]);
+    add_scale = 20;//atoi(argv[6]);
     bin_num = 8;
-    data_col = 8;
+    data_col = 7;
     
     iters = 4;
 
-    scale_bin_num = 1;
+    scale_bin_num = 5;
 
     result_col_nu = 3 + scale_bin_num*3;
 
@@ -111,7 +111,7 @@ int main(int argc, char**argv)
     mg1_bin = new double[bin_num+1]{};
     mg2_bin = new double[bin_num+1]{};    
 
-    scale_bins = new double[scale_bin_num+1]{0, 100};
+    scale_bins = new double[scale_bin_num+1]{0, 3, 5, 7, 10, 100000};
     scale_vals = new double[sub_row];
     scale_bin_label = new int[sub_row];
     scale_num_counts = new int[scale_bin_num];
@@ -131,7 +131,7 @@ int main(int argc, char**argv)
 
     // weight = new double[sub_row];
     
-    sprintf(result_path, "%s/new_pdf_%s_%d.hdf5",parent_path, data_nm, scale_bin_num);
+    sprintf(result_path, "%s/new_pdf_%d.hdf5",parent_path, scale_bin_num);
 
     sprintf(data_path, "%s/shear.hdf5", parent_path);
     
@@ -182,22 +182,26 @@ int main(int argc, char**argv)
     for(shear_id=my_shear_st; shear_id<my_shear_ed; shear_id++)
     {   
         // sprintf(data_name, data_nm, shear_id);
-        sprintf(data_path, "%s/data_%d_%s.hdf5",parent_path, shear_id, data_nm);
+        sprintf(data_path, "%s/data_%d.hdf5",parent_path, shear_id);
         sprintf(set_name,"/data");
         read_h5(data_path, set_name, data);
+
+        sprintf(data_path, "%s/sex2_1.5/flux2_ex1_%d.hdf5",parent_path, shear_id);
+        sprintf(set_name,"/data");
+        read_h5(data_path, set_name, scale_vals);
 
         for(i=0;i<sub_row;i++)
         {   
             //weight[i] = data[i*data_col + 7]*data[i*data_col + 7];
 
-            mg1[i] = data[i*data_col + 0];
-            mg2[i] = data[i*data_col + 1];
-            mn[i] = data[i*data_col + 2];
-            mu[i] = data[i*data_col + 3];
+            mg1[i] = data[i*data_col + 2];
+            mg2[i] = data[i*data_col + 3];
+            mn[i] = data[i*data_col + 4];
+            mu[i] = data[i*data_col + 5];
             mnu1[i] = mn[i] + mu[i];
             mnu2[i] = mn[i] - mu[i];
 
-            scale_vals[i] = data[i*data_col + 6]/48./60.;
+            scale_vals[i] = scale_vals[i]/48./60.;
             histogram_s(scale_vals[i], scale_bins, scale_bin_num, k);
             scale_bin_label[i] = k;
             if(rank == 0 and i <= 20){std::cout<<scale_bin_label[i]<<std::endl;}

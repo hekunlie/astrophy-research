@@ -8,7 +8,7 @@ import h5py
 
 iters = 4
 
-data_path = "E:/data/new_pdf/component_separation/stack_sep"
+data_path = "E:/"
 
 h5f = h5py.File(data_path + "/shear.hdf5", "r")
 g1 = h5f["/g1"][()]
@@ -17,7 +17,7 @@ h5f.close()
 shear_num = g1.shape[0]
 print(shear_num)
 
-file_name = "new_pdf_noisy_1.hdf5"
+file_name = "new_pdf_5.hdf5"
 pic_nm1 = data_path + "/%s_1.png"%file_name
 pic_nm2 = data_path + "/%s_2.png"%file_name
 pic_nm3 = data_path + "/%s_3.png"%file_name
