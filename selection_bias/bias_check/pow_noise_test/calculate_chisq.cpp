@@ -51,7 +51,8 @@ int main(int argc, char**argv)
     int chisq_num;
     double *chisq1, *chisq2, *shear_for_chi, chisq_min_fit;
     double left_guess, right_guess;
-  
+    double gh1, gh1_sig, gh2, gh2_sig;
+    double *result;
     int data_col, data_row;
     double *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
     double *rotation;
@@ -69,14 +70,14 @@ int main(int argc, char**argv)
     data_col = 5;// G1, G2, N, U, V
     mg_bin_num = 10;//atoi(argv[4]);
     chi_check_num =20;
-    chisq_num = 201;
+    chisq_num = 501;
     left_guess = -0.1;
     right_guess = 0.1;
     rotation = new double[5];
 
     char_stack(data_type, data_type_num, data_comb);
-    
-    data = new double[data_row*data_col];
+    result = new double[4];
+    data = new double[data_row*data_col]{};
     mg1 = new double[data_row]{};
     mg2 = new double[data_row]{};
     mn = new double[data_row]{};
@@ -138,18 +139,18 @@ int main(int argc, char**argv)
                 if(rank== 0){std::cout<<"Read data "<<data_path<<" "<<data_type[j]<<std::endl;}
                 for(k=0;k<data_row;k++)
                 {
-                    estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-                    mg1[k] += rotation[0];
-                    mg2[k] += rotation[1];
-                    mn[k] += rotation[2];
-                    mnu1[k] += rotation[2] + rotation[3];
-                    mnu2[k] += rotation[2] - rotation[3];
+                    // estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
+                    // mg1[k] += rotation[0];
+                    // mg2[k] += rotation[1];
+                    // mn[k] += rotation[2];
+                    // mnu1[k] += rotation[2] + rotation[3];
+                    // mnu2[k] += rotation[2] - rotation[3];
 
-                    // mg1[k] = mg1[k] + data[k*data_col];
-                    // mg2[k] = mg2[k] + data[k*data_col + 1];
-                    // mn[k] = mn[k] + data[k*data_col + 2];
-                    // mnu1[k] = mnu1[k] + data[k*data_col + 2] + data[k*data_col + 3];
-                    // mnu2[k] = mnu2[k] + data[k*data_col + 2] - data[k*data_col + 3];
+                    mg1[k] = mg1[k] + data[k*data_col];
+                    mg2[k] = mg2[k] + data[k*data_col + 1];
+                    mn[k] = mn[k] + data[k*data_col + 2];
+                    mnu1[k] = mnu1[k] + (data[k*data_col + 2] + data[k*data_col + 3]);
+                    mnu2[k] = mnu2[k] + (data[k*data_col + 2] - data[k*data_col + 3]);
                 }
             }
             else
@@ -157,17 +158,17 @@ int main(int argc, char**argv)
                 if(rank== 0){std::cout<<"Read data "<<data_path<<" "<<data_type[j]<<std::endl;}
                 for(k=0;k<data_row;k++)
                 {
-                    estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-                    mg1[k] += rotation[0];
-                    mg2[k] += rotation[1];
-                    mn[k] += rotation[2];
-                    mnu1[k] += rotation[2] + rotation[3];
-                    mnu2[k] += rotation[2] - rotation[3];
-                    // mg1[k] = mg1[k] - data[k*data_col];
-                    // mg2[k] = mg2[k] - data[k*data_col + 1];
-                    // mn[k] = mn[k] - data[k*data_col + 2];
-                    // mnu1[k] = mnu1[k] - (data[k*data_col + 2] + data[k*data_col + 3]);
-                    // mnu2[k] = mnu2[k] - (data[k*data_col + 2] - data[k*data_col + 3]);
+                    // estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
+                    // mg1[k] += rotation[0];
+                    // mg2[k] += rotation[1];
+                    // mn[k] += rotation[2];
+                    // mnu1[k] += rotation[2] + rotation[3];
+                    // mnu2[k] += rotation[2] - rotation[3];
+                    mg1[k] = mg1[k] + data[k*data_col];
+                    mg2[k] = mg2[k] + data[k*data_col + 1];
+                    mn[k] = mn[k] + data[k*data_col + 2];
+                    mnu1[k] = mnu1[k] + (data[k*data_col + 2] + data[k*data_col + 3]);
+                    mnu2[k] = mnu2[k] + (data[k*data_col + 2] - data[k*data_col + 3]);
                 }
             }
         }
@@ -196,14 +197,24 @@ int main(int argc, char**argv)
             }
             chisq2[k] = left_guess;
         }
+        
+        find_shear_mean(mg1, mn, data_row, gh1, gh1_sig, 1000,100);
+        find_shear_mean(mg2, mn, data_row, gh2, gh2_sig, 1000,100);
+        result[0] = gh1;
+        result[1] = gh1_sig;
+        result[2] = gh2;
+        result[3] = gh2_sig;
 
-        sprintf(data_path, "%s/chisq/chisq_%d_rotate_all_%s.hdf5", parent_path, rank, data_comb);
+
+        sprintf(data_path, "%s/chisq/chisq_%d_%s.hdf5", parent_path, rank, data_comb);
         sprintf(set_name,"/chisq1");
         write_h5(data_path, set_name, chisq1, chisq_num, 1, true);
         sprintf(set_name,"/chisq2");
         write_h5(data_path, set_name, chisq2, chisq_num, 1, false);
         sprintf(set_name,"/shear");
-        write_h5(data_path, set_name, shear_for_chi, chisq_num, 1, false);       
+        write_h5(data_path, set_name, shear_for_chi, chisq_num, 1, false);    
+        sprintf(set_name,"/g");
+        write_h5(data_path, set_name, result, 4, 1, false);   
 
     }
     

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # data_path, shear_num = argv[1], int(argv[2])
 
-shear_num = 22
+shear_num = 14
 data_path = "D:/"
 # g = numpy.linspace(0,0.05, shear_num)
 # theta = numpy.random.uniform(0,2*numpy.pi,shear_num)
@@ -16,10 +16,10 @@ data_path = "D:/"
 # g2 = g*sin_2theta
 g1 = numpy.zeros((shear_num,))
 g2 = numpy.zeros((shear_num,))
-g1[:11] = numpy.linspace(-0.05, -0.01, 11)
-g1[11:] = numpy.linspace(0.01, 0.05, 11)
-g2[:11] = numpy.linspace(-0.05, -0.01, 11)
-g2[11:] = numpy.linspace(0.01, 0.05, 11)
+g1[:7] = numpy.linspace(-0.04, -0.005, 7)
+g1[7:] = numpy.linspace(0.005, 0.04, 7)
+g2[:7] = numpy.linspace(-0.04, -0.005, 7)
+g2[7:] = numpy.linspace(0.005, 0.04, 7)
 print(g1)
 numpy.random.shuffle(g1)
 print(g1)

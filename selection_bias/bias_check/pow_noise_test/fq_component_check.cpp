@@ -5,6 +5,16 @@
 #define FLUX_PDF_UNI
 #define EPSF
 
+
+void arr_sqrt(double *arr_in, double *arr_out, const int length)
+{
+    for(int i=0;i<length;i++)
+    {
+        arr_out[i] = sqrt(arr_in[i]);
+    }
+}
+
+
 void arr_add(double *arr1, const double*arr2,const int length)
 {
     for(int i=0;i<length;i++)
@@ -99,7 +109,7 @@ int main(int argc, char*argv[])
 	int psf_scale_id;
 
 	seed_ini = atoi(argv[2]);
-	psf_scale_id = 4;//atoi(argv[3]); 
+	psf_scale_id = 5;//atoi(argv[3]); 
 	pts_step = 1;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
@@ -157,6 +167,7 @@ int main(int argc, char*argv[])
 
 	double *psf = new double[img_len]{};
 	double *ppsf = new double[img_len]{};
+	double *ppsf_sqrt = new double[img_len]{};
 
 	double *noise_1 = new double[img_len]{};
 	double *pnoise_1 = new double[img_len]{};
@@ -261,7 +272,7 @@ int main(int argc, char*argv[])
 #endif
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
-
+	arr_sqrt(ppsf, ppsf_sqrt, img_len);
 
 	// std::cout<<rank<<std::endl;
 	// show_arr(scatter_count,1,numprocs);
@@ -425,7 +436,7 @@ int main(int argc, char*argv[])
 				stack(big_img_cross_term, pgal_cross_term, j, size, stamp_nx, stamp_nx);
 				stack(big_img_noisy, gal, j, size, stamp_nx, stamp_nx);
 #endif
-				shear_est(pgal_cross_term, ppsf, &all_paras);
+				shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
 
 				sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
 				sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;

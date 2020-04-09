@@ -156,7 +156,14 @@ void convolve(double *in_img, const double * points, const double flux, const in
 void convolve_e(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
 	const double g1, const double g2, const int psf, const double ellip, const double theta);
 
-void pow_spec(const double *in_img, double *out_img, const int column, const int row);
+void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row);
+void deconvolution(const double *gal_pow, const double*gal_pow_real, const double*gal_pow_imag, const double *psf_pow, const double*psf_pow_real, const double*psf_pow_imag, 
+     double *img_out, const int column, const int row);
+
+
+void pow_spec(const double *in_img, double *out_img_pow, const int column, const int row);
+void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row);
+
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);
 
 void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level);
@@ -230,7 +237,11 @@ void snr_est(const double *image, fq_paras *paras, int fit);//checked
 void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
 
-void shear_est(double *gal_img, double *psf_img, fq_paras *paras);//checked
+void shear_est(double *gal_pow, double *psf_pow, fq_paras *paras);//checked
+
+void shear_est(const double *gal_pow, const double *gal_pow_real, const double *gal_pow_imag,
+               double *psf_pow,const double *psf_pow_real,const double *psf_pow_imag, fq_paras *paras);//checked
+
 
 void ellip_est(const double *gal_img, const int size, fq_paras*paras);
 

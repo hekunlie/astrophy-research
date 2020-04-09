@@ -397,6 +397,27 @@ void convolve_e(double *in_img, const double * points, const double flux, const 
 	delete[] points_r;
 }
 
+void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row)
+{
+	int i, j;
+	j=column*row;
+	for(i=0;i<j;i++)
+	{
+		out_img[i]=gal_pow[i]/psf_pow[i];
+	}
+}
+
+void deconvolution(const double *gal_pow, const double*gal_pow_real, const double*gal_pow_imag, const double *psf_pow, const double*psf_pow_real, const double*psf_pow_imag, 
+double *out_img, const int column, const int row)
+{
+	int i,j;
+	j = column*row;
+	for(i=0;i<j;i++)
+	{
+		out_img[i] = gal_pow[i]/psf_pow[i] + 4*gal_pow_real[i]*gal_pow_imag[i]*psf_pow_real[i]*psf_pow_imag[i]/psf_pow[i]/psf_pow[i];
+	}
+}
+
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row)
 {   /* will not change the inputted array */
@@ -438,6 +459,58 @@ void pow_spec(const double *in_img, double *out_img, const int column, const int
 			}
 
 			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+		}
+	}
+	/* shift the signal to the center */
+
+	fftwl_destroy_plan(p);
+	fftwl_free(in);
+	fftwl_free(out);
+}
+
+void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row)
+{
+    /* will not change the inputted array */
+	/* in_img is the inputted array and the out_img is the container of the outputted image */
+	fftwl_complex *in, *out;
+	fftwl_plan p;
+	long int i, j, m, n;
+
+	in = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
+	for (i = 0; i < (row*column); i++)
+	{
+		in[i][1] = 0;
+		in[i][0] = in_img[i];
+	}
+
+	out = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
+	p = fftwl_plan_dft_2d(row, column, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftwl_execute(p);															 /* repeat as needed */
+
+	 /* shift the signal to the center */
+	for (i = 0; i < row; i++)
+	{
+		for (j = 0; j < column; j++)
+		{
+			m = i*column + j;
+			if (i<row / 2)
+			{
+				if (j < column / 2)
+					n = (i + row / 2)*column + j + column / 2;
+				else
+					n = (i + row / 2)*column + j - column / 2;
+			}
+			else
+			{
+				if (j<column / 2)
+					n = (i - row / 2)*column + j + column / 2;
+				else
+					n = (i - row / 2)*column + j - column / 2;
+			}
+
+			out_img_pow[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+			out_img_real[n] = out[m][0];
+			out_img_imag[n] = out[m][1];
 		}
 	}
 	/* shift the signal to the center */
@@ -1640,6 +1713,63 @@ void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 				ky2 = ky*ky;
 
 				tk = exp( - k2 * beta ) / psf_img[i*size + j] * gal_img[i*size + j] * alpha;
+				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
+				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
+				mg2 += -kx*ky*tk;
+				mn += ( k2 - 0.5*beta*k4 ) * tk;
+				mu += (k4  - 8 *kx2*ky2)*tk * (-0.5*beta);
+				mv += kx*ky*(kx2-ky2)* tk * (-2.* beta);
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+			}
+		}
+	}
+
+	paras->n1 = mg1;
+	paras->n2 = mg2;
+	paras->dn = mn;
+	paras->du = mu;
+	paras->dv = mv;
+	//paras->dp1 = mp1;
+	//paras->dp2 = mp2;
+
+}
+
+void shear_est(const double *gal_pow, const double *gal_pow_real, const double *gal_pow_imag,
+               double *psf_pow,const double *psf_pow_real,const double *psf_pow_imag, fq_paras *paras)
+{	 /* will not change the inputted array */
+	 /* all the inputted images are the powerspectrums */
+	/* if there's no background noise, a array of '0' should be inputted */
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
+	double mp1=0., mp2=0.;
+	int i, j, k, size, tag;
+	size = paras->stamp_size;
+
+	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
+	/* beta is the beta_square in the estimators */
+	// use the hlr/1.414 of the PSF as the sigma of the target PSF
+	// then the hlr of the target PSF will be smaller than the PSF
+	// HLR = hlr/1.414*1.177 < hlr
+	beta = 1./ paras->psf_hlr / paras->psf_hlr;
+	
+	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken into account
+	thresh = paras->psf_pow_thresh;
+
+	for (i = 0; i < size; i++)//y coordinates
+	{
+		ky = i - size*0.5;
+		for (j = 0; j < size; j++) // x coordinates
+		{
+			kx = j - size*0.5;
+			tag = i*size+j;
+			if (psf_pow[tag] >= thresh)
+			{	
+				k2 = kx*kx + ky*ky;
+				k4 = k2*k2;
+				kx2 = kx*kx;
+				ky2 = ky*ky;			
+
+				tk = exp(-k2*beta)*(gal_pow[tag]+4*gal_pow_real[tag]*gal_pow_imag[tag]*psf_pow_real[tag]*psf_pow_imag[tag]/psf_pow[tag])/psf_pow[tag]* alpha;
 				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
 				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
 				mg2 += -kx*ky*tk;
