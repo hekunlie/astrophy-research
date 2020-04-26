@@ -34,7 +34,7 @@ int main(int argc, char**argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-    char parent_path[200], shear_path[200], result_path[200];
+    char parent_path[300], shear_path[300], result_path[300];
     char set_name[30], inform[300], time_now[40];
 
     char data_path[300], *data_type[10], data_comb[100];
@@ -70,7 +70,7 @@ int main(int argc, char**argv)
     data_col = 5;// G1, G2, N, U, V
     mg_bin_num = 10;//atoi(argv[4]);
     chi_check_num =20;
-    chisq_num = 501;
+    chisq_num = 121;
     left_guess = -0.1;
     right_guess = 0.1;
     rotation = new double[5];
@@ -131,7 +131,7 @@ int main(int argc, char**argv)
         // read data
         for(j=0;j<data_type_num;j++)
         {
-            sprintf(data_path,"%s/data_%d_%s.hdf5",parent_path, i, data_type[j]);
+            sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_type[j], i);
             read_h5(data_path, set_name, data);
             
             if(j==0)

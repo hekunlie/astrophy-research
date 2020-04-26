@@ -14,7 +14,7 @@ from astropy.io import fits
 
 # the relation between Pk0 and magnitude
 
-h5f = h5py.File("E:/mask_12.hdf5","r")
+h5f = h5py.File("D:/mask_12.hdf5","r")
 mask = h5f["/data"][()]
 h5f.close()
 idx = mask > 0
@@ -22,27 +22,27 @@ idx = mask > 0
 mask = mask[idx]
 ch = numpy.random.choice(numpy.array([i for i in range(len(mask))]), 50000, replace=False).tolist()
 
-h5f = h5py.File("E:/flux2_ex1_12.hdf5","r")
+h5f = h5py.File("D:/flux2_ex1_12.hdf5","r")
 pk0 = h5f["/data"][()][idx][ch]/48/60
 h5f.close()
 
-h5f = h5py.File("E:/flux2_ex2_12.hdf5","r")
+h5f = h5py.File("D:/flux2_ex2_12.hdf5","r")
 pk0_fit = h5f["/data"][()][idx][ch]/48/60
 h5f.close()
 
-h5f = h5py.File("E:/mag_true_12.hdf5","r")
+h5f = h5py.File("D:/mag_true_12.hdf5","r")
 mag_true = -h5f["/data"][()][idx][ch]
 h5f.close()
 
-h5f = h5py.File("E:/snr_sex_12.hdf5","r")
-snr_sex = h5f["/data"][()][idx][ch]
-h5f.close()
+# h5f = h5py.File("D:/snr_sex_12.hdf5","r")
+# snr_sex = h5f["/data"][()][idx][ch]
+# h5f.close()
 
 print(mag_true.min(), mag_true.max())
 mag_min = mag_true.min()
 mag_max = mag_true.max()
 
-num = 500
+num = 1000
 
 mag_bin = numpy.linspace(mag_min, mag_max, num+1)
 mags = (mag_bin[1:] + mag_bin[:num])/2
@@ -54,40 +54,40 @@ for i in range(num):
     idx2 = mag_true < mag_bin[i+1]
 
 
-    data = snr_sex[idx1&idx2]
+    data = pk0[idx1&idx2]
     pks[0,i], pks[1,i] = data.min(), data.max()
 
-    data = snr_sex[idx1&idx2]
+    data = pk0_fit[idx1&idx2]
     pks[2,i], pks[3,i] = data.min(), data.max()
 
 
 matplotlib.rcParams["font.family"] = "serif"
 
-img = Image_Plot(legend_size=14, fig_x=6, fig_y=4,plt_line_width=2,axis_linewidth=2,xpad=0.2)
+img = Image_Plot(legend_size=15, fig_x=6, fig_y=4, plt_line_width=1.5,axis_linewidth=1.5,xpad=0.2)
 img.subplots(1,1)
 img.axis_type(0,"major",tick_len=6, tick_width=1.2)
 img.axis_type(0,"minor",tick_len=3, tick_width=1.2)
 img.axis_type(1,"major",tick_len=6, tick_width=1.2)
 
 
-labels = ["P$_{k0}$", "P$_{k0,fit}$", "MAX(P$_{k0}$,P$_{k0,fit}$)"]
+labels = ["$\\nu_F$", "$\\nu_{F,fit}$", "$\\tilde{\\nu}_F$"]
 
 # img.axs[0][0].scatter(mag[ch], pk0[idx][ch], s=5, color="C0",label=labels[0])
 # img.axs[0][0].scatter(mag[ch], pk0_fit[idx][ch], s=5, color="C1",label=labels[1])
 img.axs[0][0].fill_between(mags, pks[0], pks[1], alpha=0.8,color="C0",label=labels[0])
-# img.axs[0][0].fill_between(mags, pks[2], pks[3], alpha=0.8,color="C1",label=labels[1])
+img.axs[0][0].fill_between(mags, pks[2], pks[3], alpha=0.8,color="C1",label=labels[1])
 
 ys = img.axs[0][0].set_ylim()
 xs = img.axs[0][0].set_xlim()
 
-img.axs[0][0].set_ylim(pks.min(), pks.max())
-# img.axs[0][0].set_xlim(22.5, 25.02)
+img.axs[0][0].set_ylim(0.11, 45)
+img.axs[0][0].set_xlim(22.5, 25.02)
 # img.axs[0][0].set_ylim(22, xs[1])
 img.axs[0][0].set_yscale("log")
 img.axs[0][0].set_xlabel("Magnitude",fontsize=img.xy_lb_size)
-img.axs[0][0].set_ylabel("$P_{k0}$",fontsize=img.xy_lb_size)
+img.axs[0][0].set_ylabel("$\\nu_F$",fontsize=img.xy_lb_size)
 img.axs[0][0].legend(loc="lower left", frameon=False, fontsize=img.legend_size)
-# img.save_img("E:/pk_scatter.pdf")
+img.save_img("E:/pk_scatter.pdf")
 img.show_img()
 
 

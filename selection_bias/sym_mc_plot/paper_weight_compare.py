@@ -47,30 +47,30 @@ h5f.close()
 
 
 matplotlib.rcParams["font.family"] = "serif"
-img = Image_Plot(fig_x=6,fig_y=4,xpad=0.2, ypad=0.2,legend_size=11)
+img = Image_Plot(fig_x=6,fig_y=4,xpad=0.2, ypad=0.2,legend_size=13)
 img.subplots(1,1)
 img.axis_type(0,"major",tick_len=6, tick_width=1.5)
 img.axis_type(1,"major",tick_len=6, tick_width=1.5)
 
-img.axs[0][0].errorbar(x_coord, 100 * mc1_tf_pk_fit[0], 100 * mc1_tf_pk_fit[1], linewidth=img.plt_line_width-0.25,
-                       capsize=img.cap_size, marker="s", fillstyle="none",c="C3",label="$m_1$, weight=$[True\ Flux]^{-2}$")
-img.axs[0][0].errorbar(x_coord, 100 * mc2_tf_pk_fit[0], 100 * mc2_tf_pk_fit[1], linewidth=img.plt_line_width-0.25,
-                       capsize=img.cap_size, marker="s", fillstyle="none", ls="--",c="C3",label="$m_2$, weight=$[True\ Flux]^{-2}$")
+img.axs[0][0].errorbar(x_coord, 100 * mc1_tf_pk_fit[0], 100 * mc1_tf_pk_fit[1], linewidth=img.plt_line_width-0.5,
+                       capsize=img.cap_size, marker="o", fillstyle="none",c="C2",label="$m_1$, weight=$F^{-2}$")
+img.axs[0][0].errorbar(x_coord, 100 * mc2_tf_pk_fit[0], 100 * mc2_tf_pk_fit[1], linewidth=img.plt_line_width-0.5,
+                       capsize=img.cap_size, marker="o", fillstyle="none", ls="--",c="C2",label="$m_2$, weight=$F^{-2}$")
 # img.axs[0][0].errorbar(x_coord, 100 * mc1_tf_tmag[0], 100 * mc1_tf_tmag[1], linewidth=img.plt_line_width,
 #                        capsize=img.cap_size, marker="s", fillstyle="none", ls="-.")
-img.axs[0][0].errorbar(x_coord, 100 * mc1_mpk_pk_fit[0], 100 * mc1_mpk_pk_fit[1], linewidth=img.plt_line_width-0.25,
-                       capsize=img.cap_size, marker="s", fillstyle="none",c="C2",label="$m_1$, weight=$Max[P_{k0}, P_{k0,fit}]^{-2}$")
-img.axs[0][0].errorbar(x_coord, 100 * mc2_mpk_pk_fit[0], 100 * mc2_mpk_pk_fit[1], linewidth=img.plt_line_width-0.25,
-                       capsize=img.cap_size, marker="s", fillstyle="none", ls="--",c="C2",label="$m_2$, weight=$Max[P_{k0}, P_{k0,fit}]^{-2}$")
+img.axs[0][0].errorbar(x_coord, 100 * mc1_mpk_pk_fit[0], 100 * mc1_mpk_pk_fit[1], linewidth=img.plt_line_width-0.5,
+                       capsize=img.cap_size, marker="o", fillstyle="none",c="C1",label="$m_1$, weight=$\\tilde{\\nu}_F^{-2}$")
+img.axs[0][0].errorbar(x_coord, 100 * mc2_mpk_pk_fit[0], 100 * mc2_mpk_pk_fit[1], linewidth=img.plt_line_width-0.5,
+                       capsize=img.cap_size, marker="o", fillstyle="none", ls="--",c="C1",label="$m_2$, weight=$\\tilde{\\nu}_F^{-2}$")
 # img.axs[0][0].errorbar(x_coord, 100 * mc1_mpk_tmag[0], 100 * mc1_mpk_tmag[1], linewidth=img.plt_line_width,
 #                        capsize=img.cap_size, marker="s", fillstyle="none")
 xs = img.axs[0][0].set_xlim()
-ys = img.axs[0][0].set_ylim(-1, 1)
-img.axs[0][0].plot([xs[0], 100], [0, 0], linewidth=img.plt_line_width-0.25, c="grey", linestyle="--")
+ys = img.axs[0][0].set_ylim(-1.02, 1.02)
+img.axs[0][0].plot([xs[0], 100], [0, 0], linewidth=img.plt_line_width-0.5, c="grey", alpha=0.7,linestyle="--")
 img.axs[0][0].xaxis.set_major_formatter(xticks)
 img.axs[0][0].set_xlabel("Cutoff percentage", fontsize=img.xy_lb_size)
 img.axs[0][0].set_ylabel("$m_{1/2}\\times 10^2$", fontsize=img.xy_lb_size)
 img.axs[0][0].set_xticks(x_tick)
-img.axs[0][0].legend(ncol=2,fontsize=img.legend_size)
+img.axs[0][0].legend(ncol=2,fontsize=img.legend_size,frameon=False)
 img.save_img("E:/weight_compare.pdf")
 img.show_img()

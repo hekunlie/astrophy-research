@@ -70,8 +70,8 @@ int main(int argc, char**argv)
     // data shape
     strcpy(parent_path, argv[1]);
     strcpy(data_type, argv[2]);
-    shear_num = 22;//atoi(argv[3]);
-    data_row = 2000*10000;//atoi(argv[4])*10000;
+    shear_num = atoi(argv[3]);
+    data_row = atoi(argv[4])*10000;
 
     data_col = 5;// G1, G2, N, U
     result_col = 4;// g1, g1_sig, g2, g2_sig
@@ -170,7 +170,7 @@ int main(int argc, char**argv)
     sprintf(set_name,"/data");
     for(i=shear_st;i<shear_ed;i++)
     {   
-        sprintf(data_path,"%s/data_%d_%s.hdf5",parent_path, i, data_type);
+        sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_type, i);
         read_h5(data_path, set_name, data);
         
         // read data
