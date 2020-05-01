@@ -145,7 +145,7 @@ class Image_Plot:
             self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va, fontsize=text_fontsize)
 
 
-    def del_tick(self, iy, ix, axis_nm, box=None):
+    def del_axis(self, iy, ix, axis_nm, box=None):
         """not to show the axis"""
         # delete the axis, but the box of axis will be preserved
         # axis_nm must be a list, [0] or [0,1]...
@@ -161,6 +161,12 @@ class Image_Plot:
             for nm in box:
                 self.axs[iy][ix].spines[labels[nm]].set_visible(False)
 
+    def del_ticks(self, iy, ix, axis_nm):
+        for nm in axis_nm:
+            if nm == 0:
+                self.axs[iy][ix].set_yticks([])
+            else:
+                self.axs[iy][ix].set_xticks([])
 
     def set_label(self, iy, ix, axis_nm, label, font="serif", fontsize=None):
         if not fontsize:

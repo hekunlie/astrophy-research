@@ -5,85 +5,24 @@ path.append('%s/work/mylib/' % my_home)
 import numpy
 from mpi4py import MPI
 import h5py
-from scipy import optimize
 from plot_tool import Image_Plot
+from Fourier_Quad import Fourier_Quad
+import component_fit
+
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 
-def dipole_fun(sin_cos, a1, a2):
-    return a1 * sin_cos[0] + a2 * sin_cos[1]
-
-
-def get_bingrid(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5):
-    if mode == 0:
-        num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [bin_num, bin_num])
-    #         print(mode, xbins - ybins)
-
-    elif mode == 1:
-        a = max(numpy.abs(numpy.percentile(data_1, percen_low)), numpy.percentile(data_1, percen_up))
-        b = max(numpy.abs(numpy.percentile(data_2, percen_low)), numpy.percentile(data_2, percen_up))
-        xy_max = max(a, b)
-        xy_bin = numpy.linspace(-xy_max, xy_max, bin_num + 1)
-        num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
-    #         print(mode, xbins-ybins)
-    else:
-        xy_max = max(numpy.max(numpy.abs(data_1)), numpy.max(numpy.abs(data_2)))
-        xy_bin = numpy.linspace(-xy_max, xy_max, bin_num + 1)
-        num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
-    #         print(mode, xbins-ybins)
-
-    xgrid = numpy.zeros((bin_num, bin_num))
-    ygrid = numpy.zeros((bin_num, bin_num))
-
-    for i in range(bin_num):
-        for j in range(bin_num):
-            xgrid[i, j] = (d2_bins[j] + d2_bins[j + 1]) / 2
-            ygrid[i, j] = (d1_bins[i] + d1_bins[i + 1]) / 2
-    return num, xgrid, ygrid, numpy.sqrt(xgrid ** 2 + ygrid ** 2)
-
-
-def get_dipole(num, radius, radius_bin_num):
-    radius_bin = numpy.linspace(0, radius.max(), radius_bin_num + 1)
-    num_dipole = numpy.zeros_like(num)
-    raidus_mask = numpy.zeros_like(num)
-    for i in range(radius_bin_num):
-        idx1 = radius >= radius_bin[i]
-        idx2 = radius < radius_bin[i + 1]
-        idx = idx1 & idx2
-        num_dipole[idx] = num[idx] - num[idx].mean()
-        raidus_mask[idx] = i
-    return num_dipole, radius_bin, raidus_mask
-
-
-def get_quadrupole(num_dipole, xgrid, ygrid, radius_bin, radius_bin_num):
-    radius_grid = numpy.sqrt(xgrid**2 + ygrid**2)
-    sin_theta = ygrid / radius_grid
-    cos_theta = xgrid / radius_grid
-    num_dipole_fit = numpy.zeros_like(num_dipole)
-    num_dipole_fit[:, :] = numpy.nan
-    #     print(num_dipole_fit)
-    for i in range(radius_bin_num):
-        idx1 = radius_grid >= radius_bin[i]
-        idx2 = radius_grid < radius_bin[i + 1]
-        idx = idx1 & idx2
-        if idx.sum() > 5:
-            sin_cos = numpy.zeros((2, idx.sum()))
-            sin_cos[0] = sin_theta[idx]
-            sin_cos[1] = cos_theta[idx]
-            res = optimize.curve_fit(dipole_fun, sin_cos, num_dipole[idx])[0]
-            #             print(res)
-            num_dipole_fit[idx] = dipole_fun(sin_cos, res[0], res[1])
-    return num_dipole - num_dipole_fit, num_dipole_fit
-
-
+fq = Fourier_Quad(12,1234)
 
 data_path = argv[1]
 xy_bin_num, radius_bin_num = int(argv[2]), int(argv[3])
+shear_scale = float(argv[4])
 
-pic_path = data_path + "/multipole_pic"
+
+pic_path = data_path + "/multipole_pic_%.1f"%shear_scale
 
 if rank == 0:
     if not os.path.exists(pic_path):
@@ -99,11 +38,12 @@ g1t = h5f["/g1"][()]
 g2t = h5f["/g2"][()]
 h5f.close()
 
+gh = numpy.linspace(-0.1, 0.1, 13)
+
 for tag, nm in enumerate(data_nm):
-    pic_nm = ""
+    pic_nm = "-".join(nm)
     for sub_tag, sub_nm in enumerate(nm):
 
-        pic_nm += sub_nm
         if rank == 0:
             print(pic_nm)
         if sub_tag == 0:
@@ -123,41 +63,149 @@ for tag, nm in enumerate(data_nm):
             mu = mu + data[:,3]
             h5f.close()
 
-    mg1_sym = mg1 - g1t[rank]*(mn + mu)
-    mg2_sym = mg2 - g2t[rank]*(mn - mu)
 
-    num, xgrid, ygrid, radius_grid = get_bingrid(mg1, mg2, xy_bin_num, 1, 0.05, 99.95)
-    dpl, radius_bin, radius_mask = get_dipole(num, radius_grid, radius_bin_num)
-    qpl, dpl_fit = get_quadrupole(dpl, xgrid, ygrid, radius_bin, radius_bin_num)
+    num, xgrid, ygrid, radius_grid = component_fit.get_bingrid(mg1, mg2, xy_bin_num, 1, 0.1, 99.9)[:4]
 
-    num_sym, xgrid_sym, ygrid_sym, radius_grid_sym = get_bingrid(mg1_sym, mg2_sym, xy_bin_num, 1, 0.05, 99.95)
-    dpl_sym, radius_bin_sym, radius_mask_sym = get_dipole(num_sym, radius_grid_sym, radius_bin_num)
-    qpl_sym, dpl_fit_sym = get_quadrupole(dpl_sym, xgrid_sym, ygrid_sym, radius_bin_sym, radius_bin_num)
+    dpl, radius_bin, radius_mask, mean_of_annuli = component_fit.get_dipole(num, radius_grid, radius_bin_num)
 
-    plot_data = [[num, dpl, dpl_fit, qpl],
-                 [num_sym, dpl_sym, dpl_fit_sym, qpl_sym]]
+    qpl, dpl_fit, sin_theta, cos_theta = component_fit.get_quadrupole(dpl, xgrid, ygrid, radius_bin, radius_bin_num)
 
-    img = Image_Plot()
-    img.subplots(2, 4)
+    qpl_fit, sin_2theta, cos_2theta = component_fit.fit_quadrupole(qpl,xgrid, ygrid, radius_bin, radius_bin_num)
+
+
+    mnu1 = mn+mu
+    mnu2 = mn-mu
+
+    mg1_sym = mg1 - g1t[rank]*mnu1*shear_scale
+    mg2_sym = mg2 - g2t[rank]*mnu2*shear_scale
+
+    num_sym, xgrid_sym, ygrid_sym, radius_grid_sym = component_fit.get_bingrid(mg1_sym, mg2_sym, xy_bin_num, 1, 0.1, 99.9)[:4]
+
+    dpl_sym, radius_bin_sym, radius_mask_sym, mean_of_annuli_sym = component_fit.get_dipole(num_sym, radius_grid_sym, radius_bin_num)
+
+    qpl_sym, dpl_fit_sym, sin_theta_sym, cos_theta_sym = component_fit.get_quadrupole(dpl_sym, xgrid_sym, ygrid_sym, radius_bin_sym, radius_bin_num)
+
+    qpl_sym_fit, sin_2theta_sym, cos_2theta_sym = component_fit.fit_quadrupole(qpl_sym,xgrid_sym, ygrid_sym, radius_bin_sym, radius_bin_num)
+
+
+    chisq1 = fq.get_chisq_range(mg1, mnu1, 10, gh)[1]
+    chisq2 = fq.get_chisq_range(mg2, mnu2, 10, gh)[1]
+
+    chisq1_sym = fq.get_chisq_range(mg1_sym, mnu1, 10, gh)[1]
+    chisq2_sym = fq.get_chisq_range(mg2_sym, mnu2, 10, gh)[1]
+
+
+
+    #################################################################################
+    # hist of data
+
+    img = Image_Plot(fig_x=6, fig_y=5)
+    img.subplots(2, 3)
+
+    plot_data = [[num, dpl, dpl_fit], [0,qpl, qpl_fit]]
+    titles = [["G1-G2-hist", "dipole", "dipole-fit"], ["$\chi^2$", "quadrupole","quadrupole-fit"]]
+
+    img.axs[1][0].plot(gh, chisq1, label="$\chi^2_{g1}$,g1=%.3f" % g1t[rank])
+    img.axs[1][0].plot(gh, chisq2, label="$\chi^2_{g2}$,g2=%.3f" % g2t[rank])
+    img.set_label(1, 0, 0, "$\chi^2$")
+    img.set_label(1, 0, 1, "$\hat{g}$")
+    img.axs[1][0].legend()
+
     for i in range(2):
-        for j in range(4):
+        if i == 0:
+            st = 0
+        else:
+            st = 1
+        for j in range(st,3):
             fig = img.axs[i][j].imshow(plot_data[i][j])
             img.figure.colorbar(fig, ax=img.axs[i][j])
-            img.del_tick(i,j,[0,1])
+            img.del_ticks(i,j,[0,1])
+            img.set_label(i,j,0, "+  G1  -")
+            img.set_label(i,j,1, "-  G2  +")
+
+        for j in range(3):
+            img.axs[i][j].set_title(titles[i][j])
+
     pic_name = pic_path + "/%s_%d.png"%(pic_nm, rank)
     img.save_img(pic_name)
     img.close_img()
 
-    plot_data = [[xgrid, ygrid, radius_grid, radius_mask],
-                 [xgrid_sym, ygrid_sym, radius_grid_sym, radius_mask_sym]]
 
+
+    #################################################################################
+    # hist of PDF_SYM_data
+
+    img = Image_Plot(fig_x=6, fig_y=5)
+    img.subplots(2, 3)
+
+    plot_data = [[num_sym, dpl_sym, dpl_fit_sym], [0, qpl_sym, qpl_sym_fit]]
+    titles =[["PDF_SYM-G1-G2-hist", "PDF_SYM-dipole", "PDF_SYM-dipole-fit"],
+             ["PDF_SYM-$\chi^2$", "PDF_SYM-quadrupole", "PDF_SYM-quadrupole-fit"]]
+
+    img.axs[1][0].plot(gh, chisq1_sym, label="$\chi^2_{g1}$,g1=%.3f" % g1t[rank])
+    img.axs[1][0].plot(gh, chisq2_sym, label="$\chi^2_{g2}$,g2=%.3f" % g2t[rank])
+
+    img.set_label(1, 0, 0, "$\chi^2$")
+    img.set_label(1, 0, 1, "$\hat{g}$")
+    img.axs[1][0].legend()
+
+    for i in range(2):
+        if i == 0:
+            st = 0
+        else:
+            st = 1
+        for j in range(st, 3):
+            fig = img.axs[i][j].imshow(plot_data[i][j])
+            img.figure.colorbar(fig, ax=img.axs[i][j])
+            img.del_ticks(i, j, [0, 1])
+            img.set_label(i, j, 0, "+  G1  -")
+            img.set_label(i, j, 1, "-  G2  +")
+
+        for j in range(3):
+            img.axs[i][j].set_title(titles[i][j])
+
+    pic_name = pic_path + "/%s_%d_sym.png" % (pic_nm, rank)
+    img.save_img(pic_name)
+    img.close_img()
+
+
+
+    #################################################################################
+    # x & y grid, raidus ....
+    img = Image_Plot()
+    img.subplots(2, 5)
+
+    titles = [["x-grid", "y-grid", "radius-grid", "radius-bin", "mean_num_annuli"],
+              ["PDF_SYM-x-grid", "PDF_SYM-y-grid", "PDF_SYM-radius-grid", "PDF_SYM-radius-bin", "PDF_SYM-mean_num_annuli"]]
+    plot_data = [[xgrid, ygrid, radius_grid, radius_mask, mean_of_annuli],
+                 [xgrid_sym, ygrid_sym, radius_grid_sym, radius_mask_sym, mean_of_annuli_sym]]
+    for i in range(2):
+        for j in range(5):
+            fig = img.axs[i][j].imshow(plot_data[i][j])
+            img.figure.colorbar(fig, ax=img.axs[i][j])
+            img.del_ticks(i,j,[0,1])
+            img.axs[i][j].set_title(titles[i][j])
+    pic_name = pic_path + "/%s_%d_check1.png"%(pic_nm, rank)
+    img.save_img(pic_name)
+    img.close_img()
+
+
+    #################################################################################
+    # sin_theta .....
     img = Image_Plot()
     img.subplots(2, 4)
+
+    titles = [["sin$\\theta$", "cos$\\theta$", "sin$2\\theta$", "cos$2\\theta$"],
+              ["PDF_SYM-sin$\\theta$", "PDF_SYM-cos$\\theta$", "PDF_SYM-sin$2\\theta$", "PDF_SYM-cos$2\\theta$"]]
+    plot_data = [[sin_theta, cos_theta, sin_2theta, cos_2theta],
+                 [sin_theta_sym, cos_theta_sym, sin_2theta_sym, cos_2theta_sym]]
+
     for i in range(2):
         for j in range(4):
             fig = img.axs[i][j].imshow(plot_data[i][j])
             img.figure.colorbar(fig, ax=img.axs[i][j])
-            img.del_tick(i,j,[0,1])
-    pic_name = pic_path + "/debug_%s_%d.png"%(pic_nm, rank)
+            img.del_ticks(i,j,[0,1])
+            img.axs[i][j].set_title(titles[i][j])
+    pic_name = pic_path + "/%s_%d_check2.png"%(pic_nm, rank)
     img.save_img(pic_name)
     img.close_img()

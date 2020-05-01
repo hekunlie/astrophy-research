@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<hk_mpi.h>
 #include<hk_iolib.h>
-#define IMG_CHECK_LABEL 2
+#define IMG_CHECK_LABEL 3
 #define FLUX_PDF_UNI
 #define CPSF
 
@@ -101,20 +101,21 @@ int main(int argc, char*argv[])
 	double gal_fluxs[5]{3000, 6000, 9000, 16000, 800000};
 	int flux_tag;
 
+	double theta;
+
 	strcpy(parent_path, argv[1]);
 	seed_ini = atoi(argv[2]);
 	flux_tag = atoi(argv[3]);
 	total_chips = atoi(argv[4]);
 	size = atoi(argv[5]);
+	shear_pairs = atoi(argv[6]);
 	pts_step = 1;//atof(argv[1]);
-	//rotation = atoi(argv[1]);
+
 	rotation = 0;
 	num_p = 30;
 	max_radius= 7;
 	stamp_num = 10000;
 	shear_data_cols = 5;
-
-    shear_pairs = 10;
 
 	psf_type = 2;
 	psf_scale = 4;//psf_scales[psf_scale_id];
@@ -137,7 +138,7 @@ int main(int argc, char*argv[])
 	// because the max half light radius of the galsim source is 5.5 pixels
 	all_paras.max_distance = max_radius; 
 
-	sprintf(log_path, "%s/logs/%02d_S%.2f.dat", parent_path, rank, pts_step);
+	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
 
 #ifdef IMG_CHECK_LABEL
     double *big_img_noise_free = new double[stamp_nx*stamp_nx*img_len]{};
@@ -148,6 +149,8 @@ int main(int argc, char*argv[])
 #endif
 
 	double *point = new double[2 * num_p]{};
+	double *point_r = new double[2 * num_p]{};
+
 
 	double *gal = new double[img_len]{};
 	double *pgal = new double[img_len]{};
@@ -238,6 +241,8 @@ int main(int argc, char*argv[])
 	sub_noise_cross_term_estimate = new double[gather_count[rank]]{};
 	sub_noise_residual_term_estimate = new double[gather_count[rank]]{};
 
+	double *total_theta;
+	double *sub_theta = new double[scatter_count[rank]]{};
 
 
 	// seed distribution, different thread gets different seed
@@ -249,15 +254,10 @@ int main(int argc, char*argv[])
 
 	if (0 == rank)
 	{
-#ifdef FLUX_PDF
-		total_flux = new double[total_data_row]{};
-#endif
+		total_theta = new double[total_data_row]{};
 		total_data = new double[total_data_row*shear_data_cols]{};
 	}
 
-#ifdef FLUX_PDF
-	sub_flux = new double[scatter_count[rank]]{};
-#endif
 	// read shear
 	g1t = new double[shear_pairs]{};
 	g2t = new double[shear_pairs]{};
@@ -298,7 +298,7 @@ int main(int argc, char*argv[])
 		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
 #endif
 		write_fits(buffer,psf, size, size);
-		std::cout<<"Chip Num of each thread: ";
+		std::cout<<"Gal Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
 	}
@@ -311,7 +311,7 @@ int main(int argc, char*argv[])
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
-
+	seed_pts = 1;
 	// loop the shear points
 	for (shear_id = 0; shear_id < shear_pairs; shear_id++)
 	{
@@ -332,16 +332,22 @@ int main(int argc, char*argv[])
 		{
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 			std::cout<<"g1: "<<g1<<" g2: "<<g2<<std::endl;
-#ifdef FLUX_PDF
-			sprintf(para_path, "%s/parameters/para_%d.hdf5", parent_path, shear_id);
-			sprintf(set_name, "/flux");
-			read_h5(para_path, set_name, total_flux);
-#endif
 		}
-#ifdef FLUX_PDF
-		my_Scatterv(total_flux, scatter_count, sub_flux, numprocs, rank);
-#endif
 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+
+		initialize_arr(point, num_p * 2, 0);
+		gsl_initialize(shear_id+seed_ini,0);
+		create_points(point, num_p, max_radius, pts_step, rng0);
+		for(i=0;i<5;i++)
+		{
+			if(rank == i)
+			{std::cout<<"------------------"<<std::endl;show_arr(point,2,num_p);std::cout<<"------------------"<<std::endl;}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+		gsl_free(0);
+		
 
 		// loop the chips
 		for (i = chip_st; i < chip_ed; i++)
@@ -356,32 +362,19 @@ int main(int argc, char*argv[])
 			}
 
 			// initialize GSL
-			gsl_initialize(seed_pts,0);
 			gsl_initialize(seed_n1,1);
 			gsl_initialize(seed_n2,2);
-			seed_pts += seed_step;
 			seed_n1 += seed_step;
 			seed_n2 += seed_step;
-
-
-#ifdef IMG_CHECK_LABEL
-			initialize_arr(big_img_noisy, stamp_nx*stamp_nx*img_len, 0);
-			initialize_arr(big_img_noise_free, stamp_nx*stamp_nx*img_len, 0);
-#endif
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
 
 			// loop the stamps
 			for (j = 0; j < stamp_num; j++)
 			{	
-#ifdef FLUX_PDF
-				flux_i = sub_flux[(i-chip_st)*stamp_num + j] / num_p;
-#else	
-				flux_i = gal_fluxs[flux_tag]/ num_p;
-#endif
 
-						
-				initialize_arr(point, num_p * 2, 0);
+				flux_i = gal_fluxs[flux_tag]/ num_p;				
+				
 				initialize_arr(pgal, size*size, 0);
 				
 				initialize_arr(noise_1, img_len, 0);
@@ -397,11 +390,15 @@ int main(int argc, char*argv[])
 				addnoise(noise_2, img_len, gal_noise_sig, rng1);
 				pow_spec(noise_2, pnoise_2, size, size);
 
-				create_points(point, num_p, max_radius, pts_step, rng1);
+				rand_uniform(0, 2*Pi, theta, rng2);
+				coord_rotation(point, num_p, theta, point_r);
+				sub_theta[row/shear_data_cols+j] = theta;
+				// create_points(point, num_p, max_radius, pts_step, rng1);
 #ifdef EPSF
 				convolve_e(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
 #else
-				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
+				// convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
+				convolve(gal, point_r, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
 #endif
 				// noise free
 				pow_spec(gal, pgal, size, size);
@@ -410,13 +407,13 @@ int main(int argc, char*argv[])
 				pow_spec(gal_noisy, pgal_noisy, size, size);
 				arr_deduct(pgal_dn, pgal_noisy, pnoise_2, img_len);
 				// noise residual
-				arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
+				// arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
 				// cross term
-                arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
+                // arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
 				// cross term estimate
-				arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
-				pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
-				arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
+				// arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
+				// pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
+				// arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
 
 
 				///////////////// Noise free /////////////////////////
@@ -435,96 +432,66 @@ int main(int argc, char*argv[])
 				sub_noisy_data[row + j * shear_data_cols + 3] = all_paras.du;
 				sub_noisy_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
- 				////////////////// noise-residual image //////////////////////
-				shear_est(noise_pow_diff, ppsf, &all_paras);
-				sub_noise_residual_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_noise_residual_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_noise_residual_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_noise_residual_data[row + j * shear_data_cols + 4] = all_paras.dv;
+ 				// ////////////////// noise-residual image //////////////////////
+				// shear_est(noise_pow_diff, ppsf, &all_paras);
+				// sub_noise_residual_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_noise_residual_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_noise_residual_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_noise_residual_data[row + j * shear_data_cols + 4] = all_paras.dv;
 				
-				////////////////// cross-term image //////////////////////
-				shear_est(pgal_cross_term, ppsf, &all_paras);
-				sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				// ////////////////// cross-term image //////////////////////
+				// shear_est(pgal_cross_term, ppsf, &all_paras);
+				// sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
-				////////////////// cross-term divided by |P_psf| image //////////////////////
-				shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
-				sub_cross_term_sqrt_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_cross_term_sqrt_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_cross_term_sqrt_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_cross_term_sqrt_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_cross_term_sqrt_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				// ////////////////// cross-term divided by |P_psf| image //////////////////////
+				// shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
+				// sub_cross_term_sqrt_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
-				////////////////// cross-term-est image //////////////////////
-				shear_est(pgal_cross_term_est, ppsf, &all_paras);				
-				sub_cross_term_estimate[row + j * shear_data_cols] = all_paras.n1;
-				sub_cross_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_cross_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
+				// ////////////////// cross-term-est image //////////////////////
+				// shear_est(pgal_cross_term_est, ppsf, &all_paras);				
+				// sub_cross_term_estimate[row + j * shear_data_cols] = all_paras.n1;
+				// sub_cross_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_cross_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
 
                
 
 #ifdef IMG_CHECK_LABEL
-				stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
-				stack(big_img_noise_residual, noise_pow_diff, j, size, stamp_nx, stamp_nx);
-				stack(big_img_cross_term, pgal_cross_term, j, size, stamp_nx, stamp_nx);
-				stack(big_img_noisy, gal, j, size, stamp_nx, stamp_nx);
+				if(i <= IMG_CHECK_LABEL)
+				{
+					stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
+					stack(big_img_noise_residual, noise_pow_diff, j, size, stamp_nx, stamp_nx);
+					stack(big_img_cross_term, pgal_cross_term, j, size, stamp_nx, stamp_nx);
+					stack(big_img_noisy, gal_noisy, j, size, stamp_nx, stamp_nx);
+				}
 #endif
 		
-
-				// /////////////////////////// estimate noise-noise cross_term /////////////////////////////////
-				// initialize_arr(noise_1, img_len, 0);
-				// initialize_arr(pnoise_1, img_len, 0);
-				// initialize_arr(noise_3, img_len, 0);
-				// initialize_arr(pnoise_3, img_len, 0);
-
-				// addnoise(noise_3, img_len, gal_noise_sig, rng2);
-				// pow_spec(noise_3, pnoise_3, size, size);
-
-				// arr_add(noise_1, noise_2, noise_3, img_len);
-				// pow_spec(noise_1, pnoise_1, size, size);
-
-				// arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, pnoise_3, img_len);
-
-				// shear_est(noise_pow_diff, ppsf, &all_paras);
-				
-				// sub_noise_cross_term_estimate[row + j * shear_data_cols] = all_paras.n1;
-				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
-
-
-				// /////////////////////////// estimate noise-residual term /////////////////////////////////
-				// arr_deduct(noise_pow_diff, pnoise_2, pnoise_3, img_len);
-				// shear_est(noise_pow_diff, ppsf, &all_paras);
-				
-				// sub_noise_residual_term_estimate[row + j * shear_data_cols] = all_paras.n1;
-				// sub_noise_residual_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_noise_residual_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_noise_residual_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_noise_residual_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
 			}
-			gsl_free(0);
+			// gsl_free(0);
 			gsl_free(1);
 			gsl_free(2);
 
 
 #ifdef IMG_CHECK_LABEL
-			if(i == IMG_CHECK_LABEL)
+			if(i <= IMG_CHECK_LABEL)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_free.fits", parent_path, shear_id, i, pts_step, psf_scale);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_pow_residual.fits", parent_path, shear_id, i, pts_step, psf_scale);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_pow_residual.fits", parent_path, shear_id, i);
 				write_fits(chip_path, big_img_noise_residual, stamp_nx*size, stamp_nx*size);
-                sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_cross_term.fits", parent_path, shear_id, i, pts_step, psf_scale);
+                sprintf(chip_path, "!%s/%d/gal_chip_%05d_cross_term.fits", parent_path, shear_id, i);
 				write_fits(chip_path, big_img_cross_term, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noisy.fits", parent_path, shear_id, i, pts_step, psf_scale);
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noisy.fits", parent_path, shear_id, i);
 				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
 			}
 #endif
@@ -566,85 +533,67 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		my_Gatherv(sub_noise_residual_data, gather_count, total_data, numprocs, rank);
+// 		my_Gatherv(sub_noise_residual_data, gather_count, total_data, numprocs, rank);
+// 		if (0 == rank)
+// 		{
+// #ifdef EPSF
+// 			sprintf(result_path, "%s/data/data_noise_residual_epsf_%d.hdf5", parent_path, shear_id);
+// #else
+// 			sprintf(result_path, "%s/data/data_noise_residual_%d.hdf5", parent_path,shear_id);
+// #endif
+// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+// 		}
+// 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+// 		my_Gatherv(sub_cross_term_data, gather_count, total_data, numprocs, rank);
+// 		if (0 == rank)
+// 		{
+// #ifdef EPSF
+// 			sprintf(result_path, "%s/data/data_cross_term_epsf_%d.hdf5", parent_path, shear_id);
+// #else
+// 			sprintf(result_path, "%s/data/data_cross_term_%d.hdf5", parent_path,shear_id);
+// #endif
+// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+// 		}
+// 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+// 		my_Gatherv(sub_cross_term_sqrt_data, gather_count, total_data, numprocs, rank);
+// 		if (0 == rank)
+// 		{
+// #ifdef EPSF
+// 			sprintf(result_path, "%s/data/data_cross_term_sqrt_epsf_%d.hdf5", parent_path, shear_id);
+// #else
+// 			sprintf(result_path, "%s/data/data_cross_term_sqrt_%d.hdf5", parent_path,shear_id);
+// #endif
+// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+// 		}
+// 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+// 		my_Gatherv(sub_cross_term_estimate, gather_count, total_data, numprocs, rank);
+// 		if (0 == rank)
+// 		{
+// #ifdef EPSF
+// 			sprintf(result_path, "%s/data/data_cross_term_est_epsf_%d.hdf5", parent_path, shear_id);
+// #else
+// 			sprintf(result_path, "%s/data/data_cross_term_est_%d.hdf5", parent_path,shear_id);
+// #endif
+// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+// 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
+// 		}
+// 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+		my_Gatherv(sub_theta, scatter_count, total_theta, numprocs, rank);
 		if (0 == rank)
 		{
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_noise_residual_epsf_%d.hdf5", parent_path, shear_id);
-#else
-			sprintf(result_path, "%s/data/data_noise_residual_%d.hdf5", parent_path,shear_id);
-#endif
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-
-		my_Gatherv(sub_cross_term_data, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_cross_term_epsf_%d.hdf5", parent_path, shear_id);
-#else
-			sprintf(result_path, "%s/data/data_cross_term_%d.hdf5", parent_path,shear_id);
-#endif
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-
-		my_Gatherv(sub_cross_term_sqrt_data, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_cross_term_sqrt_epsf_%d.hdf5", parent_path, shear_id);
-#else
-			sprintf(result_path, "%s/data/data_cross_term_sqrt_%d.hdf5", parent_path,shear_id);
-#endif
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-
-		my_Gatherv(sub_cross_term_estimate, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_cross_term_est_epsf_%d.hdf5", parent_path, shear_id);
-#else
-			sprintf(result_path, "%s/data/data_cross_term_est_%d.hdf5", parent_path,shear_id);
-#endif
-			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
+			sprintf(result_path, "%s/data/theta_%d.hdf5", parent_path,shear_id);
+			write_h5(result_path, set_name, total_theta, total_data_row, 1, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
-
-
-// 		my_Gatherv(sub_noise_cross_term_estimate, gather_count, total_data, numprocs, rank);
-// 		if (0 == rank)
-// 		{
-// #ifdef EPSF
-// 			sprintf(result_path, "%s/data/data_noise_noise_cross_term_est_epsf_%d.hdf5", parent_path, shear_id);
-// #else
-// 			sprintf(result_path, "%s/data/data_noise_noise_cross_term_est_%d.hdf5", parent_path,shear_id);
-// #endif
-// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-// 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
-// 		}
-// 		MPI_Barrier(MPI_COMM_WORLD);
-
-
-// 		my_Gatherv(sub_noise_residual_term_estimate, gather_count, total_data, numprocs, rank);
-// 		if (0 == rank)
-// 		{
-// #ifdef EPSF
-// 			sprintf(result_path, "%s/data/data_noise_diff_est_epsf_%d.hdf5", parent_path, shear_id);
-// #else
-// 			sprintf(result_path, "%s/data/data_noise_diff_est_%d.hdf5", parent_path,shear_id);
-// #endif
-// 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
-// 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
-// 		}
-// 		MPI_Barrier(MPI_COMM_WORLD);
 
 		te = clock();
 		if (rank == 0)

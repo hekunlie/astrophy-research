@@ -147,6 +147,8 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
+void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r);
+
 void create_psf(double*in_img, const double psf_scale, const int size, const double img_cent, const int psf);
 void create_psf_e(double*in_img, const double psf_scale, const int size, const double img_cent, const double ellip, const double theta, const int psf);
 

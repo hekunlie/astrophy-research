@@ -155,6 +155,19 @@ void create_epoints(double *point, const int num_p, const double ellip, const gs
 	}
 }
 
+void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r)
+{
+    double sin_theta, cos_theta;
+    cos_theta = cos(theta);
+    sin_theta = sin(theta);
+    for (int i = 0; i < pts_num; i++)
+    {
+        xy_r[i] = cos_theta * xy[i] - sin_theta*xy[i + pts_num];
+        xy_r[i + pts_num] = sin_theta * xy[i] + cos_theta*xy[i + pts_num];
+        // std::cout<<xy[i]<<" "<<xy[i+pts_num]<<" "<<xy_r[i]<<" "<<xy_r[i+pts_num]<<std::endl;
+    }
+}
+
 void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf)
 {
 	int i, j;
