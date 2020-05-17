@@ -40,7 +40,7 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
-    def shear_est(self, gal_image, psf_image, weight, noise=None, F=False):
+    def shear_est(self, gal_image, psf_image, noise=None, F=False):
         r"""
         Before the shear_est(), the get_hlr() should be called to get the half light radius of the PSF, and it will
         assigned to the self.hlr for shear_est() automatically. The get_hlr() should be called when the PSF changes.
@@ -73,7 +73,7 @@ class Fourier_Quad:
         idx = psf_ps < maxi / 100000.
         wb[idx] = 0
         psf_ps[idx] = 1.
-        tk = wb/psf_ps * gal_ps*wb#*weight
+        tk = wb/psf_ps * gal_ps
 
         # ky, kx = self.my, self.mx
         # #

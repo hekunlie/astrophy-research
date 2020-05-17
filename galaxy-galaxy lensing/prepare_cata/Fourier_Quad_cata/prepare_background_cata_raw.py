@@ -144,7 +144,7 @@ if cmd == "collect":
 
         # if fields are more than the threads,
         # some thread will get an empty "field_pool"
-        field_pool = tool_box.allot(field_tar, cpus)[rank]
+        field_pool = tool_box.alloc(field_tar, cpus)[rank]
 
         # check
         anothers = ["w%d"%i for i in range(1,area_num+1) if i != area_id]

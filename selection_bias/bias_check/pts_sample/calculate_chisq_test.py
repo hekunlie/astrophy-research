@@ -20,4 +20,4 @@ data_nr = h5f["/data"][()]
 h5f.close()
 
 fq = Fourier_Quad(12,124)
-gh,chisq = fq.get_chisq_range(data_ct[:,0], data_ct[:,2]+)
+gh,chisq = fq.get_chisq_range(data_ct[:,0], data_ct[:,2])

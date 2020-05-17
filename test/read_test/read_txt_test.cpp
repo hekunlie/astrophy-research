@@ -1,4 +1,5 @@
 #include<FQlib.h>
+#include<hk_iolib.h>
 
 void read_text_(const char *filename, double *data_buf, const int data_col,  const int skipline=0)
 {
