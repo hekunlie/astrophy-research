@@ -147,6 +147,8 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
 
+void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r);
+
 void create_psf(double*in_img, const double psf_scale, const int size, const double img_cent, const int psf);
 void create_psf_e(double*in_img, const double psf_scale, const int size, const double img_cent, const double ellip, const double theta, const int psf);
 
@@ -156,7 +158,14 @@ void convolve(double *in_img, const double * points, const double flux, const in
 void convolve_e(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
 	const double g1, const double g2, const int psf, const double ellip, const double theta);
 
-void pow_spec(const double *in_img, double *out_img, const int column, const int row);
+void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row);
+void deconvolution(const double *gal_pow, const double*gal_pow_real, const double*gal_pow_imag, const double *psf_pow, const double*psf_pow_real, const double*psf_pow_imag, 
+     double *img_out, const int column, const int row);
+
+
+void pow_spec(const double *in_img, double *out_img_pow, const int column, const int row);
+void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row);
+
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);
 
 void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level);
@@ -229,7 +238,13 @@ void snr_est(const double *image, fq_paras *paras, int fit);//checked
 */
 void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
-void shear_est(double *gal_img, double *psf_img, fq_paras *paras);//checked
+
+void shear_est(double *gal_pow, double *psf_pow, fq_paras *paras);//checked
+
+void shear_est(const double *gal_pow, const double *gal_pow_real, const double *gal_pow_imag,
+               double *psf_pow,const double *psf_pow_real,const double *psf_pow_imag, fq_paras *paras);//checked
+
+
 void ellip_est(const double *gal_img, const int size, fq_paras*paras);
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
@@ -248,6 +263,9 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	gh: the guess of shear
 	bins: the bin for G1(2) , which must be set up (call set_bin()) before , for chi square calculation
 	chisq: the chi square with shear guess, gh
+*/
+void chisq_Gbin_1d(const double *mg,const int data_num, const double *bins, const int bin_num, double &result);
+/* 	new for PDF_SYM
 */
 
 void cal_chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
@@ -269,8 +287,8 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	it's better to sum the sub-block and then add the these quantities together.
 */
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,const int choice=0,const double max_scale=100.);
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
@@ -292,7 +310,7 @@ const double max_scale=100., const double ini_left = -0.1, const double ini_righ
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 */
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double chi_gap = 40);// checked
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double chi_gap = 40);// checked
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
@@ -303,7 +321,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 				  if < 0, all the points will be used for fitting.
 */
 
-
+void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
@@ -360,8 +378,8 @@ void poly_fit_2d(const double *x, const double *y, const double *fxy, const int 
 	f(x,y) = a1 + a2*x + a3*y + a4*x^2 + a5*x*y + a6*y^2 .....
 	
 	!!! one should be very careful with problem of the precision that comes from the larger power gap between
-	!!! the maximum and minimum in the matrix A (the square matrix from least square). So, one should shift and rescale the "x" and "y" before fiiting.
-	!!! if the coordinates have been shifted and scaled, the orignal f(x,y) should be calculated at new (x,y)
+	!!! the maximum and minimum in the matrix A (the square matrix from least square). So, one should shift and rescale the "x" and "y" before fitting.
+	!!! if the coordinates have been shifted and scaled, the original f(x,y) should be calculated at new (x,y)
 
 	x(y) : array, coordinates
 	fxy: array, the measured value at (x,y)

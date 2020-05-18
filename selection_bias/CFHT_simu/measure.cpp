@@ -88,7 +88,7 @@ int main(int argc, char*argv[])
 	all_paras.detect_thresh = gal_noise_sig * sig_level;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
-	all_paras.max_distance = 6; // because the max half light radius of the galsim source is 5.5 pixels
+	all_paras.max_distance = 8; // because the max half light radius of the galsim source is 5.5 pixels
 
 	double *psf = new double[size*size]();
 	double *ppsf = new double[size*size]();
@@ -101,6 +101,8 @@ int main(int argc, char*argv[])
 	double *noise = new double[size*size]();
 	double *pnoise = new double[size*size]();
 	double *mag = new double[total_data_row]();
+	double *flux = new double[total_data_row];
+
 	double *recvbuf, *recvbuf_s;
 	double *data = new double[data_row*shear_data_cols]();
 	// the snr parameters data matrix data_snr[i][j]
@@ -150,7 +152,8 @@ int main(int argc, char*argv[])
 		sprintf(para_path, "%s/parameters/para_%d.hdf5", data_path, shear_id);
 		sprintf(set_name, "/mag");
 		read_h5(para_path, set_name, mag);
-		
+		sprintf(set_name, "/flux");
+		read_h5(para_path, set_name, flux);
 		if (0 == rank)
 		{
 			std::cout<<log_inform<<std::endl;
@@ -213,7 +216,7 @@ int main(int argc, char*argv[])
 					noise_subtraction(pgal, pnoise, &all_paras, 1, 1);
 					shear_est(pgal, ppsf, &all_paras);
 
-					data[row + j * shear_data_cols + 0] = i;
+					data[row + j * shear_data_cols + 0] = flux[i*stamp_num + j];
 					data[row + j * shear_data_cols + 1] = j;
 					data[row + j * shear_data_cols + 2] = all_paras.n1;
 					data[row + j * shear_data_cols + 3] = all_paras.n2;
@@ -294,6 +297,7 @@ int main(int argc, char*argv[])
 	delete[] data;
 	delete[] data_s;
 	delete[] mag;
+	delete[] flux;
 	//delete[] coeff;
 	delete[] check_img;
 	MPI_Finalize();

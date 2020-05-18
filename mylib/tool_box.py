@@ -1297,7 +1297,7 @@ def plt_lines(plt_line):
     linestyles = [(0, ()),  (0, (1, 1)),  (0, (5, 1)), (0, (3, 1, 1, 1)), (0, (5, 3, 3, 3))]
     return linestyles[divmod(plt_line, len(linestyles))[1]]
 
-def allot(allot_list, portions, method="mean"):
+def alloc(allot_list, portions, method="mean"):
     """
     allot the "target mission list" to CPUs
     :param allot_list: list of any thing

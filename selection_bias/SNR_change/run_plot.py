@@ -9,12 +9,15 @@ import numpy
 from plot_tool import Image_Plot
 
 
-cmd = argv[1]
+source_label = argv[1]
+cmd = argv[2]
 # generate the galaxy & measurement
-num = int(argv[2])
+num_st = int(argv[3])
+num_ed = int(argv[4])
+
 if cmd == "run":
-    for i in range(num):
-        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d"%(122230+i, i)
+    for i in range(num_st, num_ed):
+        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d %s"%(122230+i, i, source_label)
         a = Popen(cmd, shell=True)
         a.wait()
 
@@ -25,7 +28,7 @@ if cmd == "stack":
     pic_path_png = "./imgs/stack_result.png"
     pic_path_pdf = "./imgs/stack_result.pdf"
 
-    flux_num = 3
+    flux_num = 4
     snr_num = 5
     shear_num = 11
 
@@ -40,7 +43,7 @@ if cmd == "stack":
     result_stack = numpy.zeros((int(flux_num*snr_num), shear_num))
     detect_num = numpy.zeros((int(flux_num*snr_num), shear_num), dtype=numpy.intc)
 
-    for k in range(num):
+    for k in range(num_ed-num_st):
         # read the data
         file_npz = numpy.load(total_path + "%d/result.npz"%k)
         shears = file_npz["arr_0"]
@@ -148,13 +151,13 @@ if cmd == "stack":
                 img.axs[m][n].scatter(shears[idx], var_rate[idx], edgecolor=colors[j], s=80, label=lb,
                                       marker=markers[j], facecolor="none", linewidths=img.plt_line_width)
         if i == 0:
-            text_x, text_y = 0.8, 0.9
+            text_x, text_y = 0.8, 0.1
         elif i == 1:
-            text_x, text_y = 0.68, 0.9
+            text_x, text_y = 0.68, 0.1
         elif i == 3:
             text_x, text_y = 0.8, 0.9
         else:
-            text_x, text_y = 0.6, 0.9
+            text_x, text_y = 0.68, 0.9
         img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size+3)
     ys = [0,0]
     for i in range(4):
@@ -169,10 +172,14 @@ if cmd == "stack":
     for i in range(4):
         m,n = divmod(i,2)
         if i < 2:
-            img.axs[m][n].set_ylim(-0.0033, 0.0033)
-            img.axs[m][n].set_yticks(numpy.linspace(-0.003, 0.003, 5))
+            if source_label == "galsim":
+                img.axs[m][n].set_ylim(-0.0025, 0.0025)
+                img.axs[m][n].set_yticks(numpy.linspace(-0.002, 0.002, 5))
+            else:
+                img.axs[m][n].set_ylim(-0.0025, 0.0025)
+                img.axs[m][n].set_yticks(numpy.linspace(-0.002, 0.002, 5))
         else:
-            img.axs[m][n].set_ylim(-0.032, 0.036)
+            img.axs[m][n].set_ylim(-0.037, 0.037)
             img.axs[m][n].set_yticks(numpy.linspace(-0.03, 0.03, 5))
         img.axs[m][n].set_xlim(-0.075, 0.075)
         img.axs[m][n].set_xticks(x_ticks)

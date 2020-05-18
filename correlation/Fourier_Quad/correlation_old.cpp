@@ -1,5 +1,7 @@
 #include<FQlib.h>
 #include<mpi.h>
+#include<hk_iolib.h>
+#include<hk_mpi.h>
 
 int main(int argc, char *argv[])
 {

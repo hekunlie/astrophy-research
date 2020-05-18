@@ -5,7 +5,34 @@ import time
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
+cpus = comm.Get_size()
 
+
+
+#################### Send/Recv #################
+cata_data = numpy.zeros((4,4))
+data_sp = (4,4)
+data_sps = comm.gather(data_sp, root=0)
+
+if rank > 0:
+    # remember the data type, MPI.DOUBLE, MPI.FLOAT, ...
+    # or it will raise an error, Keyerror
+    comm.Send([cata_data, MPI.DOUBLE], dest=0, tag=rank)
+else:
+    if data_sp[0] > 1 and data_sp[1] > 1:
+        stack_pool = [cata_data]
+    else:
+        stack_pool = []
+
+    for procs in range(1, cpus):
+        recvs = numpy.empty(data_sps[procs], dtype=numpy.double)
+        comm.Recv(recvs, source=procs, tag=procs)
+        if data_sps[procs][0] > 1 and data_sps[procs][1] > 1:
+            stack_pool.append(recvs)
+
+
+
+#################### shared memory #################
 # show how to create two contiguous shared blocks in memory
 # length of double
 itemsize = MPI.DOUBLE.Get_size()

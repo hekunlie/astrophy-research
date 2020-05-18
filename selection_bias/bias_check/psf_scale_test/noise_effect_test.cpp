@@ -3,7 +3,7 @@
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 2
 #define FLUX_PDF_UNI
-#define EPSF
+#define CPSF
 
 void arr_add(double *arr1, const double*arr2,const int length)
 {
@@ -61,7 +61,7 @@ int main(int argc, char*argv[])
 	int psf_scale_id;
 
 	seed_ini = atoi(argv[2]);
-	psf_scale_id = atoi(argv[3]); 
+	psf_scale_id = 3;//atoi(argv[3]); 
 	pts_step = 1;//atof(argv[1]);
 	//rotation = atoi(argv[1]);
 	rotation = 0;
@@ -83,9 +83,9 @@ int main(int argc, char*argv[])
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
 
-	size = 64;
+	size = 52;
 	img_cent = size*0.5 - 0.5;
-    total_chips = 2000;
+    total_chips = 1000;
     stamp_nx = 100;
 
 	all_paras.stamp_size = size;
@@ -356,7 +356,7 @@ int main(int argc, char*argv[])
 
 
 #ifdef IMG_CHECK_LABEL
-			if(i == IMG_CHECK_LABEL)
+			if(i == IMG_CHECK_LABEL and shear_id == 0)
 			{
 				sprintf(chip_path, "!%s/%d/gal_chip_%05d_step_%.2f_scale_%.2f_noise_free.fits", parent_path, shear_id, i, pts_step, psf_scale);
 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
@@ -382,9 +382,9 @@ int main(int argc, char*argv[])
 			sprintf(set_name, "/data");
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noise_free.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free_epsf.hdf5", parent_path,psf_scale_id,shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d.hdf5", parent_path,psf_scale_id,shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d/data_%d_noise_free.hdf5", parent_path, psf_scale_id,shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d.hdf5", parent_path, psf_scale_id,shear_id);
 #endif
 
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
@@ -396,9 +396,9 @@ int main(int argc, char*argv[])
 		{
 			//sprintf(result_path, "%s/result/data/data_%.2f/data_%d_noisy_cpp.hdf5", parent_path, pts_step, shear_id);
 #ifdef EPSF
-			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp_epsf.hdf5", parent_path,psf_scale_id, shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d.hdf5", parent_path,psf_scale_id, shear_id);
 #else
-			sprintf(result_path, "%s/result/data_%d/data_%d_noisy_cpp.hdf5", parent_path, psf_scale_id,shear_id);
+			sprintf(result_path, "%s/result/data_%d/data_%d.hdf5", parent_path, psf_scale_id,shear_id);
 #endif
 			write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols, true);
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;

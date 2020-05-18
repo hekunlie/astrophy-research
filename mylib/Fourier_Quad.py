@@ -50,7 +50,8 @@ class Fourier_Quad:
         :param F: boolean, False for PSF image, True for PSF Power spectrum
         :return: estimators of shear
         """
-        gal_ps = self.pow_spec(gal_image)
+        # gal_ps = self.pow_spec(gal_image)
+        gal_ps = gal_image
         # gal_ps = tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
@@ -69,7 +70,7 @@ class Fourier_Quad:
         # hlr = self.get_radius_new(psf_ps, 2)[0]
         wb, beta = self.wbeta(self.hlr)
         maxi = numpy.max(psf_ps)
-        idx = psf_ps < maxi / 10000.
+        idx = psf_ps < maxi / 100000.
         wb[idx] = 0
         psf_ps[idx] = 1.
         tk = wb/psf_ps * gal_ps
@@ -141,6 +142,41 @@ class Fourier_Quad:
             return xy_coord, sheared
         else:
             return xy_coord
+
+    def ran_pts_e(self, num, radius, step=2.5, xy_ratio=1.):
+        """
+        create random points within a ellipse
+        :param num: point number
+        :param radius: max radius for a point from the center
+        :param ellip: ellipticity
+        :param alpha: radian, the angle between the major-axis and x-axis
+        :param g: shear, tuple or list or something can indexed by g[0] and g[1]
+        :return: (2,num) numpy array, the points
+        """
+        r2 = radius ** 2
+        xy_coord = numpy.zeros((2, num))
+        theta = self.rng.uniform(0., 2 * numpy.pi, num)
+        if xy_ratio >= 1:
+            xn = numpy.cos(theta) * step * xy_ratio
+            yn = numpy.sin(theta) * step
+        else:
+            xn = numpy.cos(theta) * step
+            yn = numpy.sin(theta) * step / xy_ratio
+        x = 0.
+        y = 0.
+        for n in range(num):
+            x += xn[n]
+            y += yn[n]
+            if x ** 2 + y ** 2 > r2:
+                x = xn[n]
+                y = yn[n]
+            xy_coord[0, n] = x
+            xy_coord[1, n] = y
+
+        xy_coord[0] = xy_coord[0] - numpy.mean(xy_coord[0])
+        xy_coord[1] = xy_coord[1] - numpy.mean(xy_coord[1])
+
+        return xy_coord
 
     def rotate(self, pos, theta):
         rot_matrix = numpy.array([[numpy.cos(theta), -numpy.sin(theta)], [numpy.sin(theta), numpy.cos(theta)]])
@@ -810,8 +846,8 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
-        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
-        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
+        # y = a1 + a2*x a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = \sqrt(1/2/a3)
         # g_h = -coeff[1] / 2. / coeff[2]
         g_sig = 0.70710678118/numpy.sqrt(coeff[2])
 
@@ -888,8 +924,8 @@ class Fourier_Quad:
 
         coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
-        # y = a1 + a2*x + a3*x^2 = a2(x+a1/2/a2)^2 +...
-        # gh = - a1/2/a2, gh_sig = 1/ sqrt(1/2/a2)
+        # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2]
         g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 

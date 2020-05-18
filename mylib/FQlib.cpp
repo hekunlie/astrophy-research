@@ -155,6 +155,19 @@ void create_epoints(double *point, const int num_p, const double ellip, const gs
 	}
 }
 
+void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r)
+{
+    double sin_theta, cos_theta;
+    cos_theta = cos(theta);
+    sin_theta = sin(theta);
+    for (int i = 0; i < pts_num; i++)
+    {
+        xy_r[i] = cos_theta * xy[i] - sin_theta*xy[i + pts_num];
+        xy_r[i + pts_num] = sin_theta * xy[i] + cos_theta*xy[i + pts_num];
+        // std::cout<<xy[i]<<" "<<xy[i+pts_num]<<" "<<xy_r[i]<<" "<<xy_r[i+pts_num]<<std::endl;
+    }
+}
+
 void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf)
 {
 	int i, j;
@@ -397,6 +410,27 @@ void convolve_e(double *in_img, const double * points, const double flux, const 
 	delete[] points_r;
 }
 
+void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row)
+{
+	int i, j;
+	j=column*row;
+	for(i=0;i<j;i++)
+	{
+		out_img[i]=gal_pow[i]/psf_pow[i];
+	}
+}
+
+void deconvolution(const double *gal_pow, const double*gal_pow_real, const double*gal_pow_imag, const double *psf_pow, const double*psf_pow_real, const double*psf_pow_imag, 
+double *out_img, const int column, const int row)
+{
+	int i,j;
+	j = column*row;
+	for(i=0;i<j;i++)
+	{
+		out_img[i] = gal_pow[i]/psf_pow[i] + 4*gal_pow_real[i]*gal_pow_imag[i]*psf_pow_real[i]*psf_pow_imag[i]/psf_pow[i]/psf_pow[i];
+	}
+}
+
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row)
 {   /* will not change the inputted array */
@@ -438,6 +472,58 @@ void pow_spec(const double *in_img, double *out_img, const int column, const int
 			}
 
 			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+		}
+	}
+	/* shift the signal to the center */
+
+	fftwl_destroy_plan(p);
+	fftwl_free(in);
+	fftwl_free(out);
+}
+
+void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row)
+{
+    /* will not change the inputted array */
+	/* in_img is the inputted array and the out_img is the container of the outputted image */
+	fftwl_complex *in, *out;
+	fftwl_plan p;
+	long int i, j, m, n;
+
+	in = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
+	for (i = 0; i < (row*column); i++)
+	{
+		in[i][1] = 0;
+		in[i][0] = in_img[i];
+	}
+
+	out = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
+	p = fftwl_plan_dft_2d(row, column, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftwl_execute(p);															 /* repeat as needed */
+
+	 /* shift the signal to the center */
+	for (i = 0; i < row; i++)
+	{
+		for (j = 0; j < column; j++)
+		{
+			m = i*column + j;
+			if (i<row / 2)
+			{
+				if (j < column / 2)
+					n = (i + row / 2)*column + j + column / 2;
+				else
+					n = (i + row / 2)*column + j - column / 2;
+			}
+			else
+			{
+				if (j<column / 2)
+					n = (i - row / 2)*column + j + column / 2;
+				else
+					n = (i - row / 2)*column + j - column / 2;
+			}
+
+			out_img_pow[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+			out_img_real[n] = out[m][0];
+			out_img_imag[n] = out[m][1];
 		}
 	}
 	/* shift the signal to the center */
@@ -1662,6 +1748,63 @@ void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 
 }
 
+void shear_est(const double *gal_pow, const double *gal_pow_real, const double *gal_pow_imag,
+               double *psf_pow,const double *psf_pow_real,const double *psf_pow_imag, fq_paras *paras)
+{	 /* will not change the inputted array */
+	 /* all the inputted images are the powerspectrums */
+	/* if there's no background noise, a array of '0' should be inputted */
+	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
+	double mp1=0., mp2=0.;
+	int i, j, k, size, tag;
+	size = paras->stamp_size;
+
+	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
+	/* beta is the beta_square in the estimators */
+	// use the hlr/1.414 of the PSF as the sigma of the target PSF
+	// then the hlr of the target PSF will be smaller than the PSF
+	// HLR = hlr/1.414*1.177 < hlr
+	beta = 1./ paras->psf_hlr / paras->psf_hlr;
+	
+	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken into account
+	thresh = paras->psf_pow_thresh;
+
+	for (i = 0; i < size; i++)//y coordinates
+	{
+		ky = i - size*0.5;
+		for (j = 0; j < size; j++) // x coordinates
+		{
+			kx = j - size*0.5;
+			tag = i*size+j;
+			if (psf_pow[tag] >= thresh)
+			{	
+				k2 = kx*kx + ky*ky;
+				k4 = k2*k2;
+				kx2 = kx*kx;
+				ky2 = ky*ky;			
+
+				tk = exp(-k2*beta)*(gal_pow[tag]+4*gal_pow_real[tag]*gal_pow_imag[tag]*psf_pow_real[tag]*psf_pow_imag[tag]/psf_pow[tag])/psf_pow[tag]* alpha;
+				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
+				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
+				mg2 += -kx*ky*tk;
+				mn += ( k2 - 0.5*beta*k4 ) * tk;
+				mu += (k4  - 8 *kx2*ky2)*tk * (-0.5*beta);
+				mv += kx*ky*(kx2-ky2)* tk * (-2.* beta);
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+			}
+		}
+	}
+
+	paras->n1 = mg1;
+	paras->n2 = mg2;
+	paras->dn = mn;
+	paras->du = mu;
+	paras->dv = mv;
+	//paras->dp1 = mp1;
+	//paras->dp2 = mp2;
+
+}
+
 
 void ellip_est(const double *gal_img, const int size, fq_paras*paras)
 {
@@ -1895,6 +2038,30 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	delete[] temp;
 }
 
+void chisq_Gbin_1d(const double *mg, const int data_num, const double *bins, const int bin_num, double &result)
+{
+	int i, j, k;
+
+	int *num_in_bin = new int[bin_num];
+
+	histogram(mg, bins, num_in_bin, data_num, bin_num);
+	try
+	{
+		cal_chisq_1d(num_in_bin, bin_num, result);
+	}
+	catch(const char *msg)
+	{	
+		std::cout << "Num: " << std::endl;
+		show_arr(num_in_bin, 1, bin_num);
+		std::cout << "Bin: " << std::endl;
+		show_arr(bins, 1, bin_num + 1);
+		char err_inform[200];
+		sprintf(err_inform,"%s, Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d)!!!",msg);
+		throw err_inform;
+	}
+	delete[] num_in_bin;
+}
+
 
 void cal_chisq_2d(const double *hist_arr, const int size, double &result)
 {
@@ -2117,7 +2284,7 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	delete[] block_st;
 }
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, const int choice,const double max_scale)
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, double &chisq_min_fit, const int choice,const double max_scale)
 {
 	int i, j, k;
 	double step,chisq;
@@ -2160,26 +2327,27 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
 
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] bins;
 }
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double *chi_check,	const int chi_num_fit, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check,	const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	int max_iters = 12;
+	int temp_num;
 
 	double *bins = new double[bin_num + 1];
-	double *gh_fit = new double[chi_num_fit];
-	double *chisq_fit = new double[chi_num_fit];
+	double *gh_fit = new double[chi_fit_num];
+	double *chisq_fit = new double[chi_fit_num];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
 	int left_tag=-1, right_tag=-1;
-	double fit_max_chisq;
+	double fit_max_chisq, new_end;
 	double *search_vals = new double[(max_iters+1)*record_col]{};
 
 	int same = 0, iters = 0, change = 1;
@@ -2335,13 +2503,38 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	// else{right = search_vals[right_tag*record_col+2];}
 
 	//std::cout<<left<<" "<<right<<std::endl;
-
-	step = (right - left) / (chi_num_fit - 1);
-	for (i = 0; i < chi_num_fit; i++)
+	temp_num = 15;
+	step = (right - left) / (temp_num - 1);
+	for (i = 0; i < temp_num; i++)
 	{
 		gh_fit[i] = left + step * i;
 	}
-	for (i = 0; i < chi_num_fit; i++)
+	for (i = 0; i < temp_num; i++)
+	{	
+		try
+		{
+			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		chisq_fit[i] = chi_right;
+	}
+	//st4 = clock();
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+
+	// to get a more symmetrical interval for fitting
+	new_end = std::max(gh-left, right-gh);
+	
+	left = gh - new_end;
+	step = 2*new_end / (chi_fit_num - 1);
+
+	for (i = 0; i < chi_fit_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	for (i = 0; i < chi_fit_num; i++)
 	{	
 		try
 		{
@@ -2355,12 +2548,13 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		if (chi_check)
 		{	// for checking
 			chi_check[i] = chi_right;
-			chi_check[chi_num_fit + i] = gh_fit[i];
+			chi_check[chi_fit_num + i] = gh_fit[i];
 		}
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_num_fit, gh, gh_sig, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
 	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
@@ -2370,7 +2564,7 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	delete[] search_vals;
 }
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, const double d_chi)
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2+bx + c
@@ -2440,10 +2634,24 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	gh = -coeff[1] / coeff[2]*0.5;
 	gh_sig = sqrt(0.5 / coeff[2]);
 
+	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
 
 }
 
+void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output)
+{
+	double cos2theta, sin2theta, cos4theta, sin4theta;
+	cos2theta = cos(2*theta);
+	sin2theta = sin(2*theta);
+	cos4theta = cos(4*theta);
+	sin4theta = sin(4*theta);
+	output[0] = mg1*cos2theta - mg2*sin2theta;
+	output[1] = mg1*sin2theta + mg2*cos2theta;
+	output[2] = mn;
+	output[3] = mu*cos4theta - mv*sin4theta;
+	output[4] = mu*sin4theta + mv*cos4theta;
 
+}
 
 /********************************************************************************************************************************************/
 /* cosmology */
