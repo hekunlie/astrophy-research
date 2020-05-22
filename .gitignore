@@ -18,3 +18,4 @@ my_lib/__pycache__/*
 test.py
 test.py
 *.pyc
+*.pyc
