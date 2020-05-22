@@ -2,6 +2,8 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
+#define MY_FLOAT double
+
 void task_allot(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {
     int i,j,m,n;
@@ -37,34 +39,37 @@ int main(int argc, char**argv)
     char parent_path[200], shear_path[200], data_path[200], result_path[200];
     char set_name[30], inform[300], time_now[40], data_type[40];
 
+    get_time(time_now, 40);
+    if(rank == 0){std::cout<<time_now<<std::endl;}
+    
     int i,j,k;
 
     int shear_num, shear_st, shear_ed;
     int*shear_point;
-    double *shears, *g1_t, *g2_t;
-    double gh1, gh1_sig, gh2, gh2_sig;
+    MY_FLOAT *shears, *g1_t, *g2_t;
+    MY_FLOAT gh1, gh1_sig, gh2, gh2_sig;
 
     int mg_bin_num;
-    double *mg_bins;
+    MY_FLOAT *mg_bins;
     int chi_check_num;
     int chisq_num;
-    double *chi_check;
-    double *chisq1, *chisq2, *shear_for_chi, chisq_min_fit;
-    double left_guess, right_guess;
+    MY_FLOAT *chi_check;
+    MY_FLOAT *chisq1, *chisq2, *shear_for_chi, chisq_min_fit;
+    MY_FLOAT left_guess, right_guess;
   
-    double *total_chi_check_g1, *sub_chi_check_g1;
-    double *total_chi_check_g2, *sub_chi_check_g2;
+    MY_FLOAT *total_chi_check_g1, *sub_chi_check_g1;
+    MY_FLOAT *total_chi_check_g2, *sub_chi_check_g2;
     int *chi_send_count;
 
     int data_col, data_row;
     int result_col;
-    double *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
-    double weight;
+    MY_FLOAT *data, *mg1, *mg2,*mn, *mu, *mnu1, *mnu2;
+    MY_FLOAT weight;
 
     // for results
     int sub_num;
-    double *result_all_mean, *result_sub_mean;
-    double *result_all_pdf, *result_sub_pdf;
+    MY_FLOAT *result_all_mean, *result_sub_mean;
+    MY_FLOAT *result_all_pdf, *result_sub_pdf;
     int *send_count;
 
     // data shape
@@ -85,22 +90,23 @@ int main(int argc, char**argv)
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, data_type);
 
-    data = new double[data_row*data_col];
-    mg1 = new double[data_row];
-    mg2 = new double[data_row];
-    mn = new double[data_row];
-    mnu1 = new double[data_row];
-    mnu2 = new double[data_row];
+    data = new MY_FLOAT[data_row*data_col];
+    mg1 = new MY_FLOAT[data_row];
+    mg2 = new MY_FLOAT[data_row];
+    mn = new MY_FLOAT[data_row];
+    mu = new MY_FLOAT[data_row];
+    mnu1 = new MY_FLOAT[data_row];
+    mnu2 = new MY_FLOAT[data_row];
 
     shear_point = new int[numprocs]{};
     send_count = new int[numprocs]{};
     chi_send_count = new int[numprocs]{};
 
-    mg_bins = new double[mg_bin_num+1]{};
-    chi_check = new double[2*chi_check_num]{};
-    chisq1 = new double[chisq_num]{};
-    chisq2 = new double[chisq_num]{};
-    shear_for_chi = new double[chisq_num]{};
+    mg_bins = new MY_FLOAT[mg_bin_num+1]{};
+    chi_check = new MY_FLOAT[2*chi_check_num]{};
+    chisq1 = new MY_FLOAT[chisq_num]{};
+    chisq2 = new MY_FLOAT[chisq_num]{};
+    shear_for_chi = new MY_FLOAT[chisq_num]{};
     for(i=0;i<chisq_num;i++)
     {
         shear_for_chi[i] = 0.2/(chisq_num-1)*i - 0.1;
@@ -134,8 +140,8 @@ int main(int argc, char**argv)
     // the measured g1, sig1, g2, sig2 of each thread
     // measured from all source
     // will be sent to rank 0 stack into result_all
-    result_sub_mean = new double[(shear_ed - shear_st)*result_col]{};
-    result_sub_pdf = new double[(shear_ed - shear_st)*result_col]{};
+    result_sub_mean = new MY_FLOAT[(shear_ed - shear_st)*result_col]{};
+    result_sub_pdf = new MY_FLOAT[(shear_ed - shear_st)*result_col]{};
 
     if(rank == 0)
     {
@@ -143,8 +149,8 @@ int main(int argc, char**argv)
         std::cout<<"Bin_num "<<mg_bin_num<<" data:"<<parent_path<<" "<<std::endl;
     }
 
-    sub_chi_check_g1 = new double[(shear_ed - shear_st)*chi_check_num*2];
-    sub_chi_check_g2 = new double[(shear_ed - shear_st)*chi_check_num*2];
+    sub_chi_check_g1 = new MY_FLOAT[(shear_ed - shear_st)*chi_check_num*2];
+    sub_chi_check_g2 = new MY_FLOAT[(shear_ed - shear_st)*chi_check_num*2];
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -159,8 +165,8 @@ int main(int argc, char**argv)
 
     
     sprintf(shear_path, "%s/shear.hdf5",parent_path);
-    g1_t = new double[shear_num]{};
-    g2_t = new double[shear_num]{};
+    g1_t = new MY_FLOAT[shear_num]{};
+    g2_t = new MY_FLOAT[shear_num]{};
     sprintf(set_name,"/g1");
     read_h5(shear_path, set_name,g1_t);
     sprintf(set_name,"/g2");
@@ -179,6 +185,7 @@ int main(int argc, char**argv)
             mg1[k] = data[k*data_col];
             mg2[k] = data[k*data_col + 1];
             mn[k] = data[k*data_col + 2];
+            mu[k] = data[k*data_col + 3];
             mnu1[k] = data[k*data_col + 2] + data[k*data_col + 3];
             mnu2[k] = data[k*data_col + 2] - data[k*data_col + 3];
         }
@@ -197,7 +204,7 @@ int main(int argc, char**argv)
         // PDF_SYM
         try
         {
-            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg1, mn, mu, data_row, mg_bin_num, 1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -211,7 +218,7 @@ int main(int argc, char**argv)
 
         try
         {
-            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg2, mn,mu, data_row, mg_bin_num, 2, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -247,11 +254,11 @@ int main(int argc, char**argv)
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0)
     {
-        result_all_mean = new double[shear_num*result_col]{};
-        result_all_pdf = new double[shear_num*result_col]{};
+        result_all_mean = new MY_FLOAT[shear_num*result_col]{};
+        result_all_pdf = new MY_FLOAT[shear_num*result_col]{};
 
-        total_chi_check_g1 = new double[shear_num*2*chi_check_num]{};
-        total_chi_check_g2 = new double[shear_num*2*chi_check_num]{};
+        total_chi_check_g1 = new MY_FLOAT[shear_num*2*chi_check_num]{};
+        total_chi_check_g2 = new MY_FLOAT[shear_num*2*chi_check_num]{};
     }
 
     my_Gatherv(result_sub_mean, send_count, result_all_mean, numprocs, rank, 0);
@@ -264,12 +271,12 @@ int main(int argc, char**argv)
 
     if(rank == 0)
     {   
-        double *mc = new double[4];
-        double *pdf_mc = new double[8];
-        double *mean_mc = new double[8];
-        double *fit_val = new double[shear_num];
-        double *fit_err = new double[shear_num];
-        double *result_arr = new double[6*shear_num]{};
+        MY_FLOAT *mc = new MY_FLOAT[4];
+        MY_FLOAT *pdf_mc = new MY_FLOAT[8];
+        MY_FLOAT *mean_mc = new MY_FLOAT[8];
+        MY_FLOAT *fit_val = new MY_FLOAT[shear_num];
+        MY_FLOAT *fit_err = new MY_FLOAT[shear_num];
+        MY_FLOAT *result_arr = new MY_FLOAT[6*shear_num]{};
 
         // mean
         for(k=0;k<2;k++)

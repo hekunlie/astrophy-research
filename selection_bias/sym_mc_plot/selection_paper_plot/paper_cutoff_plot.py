@@ -13,13 +13,51 @@ import h5py
 
 matplotlib.rcParams["font.family"] = "serif"
 
-mc_cmd = 0
+mc_cmd = 1
 
-source_b = "pts_bright"
-source_f = "pts_dimmer"
+# # pts sample
+if mc_cmd == 0:
+
+    source_b = "pts_bright"
+    source_f = "pts_dimmer"
+
+    pic_nm = "/pts_mc.pdf"
+
+    ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
+    text_pos = [[50, 2.5],[50, 2.5],[50, 2.2],[50, 2.2]]
+    sample_name = ["PI sample","PI sample","PII sample","PII sample"]
+    xy_lims = [(-4.1, 3.7),(-4.1, 3.7),(-6.5, 3.7),(-6.5, 3.7)]
+
+
+# # galsim sample
+elif mc_cmd == 1:
+
+    source_b = "galsim_bright"
+    source_f = "galsim_dimmer"
+
+    pic_nm = "/galsim_mc.pdf"
+
+    ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
+    text_pos = [[6, 1.6],[6, 1.6],[6, 1.4],[6, 1.4]]
+    sample_name = ["GI sample","GI sample","GII sample","GII sample"]
+    xy_lims = [(-1.9, 2.2),(-1.9, 2.2),(-3.6, 2.2),(-3.6, 2.2)]
+
+# epsf sample
+else:
+
+    source_b = "galsim_bright"
+    source_f = "pts_dimmer"
+
+    pic_nm = "/pts_mc.pdf"
+
+    ylabels = ["c$_1 \\times 10^3$", "c$_2 \\times 10^3$", "c$_1 \\times 10^3$", "c$_2 \\times 10^3$"]
+    text_pos = [[3, 0.075],[55, 0.25],[3, 0.065],[55, 0.6]]
+    sample_name = ["GI sample","GI sample","PI sample","PI sample"]
+    xy_lims = [(-0.042, 0.092),(-0.33, 0.33),(-0.12,0.092),(-0.71, 0.78)]
+
+
 parent_path = "D:/cut/large_g"
-# final pic name
-pic_nm = "/pts_mc.pdf"
+
 pic_nm_png = pic_nm.split(".")[0]+".png"
 # the file name
 file_name = "cuts_pi_half_sample/"
@@ -33,7 +71,7 @@ data_path_1 = total_path_1 + file_name + sex_filter_name
 total_path_2 = parent_path + "/%s/result/"%source_f
 data_path_2 = total_path_2 + file_name + sex_filter_name
 
-names = ["$\\nu_F$", "MAG_AUTO", "MAG$_{\\rm{true}}$", "SNR", "Resolution"]
+names = ["$\\nu_F$", "MAG_AUTO", "MAG$_{\\rm{true}}$", "SNR", "Resolution factor"]
 files = ["flux2_ex1", "mag_auto", "mag_true", "snr_sex", "rfactor"]
 colors = ["C0", "C2", "C1", "C3", "C4"]
 ch_num = 9
@@ -50,28 +88,6 @@ img.subplots(2,2)
 img.axis_type(0,"major",tick_len=8, tick_width=1.5)
 img.axis_type(1,"major",tick_len=8, tick_width=1.5)
 
-
-# # pts sample
-if mc_cmd == 0:
-    ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
-    text_pos = [[50, 2.5],[50, 2.5],[50, 2.2],[50, 2.2]]
-    sample_name = ["PI sample","PI sample","PII sample","PII sample"]
-    xy_lims = [(-4.1, 3.7),(-4.1, 3.7),(-6.5, 3.7),(-6.5, 3.7)]
-
-
-# # galsim sample
-elif mc_cmd == 1:
-    ylabels = ["m$_1 \\times 10^2$", "m$_2 \\times 10^2$", "m$_1 \\times 10^2$", "m$_2 \\times 10^2$"]
-    text_pos = [[6, 1.6],[6, 1.6],[6, 1.4],[6, 1.4]]
-    sample_name = ["GI sample","GI sample","GII sample","GII sample"]
-    xy_lims = [(-1.9, 2.2),(-1.9, 2.2),(-3.6, 2.2),(-3.6, 2.2)]
-
-# epsf sample
-else:
-    ylabels = ["c$_1 \\times 10^3$", "c$_2 \\times 10^3$", "c$_1 \\times 10^3$", "c$_2 \\times 10^3$"]
-    text_pos = [[3, 0.075],[55, 0.25],[3, 0.065],[55, 0.6]]
-    sample_name = ["GI sample","GI sample","PI sample","PI sample"]
-    xy_lims = [(-0.042, 0.092),(-0.33, 0.33),(-0.12,0.092),(-0.71, 0.78)]
 
 for j in range(4):
 
@@ -125,7 +141,7 @@ for j in range(4):
 
     if j == 0:
         img.axs[row][col].legend(ncol=6, fontsize=img.legend_size-2,
-                                 loc='upper left', bbox_to_anchor=(0.11,1.18), edgecolor="k",fancybox=False)
+                                 loc='upper left', bbox_to_anchor=(0.09,1.18), edgecolor="k",fancybox=False)
 
     img.axs[row][col].set_ylim(xy_lims[j])
     img.axs[row][col].text(text_pos[j][0], text_pos[j][1], sample_name[j], color='k', ha='left', va='center',
@@ -178,7 +194,7 @@ data_path_1_ = total_path_1_ + file_name + sex_filter_name
 total_path_2_ = parent_path + "/%s_1/result/"%source_f
 data_path_2_ = total_path_2_ + file_name + sex_filter_name
 
-names = ["$\\nu_F$", "MAG_AUTO", "MAG$_{\\rm{true}}$", "SNR", "Resolution"]
+names = ["$\\nu_F$", "MAG_AUTO", "MAG$_{\\rm{true}}$", "SNR", "Resolution factor"]
 files = ["flux2_ex1", "mag_auto", "mag_true", "snr_sex", "rfactor"]
 colors = ["C0", "C2", "C1", "C3", "C4"]
 ch_num = 9

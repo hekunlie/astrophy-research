@@ -9,6 +9,7 @@ void my_Scatterv_all(const double *send_buf, const int total_len, double *rec_bu
 /* scatter the whole array to each thread, each thread gets a copy of the 'send_buf' */
 
 void my_Gatherv(const double *send_buf, const int*send_count, double *rec_buf, const int num_pros, const int rank,const int rev_rank=0);//checked 2019-11-21
+void my_Gatherv(const float *send_buf, const int*send_count, float *rec_buf, const int num_pros, const int rank,const int rev_rank=0);
 /* gather arrays into a large one */
 
 void my_Send_all(const double *send_buf, double *recv_buf, const int buf_len, const int num_pros, const int send_rank, const int my_rank);
