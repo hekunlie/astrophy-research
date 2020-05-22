@@ -177,6 +177,13 @@ class Image_Plot:
         else:
             self.axs[iy][ix].set_ylabel(label, fontdict=fontdict)
 
+    def set_sci_ax(self,iy, ix, axis_nm,lower=0, upper=0):
+        for nm in axis_nm:
+            if axis_nm == 0:
+                self.axs[iy][ix].yaxis.major.formatter.set_powerlimits((lower,upper))
+            else:
+                self.axs[iy][ix].xaxis.major.formatter.set_powerlimits((lower,upper))
+
     def set_legend(self, iy, ix, font="serif", size=None, loc="best", bbox_to_anchor=None):
         if not size:
             size = self.legend_size

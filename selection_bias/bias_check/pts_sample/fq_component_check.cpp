@@ -5,8 +5,16 @@
 #define FLUX_PDF_UNI
 #define CPSF
 
+// #define SAVE_MEN
 
-void arr_sqrt(double *arr_in, double *arr_out, const int length)
+#ifdef SAVE_MEM
+#define MY_FLOAT float
+#else
+#define MY_FLOAT double
+#endif
+
+
+void arr_sqrt(MY_FLOAT *arr_in, MY_FLOAT *arr_out, const int length)
 {
     for(int i=0;i<length;i++)
     {
@@ -15,7 +23,7 @@ void arr_sqrt(double *arr_in, double *arr_out, const int length)
 }
 
 
-void arr_add(double *arr1, const double*arr2,const int length)
+void arr_add(MY_FLOAT *arr1, const MY_FLOAT*arr2,const int length)
 {
     for(int i=0;i<length;i++)
     {
@@ -23,7 +31,7 @@ void arr_add(double *arr1, const double*arr2,const int length)
     }
 }
 
-void arr_add(double *arr1, const double*arr2,const double*arr3,const int length)
+void arr_add(MY_FLOAT *arr1, const MY_FLOAT*arr2,const MY_FLOAT*arr3,const int length)
 {
     for(int i=0;i<length;i++)
     {
@@ -31,21 +39,21 @@ void arr_add(double *arr1, const double*arr2,const double*arr3,const int length)
     }
 }
 
-void arr_deduct(double *result_buff, const double *arr1, const double*arr2,const int length)
+void arr_deduct(MY_FLOAT *result_buff, const MY_FLOAT *arr1, const MY_FLOAT*arr2,const int length)
 {
     for(int i=0;i<length;i++)
     {
         result_buff[i] = arr1[i] - arr2[i];
     }
 }
-void arr_deduct(double *result_buff, const double *arr1, const double*arr2, const double *arr3, const int length)
+void arr_deduct(MY_FLOAT *result_buff, const MY_FLOAT *arr1, const MY_FLOAT*arr2, const MY_FLOAT *arr3, const int length)
 {
     for(int i=0;i<length;i++)
     {
         result_buff[i] = arr1[i] - arr2[i] - arr3[i];
     }
 }
-void arr_copy(double *arr1, const double*arr2,const int length)
+void arr_copy(MY_FLOAT *arr1, const MY_FLOAT*arr2,const int length)
 {
     for(int i=0;i<length;i++)
     {
@@ -53,7 +61,7 @@ void arr_copy(double *arr1, const double*arr2,const int length)
     }
 }
 
-void noise_subtraction_new(double *pow_arr1, const double*pow_arr2,const double *noise_pow_arr, const int length)
+void noise_subtraction_new(MY_FLOAT *pow_arr1, const MY_FLOAT*pow_arr2,const MY_FLOAT *noise_pow_arr, const int length)
 {
     for(int i=0;i<length;i++)
     {
@@ -74,7 +82,12 @@ int main(int argc, char*argv[])
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
+
+#ifdef SAVE_MEM
+	fq_paras_float all_paras;
+#else
 	fq_paras all_paras;
+#endif
 
 	char parent_path[300], chip_path[300], para_path[300], shear_path[300], result_path[300], log_path[300];
 	char buffer[300], log_inform[250], set_name[50];
@@ -86,22 +99,22 @@ int main(int argc, char*argv[])
 	int rotation;
 
 	int num_p, size, shear_pairs, img_len;
-    double max_radius;
+    MY_FLOAT max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
 	int seed_ini;
 
-	double psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
-	double g1, g2, ts, te, t1, t2;
-	double *g1t, *g2t;
-	double psf_ellip, ellip_theta;
-	double img_cent;
-	double pts_step;
-	double gal_fluxs[5]{3000, 6000, 9000, 16000, 800000};
+	MY_FLOAT psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
+	MY_FLOAT g1, g2, ts, te, t1, t2;
+	MY_FLOAT *g1t, *g2t;
+	MY_FLOAT psf_ellip, ellip_theta;
+	MY_FLOAT img_cent;
+	MY_FLOAT pts_step;
+	MY_FLOAT gal_fluxs[5]{3000, 6000, 9000, 16000, 800000};
 	int flux_tag;
 
-	double theta;
+	MY_FLOAT theta;
 
 	strcpy(parent_path, argv[1]);
 	seed_ini = atoi(argv[2]);
@@ -141,58 +154,58 @@ int main(int argc, char*argv[])
 	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
 
 #ifdef IMG_CHECK_LABEL
-    double *big_img_noise_free = new double[stamp_nx*stamp_nx*img_len]{};
-    double *big_img_noise_residual = new double[stamp_nx*stamp_nx*img_len]{};
-    double *big_img_cross_term = new double[stamp_nx*stamp_nx*img_len]{};
-	double *big_img_noisy = new double[stamp_nx*stamp_nx*img_len]{};
+    MY_FLOAT *big_img_noise_free = new MY_FLOAT[stamp_nx*stamp_nx*img_len]{};
+    MY_FLOAT *big_img_noise_residual = new MY_FLOAT[stamp_nx*stamp_nx*img_len]{};
+    MY_FLOAT *big_img_cross_term = new MY_FLOAT[stamp_nx*stamp_nx*img_len]{};
+	MY_FLOAT *big_img_noisy = new MY_FLOAT[stamp_nx*stamp_nx*img_len]{};
 	
 #endif
 
-	double *point = new double[2 * num_p]{};
-	double *point_r = new double[2 * num_p]{};
+	MY_FLOAT *point = new MY_FLOAT[2 * num_p]{};
+	MY_FLOAT *point_r = new MY_FLOAT[2 * num_p]{};
 
 
-	double *gal = new double[img_len]{};
-	double *pgal = new double[img_len]{};
-	double *pgal_dn = new double[img_len]{};
+	MY_FLOAT *gal = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal_dn = new MY_FLOAT[img_len]{};
 	
-	double *gal_noisy = new double[img_len]{};
-	double *pgal_noisy = new double[img_len]{};
+	MY_FLOAT *gal_noisy = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal_noisy = new MY_FLOAT[img_len]{};
 
-	double *gal_noisy_a = new double[img_len]{};
-	double *pgal_noisy_a = new double[img_len]{};
+	MY_FLOAT *gal_noisy_a = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal_noisy_a = new MY_FLOAT[img_len]{};
 
-	double *pgal_cross_term = new double[img_len]{};
-	double *pgal_cross_term_est = new double[img_len]{};
+	MY_FLOAT *pgal_cross_term = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal_cross_term_est = new MY_FLOAT[img_len]{};
 
-	double *psf = new double[img_len]{};
-	double *ppsf = new double[img_len]{};
-	double *ppsf_sqrt = new double[img_len]{};
+	MY_FLOAT *psf = new MY_FLOAT[img_len]{};
+	MY_FLOAT *ppsf = new MY_FLOAT[img_len]{};
+	MY_FLOAT *ppsf_sqrt = new MY_FLOAT[img_len]{};
 
-	double *noise_1 = new double[img_len]{};
-	double *pnoise_1 = new double[img_len]{};
+	MY_FLOAT *noise_1 = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pnoise_1 = new MY_FLOAT[img_len]{};
 
-    double *noise_2 = new double[img_len]{};
-	double *pnoise_2 = new double[img_len]{};
-    double *noise_pow_diff = new double[img_len]{};
+    MY_FLOAT *noise_2 = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pnoise_2 = new MY_FLOAT[img_len]{};
+    MY_FLOAT *noise_pow_diff = new MY_FLOAT[img_len]{};
 
-	double *noise_3 = new double[img_len]{};
-	double *pnoise_3 = new double[img_len]{};
-	double *pnoise_cross = new double[img_len]{};
+	MY_FLOAT *noise_3 = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pnoise_3 = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pnoise_cross = new MY_FLOAT[img_len]{};
 
 	// the shear estimators data matrix  
-	double *total_data;	
-	double *sub_noise_free_data;
-    double *sub_noise_residual_data;	
-	double *sub_cross_term_data;
-	double *sub_cross_term_sqrt_data;
-    double *sub_noisy_data;
-	double *sub_cross_term_estimate;
-	double *sub_noise_cross_term_estimate;
-	double *sub_noise_residual_term_estimate;	
+	MY_FLOAT *total_data;	
+	MY_FLOAT *sub_noise_free_data;
+    MY_FLOAT *sub_noise_residual_data;	
+	MY_FLOAT *sub_cross_term_data;
+	MY_FLOAT *sub_cross_term_sqrt_data;
+    MY_FLOAT *sub_noisy_data;
+	MY_FLOAT *sub_cross_term_estimate;
+	MY_FLOAT *sub_noise_cross_term_estimate;
+	MY_FLOAT *sub_noise_residual_term_estimate;	
 
 
-	double *total_flux, *sub_flux;
+	MY_FLOAT *total_flux, *sub_flux;
 	int *scatter_count,*gather_count;
 
 	// for scatterring the flux to each thread
@@ -232,17 +245,17 @@ int main(int argc, char*argv[])
 		gather_count[i] = scatter_count[i]*shear_data_cols;
 	}
 	
-	sub_noise_free_data = new double[gather_count[rank]]{};
-	sub_noise_residual_data = new double[gather_count[rank]]{};
-	sub_cross_term_data = new double[gather_count[rank]]{};
-	sub_cross_term_sqrt_data = new double[gather_count[rank]]{};
-	sub_noisy_data = new double[gather_count[rank]]{};
-	sub_cross_term_estimate = new double[gather_count[rank]]{};
-	sub_noise_cross_term_estimate = new double[gather_count[rank]]{};
-	sub_noise_residual_term_estimate = new double[gather_count[rank]]{};
+	sub_noise_free_data = new MY_FLOAT[gather_count[rank]]{};
+	sub_noise_residual_data = new MY_FLOAT[gather_count[rank]]{};
+	sub_cross_term_data = new MY_FLOAT[gather_count[rank]]{};
+	sub_cross_term_sqrt_data = new MY_FLOAT[gather_count[rank]]{};
+	sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
+	sub_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
+	sub_noise_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
+	sub_noise_residual_term_estimate = new MY_FLOAT[gather_count[rank]]{};
 
-	double *total_theta;
-	double *sub_theta = new double[scatter_count[rank]]{};
+	MY_FLOAT *total_theta;
+	MY_FLOAT *sub_theta = new MY_FLOAT[scatter_count[rank]]{};
 
 
 	// seed distribution, different thread gets different seed
@@ -254,13 +267,13 @@ int main(int argc, char*argv[])
 
 	if (0 == rank)
 	{
-		total_theta = new double[total_data_row]{};
-		total_data = new double[total_data_row*shear_data_cols]{};
+		total_theta = new MY_FLOAT[total_data_row]{};
+		total_data = new MY_FLOAT[total_data_row*shear_data_cols]{};
 	}
 
 	// read shear
-	g1t = new double[shear_pairs]{};
-	g2t = new double[shear_pairs]{};
+	g1t = new MY_FLOAT[shear_pairs]{};
+	g2t = new MY_FLOAT[shear_pairs]{};
 
 	sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
 	sprintf(set_name,"/g1");
@@ -378,10 +391,13 @@ int main(int argc, char*argv[])
 				
 				initialize_arr(pgal, size*size, 0);
 				initialize_arr(point, num_p * 2, 0);
+
 				initialize_arr(noise_1, img_len, 0);
 				initialize_arr(pnoise_1, img_len, 0);
 				initialize_arr(noise_2, img_len, 0);
 				initialize_arr(pnoise_2, img_len, 0);
+				initialize_arr(noise_3, img_len, 0);
+				initialize_arr(pnoise_3, img_len, 0);
 
 				initialize_arr(pgal_cross_term, img_len, 0);
 				initialize_arr(pgal_noisy, img_len, 0);
@@ -390,7 +406,9 @@ int main(int argc, char*argv[])
 				pow_spec(noise_1, pnoise_1, size, size);
 				addnoise(noise_2, img_len, gal_noise_sig, rng1);
 				pow_spec(noise_2, pnoise_2, size, size);
-
+				addnoise(noise_3, img_len, gal_noise_sig, rng1);
+				pow_spec(noise_3, pnoise_3, size, size);
+				
 				// rand_uniform(0, 2*Pi, theta, rng2);
 				// coord_rotation(point, num_p, theta, point_r);
 				// sub_theta[row/shear_data_cols+j] = theta;
@@ -398,10 +416,10 @@ int main(int argc, char*argv[])
 				create_points(point, num_p, max_radius, pts_step, rng0);
 
 #ifdef EPSF
-				convolve_e(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type, psf_ellip, ellip_theta);
+				convolve_e(point,num_p,flux_i, g1, g2, gal, size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
 #else
-				// convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
-				convolve(gal, point, flux_i, size, img_cent, num_p, rotation, psf_scale, g1, g2, psf_type);
+				convolve(point,num_p,flux_i, g1, g2, gal, size, img_cent, psf_scale,psf_type);
+
 #endif
 				// noise free
 				pow_spec(gal, pgal, size, size);
@@ -470,7 +488,7 @@ int main(int argc, char*argv[])
                
 
 #ifdef IMG_CHECK_LABEL
-				if(i <= IMG_CHECK_LABEL)
+				if(i <= IMG_CHECK_LABEL and shear_id<=IMG_CHECK_LABEL)
 				{
 					stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
 					stack(big_img_noise_residual, noise_pow_diff, j, size, stamp_nx, stamp_nx);
@@ -486,7 +504,7 @@ int main(int argc, char*argv[])
 
 
 #ifdef IMG_CHECK_LABEL
-			if(i <= IMG_CHECK_LABEL)
+			if(i <= IMG_CHECK_LABEL and shear_id<=IMG_CHECK_LABEL)
 			{
 				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);

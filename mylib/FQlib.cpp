@@ -133,6 +133,43 @@ void create_points(double *point, const int num_p, const double radius, const do
 	}
 }
 
+
+void create_points(float *point, const int num_p, const float radius, const float step, const gsl_rng *gsl_rand_rng)
+{	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
+	int i;
+	float x = 0., y = 0., xm = 0., ym = 0., theta;
+
+	for (i = 0; i < num_p; i++)
+	{
+		theta = 2.*Pi*gsl_rng_uniform(gsl_rand_rng);
+		//step = 1*gsl_rng_uniform(rng);
+		x += cos(theta)*step;
+		y += sin(theta)*step;
+		if (x*x + y*y > radius*radius)
+		{
+			x = cos(theta)*step;
+			y = sin(theta)*step;
+		}
+		point[i] = x;
+		point[i + num_p] = y;
+		xm += x;
+		ym += y;
+	}
+	
+	//theta = 2.*Pi*gsl_rng_uniform(gsl_rand_rng);
+	//x = cos(theta);
+	//y = sin(theta);
+
+	/* move the mass center of the points cluster to (0,0) */
+	xm /= num_p;
+	ym /= num_p;
+	for (i = 0; i < num_p; i++)
+	{
+		point[i] = point[i] - xm;
+		point[i + num_p] = point[i + num_p] - ym;
+	}
+}
+
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng)
 {
 	int i = 0;
@@ -155,6 +192,29 @@ void create_epoints(double *point, const int num_p, const double ellip, const gs
 	}
 }
 
+void create_epoints(float *point, const int num_p, const float ellip, const gsl_rng *gsl_rand_rng)
+{
+	int i = 0;
+	float theta, beta, radius, r1, r2, b, y, x;
+	radius = 5 + 4 * gsl_rng_uniform(gsl_rand_rng);
+	b = sqrt((1 - ellip) / (1 + ellip))*radius;
+	beta = 2 * Pi*gsl_rng_uniform(gsl_rand_rng);
+	r1 = cos(beta);
+	r2 = sin(beta);
+	while (i < num_p)
+	{
+		x = gsl_ran_gaussian(gsl_rand_rng, radius);
+		y = gsl_ran_gaussian(gsl_rand_rng, b);
+		if (x*x / (radius*radius) + y*y / (b*b) <= 1)
+		{
+			point[i] = x*r1 - y*r2;
+			point[i + num_p] = x*r2 + r1*y;
+			i++;
+		}
+	}
+}
+
+
 void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r)
 {
     double sin_theta, cos_theta;
@@ -167,6 +227,20 @@ void coord_rotation(const double*xy, const int pts_num, const double theta, doub
         // std::cout<<xy[i]<<" "<<xy[i+pts_num]<<" "<<xy_r[i]<<" "<<xy_r[i+pts_num]<<std::endl;
     }
 }
+
+void coord_rotation(const float*xy, const int pts_num, const float theta, float *xy_r)
+{
+    float sin_theta, cos_theta;
+    cos_theta = cos(theta);
+    sin_theta = sin(theta);
+    for (int i = 0; i < pts_num; i++)
+    {
+        xy_r[i] = cos_theta * xy[i] - sin_theta*xy[i + pts_num];
+        xy_r[i + pts_num] = sin_theta * xy[i] + cos_theta*xy[i + pts_num];
+        // std::cout<<xy[i]<<" "<<xy[i+pts_num]<<" "<<xy_r[i]<<" "<<xy_r[i+pts_num]<<std::endl;
+    }
+}
+
 
 void create_psf(double*in_img, const double scale, const int size, const double img_cent, const int psf)
 {
@@ -195,6 +269,36 @@ void create_psf(double*in_img, const double scale, const int size, const double 
 		}
 	}
 }
+
+void create_psf(float*in_img, const float scale, const int size, const float img_cent, const int psf)
+{
+	int i, j;
+	float rs, r1, val, flux_g, flux_m, rd;
+	
+	flux_g = 1. / (2 * Pi *scale*scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_m = 1. / (Pi*scale*scale*(1. - pow(10, -2.5))*0.4); /* 1 / ( Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), where alpha = 3, beta = 3.5 */
+
+	initialize_arr(in_img, size*size, 0);
+	rd = 1. / scale / scale;
+	for (i = 0; i < size; i++)
+	{
+		r1 = (i - img_cent)*(i - img_cent)*rd;
+		for (j = 0; j < size; j++)
+		{
+			rs = r1 + (j - img_cent)*(j - img_cent)*rd;
+			if (psf == 1)  // Gaussian PSF
+			{
+				if (rs <= 9) in_img[i*size + j] = flux_g*exp(-rs*0.5);
+			}
+			else              // Moffat PSF
+			{
+				if (rs <= 9.) in_img[i*size + j] = flux_m*pow(1. + rs, -3.5);
+			}
+		}
+	}
+}
+
+
 
 void create_psf_e(double*in_img, const double scale, const int size, const double img_cent, const double ellip, const double theta, const int psf)
 {
@@ -256,7 +360,70 @@ void create_psf_e(double*in_img, const double scale, const int size, const doubl
 	}
 }
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type)
+void create_psf_e(float*in_img, const float scale, const int size, const float img_cent, const float ellip, const float theta, const int psf)
+{
+	int i, j;
+	float rs, val, flux_norm, rd;
+	float a2_inv, b2_inv;
+	float q2, rot_1, rot_2;
+	float r1, r2, ry1, ry2;
+	float nscale;
+
+	initialize_arr(in_img, size*size, 0);
+
+	rot_1 = cos(theta);
+	rot_2 = -sin(theta);
+	// [ cos \theta, -sin \theta]
+	// [sin \theta, cos \theta]
+	q2 =  (1 - ellip)/(1 + ellip);
+
+	// x^2/a^2 + y^2/b^2 = 1, (a > b)
+	// q = b/a, q^2 = (1-e)/(1+e) 
+	// => q^2 x^2/b^2 + y^2/b^2 = 1
+
+	b2_inv = 1. / scale / scale;
+	a2_inv = b2_inv*q2;
+
+	// just for Moffat PSF now!!!
+	// plot the PSF to 3*rd, default
+	nscale = 9;
+	// integrate to sqrt(nscale)*rd
+	flux_norm = sqrt(q2)/ (Pi*scale*scale*(1. - pow(1+nscale, -2.5))*0.4);
+
+	// xr = cos\theta * x - sin\theta *y
+	// yr = sin\theta * x + cos\theta *y
+	for (i = 0; i < size; i++) // y
+	{
+		// -sin\theta *y
+		ry1 =  -rot_2 * (i - img_cent);
+		// cos\theta *y
+		ry2 =  rot_1 * (i - img_cent);
+
+		for (j = 0; j < size; j++) // x
+		{
+			// xr = cos\theta * x - sin\theta *y
+			r1 = rot_1 * (j - img_cent) + ry1;
+			// yr = sin\theta * x + cos\theta *y
+			r2 = rot_2 * (j - img_cent) + ry2;
+			// xr^2/a^2 + yr^2/b^2
+			rs = r1 * r1*a2_inv + r2 * r2*b2_inv;
+
+			if (psf == 1)  // Gaussian PSF
+			{
+				if (rs <= nscale) in_img[i*size + j] = flux_norm * exp(-rs * 0.5);
+			}
+			else              // Moffat PSF
+			{
+				if (rs <= nscale) in_img[i*size + j] = flux_norm * pow(1. + rs, -3.5);
+			}
+		}
+	}
+}
+
+
+
+void convolve(const double * points, const int num_p, const double flux_per_pts, const double g1, const double g2,
+ 				double *in_img, const int size, const double img_cent, const double psf_scale, const int psf_type)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -274,31 +441,74 @@ void convolve(double *in_img, const double * points, const double flux, const in
 
 	initialize_arr(in_img, size*size, 0);
 
-	/* rotate and shear */
-	if (rotate != 0)
-	{	
-		rot1 = cos(rotate*Pi / 4.);
-		rot2 = sin(rotate*Pi / 4.);
-		for (i = 0; i < num_p; i++)
-		{
-			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2*points[i + num_p]) + g2*(rot2 * points[i] + rot1*points[i + num_p]) + img_cent;
-			points_r[i + num_p] = g2*(rot1 * points[i] - rot2*points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1*points[i + num_p]) + img_cent;
-		}
-	}
-	else
+	/* shear the profile and move the center to image center */
+	for (i = 0; i < num_p; i++)
 	{
-		/* shear the profile and move the center to image center */
-		for (i = 0; i < num_p; i++)
-		{
-			points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + img_cent;
-			points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + img_cent;
-		}
+		points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + img_cent;
+		points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + img_cent;
 	}
+	
 
 	/*  convolve PSF and draw the image */
-	flux_g = flux / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	flux_g = flux_per_pts / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
 	/* \int_{0}^{alpha*rd}  PSF(r)_{moffat} = Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), beta = 3.5 for moffat*/
-	flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
+	flux_m = flux_per_pts / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
+	//flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(17, -2.5))*0.4);   /*  alpha = 4, beta = 3.5 */
+	
+	for (k = 0; k < num_p; k++)
+	{
+		for (i = 0; i < size; i++)  /* y coordinate */
+		{
+			r1 = (i - points_r[k + num_p])*(i - points_r[k + num_p])*rd;
+			for (j = 0; j < size; j++) /* x coordinate */
+			{
+				rs = r1 + (j - points_r[k])*(j - points_r[k])*rd;
+				if (psf_type == 1)  // Gaussian PSF
+				{
+					if (rs <= 9) in_img[i*size + j] += flux_g*exp(-rs*0.5);
+				}
+				else				// Moffat PSF
+				{
+					if (rs <= 9) in_img[i*size + j] += flux_m*pow(1. + rs, -3.5);
+				}
+			}
+		}
+	}
+	delete[] points_r;
+}
+
+void convolve(const float * points, const int num_p, const float flux_per_pts, const float g1, const float g2, 
+				float *in_img, const int size, const float img_cent, const float psf_scale, const int psf_type)
+{	 /* will not change the inputted array */
+	 /* in_img is the container of the final image,
+	 points is the array of points' coordinates,
+	 rotate is the radian in units of pi/4,
+	 psf_scale is the scale length of PSF,
+	 psf_type=1 means the Gaussian PSF, psf_type=2 means the Moffat PSF	*/
+	int i, j, k, m;
+	float r1, r2, n, flux_g, flux_m;
+	// |rot1, - rot2 |
+	// |rot2,  rot1  |
+	float rot1, rot2, val, rs, rd;
+	rd = 1. / psf_scale / psf_scale;  // scale of PSF	
+
+	float *points_r = new float[num_p * 2];
+
+	initialize_arr(in_img, size*size, 0);
+
+
+	/* shear the profile and move the center to image center */
+	for (i = 0; i < num_p; i++)
+	{
+		points_r[i] = (1. + g1)* points[i] + g2*points[i + num_p] + img_cent;
+		points_r[i + num_p] = g2*points[i] + (1. - g1)*points[i + num_p] + img_cent;
+	}
+
+
+	/*  convolve PSF and draw the image */
+	flux_g = flux_per_pts / (2 * Pi *psf_scale*psf_scale);     /* 1 / sqrt(2*Pi*sig_x^2)/sqrt(2*Pi*sig_x^2) */
+	/* \int_{0}^{alpha*rd}  PSF(r)_{moffat} = Pi*scale^2*( (1 + alpha^2)^(1-beta) - 1) /(1-beta)), beta = 3.5 for moffat*/
+	flux_m = flux_per_pts / (Pi*psf_scale*psf_scale*(1. - pow(10, -2.5))*0.4);   /* alpha = 3, beta = 3.5 */
 	//flux_m = flux / (Pi*psf_scale*psf_scale*(1. - pow(17, -2.5))*0.4);   /*  alpha = 4, beta = 3.5 */
 	
 	for (k = 0; k < num_p; k++)
@@ -324,7 +534,9 @@ void convolve(double *in_img, const double * points, const double flux, const in
 }
 
 
-void convolve_e(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, const double g1, const double g2, const int psf_type, const double ellip, const double theta)
+
+void convolve_e(const double * points, const int num_p, const double flux_per_pts, const double g1, const double g2,
+				double *in_img, const int size, const double img_cent, const double psf_scale, const int psf_type, const double ellip, const double theta)
 {	 /* will not change the inputted array */
 	 /* in_img is the container of the final image,
 	 points is the array of points' coordinates,
@@ -352,30 +564,13 @@ void convolve_e(double *in_img, const double * points, const double flux, const 
 	b2_inv = 1. / psf_scale / psf_scale;
 	a2_inv = b2_inv*q2;
 	
-	/* rotate and shear */
-	if (rotate != 0)
-	{	
-		// rotation of points
-		// |rot1, - rot2 |
-		// |rot2,  rot1  |
-		double rot1 = cos(rotate*Pi / 4.);
-		double rot2 = sin(rotate*Pi / 4.);
-
-		for (i = 0; i < num_p; i++)
-		{
-			points_r[i] = (1. + g1)*(rot1 * points[i] - rot2 * points[i + num_p]) + g2 * (rot2 * points[i] + rot1 * points[i + num_p]) + img_cent;
-			points_r[i + num_p] = g2 * (rot1 * points[i] - rot2 * points[i + num_p]) + (1. - g1)*(rot2 * points[i] + rot1 * points[i + num_p]) + img_cent;
-		}
-	}
-	else
+	/* shear the profile and move the center to image center */
+	for (i = 0; i < num_p; i++)
 	{
-		/* shear the profile and move the center to image center */
-		for (i = 0; i < num_p; i++)
-		{
-			points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + img_cent;
-			points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + img_cent;
-		}
+		points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + img_cent;
+		points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + img_cent;
 	}
+
 
 	/*  convolve PSF and draw the image */
 
@@ -383,7 +578,7 @@ void convolve_e(double *in_img, const double * points, const double flux, const 
 	// plot the PSF to 3*rd, default
 	nscale = 9;
 	// integrate to sqrt(nscale)*rd
-	flux_norm = flux*sqrt(q2)/ (Pi*psf_scale*psf_scale*(1. - pow(1+nscale, -2.5))*0.4);
+	flux_norm = flux_per_pts*sqrt(q2)/ (Pi*psf_scale*psf_scale*(1. - pow(1+nscale, -2.5))*0.4);
 
 	for (k = 0; k < num_p; k++)
 	{
@@ -410,6 +605,79 @@ void convolve_e(double *in_img, const double * points, const double flux, const 
 	delete[] points_r;
 }
 
+void convolve_e(const float * points, const int num_p, const float flux_per_pts, const float g1, const float g2, 
+				float *in_img, const int size, const float img_cent, const float psf_scale, const int psf_type, const float ellip, const float theta)
+{	 /* will not change the inputted array */
+	 /* in_img is the container of the final image,
+	 points is the array of points' coordinates,
+	 rotate is the radian in units of pi/4,
+	 psf_scale is the scale length of PSF,
+	 psf_type=1 means the Gaussian PSF, psf_type=2 means the Moffat PSF	*/
+	int i, j, k, m;
+	float r1, r2, n, flux_norm;
+	float ry1, ry2, rx1, rx2;
+	float a2_inv, b2_inv;
+	float psf_rot_1, psf_rot_2, q2;
+	float nscale;
+
+	float val, rs;
+
+	float *points_r = new float[num_p * 2];
+
+	initialize_arr(in_img, size*size, 0);
+
+	// rotation of psf
+	psf_rot_1 = cos(theta);
+	psf_rot_2 = -sin(theta);
+
+	q2 =  (1 - ellip)/(1 + ellip);
+	b2_inv = 1. / psf_scale / psf_scale;
+	a2_inv = b2_inv*q2;
+	
+
+	/* shear the profile and move the center to image center */
+	for (i = 0; i < num_p; i++)
+	{
+		points_r[i] = (1. + g1)* points[i] + g2 * points[i + num_p] + img_cent;
+		points_r[i + num_p] = g2 * points[i] + (1. - g1)*points[i + num_p] + img_cent;
+	}
+
+
+	/*  convolve PSF and draw the image */
+
+	// now, just for Moffat PSF
+	// plot the PSF to 3*rd, default
+	nscale = 9;
+	// integrate to sqrt(nscale)*rd
+	flux_norm = flux_per_pts*sqrt(q2)/ (Pi*psf_scale*psf_scale*(1. - pow(1+nscale, -2.5))*0.4);
+
+	for (k = 0; k < num_p; k++)
+	{
+		for (i = 0; i < size; i++)  /* y coordinate */
+		{
+			ry1 = -psf_rot_2 * (i - points_r[k + num_p]);
+			ry2 = psf_rot_1 * (i - points_r[k + num_p]);
+			for (j = 0; j < size; j++) /* x coordinate */
+			{
+				r1 = psf_rot_1 * (j - points_r[k]) + ry1;
+				r2 = psf_rot_2 * (j - points_r[k]) + ry2;
+				rs = r1*r1*a2_inv + r2*r2*b2_inv;
+				if (psf_type == 1)  // Gaussian PSF
+				{
+					if (rs <= nscale) in_img[i*size + j] += flux_norm * exp(-rs * 0.5);
+				}
+				else				// Moffat PSF
+				{
+					if (rs <= nscale) in_img[i*size + j] += flux_norm * pow(1. + rs, -3.5);
+				}
+			}
+		}
+	}
+	delete[] points_r;
+}
+
+
+
 void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row)
 {
 	int i, j;
@@ -430,6 +698,7 @@ double *out_img, const int column, const int row)
 		out_img[i] = gal_pow[i]/psf_pow[i] + 4*gal_pow_real[i]*gal_pow_imag[i]*psf_pow_real[i]*psf_pow_imag[i]/psf_pow[i]/psf_pow[i];
 	}
 }
+
 
 
 void pow_spec(const double *in_img, double *out_img, const int column, const int row)
@@ -581,6 +850,7 @@ void pow_spec(const float *in_img, float *out_img, const int column, const int r
 	fftwf_free(in);
 	fftwf_free(out);
 }
+
 
 
 void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level)
@@ -788,7 +1058,7 @@ void get_psf_radius(const double *psf_pow, fq_paras*paras, const double scale)
 	delete[] row;
 }
 
-void get_psf_radius(const float *psf_pow, fq_paras*paras, const float scale)
+void get_psf_radius(const float *psf_pow, fq_paras_float *paras, const float scale)
 {
 	int x, y, xp = 0, yp = 0, num0 = 0, num = 1, nump, p, size = paras->stamp_size;
 	float max = 0;
@@ -808,7 +1078,7 @@ void get_psf_radius(const float *psf_pow, fq_paras*paras, const float scale)
 			}
 		}
 	}
-	paras->psf_pow_thresh = max / 10000.;
+	paras->psf_pow_thresh = max / 100000.;
 	/* copy the image and wrap out the value smaller than the specific one */	
 	for (x = 0; x < size*size; x++)
 	{
@@ -868,6 +1138,7 @@ void get_psf_radius(const float *psf_pow, fq_paras*paras, const float scale)
 }
 
 
+
 void get_quad(const double *img, const int img_size, const double img_cent, const double weight_sigma_sq, double &quad_size)
 {
     // calculate the gaussian-weighted quadrupole of a galaxy or PSF image 
@@ -898,6 +1169,39 @@ void get_quad(const double *img, const int img_size, const double img_cent, cons
     if(temp_norm == 0){quad_size = 0;}
 	else{quad_size = temp_quad/temp_norm;}    
 }
+
+void get_quad(const float *img, const int img_size, const float img_cent, const float weight_sigma_sq, float &quad_size)
+{
+    // calculate the gaussian-weighted quadrupole of a galaxy or PSF image 
+    float temp_quad, temp_norm;
+    int i,j,m;
+    float ry_sq, r_sq;
+    float wei_coeff,wei_img;
+    
+
+    wei_coeff = 0.5/weight_sigma_sq;
+
+    temp_quad = 0;
+    temp_norm = 0;
+    for(i=0; i<img_size; i++)
+    {   
+        ry_sq = (i - img_cent)*(i-img_cent);
+        m = i*img_size;
+        for(j=0; j<img_size; j++)
+        {
+            r_sq = (j - img_cent)*(j-img_cent) + ry_sq;
+
+            wei_img = exp(-r_sq*wei_coeff)*img[m+j];
+   
+            temp_quad += wei_img*r_sq;
+            temp_norm += wei_img;
+        }
+    }
+    if(temp_norm == 0){quad_size = 0;}
+	else{quad_size = temp_quad/temp_norm;}    
+}
+
+
 
 
 void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
@@ -1213,6 +1517,7 @@ void source_detector(const float *source_img, int *source_x, int*source_y, float
 }
 
 
+
 void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
 {	
 	// find the galaxies in a stamp !!
@@ -1498,6 +1803,7 @@ int edge_extend(int *mask, const int *source_y, const int* source_x, const int s
 }
 
 
+
 void initialize_arr(long *arr, const int length, const long x)
 {/* will set all the elements to x */
 	for (int i = 0; i < length; i++)
@@ -1582,6 +1888,7 @@ void normalize_arr(float * arr, const int size)
 }
 
 
+
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
@@ -1628,6 +1935,50 @@ void snr_est(const double *image, fq_paras *paras, int fit)
 	}
 }
 
+void snr_est(const float *image, fq_paras_float *paras, int fit)
+{	/* will not change the inputted array */
+	/* estimate the snr in Fourier space */
+	float n = 0, noise;
+	int size = paras->stamp_size;
+	int i, k, edge = 1, xc = size / 2;
+	int x[20]{ -1,  0,  1, -2, -1,  0,  1,  2, -2, -1,  1,  2, -2, -1,  0,  1,  2, -1,  0,  1 };
+	int y[20]{ -2, -2, -2, -1, -1, -1, -1, -1,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2, 2, 2 };
+	float fz[20], fit_paras[6];
+
+	for (i = 0; i < size; i++) //y coordinates
+	{
+		for (k = 0; k < size; k++) // x coordinates
+		{
+			if (i< edge || i> size - edge - 1)
+			{
+				n += image[i*size + k];
+			}
+			else if (k < edge || k>size - edge - 1)
+			{
+				n += image[i*size + k];
+			}
+		}
+	}
+	noise = sqrt(n*0.25 / ((size - edge)*edge));
+	paras->gal_flux2 = sqrt(image[xc*size + xc]) / noise;
+	paras->gal_flux2_ext[0] = sqrt(image[xc*size + xc]);
+
+	if (fit == 2)
+	{
+		for (i = 0; i < 20; i++)
+		{
+			fz[i] = image[(xc + y[i])*size + xc + x[i]];
+		}
+		hyperfit_5(fz, fit_paras, paras);
+		paras->gal_flux_alt = sqrt(pow(10, fit_paras[0]))/ noise;
+		paras->gal_flux2_ext[1] = sqrt(pow(10, fit_paras[0]));
+		paras->gal_flux2_ext[2] = std::max(paras->gal_flux2_ext[1], paras->gal_flux2_ext[0]);
+		paras->gal_flux2_ext[3] = std::max(paras->gal_flux2, paras->gal_flux_alt);
+	}
+}
+
+
+
 void possion_subtraction(double *arr, fq_paras *paras, int edge)
 {
 	int i, j,size = paras->stamp_size;
@@ -1652,6 +2003,32 @@ void possion_subtraction(double *arr, fq_paras *paras, int edge)
 		arr[i] = arr[i] - noise;
 	}
 }
+
+void possion_subtraction(float *arr, fq_paras_float *paras, int edge)
+{
+	int i, j,size = paras->stamp_size;
+	float noise = 0;
+	for (i = 0; i < size; i++) //y
+	{
+		for (j = 0; j < size; j++) // x
+		{
+			if (i< edge || i> size - edge - 1)
+			{
+				noise += arr[i*size + j];
+			}
+			else if (j < edge || j>size - edge - 1)
+			{
+				noise += arr[i*size + j];
+			}
+		}
+	}
+	noise = noise * 0.25 / ((size - edge)*edge);
+	for (i = 0; i < size*size; i++) 
+	{
+		arr[i] = arr[i] - noise;
+	}
+}
+
 
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion)
 {
@@ -1693,12 +2070,109 @@ void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, co
 	}
 }
 
+void noise_subtraction(float *image_pow, float *noise_pow, fq_paras_float *paras, const int edge, const int possion)
+{
+	int i, j, size = paras->stamp_size;
+	float inoise = 0, pnoise=0;
+
+	if (0 == possion)
+	{
+		for (i = 0; i < size*size; i++)
+		{
+			image_pow[i] = image_pow[i] - noise_pow[i];
+		}
+	}
+	else
+	{
+		for (i = 0; i < size; i++) //y
+		{
+			for (j = 0; j < size; j++) // x
+			{
+				if (i< edge || i> size - edge - 1)
+				{
+					inoise += image_pow[i*size + j];
+					pnoise += noise_pow[i*size + j];
+				}
+				else if (j < edge || j>size - edge - 1)
+				{
+					inoise += image_pow[i*size + j];
+					pnoise += noise_pow[i*size + j];
+				}
+			}
+		}
+		inoise = inoise * 0.25 / ((size - edge)*edge);
+		pnoise = pnoise * 0.25 / ((size - edge)*edge);
+
+		for (i = 0; i < size*size; i++)
+		{
+			image_pow[i] = image_pow[i] - inoise - noise_pow[i] + pnoise;
+		}
+	}
+}
+
+
+
 void shear_est(double *gal_img, double *psf_img, fq_paras *paras)
 {	 /* will not change the inputted array */
 	 /* all the inputted images are the powerspectrums */
 	/* if there's no background noise, a array of '0' should be inputted */
 	double mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
 	double mp1=0., mp2=0.;
+	int i, j, k, size;
+	size = paras->stamp_size;
+
+	alpha = 16*Pi*Pi*Pi*Pi/ (size*size*size*size);
+	/* beta is the beta_square in the estimators */
+	// use the hlr/1.414 of the PSF as the sigma of the target PSF
+	// then the hlr of the target PSF will be smaller than the PSF
+	// HLR = hlr/1.414*1.177 < hlr
+	beta = 1./ paras->psf_hlr / paras->psf_hlr;
+	
+	//find the maximum of psf power spectrum and set the threshold of max/10000 above which the pixel value will be taken into account
+	thresh = paras->psf_pow_thresh;
+
+	for (i = 0; i < size; i++)//y coordinates
+	{
+		ky = i - size*0.5;
+		for (j = 0; j < size; j++) // x coordinates
+		{
+			kx = j - size*0.5;
+			if (psf_img[i*size + j] >= thresh)
+			{	
+				k2 = kx*kx + ky*ky;
+				k4 = k2*k2;
+				kx2 = kx*kx;
+				ky2 = ky*ky;
+
+				tk = exp( - k2 * beta ) / psf_img[i*size + j] * gal_img[i*size + j] * alpha;
+				//tk = exp(-k2 * beta) / psf_img[i*size + j] * (gal_img[i*size + j] - noise_img[i*size + j]) * alpha;
+				mg1 += -0.5 * ( kx2 - ky2 ) * tk;
+				mg2 += -kx*ky*tk;
+				mn += ( k2 - 0.5*beta*k4 ) * tk;
+				mu += (k4  - 8 *kx2*ky2)*tk * (-0.5*beta);
+				mv += kx*ky*(kx2-ky2)* tk * (-2.* beta);
+				//mp1 += (-4.*(kx*kx - ky*ky) + 8.*beta*( pow(kx, 4) - pow(ky, 4) ) - 2.*beta*beta*( pow(kx, 6) + pow(kx, 4)*ky*ky - kx*kx*pow(ky, 4) - pow(ky, 6) ) )*tk;
+				//mp2 += ( -8.*kx*ky + 16.*beta*( kx*kx*kx*ky + kx*ky*ky*ky ) - 4*beta*beta*( pow(kx, 5)*ky + 2*kx*kx*kx*ky*ky*ky + kx*pow(ky, 5) ) )*tk;				
+			}
+		}
+	}
+
+	paras->n1 = mg1;
+	paras->n2 = mg2;
+	paras->dn = mn;
+	paras->du = mu;
+	paras->dv = mv;
+	//paras->dp1 = mp1;
+	//paras->dp2 = mp2;
+
+}
+
+void shear_est(float *gal_img, float *psf_img, fq_paras_float *paras)
+{	 /* will not change the inputted array */
+	 /* all the inputted images are the powerspectrums */
+	/* if there's no background noise, a array of '0' should be inputted */
+	float mg1 = 0., mg2 = 0., mn = 0., mu = 0., mv = 0., beta, thresh, alpha, kx, kx2, ky2, ky, tk, k2, k4;
+	float mp1=0., mp2=0.;
 	int i, j, k, size;
 	size = paras->stamp_size;
 
@@ -1806,6 +2280,7 @@ void shear_est(const double *gal_pow, const double *gal_pow_real, const double *
 }
 
 
+
 void ellip_est(const double *gal_img, const int size, fq_paras*paras)
 {
 	int i, j, sizeh = size*0.5;
@@ -1826,6 +2301,28 @@ void ellip_est(const double *gal_img, const int size, fq_paras*paras)
 	paras->gal_e1 = (q11 - q22) / (q11 + q22);
 	paras->gal_e2 = 2 * q12 / (q11 + q22);
 }
+
+void ellip_est(const float *gal_img, const int size, fq_paras_float*paras)
+{
+	int i, j, sizeh = size*0.5;
+	float x, y, y2, xg, q11 =0, q12=0, q22=0;
+	for (i = 0; i < size; i++)
+	{	
+		y = i - sizeh;
+		y2 = y * y;
+		for (j = 0; j < size; j++)
+		{
+			x = j - sizeh;
+			xg = x * gal_img[i*size + j];
+			q11 += x * xg;
+			q12 += y * xg;
+			q22 += y2 * gal_img[i*size + j];
+		}
+	}
+	paras->gal_e1 = (q11 - q22) / (q11 + q22);
+	paras->gal_e2 = 2 * q12 / (q11 + q22);
+}
+
 
 void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x)
 {
@@ -2038,6 +2535,38 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	delete[] temp;
 }
 
+void chisq_Gbin_1d(const float *mg, const float *mnu, const int data_num, const float *bins, const int bin_num, const float gh, float &result)
+{
+	int i, j, k;
+	float *temp = new float[data_num];
+	int *num_in_bin = new int[bin_num];
+
+	for (i = 0; i < data_num; i++)
+	{
+		temp[i] = mg[i] - gh * mnu[i];
+	}
+	histogram(temp, bins, num_in_bin, data_num, bin_num);
+	try
+	{
+		cal_chisq_1d(num_in_bin, bin_num, result);
+	}
+	catch(const char *msg)
+	{	
+		std::cout << "g_guess: " << gh << std::endl;
+		std::cout << "Num: " << std::endl;
+		show_arr(num_in_bin, 1, bin_num);
+		std::cout << "Bin: " << std::endl;
+		show_arr(bins, 1, bin_num + 1);
+		char err_inform[200];
+		sprintf(err_inform,"%s, Chi square divided by zero (chisq_Gbin_1d -> cal_chisq_1d)!!!",msg);
+		throw err_inform;
+	}
+
+	delete[] num_in_bin;
+	delete[] temp;
+}
+
+
 void chisq_Gbin_1d(const double *mg, const int data_num, const double *bins, const int bin_num, double &result)
 {
 	int i, j, k;
@@ -2202,6 +2731,29 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, double &result)
 	result = chi_count * 0.5;
 }
 
+void cal_chisq_1d(const int *hist_num, const int bin_num, float &result)
+{
+	// the size must be an even number
+	int i, j;
+	int mid = bin_num / 2;
+	float chi_count = 0;
+	float dn, sn;
+	for (i = mid; i < bin_num; i++)
+	{
+		dn = hist_num[i] - hist_num[bin_num - i - 1];
+		sn = hist_num[i] + hist_num[bin_num - i - 1];
+		if (hist_num[i] + hist_num[bin_num - i - 1] == 0)
+		{
+			std::cout << "ERROR in cal_chisq_1d !" << std::endl;
+			std::cout<<"ERROR Data : ";
+			show_arr(hist_num, 1, bin_num);
+			throw "ERROR chi square divided by zero !!!";
+		}
+		chi_count += dn * dn / sn;
+	}
+	result = chi_count * 0.5;
+}
+
 void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double &result)
 {
 	// the size must be an even number
@@ -2224,6 +2776,7 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 	}
 	result = chi_count * 0.5;
 }
+
 
 
 void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale)
@@ -2284,7 +2837,67 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	delete[] block_st;
 }
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig, double &chisq_min_fit, const int choice,const double max_scale)
+void find_shear_mean(const float *mg, const float *mn, const int data_num, float &gh, float &gh_sig, const int sub_block_num, const float scale)
+{
+	// if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
+	// it's better to sum the sub-block and then add the these quantities together.
+
+	int i,j, m,n;
+
+	float mg_mean, mg_sq_mean, mn_mean, mg_sum, mn_sum;
+	float sub_sum1, sub_sum2, sub_sum3;;
+
+	float s1= 1./scale;
+	
+	int *num_in_block = new int[sub_block_num];
+	int *block_st = new int[sub_block_num];
+
+	m = data_num/sub_block_num;
+	n = data_num%sub_block_num;
+
+	for(i=0;i<sub_block_num;i++)
+	{
+		block_st[i] = 0;
+
+		num_in_block[i] = m;
+		if(i<n)num_in_block[i] += 1;
+
+		for(j=0;j<i;j++)
+		{
+			block_st[i] += num_in_block[j];
+		}
+	}
+
+	mg_mean = 0;
+	mg_sq_mean = 0;
+	mn_mean = 0;
+	for(i=0;i<sub_block_num;i++)
+	{
+		sub_sum1 = 0;
+		sub_sum2 = 0;
+		sub_sum3 = 0;
+
+		for(j=block_st[i];j<block_st[i]+num_in_block[i];j++)
+		{
+			sub_sum1 += mg[j]*s1;
+			sub_sum2 += mn[j]*s1;
+			sub_sum3 += (mg[j]*s1)*(mg[j]*s1);
+		}
+		mg_mean += sub_sum1*(scale/data_num);
+		mn_mean += sub_sum2*(scale/data_num);
+		mg_sq_mean += sub_sum3*(scale*scale/data_num);
+	}
+
+	gh = mg_mean/mn_mean;
+	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_num);
+
+	delete[] num_in_block;
+	delete[] block_st;
+}
+
+
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, 
+					const double left, const double right, double &gh, double &gh_sig, double &chisq_min_fit, const int choice,const double max_scale)
 {
 	int i, j, k;
 	double step,chisq;
@@ -2334,15 +2947,19 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 	delete[] bins;
 }
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check,	const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
+
+void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	int max_iters = 12;
 	int temp_num;
 
+	int *num_in_bin = new int[bin_num];
 	double *bins = new double[bin_num + 1];
 	double *gh_fit = new double[chi_fit_num];
 	double *chisq_fit = new double[chi_fit_num];
+	double *temp_mg = new double[data_num];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -2370,9 +2987,30 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 
 		try
 		{
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_left * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_left);
+
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_mid * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
+
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_right * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+
+			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
+			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
+			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
 		}
 		catch(const char *msg)
 		{
@@ -2402,107 +3040,10 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 			break;
 		}
 	}
-	// while (iters<=max_iters)
-	// {		
-	// 	gh_mid = (left + right) *0.5;
-	// 	gh_left = left;
-	// 	gh_right = right;
-	// 	gh_left_mid = (gh_mid + gh_left)*0.5;
-	// 	gh_right_mid = (gh_mid + gh_right)*0.5;
-
-	// 	try
-	// 	{
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left_mid, chi_left_mid);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right_mid, chi_right_mid);
-	// 		chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
-	// 	}
-	// 	catch(const char *msg)
-	// 	{
-	// 		throw msg;
-	// 	}
-
-	// 	search_vals[iters*record_col] = left;
-	// 	search_vals[iters*record_col+1] = chi_left;
-	// 	search_vals[iters*record_col+2] = right;
-	// 	search_vals[iters*record_col+3] = chi_right;
-		
-	// 	//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
-	// 	if(chi_left <= chi_left_mid and chi_left < chi_mid and chi_left < chi_right_mid and chi_left < chi_right)
-	// 	{
-	// 		right = gh_left_mid;
-	// 		chisq_r1 = chi_left;
-	// 		chisq_r2 = chi_left_mid;
-	// 	}
-	// 	if(chi_left_mid <= chi_left and chi_left_mid <= chi_mid and chi_left_mid < chi_right_mid and chi_left_mid < chi_right)
-	// 	{
-	// 		right = gh_mid;
-	// 		chisq_r1 = chi_left;
-	// 		chisq_r2 = chi_mid;
-	// 	}
-	// 	if(chi_mid < chi_left and chi_mid <= chi_left_mid and chi_mid <= chi_right_mid and chi_mid < chi_right)
-	// 	{
-	// 		left = gh_left_mid;
-	// 		right = gh_right_mid;
-	// 		chisq_r1 = chi_left_mid;
-	// 		chisq_r2 = chi_right_mid;
-	// 	}
-	// 	if(chi_right_mid < chi_left and chi_right_mid < chi_left_mid and chi_right_mid <= chi_mid and chi_right_mid <= chi_right)
-	// 	{
-	// 		left = gh_mid;
-	// 		chisq_r1 = chi_mid;
-	// 		chisq_r2 = chi_right;
-	// 	}
-	// 	if(chi_right < chi_left and chi_right < chi_left_mid and chi_right < chi_mid and chi_right <= chi_right_mid)
-	// 	{
-	// 		left = gh_right_mid;
-	// 		chisq_r1 = chi_right_mid;
-	// 		chisq_r2 = chi_right;
-	// 	}	
-	// 	iters += 1;
-	// 	if(fabs(left - right)<= 0.005)
-	// 	{	
-	// 		chi_left = chisq_r1;
-	// 		chi_right = chisq_r2;
-	// 		//std::cout<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<iters<<std::endl;
-	// 		break;
-	// 	}		
-	// }
-	// if(iters <=0)
-	// {
-	// 	std::cout<<"Error! Can't find the fitting range!!!";
-	// 	exit(0);
-	// }
-	//std::cout << iters<<" "<< left << " " << right << std::endl;
-	//st3 = clock();
-
-	// find the max chi_squared for fitting
+	
 	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
 	
-	//std::cout<<"fit max "<<left<<" "<<chi_left<<" "<<right<<" "<<chi_right<<" "<<fit_max_chisq<<" "<<chi_gap<<std::endl;
-
-	// for(i=0; i<iters; i++)
-	// {	
-	// 	if(search_vals[i*record_col+1] <= fit_max_chisq and left_tag < 0)
-	// 	{
-	// 		left_tag = i;			
-	// 	}
-	// 	if(search_vals[i*record_col+3] <= fit_max_chisq and right_tag < 0)
-	// 	{
-	// 		right_tag = i;
-	// 	}
-	// 	//std::cout<<left_tag<<" "<<right_tag<<std::endl;
-	// 	//show_arr(&search_vals[i*record_col],1,4);
-	// }
-
-	// if(left_tag < 0){left = search_vals[(iters-1)*record_col];}
-	// else{left = search_vals[left_tag*record_col];}
-
-	// if(right_tag < 0){right = search_vals[(iters-1)*record_col+2];}
-	// else{right = search_vals[right_tag*record_col+2];}
-
-	//std::cout<<left<<" "<<right<<std::endl;
+	
 	temp_num = 15;
 	step = (right - left) / (temp_num - 1);
 	for (i = 0; i < temp_num; i++)
@@ -2513,7 +3054,13 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	{	
 		try
 		{
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+			for (j = 0; j < data_num; j++)
+			{
+				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
 		{
@@ -2522,6 +3069,176 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		chisq_fit[i] = chi_right;
 	}
 	//st4 = clock();
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+
+	// to get a more symmetrical interval for fitting
+	new_end = std::max(gh-left, right-gh);
+	
+	left = gh - new_end;
+	step = 2*new_end / (chi_fit_num - 1);
+
+	for (i = 0; i < chi_fit_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	for (i = 0; i < chi_fit_num; i++)
+	{	
+		try
+		{
+			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+			for (j = 0; j < data_num; j++)
+			{
+				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		chisq_fit[i] = chi_right;
+		if (chi_check)
+		{	// for checking
+			chi_check[i] = chi_right;
+			chi_check[chi_fit_num + i] = gh_fit[i];
+		}
+	}
+	
+	//st4 = clock();
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+
+	//st5 = clock();
+	//std::cout << gh << " " << gh_sig << std::endl;
+	//std::cout <<"Time: "<< (st2 - st1) / CLOCKS_PER_SEC << " " << (st3 - st2) / CLOCKS_PER_SEC << " " << (st4 - st3) / CLOCKS_PER_SEC << " " << (st5 - st4) / CLOCKS_PER_SEC << std::endl;
+	delete[] gh_fit;
+	delete[] chisq_fit;
+	delete[] bins;
+	delete[] search_vals;
+	delete[] temp_mg;
+	delete[] num_in_bin;
+}
+
+
+void find_shear(const float *mg, const float *mnu, const int data_num, const int bin_num, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
+				const int choice, const float max_scale, const float ini_left, const float ini_right, const float chi_gap)
+{
+	int i, j, k;
+	int max_iters = 12;
+	int temp_num;
+
+	int *num_in_bin = new int[bin_num];
+
+	float *temp_mg = new float[data_num];
+	float *bins = new float[bin_num + 1];
+
+	float *gh_fit = new float[chi_fit_num];
+	float *chisq_fit = new float[chi_fit_num];
+
+	// record the each g_left, chisq_left, g_right, chisq_right
+	int record_col = 4;
+	int left_tag=-1, right_tag=-1;
+	float fit_max_chisq, new_end;
+	float *search_vals = new float[(max_iters+1)*record_col]{};
+
+	int same = 0, iters = 0, change = 1;
+	float left = ini_left, right = ini_right, step;
+	float chi_left, chi_right, chi_mid, chi_left_mid, chi_right_mid;
+	float gh_left, gh_right, gh_mid, gh_left_mid, gh_right_mid;
+	float chisq_r1, chisq_r2;
+	//double st1, st2, st3, st4, st5, st6;
+	//st1 = clock();
+	// set the bins for G1(2)
+	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
+	//show_arr(bins, 1, bin_num + 1);
+	//st2 = clock();
+	while (change == 1)
+	{		
+		change = 0;
+		gh_mid = (left + right) *0.5;
+		gh_left = left;
+		gh_right = right;
+
+		try
+		{	
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_left * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_left);
+
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_mid * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
+
+			for (i = 0; i < data_num; i++)
+			{
+				temp_mg[i] = mg[i] - gh_right * mnu[i];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		search_vals[iters*record_col] = gh_left;
+		search_vals[iters*record_col+1] = chi_left;
+		search_vals[iters*record_col+2] = gh_right;
+		search_vals[iters*record_col+3] = chi_right;
+
+		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
+
+		if (chi_left > chi_mid + chi_gap)
+		{
+			left = (gh_mid + gh_left) *0.5;
+			change = 1;
+		}
+		if (chi_right > chi_mid + chi_gap)
+		{
+			right = (gh_mid + gh_right)*0.5;
+			change = 1;
+		}
+
+		iters += 1;
+		if (iters > max_iters)
+		{
+			break;
+		}
+	}
+	
+	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
+
+	temp_num = 10;
+	step = (right - left) / (temp_num - 1);
+	for (i = 0; i < temp_num; i++)
+	{
+		gh_fit[i] = left + step * i;
+	}
+	for (i = 0; i < temp_num; i++)
+	{	
+		try
+		{
+			for (j = 0; j < data_num; j++)
+			{
+				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
+			}
+			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+		}
+		catch(const char *msg)
+		{
+			throw msg;
+		}
+		chisq_fit[i] = chi_right;
+	}
+	//st4 = clock();
+
 	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
 
 	// to get a more symmetrical interval for fitting
@@ -2562,7 +3279,10 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 	delete[] chisq_fit;
 	delete[] bins;
 	delete[] search_vals;
+	delete[] temp_mg;
+	delete[] num_in_bin;
 }
+
 
 void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double d_chi)
 {
@@ -2638,9 +3358,99 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 
 }
 
+void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, const float d_chi)
+{
+	// fit a 2nd order 1-D curve for estimate the shear.
+	// y = ax^2+bx + c
+
+	int i, count = 0;
+	float min_chi = 10000;
+	float coeff[3];
+	if (d_chi > 0)
+	{
+		int *mask = new int[num] {};
+		// find the minimum
+		for (i = 0; i < num; i++)
+		{
+			if (chisq[i] < min_chi and chisq[i] >=0)
+			{
+				min_chi = chisq[i];
+			}
+		}
+		// find the width for fitting
+		for (i = 0; i < num; i++)
+		{
+			if (chisq[i] >= 0 and chisq[i] < min_chi + d_chi)
+			{
+				count++;
+				mask[i] = 1;
+			}
+		}
+		//std::cout << min_chi << std::endl;
+		//show_arr(chisq, 1, num);
+		// for fitting
+		if (count < 5)
+		{
+			char err_log[100];
+			sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
+			throw err_log;
+		}
+		float *new_chisq = new float[count] {};
+		float *new_shear = new float[count] {};
+		count = 0;
+		for (i = 0; i < num; i++)
+		{
+			if (mask[i] == 1)
+			{
+				new_chisq[count] = chisq[i];
+				new_shear[count] = shear[i];
+				count++;
+			}
+		}
+
+		// g`= a1 + a2*g + a3*g^2
+		poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
+
+		delete[] mask;
+		delete[] new_chisq;
+		delete[] new_shear;
+	}
+	else
+	{
+		poly_fit_1d(shear, chisq, num, 2, coeff);
+	}
+	if (coeff[2] < 0)
+	{
+		char err_log[35];
+		sprintf(err_log, "Bad shear fitting !!!");
+		throw err_log;
+	}
+	gh = -coeff[1] / coeff[2]*0.5;
+	gh_sig = sqrt(0.5 / coeff[2]);
+
+	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
+
+}
+
+
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output)
 {
 	double cos2theta, sin2theta, cos4theta, sin4theta;
+	cos2theta = cos(2*theta);
+	sin2theta = sin(2*theta);
+	cos4theta = cos(4*theta);
+	sin4theta = sin(4*theta);
+	output[0] = mg1*cos2theta - mg2*sin2theta;
+	output[1] = mg1*sin2theta + mg2*cos2theta;
+	output[2] = mn;
+	output[3] = mu*cos4theta - mv*sin4theta;
+	output[4] = mu*sin4theta + mv*cos4theta;
+
+}
+
+void estimator_rotation(const float theta,const float mg1, const float mg2, const float mn, const float mu, const float mv, float *output)
+{
+	float cos2theta, sin2theta, cos4theta, sin4theta;
 	cos2theta = cos(2*theta);
 	sin2theta = sin(2*theta);
 	cos4theta = cos(4*theta);
@@ -3029,6 +3839,22 @@ void hyperfit_5(const double *data, double *fit_paras, fq_paras *paras)
 	}
 }
 
+void hyperfit_5(const float *data, float *fit_paras, fq_paras_float *paras)
+{
+	float temp = 0;
+
+	for (int i = 0; i < 6; i++)
+	{
+		temp = 0;
+		for (int j = 0; j < 20; j++)
+		{
+			temp += paras->fit_matrix[i][j] * log10(data[j]);
+		}
+		fit_paras[i] = temp;
+	}
+}
+
+
 double fval_at_xy(const double x, const double y, const int order, const double *coeffs)
 {		
 	int terms = (order + 1)*(order + 2) / 2;
@@ -3111,6 +3937,59 @@ void poly_fit_1d(const double *x, const double *fx, const int data_num, const in
 	delete[] f_vector;
 }
 
+void poly_fit_1d(const float *x, const float *fx, const int data_num, const int order, float *coeffs)
+{
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+	int i, j, s;
+	int terms = order + 1;
+	float *cov_matrix = new float[terms*terms]{};
+	float *f_vector = new float[terms] {};
+	
+	cov_matrix_1d(x, fx, data_num, order, cov_matrix, f_vector);
+
+	gsl_matrix *cov_mat = gsl_matrix_alloc(terms, terms);
+	gsl_vector * vect_b = gsl_vector_alloc(terms);
+	gsl_matrix *mat_inv = gsl_matrix_alloc(terms, terms);
+	gsl_permutation *permu = gsl_permutation_alloc(terms);
+	gsl_vector *pamer = gsl_vector_alloc(terms);
+
+	for (j = 0; j < terms; j++)
+	{
+		gsl_vector_set(vect_b, j, f_vector[j]);
+	}
+
+	for (i = 0; i < terms; i++)
+	{
+		for (j = 0; j < terms; j++)
+		{
+			gsl_matrix_set(cov_mat, i, j, cov_matrix[i*terms + j]);
+		}
+	}
+
+	gsl_linalg_LU_decomp(cov_mat, permu, &s);
+	//gsl_linalg_LU_invert(cov_mat, permu, mat_inv);
+	gsl_linalg_LU_solve(cov_mat, permu, vect_b, pamer);
+
+	for (i = 0; i < terms; i++)
+	{
+		coeffs[i] = gsl_vector_get(pamer, i);
+	}
+
+	gsl_matrix_free(cov_mat);
+	gsl_vector_free(vect_b);
+	gsl_matrix_free(mat_inv);
+	gsl_vector_free(pamer);
+	gsl_permutation_free(permu);
+
+	delete[] cov_matrix;
+	delete[] f_vector;
+}
+
+
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight)
 {
 	double chi, c0, c1, cov00, cov01, cov11;
@@ -3140,6 +4019,30 @@ void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const 
 	coeffs[2] = c1;
 	coeffs[3] = sqrt(cov11);
 }
+
+void poly_fit_1d(const float *x, const float *fx, const float *fx_err, const int data_num, float *coeffs, int weight)
+{	
+	double *doub_x = new double[data_num];
+	double *doub_fx = new double[data_num];
+	double *doub_fx_err = new double[data_num];
+	double *doub_coeffs = new double[4];
+	
+	int i;
+	for(i=0; i<data_num; i++)
+	{
+		doub_x[i] = x[i];
+		doub_fx[i] = fx[i];
+		doub_fx_err[i] = fx_err[i];
+	}
+	poly_fit_1d(doub_x, doub_fx, doub_fx_err, data_num, doub_coeffs, weight);
+	for(i=0;i<4;i++){coeffs[i] = doub_coeffs[i];}
+
+	delete[] doub_x;
+	delete[] doub_fx;
+	delete[] doub_fx_err;
+	delete[] doub_coeffs;
+}
+
 
 void poly_fit_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *coeffs)
 {
@@ -3212,6 +4115,54 @@ void cov_matrix_1d(const double *x, const double *fx, const int data_num, const 
 	int terms = order + 1;
 	double *xn = new double[(2*order+1)*data_num];
 	double elem_sum = 0;
+
+	for (j = 0; j < data_num; j++)
+	{
+		xn[j] = 1;
+		xn[data_num + j] = x[j];
+	}
+	for (i = 2; i < 2 * order + 1; i++)
+	{
+		for (j = 0; j < data_num; j++)
+		{
+			xn[i*data_num + j] = pow(x[j], i);
+		}	
+	}
+
+	for (i = 0; i < terms; i++)
+	{
+		elem_sum = 0;
+		for (m = 0; m < data_num; m++)
+		{
+			elem_sum += fx[m] * xn[i*data_num + m];
+		}
+		f_vector[i] = elem_sum;
+
+		for (j = 0; j < terms; j++)
+		{
+			elem_sum = 0;
+			for (k = 0; k < data_num; k++)
+			{
+				elem_sum += xn[(i + j)*data_num + k];
+			}
+			cov_mat[i*terms+ j] = elem_sum;
+		}
+	}
+
+	delete[] xn;
+}
+
+void cov_matrix_1d(const float *x, const float *fx, const int data_num, const int order, float *cov_mat, float *f_vector)
+{
+	if (order < 1)
+	{
+		std::cout << "Order < 1 !!!" << std::endl;
+		exit(0);
+	}
+	int i, j, k, m;
+	int terms = order + 1;
+	float *xn = new float[(2*order+1)*data_num];
+	float elem_sum = 0;
 
 	for (j = 0; j < data_num; j++)
 	{

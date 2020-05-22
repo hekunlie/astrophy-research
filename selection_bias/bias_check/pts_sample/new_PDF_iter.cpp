@@ -2,6 +2,8 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
+#define MY_FLOAT double
+
 void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {
     int i,j,m,n;
@@ -39,32 +41,32 @@ int main(int argc, char**argv)
     char data_nm[30];
     char time_now[50],time_now_1[50];
 
-    double *data, *mg1, *mg2, *mn, *mu, *mnu1, *mnu2, *mg;
-    double *mg1_w, *mg2_w, *mn_w, *weight;
+    MY_FLOAT *data, *mg1, *mg2, *mn, *mu, *mnu1, *mnu2, *mg;
+    MY_FLOAT *mg1_w, *mg2_w, *mn_w, *weight;
     
-    double *mg1_bin, *mg2_bin;
+    MY_FLOAT *mg1_bin, *mg2_bin;
     int *num_in_bin, bin_num;
 
-    double *g1t, *g2t;
-    double *shear_m, *shear_result, *shear_nu, *shear_result_nu;
+    MY_FLOAT *g1t, *g2t;
+    MY_FLOAT *shear_m, *shear_result, *shear_nu, *shear_result_nu;
     int result_col_nu;
 
     int grid_row, grid_col, total_grid, my_grid_st, my_grid_ed;
 
     int *shear_count, *send_count, *send_count_nu;   
 
-    double *check1;
-    double *check2;    
+    MY_FLOAT *check1;
+    MY_FLOAT *check2;    
 
     int i,j,k;
     int shear_num, shear_id;
     int data_row, sub_row, data_col;
-    double g1, g1_sig, g2, g2_sig;
+    MY_FLOAT g1, g1_sig, g2, g2_sig;
 
-    double *check_temp;
-    double *mg_temp, *mnu_temp;
-    double g1_temp, g1_temp_sig, g2_temp, g2_temp_sig;
-    double gN, gU, gN_sig, gU_sig,delta_g, chisq_N, chisq_U;
+    MY_FLOAT *check_temp;
+    MY_FLOAT *mg_temp, *mnu_temp;
+    MY_FLOAT g1_temp, g1_temp_sig, g2_temp, g2_temp_sig;
+    MY_FLOAT gN, gU, gN_sig, gU_sig,delta_g, chisq_N, chisq_U;
     int my_shear_st, my_shear_ed;
     int iters;
 
@@ -88,9 +90,9 @@ int main(int argc, char**argv)
 
     grid_row = 15;
 
-    check1 = new double[2*grid_row];
-    check2 = new double[2*grid_row];
-    check_temp = new double[2*grid_row];
+    check1 = new MY_FLOAT[2*grid_row];
+    check2 = new MY_FLOAT[2*grid_row];
+    check_temp = new MY_FLOAT[2*grid_row];
 
     for(i=0;i<iters*2;i++)
     {
@@ -102,24 +104,23 @@ int main(int argc, char**argv)
     
 
     num_in_bin = new int[bin_num]{};
-    mg1_bin = new double[bin_num+1]{};
-    mg2_bin = new double[bin_num+1]{};    
+    mg1_bin = new MY_FLOAT[bin_num+1]{};
+    mg2_bin = new MY_FLOAT[bin_num+1]{};    
 
 
-    data = new double[data_row*data_col];
-    mg = new double[sub_row];
-    mg1 = new double[sub_row];
-    mg2 = new double[sub_row];
-    mn = new double[sub_row];
+    data = new MY_FLOAT[data_row*data_col];
+    mg = new MY_FLOAT[sub_row];
+    mg1 = new MY_FLOAT[sub_row];
+    mg2 = new MY_FLOAT[sub_row];
+    mn = new MY_FLOAT[sub_row];
 
-    mg_temp = new double[sub_row];
-    mnu_temp = new double[sub_row];
+    mg_temp = new MY_FLOAT[sub_row];
+    mnu_temp = new MY_FLOAT[sub_row];
 
-    mu = new double[sub_row];
-    mnu1 = new double[sub_row];
-    mnu2 = new double[sub_row];
+    mu = new MY_FLOAT[sub_row];
+    mnu1 = new MY_FLOAT[sub_row];
+    mnu2 = new MY_FLOAT[sub_row];
 
-    weight = new double[sub_row];
 
     sprintf(result_path, "%s/shear_result_pdf_iter_%s.hdf5",parent_path, data_nm);
 
@@ -127,27 +128,27 @@ int main(int argc, char**argv)
     
     sprintf(set_name,"/g1");
     read_h5_datasize(data_path, set_name,shear_num);
-    g1t = new double[shear_num];
-    g2t = new double[shear_num];
+    g1t = new MY_FLOAT[shear_num];
+    g2t = new MY_FLOAT[shear_num];
     read_h5(data_path, set_name, g1t);
 
     sprintf(set_name,"/g2");
     read_h5_datasize(data_path, set_name,shear_num);
     read_h5(data_path, set_name, g2t);
     
-    double *mc = new double[4];
-    double *result_mc = new double[8];
-    double *result_mc_iter = new double[8*iters];
+    MY_FLOAT *mc = new MY_FLOAT[4];
+    MY_FLOAT *result_mc = new MY_FLOAT[8];
+    MY_FLOAT *result_mc_iter = new MY_FLOAT[8*iters];
 
-    double *fit_val = new double[shear_num];
-    double *fit_err = new double[shear_num];
+    MY_FLOAT *fit_val = new MY_FLOAT[shear_num];
+    MY_FLOAT *fit_err = new MY_FLOAT[shear_num];
 
-    shear_m = new double[4];
-    shear_nu = new double[iters*result_col_nu];
+    shear_m = new MY_FLOAT[4];
+    shear_nu = new MY_FLOAT[iters*result_col_nu];
     if(rank == 0)
     {
-        shear_result = new double[shear_num*4];
-        shear_result_nu = new double[iters*result_col_nu*shear_num];
+        shear_result = new MY_FLOAT[shear_num*4];
+        shear_result_nu = new MY_FLOAT[iters*result_col_nu*shear_num];
     }
     shear_count = new int[shear_num];
     send_count = new int[shear_num];

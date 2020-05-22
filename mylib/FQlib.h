@@ -3,7 +3,6 @@
 #ifndef FQLIB_H
 #define FQLIB_H
 
-#pragma once
 #include<iostream>
 #include<fstream>
 #include<sstream>
@@ -75,9 +74,49 @@ struct fq_paras
 		{ 0.0555556,0.0,-0.0555556,0.0555556,0.0277778,0.0,-0.0277778,-0.0555556,0.0,0.0,0.0,0.0,-0.0555556,-0.0277778,0.0,0.0277778,0.0555556,-0.0555556,0.0,0.0555556 },
 		{ 0.0517316,0.0399351,0.0517316,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,-0.0172078,-0.0525974,-0.0525974,-0.0172078,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,0.0517316,0.0399351,0.0517316 },
 	};
+};
 
-	/* for calculating the exponential exp() quickly */
-	double exp_val[15] = { exp(1.), exp(2.), exp(3.), exp(4.), exp(5.), exp(6.), exp(7.), exp(8.), exp(9.),  exp(10.), exp(11.), exp(12.), exp(13.), exp(14.), exp(15.), };
+
+struct fq_paras_float
+{
+	int psf_size, psf_px, psf_py;
+	float psf_peak, psf_hlr, psf_flux, psf_fluxsq, psf_noise_sig, psf_pow_thresh = 0.0001;
+
+	int gal_size, gal_hsize, gal_px, gal_py;
+	float gal_peak, gal_hlr, gal_flux, gal_hflux, gal_fluxsq, gal_total_flux,gal_effective_radius;
+	float gal_flux2, gal_flux_alt, gal_snr, gal_osnr, gal_noise_sig, gal_flux2_new;
+	float gal_size_ext[5];
+	float gal_flux_ext[5];
+	float gal_flux2_ext[5];
+
+	float gal_e1, gal_e2;
+	float n1, n2, dn, du, dv, dp1, dp2;
+	float t1, t2, t3, t4;
+
+
+	/*parameters for detection which should be initialized before */
+	int stamp_size; /* the stamp size,  for get_radius() */
+	float stamp_cent;
+	int img_x, img_y; /* the size of chip image for the 'source_detector()' and galaxy_finder()*/
+	int area_thresh=6; /* the minimun pixels for a detection */
+	float detect_thresh; /* the threshold of pixel value of source */
+	float noise_sig;
+	int max_source = 20; /* the maximum of sources allowed in each chip, changeable */
+	float max_distance= 8.;/* the max distance of peak away from the center of the source candidate */
+
+
+	/* hyper_fit_5 matrix elements of order 2 of xy polynomials */
+	/* this is the final matrix and the data value is the only things needed */
+	float fit_matrix[6][20] =
+	{
+		{ -0.0530303,0.0113636,-0.0530303,-0.0530303,0.1401515,0.2045455,0.1401515,-0.0530303,0.0113636,0.2045455,0.2045455,0.0113636,-0.0530303,0.1401515,0.2045455,0.1401515,-0.0530303,-0.0530303,0.0113636,-0.0530303 },
+		{ -0.0294118,0.0,0.0294118,-0.0588235,-0.0294118,0.0,0.0294118,0.0588235,-0.0588235,-0.0294118,0.0294118,0.0588235,-0.0588235,-0.0294118,0.0,0.0294118,0.0588235,-0.0294118,0.0,0.0294118 },
+		{ -0.0588235,-0.0588235,-0.0588235,-0.0294118,-0.0294118,-0.0294118,-0.0294118,-0.0294118,0.0,0.0,0.0,0.0,0.0294118,0.0294118,0.0294118,0.0294118,0.0294118,0.0588235,0.0588235,0.0588235 },
+		{ 0.0088745,-0.0172078,0.0088745,0.0517316,-0.0265152,-0.0525974,-0.0265152,0.0517316,0.0399351,-0.0383117,-0.0383117,0.0399351,0.0517316,-0.0265152,-0.0525974,-0.0265152,0.0517316,0.0088745,-0.0172078,0.0088745 },
+		{ 0.0555556,0.0,-0.0555556,0.0555556,0.0277778,0.0,-0.0277778,-0.0555556,0.0,0.0,0.0,0.0,-0.0555556,-0.0277778,0.0,0.0277778,0.0555556,-0.0555556,0.0,0.0555556 },
+		{ 0.0517316,0.0399351,0.0517316,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,-0.0172078,-0.0525974,-0.0525974,-0.0172078,0.0088745,-0.0265152,-0.0383117,-0.0265152,0.0088745,0.0517316,0.0399351,0.0517316 },
+	};
+
 };
 
 // something relates to the correlation function calculation
@@ -145,18 +184,35 @@ void segment(const int *big_arr, int *stamp, const int tag, const int size, cons
 /* operations on the image */
 /********************************************************************************************************************************************/
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng);
+void create_points(float *point, const int num_p, const float radius, const float step, const gsl_rng *gsl_rand_rng);
+
 void create_epoints(double *point, const int num_p, const double ellip, const gsl_rng *gsl_rand_rng);
+void create_epoints(float *point, const int num_p, const float ellip, const gsl_rng *gsl_rand_rng);
+
 
 void coord_rotation(const double*xy, const int pts_num, const double theta, double *xy_r);
+void coord_rotation(const float*xy, const int pts_num, const float theta, float *xy_r);
 
-void create_psf(double*in_img, const double psf_scale, const int size, const double img_cent, const int psf);
-void create_psf_e(double*in_img, const double psf_scale, const int size, const double img_cent, const double ellip, const double theta, const int psf);
 
-void convolve(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
-	const double g1, const double g2, const int psf);
+void create_psf(double *in_img, const double psf_scale, const int size, const double img_cent, const int psf);
+void create_psf(float *in_img, const float psf_scale, const int size, const float img_cent, const int psf);
 
-void convolve_e(double *in_img, const double * points, const double flux, const int size, const double img_cent, const int num_p, const int rotate, const double psf_scale, 
-	const double g1, const double g2, const int psf, const double ellip, const double theta);
+
+void create_psf_e(double*in_img, const double psf_scale, const int size, const double img_cent, const double ellip, const double theta, const int psf_type);
+void create_psf_e(float*in_img, const float psf_scale, const int size, const float img_cent, const float ellip, const float theta, const int psf_type);
+
+
+void convolve(const double * points, const int num_p, const double flux_per_pts, const double g1, const double g2,
+ 				double *in_img, const int size, const double img_cent, const double psf_scale, const int psf_type);
+void convolve(const float * points, const int num_p, const float flux_per_pts, const float g1, const float g2, 
+				float *in_img, const int size, const float img_cent, const float psf_scale, const int psf_type);
+
+
+void convolve_e(const double * points, const int num_p, const double flux_per_pts, const double g1, const double g2,
+				double *in_img, const int size, const double img_cent, const double psf_scale, const int psf_type, const double ellip, const double theta);
+void convolve_e(const float * points, const int num_p, const float flux_per_pts, const float g1, const float g2, 
+				float *in_img, const int size, const float img_cent, const float psf_scale, const int psf_type, const float ellip, const float theta);
+
 
 void deconvolution(const double *gal_pow, const double *psf_pow, double *out_img, const int column, const int row);
 void deconvolution(const double *gal_pow, const double*gal_pow_real, const double*gal_pow_imag, const double *psf_pow, const double*psf_pow_real, const double*psf_pow_imag, 
@@ -164,17 +220,19 @@ void deconvolution(const double *gal_pow, const double*gal_pow_real, const doubl
 
 
 void pow_spec(const double *in_img, double *out_img_pow, const int column, const int row);
+void pow_spec(const float *in_img, float *out_img, const int column, const int row);
 void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row);
 
-void pow_spec(const float *in_img, float *out_img, const int column, const int row);
+
 
 void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level);
 void get_psf_radius(const double *psf_pow, fq_paras*para, const double scale);
-void get_psf_radius(const float *psf_pow, fq_paras*para, const float scale);
+void get_psf_radius(const float *psf_pow, fq_paras_float*para, const float scale);
 /*measure the size of psf power spectrum for the \beta parameter in the measurement.
 	power of k=0 may be not the maximun, be careful!!!! */
 
 void get_quad(const double *img, const int img_size, const double img_cent, const double weight_sigma_sq, double &quad_size);
+void get_quad(const float *img, const int img_size, const float img_cent, const float weight_sigma_sq, float &quad_size);
 /* calculate the gaussian weighted quadrupole of the image   */
 /* weight_sigma_sq: the squared sigma of the gaussian weight */
 /* quad size := \Sum {weight*r^2*img} / \Sum {weight*img}      */
@@ -229,23 +287,33 @@ void normalize_arr(float *arr, const int size);//checked
 	divide each pixel by the peak 
 */
 
+
 /********************************************************************************************************************************************/
 /* Fourier Quad */
 /********************************************************************************************************************************************/
 void snr_est(const double *image, fq_paras *paras, int fit);//checked
+void snr_est(const float *image, fq_paras_float *paras, int fit);
 /* if fit=2 for both flux2 and flux_alt estimations
 	else just estimate the flux2
 */
+
 void possion_subtraction(double *image_pow, fq_paras *paras, int edge);//checked
+void possion_subtraction(float *image_pow, fq_paras_float *paras, int edge);
+
 void noise_subtraction(double *image_pow, double *noise_pow, fq_paras *paras, const int edge, const int possion);//checked
+void noise_subtraction(float *image_pow, float *noise_pow, fq_paras_float *paras, const int edge, const int possion);
+
 
 void shear_est(double *gal_pow, double *psf_pow, fq_paras *paras);//checked
+void shear_est(float *gal_pow, float *psf_pow, fq_paras_float *paras);
 
 void shear_est(const double *gal_pow, const double *gal_pow_real, const double *gal_pow_imag,
                double *psf_pow,const double *psf_pow_real,const double *psf_pow_imag, fq_paras *paras);//checked
 
 
 void ellip_est(const double *gal_img, const int size, fq_paras*paras);
+void ellip_est(const float *gal_img, const int size, fq_paras_float*paras);
+
 
 void find_block(const pts_info *infos, const double radius_s, const double radius_e, const double *bound_y, const double *bound_x, int *block_mask);//checked
 void find_block(const pts_info *infos, const double radius, const double *bound_y, const double *bound_x, int *block_mask);//checked
@@ -255,7 +323,9 @@ void find_block(const pts_info *infos, const double radius, const double *bound_
 
 void block_bound(const double scale, const int ny, const int nx, double *bound_y, double *bound_x);//checked
 
+
 void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, const double *bins, const int bin_num, const double gh, double &result);
+void chisq_Gbin_1d(const float *mg, const float *mnu, const int data_num, const float *bins, const int bin_num, const float gh, float &result);
 /* calculate the chi square with the input G1, N, U and the guess of shear, gh 
 	Fourier Quad shear estimators: G1, G2, N, U, V
 	mg: array, G1(2), for g1(2)
@@ -264,9 +334,12 @@ void chisq_Gbin_1d(const double *mg, const double *mnu, const int data_num, cons
 	bins: the bin for G1(2) , which must be set up (call set_bin()) before , for chi square calculation
 	chisq: the chi square with shear guess, gh
 */
+
+
 void chisq_Gbin_1d(const double *mg,const int data_num, const double *bins, const int bin_num, double &result);
 /* 	new for PDF_SYM
 */
+
 
 void cal_chisq_2d(const double *hist_arr, const int bin_num, double &result);//checked
 void cal_chisq_2d(const long *hist_arr, const int bin_num, double &result);//checked
@@ -277,19 +350,25 @@ void cal_chisq_2d(const int *hist_arr, const int bin_num, double &result);//chec
 void cal_chisq_1d(const double *hist_num,  const int bin_num, double &result);
 void cal_chisq_1d(const long *hist_num, const int bin_num, double &result);
 void cal_chisq_1d(const int *hist_num,  const int bin_num,  double &result);//checked
+void cal_chisq_1d(const int *hist_num,  const int bin_num,  float &result);
 void cal_chisq_1d(const int *hist_num,  const int bin_num, const int num, double &result);//checked
 /* calculate the 1d chi square using the histogram of G1(2) for the shear estimation 
 	hist_num: the histogrom of G1(2), the count of G1(2) 
 */
 
+
 void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale=1);
+void find_shear_mean(const float *mg, const float *mn, const int data_num, float &gh, float &gh_sig, const int sub_block_num, const float scale=1);
 /* 	if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
 	it's better to sum the sub-block and then add the these quantities together.
 */
 
 void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
+
 void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
+void find_shear(const float *mg, const float *mnu, const int data_num, const int bin_num, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
+const float max_scale=100., const float ini_left = -0.1, const float ini_right = 0.1, const float chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -311,6 +390,7 @@ const double max_scale=100., const double ini_left = -0.1, const double ini_righ
 */
 
 void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double chi_gap = 40);// checked
+void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, const float chi_gap = 40);
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
@@ -322,6 +402,8 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 */
 
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
+void estimator_rotation(const float theta,const float mg1, const float mg2, const float mn, const float mu, const float mv, float *output);
+
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/
@@ -356,11 +438,15 @@ void smooth_real(double*image, const double *coeffs, fq_paras *paras);
 /* smooth the image by fitting a polynomial */
 
 void hyperfit_5(const double *data, double*fit_para, fq_paras *paras);//checked
+void hyperfit_5(const float *data, float*fit_para, fq_paras_float *paras);
+
 
 void poly_fit_1d(const double *x, const double *fx, const int data_num, const int order, double *coeffs);//checked
+void poly_fit_1d(const float *x, const float *fx, const int data_num, const int order, float *coeffs);
 /* fit y = a1 +a2*x +a3*x^2 + a4*x^3 ... */
 
 void poly_fit_1d(const double *x, const double *fx, const double *fx_err, const int data_num, double *coeffs, int weight);// checked
+void poly_fit_1d(const float *x, const float *fx, const float *fx_err, const int data_num, float *coeffs, int weight);
 /* polynomial fitting by GSL
 	FX = c + m*X
 	x: array, coordinates
@@ -399,6 +485,7 @@ double fval_at_xy(const double x, const double y, const int order, const double 
 */
 
 void cov_matrix_1d(const double *x, const double *fx, const int data_num, const int order, double *cov_matrix, double *f_vector);//checked
+void cov_matrix_1d(const float *x, const float *fx, const int data_num, const int order, float *cov_matrix, float *f_vector);
 /* calculate the matrix on the left and right of the equation from the least square method to "order" */
 
 void cov_matrix_2d(const double *x, const double *y, const double *fxy, const int data_num, const int order, double *cov_matrix, double *f_vertor);//checked
