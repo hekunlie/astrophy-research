@@ -39,6 +39,9 @@ int main(int argc, char**argv)
     char parent_path[200], shear_path[200], data_path[200], result_path[200];
     char set_name[30], inform[300], time_now[40], data_type[40];
 
+    get_time(time_now, 40);
+    if(rank == 0){std::cout<<time_now<<std::endl;}
+    
     int i,j,k;
 
     int shear_num, shear_st, shear_ed;
@@ -60,7 +63,7 @@ int main(int argc, char**argv)
 
     int data_col, data_row;
     int result_col;
-    MY_FLOAT *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
+    MY_FLOAT *data, *mg1, *mg2,*mn, *mu, *mnu1, *mnu2;
     MY_FLOAT weight;
 
     // for results
@@ -91,6 +94,7 @@ int main(int argc, char**argv)
     mg1 = new MY_FLOAT[data_row];
     mg2 = new MY_FLOAT[data_row];
     mn = new MY_FLOAT[data_row];
+    mu = new MY_FLOAT[data_row];
     mnu1 = new MY_FLOAT[data_row];
     mnu2 = new MY_FLOAT[data_row];
 
@@ -181,6 +185,7 @@ int main(int argc, char**argv)
             mg1[k] = data[k*data_col];
             mg2[k] = data[k*data_col + 1];
             mn[k] = data[k*data_col + 2];
+            mu[k] = data[k*data_col + 3];
             mnu1[k] = data[k*data_col + 2] + data[k*data_col + 3];
             mnu2[k] = data[k*data_col + 2] - data[k*data_col + 3];
         }
@@ -199,7 +204,7 @@ int main(int argc, char**argv)
         // PDF_SYM
         try
         {
-            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg1, mn, mu, data_row, mg_bin_num, 1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -213,7 +218,7 @@ int main(int argc, char**argv)
 
         try
         {
-            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg2, mn,mu, data_row, mg_bin_num, 2, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {

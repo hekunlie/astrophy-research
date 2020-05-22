@@ -365,8 +365,10 @@ void find_shear_mean(const float *mg, const float *mn, const int data_num, float
 
 void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
+
+void find_shear(const double *mg, const double *mn, const double*mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
+
 void find_shear(const float *mg, const float *mnu, const int data_num, const int bin_num, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const float max_scale=100., const float ini_left = -0.1, const float ini_right = 0.1, const float chi_gap = 40);
 // checked
@@ -400,6 +402,9 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 				  if < 0, all the points will be used for fitting.
 */
+
+void fourier_hist(const double *mg, const double* mn, const double *mu, const int data_num, const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num);
+void fourier_hist(const float *mg, const float* mn, const float *mu, const int data_num, const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num);
 
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
 void estimator_rotation(const float theta,const float mg1, const float mg2, const float mn, const float mu, const float mv, float *output);

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # data_path, shear_num = argv[1], int(argv[2])
 
-shear_num = 40
+shear_num = 4
 half_num = int(shear_num/2)
 data_path = "D:/"
 # g = numpy.linspace(0,0.05, shear_num)

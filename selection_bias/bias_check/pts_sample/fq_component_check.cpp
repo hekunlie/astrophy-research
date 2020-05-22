@@ -5,7 +5,7 @@
 #define FLUX_PDF_UNI
 #define CPSF
 
-// #define SAVE_MEN
+// #define SAVE_MEM
 
 #ifdef SAVE_MEM
 #define MY_FLOAT float

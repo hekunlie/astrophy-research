@@ -2948,7 +2948,7 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 }
 
 
-void find_shear(const double *mg, const double *mnu, const int data_num, const int bin_num, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
 				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
@@ -2987,25 +2987,28 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 
 		try
 		{
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_left * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			// for (i = 0; i < data_num; i++)
+			// {
+			// 	temp_mg[i] = mg[i] - gh_left * mnu[i];
+			// }
+			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_left, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_mid * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			// for (i = 0; i < data_num; i++)
+			// {
+			// 	temp_mg[i] = mg[i] - gh_mid * mnu[i];
+			// }
+			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_mid, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_right * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			// for (i = 0; i < data_num; i++)
+			// {
+			// 	temp_mg[i] = mg[i] - gh_right * mnu[i];
+			// }
+			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_right, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 
 			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
@@ -3055,11 +3058,12 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		try
 		{
 			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
-			for (j = 0; j < data_num; j++)
-			{
-				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			// for (j = 0; j < data_num; j++)
+			// {
+			// 	temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
+			// }
+			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3086,11 +3090,12 @@ void find_shear(const double *mg, const double *mnu, const int data_num, const i
 		try
 		{
 			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
-			for (j = 0; j < data_num; j++)
-			{
-				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			// for (j = 0; j < data_num; j++)
+			// {
+			// 	temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
+			// }
+			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3432,6 +3437,86 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 
 }
 
+void fourier_hist(const double *mg, const double* mn, const double *mu, const int data_num, const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num)
+{
+	int i,j;
+	double temp, g1, g2;
+
+	initialize_arr(num_in_bin, bin_num, 0);
+
+	if(g_label==1)
+	{
+		for(i=0;i<data_num;i++)
+		{
+			temp = mg[i] - gh*(mn[i] + mu[i]);
+			
+			for(j=0;j<bin_num;j++)
+			{
+				if(temp >= bins[j] and temp < bins[j+1])
+				{
+					num_in_bin[j] += 1;
+					continue;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(i=0;i<data_num;i++)
+		{
+			temp = mg[i] - gh*(mn[i] - mu[i]);
+			for(j=0;j<bin_num;j++)
+			{
+				if(temp >= bins[j] and temp < bins[j+1])
+				{
+					num_in_bin[j] += 1;
+					continue;
+				}
+			}
+		}
+	}
+}
+
+void fourier_hist(const float *mg, const float* mn, const float *mu, const int data_num, const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num)
+{
+	int i,j;
+	float temp;
+
+	initialize_arr(num_in_bin, bin_num, 0);
+
+	if(g_label==1)
+	{
+		for(i=0;i<data_num;i++)
+		{
+			temp = mg[i] - gh*(mn[i] + mu[i]);
+			
+			for(j=0;j<bin_num;j++)
+			{
+				if(temp >= bins[j] and temp < bins[j+1])
+				{
+					num_in_bin[j] += 1;
+					continue;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(i=0;i<data_num;i++)
+		{
+			temp = mg[i] - gh*(mn[i] - mu[i]);
+			for(j=0;j<bin_num;j++)
+			{
+				if(temp >= bins[j] and temp < bins[j+1])
+				{
+					num_in_bin[j] += 1;
+					continue;
+				}
+			}
+		}
+	}
+
+}
 
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output)
 {
