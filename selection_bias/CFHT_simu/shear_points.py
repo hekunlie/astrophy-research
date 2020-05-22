@@ -17,9 +17,9 @@ data_path = "D:/"
 # g2 = g*sin_2theta
 g1 = numpy.zeros((shear_num,))
 g2 = numpy.zeros((shear_num,))
-g1[:half_num] = numpy.linspace(-0.04, 0.001, half_num)
+g1[:half_num] = numpy.linspace(-0.04, -0.001, half_num)
 g1[half_num:] = numpy.linspace(0.001, 0.04, half_num)
-g2[:half_num] = numpy.linspace(-0.04, 0.001, half_num)
+g2[:half_num] = numpy.linspace(-0.04, -0.001, half_num)
 g2[half_num:] = numpy.linspace(0.001, 0.04, half_num)
 print(g1)
 numpy.random.shuffle(g1)
@@ -38,6 +38,11 @@ plt.show()
 h5f = h5py.File(data_path+"shear.hdf5","w")
 h5f["/g1"] = g1
 h5f["/g2"] = g2
+h5f.close()
+
+h5f = h5py.File(data_path+"shear_f.hdf5","w")
+h5f.create_dataset("/g1", data=g1, dtype=numpy.float32)
+h5f.create_dataset("/g2", data=g2, dtype=numpy.float32)
 h5f.close()
 
 numpy.savetxt(data_path+"shear.dat",g)

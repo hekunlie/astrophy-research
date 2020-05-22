@@ -2,7 +2,7 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
-#define MY_FLOAT double
+#define MY_FLOAT float
 
 void task_allot(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {
@@ -95,8 +95,7 @@ int main(int argc, char**argv)
     mg2 = new MY_FLOAT[data_row];
     mn = new MY_FLOAT[data_row];
     mu = new MY_FLOAT[data_row];
-    mnu1 = new MY_FLOAT[data_row];
-    mnu2 = new MY_FLOAT[data_row];
+
 
     shear_point = new int[numprocs]{};
     send_count = new int[numprocs]{};
@@ -186,8 +185,6 @@ int main(int argc, char**argv)
             mg2[k] = data[k*data_col + 1];
             mn[k] = data[k*data_col + 2];
             mu[k] = data[k*data_col + 3];
-            mnu1[k] = data[k*data_col + 2] + data[k*data_col + 3];
-            mnu2[k] = data[k*data_col + 2] - data[k*data_col + 3];
         }
 
         // MEAN
@@ -200,7 +197,8 @@ int main(int argc, char**argv)
         result_sub_mean[(i-shear_st)*result_col + 3] = gh2_sig;
         sprintf(inform, "%03d, Ave. True g1: %9.6f, Est.: %9.6f (%8.6f), True g2: %9.6f, Est.: %9.6f (%8.6f).", rank, g1_t[i], gh1, gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
-
+        
+        find_shear(mg1, mn, mu, data_row, mg_bin_num, 1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
         // PDF_SYM
         try
         {
@@ -376,8 +374,7 @@ int main(int argc, char**argv)
     delete[] result_sub_pdf;
 
     delete[] data;
-    delete[] mnu2;
-    delete[] mnu1;
+    delete[] mu;
     delete[] mn;
     delete[] mg2;
     delete[] mg1;

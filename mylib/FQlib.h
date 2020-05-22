@@ -369,7 +369,7 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 void find_shear(const double *mg, const double *mn, const double*mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 
-void find_shear(const float *mg, const float *mnu, const int data_num, const int bin_num, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
+void find_shear(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, int g_label, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
 const float max_scale=100., const float ini_left = -0.1, const float ini_right = 0.1, const float chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 

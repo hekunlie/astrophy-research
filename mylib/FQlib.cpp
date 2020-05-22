@@ -2951,7 +2951,7 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
 				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
-	int i, j, k;
+	int i, j;
 	int max_iters = 12;
 	int temp_num;
 
@@ -2959,19 +2959,17 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	double *bins = new double[bin_num + 1];
 	double *gh_fit = new double[chi_fit_num];
 	double *chisq_fit = new double[chi_fit_num];
-	double *temp_mg = new double[data_num];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
-	int left_tag=-1, right_tag=-1;
 	double fit_max_chisq, new_end;
 	double *search_vals = new double[(max_iters+1)*record_col]{};
 
 	int same = 0, iters = 0, change = 1;
 	double left = ini_left, right = ini_right, step;
-	double chi_left, chi_right, chi_mid, chi_left_mid, chi_right_mid;
-	double gh_left, gh_right, gh_mid, gh_left_mid, gh_right_mid;
-	double chisq_r1, chisq_r2;
+	double chi_left, chi_right, chi_mid;
+	double gh_left, gh_right, gh_mid;
+
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
@@ -2987,33 +2985,14 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 
 		try
 		{
-			// for (i = 0; i < data_num; i++)
-			// {
-			// 	temp_mg[i] = mg[i] - gh_left * mnu[i];
-			// }
-			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
 			fourier_hist(mg, mn, mu, data_num, gh_left, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			// for (i = 0; i < data_num; i++)
-			// {
-			// 	temp_mg[i] = mg[i] - gh_mid * mnu[i];
-			// }
-			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
 			fourier_hist(mg, mn, mu, data_num, gh_mid, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			// for (i = 0; i < data_num; i++)
-			// {
-			// 	temp_mg[i] = mg[i] - gh_right * mnu[i];
-			// }
-			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
 			fourier_hist(mg, mn, mu, data_num, gh_right, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
-
-			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_left, chi_left);
-			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_mid, chi_mid);
-			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_right, chi_right);
 		}
 		catch(const char *msg)
 		{
@@ -3046,7 +3025,6 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	
 	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
 	
-	
 	temp_num = 15;
 	step = (right - left) / (temp_num - 1);
 	for (i = 0; i < temp_num; i++)
@@ -3057,12 +3035,6 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	{	
 		try
 		{
-			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
-			// for (j = 0; j < data_num; j++)
-			// {
-			// 	temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
-			// }
-			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
 			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
@@ -3089,12 +3061,6 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	{	
 		try
 		{
-			// chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
-			// for (j = 0; j < data_num; j++)
-			// {
-			// 	temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
-			// }
-			// histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
 			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
@@ -3120,21 +3086,19 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	delete[] chisq_fit;
 	delete[] bins;
 	delete[] search_vals;
-	delete[] temp_mg;
 	delete[] num_in_bin;
 }
 
 
-void find_shear(const float *mg, const float *mnu, const int data_num, const int bin_num, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
+void find_shear(const float *mg, const float *mn, const float*mu, const int data_num, const int bin_num, const int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
 				const int choice, const float max_scale, const float ini_left, const float ini_right, const float chi_gap)
 {
-	int i, j, k;
+	int i, j;
 	int max_iters = 12;
 	int temp_num;
 
 	int *num_in_bin = new int[bin_num];
 
-	float *temp_mg = new float[data_num];
 	float *bins = new float[bin_num + 1];
 
 	float *gh_fit = new float[chi_fit_num];
@@ -3148,14 +3112,14 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 
 	int same = 0, iters = 0, change = 1;
 	float left = ini_left, right = ini_right, step;
-	float chi_left, chi_right, chi_mid, chi_left_mid, chi_right_mid;
-	float gh_left, gh_right, gh_mid, gh_left_mid, gh_right_mid;
-	float chisq_r1, chisq_r2;
+	float chi_left, chi_right, chi_mid;
+	float gh_left, gh_right, gh_mid;
+
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
 	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
-	//show_arr(bins, 1, bin_num + 1);
+	// show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
 	while (change == 1)
 	{		
@@ -3166,27 +3130,14 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 
 		try
 		{	
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_left * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_left, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_mid * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_mid, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			for (i = 0; i < data_num; i++)
-			{
-				temp_mg[i] = mg[i] - gh_right * mnu[i];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_right, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
-
 		}
 		catch(const char *msg)
 		{
@@ -3218,6 +3169,8 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 	}
 	
 	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
+	// std::cout<<right<<" "<<left<<std::endl;
+	// std::cout<<"chi max "<<fit_max_chisq<<std::endl;
 
 	temp_num = 10;
 	step = (right - left) / (temp_num - 1);
@@ -3229,12 +3182,13 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 	{	
 		try
 		{
-			for (j = 0; j < data_num; j++)
-			{
-				temp_mg[j] = mg[j] - gh_fit[i] * mnu[j];
-			}
-			histogram(temp_mg, bins, num_in_bin, data_num, bin_num);
+			fourier_hist(mg, mn, mu, data_num, gh_fit[i], g_label, bins, num_in_bin, bin_num);
+
+			// std::cout<<i<<" "<<gh_fit[i]<<std::endl;
+			// show_arr(num_in_bin, 1, bin_num);
+
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+			// std::cout<<chi_right<<std::endl;
 		}
 		catch(const char *msg)
 		{
@@ -3245,6 +3199,7 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 	//st4 = clock();
 
 	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	// std::cout<<gh<<" "<<gh_sig<<std::endl;
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -3260,7 +3215,8 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 	{	
 		try
 		{
-			chisq_Gbin_1d(mg, mnu, data_num, bins, bin_num, gh_fit[i], chi_right);
+			fourier_hist(mg, mn, mu, data_num, gh_fit[i], g_label, bins, num_in_bin, bin_num);
+			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
 		{
@@ -3284,7 +3240,6 @@ void find_shear(const float *mg, const float *mnu, const int data_num, const int
 	delete[] chisq_fit;
 	delete[] bins;
 	delete[] search_vals;
-	delete[] temp_mg;
 	delete[] num_in_bin;
 }
 
@@ -3423,6 +3378,8 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 	else
 	{
 		poly_fit_1d(shear, chisq, num, 2, coeff);
+		// show_arr(shear,1, num);
+		// show_arr(chisq,1, num);
 	}
 	if (coeff[2] < 0)
 	{
@@ -4031,47 +3988,20 @@ void poly_fit_1d(const float *x, const float *fx, const int data_num, const int 
 	}
 	int i, j, s;
 	int terms = order + 1;
-	float *cov_matrix = new float[terms*terms]{};
-	float *f_vector = new float[terms] {};
-	
-	cov_matrix_1d(x, fx, data_num, order, cov_matrix, f_vector);
-
-	gsl_matrix *cov_mat = gsl_matrix_alloc(terms, terms);
-	gsl_vector * vect_b = gsl_vector_alloc(terms);
-	gsl_matrix *mat_inv = gsl_matrix_alloc(terms, terms);
-	gsl_permutation *permu = gsl_permutation_alloc(terms);
-	gsl_vector *pamer = gsl_vector_alloc(terms);
-
-	for (j = 0; j < terms; j++)
+	double *doub_coeffs = new double[terms];	
+	double *doub_x = new double[data_num];
+	double *doub_fx = new double[data_num];
+	for(i=0; i<data_num; i++)
 	{
-		gsl_vector_set(vect_b, j, f_vector[j]);
+		doub_x[i] = x[i];
+		doub_fx[i] = fx[i];
 	}
+	poly_fit_1d(doub_x, doub_fx, data_num, order, doub_coeffs);
+	for(i=0;i<terms;i++){coeffs[i] = doub_coeffs[i];}
+	delete[] doub_coeffs;
+	delete[] doub_x;
+	delete[] doub_fx;
 
-	for (i = 0; i < terms; i++)
-	{
-		for (j = 0; j < terms; j++)
-		{
-			gsl_matrix_set(cov_mat, i, j, cov_matrix[i*terms + j]);
-		}
-	}
-
-	gsl_linalg_LU_decomp(cov_mat, permu, &s);
-	//gsl_linalg_LU_invert(cov_mat, permu, mat_inv);
-	gsl_linalg_LU_solve(cov_mat, permu, vect_b, pamer);
-
-	for (i = 0; i < terms; i++)
-	{
-		coeffs[i] = gsl_vector_get(pamer, i);
-	}
-
-	gsl_matrix_free(cov_mat);
-	gsl_vector_free(vect_b);
-	gsl_matrix_free(mat_inv);
-	gsl_vector_free(pamer);
-	gsl_permutation_free(permu);
-
-	delete[] cov_matrix;
-	delete[] f_vector;
 }
 
 
