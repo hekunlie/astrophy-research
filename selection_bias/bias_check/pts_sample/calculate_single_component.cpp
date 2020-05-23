@@ -49,6 +49,7 @@ int main(int argc, char**argv)
     MY_FLOAT *shears, *g1_t, *g2_t;
     MY_FLOAT gh1, gh1_sig, gh2, gh2_sig;
     int mg1_idx, mg2_idx, mn_idx, mu_idx, mv_idx;
+    MY_FLOAT *mg1, *mg2, *mn, *mu, *mv;
 
     int mg_bin_num;
     MY_FLOAT *mg_bins;
@@ -96,7 +97,12 @@ int main(int argc, char**argv)
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, data_type);
 
-    data = new MY_FLOAT[data_row*data_col];
+    // data = new MY_FLOAT[data_row*data_col];
+    mg1 = new MY_FLOAT[data_row]; 
+    mg2 = new MY_FLOAT[data_row]; 
+    mn = new MY_FLOAT[data_row]; 
+    mu = new MY_FLOAT[data_row]; 
+    mv = new MY_FLOAT[data_row]; 
 
     shear_point = new int[numprocs]{};
     send_count = new int[numprocs]{};
@@ -173,16 +179,26 @@ int main(int argc, char**argv)
     read_h5(shear_path, set_name,g2_t);
 
     // read and calculate
-    sprintf(set_name,"/data");
+    
     for(i=shear_st;i<shear_ed;i++)
     {   
-        sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_type, i);
-        read_h5(data_path, set_name, data);
         
+        sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_type, i);
+        sprintf(set_name,"/mg1");
+        read_h5(data_path, set_name, mg1);
+        sprintf(set_name,"/mg2");
+        read_h5(data_path, set_name, mg2);
+        sprintf(set_name,"/mn");
+        read_h5(data_path, set_name, mn);
+        sprintf(set_name,"/mu");
+        read_h5(data_path, set_name, mu);
+        sprintf(set_name,"/mv");
+        read_h5(data_path, set_name, mv);
+
 
         // MEAN
-        find_shear_mean(data, data_row, data_col, 0,2, gh1, gh1_sig, 1000,100);
-        find_shear_mean(data, data_row, data_col, 1,2, gh2, gh2_sig, 1000,100);
+        find_shear_mean(mg1, mn, data_row, gh1, gh1_sig, 1000);
+        find_shear_mean(mg2, mn, data_row, gh2, gh2_sig, 1000);
 
         result_sub_mean[(i-shear_st)*result_col] = gh1;
         result_sub_mean[(i-shear_st)*result_col + 1] = gh1_sig;
@@ -191,12 +207,13 @@ int main(int argc, char**argv)
         sprintf(inform, "%03d, Ave. True g1: %9.6f, Est.: %9.6f (%8.6f), True g2: %9.6f, Est.: %9.6f (%8.6f).", rank, g1_t[i], gh1, gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
         
-       
+       set_bin(mg1, data_row, mg_bin_num, mg_bins, 100, 0);
         // PDF_SYM
         try
         {
-            find_shear(data, data_row, data_col, mg1_idx, mn_idx, mu_idx, mg_bin_num,1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
-            //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
+            // find_shear(data, data_row, data_col, mg1_idx, mn_idx, mu_idx, mg_bin_num,1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg1, mn, mu, data_row, mg_bin_num, mg_bins, 1, gh1, gh1_sig, chisq_min_fit,chi_check);
+            
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g1[(i-shear_st)*2*chi_check_num + k] = chi_check[k];
@@ -209,8 +226,8 @@ int main(int argc, char**argv)
 
         try
         {
-            find_shear(data, data_row, data_col, mg2_idx, mn_idx, mu_idx, mg_bin_num,2, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
-            //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
+            // find_shear(data, data_row, data_col, mg2_idx, mn_idx, mu_idx, mg_bin_num,2, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(mg2, mn, mu, data_row, mg_bin_num, mg_bins, 2, gh2, gh2_sig, chisq_min_fit,chi_check);
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g2[(i-shear_st)*2*chi_check_num + k] = chi_check[k];
@@ -366,7 +383,7 @@ int main(int argc, char**argv)
     delete[] result_sub_mean;
     delete[] result_sub_pdf;
 
-    delete[] data;
+    // delete[] data;
     delete[] shear_point;
     delete[] g1_t;
     delete[] g2_t;

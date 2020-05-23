@@ -47,6 +47,10 @@ int main(int argc, char**argv)
     int*shear_point;
     MY_FLOAT *shears, *g1_t, *g2_t;
     MY_FLOAT gh1, gh1_sig, gh2, gh2_sig;
+    MY_FLOAT *mg[5];
+    MY_FLOAT *mg_buf[5];
+    char *mg_name[5];
+
     int mg1_idx, mg2_idx, mn_idx, mu_idx, mv_idx;
     int mg_bin_num;
 
@@ -98,8 +102,16 @@ int main(int argc, char**argv)
     // sprintf(result_path, "%s/shear_result_%s_rotate_%s_minus_%s.hdf5", parent_path, data_type_1,data_type_2, data_type_3);
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, result_nm);
 
-    data = new MY_FLOAT[data_row*data_col]{};
-    data_buffer = new MY_FLOAT[data_row*data_col]{};
+    for(i=0;i<5;i++)
+    {
+        mg[i] = new MY_FLOAT[data_row]; 
+        mg_buf[i] = new MY_FLOAT[data_row]; 
+    }
+    sprintf(mg_name[0], "/mg1");
+    sprintf(mg_name[1], "/mg2");
+    sprintf(mg_name[2], "/mn");
+    sprintf(mg_name[3], "/mu");
+    sprintf(mg_name[4], "/mv");
 
 
     shear_point = new int[numprocs]{};
@@ -175,19 +187,23 @@ int main(int argc, char**argv)
     for(i=shear_st;i<shear_ed;i++)
     {   
         sprintf(data_path_1,"%s/data_%s_%d.hdf5",parent_path, data_type_1, i);
-        read_h5(data_path_1, set_name, data);
+        for(j=0;j<5;j++)
+        {
+            read_h5(data_path_1, mg_name[j], mg[j]);
+        }
+
         // read data
         if(rank == 0)
         {
             std::cout<<data_path_1<<std::endl;
         }
-        for(k=0;k<data_row*data_col;k++)
-        {
-            data_buffer[k] = data[k];
-        }
 
         sprintf(data_path_2,"%s/data_%s_%d.hdf5",parent_path, data_type_2, i);
-        read_h5(data_path_2, set_name, data);
+        for(j=0;j<5;j++)
+        {
+            read_h5(data_path_1, mg_name[j], mg_buf[j]);
+        }
+
         // read data
         if(rank == 0)
         {
@@ -196,19 +212,26 @@ int main(int argc, char**argv)
 
         if(shear_rotation_cmd == 0)
         {
-            for(k=0;k<data_row*data_col;k++){data_buffer[k] += data[k];}
+            for(j=0; j<5; j++)
+            {
+                for(k=0; k<data_row; k++)
+                {
+                    mg[j][k] += mg_buf[j][k];
+                }
+            }
         }
         else
         {   
-            for(k=0;k<data_row;k++)
+            for(j=0;j<data_row;j++)
             {
-                estimator_rotation(Pi/2, data[k*data_col+mg1_idx],data[k*data_col+mg2_idx],
-                                    data[k*data_col+mn_idx],data[k*data_col+mu_idx],data[k*data_col+mv_idx],rotation);
+                estimator_rotation(Pi/2, mg_buf[0][j],mg_buf[1][j],mg_buf[2][j],mg_buf[3][j],mg_buf[4][j],rotation);
+                
+                mg[0][j] += rotation[0];
+                mg[1][j] +=  rotation[1];      
+                mg[2][j] +=  rotation[2];      
+                mg[3][j] +=  rotation[3];
+                mg[4][j] +=  rotation[4];      
 
-                data_buffer[k*data_col + mg1_idx] += rotation[mg1_idx];
-                data_buffer[k*data_col + mg2_idx] +=  rotation[mg2_idx];      
-                data_buffer[k*data_col + mn_idx] +=  rotation[mn_idx];      
-                data_buffer[k*data_col + mu_idx] +=  rotation[mu_idx];      
 
                 // mg1[k] = mg1[k] + rotation[0];
                 // mg2[k] = mg2[k] + rotation[1];
@@ -238,8 +261,8 @@ int main(int argc, char**argv)
 
 
         // MEAN
-        find_shear_mean(data_buffer, data_row, data_col, mg1_idx, mn_idx, gh1, gh1_sig, 1000,100);
-        find_shear_mean(data_buffer, data_row, data_col, mg2_idx, mn_idx, gh2, gh2_sig, 1000,100);
+        find_shear_mean(mg[0], mg[2], data_row, gh1, gh1_sig, 1000, 1);
+        find_shear_mean(mg[1], mg[2], data_row, gh2, gh2_sig, 1000, 1);
 
         result_sub_mean[(i-shear_st)*result_col] = gh1;
         result_sub_mean[(i-shear_st)*result_col + 1] = gh1_sig;
@@ -248,11 +271,12 @@ int main(int argc, char**argv)
         sprintf(inform, "%03d, Ave. True g1: %9.6f, Est.: %9.6f (%8.6f), True g2: %9.6f, Est.: %9.6f (%8.6f).", rank, g1_t[i], gh1, gh1_sig,g2_t[i],gh2,gh2_sig);
         std::cout<<inform<<std::endl;
 
+        set_bin(mg[0], data_row, mg_bin_num, mg_bins,100, 0);
         // PDF_SYM
         try
         {
-            find_shear(data_buffer, data_row,data_col,mg1_idx, mn_idx, mu_idx, mg_bin_num, 1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
-            //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
+            find_shear(mg[0], mg[2], mg[3], data_row, mg_bin_num, mg_bins, 1, gh1, gh1_sig, chisq_min_fit, chi_check);
+           
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g1[(i-shear_st)*2*chi_check_num + k] = chi_check[k];
@@ -265,8 +289,7 @@ int main(int argc, char**argv)
 
         try
         {
-            find_shear(data_buffer, data_row,data_col, mg2_idx, mn_idx, mu_idx, mg_bin_num, 2,  gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
-            //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
+            find_shear(mg[1], mg[2], mg[3], data_row, mg_bin_num, mg_bins, 2, gh2, gh2_sig, chisq_min_fit, chi_check);
             for(k=0;k<2*chi_check_num;k++)
             {
                 sub_chi_check_g2[(i-shear_st)*2*chi_check_num + k] = chi_check[k];

@@ -41,9 +41,11 @@ int main(int argc, char**argv)
     char data_nm[30];
     char time_now[50],time_now_1[50];
 
-    MY_FLOAT *data, *mg1, *mg2, *mn, *mu, *mnu1, *mnu2, *mg;
-    MY_FLOAT *mg1_w, *mg2_w, *mn_w, *weight;
     
+    MY_FLOAT *mg[5];
+    char *mg_name[5];
+
+
     MY_FLOAT *mg1_bin, *mg2_bin;
     int *num_in_bin, bin_num;
 
@@ -55,15 +57,16 @@ int main(int argc, char**argv)
 
     int *shear_count, *send_count, *send_count_nu;   
 
-    MY_FLOAT *check1;
-    MY_FLOAT *check2;    
+    MY_FLOAT *chi_check, chi_min;
+    int chi_fit_num;
 
     int i,j,k;
     int shear_num, shear_id;
-    int data_row, sub_row, data_col;
-    MY_FLOAT g1, g1_sig, g2, g2_sig;
+    int data_row, data_col;
 
-    MY_FLOAT *check_temp;
+    MY_FLOAT g1, g1_sig, g2, g2_sig;
+    int mg1_idx, mg2_idx, mn_idx, mu_idx, mv_idx;
+
     MY_FLOAT *mg_temp, *mnu_temp;
     MY_FLOAT g1_temp, g1_temp_sig, g2_temp, g2_temp_sig;
     MY_FLOAT gN, gU, gN_sig, gU_sig,delta_g, chisq_N, chisq_U;
@@ -79,22 +82,23 @@ int main(int argc, char**argv)
     data_col = 5;
     result_col_nu = 6;
     iters = 3;
+    chi_fit_num = 20;
+
+    mg1_idx = 0;
+    mg2_idx = 1;
+    mn_idx = 2;
+    mu_idx = 3;
+    mv_idx = 4;
 
     strcpy(parent_path, argv[1]);
     strcpy(data_nm, argv[2]);
     data_row = atoi(argv[3])*10000;
+    shear_num = atoi(argv[4]);
     
-    ratio = 1;
-    
-    sub_row = data_row/ratio;
 
-    grid_row = 15;
+    chi_check = new MY_FLOAT[2*chi_fit_num];
 
-    check1 = new MY_FLOAT[2*grid_row];
-    check2 = new MY_FLOAT[2*grid_row];
-    check_temp = new MY_FLOAT[2*grid_row];
-
-    for(i=0;i<iters*2;i++)
+    for(i=0; i<iters*2; i++)
     {
         temp_inform[i] = new char[200];
     }
@@ -105,37 +109,37 @@ int main(int argc, char**argv)
 
     num_in_bin = new int[bin_num]{};
     mg1_bin = new MY_FLOAT[bin_num+1]{};
-    mg2_bin = new MY_FLOAT[bin_num+1]{};    
+ 
 
+    for(i=0;i<5;i++)
+    {
+        mg[i] = new MY_FLOAT[data_row];
+        mg_name[i] = new char[50];
+    }
+    sprintf(mg_name[0], "/mg1");
+    sprintf(mg_name[1], "/mg2");
+    sprintf(mg_name[2], "/mn");
+    sprintf(mg_name[3], "/mu");
+    sprintf(mg_name[4], "/mv");
 
-    data = new MY_FLOAT[data_row*data_col];
-    mg = new MY_FLOAT[sub_row];
-    mg1 = new MY_FLOAT[sub_row];
-    mg2 = new MY_FLOAT[sub_row];
-    mn = new MY_FLOAT[sub_row];
-
-    mg_temp = new MY_FLOAT[sub_row];
-    mnu_temp = new MY_FLOAT[sub_row];
-
-    mu = new MY_FLOAT[sub_row];
-    mnu1 = new MY_FLOAT[sub_row];
-    mnu2 = new MY_FLOAT[sub_row];
 
 
     sprintf(result_path, "%s/shear_result_pdf_iter_%s.hdf5",parent_path, data_nm);
 
+
     sprintf(data_path, "%s/shear.hdf5", parent_path);
     
-    sprintf(set_name,"/g1");
-    read_h5_datasize(data_path, set_name,shear_num);
     g1t = new MY_FLOAT[shear_num];
     g2t = new MY_FLOAT[shear_num];
+
+    sprintf(set_name,"/g1");
     read_h5(data_path, set_name, g1t);
 
     sprintf(set_name,"/g2");
-    read_h5_datasize(data_path, set_name,shear_num);
     read_h5(data_path, set_name, g2t);
     
+
+
     MY_FLOAT *mc = new MY_FLOAT[4];
     MY_FLOAT *result_mc = new MY_FLOAT[8];
     MY_FLOAT *result_mc_iter = new MY_FLOAT[8*iters];
@@ -166,7 +170,7 @@ int main(int argc, char**argv)
     {   
         show_arr(g1t, 1, shear_num);
         show_arr(g2t, 1, shear_num);
-        std::cout<<rank<<" "<<sub_row<<" "<< my_shear_st<<" "<<my_shear_ed<<std::endl;
+        std::cout<<rank<<" "<<data_row<<" "<< my_shear_st<<" "<<my_shear_ed<<std::endl;
     }
     
     // for(i=0;i<numprocs;i++)
@@ -179,30 +183,15 @@ int main(int argc, char**argv)
     {   
         // sprintf(data_name, data_nm, shear_id);
         sprintf(data_path, "%s/data_%s_%d.hdf5",parent_path, data_nm, shear_id);
-        sprintf(set_name,"/data");
-        read_h5(data_path, set_name, data);
-
-        for(i=0;i<sub_row;i++)
-        {   
-            //weight[i] = data[i*data_col + 7]*data[i*data_col + 7];
-
-            mg1[i] = data[i*data_col + 0];
-            mg2[i] = data[i*data_col + 1];
-            mn[i] = data[i*data_col + 2];
-            mu[i] = data[i*data_col + 3];
-            mnu1[i] = mn[i] + mu[i];
-            mnu2[i] = mn[i] - mu[i];
-
-            // mg1_w[i] = mg1[i]/data[i*data_col]/data[i*data_col];
-            // mg2_w[i] = mg2[i]/data[i*data_col]/data[i*data_col];
-            // mn_w[i] = mn[i]/data[i*data_col]/data[i*data_col];
-
+        for(j=0;j<5;j++)
+        {
+            read_h5(data_path, mg_name[j], mg[j]);
         }
         std::cout<<"Read data "<<data_path<<std::endl;
         
         //////// average  ////////
-        find_shear_mean(mg1, mn, sub_row, g1, g1_sig, add_time, add_scale);
-        find_shear_mean(mg2, mn, sub_row, g2, g2_sig, add_time, add_scale);
+        find_shear_mean(mg[0], mg[2], data_row, g1, g1_sig, 1000, 1);
+        find_shear_mean(mg[1], mg[2], data_row, g2, g2_sig, 1000, 1);
 
         sprintf(temp_inform[0], "Ave g1(true %9.6f): %9.6f (%9.6f)", g1t[shear_id], g1, g1_sig);
         sprintf(temp_inform[1], "Ave g2(true %9.6f): %9.6f (%9.6f)", g2t[shear_id], g2, g2_sig);
@@ -251,94 +240,16 @@ int main(int argc, char**argv)
             result_mc[7] = mc[1];// c_sig
             sprintf(set_name, "/mean_mc");
             write_h5(result_path, set_name, result_mc, 2, 4, false);
-
+            show_arr(result_mc,2,4);
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
 
-        //////// PDF ////////
-        set_bin(mg1, sub_row, mg1_bin, bin_num, 100);
-        set_bin(mg2, sub_row, mg2_bin, bin_num, 100);
 
-        find_shear(mg1, mnu1, sub_row, 10, g1, g1_sig, chisq_N, check1, grid_row, 0,100,-0.1, 0.1, 40);
-        find_shear(mg2, mnu2, sub_row, 10, g2, g2_sig, chisq_U, check2, grid_row, 0,100,-0.1, 0.1, 40);
+        set_bin(mg[0], data_row, bin_num, mg1_bin, 100, 0);
         
-        shear_m[0] = g1;
-        shear_m[1] = g1_sig;
-        shear_m[2] = g2;
-        shear_m[3] = g2_sig;
+        find_shear_iter(mg[0], mg[2], mg[3], data_row, bin_num, mg1_bin, 1, iters, shear_nu, chi_fit_num, -0.1, 0.1, 40);
 
-        MPI_Barrier(MPI_COMM_WORLD);
-        // for(i=0;i<numprocs;i++)
-        // {
-        //     if(i==rank)
-        //     {
-        //         sprintf(inform, "PDF g1(true %9.6f): %9.6f (%9.6f), chisq: %.4f", g1t[shear_id], g1, g1_sig, chisq_N);
-        //         std::cout<<inform<<std::endl;            
-        //         sprintf(inform, "PDF g2(true %9.6f): %9.6f (%9.6f), chisq: %.4f", g2t[shear_id], g2, g2_sig, chisq_U);
-        //         std::cout<<inform<<std::endl;
-        //     }
-        //     MPI_Barrier(MPI_COMM_WORLD);
-        // }
-        // MPI_Barrier(MPI_COMM_WORLD);   
-        // my_Gatherv(shear_m, send_count, shear_result, numprocs, rank);
-        // if(rank == 0)
-        // {
-        //     sprintf(set_name, "/PDF");
-        //     write_h5(result_path, set_name, shear_result, shear_num, 4, false);
-        //     // fitting
-        //     for(i=0;i<shear_num;i++)
-        //     {
-        //         fit_val[i] = shear_result[i*4];
-        //         fit_err[i] = shear_result[i*4+1];
-        //     }
-        //     poly_fit_1d(g1t, fit_val, fit_err, shear_num, mc, 1);
-        //     result_mc[0] = mc[2]-1;// m
-        //     result_mc[1] = mc[3];// m_sig
-        //     result_mc[2] = mc[0];// c
-        //     result_mc[3] = mc[1];// c_sig
-        //     for(i=0;i<shear_num;i++)
-        //     {
-        //         fit_val[i] = shear_result[i*4+2];
-        //         fit_err[i] = shear_result[i*4+3];
-        //     }
-        //     poly_fit_1d(g2t, fit_val, fit_err, shear_num, mc, 1);
-        //     result_mc[4] = mc[2]-1;// m
-        //     result_mc[5] = mc[3];// m_sig
-        //     result_mc[6] = mc[0];// c
-        //     result_mc[7] = mc[1];// c_sig
-        //     sprintf(set_name, "/sym_mc");
-        //     write_h5(result_path, set_name, result_mc, 2, 4, false);
-
-        // }
-        // MPI_Barrier(MPI_COMM_WORLD);
-        
-
-
-        //////// new PDF ////////
-        delta_g = 1;
-        gN = g1;
-        gU = g1;
-
-        for(j=0;j<iters;j++)
-        {   
-            // fix g_N, find the g_U
-            for(i=0;i<sub_row;i++){mg_temp[i] = mg1[i] - gN*mn[i];}
-            find_shear(mg_temp, mu, sub_row, 10, gU, gU_sig, chisq_U, check_temp, grid_row, 0, 100,-0.07, 0.07, 60);
-            // fix g_U, find the g_N
-            for(i=0;i<sub_row;i++){mg_temp[i] = mg1[i] - gU*mu[i];}
-            find_shear(mg_temp, mn, sub_row, 10, gN, gN_sig, chisq_N, check_temp, grid_row, 0, 100,-0.07, 0.07, 60);
-            
-            sprintf(temp_inform[j], "Iter %d. (true %9.6f) g1_N: %9.6f (%9.6f). g1_U: %9.6f (%9.6f). chi^2: %.4f, %.4f", j, g1t[shear_id], gN, gN_sig, gU, gU_sig, chisq_U, chisq_N);
-
-            shear_nu[j*result_col_nu] = gN;
-            shear_nu[j*result_col_nu + 1] = gN_sig;
-            shear_nu[j*result_col_nu + 2] = gU;
-            shear_nu[j*result_col_nu + 3] = gU_sig;
-            shear_nu[j*result_col_nu + 4] = chisq_N;
-            shear_nu[j*result_col_nu + 5] = chisq_U;
-        }
-        
         MPI_Barrier(MPI_COMM_WORLD);   
         my_Gatherv(shear_nu, send_count_nu, shear_result_nu, numprocs, rank);
         if(rank == 0)
@@ -361,28 +272,9 @@ int main(int argc, char**argv)
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
-        
-        gN = g2;
-        gU = g2;
-        for(j=0;j<iters;j++)
-        {   
-            // fix g_N, find the g_U
-            for(i=0;i<sub_row;i++){mg_temp[i] = mg2[i] - gN*mn[i];}
-            find_shear(mg_temp, mu, sub_row, 10, gU, gU_sig, chisq_U, check_temp, grid_row, 0, 100,-0.07, 0.07, 60);
-            // fix g_U, find the g_N
-            for(i=0;i<sub_row;i++){mg_temp[i] = mg2[i] - gU*mu[i];}
-            find_shear(mg_temp, mn, sub_row, 10, gN, gN_sig, chisq_N, check_temp, grid_row, 0, 100,-0.07, 0.07, 60);
-            
-            sprintf(temp_inform[j+iters], "Iter %d. (true %9.6f) g2_N: %9.6f (%9.6f). g2_U: %9.6f (%9.6f). chi^2: %.4f, %.4f", j, g2t[shear_id], gN, gN_sig, gU, gU_sig, chisq_U, chisq_N);
-            
-            shear_nu[j*result_col_nu] = gN;
-            shear_nu[j*result_col_nu + 1] = gN_sig;
-            shear_nu[j*result_col_nu + 2] = gU;
-            shear_nu[j*result_col_nu + 3] = gU_sig;
-            shear_nu[j*result_col_nu + 4] = chisq_N;
-            shear_nu[j*result_col_nu + 5] = chisq_U;
 
-        }
+        find_shear_iter(mg[1], mg[2], mg[3], data_row, bin_num, mg1_bin, 2, iters, shear_nu, chi_fit_num, -0.1, 0.1, 40);
+
         MPI_Barrier(MPI_COMM_WORLD);   
         my_Gatherv(shear_nu, send_count_nu, shear_result_nu, numprocs, rank);
         if(rank == 0)

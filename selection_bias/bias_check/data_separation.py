@@ -1,42 +1,52 @@
-import h5py
-from mpi4py import MPI
+import os
+my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path,argv
 path.append("/home/hklee/work/mylib")
+path.append('%s/work/mylib/' % my_home)
+import h5py
+from mpi4py import MPI
 import tool_box
-
+import numpy
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-shear_num = int(argv[2])
-n, m = divmod(shear_num, numprocs)
-tasks = [i for i in range(shear_num)]
+data_path = argv[1]
+if rank == 0:
+    all_files = os.listdir(data_path + "/data_ori")
 
-my_task = tool_box.allot(tasks,numprocs)[rank]
+    files = []
+    for al in all_files:
+        if "data" in al:
+            files.append(al)
+else:
+    files = None
 
-print(rank, my_task)
+comm.Barrier()
 
-total_path = argv[1]
-# # columns: [col_st, col_ed]
-# col_st, col_ed = int(argv[2]), int(argv[3])
-# # name of the sub-data file
-# sep_data_nm = argv[4]
-#
-# dst_nms = ["gauss_noise_1.hdf5", "gauss_noise_2.hdf5", "gauss_noise_residual.hdf5",
-#            "moffat_noise_1.hdf5", "moffat_noise_2.hdf5", "moffat_noise_residual.hdf5"]
-dst_nms = ["noise_free.hdf5", "noisy_img.hdf5"]
+files = comm.bcast(files, root=0)
+my_files = tool_box.alloc(files, numprocs)[rank]
 
-for ig in my_task:
-    src_path = total_path + "/data_%d.hdf5"%ig
-    h5f = h5py.File(src_path, "r")
-    total_data_ig = h5f["/data"].value
+for mf in my_files:
+    h5f = h5py.File(data_path + "/data_ori/%s"%mf,"r")
+    data = h5f["/data"][()]
     h5f.close()
-    print("Reading total data of shear %d"%ig,total_data_ig.shape)
 
-    for i in range(len(dst_nms)):
-        dst_path = total_path + "/data_%d_%s"%(ig,dst_nms[i])
-        h5f = h5py.File(dst_path,"w")
-        h5f["/data"] = total_data_ig[:,i*4:(i+1)*4]
-        h5f.close()
-        print("Write data %s of shear %d" % (dst_nms[i],ig), total_data_ig.shape)
+    h5f = h5py.File(data_path + "/data/%s"%mf, "w")
+    h5f["/mg1"] = data[:,0]
+    h5f["/mg2"] = data[:,1]
+    h5f["/mn"] = data[:,2]
+    h5f["/mu"] = data[:,3]
+    h5f["/mv"] = data[:,4]
+    h5f.close()
+
+    h5f = h5py.File(data_path + "/data_float32/%s"%mf, "w")
+    h5f.create_dataset("/mg1",data=data[:,0],dtype=numpy.float32)
+    h5f.create_dataset("/mg2",data=data[:,1],dtype=numpy.float32)
+    h5f.create_dataset("/mn",data=data[:,2],dtype=numpy.float32)
+    h5f.create_dataset("/mu",data=data[:,3],dtype=numpy.float32)
+    h5f.create_dataset("/mv",data=data[:,4],dtype=numpy.float32)
+    h5f.close()
+
+comm.Barrier()
