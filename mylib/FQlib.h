@@ -357,20 +357,23 @@ void cal_chisq_1d(const int *hist_num,  const int bin_num, const int num, double
 */
 
 
-void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale=1);
-void find_shear_mean(const float *mg, const float *mn, const int data_num, float &gh, float &gh_sig, const int sub_block_num, const float scale=1);
+void find_shear_mean(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, 
+						double &gh, double &gh_sig, const int sub_block_num, const double scale=1);
+void find_shear_mean(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, 
+						float &gh, float &gh_sig, const int sub_block_num, const float scale=1);
 /* 	if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
 	it's better to sum the sub-block and then add the these quantities together.
 */
 
-void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
+void find_shear_fit(const double *mg, const double *mnu, const int data_num, const int bin_num, const int chi_fit_num, double *chi_check, 
+					const double left, const double right, double &gh, double &gh_sig,double &chisq_min_fit, const int choice=0,const double max_scale=100.);
 
 
-void find_shear(const double *mg, const double *mn, const double*mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
-const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
+void find_shear(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, int g_label, double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const int choice=0, 
+				const double max_scale=100., const double ini_left = -0.1, const double ini_right = 0.1, const double chi_gap = 40);
 
-void find_shear(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, int g_label, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
-const float max_scale=100., const float ini_left = -0.1, const float ini_right = 0.1, const float chi_gap = 40);
+void find_shear(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, int g_label, float &gh, float &gh_sig, float & chisq_min_fit, float *chi_check, const int chi_fit_num = 20, const int choice=0, 
+				const float max_scale=100., const float ini_left = -0.1, const float ini_right = 0.1, const float chi_gap = 40);
 // checked
 /* estimate shear and sigma using dichotomy 
 	Fourier Quad shear estimators: G1, G2, N, U, V
@@ -403,8 +406,10 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 				  if < 0, all the points will be used for fitting.
 */
 
-void fourier_hist(const double *mg, const double* mn, const double *mu, const int data_num, const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num);
-void fourier_hist(const float *mg, const float* mn, const float *mu, const int data_num, const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num);
+void fourier_hist(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const double gh, 
+					const int g_label, const double *bins, int *num_in_bin, const int bin_num);
+void fourier_hist(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const float gh, 
+					const int g_label, const float *bins, int *num_in_bin, const int bin_num);
 
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
 void estimator_rotation(const float theta,const float mg1, const float mg2, const float mn, const float mu, const float mv, float *output);
@@ -591,6 +596,9 @@ void show_arr(const float*arr, const int rows, const int cols);//checked
 void initialize_para(fq_paras *paras);
 /* set the "gal_" parameters zero */
 
+
+void set_bin(double *data, const int data_num, double * bins, const int bin_num, const double max_scale);
+void set_bin(float *data, const int data_num, float * bins, const int bin_num, const float max_scale);
 void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale, int choice=0); //checked
 void set_bin(const float *data, const int data_num, float * bins, const int bin_num, const float max_scale, int choice=0);//checked
 void set_bin(const int *data, const int data_num, int * bins, const int bin_num, const int max_scale, int choice=0);//checked

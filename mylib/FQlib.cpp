@@ -2779,7 +2779,8 @@ void cal_chisq_1d(const int *hist_num, const int bin_num, const int num, double 
 
 
 
-void find_shear_mean(const double *mg, const double *mn, const int data_num, double &gh, double &gh_sig, const int sub_block_num, const double scale)
+void find_shear_mean(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col,
+						 double &gh, double &gh_sig, const int sub_block_num, const double scale)
 {
 	// if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
 	// it's better to sum the sub-block and then add the these quantities together.
@@ -2794,8 +2795,8 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 	int *num_in_block = new int[sub_block_num];
 	int *block_st = new int[sub_block_num];
 
-	m = data_num/sub_block_num;
-	n = data_num%sub_block_num;
+	m = data_row/sub_block_num;
+	n = data_row%sub_block_num;
 
 	for(i=0;i<sub_block_num;i++)
 	{
@@ -2819,25 +2820,27 @@ void find_shear_mean(const double *mg, const double *mn, const int data_num, dou
 		sub_sum2 = 0;
 		sub_sum3 = 0;
 
-		for(j=block_st[i];j<block_st[i]+num_in_block[i];j++)
-		{
-			sub_sum1 += mg[j]*s1;
-			sub_sum2 += mn[j]*s1;
-			sub_sum3 += (mg[j]*s1)*(mg[j]*s1);
+		for(j=block_st[i]; j<block_st[i]+num_in_block[i]; j++)
+		{	
+			m = j*data_col;
+			sub_sum1 += data_arr[m + mg_col]*s1;
+			sub_sum2 += data_arr[m + mn_col]*s1;
+			sub_sum3 += (data_arr[m + mg_col]*s1)*(data_arr[m + mg_col]*s1);
 		}
-		mg_mean += sub_sum1*(scale/data_num);
-		mn_mean += sub_sum2*(scale/data_num);
-		mg_sq_mean += sub_sum3*(scale*scale/data_num);
+		mg_mean += sub_sum1*(scale/data_row);
+		mn_mean += sub_sum2*(scale/data_row);
+		mg_sq_mean += sub_sum3*(scale*scale/data_row);
 	}
 
 	gh = mg_mean/mn_mean;
-	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_num);
+	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_row);
 
 	delete[] num_in_block;
 	delete[] block_st;
 }
 
-void find_shear_mean(const float *mg, const float *mn, const int data_num, float &gh, float &gh_sig, const int sub_block_num, const float scale)
+void find_shear_mean(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, 
+						float &gh, float &gh_sig, const int sub_block_num, const float scale)
 {
 	// if the data array is very large, say > 10^7\, then summing it directly may cause numerical problem
 	// it's better to sum the sub-block and then add the these quantities together.
@@ -2852,8 +2855,8 @@ void find_shear_mean(const float *mg, const float *mn, const int data_num, float
 	int *num_in_block = new int[sub_block_num];
 	int *block_st = new int[sub_block_num];
 
-	m = data_num/sub_block_num;
-	n = data_num%sub_block_num;
+	m = data_row/sub_block_num;
+	n = data_row%sub_block_num;
 
 	for(i=0;i<sub_block_num;i++)
 	{
@@ -2878,18 +2881,19 @@ void find_shear_mean(const float *mg, const float *mn, const int data_num, float
 		sub_sum3 = 0;
 
 		for(j=block_st[i];j<block_st[i]+num_in_block[i];j++)
-		{
-			sub_sum1 += mg[j]*s1;
-			sub_sum2 += mn[j]*s1;
-			sub_sum3 += (mg[j]*s1)*(mg[j]*s1);
+		{	
+			m = j*data_col;
+			sub_sum1 += data_arr[m+mg_col]*s1;
+			sub_sum2 += data_arr[m+mn_col]*s1;
+			sub_sum3 += (data_arr[m+mg_col]*s1)*(data_arr[m+mg_col]*s1);
 		}
-		mg_mean += sub_sum1*(scale/data_num);
-		mn_mean += sub_sum2*(scale/data_num);
-		mg_sq_mean += sub_sum3*(scale*scale/data_num);
+		mg_mean += sub_sum1*(scale/data_row);
+		mn_mean += sub_sum2*(scale/data_row);
+		mg_sq_mean += sub_sum3*(scale*scale/data_row);
 	}
 
 	gh = mg_mean/mn_mean;
-	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_num);
+	gh_sig = sqrt(mg_sq_mean/mn_mean/mn_mean/data_row);
 
 	delete[] num_in_block;
 	delete[] block_st;
@@ -2948,7 +2952,7 @@ void find_shear_fit(const double *mg, const double *mnu, const int data_num, con
 }
 
 
-void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+void find_shear(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
 				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j;
@@ -2963,18 +2967,30 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
 	double fit_max_chisq, new_end;
-	double *search_vals = new double[(max_iters+1)*record_col]{};
+	// double *search_vals = new double[(max_iters+1)*record_col]{};
 
 	int same = 0, iters = 0, change = 1;
 	double left = ini_left, right = ini_right, step;
 	double chi_left, chi_right, chi_mid;
 	double gh_left, gh_right, gh_mid;
+	
+	temp_num = data_row;
+	if(choice > 0)
+	{
+		temp_num = choice;
+	}
 
+	double *mg = new double[temp_num];
+	int ch_step = data_row / temp_num;
+	for(i=0;i<temp_num;i++){mg[i]=data_arr[i*ch_step*data_col + mg_col];}
+	
+	set_bin(mg, temp_num, bins, bin_num, max_scale);
+	delete[] mg;
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
-	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
-	//show_arr(bins, 1, bin_num + 1);
+	
+	// show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
 	while (change == 1)
 	{		
@@ -2985,23 +3001,23 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, gh_left, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_left, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			fourier_hist(mg, mn, mu, data_num, gh_mid, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_mid, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			fourier_hist(mg, mn, mu, data_num, gh_right, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_right, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
 		{
 			throw msg;
 		}
-		search_vals[iters*record_col] = gh_left;
-		search_vals[iters*record_col+1] = chi_left;
-		search_vals[iters*record_col+2] = gh_right;
-		search_vals[iters*record_col+3] = chi_right;
+		// search_vals[iters*record_col] = gh_left;
+		// search_vals[iters*record_col+1] = chi_left;
+		// search_vals[iters*record_col+2] = gh_right;
+		// search_vals[iters*record_col+3] = chi_right;
 
 		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
 
@@ -3023,9 +3039,9 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 		}
 	}
 	
-	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
+	// fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
 	
-	temp_num = 15;
+	temp_num = 7;
 	step = (right - left) / (temp_num - 1);
 	for (i = 0; i < temp_num; i++)
 	{
@@ -3035,7 +3051,7 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	{	
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3061,7 +3077,7 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	{	
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num,  gh_fit[i], g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3071,8 +3087,8 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 		chisq_fit[i] = chi_right;
 		if (chi_check)
 		{	// for checking
-			chi_check[i] = chi_right;
-			chi_check[chi_fit_num + i] = gh_fit[i];
+			chi_check[i] = gh_fit[i];
+			chi_check[chi_fit_num + i] = chi_right;
 		}
 	}
 	
@@ -3085,12 +3101,12 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] bins;
-	delete[] search_vals;
+	// delete[] search_vals;
 	delete[] num_in_bin;
 }
 
 
-void find_shear(const float *mg, const float *mn, const float*mu, const int data_num, const int bin_num, const int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
+void find_shear(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, const int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
 				const int choice, const float max_scale, const float ini_left, const float ini_right, const float chi_gap)
 {
 	int i, j;
@@ -3108,7 +3124,7 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 	int record_col = 4;
 	int left_tag=-1, right_tag=-1;
 	float fit_max_chisq, new_end;
-	float *search_vals = new float[(max_iters+1)*record_col]{};
+	// float *search_vals = new float[(max_iters+1)*record_col]{};
 
 	int same = 0, iters = 0, change = 1;
 	float left = ini_left, right = ini_right, step;
@@ -3118,7 +3134,18 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 	//double st1, st2, st3, st4, st5, st6;
 	//st1 = clock();
 	// set the bins for G1(2)
-	set_bin(mg, data_num, bins, bin_num, max_scale, choice);
+	temp_num = data_row;
+	if(choice > 0)
+	{
+		temp_num = choice;
+	}
+
+	float *mg = new float[temp_num];
+	int ch_step = data_row / temp_num;
+	for(i=0;i<temp_num;i++){mg[i]=data_arr[i*ch_step*data_col + mg_col];}
+	
+	set_bin(mg, temp_num, bins, bin_num, max_scale);
+	delete[] mg;
 	// show_arr(bins, 1, bin_num + 1);
 	//st2 = clock();
 	while (change == 1)
@@ -3130,23 +3157,23 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 
 		try
 		{	
-			fourier_hist(mg, mn, mu, data_num, gh_left, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_left, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			fourier_hist(mg, mn, mu, data_num, gh_mid, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_mid, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			fourier_hist(mg, mn, mu, data_num, gh_right, g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_right, g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
 		{
 			throw msg;
 		}
-		search_vals[iters*record_col] = gh_left;
-		search_vals[iters*record_col+1] = chi_left;
-		search_vals[iters*record_col+2] = gh_right;
-		search_vals[iters*record_col+3] = chi_right;
+		// search_vals[iters*record_col] = gh_left;
+		// search_vals[iters*record_col+1] = chi_left;
+		// search_vals[iters*record_col+2] = gh_right;
+		// search_vals[iters*record_col+3] = chi_right;
 
 		//std::cout << left << " "<< gh_left<<" "<< gh_mid<<" "<< gh_right <<" "<< right << std::endl;
 
@@ -3168,11 +3195,11 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 		}
 	}
 	
-	fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
+	// fit_max_chisq = std::max(chi_left, chi_right)+chi_gap;
 	// std::cout<<right<<" "<<left<<std::endl;
 	// std::cout<<"chi max "<<fit_max_chisq<<std::endl;
 
-	temp_num = 10;
+	temp_num = 7;
 	step = (right - left) / (temp_num - 1);
 	for (i = 0; i < temp_num; i++)
 	{
@@ -3182,7 +3209,7 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 	{	
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, gh_fit[i], g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_fit[i], g_label, bins, num_in_bin, bin_num);
 
 			// std::cout<<i<<" "<<gh_fit[i]<<std::endl;
 			// show_arr(num_in_bin, 1, bin_num);
@@ -3215,7 +3242,7 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 	{	
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, gh_fit[i], g_label, bins, num_in_bin, bin_num);
+			fourier_hist(data_arr, data_row, data_col, mg_col, mn_col, mu_col, gh_fit[i], g_label, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3239,7 +3266,7 @@ void find_shear(const float *mg, const float *mn, const float*mu, const int data
 	delete[] gh_fit;
 	delete[] chisq_fit;
 	delete[] bins;
-	delete[] search_vals;
+	// delete[] search_vals;
 	delete[] num_in_bin;
 }
 
@@ -3394,18 +3421,20 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 
 }
 
-void fourier_hist(const double *mg, const double* mn, const double *mu, const int data_num, const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num)
+void fourier_hist(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, 
+					const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num)
 {
-	int i,j;
-	double temp, g1, g2;
+	int i,j, k;
+	double temp;
 
 	initialize_arr(num_in_bin, bin_num, 0);
 
 	if(g_label==1)
 	{
-		for(i=0;i<data_num;i++)
-		{
-			temp = mg[i] - gh*(mn[i] + mu[i]);
+		for(i=0;i<data_row;i++)
+		{	
+			k = i*data_col;
+			temp = data_arr[k+mg_col] - gh*(data_arr[k+mn_col] + data_arr[k+mu_col]);
 			
 			for(j=0;j<bin_num;j++)
 			{
@@ -3419,9 +3448,11 @@ void fourier_hist(const double *mg, const double* mn, const double *mu, const in
 	}
 	else
 	{
-		for(i=0;i<data_num;i++)
-		{
-			temp = mg[i] - gh*(mn[i] - mu[i]);
+		for(i=0;i<data_row;i++)
+		{	
+			k = i*data_col;
+			temp = data_arr[k+mg_col] - gh*(data_arr[k+mn_col] - data_arr[k+mu_col]);
+			
 			for(j=0;j<bin_num;j++)
 			{
 				if(temp >= bins[j] and temp < bins[j+1])
@@ -3434,18 +3465,20 @@ void fourier_hist(const double *mg, const double* mn, const double *mu, const in
 	}
 }
 
-void fourier_hist(const float *mg, const float* mn, const float *mu, const int data_num, const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num)
+void fourier_hist(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col,
+					const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num)
 {
-	int i,j;
+	int i,j, k;
 	float temp;
 
 	initialize_arr(num_in_bin, bin_num, 0);
 
 	if(g_label==1)
 	{
-		for(i=0;i<data_num;i++)
-		{
-			temp = mg[i] - gh*(mn[i] + mu[i]);
+		for(i=0;i<data_row;i++)
+		{	
+			k = i*data_col;
+			temp = data_arr[k+mg_col] - gh*(data_arr[k+mn_col] + data_arr[k+mu_col]);
 			
 			for(j=0;j<bin_num;j++)
 			{
@@ -3459,9 +3492,11 @@ void fourier_hist(const float *mg, const float* mn, const float *mu, const int d
 	}
 	else
 	{
-		for(i=0;i<data_num;i++)
-		{
-			temp = mg[i] - gh*(mn[i] - mu[i]);
+		for(i=0;i<data_row;i++)
+		{	
+			k = i*data_col;
+			temp = data_arr[k+mg_col] - gh*(data_arr[k+mn_col] - data_arr[k+mu_col]);
+			
 			for(j=0;j<bin_num;j++)
 			{
 				if(temp >= bins[j] and temp < bins[j+1])
@@ -4832,6 +4867,53 @@ void initialize_para(fq_paras *paras)
 }
 
 
+void set_bin(double *data, const int data_num, double * bins, const int bin_num, const double max_scale)
+{
+	int i;
+	int mid = bin_num / 2, step, num;
+	
+	for (i = 0; i < data_num; i++)
+	{
+		data[i] = fabs(data[i]);
+	}
+
+	step = data_num / bin_num * 2;
+	sort_arr(data, data_num, 1);
+	
+	// make the boundary big enough to enclose all the data
+	bins[0] = -data[data_num-1] * max_scale;
+	bins[bin_num] = data[data_num-1] * max_scale;
+	bins[mid] = 0;
+	for (i = 1; i < bin_num / 2; i++)
+	{
+		bins[mid + i] = data[step*i];
+		bins[mid - i] = -data[step*i];
+	}
+
+}
+void set_bin(float *data, const int data_num, float * bins, const int bin_num, const float max_scale)
+{
+	int i;
+	int mid = bin_num / 2, step, num;
+	
+	for (i = 0; i < data_num; i++)
+	{
+		data[i] = fabs(data[i]);
+	}
+
+	step = data_num / bin_num * 2;
+	sort_arr(data, data_num, 1);
+	
+	// make the boundary big enough to enclose all the data
+	bins[0] = -data[data_num-1] * max_scale;
+	bins[bin_num] = data[data_num-1] * max_scale;
+	bins[mid] = 0;
+	for (i = 1; i < bin_num / 2; i++)
+	{
+		bins[mid + i] = data[step*i];
+		bins[mid - i] = -data[step*i];
+	}
+}
 
 void set_bin(const double *data, const int data_num, double * bins, const int bin_num, const double max_scale, int choice)
 {

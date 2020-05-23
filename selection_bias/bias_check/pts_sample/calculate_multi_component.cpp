@@ -47,8 +47,9 @@ int main(int argc, char**argv)
     int*shear_point;
     MY_FLOAT *shears, *g1_t, *g2_t;
     MY_FLOAT gh1, gh1_sig, gh2, gh2_sig;
-
+    int mg1_idx, mg2_idx, mn_idx, mu_idx, mv_idx;
     int mg_bin_num;
+
     MY_FLOAT *mg_bins;
     int chi_check_num;
     MY_FLOAT *chi_check;
@@ -61,7 +62,7 @@ int main(int argc, char**argv)
 
     int data_col, data_row;
     int result_col;
-    MY_FLOAT *data, *mg1, *mg2,*mn,*mnu1, *mnu2;
+    MY_FLOAT *data, *data_buffer;
     MY_FLOAT weight;
 
     // for results
@@ -80,13 +81,17 @@ int main(int argc, char**argv)
     shear_num = atoi(argv[6]);
     data_row = atoi(argv[7])*10000;
 
-    data_col = 5;// G1, G2, N, U
+    data_col = 5;// G1, G2, N, U, V
     result_col = 4;// g1, g1_sig, g2, g2_sig
     mg_bin_num = 10;//atoi(argv[4]);
     chi_check_num =20;
     left_guess = -0.1;
     right_guess = 0.1;
-    
+    mg1_idx=0;
+    mg2_idx=1;
+    mn_idx=2;
+    mu_idx=3;
+    mv_idx=4;
     rotation = new MY_FLOAT[5];
 
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
@@ -94,11 +99,8 @@ int main(int argc, char**argv)
     sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, result_nm);
 
     data = new MY_FLOAT[data_row*data_col]{};
-    mg1 = new MY_FLOAT[data_row]{};
-    mg2 = new MY_FLOAT[data_row]{};
-    mn = new MY_FLOAT[data_row]{};
-    mnu1 = new MY_FLOAT[data_row]{};
-    mnu2 = new MY_FLOAT[data_row]{};
+    data_buffer = new MY_FLOAT[data_row*data_col]{};
+
 
     shear_point = new int[numprocs]{};
     send_count = new int[numprocs]{};
@@ -179,13 +181,9 @@ int main(int argc, char**argv)
         {
             std::cout<<data_path_1<<std::endl;
         }
-        for(k=0;k<data_row;k++)
+        for(k=0;k<data_row*data_col;k++)
         {
-            mg1[k] = data[k*data_col];
-            mg2[k] = data[k*data_col + 1];
-            mn[k] = data[k*data_col + 2];
-            mnu1[k] = data[k*data_col + 2] + data[k*data_col + 3];
-            mnu2[k] = data[k*data_col + 2] - data[k*data_col + 3];
+            data_buffer[k] = data[k];
         }
 
         sprintf(data_path_2,"%s/data_%s_%d.hdf5",parent_path, data_type_2, i);
@@ -195,26 +193,31 @@ int main(int argc, char**argv)
         {
             std::cout<<data_path_2<<std::endl;
         }
-        for(k=0;k<data_row;k++)
+
+        if(shear_rotation_cmd == 0)
         {
-            if(shear_rotation_cmd == 0)
+            for(k=0;k<data_row*data_col;k++){data_buffer[k] += data[k];}
+        }
+        else
+        {   
+            for(k=0;k<data_row;k++)
             {
-                mg1[k] = mg1[k] + data[k*data_col];
-                mg2[k] = mg2[k] + data[k*data_col + 1];
-                mn[k] = mn[k] + data[k*data_col + 2];
-                mnu1[k] = mnu1[k] + (data[k*data_col + 2] + data[k*data_col + 3]);
-                mnu2[k] = mnu2[k] + (data[k*data_col + 2] - data[k*data_col + 3]);
-            }
-            else
-            {
-                estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-                mg1[k] = mg1[k] + rotation[0];
-                mg2[k] = mg2[k] + rotation[1];
-                mn[k] = mn[k] + rotation[2];
-                mnu1[k] = mnu1[k] + rotation[2] + rotation[3];
-                mnu2[k] = mnu2[k] + rotation[2] - rotation[3];
+                estimator_rotation(Pi/2, data[k*data_col+mg1_idx],data[k*data_col+mg2_idx],
+                                    data[k*data_col+mn_idx],data[k*data_col+mu_idx],data[k*data_col+mv_idx],rotation);
+
+                data_buffer[k*data_col + mg1_idx] += rotation[mg1_idx];
+                data_buffer[k*data_col + mg2_idx] +=  rotation[mg2_idx];      
+                data_buffer[k*data_col + mn_idx] +=  rotation[mn_idx];      
+                data_buffer[k*data_col + mu_idx] +=  rotation[mu_idx];      
+
+                // mg1[k] = mg1[k] + rotation[0];
+                // mg2[k] = mg2[k] + rotation[1];
+                // mn[k] = mn[k] + rotation[2];
+                // mnu1[k] = mnu1[k] + rotation[2] + rotation[3];
+                // mnu2[k] = mnu2[k] + rotation[2] - rotation[3];
             }
         }
+        
         
         // sprintf(data_path_3,"%s/data_%d_%s.hdf5",parent_path, i, data_type_3);
         // read_h5(data_path_3, set_name, data);
@@ -235,8 +238,8 @@ int main(int argc, char**argv)
 
 
         // MEAN
-        find_shear_mean(mg1, mn, data_row, gh1, gh1_sig, 1000,100);
-        find_shear_mean(mg2, mn, data_row, gh2, gh2_sig, 1000,100);
+        find_shear_mean(data_buffer, data_row, data_col, mg1_idx, mn_idx, gh1, gh1_sig, 1000,100);
+        find_shear_mean(data_buffer, data_row, data_col, mg2_idx, mn_idx, gh2, gh2_sig, 1000,100);
 
         result_sub_mean[(i-shear_st)*result_col] = gh1;
         result_sub_mean[(i-shear_st)*result_col + 1] = gh1_sig;
@@ -248,7 +251,7 @@ int main(int argc, char**argv)
         // PDF_SYM
         try
         {
-            find_shear(mg1, mnu1, data_row, mg_bin_num, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(data_buffer, data_row,data_col,mg1_idx, mn_idx, mu_idx, mg_bin_num, 1, gh1, gh1_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg1, mnu1, data_row, mg_bin_num, chi_check_num,chi_check ,left_guess, right_guess, gh1, gh1_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -262,7 +265,7 @@ int main(int argc, char**argv)
 
         try
         {
-            find_shear(mg2, mnu2, data_row, mg_bin_num, gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
+            find_shear(data_buffer, data_row,data_col, mg2_idx, mn_idx, mu_idx, mg_bin_num, 2,  gh2, gh2_sig, chisq_min_fit,chi_check, chi_check_num);
             //find_shear_fit(mg2, mnu2, data_row, mg_bin_num, chi_check_num, chi_check, left_guess, right_guess,  gh2, gh2_sig);
             for(k=0;k<2*chi_check_num;k++)
             {
@@ -420,11 +423,7 @@ int main(int argc, char**argv)
     delete[] result_sub_pdf;
 
     delete[] data;
-    delete[] mnu2;
-    delete[] mnu1;
-    delete[] mn;
-    delete[] mg2;
-    delete[] mg1;
+    delete[] data_buffer;
     delete[] shear_point;
     delete[] g1_t;
     delete[] g2_t;
