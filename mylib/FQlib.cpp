@@ -97,6 +97,607 @@ void segment(const int *chip, int *stamp, const int tag, const int size, const i
 }
 
 
+
+void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
+{	/* remember to add the peak detection! to locate the source */
+	/* it will not change the inputted array */
+	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
+	int s = y_size*x_size;
+	int peak = 0, yp, xp, area = 0, half_light_area = 0;
+	double flux = 0, flux_sq = 0, half_light_flux = 0;
+	int  len0 = 0, len=0, s_num = 0, num0, num, num_new;
+	double detect_thresh = paras->detect_thresh;
+	double *cp_img = new double[s] {};
+	int *temp_x = new int[s] {};
+	int *temp_y = new int[s] {};
+	int cross_x[4]{ -1,1,0,0 };
+	int cross_y[4]{ 0,0,-1,1 };
+	
+	/* copy and mask the candidates pixels */
+	for (i = 0; i < s; i++)
+	{
+			if (source_img[i] >= detect_thresh)
+			{
+				cp_img[i] = source_img[i];
+			}
+	}
+	
+	/* search the source by FoF */	
+	for (i = 0; i < y_size; i++)
+	{
+		for (j = 0; j < x_size; j++)
+		{
+			if (cp_img[i*x_size + j] > 0)
+			{	
+				peak = 0;
+				half_light_area = 0;
+				half_light_flux = 0;
+				flux = cp_img[i*x_size + j];
+				flux_sq = flux*flux;
+
+				// if(i==29 and j ==30)
+				// {
+				// 	std::cout<<"Begin peak: "<<peak<<std::endl;
+				// }
+
+				len = 0;
+				num0 = 0;
+				num = 1;
+				/* the temp_x, _y are the temporal array to store the coordinates of the source detected*/
+				temp_x[len] = j;
+				temp_y[len] = i;
+				len = 1;
+				cp_img[i*x_size + j] = 0;
+				while (num0 != num)
+				{
+					num_new = num - num0;
+					num0 = len;
+					for (k = num0 - num_new; k < num0; k++)
+					{	
+						if (cross)/* search the nearest four pixels */
+						{	
+							for (c = 0; c < 4; c++)
+							{
+								tx = temp_x[k] + cross_x[c];
+								ty = temp_y[k] + cross_y[c];
+								if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+								{
+									temp_x[len] = tx;
+									temp_y[len] = ty;
+									if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+									{
+										peak = cp_img[ty*x_size + tx];
+										yp = ty;
+										xp = tx;
+									}
+									flux = flux + cp_img[ty*x_size + tx];
+									flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+									cp_img[ty*x_size + tx] = 0; /* mask each pixel after detection */
+									
+									len++;
+								}
+							}							
+						}
+						else /* search the nearest eight pixels */
+						{
+							for (iy = -1; iy < 2; iy++)
+							{
+								ty = temp_y[k] + iy;
+								for (ix = -1; ix < 2; ix++)
+								{
+									tx = temp_x[k] + ix;									
+									if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+									{
+										temp_x[len] = tx;
+										temp_y[len] = ty;
+										if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+										{
+											peak = cp_img[ty*x_size + tx];
+											yp = ty;
+											xp = tx;
+
+											// if(i==29 and j ==30)
+											// {
+											// 	std::cout<<"Finding: "<<peak<<" "<<yp<<" "<<xp<<" "<<ty<<" "<<tx<<std::endl;
+											// }
+										}
+										flux = flux + cp_img[ty*x_size + tx];
+										flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+										cp_img[ty*x_size + tx] = 0;
+										len++;
+									}
+								}
+							}
+						}
+					}
+					num = len;
+				}
+
+				if (len >= paras->area_thresh)
+				{	
+					//std::cout<<len<<" "<<yp<<" "<<xp<<std::endl;
+					if (s_num >= paras->max_source)
+					{
+						std::cout << "Too many source!" << std::endl;
+						info = "Too many source!";
+						break;
+					}
+					for (m = 0; m < len; m++)
+					{
+
+						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak*0.5) /* to calculate the half light radius */							
+						{
+							half_light_area++;
+							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
+						}
+						source_x[len0 + m] = temp_x[m];
+						source_y[len0 + m] = temp_y[m];						
+					}
+
+					source_paras[8 * s_num] = len; /* length of source */
+					source_paras[8 * s_num + 1] = yp; /* 'y' of peak of source */
+					source_paras[8 * s_num + 2] = xp; /* 'x' of peak of source */
+					source_paras[8 * s_num + 3] = peak ; /* peak value of source */
+					source_paras[8 * s_num + 4] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
+					source_paras[8 * s_num + 5] = flux; /* total flux of source */
+					source_paras[8 * s_num + 6] = half_light_flux; /* half light flux */
+					source_paras[8 * s_num + 7] = flux_sq; /* sum of square of flux of each source pixel */
+					len0 += len;
+					s_num++;
+					
+				}
+			}
+		}
+	}
+	if (info != "Too many source!")
+	{
+		info = "Normal.";
+	}
+	delete[] cp_img;
+	delete[] temp_x;
+	delete[] temp_y;
+	detection = s_num;
+}
+
+void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
+{	/* remember to add the peak detection! to locate the source */
+	/* it will not change the inputted array */
+	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
+	int s = y_size * x_size;
+	int peak = 0, yp, xp, area = 0, half_light_area = 0;
+	float flux = 0, flux_sq = 0, half_light_flux = 0;
+	int  len0 = 0, len = 0, s_num = 0, num0, num, num_new;
+	float detect_thresh = paras->detect_thresh;
+	float *cp_img = new float[s] {};
+	int *temp_x = new int[s] {};
+	int *temp_y = new int[s] {};
+	int cross_x[4]{ -1,1,0,0 };
+	int cross_y[4]{ 0,0,-1,1 };
+
+	/* copy and mask the candidates pixels */
+	for (i = 0; i < s; i++)
+	{
+		if (source_img[i] >= detect_thresh)
+		{
+			cp_img[i] = source_img[i];
+		}
+	}
+
+	/* search the source by FoF */
+	for (i = 0; i < y_size; i++)
+	{
+		for (j = 0; j < x_size; j++)
+		{
+			if (cp_img[i*x_size + j] > 0)
+			{
+				peak = 0;
+				half_light_area = 0;
+				half_light_flux = 0;
+				flux = cp_img[i*x_size + j];
+				flux_sq = flux * flux;
+
+				len = 0;
+				num0 = 0;
+				num = 1;
+				/* the temp_x, _y are the temporal array to store the coordinates of the source detected*/
+				temp_x[len] = j;
+				temp_y[len] = i;
+				len = 1;
+				cp_img[i*x_size + j] = 0;
+				while (num0 != num)
+				{
+					num_new = num - num0;
+					num0 = len;
+					for (k = num0 - num_new; k < num0; k++)
+					{
+						if (cross)/* search the nearest four pixels */
+						{
+							for (c = 0; c < 4; c++)
+							{
+								tx = temp_x[k] + cross_x[c];
+								ty = temp_y[k] + cross_y[c];
+								if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+								{
+									temp_x[len] = tx;
+									temp_y[len] = ty;
+									if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+									{
+										peak = cp_img[ty*x_size + tx];
+										yp = ty;
+										xp = tx;
+									}
+									flux = flux + cp_img[ty*x_size + tx];
+									flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+									cp_img[ty*x_size + tx] = 0; /* mask each pixel after detection */
+
+									len++;
+								}
+							}
+						}
+
+						else /* search the nearest nine pixels */
+						{
+							for (iy = -1; iy < 2; iy++)
+							{
+								ty = temp_y[k] + iy;
+								for (ix = -1; ix < 2; ix++)
+								{
+									tx = temp_x[k] + ix;
+									if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
+									{
+										temp_x[len] = tx;
+										temp_y[len] = ty;
+										if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
+										{
+											peak = cp_img[ty*x_size + tx];
+											yp = ty;
+											xp = tx;
+										}
+										flux = flux + cp_img[ty*x_size + tx];
+										flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
+										cp_img[ty*x_size + tx] = 0;
+										len++;
+									}
+								}
+							}
+						}
+					}
+					num = len;
+				}
+
+				if (len >= paras->area_thresh)
+				{
+					if (s_num >= paras->max_source)
+					{
+						std::cout << "Too many source!" << std::endl;
+						info = "Too many source!";
+						break;
+					}
+					for (m = 0; m < len; m++)
+					{
+
+						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak * 0.5) /* to calculate the half light radius */
+						{
+							half_light_area++;
+							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
+						}
+						source_x[len0 + m] = temp_x[m];
+						source_y[len0 + m] = temp_y[m];
+					}
+
+					source_paras[8 * s_num] = len; /* length of source */
+					source_paras[8 * s_num + 1] = yp; /* 'y' of peak of source */
+					source_paras[8 * s_num + 2] = xp; /* 'x' of peak of source */
+					source_paras[8 * s_num + 3] = peak; /* peak value of source */
+					source_paras[8 * s_num + 4] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
+					source_paras[8 * s_num + 5] = flux; /* total flux of source */
+					source_paras[8 * s_num + 6] = half_light_flux; /* half light flux */
+					source_paras[8 * s_num + 7] = flux_sq; /* sum of square of flux of each source pixel */
+					len0 += len;
+					s_num++;
+					
+				}
+			}
+		}
+	}
+	if (info != "Too many source!")
+	{
+		info = "Normal.";
+	}
+	delete[] cp_img;
+	delete[] temp_x;
+	delete[] temp_y;
+	detection = s_num;
+}
+
+
+
+void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
+{	
+	// find the galaxies in a stamp !!
+
+	// the number, 8, of parameters for each source detected, 
+	// if it is changed please must change the element number in source_detector()!!!
+	int elem_unit = 8; 
+	int source_num, area = 0, hlr_area, yp, xp, pix_label;
+	int size = paras->stamp_size;
+	int pix_num = size * size;
+	int xc = size / 2, yc = size / 2;
+	int detect = -1; 
+	double cen_x, cen_y;
+	int tag_s = 0,tag_e, i, j;
+
+	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
+	double dy, dx;
+	int *source_x = new int[pix_num] {};
+	int *source_y = new int[pix_num] {};
+
+	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
+
+	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
+	//std::cout << "Source num: "<<source_num << std::endl;
+
+	// find the max source which will be regarded as the target source
+	int max_tag=-1, max_area=0;
+	for ( i = 0; i < source_num; i++)
+	{		
+		area = source_para[i * elem_unit];
+		dy = 0;
+		dx = 0;
+
+		// find the mean x & y of each source
+		if (i > 0)
+		{
+			tag_s += source_para[(i-1)*elem_unit];
+		}
+		else
+		{
+			tag_s = 0;
+		}
+		tag_e = tag_s + area;
+		
+		//std::cout<<tag_s<<" "<<tag_e<<" "<<area<<std::endl;
+
+		for (j = tag_s; j < tag_e; j++)
+		{
+			dy = dy + source_y[j] - yc;
+			dx = dx + source_x[j] - xc;
+		}
+
+		radius = (dy*dy+ dx*dx)/area/area;
+		//std::cout<<dy/area<<" "<<dx/area<<" "<<radius<<std::endl;
+		// if the centroid locates within max_distance,
+		// it will be regarded as the source
+		if (radius <= max_distance and area >= max_area)
+		{
+			max_tag = i;
+			max_area = area;
+		}
+		//std::cout<<i<<" "<<source_para[i * elem_unit + 1]<<" "<<source_para[i * elem_unit + 2]<<" "<<dy<<" "<<dx<<" "<<radius<<" "<<area<<std::endl;
+	}
+	detect = max_tag;
+
+	// mask the source
+	double sub_max;
+	for ( i = 0; i < source_num; i++)
+	{	
+		// start point of source_y(x) of i'th source
+		if (i > 0)
+		{
+			tag_s += source_para[(i-1)*elem_unit];
+		}
+		else
+		{
+			tag_s = 0;
+		}
+		area = source_para[i * elem_unit];
+		sub_max = 0;
+		for (j = tag_s; j < tag_s + area; j++)
+		{	
+			// detection mask
+			pix_label = source_y[j] * size + source_x[j];
+			check_mask[pix_label] = 1;
+			if(stamp_arr[pix_label] > sub_max)
+			{
+				yp = source_y[j];
+				xp = source_x[j];
+				sub_max = stamp_arr[pix_label];
+			}
+		}
+		check_mask[yp * size + xp] = 2;
+	}
+
+	if (detect > -1)
+	{	
+		// mask the target galaxy
+		tag_s = 0;
+		for (i = 0; i < detect; i++)
+		{
+			tag_s += source_para[i*elem_unit];
+		}
+		tag_e = tag_s + source_para[detect*elem_unit];
+		for (i = tag_s; i < tag_e; i++)
+		{
+			check_mask[source_y[i] * size + source_x[i]] = 2;
+		}
+		
+		pix_label = int(source_para[detect * elem_unit + 1] * size + source_para[detect * elem_unit + 2]);
+		check_mask[pix_label] = 3;
+
+		paras->gal_size = area;
+		paras->gal_py = source_para[detect * elem_unit + 1];
+		paras->gal_px = source_para[detect * elem_unit + 2];
+		paras->gal_peak = source_para[detect * elem_unit + 3];
+		paras->gal_hsize = source_para[detect * elem_unit + 4];
+		paras->gal_flux = source_para[detect * elem_unit + 5];
+		paras->gal_hflux = source_para[detect * elem_unit + 6];
+
+		paras->gal_effective_radius = sqrt(area / Pi);
+		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
+		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
+	}
+	else
+	{
+		initialize_para(paras); // set the relative parameters to zero
+	}
+	delete[] source_x;
+	delete[] source_y;
+	delete[] source_para;
+	detect_label = detect;
+}
+
+void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
+{
+	int elem_unit = 8; // the number of parameters for each source detected 
+	int source_num, area = 0, hlr_area, yp, xp;
+	int size = paras->stamp_size, pix_num = size * size;
+	int xc = size / 2, yc = size / 2;
+	int detect = -1;
+
+	int tag_s = 0, tag_e, i, j;
+
+	double hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
+	double dy, dx;
+	int *source_x = new int[pix_num] {};
+	int *source_y = new int[pix_num] {};
+
+	float *source_para = new float[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
+
+	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
+	//std::cout << source_num << std::endl;
+
+	int max_tag=-1, max_area=0;
+	for ( i = 0; i < source_num; i++)
+	{		
+		dy = source_para[i * elem_unit + 1] - yc;
+		dx = source_para[i * elem_unit + 2] - xc;
+		radius = dy*dy+ dx*dx;
+		area = source_para[i * elem_unit];
+		if (radius <= max_distance and area >= max_area)
+		{
+			max_tag = i;
+			max_area = area;
+		}
+	}
+	detect = max_tag;
+
+	for (i = 0; i < source_num; i++)
+	{
+		// start point of source_y(x) of i'th source
+		if (i > 0)
+		{
+			tag_s += source_para[(i - 1)*elem_unit];
+		}
+		else
+		{
+			tag_s = 0;
+		}
+		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
+		{
+			// detection mask
+			check_mask[source_y[j] * size + source_x[j]] = 1;
+		}
+	
+	}
+
+	if (detect > -1)
+	{
+		// mask the target galaxy
+		tag_s = 0;
+		int tag_e;
+		for (i = 0; i < detect; i++)
+		{
+			tag_s += source_para[i*elem_unit];
+		}
+		tag_e = tag_s + source_para[detect*elem_unit];
+		for (i = tag_s; i < tag_e; i++)
+		{
+			check_mask[source_y[i] * size + source_x[i]] = 2;
+		}
+
+		paras->gal_size = area;
+		paras->gal_py = source_para[detect * elem_unit + 1];
+		paras->gal_px = source_para[detect * elem_unit + 2];
+		paras->gal_peak = source_para[detect * elem_unit + 3];
+		paras->gal_hsize = source_para[detect * elem_unit + 4];
+		paras->gal_flux = source_para[detect * elem_unit + 5];
+		paras->gal_hflux = source_para[detect * elem_unit + 6];
+
+		paras->gal_effective_radius = sqrt(area / Pi);
+		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
+		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
+	}
+	else
+	{
+		initialize_para(paras); // set the relative parameters to zero
+	}
+	delete[] source_x;
+	delete[] source_y;
+	delete[] source_para;
+	detect_label = detect;
+}
+
+int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, fq_paras *paras, const int iters)
+{
+	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
+	int *cp_y = new int[size*size]{};
+	int *cp_x = new int[size*size]{};
+	for (i = source_id; i < source_len+ source_id; i++)
+	{
+		// copy of source coordinates 
+		cp_y[i - source_id] = source_y[i];
+		cp_x[i - source_id] = source_x[i];
+		// label the source pixel on the mask
+		mask[source_y[i] * size + source_x[i]] = 1;
+	}
+	
+	pix_len_0 = 0;
+	pix_len = source_len;
+
+	for (i = 0; i < iters; i++)
+	{	
+		// count the newly added pixels
+		pix_new = pix_len - pix_len_0;
+		// label the source length at the biginning
+		pix_len_0 = pix_len;
+		// each time search around the newly added pixels
+		for (j = pix_len_0 - pix_new; j < pix_len_0; j++)
+		{
+			for (m = -1; m < 2; m++)
+			{
+				iy = cp_y[j] + m;
+				if (iy >= 0 && iy < size)
+				{
+					for (n = -1; n < 2; n++)
+					{
+						ix = cp_x[j] + n;
+						if (ix >= 0 && ix < size && mask[iy*size + ix] == 0)
+						{	
+							mask[iy*size + ix] = sub;
+							// add the newly found pixels to source list
+							// and increase the pixel counts
+							cp_y[pix_len] = iy;
+							cp_x[pix_len] = ix;
+							//sprintf(buffer, "%d, (%d, %d) --> (%d, %d), %d", j, cp_y[j], cp_x[j], iy, ix, pix_len);
+							//std::cout << buffer << std::endl;
+							pix_len++;
+						}
+					}
+				}
+			}
+		}
+		sub++;
+	}
+	
+	delete[] cp_y;
+	delete[] cp_x;
+	return pix_len;
+}
+
+
+
 void create_points(double *point, const int num_p, const double radius, const double step, const gsl_rng *gsl_rand_rng)
 {	/* point is the container of the coordinates of the points created which should has 2*num_p elements ,[x..., y....]*/
 	int i;
@@ -1202,605 +1803,6 @@ void get_quad(const float *img, const int img_size, const float img_cent, const 
 }
 
 
-
-
-void source_detector(const double *source_img, int *source_x, int*source_y, double*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
-{	/* remember to add the peak detection! to locate the source */
-	/* it will not change the inputted array */
-	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
-	int s = y_size*x_size;
-	int peak = 0, yp, xp, area = 0, half_light_area = 0;
-	double flux = 0, flux_sq = 0, half_light_flux = 0;
-	int  len0 = 0, len=0, s_num = 0, num0, num, num_new;
-	double detect_thresh = paras->detect_thresh;
-	double *cp_img = new double[s] {};
-	int *temp_x = new int[s] {};
-	int *temp_y = new int[s] {};
-	int cross_x[4]{ -1,1,0,0 };
-	int cross_y[4]{ 0,0,-1,1 };
-	
-	/* copy and mask the candidates pixels */
-	for (i = 0; i < s; i++)
-	{
-			if (source_img[i] >= detect_thresh)
-			{
-				cp_img[i] = source_img[i];
-			}
-	}
-	
-	/* search the source by FoF */	
-	for (i = 0; i < y_size; i++)
-	{
-		for (j = 0; j < x_size; j++)
-		{
-			if (cp_img[i*x_size + j] > 0)
-			{	
-				peak = 0;
-				half_light_area = 0;
-				half_light_flux = 0;
-				flux = cp_img[i*x_size + j];
-				flux_sq = flux*flux;
-
-				// if(i==29 and j ==30)
-				// {
-				// 	std::cout<<"Begin peak: "<<peak<<std::endl;
-				// }
-
-				len = 0;
-				num0 = 0;
-				num = 1;
-				/* the temp_x, _y are the temporal array to store the coordinates of the source detected*/
-				temp_x[len] = j;
-				temp_y[len] = i;
-				len = 1;
-				cp_img[i*x_size + j] = 0;
-				while (num0 != num)
-				{
-					num_new = num - num0;
-					num0 = len;
-					for (k = num0 - num_new; k < num0; k++)
-					{	
-						if (cross)/* search the nearest four pixels */
-						{	
-							for (c = 0; c < 4; c++)
-							{
-								tx = temp_x[k] + cross_x[c];
-								ty = temp_y[k] + cross_y[c];
-								if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
-								{
-									temp_x[len] = tx;
-									temp_y[len] = ty;
-									if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
-									{
-										peak = cp_img[ty*x_size + tx];
-										yp = ty;
-										xp = tx;
-									}
-									flux = flux + cp_img[ty*x_size + tx];
-									flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
-									cp_img[ty*x_size + tx] = 0; /* mask each pixel after detection */
-									
-									len++;
-								}
-							}							
-						}
-						else /* search the nearest eight pixels */
-						{
-							for (iy = -1; iy < 2; iy++)
-							{
-								ty = temp_y[k] + iy;
-								for (ix = -1; ix < 2; ix++)
-								{
-									tx = temp_x[k] + ix;									
-									if (ty<y_size&&ty >= 0 && tx<x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
-									{
-										temp_x[len] = tx;
-										temp_y[len] = ty;
-										if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
-										{
-											peak = cp_img[ty*x_size + tx];
-											yp = ty;
-											xp = tx;
-
-											// if(i==29 and j ==30)
-											// {
-											// 	std::cout<<"Finding: "<<peak<<" "<<yp<<" "<<xp<<" "<<ty<<" "<<tx<<std::endl;
-											// }
-										}
-										flux = flux + cp_img[ty*x_size + tx];
-										flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
-										cp_img[ty*x_size + tx] = 0;
-										len++;
-									}
-								}
-							}
-						}
-					}
-					num = len;
-				}
-
-				if (len >= paras->area_thresh)
-				{	
-					//std::cout<<len<<" "<<yp<<" "<<xp<<std::endl;
-					if (s_num >= paras->max_source)
-					{
-						std::cout << "Too many source!" << std::endl;
-						info = "Too many source!";
-						break;
-					}
-					for (m = 0; m < len; m++)
-					{
-
-						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak*0.5) /* to calculate the half light radius */							
-						{
-							half_light_area++;
-							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
-						}
-						source_x[len0 + m] = temp_x[m];
-						source_y[len0 + m] = temp_y[m];						
-					}
-
-					source_paras[8 * s_num] = len; /* length of source */
-					source_paras[8 * s_num + 1] = yp; /* 'y' of peak of source */
-					source_paras[8 * s_num + 2] = xp; /* 'x' of peak of source */
-					source_paras[8 * s_num + 3] = peak ; /* peak value of source */
-					source_paras[8 * s_num + 4] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
-					source_paras[8 * s_num + 5] = flux; /* total flux of source */
-					source_paras[8 * s_num + 6] = half_light_flux; /* half light flux */
-					source_paras[8 * s_num + 7] = flux_sq; /* sum of square of flux of each source pixel */
-					len0 += len;
-					s_num++;
-					
-				}
-			}
-		}
-	}
-	if (info != "Too many source!")
-	{
-		info = "Normal.";
-	}
-	delete[] cp_img;
-	delete[] temp_x;
-	delete[] temp_y;
-	detection = s_num;
-}
-
-void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
-{	/* remember to add the peak detection! to locate the source */
-	/* it will not change the inputted array */
-	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
-	int s = y_size * x_size;
-	int peak = 0, yp, xp, area = 0, half_light_area = 0;
-	float flux = 0, flux_sq = 0, half_light_flux = 0;
-	int  len0 = 0, len = 0, s_num = 0, num0, num, num_new;
-	float detect_thresh = paras->detect_thresh;
-	float *cp_img = new float[s] {};
-	int *temp_x = new int[s] {};
-	int *temp_y = new int[s] {};
-	int cross_x[4]{ -1,1,0,0 };
-	int cross_y[4]{ 0,0,-1,1 };
-
-	/* copy and mask the candidates pixels */
-	for (i = 0; i < s; i++)
-	{
-		if (source_img[i] >= detect_thresh)
-		{
-			cp_img[i] = source_img[i];
-		}
-	}
-
-	/* search the source by FoF */
-	for (i = 0; i < y_size; i++)
-	{
-		for (j = 0; j < x_size; j++)
-		{
-			if (cp_img[i*x_size + j] > 0)
-			{
-				peak = 0;
-				half_light_area = 0;
-				half_light_flux = 0;
-				flux = cp_img[i*x_size + j];
-				flux_sq = flux * flux;
-
-				len = 0;
-				num0 = 0;
-				num = 1;
-				/* the temp_x, _y are the temporal array to store the coordinates of the source detected*/
-				temp_x[len] = j;
-				temp_y[len] = i;
-				len = 1;
-				cp_img[i*x_size + j] = 0;
-				while (num0 != num)
-				{
-					num_new = num - num0;
-					num0 = len;
-					for (k = num0 - num_new; k < num0; k++)
-					{
-						if (cross)/* search the nearest four pixels */
-						{
-							for (c = 0; c < 4; c++)
-							{
-								tx = temp_x[k] + cross_x[c];
-								ty = temp_y[k] + cross_y[c];
-								if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
-								{
-									temp_x[len] = tx;
-									temp_y[len] = ty;
-									if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
-									{
-										peak = cp_img[ty*x_size + tx];
-										yp = ty;
-										xp = tx;
-									}
-									flux = flux + cp_img[ty*x_size + tx];
-									flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
-									cp_img[ty*x_size + tx] = 0; /* mask each pixel after detection */
-
-									len++;
-								}
-							}
-						}
-
-						else /* search the nearest nine pixels */
-						{
-							for (iy = -1; iy < 2; iy++)
-							{
-								ty = temp_y[k] + iy;
-								for (ix = -1; ix < 2; ix++)
-								{
-									tx = temp_x[k] + ix;
-									if (ty < y_size&&ty >= 0 && tx < x_size&&tx >= 0 && cp_img[ty*x_size + tx]>0)
-									{
-										temp_x[len] = tx;
-										temp_y[len] = ty;
-										if (cp_img[ty*x_size + tx] > peak) /* to find the peak of the source */
-										{
-											peak = cp_img[ty*x_size + tx];
-											yp = ty;
-											xp = tx;
-										}
-										flux = flux + cp_img[ty*x_size + tx];
-										flux_sq += cp_img[ty*x_size + tx] * cp_img[ty*x_size + tx];
-										cp_img[ty*x_size + tx] = 0;
-										len++;
-									}
-								}
-							}
-						}
-					}
-					num = len;
-				}
-
-				if (len >= paras->area_thresh)
-				{
-					if (s_num >= paras->max_source)
-					{
-						std::cout << "Too many source!" << std::endl;
-						info = "Too many source!";
-						break;
-					}
-					for (m = 0; m < len; m++)
-					{
-
-						if (source_img[temp_y[m] * y_size + temp_x[m]] >= peak * 0.5) /* to calculate the half light radius */
-						{
-							half_light_area++;
-							half_light_flux = half_light_flux + source_img[temp_y[m] * y_size + temp_x[m]];
-						}
-						source_x[len0 + m] = temp_x[m];
-						source_y[len0 + m] = temp_y[m];
-					}
-
-					source_paras[8 * s_num] = len; /* length of source */
-					source_paras[8 * s_num + 1] = yp; /* 'y' of peak of source */
-					source_paras[8 * s_num + 2] = xp; /* 'x' of peak of source */
-					source_paras[8 * s_num + 3] = peak; /* peak value of source */
-					source_paras[8 * s_num + 4] = half_light_area; /* length of source that the pixel value bigger than 0.5*peak */
-					source_paras[8 * s_num + 5] = flux; /* total flux of source */
-					source_paras[8 * s_num + 6] = half_light_flux; /* half light flux */
-					source_paras[8 * s_num + 7] = flux_sq; /* sum of square of flux of each source pixel */
-					len0 += len;
-					s_num++;
-					
-				}
-			}
-		}
-	}
-	if (info != "Too many source!")
-	{
-		info = "Normal.";
-	}
-	delete[] cp_img;
-	delete[] temp_x;
-	delete[] temp_y;
-	detection = s_num;
-}
-
-
-
-void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
-{	
-	// find the galaxies in a stamp !!
-
-	// the number, 8, of parameters for each source detected, 
-	// if it is changed please must change the element number in source_detector()!!!
-	int elem_unit = 8; 
-	int source_num, area = 0, hlr_area, yp, xp, pix_label;
-	int size = paras->stamp_size;
-	int pix_num = size * size;
-	int xc = size / 2, yc = size / 2;
-	int detect = -1; 
-	double cen_x, cen_y;
-	int tag_s = 0,tag_e, i, j;
-
-	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
-	double dy, dx;
-	int *source_x = new int[pix_num] {};
-	int *source_y = new int[pix_num] {};
-
-	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-
-	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
-	//std::cout << "Source num: "<<source_num << std::endl;
-
-	// find the max source which will be regarded as the target source
-	int max_tag=-1, max_area=0;
-	for ( i = 0; i < source_num; i++)
-	{		
-		area = source_para[i * elem_unit];
-		dy = 0;
-		dx = 0;
-
-		// find the mean x & y of each source
-		if (i > 0)
-		{
-			tag_s += source_para[(i-1)*elem_unit];
-		}
-		else
-		{
-			tag_s = 0;
-		}
-		tag_e = tag_s + area;
-		
-		//std::cout<<tag_s<<" "<<tag_e<<" "<<area<<std::endl;
-
-		for (j = tag_s; j < tag_e; j++)
-		{
-			dy = dy + source_y[j] - yc;
-			dx = dx + source_x[j] - xc;
-		}
-
-		radius = (dy*dy+ dx*dx)/area/area;
-		//std::cout<<dy/area<<" "<<dx/area<<" "<<radius<<std::endl;
-		// if the centroid locates within max_distance,
-		// it will be regarded as the source
-		if (radius <= max_distance and area >= max_area)
-		{
-			max_tag = i;
-			max_area = area;
-		}
-		//std::cout<<i<<" "<<source_para[i * elem_unit + 1]<<" "<<source_para[i * elem_unit + 2]<<" "<<dy<<" "<<dx<<" "<<radius<<" "<<area<<std::endl;
-	}
-	detect = max_tag;
-
-	// mask the source
-	double sub_max;
-	for ( i = 0; i < source_num; i++)
-	{	
-		// start point of source_y(x) of i'th source
-		if (i > 0)
-		{
-			tag_s += source_para[(i-1)*elem_unit];
-		}
-		else
-		{
-			tag_s = 0;
-		}
-		area = source_para[i * elem_unit];
-		sub_max = 0;
-		for (j = tag_s; j < tag_s + area; j++)
-		{	
-			// detection mask
-			pix_label = source_y[j] * size + source_x[j];
-			check_mask[pix_label] = 1;
-			if(stamp_arr[pix_label] > sub_max)
-			{
-				yp = source_y[j];
-				xp = source_x[j];
-				sub_max = stamp_arr[pix_label];
-			}
-		}
-		check_mask[yp * size + xp] = 2;
-	}
-
-	if (detect > -1)
-	{	
-		// mask the target galaxy
-		tag_s = 0;
-		for (i = 0; i < detect; i++)
-		{
-			tag_s += source_para[i*elem_unit];
-		}
-		tag_e = tag_s + source_para[detect*elem_unit];
-		for (i = tag_s; i < tag_e; i++)
-		{
-			check_mask[source_y[i] * size + source_x[i]] = 2;
-		}
-		
-		pix_label = int(source_para[detect * elem_unit + 1] * size + source_para[detect * elem_unit + 2]);
-		check_mask[pix_label] = 3;
-
-		paras->gal_size = area;
-		paras->gal_py = source_para[detect * elem_unit + 1];
-		paras->gal_px = source_para[detect * elem_unit + 2];
-		paras->gal_peak = source_para[detect * elem_unit + 3];
-		paras->gal_hsize = source_para[detect * elem_unit + 4];
-		paras->gal_flux = source_para[detect * elem_unit + 5];
-		paras->gal_hflux = source_para[detect * elem_unit + 6];
-
-		paras->gal_effective_radius = sqrt(area / Pi);
-		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
-		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
-	}
-	else
-	{
-		initialize_para(paras); // set the relative parameters to zero
-	}
-	delete[] source_x;
-	delete[] source_y;
-	delete[] source_para;
-	detect_label = detect;
-}
-
-void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
-{
-	int elem_unit = 8; // the number of parameters for each source detected 
-	int source_num, area = 0, hlr_area, yp, xp;
-	int size = paras->stamp_size, pix_num = size * size;
-	int xc = size / 2, yc = size / 2;
-	int detect = -1;
-
-	int tag_s = 0, tag_e, i, j;
-
-	double hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
-	double dy, dx;
-	int *source_x = new int[pix_num] {};
-	int *source_y = new int[pix_num] {};
-
-	float *source_para = new float[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-
-	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
-	//std::cout << source_num << std::endl;
-
-	int max_tag=-1, max_area=0;
-	for ( i = 0; i < source_num; i++)
-	{		
-		dy = source_para[i * elem_unit + 1] - yc;
-		dx = source_para[i * elem_unit + 2] - xc;
-		radius = dy*dy+ dx*dx;
-		area = source_para[i * elem_unit];
-		if (radius <= max_distance and area >= max_area)
-		{
-			max_tag = i;
-			max_area = area;
-		}
-	}
-	detect = max_tag;
-
-	for (i = 0; i < source_num; i++)
-	{
-		// start point of source_y(x) of i'th source
-		if (i > 0)
-		{
-			tag_s += source_para[(i - 1)*elem_unit];
-		}
-		else
-		{
-			tag_s = 0;
-		}
-		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
-		{
-			// detection mask
-			check_mask[source_y[j] * size + source_x[j]] = 1;
-		}
-	
-	}
-
-	if (detect > -1)
-	{
-		// mask the target galaxy
-		tag_s = 0;
-		int tag_e;
-		for (i = 0; i < detect; i++)
-		{
-			tag_s += source_para[i*elem_unit];
-		}
-		tag_e = tag_s + source_para[detect*elem_unit];
-		for (i = tag_s; i < tag_e; i++)
-		{
-			check_mask[source_y[i] * size + source_x[i]] = 2;
-		}
-
-		paras->gal_size = area;
-		paras->gal_py = source_para[detect * elem_unit + 1];
-		paras->gal_px = source_para[detect * elem_unit + 2];
-		paras->gal_peak = source_para[detect * elem_unit + 3];
-		paras->gal_hsize = source_para[detect * elem_unit + 4];
-		paras->gal_flux = source_para[detect * elem_unit + 5];
-		paras->gal_hflux = source_para[detect * elem_unit + 6];
-
-		paras->gal_effective_radius = sqrt(area / Pi);
-		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
-		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
-	}
-	else
-	{
-		initialize_para(paras); // set the relative parameters to zero
-	}
-	delete[] source_x;
-	delete[] source_y;
-	delete[] source_para;
-	detect_label = detect;
-}
-
-int edge_extend(int *mask, const int *source_y, const int* source_x, const int source_id, const int source_len, fq_paras *paras, const int iters)
-{
-	int size = paras->stamp_size, pix_len=0, pix_len_0, pix_new,ix, iy, i, j, m,n,sub=2;
-	int *cp_y = new int[size*size]{};
-	int *cp_x = new int[size*size]{};
-	for (i = source_id; i < source_len+ source_id; i++)
-	{
-		// copy of source coordinates 
-		cp_y[i - source_id] = source_y[i];
-		cp_x[i - source_id] = source_x[i];
-		// label the source pixel on the mask
-		mask[source_y[i] * size + source_x[i]] = 1;
-	}
-	
-	pix_len_0 = 0;
-	pix_len = source_len;
-
-	for (i = 0; i < iters; i++)
-	{	
-		// count the newly added pixels
-		pix_new = pix_len - pix_len_0;
-		// label the source length at the biginning
-		pix_len_0 = pix_len;
-		// each time search around the newly added pixels
-		for (j = pix_len_0 - pix_new; j < pix_len_0; j++)
-		{
-			for (m = -1; m < 2; m++)
-			{
-				iy = cp_y[j] + m;
-				if (iy >= 0 && iy < size)
-				{
-					for (n = -1; n < 2; n++)
-					{
-						ix = cp_x[j] + n;
-						if (ix >= 0 && ix < size && mask[iy*size + ix] == 0)
-						{	
-							mask[iy*size + ix] = sub;
-							// add the newly found pixels to source list
-							// and increase the pixel counts
-							cp_y[pix_len] = iy;
-							cp_x[pix_len] = ix;
-							//sprintf(buffer, "%d, (%d, %d) --> (%d, %d), %d", j, cp_y[j], cp_x[j], iy, ix, pix_len);
-							//std::cout << buffer << std::endl;
-							pix_len++;
-						}
-					}
-				}
-			}
-		}
-		sub++;
-	}
-	
-	delete[] cp_y;
-	delete[] cp_x;
-	return pix_len;
-}
 
 
 
@@ -3646,14 +3648,21 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 		}
 		try
 		{	
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
+			// std::cout<<a1<<" "<<b1<<" "<<chi_left<<std::endl;
+			// show_arr(num_in_bin, 1, bin_num);
 
-			fourier_hist(mg, mn, mu, data_num, a2, b2, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a2, b2, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
+			// std::cout<<a2<<" "<<b2<<" "<<chi_left<<std::endl;
+			// show_arr(num_in_bin, 1, bin_num);
 
-			fourier_hist(mg, mn, mu, data_num, a3, b3, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a3, b3, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
+			// std::cout<<a3<<" "<<b3<<" "<<chi_left<<std::endl;
+			// show_arr(num_in_bin, 1, bin_num);
+
 		}
 		catch(const char *msg)
 		{
@@ -3679,7 +3688,6 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 		}
 	}
 	
-	
 	temp_num = 7;
 	step = (right - left) / (temp_num - 1);
 	for (i = 0; i < temp_num; i++)
@@ -3701,7 +3709,7 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3738,7 +3746,7 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3807,13 +3815,13 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 		}
 		try
 		{	
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_left);
 
-			fourier_hist(mg, mn, mu, data_num, a2, b2, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a2, b2, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_mid);
 
-			fourier_hist(mg, mn, mu, data_num, a3, b3, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a3, b3, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3862,7 +3870,7 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3899,7 +3907,7 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 
 		try
 		{
-			fourier_hist(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
+			fourier_hist_NU(mg, mn, mu, data_num, a1, b1, bins, num_in_bin, bin_num);
 			cal_chisq_1d(num_in_bin, bin_num, chi_right);
 		}
 		catch(const char *msg)
@@ -3933,6 +3941,7 @@ void find_shear_iter(const double *mg, const double *mn, const double *mu, const
 	double gN, gN_sig, gU, gU_sig;
 	double *chi_check = new double[chi_fit_num*2];
 	find_shear(mg, mn, mu, data_num, bin_num, bins, g_label, gN, gN_sig, chimin, chi_check, chi_fit_num, ini_left, ini_right, chi_gap);
+	
 	// gN, gN_sig, gU, gU_sig, chimin_gN, chimin_gU
 	result[0] = gN;
 	result[1] = gN_sig;
@@ -3941,17 +3950,17 @@ void find_shear_iter(const double *mg, const double *mn, const double *mu, const
 	result[4] = chimin;
 	result[5] = chimin;
 
-	for(i=1; i<iters-1; i++)
-	{
+	for(i=1; i<iters; i++)
+	{	
 		find_shear_NU(mg, mn, mu, data_num, bin_num, bins, 1, gN, gU, gU_sig, chimin, chi_check, chi_fit_num, ini_left, ini_right, chi_gap);
-		result[i*result_col] = gN;
-		result[i*result_col + 1] = gN_sig;
-		result[i*result_col + 4] = chimin;
-
-		find_shear_NU(mg, mn, mu, data_num, bin_num, bins, 2, gU, gN, gN_sig, chimin, chi_check, chi_fit_num, ini_left, ini_right, chi_gap);
 		result[i*result_col + 2] = gU;
 		result[i*result_col + 3] = gU_sig;
 		result[i*result_col + 5] = chimin;
+
+		find_shear_NU(mg, mn, mu, data_num, bin_num, bins, 2, gU, gN, gN_sig, chimin, chi_check, chi_fit_num, ini_left, ini_right, chi_gap);
+		result[i*result_col] = gN;
+		result[i*result_col + 1] = gN_sig;
+		result[i*result_col + 4] = chimin;
 	}
 
 	delete[] chi_check;
@@ -4166,7 +4175,7 @@ void fourier_hist_NU(const double *mg, const double *mn,const double *mu, const 
 	
 }
 
-void fourier_hist_NU(const float *mg, const float *mn,const float *mu, const int data_row, const float gN, const double gU, const float *bins, int *num_in_bin, const int bin_num)
+void fourier_hist_NU(const float *mg, const float *mn,const float *mu, const int data_row, const float gN, const float gU, const float *bins, int *num_in_bin, const int bin_num)
 {
 	int i,j, k;
 	float temp;
@@ -5791,13 +5800,9 @@ void set_bin(const double *data, const int data_num, const int bin_num, double *
 	}
 	data_min = fabs(data_min);
 	bound = std::max(data_min, data_max);
+	// std::cout<<data_min<<" "<<data_max<<std::endl;
 
-	if (choice < 0)
-	{
-		std::cout << "choice must be non-negative!!!" << std::endl;
-		exit(0);
-	}
-	else if (0 == choice)
+	if (0 >= choice)
 	{
 		num = data_num;
 		data_cp = new double[num];		
@@ -5820,7 +5825,7 @@ void set_bin(const double *data, const int data_num, const int bin_num, double *
 
 	step = num / bin_num * 2;
 	sort_arr(data_cp, num, 1);
-
+	
 	// make the boundary big enough to enclose all the data
 	bins[0] = -bound * max_scale;
 	bins[bin_num] = bound * max_scale;

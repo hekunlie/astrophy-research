@@ -379,9 +379,9 @@ void find_shear(const float *data_arr, const int data_row, const int data_col, c
 // these two for the data that contain all the estimators in one array
 // g_label: 1 for g1, others for g2
 void find_shear_iter(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int g_label, const int iters, double *result, 
-						const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap);
+						const int chi_fit_num=20, const double ini_left= -0.1, const double ini_right= 0.1, const double chi_gap= 40);
 void find_shear_iter(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, const float *bins, int g_label, const int iters, float *result, 
-						const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap);
+						const int chi_fit_num=20, const float ini_left= -0.1, const float ini_right= 0.1, const float chi_gap=40);
 
 void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double*bins, const int g_label, 
 				double &gh, double &gh_sig, double & chisq_min_fit, double *chi_check, const int chi_fit_num = 20, const double ini_left = -0.1, 
@@ -422,13 +422,18 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 				  if < 0, all the points will be used for fitting.
 */
 
-void find_shear_NU(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int NU_label, double fix_g, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
-				const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap);
-void find_shear_NU(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, const float *bins, int NU_label, float fix_g, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check, 
-				const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap);
+void find_shear_NU(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, 
+					int NU_label, double fix_g, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+					const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap);
+
+void find_shear_NU(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, const float *bins,
+					 int NU_label, float fix_g, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check, 
+					const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap);
 		
-void fourier_hist_NU(const double *mg, const double *mn,const double *mu, const int data_row, const double gN, const double gU, const double *bins, int *num_in_bin, const int bin_num);
-void fourier_hist_NU(const float *mg, const float *mn,const float *mu, const int data_row, const float gN, const float gU, const float *bins, int *num_in_bin, const int bin_num);
+void fourier_hist_NU(const double *mg, const double *mn,const double *mu, const int data_row, const double gN, const double gU, 
+					const double *bins, int *num_in_bin, const int bin_num);
+void fourier_hist_NU(const float *mg, const float *mn,const float *mu, const int data_row, const float gN, const float gU, 
+					const float *bins, int *num_in_bin, const int bin_num);
 
 void fourier_hist(const double *mg, const double *mn,const double *mu, const int data_row, const double gh, const int g_label, const double *bins, int *num_in_bin, const int bin_num);
 void fourier_hist(const float *mg, const float *mn,const float *mu, const int data_row, const float gh, const int g_label, const float *bins, int *num_in_bin, const int bin_num);

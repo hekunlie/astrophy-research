@@ -28,6 +28,7 @@ void task_alloc(const int total_task_num, const int division_num, const int my_p
 
 int main(int argc, char**argv)
 {   
+
     int rank, numprocs, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 
@@ -40,8 +41,10 @@ int main(int argc, char**argv)
     char inform[300], *temp_inform[50];
     char data_nm[30];
     char time_now[50],time_now_1[50];
+    double st1, st2;
 
-    
+    st1 = clock();
+
     MY_FLOAT *mg[5];
     char *mg_name[5];
 
@@ -170,7 +173,7 @@ int main(int argc, char**argv)
     {   
         show_arr(g1t, 1, shear_num);
         show_arr(g2t, 1, shear_num);
-        std::cout<<rank<<" "<<data_row<<" "<< my_shear_st<<" "<<my_shear_ed<<std::endl;
+        std::cout<<"Bin_num "<<bin_num<<" data:"<<parent_path<<" "<<std::endl;
     }
     
     // for(i=0;i<numprocs;i++)
@@ -240,6 +243,7 @@ int main(int argc, char**argv)
             result_mc[7] = mc[1];// c_sig
             sprintf(set_name, "/mean_mc");
             write_h5(result_path, set_name, result_mc, 2, 4, false);
+            std::cout<<"Mean: m & c"<<std::endl;
             show_arr(result_mc,2,4);
         }
         MPI_Barrier(MPI_COMM_WORLD);
@@ -247,7 +251,8 @@ int main(int argc, char**argv)
 
 
         set_bin(mg[0], data_row, bin_num, mg1_bin, 100, 0);
-        
+        // show_arr(mg1_bin,1,bin_num+1);
+
         find_shear_iter(mg[0], mg[2], mg[3], data_row, bin_num, mg1_bin, 1, iters, shear_nu, chi_fit_num, -0.1, 0.1, 40);
 
         MPI_Barrier(MPI_COMM_WORLD);   
@@ -298,32 +303,38 @@ int main(int argc, char**argv)
                 
                 sprintf(set_name, "/new_sym_mc_iter_%d", i);
                 write_h5(result_path, set_name, &result_mc_iter[i*8], 2, 4, false);
-                show_arr(&result_mc_iter[i*8], 2, 4);
+
             }
 
         }
         MPI_Barrier(MPI_COMM_WORLD);
 
-        for(i=0;i<numprocs;i++)
-        {
-            if(i==rank)
-            {   
-                for(j=0;j<2*iters;j++)
-                {
-                    std::cout<<temp_inform[j]<<std::endl;
-                }
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-
-        
-      
+        // for(i=0;i<numprocs;i++)
+        // {
+        //     if(i==rank)
+        //     {   
+        //         for(j=0;j<2*iters;j++)
+        //         {
+        //             std::cout<<temp_inform[j]<<std::endl;
+        //         }
+        //     }
+        //     MPI_Barrier(MPI_COMM_WORLD);
+        // }
+        // MPI_Barrier(MPI_COMM_WORLD);
 
     }
-
+    st2 = clock();
+    if(rank == 0)
+    {           
+        for(i=0;i<iters;i++)
+        {   std::cout<<"PDF_Iter "<<i<<" : m & c"<<std::endl;
+            show_arr(&result_mc_iter[i*8], 2, 4);
+        }              
+        std::cout<<result_path<<std::endl;       
+        std::cout<<(st2-st1)/CLOCKS_PER_SEC<<" SEC"<<std::endl;
+    }
     MPI_Barrier(MPI_COMM_WORLD);
-
+    
 
     MPI_Finalize();
     return 0;
