@@ -2,7 +2,7 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
-#define MY_FLOAT float
+#define MY_FLOAT double
 
 void task_allot(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {
@@ -82,7 +82,7 @@ int main(int argc, char**argv)
 
     data_col = 5;// G1, G2, N, U
     result_col = 4;// g1, g1_sig, g2, g2_sig
-    mg_bin_num = 10;//atoi(argv[4]);
+    mg_bin_num = 20;//atoi(argv[4]);
     chi_check_num =20;
     chisq_num = 101;
     left_guess = -0.1;
@@ -208,6 +208,7 @@ int main(int argc, char**argv)
         std::cout<<inform<<std::endl;
         
        set_bin(mg1, data_row, mg_bin_num, mg_bins, 100, 0);
+    //    show_arr(mg_bins,1,mg_bin_num+1);
         // PDF_SYM
         try
         {

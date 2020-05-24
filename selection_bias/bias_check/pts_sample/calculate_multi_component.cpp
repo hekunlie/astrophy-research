@@ -87,7 +87,7 @@ int main(int argc, char**argv)
 
     data_col = 5;// G1, G2, N, U, V
     result_col = 4;// g1, g1_sig, g2, g2_sig
-    mg_bin_num = 10;//atoi(argv[4]);
+    mg_bin_num = 20;//atoi(argv[4]);
     chi_check_num =20;
     left_guess = -0.1;
     right_guess = 0.1;
