@@ -57,6 +57,17 @@ void arr_copy(double *arr1, const double*arr2,const int length)
     }
 }
 
+void arr_sep(double *data, float *mg1,float *mg2, float *mn, float *mu,float *mv, int data_num, int data_col)
+{
+	for(int i=0; i<data_num; i++)
+	{
+		mg1[i] = data[i*data_col];
+		mg2[i] = data[i*data_col + 1];
+		mn[i] = data[i*data_col + 2];
+		mu[i] = data[i*data_col + 3];
+		mv[i] = data[i*data_col + 4];
+	}
+}
 int main(int argc, char*argv[])
 {
 	int rank, numprocs, namelen;
@@ -84,6 +95,8 @@ int main(int argc, char*argv[])
 	int shear_id, shear_pairs;
 	double psf_thresh_scale, gal_noise_sig;
 
+	float *mg[5];
+	char *mg_name[5];
 
 	strcpy(parent_path,argv[1]);
 	total_chips = atoi(argv[2]);
@@ -169,7 +182,17 @@ int main(int argc, char*argv[])
 	for(i=0;i<numprocs;i++){gather_count[i] = sub_data_row*total_data_cols;}
 
 	if (0 == rank)
-	{
+	{	
+		// for(i=0;i<5;i++)
+		// {
+		// 	mg[i] = new float[total_chips*total_data_row];
+		// 	mg_name[i] = new char[50];
+		// }
+		// sprintf(mg_name[0], "/mg1");
+		// sprintf(mg_name[1], "/mg2");
+		// sprintf(mg_name[2], "/mn");
+		// sprintf(mg_name[3], "/mu");
+		// sprintf(mg_name[4], "/mv");
 		recvbuf = new double[total_data_row*total_data_cols];
 	}
 	sprintf(data_path, "%s/psf.fits", parent_path);
@@ -211,7 +234,7 @@ int main(int argc, char*argv[])
 			gsl_initialize(seed, 1);
 			seed += seed_step;
 
-			sprintf(chip_path, "%s/%d/chip_%04d.fits", parent_path, shear_id, i);
+			sprintf(chip_path, "/imgs/%s/%d/chip_%04d.fits", parent_path, shear_id, i);
 			initialize_arr(big_img, stamp_num*img_len, 0);
 			
 			read_fits(chip_path, big_img);
@@ -333,6 +356,7 @@ int main(int argc, char*argv[])
 		{
 			sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path, shear_id);
 			write_h5(result_path, set_name, recvbuf, total_data_row, total_data_cols, TRUE);
+			// arr_sep(recvbuf, mg[0], mg[1], mg[2], mg[3], mg[4], total_data_row, total_data_cols)
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
