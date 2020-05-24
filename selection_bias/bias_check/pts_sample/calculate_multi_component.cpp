@@ -2,7 +2,7 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
-#define MY_FLOAT double
+#define MY_FLOAT float
 
 void task_allot(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {
@@ -66,7 +66,6 @@ int main(int argc, char**argv)
 
     int data_col, data_row;
     int result_col;
-    MY_FLOAT *data, *data_buffer;
     MY_FLOAT weight;
 
     // for results
@@ -87,7 +86,7 @@ int main(int argc, char**argv)
 
     data_col = 5;// G1, G2, N, U, V
     result_col = 4;// g1, g1_sig, g2, g2_sig
-    mg_bin_num = 10;//atoi(argv[4]);
+    mg_bin_num = 20;//atoi(argv[4]);
     chi_check_num =20;
     left_guess = -0.1;
     right_guess = 0.1;
@@ -105,7 +104,8 @@ int main(int argc, char**argv)
     for(i=0;i<5;i++)
     {
         mg[i] = new MY_FLOAT[data_row]; 
-        mg_buf[i] = new MY_FLOAT[data_row]; 
+        mg_buf[i] = new MY_FLOAT[data_row];
+        mg_name[i] = new char[50]; 
     }
     sprintf(mg_name[0], "/mg1");
     sprintf(mg_name[1], "/mg2");
@@ -444,9 +444,6 @@ int main(int argc, char**argv)
     delete[] send_count;
     delete[] result_sub_mean;
     delete[] result_sub_pdf;
-
-    delete[] data;
-    delete[] data_buffer;
     delete[] shear_point;
     delete[] g1_t;
     delete[] g2_t;

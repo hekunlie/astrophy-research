@@ -19,14 +19,14 @@ cpus = comm.Get_size()
 
 para_path = argv[1]
 
-total_num = 20000000
+total_num = 40000000
 
 seed = 12334 + rank*12
 
 rng = numpy.random.RandomState(seed)
 
-# disc_e_i = tool_box.ran_generator(tool_box.disc_e_pdf, total_num, seed, 0, 0.7, 0, 2.1)[0]
-disc_e_i = 0.6
+disc_e_i = tool_box.ran_generator(tool_box.bulge_e_pdf, total_num, seed, 0, 0.7, 0, 2.1)[0]
+# disc_e_i = 0.6
 
 theta = rng.uniform(0, 2*numpy.pi, total_num)
 disc_e1_i, disc_e2_i = disc_e_i*numpy.cos(theta), disc_e_i*numpy.sin(theta)
@@ -52,7 +52,7 @@ if rank == 0:
     mean_e = numpy.zeros((2, cpus))
     sig_e = numpy.zeros((2, cpus))
     for i in range(cpus):
-        h5f = h5py.File(para_path + "/para_%d.hdf5" % rank, "r")
+        h5f = h5py.File(para_path + "/para_%d.hdf5" %i, "r")
         e1 = h5f["/e1"][()]
         e2 = h5f["/e2"][()]
         h5f.close()

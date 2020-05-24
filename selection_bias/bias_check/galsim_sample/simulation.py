@@ -26,13 +26,13 @@ gal_fluxs = [3000, 6000, 9000, 16000, 800000]
 seed_step = 1
 
 sersic_idx = 0.31
-scale_radius = 0.2
+scale_radius = 0.3
 gal_flux = gal_fluxs[tag]
 noise_sig = 60
-shear_num = 10
-total_chips = 2000
+shear_num = 40
+total_chips = 4000
 pixel_scale = 0.187
-stamp_size = 54
+stamp_size = 48
 stamp_nx = 100
 stamp_ny = 100
 stamp_num = stamp_nx * stamp_ny
@@ -43,11 +43,12 @@ fq = Fourier_Quad(stamp_size, 123)
 
 logger = tool_box.get_logger(parent_path+"/logs/%d_logs.dat" % rank)
 
-psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4)
+psf = galsim.Moffat(beta=3.5, fwhm=0.7, flux=1.0, trunc=1.4).shear(e1=0.1, e2=0.)
 if rank == 0:
     psf_img = galsim.ImageD(stamp_size, stamp_size)
     psf.drawImage(image=psf_img, scale=pixel_scale)
-    hdu = fits.PrimaryHDU(psf_img.array)
+    psf_arr = numpy.float32(psf_img.array)
+    hdu = fits.PrimaryHDU(psf_arr)
     psf_path = parent_path + '/psf.fits'
     hdu.writeto(psf_path, overwrite=True)
 
@@ -56,7 +57,7 @@ gal = galsim.Sersic(scale_radius=scale_radius, n=sersic_idx, trunc=4.5 * scale_r
 
 # task allocation
 chip_tags = [i for i in range(total_chips)]
-chip_tags_rank = tool_box.allot(chip_tags, cpus)[rank]
+chip_tags_rank = tool_box.alloc(chip_tags, cpus)[rank]
 
 shear_path = parent_path + "/parameters/shear.hdf5"
 h5f = h5py.File(shear_path, "r")
@@ -68,6 +69,12 @@ img_buffer = numpy.zeros((ny, nx))
 counts = 0
 
 for shear_id in range(shear_num):
+
+    if rank == 0:
+        if not os.path.exists(parent_path + "/imgs/%d"%shear_id):
+            os.makedirs(parent_path + "/imgs/%d"%shear_id)
+    comm.Barrier()
+
     g1 = g1_input[shear_id]
     g2 = g2_input[shear_id]
 
@@ -83,7 +90,7 @@ for shear_id in range(shear_num):
     for t, chip_tag in enumerate(chip_tags_rank):
         t1 = time.clock()
 
-        chip_path = parent_path + "/%d/chip_%04d.fits" % (shear_id, chip_tag)
+        chip_path = parent_path + "/imgs/%d/chip_%04d.fits" % (shear_id, chip_tag)
 
         logger.info("SHEAR ID: %02d, Start the %04d's chip." % (shear_id, chip_tag))
 

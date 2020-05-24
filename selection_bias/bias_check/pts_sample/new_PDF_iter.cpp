@@ -78,10 +78,10 @@ int main(int argc, char**argv)
     
     add_time = 100;//atoi(argv[5]);
     add_scale = 100;//atoi(argv[6]);
-    bin_num = 8;
+    bin_num = 20;
     data_col = 5;
     result_col_nu = 6;
-    iters = 3;
+    iters = 5;
     chi_fit_num = 20;
 
     mg1_idx = 0;
