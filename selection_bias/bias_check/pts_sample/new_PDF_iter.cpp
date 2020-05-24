@@ -84,7 +84,7 @@ int main(int argc, char**argv)
     bin_num = 20;
     data_col = 5;
     result_col_nu = 6;
-    iters = 5;
+    iters = 4;
     chi_fit_num = 20;
 
     mg1_idx = 0;
@@ -308,19 +308,6 @@ int main(int argc, char**argv)
 
         }
         MPI_Barrier(MPI_COMM_WORLD);
-
-        // for(i=0;i<numprocs;i++)
-        // {
-        //     if(i==rank)
-        //     {   
-        //         for(j=0;j<2*iters;j++)
-        //         {
-        //             std::cout<<temp_inform[j]<<std::endl;
-        //         }
-        //     }
-        //     MPI_Barrier(MPI_COMM_WORLD);
-        // }
-        // MPI_Barrier(MPI_COMM_WORLD);
 
     }
     st2 = clock();

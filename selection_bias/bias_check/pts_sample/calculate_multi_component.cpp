@@ -39,7 +39,7 @@ int main(int argc, char**argv)
     char parent_path[400], shear_path[400], result_path[400];
     char set_name[30], inform[300], time_now[40];
     char result_nm[60];
-    char data_path_1[400], data_path_2[400],data_path_3[400], data_type_1[40], data_type_2[40], data_type_3[40];
+    char data_path_1[400], data_path_2[400],data_path_3[400], data_type_1[50], data_type_2[50], data_type_3[50];
 
     int i,j,k;
 
@@ -184,6 +184,8 @@ int main(int argc, char**argv)
 
     // read and calculate
     sprintf(set_name,"/data");
+    // shear_st = 27;
+    // shear_ed = 28;
     for(i=shear_st;i<shear_ed;i++)
     {   
         sprintf(data_path_1,"%s/data_%s_%d.hdf5",parent_path, data_type_1, i);
@@ -191,24 +193,18 @@ int main(int argc, char**argv)
         {
             read_h5(data_path_1, mg_name[j], mg[j]);
         }
-
+        show_arr(mg[0], 1, 10);
         // read data
-        if(rank == 0)
-        {
-            std::cout<<data_path_1<<std::endl;
-        }
+        if(rank == 0){std::cout<<data_path_1<<std::endl;}
 
         sprintf(data_path_2,"%s/data_%s_%d.hdf5",parent_path, data_type_2, i);
         for(j=0;j<5;j++)
         {
-            read_h5(data_path_1, mg_name[j], mg_buf[j]);
+            read_h5(data_path_2, mg_name[j], mg_buf[j]);
         }
-
+        show_arr(mg_buf[0], 1, 10);
         // read data
-        if(rank == 0)
-        {
-            std::cout<<data_path_2<<std::endl;
-        }
+        if(rank == 0){std::cout<<data_path_2<<std::endl;}
 
         if(shear_rotation_cmd == 0)
         {
@@ -263,7 +259,8 @@ int main(int argc, char**argv)
         // MEAN
         find_shear_mean(mg[0], mg[2], data_row, gh1, gh1_sig, 1000, 1);
         find_shear_mean(mg[1], mg[2], data_row, gh2, gh2_sig, 1000, 1);
-
+        std::cout<<gh1<<" "<<gh1_sig<<" "<<gh2<<" "<<gh2_sig<<std::endl;
+        
         result_sub_mean[(i-shear_st)*result_col] = gh1;
         result_sub_mean[(i-shear_st)*result_col + 1] = gh1_sig;
         result_sub_mean[(i-shear_st)*result_col + 2] = gh2;
@@ -376,10 +373,10 @@ int main(int argc, char**argv)
 
         std::cout<<"AVERAGE: m & c"<<std::endl;
         show_arr(mean_mc, 2, 4);
-        sprintf(set_name,"/mean_result");
-        write_h5(result_path, set_name, result_arr, 6, shear_num, true);
-        sprintf(set_name,"/mean_mc");
-        write_h5(result_path,set_name, mean_mc, 2, 4, false);
+        // sprintf(set_name,"/mean_result");
+        // write_h5(result_path, set_name, result_arr, 6, shear_num, true);
+        // sprintf(set_name,"/mean_mc");
+        // write_h5(result_path,set_name, mean_mc, 2, 4, false);
 
         // PDF_SYM
         for(k=0;k<2;k++)
@@ -412,18 +409,18 @@ int main(int argc, char**argv)
             result_arr[4*shear_num + i] = result_all_pdf[i*result_col+2];
             result_arr[5*shear_num + i] = result_all_pdf[i*result_col+3];
         }
-        sprintf(set_name,"/sym_result");
-        write_h5(result_path, set_name, result_arr, 6, shear_num, false);
-        sprintf(set_name,"/sym_mc");
-        write_h5(result_path,set_name, pdf_mc, 2, 4, false);
-        sprintf(set_name,"/mc1");
-        write_h5(result_path,set_name, pdf_mc, 1, 4, false);
-        sprintf(set_name,"/mc2");
-        write_h5(result_path,set_name, &pdf_mc[4], 1, 4, false);
-        sprintf(set_name,"/chisq_g1");
-        write_h5(result_path,set_name, total_chi_check_g1, shear_num, 2*chi_check_num, false);
-        sprintf(set_name,"/chisq_g2");
-        write_h5(result_path,set_name, total_chi_check_g2, shear_num, 2*chi_check_num, false);
+        // sprintf(set_name,"/sym_result");
+        // write_h5(result_path, set_name, result_arr, 6, shear_num, false);
+        // sprintf(set_name,"/sym_mc");
+        // write_h5(result_path,set_name, pdf_mc, 2, 4, false);
+        // sprintf(set_name,"/mc1");
+        // write_h5(result_path,set_name, pdf_mc, 1, 4, false);
+        // sprintf(set_name,"/mc2");
+        // write_h5(result_path,set_name, &pdf_mc[4], 1, 4, false);
+        // sprintf(set_name,"/chisq_g1");
+        // write_h5(result_path,set_name, total_chi_check_g1, shear_num, 2*chi_check_num, false);
+        // sprintf(set_name,"/chisq_g2");
+        // write_h5(result_path,set_name, total_chi_check_g2, shear_num, 2*chi_check_num, false);
 
         delete[] result_arr;
         delete[] mean_mc;
