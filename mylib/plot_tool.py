@@ -135,14 +135,14 @@ class Image_Plot:
         share_ax.tick_params(direction='in', labelsize=self.xy_tick_size, top=True, right=True, pad=self.pad_size)
         return share_ax
 
-    def axs_text(self, iy, ix, y, x, text, text_fontsize=None, text_color="green", ha="left", va="center", ax_trans=True):
+    def axs_text(self, iy, ix, y, x, text, text_fontsize=None, text_color="green", ha="left", va="center",rotation="horizontal", ax_trans=True):
         if not text_fontsize:
             text_fontsize = self.legend_size
         if ax_trans:
             self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha,  va=va,
-                              transform=self.axs[iy][ix].transAxes, fontsize=text_fontsize)
+                              transform=self.axs[iy][ix].transAxes, rotation=rotation, fontsize=text_fontsize)
         else:
-            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va, fontsize=text_fontsize)
+            self.axs[iy][ix].text(x, y, text, color=text_color, ha=ha, va=va, rotation=rotation, fontsize=text_fontsize)
 
 
     def del_axis(self, iy, ix, axis_nm, box=None):
