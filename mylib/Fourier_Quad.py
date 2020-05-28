@@ -40,6 +40,10 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
+    def pow_real_imag(self,image):
+        img_f = fft.fftshift(fft.fft2(image))
+        return img_f.real, img_f.imag
+
     def pow_arg(self, image):
         return numpy.angle(fft.fftshift(fft.fft2(image)))
 

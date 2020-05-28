@@ -1440,7 +1440,7 @@ void pow_spec(const double *in_img, double *out_img, double *out_img_real, doubl
 			}
 
 			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
-			phase_arg[n] = atan2(out[m][0], out[m][1]);
+			phase_arg[n] = atan2(out[m][1], out[m][0]);
 			out_img_real[n] = out[m][0];
 			out_img_imag[n] = out[m][1];
 		}
@@ -1492,7 +1492,7 @@ void pow_spec(const float *in_img, float *out_img, float *out_img_real, float *o
 			}
 
 			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
-			phase_arg[n] = atan2(out[m][0], out[m][1]);
+			phase_arg[n] = atan2(out[m][1], out[m][0]);
 			out_img_real[n] = out[m][0];
 			out_img_imag[n] = out[m][1];
 		}
