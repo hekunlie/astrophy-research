@@ -40,6 +40,9 @@ class Fourier_Quad:
         image_ps = fft.fftshift((numpy.abs(fft.fft2(image)))**2)
         return image_ps
 
+    def pow_arg(self, image):
+        return numpy.angle(fft.fftshift(fft.fft2(image)))
+
     def shear_est(self, gal_image, psf_image, noise=None, F=False):
         r"""
         Before the shear_est(), the get_hlr() should be called to get the half light radius of the PSF, and it will
