@@ -221,7 +221,7 @@ void deconvolution(const double *gal_pow, const double*gal_pow_real, const doubl
 
 void pow_spec(const double *in_img, double *out_img_pow, const int column, const int row);
 void pow_spec(const float *in_img, float *out_img, const int column, const int row);
-void pow_spec(const double *in_img, double *out_img_pow, double*phase_arg, const int column, const int row);
+void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, double*phase_arg, const int column, const int row);
 void pow_spec(const float *in_img, float *out_img_pow, float *out_img_real, float *out_img_imag, float*phase_arg, const int column, const int row);
 void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, double *out_img_imag, const int column, const int row);
 

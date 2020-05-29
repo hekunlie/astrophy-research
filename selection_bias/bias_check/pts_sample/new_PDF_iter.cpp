@@ -2,7 +2,7 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 
-#define MY_FLOAT double
+#define MY_FLOAT float
 
 void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
 {

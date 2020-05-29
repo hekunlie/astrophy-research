@@ -1,7 +1,7 @@
 #include<FQlib.h>
 #include<hk_iolib.h>
 
-#define MY_FLOAT float
+#define MY_FLOAT double
 
 int main(int argc, char*argv[])
 {

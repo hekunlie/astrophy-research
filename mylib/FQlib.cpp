@@ -1364,7 +1364,7 @@ void pow_spec(const float *in_img, float *out_img, const int column, const int r
 		in[i][0] = in_img[i];
 		in[i][1] = 0;
 	}
-
+	// out[i][0] real, out[i][1] imagine
 	out = (fftwf_complex*)fftwl_malloc(sizeof(fftwf_complex) *(row*column));
 	p = fftwf_plan_dft_2d(row, column, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 	fftwf_execute(p);															 /* repeat as needed */
@@ -1406,6 +1406,7 @@ void pow_spec(const double *in_img, double *out_img, double *out_img_real, doubl
 	fftwl_complex *in, *out;
 	fftwl_plan p;
 	long int i, j, m, n;
+	// out[i][0] real, out[i][1] imagine
 
 	in = (fftwl_complex*)fftwl_malloc(sizeof(fftwl_complex) *(row*column));
 	for (i = 0; i < (row*column); i++)
@@ -1438,7 +1439,7 @@ void pow_spec(const double *in_img, double *out_img, double *out_img_real, doubl
 				else
 					n = (i - row / 2)*column + j - column / 2;
 			}
-
+			
 			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
 			phase_arg[n] = atan2(out[m][1], out[m][0]);
 			out_img_real[n] = out[m][0];
