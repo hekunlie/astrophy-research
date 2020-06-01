@@ -26,7 +26,7 @@ g1 = -0.04
 g2 = 0.04
 psf_type = "Moffat"
 
-total_num = 100000
+total_num = 400000
 
 step_size = int(argv[1])
 seed = int(argv[2])
@@ -75,10 +75,10 @@ t2 = time.time()
 
 if rank == 0:
 
-    data_nf = numpy.zeros((1,4))
+    data_nf = numpy.zeros((1,5))
     data_nf[0] = fq.shear_est(gal_pow_nf, psf_pow, F=True)
 
-    h5f = h5py.File("./CT_data.hdf5", "w")
+    h5f = h5py.File("./CT_data_%.2f.hdf5"%step_size, "w")
     h5f["/data"] = data
     h5f["/data_noise_free"] = data_nf
     h5f.close()
