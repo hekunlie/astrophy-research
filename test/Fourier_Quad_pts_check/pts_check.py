@@ -8,8 +8,8 @@ import h5py
 
 psf_type = "Moffat"
 psf_flux = 1
-psf_scale = 4
-stamp_size = 48
+psf_scale = 60
+stamp_size = 500
 seed = 2301
 
 pst_num = 40
@@ -29,10 +29,13 @@ fq = Fourier_Quad(stamp_size, seed)
 
 psf_img = fq.cre_psf(psf_scale, psf_flux, psf_type)
 psf_pow = fq.pow_spec(psf_img)
-fq.get_radius_new(psf_pow, 2)
+fq.get_radius(psf_pow, 2)
 print(fq.hlr)
-
-
+img = Image_Plot()
+img.subplots(1,2)
+img.axs[0][0].imshow(psf_img)
+img.axs[0][1].imshow(psf_pow)
+img.show_img()
 
 num_scale = 1
 rotation = 4

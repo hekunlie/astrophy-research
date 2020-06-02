@@ -79,7 +79,7 @@ int main(int argc, char**argv)
     }
     data_type_num = argc-5;
     data_col = 5;// G1, G2, N, U, V
-    chisq_num = 101;
+    chisq_num = 201;
     left_guess = -0.1;
     right_guess = 0.1;
     rotation = new MY_FLOAT[5];
@@ -144,7 +144,6 @@ int main(int argc, char**argv)
     }
 
     // read and calculate
-    sprintf(set_name,"/data");
     for(i=shear_st;i<shear_ed;i++)
     {   
         // read data
@@ -154,9 +153,9 @@ int main(int argc, char**argv)
             for(k=0;k<data_col;k++)
             {
                 read_h5(data_path, mg_name[k], temp_read[k]);
+                // if(rank == 0){show_arr(&mg_data[k][data_row-100],1, 10);}
             }
-
-            if(rank== 0){std::cout<<"Read data "<<data_path<<" "<<data_type[j]<<std::endl;}
+            
             for(k=0;k<data_col;k++)
             {
                 for(m=0;m<data_row;m++)
@@ -170,19 +169,23 @@ int main(int argc, char**argv)
 
                     mg_data[k][m] += temp_read[k][m];
                 }
-            }           
+            }         
+            if(rank== 0){std::cout<<"Read data "<<data_path<<" "<<data_type[j]<<std::endl;}  
             
         }
 
         // calculate chisq
-        set_bin(mg_data[0], data_row, mg_bins, mg_bin_num, 100);
-
+        set_bin(mg_data[0], data_row, mg_bin_num,mg_bins, 100, 0);
+        // show_arr(mg_bins,1,mg_bin_num+1);
+        
         for (k = 0; k < chisq_num; k++)
         {	
             try
             {
                 fourier_hist(mg_data[0], mg_data[2], mg_data[3], data_row, shear_for_chi[k], 1, mg_bins, num_in_bin, mg_bin_num);
 			    cal_chisq_1d(num_in_bin, mg_bin_num, left_guess);
+                // show_arr(num_in_bin,1,mg_bin_num);
+                // std::cout<<shear_for_chi[k]<<" "<<left_guess<<std::endl;
             }
             catch(const char *msg)
             {

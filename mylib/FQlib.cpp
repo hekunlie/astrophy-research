@@ -4365,7 +4365,9 @@ void fourier_hist(const float *mg, const float *mn,const float *mu, const int da
 			for(j=0;j<bin_num;j++)
 			{
 				if(temp >= bins[j] and temp < bins[j+1])
-				{
+				{	
+					// if(i <10)
+					// {std::cout<<j<<" "<<bins[j]<<" "<<temp<<" "<<mg[i]<<" "<<gh<<" "<<mn[i]<<" "<<mu[i]<<" "<<bins[j+1]<<std::endl;}
 					num_in_bin[j] += 1;
 					continue;
 				}
