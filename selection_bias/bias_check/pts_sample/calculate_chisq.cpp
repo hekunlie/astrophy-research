@@ -42,7 +42,7 @@ int main(int argc, char**argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-    char parent_path[200], shear_path[200], result_path[200];
+    char parent_path[300], shear_path[300], result_path[300];
     char set_name[30], inform[300], time_now[40];
 
     char data_path[300], *data_type[10], data_comb[100], *mg_name[5];
@@ -57,7 +57,7 @@ int main(int argc, char**argv)
     int mg_bin_num, *num_in_bin;
     int chisq_num;
     MY_FLOAT *mg_bins;
-    MY_FLOAT *chisq1, *chisq2, *shear_for_chi, chisq_min_fit;
+    MY_FLOAT *chisq1, *chisq2, *shear_for_chi1, *shear_for_chi2, chisq_min_fit;
     MY_FLOAT left_guess, right_guess;
     MY_FLOAT gh1, gh1_sig, gh2, gh2_sig;
     MY_FLOAT *result;
@@ -79,7 +79,7 @@ int main(int argc, char**argv)
     }
     data_type_num = argc-5;
     data_col = 5;// G1, G2, N, U, V
-    chisq_num = 201;
+    chisq_num = 31;
     left_guess = -0.1;
     right_guess = 0.1;
     rotation = new MY_FLOAT[5];
@@ -99,6 +99,17 @@ int main(int argc, char**argv)
     sprintf(mg_name[4], "/mv");
 
     char_stack(data_type, data_type_num, data_comb);
+    
+    // read shear
+	MY_FLOAT *g1t = new MY_FLOAT[shear_num]{};
+	MY_FLOAT *g2t = new MY_FLOAT[shear_num]{};
+
+	sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
+	sprintf(set_name,"/g1");
+	read_h5(shear_path, set_name, g1t);
+	sprintf(set_name,"/g2");
+	read_h5(shear_path, set_name, g2t);
+
 
     result = new MY_FLOAT[4];
 
@@ -108,10 +119,14 @@ int main(int argc, char**argv)
     num_in_bin = new int[mg_bin_num]{};
     chisq1 = new MY_FLOAT[chisq_num]{};
     chisq2 = new MY_FLOAT[chisq_num]{};
-    shear_for_chi = new MY_FLOAT[chisq_num]{};
+    shear_for_chi1 = new MY_FLOAT[chisq_num]{};
+    shear_for_chi2 = new MY_FLOAT[chisq_num]{};
+
     for(i=0;i<chisq_num;i++)
     {
-        shear_for_chi[i] = 0.2/(chisq_num-1)*i - 0.1;
+        shear_for_chi1[i] = 0.02/(chisq_num-1)*i - 0.01 +g1t[rank];
+        shear_for_chi2[i] = 0.02/(chisq_num-1)*i - 0.01 +g2t[rank];
+
     }
     // shear point distribution
     //exit(0);
