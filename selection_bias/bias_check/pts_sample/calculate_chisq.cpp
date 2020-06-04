@@ -104,7 +104,7 @@ int main(int argc, char**argv)
 	MY_FLOAT *g1t = new MY_FLOAT[shear_num]{};
 	MY_FLOAT *g2t = new MY_FLOAT[shear_num]{};
 
-	sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
+	sprintf(shear_path,"%s/shear.hdf5", parent_path);
 	sprintf(set_name,"/g1");
 	read_h5(shear_path, set_name, g1t);
 	sprintf(set_name,"/g2");
@@ -197,7 +197,7 @@ int main(int argc, char**argv)
         {	
             try
             {
-                fourier_hist(mg_data[0], mg_data[2], mg_data[3], data_row, shear_for_chi[k], 1, mg_bins, num_in_bin, mg_bin_num);
+                fourier_hist(mg_data[0], mg_data[2], mg_data[3], data_row, shear_for_chi1[k], 1, mg_bins, num_in_bin, mg_bin_num);
 			    cal_chisq_1d(num_in_bin, mg_bin_num, left_guess);
                 // show_arr(num_in_bin,1,mg_bin_num);
                 // std::cout<<shear_for_chi[k]<<" "<<left_guess<<std::endl;
@@ -210,7 +210,7 @@ int main(int argc, char**argv)
             
             try
             {
-                fourier_hist(mg_data[1], mg_data[2], mg_data[3], data_row, shear_for_chi[k], 2, mg_bins, num_in_bin, mg_bin_num);
+                fourier_hist(mg_data[1], mg_data[2], mg_data[3], data_row, shear_for_chi2[k], 2, mg_bins, num_in_bin, mg_bin_num);
 			    cal_chisq_1d(num_in_bin, mg_bin_num, left_guess);
             }
             catch(const char *msg)
@@ -225,8 +225,11 @@ int main(int argc, char**argv)
         write_h5(data_path, set_name, chisq1, chisq_num, 1, true);
         sprintf(set_name,"/chisq2");
         write_h5(data_path, set_name, chisq2, chisq_num, 1, false);
-        sprintf(set_name,"/shear");
-        write_h5(data_path, set_name, shear_for_chi, chisq_num, 1, false);    
+        sprintf(set_name,"/shear1");
+        write_h5(data_path, set_name, shear_for_chi1, chisq_num, 1, false);
+        sprintf(set_name,"/shear2");
+        write_h5(data_path, set_name, shear_for_chi2, chisq_num, 1, false);    
+
 
 
     }

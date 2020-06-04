@@ -15,6 +15,125 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 
+data_path = argv[1]
+data_nm = argv[2]
+
+g1t = [0, -0.04, 0, 0.04, -0.02, 0, 0.02, 0, 0.02]
+g2t = [0, 0, 0.04, -0.04, 0, -0.02, 0, 0.02, -0.02]
+
+
+
+g1 = g1t[rank]
+g2 = g2t[rank]
+
+scale = 100
+xy_bin_num, radius_bin_num = 200, 60
+
+h5f = h5py.File(data_path + "/data_%s_%d.hdf5" % (data_nm, rank), "r")
+print("g1:", g1, "g2:", g2)
+print(data_path + "/data_%s_%d.hdf5" % (data_nm, rank))
+
+mg1 = h5f["/mg1"][()] / scale
+mg2 = h5f["/mg2"][()] / scale
+mn = h5f["/mn"][()] / scale
+mu = h5f["/mu"][()] / scale
+h5f.close()
+
+img = Image_Plot(xpad=0.15, ypad=0.2, fig_x=4, fig_y=3)
+img.subplots(6, 6)
+
+xy_bin = component_fit.get_bin(mg1, mg2, xy_bin_num)
+
+num, xgrid, ygrid, radius_grid = component_fit.get_2dhist(mg1, mg2, xy_bin)[:4]
+
+dpl, radius_bin, radius_mask, mean_of_annuli = component_fit.get_dipole(num, radius_grid, radius_bin_num)
+
+qpl, dpl_fit, sin_theta, cos_theta = component_fit.get_quadrupole(dpl, xgrid, ygrid, radius_bin, radius_bin_num)
+
+qpl_fit, sin_2theta, cos_2theta = component_fit.fit_quadrupole(qpl, xgrid, ygrid, radius_bin, radius_bin_num)
+
+dpl = numpy.nan_to_num(dpl)
+qpl = numpy.nan_to_num(qpl)
+
+fig1 = img.axs[0][0].imshow(dpl)
+img.figure.colorbar(fig1, ax=img.axs[0][0])
+
+img.axs[0][1].plot(ygrid[:, 0], dpl.sum(axis=1), label="G1")
+img.axs[0][1].plot(xgrid[0], dpl.sum(axis=0), label="G2")
+img.axs[0][1].legend()
+
+fig1 = img.axs[0][2].imshow(dpl_fit)
+img.figure.colorbar(fig1, ax=img.axs[0][2])
+
+fig1 = img.axs[0][3].imshow(qpl)
+img.figure.colorbar(fig1, ax=img.axs[0][3])
+
+img.axs[0][4].plot(ygrid[:, 0], qpl.sum(axis=1), label="G1")
+img.axs[0][4].plot(xgrid[0], qpl.sum(axis=0), label="G2")
+img.axs[0][4].legend()
+
+fig1 = img.axs[0][5].imshow(qpl_fit)
+img.figure.colorbar(fig1, ax=img.axs[0][5])
+
+g1s = numpy.linspace(g1 - 0.1, g1 + 0.1, 5)
+g2s = numpy.linspace(g2 - 0.1, g2 + 0.1, 5)
+
+for j in range(5):
+    mg1_sym = mg1 - g1s[j] * (mn + mu)
+    mg2_sym = mg2 - g2s[j] * (mn - mu)
+
+    num_sym, xgrid_sym, ygrid_sym, radius_grid_sym = component_fit.get_2dhist(mg1_sym, mg2_sym, xy_bin)[:4]
+
+    dpl_sym, radius_bin_sym, radius_mask_sym, mean_of_annuli_sym = component_fit.get_dipole(num_sym,
+                                                                                            radius_grid_sym,
+                                                                                            radius_bin_num)
+
+    qpl_sym, dpl_sym_fit, sin_theta_sym, cos_theta_sym = component_fit.get_quadrupole(dpl_sym, xgrid_sym, ygrid_sym,
+                                                                                      radius_bin_sym,
+                                                                                      radius_bin_num)
+
+    qpl_sym_fit, sin_2theta_sym, cos_2theta_sym = component_fit.fit_quadrupole(qpl_sym, xgrid_sym, ygrid_sym,
+                                                                               radius_bin_sym, radius_bin_num)
+
+    dpl_sym = numpy.nan_to_num(dpl_sym)
+    qpl_sym = numpy.nan_to_num(qpl_sym)
+
+    fig1 = img.axs[1 + j][0].imshow(dpl_sym)
+    img.figure.colorbar(fig1, ax=img.axs[1 + j][0])
+
+    img.axs[1 + j][1].plot(ygrid_sym[:, 0], dpl_sym.sum(axis=1), label="G1")
+    img.axs[1 + j][1].plot(xgrid_sym[0], dpl_sym.sum(axis=0), label="G2")
+    img.axs[1 + j][1].legend()
+
+    fig1 = img.axs[1 + j][2].imshow(dpl_sym_fit)
+    img.figure.colorbar(fig1, ax=img.axs[1 + j][2])
+
+    fig1 = img.axs[1 + j][3].imshow(qpl_sym)
+    img.figure.colorbar(fig1, ax=img.axs[1 + j][3])
+
+    img.axs[1 + j][4].plot(ygrid_sym[:, 0], qpl_sym.sum(axis=1), label="G1")
+    img.axs[1 + j][4].plot(xgrid_sym[0], qpl_sym.sum(axis=0), label="G2")
+    img.axs[1 + j][4].legend()
+
+    fig1 = img.axs[1 + j][5].imshow(qpl_sym_fit)
+    img.figure.colorbar(fig1, ax=img.axs[1 + j][5])
+
+for i in range(6):
+    for j in range(6):
+        if j in [0, 2, 3, 5]:
+            img.del_ticks(i, j, [0, 1])
+            img.set_label(i, j, 0, "+  G1  -")
+            img.set_label(i, j, 1, "-  G2  +")
+        else:
+            img.axs[i][j].yaxis.major.formatter.set_powerlimits((0, 0))
+            img.axs[i][j].xaxis.major.formatter.set_powerlimits((0, 0))
+img.save_img(data_path + "/%s_%d_vary_g.png" % (data_nm, rank))
+img.show_img()
+img.close_img()
+
+
+
+exit()
 fq = Fourier_Quad(12,1234)
 
 data_path = argv[1]

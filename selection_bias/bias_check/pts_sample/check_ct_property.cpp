@@ -119,21 +119,20 @@ int main(int argc, char*argv[])
 
 	MY_FLOAT psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	MY_FLOAT g1, g2, ts, te, t1, t2;
-	MY_FLOAT *g1t, *g2t;
+	MY_FLOAT g1t[9]{0, -0.04, 0, 0.04, -0.02, 0, 0.02, 0, 0.02};
+	MY_FLOAT g2t[9]{0, 0, 0.04, -0.04, 0, -0.02, 0, 0.02, -0.02};
 	MY_FLOAT psf_ellip, ellip_theta;
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
 	MY_FLOAT gal_fluxs[5]{4000, 8000,  16000, 32000, 96000};
-	MY_FLOAT gal_noise_sigs[5]{0.1,10,30,60};
 
 	int flux_tag;
 
-	MY_FLOAT theta;
-
 	strcpy(parent_path, argv[1]);
-	seed_ini = 1233;
+	seed_ini = 15454;
 	flux_tag = 1;
 	total_chips = atoi(argv[2]);
+	gal_noise_sig = atof(argv[3]);
 	size = 44;
 
 	pts_step = 1;//atof(argv[1]);
@@ -208,14 +207,10 @@ int main(int argc, char*argv[])
 	// the shear estimators data matrix  
 	MY_FLOAT *total_data;	
 	MY_FLOAT *sub_noise_free_data;
-	MY_FLOAT *sub_noise_free_sqrt_data;
     MY_FLOAT *sub_noise_residual_data;	
 	MY_FLOAT *sub_cross_term_data;
-	MY_FLOAT *sub_cross_term_sqrt_data;
     MY_FLOAT *sub_noisy_data;
-	MY_FLOAT *sub_cross_term_estimate;
-	MY_FLOAT *sub_noise_cross_term_estimate;
-	MY_FLOAT *sub_noise_residual_term_estimate;	
+
 	MY_FLOAT *mg_data[5];
 	char *mg_name[5];
 
@@ -265,20 +260,15 @@ int main(int argc, char*argv[])
 	sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
 
 
-	MY_FLOAT *total_theta;
-	MY_FLOAT *sub_theta = new MY_FLOAT[scatter_count[rank]]{};
-
-
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
 	sss1 = 2*seed_step*total_chips;
-	seed_pts = sss1*rank + 1 + seed_ini;//35000;
+	seed_pts = seed_ini;//35000;
 
 	seed_n2 = sss1*rank + 1 + seed_ini*4;//2300*(rotation+1);
 
 	if (0 == rank)
 	{
-		total_theta = new MY_FLOAT[total_data_row]{};
 		total_data = new MY_FLOAT[total_data_row*shear_data_cols]{};
 		
 		for(i=0; i<shear_data_cols; i++)
@@ -302,7 +292,7 @@ int main(int argc, char*argv[])
 #endif
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
-	arr_sqrt(ppsf, ppsf_sqrt, img_len);
+
 	// std::cout<<rank<<std::endl;
 	// show_arr(scatter_count,1,numprocs);
 	// std::cout<<"---------------------------------------------------------------------------"<<std::endl;
@@ -311,13 +301,10 @@ int main(int argc, char*argv[])
 	{	
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		std::cout << parent_path << std::endl;
-        std::cout<<"Rotation: "<<rotation<<std::endl;
 		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
 		std::cout << "Total cpus: " << numprocs << std::endl;
-		std::cout <<"PSF Scale: "<<psf_scale<< "PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
-		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
-		std::cout<<"Gal Num of each thread: ";
-		show_arr(scatter_count,1,numprocs);
+		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
+		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<" sigma"<< std::endl;
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
 	}
 	for(i=0;i<10;i++)
@@ -330,55 +317,51 @@ int main(int argc, char*argv[])
 	}
 
 
-    flux_i = gal_fluxs[flux_tag]/ num_p;				
-    
-    g1 = -0.04;
-    g2 = 0.04;
-
-    initialize_arr(point, num_p * 2, 0);
-    gsl_initialize(seed_pts,0);
-
-	create_points(point, num_p, max_radius, pts_step, rng0);
-#ifdef EPSF
-    convolve_e(point,num_p,flux_i, g1, g2, gal, size, img_cent, psf_scale, psf_type,psf_ellip, ellip_theta);
-#else
-    convolve(point,num_p,flux_i, g1, g2, gal, size, img_cent, psf_scale,psf_type);
-#endif
-    gsl_free(0);
-
-    // noise free
-    pow_spec(gal, pgal, size, size);
-    arr_sqrt(pgal, pgal_sqrt, img_len);
-
-    ///////////////// Noise free /////////////////////////
-    shear_est(pgal, ppsf, &all_paras);
-    sub_noise_free_data[0] = all_paras.n1;
-    sub_noise_free_data[1] = all_paras.n2;
-    sub_noise_free_data[2] = all_paras.dn;
-    sub_noise_free_data[3] = all_paras.du;
-    sub_noise_free_data[4] = all_paras.dv;
-
-    if (0 == rank)
-    {
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_noise_free_epsf_%d.hdf5", parent_path,shear_id);
-#else
-			sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path, shear_id);
-#endif
-        data_sep(sub_noise_free_data, mg_data, 1, shear_data_cols);
-        for(k=0; k<shear_data_cols;k++)
-        {	
-            if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], 1, 1, true);}
-            else{write_h5(result_path, mg_name[k], mg_data[k], 1, 1, false);}
-        }
-    }
 
 	// loop the shear points
-	for (shear_id = 0; shear_id < 4; shear_id++)
+	for (shear_id = 0; shear_id < 9; shear_id++)
 	{
 		ts = clock();
 
-        gal_noise_sig = gal_noise_sigs[shear_id];
+		flux_i = gal_fluxs[flux_tag]/ num_p;				
+    
+		g1 = g1t[shear_id];
+		g2 = g2t[shear_id];
+		sprintf(chip_path, "%s/gal_%d.fits", parent_path, shear_id);
+		
+		read_fits(chip_path, gal);
+
+		// noise free
+		pow_spec(gal, pgal, size, size);
+
+		///////////////// Noise free /////////////////////////
+		shear_est(pgal, ppsf, &all_paras);
+		sub_noise_free_data[0] = all_paras.n1;
+		sub_noise_free_data[1] = all_paras.n2;
+		sub_noise_free_data[2] = all_paras.dn;
+		sub_noise_free_data[3] = all_paras.du;
+		sub_noise_free_data[4] = all_paras.dv;
+
+		if (0 == rank)
+		{	
+			// sprintf(chip_path, "%s/gal_%d.fits", parent_path, shear_id);
+			// write_fits(chip_path, gal, size, size);
+
+			std::cout<<"g1: "<<g1<<" g2: "<<g2<<std::endl;
+	#ifdef EPSF
+				sprintf(result_path, "%s/data/data_noise_free_epsf_%d.hdf5", parent_path,shear_id);
+	#else
+				sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path, shear_id);
+	#endif
+			data_sep(sub_noise_free_data, mg_data, 1, shear_data_cols);
+			for(k=0; k<shear_data_cols;k++)
+			{	
+				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], 1, 1, true);}
+				else{write_h5(result_path, mg_name[k], mg_data[k], 1, 1, false);}
+			}
+		}
+
+
         seed_n1 = sss1*rank + 1 + seed_ini*2;// 4001*(rotation+1);
 		// loop the chips
 		for (i = chip_st; i < chip_ed; i++)
