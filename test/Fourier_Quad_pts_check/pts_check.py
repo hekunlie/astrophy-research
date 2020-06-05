@@ -10,7 +10,7 @@ psf_type = "Moffat"
 psf_flux = 1
 psf_scale = 60
 stamp_size = 500
-seed = 2301
+seed = 23012
 
 pst_num = 40
 max_radius = 7

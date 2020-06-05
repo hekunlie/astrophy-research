@@ -132,8 +132,8 @@ int main(int argc, char*argv[])
 	seed_ini = 15454;
 	flux_tag = 1;
 	total_chips = atoi(argv[2]);
-	gal_noise_sig = atof(argv[3]);
-	size = 44;
+	gal_noise_sig = atof(argv[4]);
+	size = atoi(argv[3]);
 
 	pts_step = 1;//atof(argv[1]);
 
