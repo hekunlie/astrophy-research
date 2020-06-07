@@ -221,18 +221,33 @@ int main(int argc, char**argv)
                 {
                     for(m=0; m<data_row; m++){mg[k][m] += mg_buf[k][m];}
                 }
-                if(rank == 0){std::cout<<data_path<<" non-rotated"<<std::endl;}
+                if(rank == 0){std::cout<<data_path<<" non-rotated, add"<<std::endl;}
             }
-            else
+            else if(shear_rotation_cmd[j] == 1)
             {   
+                for(k=0;k<correct_col;k++)
+                {
+                    for(m=0; m<data_row; m++){mg[k][m] -= mg_buf[k][m];}
+                }
+                if(rank == 0){std::cout<<data_path<<" non-rotated, subtract"<<std::endl;}
+            }
+            else if(shear_rotation_cmd[j] == 2)
+            {
                 for(k=0;k<data_row;k++)
                 {
                     estimator_rotation(Pi/2, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
-                    
-                    for(m=0;m<correct_col;m++){mg[m][k] += rotation[m];}   
-
+                    for(m=0;m<correct_col;m++){mg[m][k] += rotation[m];} 
                 }
-                if(rank == 0){std::cout<<data_path<<" rotated"<<std::endl;}
+                if(rank == 0){std::cout<<data_path<<" rotated, add"<<std::endl;}
+            }
+            else
+            {
+                for(k=0;k<data_row;k++)
+                {
+                    estimator_rotation(Pi/2, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
+                    for(m=0;m<correct_col;m++){mg[m][k] -= rotation[m];} 
+                }
+                if(rank == 0){std::cout<<data_path<<" rotated, subtract"<<std::endl;}
             }
         }
         
