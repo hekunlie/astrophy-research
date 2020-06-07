@@ -39,9 +39,12 @@ int main(int argc, char**argv)
     char parent_path[400], shear_path[400], result_path[400];
     char set_name[30], inform[300], time_now[40];
     char result_nm[60];
-    char data_path_1[400], data_path_2[400],data_path_3[400], data_type_1[50], data_type_2[50], data_type_3[50];
+    char data_path[400], data_type_1[50];
+    char *data_types[10];
+    int data_type_num;
+    int shear_rotation_cmd[10];
 
-    int i,j,k;
+    int i,j,k,m,n;
 
     int shear_num, shear_st, shear_ed;
     int*shear_point;
@@ -77,12 +80,20 @@ int main(int argc, char**argv)
 
     // data shape
     strcpy(parent_path, argv[1]);
+    shear_num = 40;//atoi(argv[8]);
+    data_row = 1600*10000;//atoi(argv[9])*10000;
+    
     strcpy(result_nm, argv[2]);
     strcpy(data_type_1, argv[3]);
-    strcpy(data_type_2, argv[4]);
-    int shear_rotation_cmd = atoi(argv[5]);
-    shear_num = atoi(argv[6]);
-    data_row = atoi(argv[7])*10000;
+    int correct_col = atoi(argv[4]);
+    int pre_num = 5;
+    data_type_num = (argc - pre_num)/2;
+    for(i=0; i<data_type_num; i++)
+    {
+        data_types[i] = new char[100];
+        strcpy(data_types[i], argv[i+pre_num]);
+        shear_rotation_cmd[i] = atoi(argv[i+pre_num+data_type_num]);
+    }
 
     data_col = 5;// G1, G2, N, U, V
     result_col = 4;// g1, g1_sig, g2, g2_sig
@@ -156,6 +167,8 @@ int main(int argc, char**argv)
     if(rank == 0)
     {
         show_arr(shear_point, 1, numprocs);
+        for(i=0;i<correct_col;i++){std::cout<<mg_name[i]<<" ";}
+        std::cout<<std::endl;
         std::cout<<"Bin_num "<<mg_bin_num<<" data:"<<parent_path<<" "<<std::endl;
     }
 
@@ -183,81 +196,58 @@ int main(int argc, char**argv)
     read_h5(shear_path, set_name,g2_t);
 
     // read and calculate
-    sprintf(set_name,"/data");
-    // shear_st = 27;
-    // shear_ed = 28;
     for(i=shear_st;i<shear_ed;i++)
     {   
-        sprintf(data_path_1,"%s/data_%s_%d.hdf5",parent_path, data_type_1, i);
+        sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_type_1, i);
         for(j=0;j<5;j++)
         {
-            read_h5(data_path_1, mg_name[j], mg[j]);
+            read_h5(data_path, mg_name[j], mg[j]);
         }
-        // show_arr(mg[0], 1, 10);
-        
-        // read data
-        if(rank == 0){std::cout<<data_path_1<<std::endl;}
+        if(rank == 0){std::cout<<data_path<<std::endl;}
 
-        sprintf(data_path_2,"%s/data_%s_%d.hdf5",parent_path, data_type_2, i);
-        for(j=0;j<5;j++)
+        for(j=0;j<data_type_num;j++)
         {
-            read_h5(data_path_2, mg_name[j], mg_buf[j]);
-        }
-        // show_arr(mg_buf[0], 1, 10);
-        
-        // read data
-        if(rank == 0){std::cout<<data_path_2<<std::endl;}
-
-        if(shear_rotation_cmd == 0)
-        {
-            for(j=0; j<5; j++)
+            // read data
+            sprintf(data_path,"%s/data_%s_%d.hdf5",parent_path, data_types[j], i);
+            for(k=0;k<5;k++)
             {
-                for(k=0; k<data_row; k++)
+                read_h5(data_path, mg_name[k], mg_buf[k]);
+            }
+            
+
+            if(shear_rotation_cmd[j] == 0)
+            {
+                for(k=0;k<correct_col;k++)
                 {
-                    mg[j][k] += mg_buf[j][k];
+                    for(m=0; m<data_row; m++){mg[k][m] += mg_buf[k][m];}
                 }
+                if(rank == 0){std::cout<<data_path<<" non-rotated"<<std::endl;}
             }
-        }
-        else
-        {   
-            for(j=0;j<data_row;j++)
-            {
-                estimator_rotation(Pi/2, mg_buf[0][j],mg_buf[1][j],mg_buf[2][j],mg_buf[3][j],mg_buf[4][j],rotation);
-                
-                mg[0][j] += rotation[0];
-                mg[1][j] +=  rotation[1];      
-                mg[2][j] +=  rotation[2];      
-                mg[3][j] +=  rotation[3];
-                mg[4][j] +=  rotation[4];      
+            else
+            {   
+                for(k=0;k<data_row;k++)
+                {
+                    estimator_rotation(Pi/2, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
+                    
+                    for(m=0;m<correct_col;m++){mg[m][k] += rotation[m];}   
 
-
-                // mg1[k] = mg1[k] + rotation[0];
-                // mg2[k] = mg2[k] + rotation[1];
-                // mn[k] = mn[k] + rotation[2];
-                // mnu1[k] = mnu1[k] + rotation[2] + rotation[3];
-                // mnu2[k] = mnu2[k] + rotation[2] - rotation[3];
+                }
+                if(rank == 0){std::cout<<data_path<<" rotated"<<std::endl;}
             }
         }
         
         
-        // sprintf(data_path_3,"%s/data_%d_%s.hdf5",parent_path, i, data_type_3);
-        // read_h5(data_path_3, set_name, data);
-        // // read data
-        // if(rank == 0)
-        // {
-        //     std::cout<<data_path_3<<std::endl;
-        // }
-        // for(k=0;k<data_row;k++)
+        // if(rank ==0)
         // {   
-        //     estimator_rotation(Pi/2, data[k*data_col],data[k*data_col+1],data[k*data_col+2],data[k*data_col+3],data[k*data_col+4],rotation);
-        //     mg1[k] = mg1[k] + rotation[0];
-        //     mg2[k] = mg2[k] + rotation[1];
-        //     mn[k] = mn[k] + rotation[2];
-        //     mnu1[k] = mnu1[k] + (rotation[2] + rotation[3]);
-        //     mnu2[k] = mnu2[k] + (rotation[2] - rotation[3]);
+        //     sprintf(set_name,"/data");
+        //     sprintf(data_path,"%s/check.hdf5",parent_path);
+        //     for(j=0;j<5;j++)
+        //     {
+        //         if(j==0){write_h5(data_path, mg_name[j], mg[j], data_row, 1, true);}
+        //         else{write_h5(data_path, mg_name[j], mg[j], data_row, 1, false);}
+        //     }
         // }
-
-
+        MPI_Barrier(MPI_COMM_WORLD);
         // MEAN
         find_shear_mean(mg[0], mg[2], data_row, gh1, gh1_sig, 1000, 1);
         find_shear_mean(mg[1], mg[2], data_row, gh2, gh2_sig, 1000, 1);

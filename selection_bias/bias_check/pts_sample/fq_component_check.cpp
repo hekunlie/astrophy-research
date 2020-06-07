@@ -3,7 +3,7 @@
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 3
 #define FLUX_PDF_UNI
-#define CPSF
+#define EPSF
 
 #define SAVE_MEM
 
@@ -443,7 +443,8 @@ int main(int argc, char*argv[])
 				pow_spec(noise_1, pnoise_1, size, size);
 				addnoise(noise_2, img_len, gal_noise_sig, rng1);
 				pow_spec(noise_2, pnoise_2, size, size);
-				addnoise(noise_3, img_len, gal_noise_sig, rng1);
+
+				addnoise(noise_3, img_len, gal_noise_sig, rng2);
 				pow_spec(noise_3, pnoise_3, size, size);
 				addnoise(noise_4, img_len, gal_noise_sig, rng2);
 				pow_spec(noise_4, pnoise_4, size, size);
@@ -471,11 +472,11 @@ int main(int argc, char*argv[])
 				arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
 				// noise cross term
 				arr_add(noise_cross,noise_1, noise_2, img_len);
-				pow_spec(noise_cross, pnoise_cross, size, size);
-				arr_deduct(pnoise_cross, pnoise_1, pnoise_2,  img_len);
+				pow_spec(noise_cross, temp, size, size);
+				arr_deduct(pnoise_cross, temp, pnoise_1, pnoise_2,  img_len);
 				// noise cross term estimate
-				arr_add(noise_3, noise_4, img_len);
-				pow_spec(noise_3, temp, size, size);
+				arr_add(noise_cross, noise_3, noise_4, img_len);
+				pow_spec(noise_cross, temp, size, size);
 				arr_deduct(pnoise_cross_est, temp, pnoise_3, pnoise_4, img_len);
 				// galaxy cross term
                 arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
@@ -605,7 +606,9 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-		}	
+		}
+		
+			
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
 
