@@ -7,6 +7,8 @@
 
 #define SAVE_MEM
 
+//#define DATA_SEP
+
 #ifdef SAVE_MEM
 #define MY_FLOAT float
 #else
@@ -310,11 +312,11 @@ int main(int argc, char*argv[])
 	g1t = new MY_FLOAT[shear_pairs]{};
 	g2t = new MY_FLOAT[shear_pairs]{};
 
-	sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
-	sprintf(set_name,"/g1");
-	read_h5(shear_path, set_name, g1t);
-	sprintf(set_name,"/g2");
-	read_h5(shear_path, set_name, g2t);
+	// sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
+	// sprintf(set_name,"/g1");
+	// read_h5(shear_path, set_name, g1t);
+	// sprintf(set_name,"/g2");
+	// read_h5(shear_path, set_name, g2t);
 
     
 #ifdef EPSF
@@ -365,8 +367,8 @@ int main(int argc, char*argv[])
 	{
 		ts = clock();
 
-		g1 = g1t[shear_id];
-		g2 = g2t[shear_id];
+		g1 = -0.04;//g1t[shear_id];
+		g2 = 0.033;//g2t[shear_id];
 
 		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f ", size, total_chips, numprocs, num_p, gal_noise_sig);
 		write_log(log_path, log_inform);
@@ -611,6 +613,7 @@ int main(int argc, char*argv[])
 			
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
+		sprintf(set_name, "/data");
 
 		my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
@@ -619,13 +622,18 @@ int main(int argc, char*argv[])
 			sprintf(result_path, "%s/data/data_noise_free_epsf_%d.hdf5", parent_path,shear_id);
 #else
 			sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path, shear_id);
-#endif
+#endif	
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -638,12 +646,16 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_noisy_cpp_%d.hdf5", parent_path,shear_id);
 #endif		
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -655,12 +667,16 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_noise_residual_%d.hdf5", parent_path,shear_id);
 #endif
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -673,12 +689,17 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_gal_noise_cross_term_%d.hdf5", parent_path,shear_id);
 #endif
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -690,12 +711,17 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_gal_noise_cross_term_est_%d.hdf5", parent_path,shear_id);
 #endif
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -709,12 +735,17 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_pure_gal_noise_cross_term_est_%d.hdf5", parent_path,shear_id);
 #endif
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -726,12 +757,17 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_noise_noise_cross_term_%d.hdf5", parent_path,shear_id);
 #endif
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -743,12 +779,17 @@ int main(int argc, char*argv[])
 #else
 			sprintf(result_path, "%s/data/data_noise_noise_cross_term_est_%d.hdf5", parent_path,shear_id);
 #endif
+
+#ifdef DATA_SEP
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
 			{	
 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
 			}
+#else
+			write_h5(result_path, set_name, total_data, total_data_row,shear_data_cols,true);
+#endif
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
