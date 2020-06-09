@@ -108,7 +108,7 @@ int main(int argc, char*argv[])
 
 	
 	
-	int i, j, k, ib;
+	int i, j, k, ib, m,n;
 	int sss1, sss2, seed_pts, seed_n1, seed_n2, seed_step;
 	int rotation;
 
@@ -121,6 +121,7 @@ int main(int argc, char*argv[])
 
 	int detect_label;
 	std::string detect_info;
+	double temp_val;
 
 	MY_FLOAT psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	MY_FLOAT g1, g2, ts, te, t1, t2;
@@ -442,6 +443,9 @@ int main(int argc, char*argv[])
 				initialize_arr(pgal, size*size, 0);
 				initialize_arr(point, num_p * 2, 0);
 
+				initialize_arr(gal_find, img_len, 0);
+				initialize_arr(img_residual, img_len, 0);
+
 				initialize_arr(noise_1, img_len, 0);
 				initialize_arr(pnoise_1, img_len, 0);
 				initialize_arr(noise_2, img_len, 0);
@@ -504,7 +508,17 @@ int main(int argc, char*argv[])
 
 				// galaxy-noise seperation
 				galaxy_finder(gal_noisy, check_mask, &all_paras, true, detect_label, detect_info);
-
+				for(m=0; m<img_len; m++)
+				{
+					if(check_mask[m] > 0)
+					{
+						gal_find[m] = gal_noisy[m];
+						rand_gauss(gal_noise_sig, 0, temp_val, rng2);
+						img_residual[m] = temp_val;
+					}
+					else{img_residual[m] = gal_noisy[m];}
+				}
+				
 				///////////// Noise free /////////////////////////
 				shear_est(pgal, ppsf, &all_paras);
 				sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
