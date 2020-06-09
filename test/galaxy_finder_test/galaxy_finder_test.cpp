@@ -1,22 +1,25 @@
 #include <FQlib.h>
-#include <mpi.h>
+//#include <mpi.h>
+#include<hk_iolib.h>
 
+
+#define MY_FLOAT float
 int main(int argc, char **argv)
 {
-    int rank, numprocs, namelen;
-	char processor_name[MPI_MAX_PROCESSOR_NAME];
+    // int rank, numprocs, namelen;
+	// char processor_name[MPI_MAX_PROCESSOR_NAME];
 
-	MPI_Init(&argc, &argv);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-	MPI_Get_processor_name(processor_name, &namelen);
+	// MPI_Init(&argc, &argv);
+	// MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	// MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	// MPI_Get_processor_name(processor_name, &namelen);
 
 
     char data_path[200],mask_path[200], set_name[30];
     std::string detect_info;
-    double *image;
+    MY_FLOAT *image;
     int *big_mask;
-    double *stamp;
+    MY_FLOAT *stamp;
     int *mask;
     int i,j,k, nx, ny;
     int stamp_tag;
@@ -24,25 +27,35 @@ int main(int argc, char **argv)
     int image_label;
     int detect_label;
 
-    para all_paras;
+    fq_paras_float all_paras;
     
 
     nx = 100;
     ny = 100;
-    stamp_size = 64;
+    stamp_size = 44;
 
-	all_paras.gal_noise_sig = 60;
+	all_paras.gal_noise_sig = 20;
 	all_paras.psf_noise_sig = 0;
 	all_paras.stamp_size = stamp_size;
 	all_paras.max_source = 30;
 	all_paras.area_thresh = 5;
-	all_paras.detect_thresh = 90;
+	all_paras.detect_thresh = 30;
 	all_paras.img_x = stamp_size;
 	all_paras.img_y = stamp_size;
 	all_paras.max_distance = 6; 
 
-    image = new double[nx*ny*stamp_size*stamp_size];
-    stamp = new double[stamp_size*stamp_size];
+    image = new MY_FLOAT[stamp_size*stamp_size];
+    mask = new int[stamp_size*stamp_size];
+
+    sprintf(data_path,"gal.fits");
+    read_fits(data_path, image);
+    galaxy_finder(image, mask, &all_paras, true, detect_label, detect_info);
+    sprintf(data_path,"mask.fits");
+    write_fits(data_path, mask, stamp_size, stamp_size);
+
+/*
+    image = new MY_FLOAT[nx*ny*stamp_size*stamp_size];
+    stamp = new MY_FLOAT[stamp_size*stamp_size];
     mask = new int[stamp_size*stamp_size];
     big_mask = new int[nx*ny*stamp_size*stamp_size];
 
@@ -56,8 +69,8 @@ int main(int argc, char **argv)
     {
         for(j=0;j<nx;j++)
         {
-            initialize_arr(mask,stamp_size*stamp_size, -1);
-            initialize_arr(stamp,stamp_size*stamp_size, 0);
+            initialize_arr(mask, stamp_size*stamp_size, -1);
+            initialize_arr(stamp, stamp_size*stamp_size, 0);
 
 
             stamp_tag = i*nx + j;
@@ -86,8 +99,8 @@ int main(int argc, char **argv)
     delete[] big_mask;
     delete[] stamp;
     delete[] image;
-
-    MPI_Finalize();
+*/
+   // MPI_Finalize();
 
     return 0;
 }

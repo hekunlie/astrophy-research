@@ -116,8 +116,11 @@ int main(int argc, char*argv[])
     MY_FLOAT max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
-	int row, chip_st, chip_ed, shear_id, psf_type, temp_s, detect_label;
+	int row, chip_st, chip_ed, shear_id, psf_type, temp_s;
 	int seed_ini;
+
+	int detect_label;
+	std::string detect_info;
 
 	MY_FLOAT psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i, mag_i;
 	MY_FLOAT g1, g2, ts, te, t1, t2;
@@ -162,6 +165,10 @@ int main(int argc, char*argv[])
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
+	all_paras.gal_noise_sig = gal_noise_sig;
+	all_paras.area_thresh = 5;
+	all_paras.detect_thresh = 1.5*gal_noise_sig;
+
 	// because the max half light radius of the galsim source is 5.5 pixels
 	all_paras.max_distance = max_radius; 
 
@@ -180,6 +187,12 @@ int main(int argc, char*argv[])
 
 
 	MY_FLOAT *gal = new MY_FLOAT[img_len]{};
+	MY_FLOAT *gal_find = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pgal_find = new MY_FLOAT[img_len]{};
+	MY_FLOAT *img_residual = new MY_FLOAT[img_len]{};
+	MY_FLOAT *pimg_residual = new MY_FLOAT[img_len]{};
+	int *check_mask = new int[img_len]{};
+
 	MY_FLOAT *pgal = new MY_FLOAT[img_len]{};
 	MY_FLOAT *pgal_sqrt = new MY_FLOAT[img_len]{};
 	MY_FLOAT *pgal_dn = new MY_FLOAT[img_len]{};
@@ -367,8 +380,8 @@ int main(int argc, char*argv[])
 	{
 		ts = clock();
 
-		g1 = -0.04;//g1t[shear_id];
-		g2 = 0.033;//g2t[shear_id];
+		g1 = g1t[shear_id];
+		g2 = g2t[shear_id];
 
 		sprintf(log_inform, "size: %d, total chips: %d (%d cpus),  point num: %d , noise sigma: %.2f ", size, total_chips, numprocs, num_p, gal_noise_sig);
 		write_log(log_path, log_inform);
@@ -467,7 +480,7 @@ int main(int argc, char*argv[])
 				pow_spec(gal, pgal, size, size);
 				arr_sqrt(pgal, pgal_sqrt, img_len);
 				// noisy image
-				arr_add(gal_noisy, gal, noise_1,img_len);
+				arr_add(gal_noisy, gal, noise_1, img_len);
 				pow_spec(gal_noisy, pgal_noisy, size, size);
 				arr_deduct(pgal_dn, pgal_noisy, pnoise_2, img_len);
 				// noise residual
@@ -489,7 +502,8 @@ int main(int argc, char*argv[])
 				// pure galaxy cross term estimate
 				arr_deduct(pgal_pure_cross_term_est, pgal_cross_term_est, pnoise_cross, img_len);
 
-
+				// galaxy-noise seperation
+				galaxy_finder(gal_noisy, check_mask, &all_paras, true, detect_label, detect_info);
 
 				///////////// Noise free /////////////////////////
 				shear_est(pgal, ppsf, &all_paras);

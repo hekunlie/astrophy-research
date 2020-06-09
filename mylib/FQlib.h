@@ -240,7 +240,7 @@ void get_quad(const float *img, const int img_size, const float img_cent, const 
 /* quad size := \Sum {weight*r^2*img} / \Sum {weight*img}      */
 
 void source_detector(const double *source_img, int *source_x, int*source_y, double *source_paras,fq_paras* paras, bool cross, int &detection, std::string &info);
-void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, fq_paras* paras, bool cross, int &detection, std::string &info);
+void source_detector(const float *source_img, int *source_x, int*source_y, float *source_paras, fq_paras_float* paras, bool cross, int &detection, std::string &info);
 /* operates on the copy,
 	if the method finds too many sources ( > para.max_source), the overflows will be ignored.
 	source_img: the inputted array in where to find the source galaxies
@@ -255,7 +255,7 @@ void source_detector(const float *source_img, int *source_x, int*source_y, float
 
 
 void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info);
-void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info);
+void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras_float *paras, bool cross, int &detect_label, std::string &info);
 /* to identify the galaxy on each stamp basing on source_detector(), because of many detections on it
 	the biggest source which peaks in the central circle with a radius of 6 pixels.	
 	return: int, "-1" means no detection
@@ -470,6 +470,9 @@ void linspace(const double start, const double end, const int num, double *bins)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
+void image_convole(double *image_in, double *image_out, const int img_size, const double *kernel, const int kernel_size);
+void image_convole(float *image_in, float*image_out, const int img_size, const float *kernel, const int kernel_size);
+
 void smooth(double *image, const double *coeffs, fq_paras *paras);//checked
 /* smooth all the region */
 void smooth(double *image, const double *psf_pow, const double *coeffs, fq_paras *paras);//checked
@@ -628,6 +631,8 @@ void show_arr(const float*arr, const int rows, const int cols);//checked
 /* print the elements on the screen
 */
 void initialize_para(fq_paras *paras);
+void initialize_para(fq_paras_float *paras);
+
 /* set the "gal_" parameters zero */
 
 

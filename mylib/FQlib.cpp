@@ -259,7 +259,7 @@ void source_detector(const double *source_img, int *source_x, int*source_y, doub
 	detection = s_num;
 }
 
-void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, fq_paras*paras, bool cross, int &detection, std::string &info)
+void source_detector(const float *source_img, int *source_x, int*source_y, float*source_paras, fq_paras_float*paras, bool cross, int &detection, std::string &info)
 {	/* remember to add the peak detection! to locate the source */
 	/* it will not change the inputted array */
 	int i, j, k, m, c, ix, iy, tx, ty, x, y, y_size = paras->img_y, x_size = paras->img_x;
@@ -433,7 +433,7 @@ void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bo
 	int *source_y = new int[pix_num] {};
 
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-
+	initialize_arr(check_mask, pix_num,0);
 	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
 	//std::cout << "Source num: "<<source_num << std::endl;
 
@@ -547,7 +547,7 @@ void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bo
 	detect_label = detect;
 }
 
-void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
+void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras_float *paras, bool cross, int &detect_label, std::string &info)
 {
 	int elem_unit = 8; // the number of parameters for each source detected 
 	int source_num, area = 0, hlr_area, yp, xp;
@@ -563,7 +563,7 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras *paras, boo
 	int *source_y = new int[pix_num] {};
 
 	float *source_para = new float[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-
+	initialize_arr(check_mask, pix_num, 0);
 	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
 	//std::cout << source_num << std::endl;
 
@@ -4661,6 +4661,64 @@ void linspace(const double start, const double end, const int num, double *bins)
 /********************************************************************************************************************************************/
 /* fitting */
 /********************************************************************************************************************************************/
+void image_convole(double *image_in, double *image_out, const int img_size, const double *kernel, const int kernel_size)
+{
+	int i,j,m,n,p,q;
+	
+	int kernel_width;
+	int alpha;
+	double temp;
+
+	alpha = img_size - kernel_size/2;
+
+	for(i=0;i<img_size;i++) // y
+	{
+		for(j=0;j<img_size;j++) // x
+		{
+			temp = 0;
+			for(m=0; m<kernel_size; m++) //y kernel
+			{
+				p = (i + m + alpha)%img_size*img_size;
+
+				for(n=0; n<kernel_size; n++) // x kernel
+				{
+					q = (j + n + alpha)%img_size;
+					temp += image_in[p + q]*kernel[m*kernel_size + n];
+				}
+			}
+			image_out[i*img_size + j] = temp;
+		}
+	}
+}
+
+void image_convole(float *image_in, float *image_out, const int img_size, const float *kernel, const int kernel_size)
+{
+	int i,j,m,n,p,q;
+	
+	int alpha;
+	float temp;
+	alpha = img_size-kernel_size/2;
+
+	for(i=0;i<img_size;i++) // y
+	{
+		for(j=0;j<img_size;j++) // x
+		{
+			temp = 0;
+			for(m=0; m<kernel_size;m++) //y kernel
+			{
+				p = (i + m + alpha)%img_size*img_size;
+
+				for(n=0; n<kernel_size;n++) // x kernel
+				{
+					q = (j + n + alpha)%img_size;
+					temp += image_in[p + q]*kernel[m*kernel_size+n];
+				}
+			}
+			image_out[i*img_size + j] = temp;
+		}
+	}
+}
+
 void smooth(double *image,  const double *coeffs, fq_paras*paras)//be careful of the memset()
 {
 	/*  to fit the curve: a1 + a2*x +a3*y + a4*x^2 +a5*x*y + a6*y^2  */
@@ -5841,6 +5899,22 @@ void initialize_para(fq_paras *paras)
 	paras->gal_osnr = 0;
 }
 
+void initialize_para(fq_paras_float *paras)
+{	
+	paras->gal_size = 0;
+	paras->gal_hsize = 0;
+	paras->gal_px = 0;
+	paras->gal_py = 0;
+	paras->gal_peak = 0;
+	paras->gal_hlr = 0;
+	paras->gal_flux = 0;
+	paras->gal_hflux = 0;
+	paras->gal_fluxsq = 0;
+	paras->gal_flux2 = 0;
+	paras->gal_flux_alt = 0;
+	paras->gal_snr = 0;
+	paras->gal_osnr = 0;
+}
 
 void set_bin(double *data, const int data_num, double * bins, const int bin_num, const double max_scale)
 {

@@ -8,6 +8,7 @@ from astropy.io import fits
 import h5py
 from mpi4py import MPI
 
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
@@ -59,8 +60,9 @@ dt = numpy.linspace(-numpy.pi, numpy.pi, total_num)
 
 pts = fq.ran_pts(pts_num, max_radius)
 
+gal_img_nf = fits.open("./gal_%d.fits"%rank)[0].data
 
-gal_img_nf = fq_n.convolve_psf(pts, psf_scale, gal_flux / pts_num, psf_type)
+# gal_img_nf = fq_n.convolve_psf(pts, psf_scale, gal_flux / pts_num, psf_type)
 gal_pow_nf = fq_n.pow_spec(gal_img_nf)
 
 for i in range(total_num):
@@ -111,7 +113,7 @@ for i in range(total_num):
     # pure est cross term
     shear_est_pure_ct_est[i] = fq_n.shear_est(pure_ct_pow_est, psf_pow, F=True)
 
-    if rank == 0 and i ==0:
+    if rank == 0 and i == 0:
         img_buffer = numpy.row_stack((gal_img_nf,gal_img_n))
         hdu = fits.PrimaryHDU(img_buffer)
         hdu.writeto("./sample.fits", overwrite=True)
