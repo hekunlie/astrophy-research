@@ -4571,10 +4571,12 @@ void image_rotation(const double *image_in, double *image_out, const int size)
 	int size2;
 	size2 = size/2;
 	
-	for(i=-size2; i<size2+1 and i !=0; i++) // y
+	for(i=-size2; i<size2+1; i++) // y
 	{
-		for(j=-size2; j<size2+1 and j !=0; j++) // x
+		if(i == 0) continue;
+		for(j=-size2; j<size2+1; j++) // x
 		{	
+			if(j == 0) continue;
 			m1 = i + size2;
 			if(i > 0){m1 -= 1;}
 			n1 = j + size2;
@@ -4596,10 +4598,12 @@ void image_rotation(const float *image_in, float *image_out, const int size)
 	int size2;
 	size2 = size/2;
 	
-	for(i=-size2; i<size2+1 and i !=0; i++) // y
-	{
-		for(j=-size2; j<size2+1 and j !=0; j++) // x
+	for(i=-size2; i<size2+1; i++) // y
+	{	
+		if(i == 0) continue;
+		for(j=-size2; j<size2+1; j++) // x
 		{	
+			if(j == 0) continue;
 			m1 = i + size2;
 			if(i > 0){m1 -= 1;}
 			n1 = j + size2;

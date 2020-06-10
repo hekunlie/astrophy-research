@@ -3,7 +3,7 @@
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 3
 #define FLUX_PDF_UNI
-#define EPSF
+#define CPSF
 
 #define SAVE_MEM
 
@@ -170,14 +170,6 @@ int main(int argc, char*argv[])
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.gal_noise_sig = gal_noise_sig;
-	all_paras.psf_noise_sig = 0;
-	all_paras.area_thresh = 5;
-	all_paras.detect_thresh = 1.5*gal_noise_sig;
-	all_paras.max_distance = 6;
-	all_paras.stamp_cent = img_cent;
-
-	// because the max half light radius of the galsim source is 5.5 pixels
-	all_paras.max_distance = max_radius; 
 
 	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
 
@@ -242,6 +234,8 @@ int main(int argc, char*argv[])
 
 	MY_FLOAT *psf = new MY_FLOAT[img_len]{};
 	MY_FLOAT *ppsf = new MY_FLOAT[img_len]{};
+	MY_FLOAT *psf_r = new MY_FLOAT[img_len]{};
+	MY_FLOAT *ppsf_r = new MY_FLOAT[img_len]{};
 	MY_FLOAT *ppsf_sqrt = new MY_FLOAT[img_len]{};
 
 	MY_FLOAT *noise_1 = new MY_FLOAT[img_len]{};
@@ -279,6 +273,7 @@ int main(int argc, char*argv[])
 
 	MY_FLOAT *sub_cross_term_estimate;
 	int cross_term_estimate_label=0;
+	MY_FLOAT *sub_cross_term_estimate_r;
 	MY_FLOAT *sub_new_cross_term_estimate_1;
 	MY_FLOAT *sub_new_cross_term_estimate_2;
 
@@ -345,11 +340,13 @@ int main(int argc, char*argv[])
 	sub_cross_term_sqrt_data = new MY_FLOAT[gather_count[rank]]{};
 	sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
 	sub_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
-	sub_pure_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
-	sub_noise_cross_term = new MY_FLOAT[gather_count[rank]]{};
-	sub_noise_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
-	sub_new_cross_term_estimate_1 = new MY_FLOAT[gather_count[rank]]{};
-	sub_new_cross_term_estimate_2 = new MY_FLOAT[gather_count[rank]]{};
+	sub_cross_term_estimate_r = new MY_FLOAT[gather_count[rank]]{};
+
+	// sub_pure_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
+	// sub_noise_cross_term = new MY_FLOAT[gather_count[rank]]{};
+	// sub_noise_cross_term_estimate = new MY_FLOAT[gather_count[rank]]{};
+	// sub_new_cross_term_estimate_1 = new MY_FLOAT[gather_count[rank]]{};
+	// sub_new_cross_term_estimate_2 = new MY_FLOAT[gather_count[rank]]{};
 
 
 
@@ -387,17 +384,17 @@ int main(int argc, char*argv[])
 	read_h5(shear_path, set_name, g2t);
 
 	
-	sprintf(shear_path,"%s/parameters/kernel.hdf5", parent_path);
-	sprintf(set_name,"/kernel1");
-	read_h5(shear_path, set_name, kernel_1);
-	sprintf(set_name,"/kernel2");
-	read_h5(shear_path, set_name, kernel_2);
+	// sprintf(shear_path,"%s/parameters/kernel.hdf5", parent_path);
+	// sprintf(set_name,"/kernel1");
+	// read_h5(shear_path, set_name, kernel_1);
+	// sprintf(set_name,"/kernel2");
+	// read_h5(shear_path, set_name, kernel_2);
 
-    if(rank == 0)
-	{
-		show_arr(kernel_1, kernel_size1, kernel_size1);
-		show_arr(kernel_2, kernel_size2, kernel_size2);
-	}
+    // if(rank == 0)
+	// {
+	// 	show_arr(kernel_1, kernel_size1, kernel_size1);
+	// 	show_arr(kernel_2, kernel_size2, kernel_size2);
+	// }
 #ifdef EPSF
 	create_psf_e(psf, psf_scale, size, img_cent, psf_ellip, ellip_theta, psf_type);
 #else
@@ -407,6 +404,10 @@ int main(int argc, char*argv[])
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
 	arr_sqrt(ppsf, ppsf_sqrt, img_len);
+
+	image_rotation(psf, psf_r, size);
+	pow_spec(psf_r, ppsf_r, size, size);
+	
 	// std::cout<<rank<<std::endl;
 	// show_arr(scatter_count,1,numprocs);
 	// std::cout<<"---------------------------------------------------------------------------"<<std::endl;
@@ -423,10 +424,15 @@ int main(int argc, char*argv[])
 		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 #ifdef EPSF
 		sprintf(buffer, "!%s/epsf_%.2f.fits", parent_path,psf_scale);
+		sprintf(chip_path, "!%s/epsf_r_%.2f.fits", parent_path,psf_scale);
+
 #else
 		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
+		sprintf(chip_path, "!%s/psf_r_%.2f.fits", parent_path,psf_scale);
 #endif
 		write_fits(buffer,psf, size, size);
+		write_fits(chip_path,psf_r, size, size);
+
 		std::cout<<"Gal Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
@@ -464,18 +470,6 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
-
-		// initialize_arr(point, num_p * 2, 0);
-		// gsl_initialize(shear_id+seed_ini,0);
-		// create_points(point, num_p, max_radius, pts_step, rng0);
-		// for(i=0;i<5;i++)
-		// {
-		// 	if(rank == i)
-		// 	{std::cout<<"------------------"<<std::endl;show_arr(point,2,num_p);std::cout<<"------------------"<<std::endl;}
-		// 	MPI_Barrier(MPI_COMM_WORLD);
-		// }
-		// gsl_free(0);
-		
 
 		// loop the chips
 		for (i = chip_st; i < chip_ed; i++)
@@ -530,10 +524,6 @@ int main(int argc, char*argv[])
 				// addnoise(noise_4, img_len, gal_noise_sig, rng2);
 				// pow_spec(noise_4, pnoise_4, size, size);
 
-				// rand_uniform(0, 2*Pi, theta, rng2);
-				// coord_rotation(point, num_p, theta, point_r);
-				// sub_theta[row/shear_data_cols+j] = theta;
-
 				create_points(point, num_p, max_radius, pts_step, rng0);
 
 #ifdef EPSF
@@ -544,7 +534,7 @@ int main(int argc, char*argv[])
 #endif
 				// noise free
 				pow_spec(gal, pgal, size, size);
-				arr_sqrt(pgal, pgal_sqrt, img_len);
+				// arr_sqrt(pgal, pgal_sqrt, img_len);
 				// noisy image
 				arr_add(gal_noisy, gal, noise_1, img_len);
 				pow_spec(gal_noisy, pgal_noisy, size, size);
@@ -559,32 +549,32 @@ int main(int argc, char*argv[])
 				// arr_add(noise_cross, noise_3, noise_4, img_len);
 				// pow_spec(noise_cross, temp, size, size);
 				// arr_deduct(pnoise_cross_est, temp, pnoise_3, pnoise_4, img_len);
-				// // galaxy cross term
-                // arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
-				// // galaxy cross term estimate
-				// arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
-				// pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
-				// arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
+				// galaxy cross term
+                arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
+				// galaxy cross term estimate
+				arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
+				pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
+				arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
 				// // pure galaxy cross term estimate
 				// arr_deduct(pgal_pure_cross_term_est, pgal_cross_term_est, pnoise_cross, img_len);
 
-				// galaxy-noise seperation
-				image_convole(gal_noisy, gal_smooth[0], size, kernel_1, kernel_size1);
-				image_convole(gal_noisy, gal_smooth[1], size, kernel_2, kernel_size2);
-				arr_deduct(img_residual[0], gal_noisy, gal_smooth[0], img_len);
-				arr_deduct(img_residual[1], gal_noisy, gal_smooth[1], img_len);
+				// // galaxy-noise seperation
+				// image_convole(gal_noisy, gal_smooth[0], size, kernel_1, kernel_size1);
+				// image_convole(gal_noisy, gal_smooth[1], size, kernel_2, kernel_size2);
+				// arr_deduct(img_residual[0], gal_noisy, gal_smooth[0], img_len);
+				// arr_deduct(img_residual[1], gal_noisy, gal_smooth[1], img_len);
 
-				pow_spec(gal_smooth[0], pgal_smooth[0], pgal_smooth_real[0], pgal_smooth_imag[0], size, size);
-				pow_spec(gal_smooth[1], pgal_smooth[1], pgal_smooth_real[1], pgal_smooth_imag[1], size, size);
+				// pow_spec(gal_smooth[0], pgal_smooth[0], pgal_smooth_real[0], pgal_smooth_imag[0], size, size);
+				// pow_spec(gal_smooth[1], pgal_smooth[1], pgal_smooth_real[1], pgal_smooth_imag[1], size, size);
 
-				pow_spec(img_residual[0], pimg_residual[0], pimg_residual_real[0], pimg_residual_imag[0], size, size);
-				pow_spec(img_residual[1], pimg_residual[1], pimg_residual_real[1], pimg_residual_imag[1], size, size);
+				// pow_spec(img_residual[0], pimg_residual[0], pimg_residual_real[0], pimg_residual_imag[0], size, size);
+				// pow_spec(img_residual[1], pimg_residual[1], pimg_residual_real[1], pimg_residual_imag[1], size, size);
 
-				for(m=0; m<img_len; m++)
-				{
-					gal_noise_sep_1[m] = pgal_smooth_real[0][m]*pimg_residual_real[0][m] + pgal_smooth_imag[0][m]*pimg_residual_imag[0][m];
-					gal_noise_sep_2[m] = pgal_smooth_real[1][m]*pimg_residual_real[1][m] + pgal_smooth_imag[1][m]*pimg_residual_imag[1][m];
-				}
+				// for(m=0; m<img_len; m++)
+				// {
+				// 	gal_noise_sep_1[m] = pgal_smooth_real[0][m]*pimg_residual_real[0][m] + pgal_smooth_imag[0][m]*pimg_residual_imag[0][m];
+				// 	gal_noise_sep_2[m] = pgal_smooth_real[1][m]*pimg_residual_real[1][m] + pgal_smooth_imag[1][m]*pimg_residual_imag[1][m];
+				// }
 
 				/////////////////////// Noise free /////////////////////////
 				shear_est(pgal, ppsf, &all_paras);
@@ -613,34 +603,41 @@ int main(int argc, char*argv[])
 				// sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
 				// sub_noise_residual_data[row + j * shear_data_cols + 4] = all_paras.dv;
 				
-				// ////////////////// true cross-term image //////////////////////
-				// shear_est(pgal_cross_term, ppsf, &all_paras);
-				// cross_term_data_label = 1;
-				// sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
-				// sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
-
-				// ////////////////// cross-term divided by |P_psf| image //////////////////////
-				// shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
-				// cross_term_sqrt_data_label = 1;
-				// sub_cross_term_sqrt_data[row + j * shear_data_cols] = all_paras.n1;
-				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_cross_term_sqrt_data[row + j * shear_data_cols + 4] = all_paras.dv;
-
-				// ////////////////// galaxy-noise cross-term-est image //////////////////////
-				// shear_est(pgal_cross_term_est, ppsf, &all_paras);				
-				// cross_term_estimate_label = 1;
-				// sub_cross_term_estimate[row + j * shear_data_cols] = all_paras.n1;
-				// sub_cross_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_cross_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
-
 				////////////////// true cross-term image //////////////////////
+				shear_est(pgal_cross_term, ppsf, &all_paras);
+				cross_term_data_label = 1;
+				sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
+
+				////////////////// cross-term divided by |P_psf| image //////////////////////
+				shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
+				cross_term_sqrt_data_label = 1;
+				sub_cross_term_sqrt_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_cross_term_sqrt_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_cross_term_sqrt_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_cross_term_sqrt_data[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_cross_term_sqrt_data[row + j * shear_data_cols + 4] = all_paras.dv;
+
+				////////////////// galaxy-noise cross-term-est image //////////////////////
+				shear_est(pgal_cross_term_est, ppsf, &all_paras);				
+				cross_term_estimate_label = 1;
+				sub_cross_term_estimate[row + j * shear_data_cols] = all_paras.n1;
+				sub_cross_term_estimate[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_cross_term_estimate[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
+
+				////////////////// galaxy-noise cross-term-est image rotated psf //////////////////
+				shear_est(pgal_cross_term_est, ppsf_r, &all_paras);				
+				sub_cross_term_estimate_r[row + j * shear_data_cols] = all_paras.n1;
+				sub_cross_term_estimate_r[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_cross_term_estimate_r[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_cross_term_estimate_r[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_cross_term_estimate_r[row + j * shear_data_cols + 4] = all_paras.dv;
+
 
                	// ////////////////// pure galaxy-noise cross-term-est image //////////////////////
 				// shear_est(pgal_pure_cross_term_est, ppsf, &all_paras);
@@ -669,20 +666,20 @@ int main(int argc, char*argv[])
 				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 3] = all_paras.du;
 				// sub_noise_cross_term_estimate[row + j * shear_data_cols + 4] = all_paras.dv;
 
-				////////////////// new galaxy-noise cross-term-est image 1 //////////////////////
-				shear_est(gal_noise_sep_1, ppsf, &all_paras);	
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols] = all_paras.n1;
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 4] = all_paras.dv;
+				// ////////////////// new galaxy-noise cross-term-est image 1 //////////////////////
+				// shear_est(gal_noise_sep_1, ppsf, &all_paras);	
+				// sub_new_cross_term_estimate_1[row + j * shear_data_cols] = all_paras.n1;
+				// sub_new_cross_term_estimate_1[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_new_cross_term_estimate_1[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_new_cross_term_estimate_1[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_new_cross_term_estimate_1[row + j * shear_data_cols + 4] = all_paras.dv;
 
-				shear_est(gal_noise_sep_2, ppsf, &all_paras);	
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols] = all_paras.n1;
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 4] = all_paras.dv;
+				// shear_est(gal_noise_sep_2, ppsf, &all_paras);	
+				// sub_new_cross_term_estimate_2[row + j * shear_data_cols] = all_paras.n1;
+				// sub_new_cross_term_estimate_2[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_new_cross_term_estimate_2[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_new_cross_term_estimate_2[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_new_cross_term_estimate_2[row + j * shear_data_cols + 4] = all_paras.dv;
 
 
 #ifdef IMG_CHECK_LABEL
@@ -934,9 +931,9 @@ int main(int argc, char*argv[])
 			if (0 == rank)
 			{
 #ifdef EPSF
-				sprintf(result_path, "%s/data/data_cross_term_sqrt_epsf_%d.hdf5", parent_path, shear_id);
+				sprintf(result_path, "%s/data/data_gal_noise_cross_term_sqrt_epsf_%d.hdf5", parent_path, shear_id);
 #else
-				sprintf(result_path, "%s/data/data_cross_term_sqrt_%d.hdf5", parent_path,shear_id);
+				sprintf(result_path, "%s/data/data_gal_noise_cross_term_sqrt_%d.hdf5", parent_path,shear_id);
 #endif
 				data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 				for(k=0; k<shear_data_cols;k++)
@@ -948,13 +945,13 @@ int main(int argc, char*argv[])
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 
-		my_Gatherv(sub_new_cross_term_estimate_1, gather_count, total_data, numprocs, rank);
+		my_Gatherv(sub_cross_term_estimate_r, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
 #ifdef EPSF
-			sprintf(result_path, "%s/data/data_new_cross_term_est_1_epsf_%d.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/data/data_gal_noise_cross_term_estimate_r_epsf_%d.hdf5", parent_path, shear_id);
 #else
-			sprintf(result_path, "%s/data/data_new_cross_term_est_1_%d.hdf5", parent_path,shear_id);
+			sprintf(result_path, "%s/data/data_gal_noise_cross_term_estimate_r_%d.hdf5", parent_path,shear_id);
 #endif
 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
 			for(k=0; k<shear_data_cols;k++)
@@ -965,21 +962,21 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		my_Gatherv(sub_new_cross_term_estimate_2, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-#ifdef EPSF
-			sprintf(result_path, "%s/data/data_new_cross_term_est_2_epsf_%d.hdf5", parent_path, shear_id);
-#else
-			sprintf(result_path, "%s/data/data_new_cross_term_est_2_%d.hdf5", parent_path,shear_id);
-#endif
-			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
-			for(k=0; k<shear_data_cols;k++)
-			{	
-				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
-				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
-			}
-		}
+// 		my_Gatherv(sub_new_cross_term_estimate_2, gather_count, total_data, numprocs, rank);
+// 		if (0 == rank)
+// 		{
+// #ifdef EPSF
+// 			sprintf(result_path, "%s/data/data_new_cross_term_est_2_epsf_%d.hdf5", parent_path, shear_id);
+// #else
+// 			sprintf(result_path, "%s/data/data_new_cross_term_est_2_%d.hdf5", parent_path,shear_id);
+// #endif
+// 			data_sep(total_data, mg_data, total_data_row, shear_data_cols);
+// 			for(k=0; k<shear_data_cols;k++)
+// 			{	
+// 				if(0 == k){write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, true);}
+// 				else{write_h5(result_path, mg_name[k], mg_data[k], total_data_row, 1, false);}
+// 			}
+// 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		te = clock();
