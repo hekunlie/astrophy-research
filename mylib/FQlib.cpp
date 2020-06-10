@@ -1558,6 +1558,56 @@ void pow_spec(const double *in_img, double *out_img_pow, double *out_img_real, d
 	fftwl_free(out);
 }
 
+void pow_spec(const float *in_img, float *out_img, float *out_img_real, float *out_img_imag,const int column, const int row)
+{   /* will not change the inputted array */
+	/* in_img is the inputted array and the out_img is the container of the outputted image */
+	fftwf_complex *in, *out;
+	fftwf_plan p;
+	long int i, j, m, n;
+
+	in = (fftwf_complex*)fftwl_malloc(sizeof(fftwf_complex) *(row*column));
+	for (i = 0; i < (row*column); i++)
+	{
+		in[i][0] = in_img[i];
+		in[i][1] = 0;
+	}
+	// out[i][0] real, out[i][1] imaginary
+	out = (fftwf_complex*)fftwl_malloc(sizeof(fftwf_complex) *(row*column));
+	p = fftwf_plan_dft_2d(row, column, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftwf_execute(p);															 /* repeat as needed */
+
+	 /* shift the signal to the center */
+	for (i = 0; i < row; i++)
+	{
+		for (j = 0; j < column; j++)
+		{
+			m = i * column + j;
+			if (i < row / 2)
+			{
+				if (j < column / 2)
+					n = (i + row / 2)*column + j + column / 2;
+				else
+					n = (i + row / 2)*column + j - column / 2;
+			}
+			else
+			{
+				if (j < column / 2)
+					n = (i - row / 2)*column + j + column / 2;
+				else
+					n = (i - row / 2)*column + j - column / 2;
+			}
+
+			out_img[n] = out[m][0] * out[m][0] + out[m][1] * out[m][1];
+			out_img_real[n] = out[m][0];
+			out_img_imag[n] = out[m][1];
+		}
+	}
+	/* shift the signal to the center */
+
+	fftwf_destroy_plan(p);
+	fftwf_free(in);
+	fftwf_free(out);
+}
 
 
 void get_radius(double *in_img, fq_paras *paras, double scale, int type, double sig_level)
