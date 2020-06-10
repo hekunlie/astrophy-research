@@ -8,13 +8,13 @@ import h5py
 
 psf_type = "Moffat"
 psf_flux = 1
-psf_scale = 60
-stamp_size = 500
-seed = 23012
+psf_scale = 4
+stamp_size = 44
+seed = 2301652
 
-pst_num = 40
+pts_num = 40
 max_radius = 7
-gal_flux = 100
+gal_flux = 8000/pts_num
 
 
 shear_path = "./shear.hdf5"
@@ -37,7 +37,7 @@ img.axs[0][0].imshow(psf_img)
 img.axs[0][1].imshow(psf_pow)
 img.show_img()
 
-num_scale = 1
+num_scale = 10
 rotation = 4
 
 temp = numpy.zeros((rotation*num_scale,3))
@@ -51,7 +51,7 @@ for i in range(shear_num):
 
     for j in range(num_scale):
 
-        pts = fq.ran_pts(pst_num, max_radius)
+        pts = fq.ran_pts(pts_num, max_radius)
         # print(pts)
         tag = j*rotation
         for k in range(rotation):
@@ -60,11 +60,19 @@ for i in range(shear_num):
 
             pst_s = fq.shear(pts_r, g1, g2)
 
-            # noise_1 = fq.draw_noise(0, 0.01)
+            noise_1 = fq.draw_noise(0, 60)
             # noise_2 = fq.draw_noise(0, 0.01)
             # pnoise = fq.pow_spec(noise_2)
 
-            gal_img = fq.convolve_psf(pst_s, psf_scale, gal_flux, psf_type)
+            gal_img = fq.convolve_psf(pst_s, psf_scale, gal_flux, psf_type)+noise_1
+            img = Image_Plot()
+            img.subplots(1,2)
+            idx = gal_img > 90
+            gal_temp = numpy.zeros_like(gal_img)
+            gal_temp[idx] = gal_img[idx]
+            img.axs[0][0].imshow(gal_img)
+            img.axs[0][1].imshow(gal_temp)
+            img.show_img()
             gal_pow = fq.pow_spec(gal_img)
 
             temp[tag + k] = fq.shear_est(gal_pow, psf_pow, F=True)[:3]

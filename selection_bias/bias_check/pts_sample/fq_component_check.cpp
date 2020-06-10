@@ -129,7 +129,7 @@ int main(int argc, char*argv[])
 	MY_FLOAT psf_ellip, ellip_theta;
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
-	MY_FLOAT gal_fluxs[8]{4000, 6000, 9000, 13500, 20250, 30375, 64000, 96000};
+	MY_FLOAT gal_fluxs[8]{4000, 8000, 9000, 13500, 20250, 30375, 64000, 96000};
 	int flux_tag;
 
 	MY_FLOAT theta;
@@ -167,8 +167,11 @@ int main(int argc, char*argv[])
 	all_paras.img_x = size;
 	all_paras.img_y = size;
 	all_paras.gal_noise_sig = gal_noise_sig;
+	all_paras.psf_noise_sig = 0;
 	all_paras.area_thresh = 5;
 	all_paras.detect_thresh = 1.5*gal_noise_sig;
+	all_paras.max_distance = 6;
+	all_paras.stamp_cent = img_cent;
 
 	// because the max half light radius of the galsim source is 5.5 pixels
 	all_paras.max_distance = max_radius; 
