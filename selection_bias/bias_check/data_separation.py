@@ -41,12 +41,4 @@ for mf in my_files:
     h5f["/mv"] = data[:,4]
     h5f.close()
 
-    h5f = h5py.File(data_path + "/data_float32/%s"%mf, "w")
-    h5f.create_dataset("/mg1",data=data[:,0],dtype=numpy.float32)
-    h5f.create_dataset("/mg2",data=data[:,1],dtype=numpy.float32)
-    h5f.create_dataset("/mn",data=data[:,2],dtype=numpy.float32)
-    h5f.create_dataset("/mu",data=data[:,3],dtype=numpy.float32)
-    h5f.create_dataset("/mv",data=data[:,4],dtype=numpy.float32)
-    h5f.close()
-
 comm.Barrier()

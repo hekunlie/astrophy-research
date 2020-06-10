@@ -4565,6 +4565,56 @@ void estimator_rotation(const float theta,const float mg1, const float mg2, cons
 
 }
 
+void image_rotation(const double *image_in, double *image_out, const int size)
+{
+	int i, j, m1,n1, m2, n2;
+	int size2;
+	size2 = size/2;
+	
+	for(i=-size2; i<size2+1 and i !=0; i++) // y
+	{
+		for(j=-size2; j<size2+1 and j !=0; j++) // x
+		{	
+			m1 = i + size2;
+			if(i > 0){m1 -= 1;}
+			n1 = j + size2;
+			if(j > 0){n1 -= 1;}
+
+			m2 = j + size2;
+			n2 = size2 - i;
+			if(j > 0){m2 -= 1;}
+			if(i < 0){n2 -= 1;}
+
+			image_out[m2*size + n2] = image_in[m1*size+n1];
+		}
+	}
+}
+
+void image_rotation(const float *image_in, float *image_out, const int size)
+{
+	int i, j, m1,n1, m2, n2;
+	int size2;
+	size2 = size/2;
+	
+	for(i=-size2; i<size2+1 and i !=0; i++) // y
+	{
+		for(j=-size2; j<size2+1 and j !=0; j++) // x
+		{	
+			m1 = i + size2;
+			if(i > 0){m1 -= 1;}
+			n1 = j + size2;
+			if(j > 0){n1 -= 1;}
+
+			m2 = j + size2;
+			n2 = size2 - i;
+			if(j > 0){m2 -= 1;}
+			if(i < 0){n2 -= 1;}
+
+			image_out[m2*size + n2] = image_in[m1*size+n1];
+		}
+	}
+}
+
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/

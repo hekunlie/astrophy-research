@@ -451,6 +451,10 @@ void fourier_hist(const float *data_arr, const int data_row, const int data_col,
 void estimator_rotation(const double theta,const double mg1, const double mg2, const double mn, const double mu, const double mv, double *output);
 void estimator_rotation(const float theta,const float mg1, const float mg2, const float mn, const float mu, const float mv, float *output);
 
+void image_rotation(const double *image_in, double *image_out, const int size);
+void image_rotation(const float *image_in, float *image_out, const int size);
+// 90 degrees rotation
+
 /********************************************************************************************************************************************/
 /* cosmology */
 /********************************************************************************************************************************************/

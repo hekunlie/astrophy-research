@@ -450,6 +450,33 @@ def fit_2d(x, y, fun_val, order):
     res = numpy.dot(numpy.linalg.inv(numpy.array(cov)), numpy.array(fxy))
     return res, pows, cov, fxy
 
+def fit_2d_kernel(x_frame,y_frame, xy_predict, order):
+    r""" the kernel for convolution, it is quick than fitting
+    however, the edge of the image will affected by the "circular boundary conditions".
+    fit a polynomial to n-order, a1 + a2*x + a2*y + a3*x^2 + a4*x*y + a5*y^2 .....
+    the powers of the polynomial can be written as \SUM_{i~N}\SUM_{j~i} X^{i-j}*y^{j}
+    :param x_frame: 1-D numpy array, x of the fitting region
+    :param y_frame: 1-D numpy array, y of the fitting region
+    :param xy_predict: [x,y], (2, ) numpy array, the point of prediction of the fitting
+    :param order: the highest order of the target polynominal
+    :return: (n,1) numpy array, coefficients of the target polynomial
+    """
+    x, y = x_frame * 1.0, y_frame * 1.0
+    nx = int(numpy.sqrt(len(x)))
+    terms = int((order + 1) * (order + 2) / 2)
+    pows = [(i-j, j) for i in range(order+1) for j in range(i+1)]
+    cov = numpy.array([[numpy.sum(x**(pows[i][0]+pows[j][0])*y**(pows[i][1]+pows[j][1])) for i in range(terms)]
+                       for j in range(terms)])
+    cov_inv = numpy.linalg.inv(cov)
+    xy_arr = numpy.zeros((terms, len(x)))
+    xy_pre_vec = numpy.zeros((terms, ))
+    print(xy_arr.shape)
+    for i in range(terms):
+        xy_arr[i] = (x ** pows[i][0]) * (y ** pows[i][1])
+        xy_pre_vec[i] = (xy_predict[0]*1.0)**pows[i][0] * (xy_predict[1]*1.0)**pows[i][1]
+    kernel = numpy.dot(xy_pre_vec, numpy.dot(cov_inv, xy_arr)).reshape(nx,nx)
+    return kernel
+
 
 def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, yblock=1, xblock=1, order=1, sort=True, ax=None):
     r"""

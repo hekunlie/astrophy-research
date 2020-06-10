@@ -7,7 +7,7 @@
 
 #define SAVE_MEM
 
-//#define DATA_SEP
+#define DATA_SEP
 
 #ifdef SAVE_MEM
 #define MY_FLOAT float
@@ -129,10 +129,10 @@ int main(int argc, char*argv[])
 	MY_FLOAT psf_ellip, ellip_theta;
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
-	MY_FLOAT gal_fluxs[8]{4000, 8000, 9000, 13500, 20250, 30375, 64000, 96000};
+	MY_FLOAT gal_fluxs[8]{4000, 6000, 9000, 13500, 20250, 30375, 64000, 96000};
 	int flux_tag;
 
-	MY_FLOAT theta;
+	int kernel_size1, kernel_size2;
 
 	strcpy(parent_path, argv[1]);
 	seed_ini = atoi(argv[2]);
@@ -163,6 +163,9 @@ int main(int argc, char*argv[])
 	img_cent = size*0.5 - 0.5;
     stamp_nx = 100;
 
+	kernel_size1 = 3;
+	kernel_size2 = 5;
+
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
 	all_paras.img_y = size;
@@ -186,31 +189,41 @@ int main(int argc, char*argv[])
 	
 #endif
 
+	MY_FLOAT *kernel_1 = new MY_FLOAT[kernel_size1*kernel_size1]{};
+	MY_FLOAT *kernel_2 = new MY_FLOAT[kernel_size2*kernel_size2]{};
+
 	MY_FLOAT *point = new MY_FLOAT[2 * num_p]{};
 	MY_FLOAT *point_r = new MY_FLOAT[2 * num_p]{};
 
 
 	MY_FLOAT *gal = new MY_FLOAT[img_len]{};
 
-	MY_FLOAT *gal_find = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pgal_find = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pgal_find_real = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pgal_find_imag = new MY_FLOAT[img_len]{};
+	MY_FLOAT *gal_smooth[2];
+	MY_FLOAT *pgal_smooth[2];
+	MY_FLOAT *pgal_smooth_real[2];
+	MY_FLOAT *pgal_smooth_imag[2];
 
-	MY_FLOAT *img_residual_1 = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_1 = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_1_real = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_1_imag = new MY_FLOAT[img_len]{};
+	MY_FLOAT *img_residual[2];
+	MY_FLOAT *pimg_residual[2];
+	MY_FLOAT *pimg_residual_real[2];
+	MY_FLOAT *pimg_residual_imag[2];
+	
+	for(i=0;i<2;i++)
+	{
+		gal_smooth[i] = new MY_FLOAT[img_len];
+		pgal_smooth[i] = new MY_FLOAT[img_len];
+		pgal_smooth_real[i] = new MY_FLOAT[img_len];
+		pgal_smooth_imag[i] = new MY_FLOAT[img_len];
 
-	MY_FLOAT *img_residual_2 = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_2 = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_2_real = new MY_FLOAT[img_len]{};
-	MY_FLOAT *pimg_residual_2_imag = new MY_FLOAT[img_len]{};
+		img_residual[i] = new MY_FLOAT[img_len];
+		pimg_residual[i] = new MY_FLOAT[img_len];
+		pimg_residual_real[i] = new MY_FLOAT[img_len];
+		pimg_residual_imag[i] = new MY_FLOAT[img_len];
+
+	}
 
 	MY_FLOAT *gal_noise_sep_1 = new MY_FLOAT[img_len]{};
 	MY_FLOAT *gal_noise_sep_2 = new MY_FLOAT[img_len]{};
-
-	int *check_mask = new int[img_len]{};
 
 	MY_FLOAT *pgal = new MY_FLOAT[img_len]{};
 	MY_FLOAT *pgal_sqrt = new MY_FLOAT[img_len]{};
@@ -367,13 +380,24 @@ int main(int argc, char*argv[])
 	g1t = new MY_FLOAT[shear_pairs]{};
 	g2t = new MY_FLOAT[shear_pairs]{};
 
-	// sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
-	// sprintf(set_name,"/g1");
-	// read_h5(shear_path, set_name, g1t);
-	// sprintf(set_name,"/g2");
-	// read_h5(shear_path, set_name, g2t);
+	sprintf(shear_path,"%s/parameters/shear.hdf5", parent_path);
+	sprintf(set_name,"/g1");
+	read_h5(shear_path, set_name, g1t);
+	sprintf(set_name,"/g2");
+	read_h5(shear_path, set_name, g2t);
 
-    
+	
+	sprintf(shear_path,"%s/parameters/kernel.hdf5", parent_path);
+	sprintf(set_name,"/kernel1");
+	read_h5(shear_path, set_name, kernel_1);
+	sprintf(set_name,"/kernel2");
+	read_h5(shear_path, set_name, kernel_2);
+
+    if(rank == 0)
+	{
+		show_arr(kernel_1, kernel_size1, kernel_size1);
+		show_arr(kernel_2, kernel_size2, kernel_size2);
+	}
 #ifdef EPSF
 	create_psf_e(psf, psf_scale, size, img_cent, psf_ellip, ellip_theta, psf_type);
 #else
@@ -484,19 +508,14 @@ int main(int argc, char*argv[])
 				initialize_arr(pgal, size*size, 0);
 				initialize_arr(point, num_p * 2, 0);
 
-				initialize_arr(gal_find, img_len, 0);
-				initialize_arr(img_residual_1, img_len, 0);
-				initialize_arr(img_residual_2, img_len, 0);
-
-
 				initialize_arr(noise_1, img_len, 0);
 				initialize_arr(pnoise_1, img_len, 0);
 				initialize_arr(noise_2, img_len, 0);
 				initialize_arr(pnoise_2, img_len, 0);
-				initialize_arr(noise_3, img_len, 0);
-				initialize_arr(pnoise_3, img_len, 0);
-				initialize_arr(noise_4, img_len, 0);
-				initialize_arr(pnoise_4, img_len, 0);
+				// initialize_arr(noise_3, img_len, 0);
+				// initialize_arr(pnoise_3, img_len, 0);
+				// initialize_arr(noise_4, img_len, 0);
+				// initialize_arr(pnoise_4, img_len, 0);
 
 				initialize_arr(pgal_cross_term, img_len, 0);
 				initialize_arr(pgal_noisy, img_len, 0);
@@ -506,10 +525,10 @@ int main(int argc, char*argv[])
 				addnoise(noise_2, img_len, gal_noise_sig, rng1);
 				pow_spec(noise_2, pnoise_2, size, size);
 
-				addnoise(noise_3, img_len, gal_noise_sig, rng2);
-				pow_spec(noise_3, pnoise_3, size, size);
-				addnoise(noise_4, img_len, gal_noise_sig, rng2);
-				pow_spec(noise_4, pnoise_4, size, size);
+				// addnoise(noise_3, img_len, gal_noise_sig, rng2);
+				// pow_spec(noise_3, pnoise_3, size, size);
+				// addnoise(noise_4, img_len, gal_noise_sig, rng2);
+				// pow_spec(noise_4, pnoise_4, size, size);
 
 				// rand_uniform(0, 2*Pi, theta, rng2);
 				// coord_rotation(point, num_p, theta, point_r);
@@ -530,50 +549,41 @@ int main(int argc, char*argv[])
 				arr_add(gal_noisy, gal, noise_1, img_len);
 				pow_spec(gal_noisy, pgal_noisy, size, size);
 				arr_deduct(pgal_dn, pgal_noisy, pnoise_2, img_len);
-				// noise residual
-				arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
-				// noise cross term
-				arr_add(noise_cross,noise_1, noise_2, img_len);
-				pow_spec(noise_cross, temp, size, size);
-				arr_deduct(pnoise_cross, temp, pnoise_1, pnoise_2,  img_len);
-				// noise cross term estimate
-				arr_add(noise_cross, noise_3, noise_4, img_len);
-				pow_spec(noise_cross, temp, size, size);
-				arr_deduct(pnoise_cross_est, temp, pnoise_3, pnoise_4, img_len);
-				// galaxy cross term
-                arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
-				// galaxy cross term estimate
-				arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
-				pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
-				arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
-				// pure galaxy cross term estimate
-				arr_deduct(pgal_pure_cross_term_est, pgal_cross_term_est, pnoise_cross, img_len);
+				// // noise residual
+				// arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
+				// // noise cross term
+				// arr_add(noise_cross,noise_1, noise_2, img_len);
+				// pow_spec(noise_cross, temp, size, size);
+				// arr_deduct(pnoise_cross, temp, pnoise_1, pnoise_2,  img_len);
+				// // noise cross term estimate
+				// arr_add(noise_cross, noise_3, noise_4, img_len);
+				// pow_spec(noise_cross, temp, size, size);
+				// arr_deduct(pnoise_cross_est, temp, pnoise_3, pnoise_4, img_len);
+				// // galaxy cross term
+                // arr_deduct(pgal_cross_term, pgal_noisy, pgal, pnoise_1, img_len);
+				// // galaxy cross term estimate
+				// arr_add(gal_noisy_a, gal_noisy, noise_2, img_len);
+				// pow_spec(gal_noisy_a, pgal_noisy_a, size, size);
+				// arr_deduct(pgal_cross_term_est, pgal_noisy_a, pgal_noisy, pnoise_2, img_len);
+				// // pure galaxy cross term estimate
+				// arr_deduct(pgal_pure_cross_term_est, pgal_cross_term_est, pnoise_cross, img_len);
 
 				// galaxy-noise seperation
-				galaxy_finder(gal_noisy, check_mask, &all_paras, false, detect_label, detect_info);
+				image_convole(gal_noisy, gal_smooth[0], size, kernel_1, kernel_size1);
+				image_convole(gal_noisy, gal_smooth[1], size, kernel_2, kernel_size2);
+				arr_deduct(img_residual[0], gal_noisy, gal_smooth[0], img_len);
+				arr_deduct(img_residual[1], gal_noisy, gal_smooth[1], img_len);
+
+				pow_spec(gal_smooth[0], pgal_smooth[0], pgal_smooth_real[0], pgal_smooth_imag[0], size, size);
+				pow_spec(gal_smooth[1], pgal_smooth[1], pgal_smooth_real[1], pgal_smooth_imag[1], size, size);
+
+				pow_spec(img_residual[0], pimg_residual[0], pimg_residual_real[0], pimg_residual_imag[0], size, size);
+				pow_spec(img_residual[1], pimg_residual[1], pimg_residual_real[1], pimg_residual_imag[1], size, size);
 
 				for(m=0; m<img_len; m++)
 				{
-					if(check_mask[m] > 0)
-					{
-						gal_find[m] = gal_noisy[m];
-						rand_gauss(gal_noise_sig, 0, temp_val, rng2);
-						img_residual_1[m] = temp_val;
-					}
-					else
-					{
-						img_residual_1[m] = gal_noisy[m];
-						img_residual_2[m] = gal_noisy[m];
-					}
-				}
-				pow_spec(gal_find, pgal_find, pgal_find_real, pgal_find_imag, size, size);
-				pow_spec(img_residual_1, pimg_residual_1, pimg_residual_1_real, pimg_residual_1_imag, size, size);
-				pow_spec(img_residual_2, pimg_residual_2, pimg_residual_2_real, pimg_residual_2_imag, size, size);
-
-				for(m=0; m<img_len; m++)
-				{
-					gal_noise_sep_1[m] = pgal_find_real[m]*pimg_residual_1_real[m] + pgal_find_imag[m]*pimg_residual_1_imag[m];
-					gal_noise_sep_2[m] = pgal_find_real[m]*pimg_residual_2_real[m] + pgal_find_imag[m]*pimg_residual_2_imag[m];
+					gal_noise_sep_1[m] = pgal_smooth_real[0][m]*pimg_residual_real[0][m] + pgal_smooth_imag[0][m]*pimg_residual_imag[0][m];
+					gal_noise_sep_2[m] = pgal_smooth_real[1][m]*pimg_residual_real[1][m] + pgal_smooth_imag[1][m]*pimg_residual_imag[1][m];
 				}
 
 				/////////////////////// Noise free /////////////////////////
@@ -603,14 +613,14 @@ int main(int argc, char*argv[])
 				// sub_noise_residual_data[row + j * shear_data_cols + 3] = all_paras.du;
 				// sub_noise_residual_data[row + j * shear_data_cols + 4] = all_paras.dv;
 				
-				////////////////// true cross-term image //////////////////////
-				shear_est(pgal_cross_term, ppsf, &all_paras);
-				cross_term_data_label = 1;
-				sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				// ////////////////// true cross-term image //////////////////////
+				// shear_est(pgal_cross_term, ppsf, &all_paras);
+				// cross_term_data_label = 1;
+				// sub_cross_term_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_cross_term_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_cross_term_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_cross_term_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
 				// ////////////////// cross-term divided by |P_psf| image //////////////////////
 				// shear_est(pgal_cross_term, ppsf_sqrt, &all_paras);
@@ -665,22 +675,22 @@ int main(int argc, char*argv[])
 				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 1] = all_paras.n2;
 				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 2] = all_paras.dn;
 				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 4] = detect_label;
+				sub_new_cross_term_estimate_1[row + j * shear_data_cols + 4] = all_paras.dv;
 
 				shear_est(gal_noise_sep_2, ppsf, &all_paras);	
 				sub_new_cross_term_estimate_2[row + j * shear_data_cols] = all_paras.n1;
 				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 1] = all_paras.n2;
 				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 2] = all_paras.dn;
 				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 4] = detect_label;
+				sub_new_cross_term_estimate_2[row + j * shear_data_cols + 4] = all_paras.dv;
 
 
 #ifdef IMG_CHECK_LABEL
 				if(i <= IMG_CHECK_LABEL and shear_id<=IMG_CHECK_LABEL)
 				{
 					stack(big_img_noise_free, gal, j, size, stamp_nx, stamp_nx);
-					stack(big_img_noise_residual, gal_find, j, size, stamp_nx, stamp_nx);
-					stack(big_img_cross_term, pgal_cross_term, j, size, stamp_nx, stamp_nx);
+					stack(big_img_noise_residual, gal_smooth[0], j, size, stamp_nx, stamp_nx);
+					stack(big_img_cross_term, gal_smooth[1], j, size, stamp_nx, stamp_nx);
 					stack(big_img_noisy, gal_noisy, j, size, stamp_nx, stamp_nx);
 				}
 #endif
