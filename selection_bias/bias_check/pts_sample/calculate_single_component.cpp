@@ -36,7 +36,7 @@ int main(int argc, char**argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 	MPI_Get_processor_name(processor_name, &namelen);
 
-    char parent_path[200], shear_path[200], data_path[200], result_path[200];
+    char parent_path[300], shear_path[300], data_path[300], result_path[300];
     char set_name[30], inform[300], time_now[40], data_type[40];
 
     get_time(time_now, 40);
@@ -80,6 +80,13 @@ int main(int argc, char**argv)
     shear_num = atoi(argv[3]);
     data_row = atoi(argv[4])*10000;
 
+    double noise_para_1 = atof(argv[5]);
+    double noise_para_2 = atof(argv[6]);
+    double noise_para_3 = atof(argv[7]);
+
+
+    double noise_val, noise_sigma, scale=100;
+    
     data_col = 5;// G1, G2, N, U
     result_col = 4;// g1, g1_sig, g2, g2_sig
     mg_bin_num = 20;//atoi(argv[4]);
@@ -94,8 +101,9 @@ int main(int argc, char**argv)
     mu_idx=3;
     mv_idx=4;
 
-    //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
-    sprintf(result_path, "%s/shear_result_%s.hdf5", parent_path, data_type);
+    sprintf(result_path, "%s/shear_result_%s_noise_level_%.2f_sigma_float_%.2f_%.2f_%.2f.hdf5", 
+    parent_path, data_type, noise_para_1, noise_para_2, noise_para_3);
+
 
     // data = new MY_FLOAT[data_row*data_col];
     mg1 = new MY_FLOAT[data_row]; 
@@ -151,8 +159,10 @@ int main(int argc, char**argv)
 
     if(rank == 0)
     {
+
         show_arr(shear_point, 1, numprocs);
-        std::cout<<"Bin_num "<<mg_bin_num<<" data:"<<parent_path<<" "<<std::endl;
+        std::cout<<"Bin_num "<<mg_bin_num<<" data:"<<parent_path<<std::endl;
+        std::cout<<result_path<<std::endl;
     }
 
     sub_chi_check_g1 = new MY_FLOAT[(shear_ed - shear_st)*chi_check_num*2];
@@ -179,7 +189,8 @@ int main(int argc, char**argv)
     read_h5(shear_path, set_name,g2_t);
 
     // read and calculate
-    
+    gsl_initialize(rank+123, 0);
+
     for(i=shear_st;i<shear_ed;i++)
     {   
         
@@ -195,6 +206,28 @@ int main(int argc, char**argv)
         sprintf(set_name,"/mv");
         read_h5(data_path, set_name, mv);
 
+        for(j=0;j<data_row;j++)
+        {   
+            noise_sigma = scale*(noise_para_1*100 - noise_para_2/10000*(mg1[j]/scale) + noise_para_3/100000*(mg1[j]/scale)*(mg1[j]/scale));
+            rand_gauss(noise_sigma, 0, noise_val, rng0);
+            mg1[j] += noise_val;
+
+            noise_sigma = scale*(noise_para_1*100 - noise_para_2/10000*(mg2[j]/scale) + noise_para_3/100000*(mg2[j]/scale)*(mg2[j]/scale));
+            rand_gauss(noise_sigma, 0, noise_val, rng0);
+            mg2[j] += noise_val;
+        }
+
+        // sprintf(data_path,"%s/add_noise/data_%s_%d_%.2f.hdf5",parent_path, data_type, i, noise_sigma_level);
+        // sprintf(set_name,"/mg1");
+        // write_h5(data_path, set_name, mg1, data_row, 1, true);
+        // sprintf(set_name,"/mg2");
+        // write_h5(data_path, set_name, mg2, data_row, 1, false);
+        // sprintf(set_name,"/mn");
+        // write_h5(data_path, set_name, mn, data_row, 1, false);
+        // sprintf(set_name,"/mu");
+        // write_h5(data_path, set_name, mu, data_row, 1, false);
+        // sprintf(set_name,"/mv");
+        // write_h5(data_path, set_name, mv, data_row, 1, false);
 
         // MEAN
         find_shear_mean(mg1, mn, data_row, gh1, gh1_sig, 1000);
@@ -248,7 +281,7 @@ int main(int argc, char**argv)
         std::cout<<inform<<std::endl;
 
     }
-
+    gsl_free(0);
     // for(i=0;i<numprocs;i++)
     // {
     //     if(rank == i)
