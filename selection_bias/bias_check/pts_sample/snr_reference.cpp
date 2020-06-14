@@ -129,7 +129,7 @@ int main(int argc, char*argv[])
 	MY_FLOAT gal_flux[8], noise_sigma[5];
     int ix, iy, tag;
 
-    for(i=0;i<8;i++){gal_flux[i] = (i+4)*1000;}
+    for(i=0;i<8;i++){gal_flux[i] = (i+11)*1000;}
     for(i=0;i<5;i++){noise_sigma[i] = i*10+30;}
 
 	strcpy(parent_path, argv[1]);
