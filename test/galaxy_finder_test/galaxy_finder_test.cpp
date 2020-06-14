@@ -34,12 +34,12 @@ int main(int argc, char **argv)
     ny = 100;
     stamp_size = 44;
 
-	all_paras.gal_noise_sig = 20;
+	all_paras.gal_noise_sig = 30;
 	all_paras.psf_noise_sig = 0;
 	all_paras.stamp_size = stamp_size;
 	all_paras.max_source = 30;
 	all_paras.area_thresh = 5;
-	all_paras.detect_thresh = 30;
+	all_paras.detect_thresh = 30*1.5;
 	all_paras.img_x = stamp_size;
 	all_paras.img_y = stamp_size;
 	all_paras.max_distance = 6; 
@@ -49,10 +49,10 @@ int main(int argc, char **argv)
 
     sprintf(data_path,"gal.fits");
     read_fits(data_path, image);
-    galaxy_finder(image, mask, &all_paras, true, detect_label, detect_info);
-    sprintf(data_path,"mask.fits");
+    galaxy_finder(image, mask, &all_paras, false, detect_label, detect_info);
+    sprintf(data_path,"!mask.fits");
     write_fits(data_path, mask, stamp_size, stamp_size);
-
+    std::cout<<all_paras.gal_size<<" "<<all_paras.gal_osnr<<std::endl;
 /*
     image = new MY_FLOAT[nx*ny*stamp_size*stamp_size];
     stamp = new MY_FLOAT[stamp_size*stamp_size];

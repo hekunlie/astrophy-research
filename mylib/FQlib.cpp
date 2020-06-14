@@ -414,103 +414,64 @@ void source_detector(const float *source_img, int *source_x, int*source_y, float
 
 void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bool cross, int &detect_label, std::string &info)
 {	
-	// find the galaxies in a stamp !!
-
-	// the number, 8, of parameters for each source detected, 
-	// if it is changed please must change the element number in source_detector()!!!
-	int elem_unit = 8; 
-	int source_num, area = 0, hlr_area, yp, xp, pix_label;
-	int size = paras->stamp_size;
-	int pix_num = size * size;
+	int elem_unit = 8; // the number of parameters for each source detected 
+	int source_num, area = 0, hlr_area, yp, xp;
+	int size = paras->stamp_size, pix_num = size * size;
 	int xc = size / 2, yc = size / 2;
-	int detect = -1; 
-	double cen_x, cen_y;
-	int tag_s = 0,tag_e, i, j;
+	int detect = -1;
 
-	double hlr, flux, radius, max_distance=paras->max_distance*paras->max_distance;
+	int tag_s = 0, tag_e, i, j;
+
+	double hlr, flux, radius, max_distance = paras->max_distance*paras->max_distance;
 	double dy, dx;
 	int *source_x = new int[pix_num] {};
 	int *source_y = new int[pix_num] {};
 
 	double *source_para = new double[elem_unit*paras->max_source]{}; // determined by 'max_sources' in paras.
-	initialize_arr(check_mask, pix_num,0);
+	initialize_arr(check_mask, pix_num, 0);
 	source_detector(stamp_arr, source_x, source_y, source_para, paras, cross, source_num, info);
-	//std::cout << "Source num: "<<source_num << std::endl;
+	//std::cout << source_num << std::endl;
 
-	// find the max source which will be regarded as the target source
 	int max_tag=-1, max_area=0;
 	for ( i = 0; i < source_num; i++)
 	{		
+		dy = source_para[i * elem_unit + 1] - yc;
+		dx = source_para[i * elem_unit + 2] - xc;
+		radius = dy*dy+ dx*dx;
 		area = source_para[i * elem_unit];
-		dy = 0;
-		dx = 0;
-
-		// find the mean x & y of each source
-		if (i > 0)
-		{
-			tag_s += source_para[(i-1)*elem_unit];
-		}
-		else
-		{
-			tag_s = 0;
-		}
-		tag_e = tag_s + area;
-		
-		//std::cout<<tag_s<<" "<<tag_e<<" "<<area<<std::endl;
-
-		for (j = tag_s; j < tag_e; j++)
-		{
-			dy = dy + source_y[j] - yc;
-			dx = dx + source_x[j] - xc;
-		}
-
-		radius = (dy*dy+ dx*dx)/area/area;
-		//std::cout<<dy/area<<" "<<dx/area<<" "<<radius<<std::endl;
-		// if the centroid locates within max_distance,
-		// it will be regarded as the source
 		if (radius <= max_distance and area >= max_area)
 		{
 			max_tag = i;
 			max_area = area;
 		}
-		//std::cout<<i<<" "<<source_para[i * elem_unit + 1]<<" "<<source_para[i * elem_unit + 2]<<" "<<dy<<" "<<dx<<" "<<radius<<" "<<area<<std::endl;
+		// std::cout<<dy<<" "<<dx<<" "<<area<<" "<<max_tag<<" "<<max_area<<std::endl;
 	}
 	detect = max_tag;
-
-	// mask the source
-	double sub_max;
-	for ( i = 0; i < source_num; i++)
-	{	
+	// std::cout<<"Max tag "<<detect<<std::endl;
+	for (i = 0; i < source_num; i++)
+	{
 		// start point of source_y(x) of i'th source
 		if (i > 0)
 		{
-			tag_s += source_para[(i-1)*elem_unit];
+			tag_s += source_para[(i - 1)*elem_unit];
 		}
 		else
 		{
 			tag_s = 0;
 		}
-		area = source_para[i * elem_unit];
-		sub_max = 0;
-		for (j = tag_s; j < tag_s + area; j++)
-		{	
+		for (j = tag_s; j < tag_s + source_para[i * elem_unit]; j++)
+		{
 			// detection mask
-			pix_label = source_y[j] * size + source_x[j];
-			check_mask[pix_label] = 1;
-			if(stamp_arr[pix_label] > sub_max)
-			{
-				yp = source_y[j];
-				xp = source_x[j];
-				sub_max = stamp_arr[pix_label];
-			}
+			check_mask[source_y[j] * size + source_x[j]] = 1;
 		}
-		check_mask[yp * size + xp] = 2;
+	
 	}
 
 	if (detect > -1)
-	{	
+	{
 		// mask the target galaxy
 		tag_s = 0;
+		int tag_e;
 		for (i = 0; i < detect; i++)
 		{
 			tag_s += source_para[i*elem_unit];
@@ -520,11 +481,8 @@ void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bo
 		{
 			check_mask[source_y[i] * size + source_x[i]] = 2;
 		}
-		
-		pix_label = int(source_para[detect * elem_unit + 1] * size + source_para[detect * elem_unit + 2]);
-		check_mask[pix_label] = 3;
 
-		paras->gal_size = area;
+		paras->gal_size = max_area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
 		paras->gal_peak = source_para[detect * elem_unit + 3];
@@ -532,10 +490,10 @@ void galaxy_finder(const double *stamp_arr, int *check_mask, fq_paras *paras, bo
 		paras->gal_flux = source_para[detect * elem_unit + 5];
 		paras->gal_hflux = source_para[detect * elem_unit + 6];
 
-		paras->gal_effective_radius = sqrt(area / Pi);
+		paras->gal_effective_radius = sqrt(max_area / Pi);
 		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
 		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(max_area) / paras->gal_noise_sig;
 	}
 	else
 	{
@@ -579,9 +537,10 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras_float *para
 			max_tag = i;
 			max_area = area;
 		}
+		// std::cout<<dy<<" "<<dx<<" "<<area<<" "<<max_tag<<" "<<max_area<<std::endl;
 	}
 	detect = max_tag;
-
+	// std::cout<<"Max tag "<<detect<<std::endl;
 	for (i = 0; i < source_num; i++)
 	{
 		// start point of source_y(x) of i'th source
@@ -616,7 +575,7 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras_float *para
 			check_mask[source_y[i] * size + source_x[i]] = 2;
 		}
 
-		paras->gal_size = area;
+		paras->gal_size = max_area;
 		paras->gal_py = source_para[detect * elem_unit + 1];
 		paras->gal_px = source_para[detect * elem_unit + 2];
 		paras->gal_peak = source_para[detect * elem_unit + 3];
@@ -624,10 +583,10 @@ void galaxy_finder(const float *stamp_arr, int *check_mask, fq_paras_float *para
 		paras->gal_flux = source_para[detect * elem_unit + 5];
 		paras->gal_hflux = source_para[detect * elem_unit + 6];
 
-		paras->gal_effective_radius = sqrt(area / Pi);
+		paras->gal_effective_radius = sqrt(max_area / Pi);
 		paras->gal_hlr = sqrt(paras->gal_hsize / Pi);
 		paras->gal_snr = sqrt(source_para[detect * elem_unit + 7]) / paras->gal_noise_sig;
-		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(area) / paras->gal_noise_sig;
+		paras->gal_osnr = source_para[detect * elem_unit + 5] / sqrt(max_area) / paras->gal_noise_sig;
 	}
 	else
 	{
