@@ -153,7 +153,7 @@ int main(int argc, char*argv[])
 	temp_s = rank;
 	sig_level = 1.5;
 	psf_noise_sig = 0;
-    gal_noise_sig = 20;
+    gal_noise_sig = 60;
 
     img_len = size*size;
 	img_cent = size*0.5 - 0.5;
@@ -326,7 +326,7 @@ int main(int argc, char*argv[])
 // 	create_psf(psf, psf_scale, size, img_cent, psf_type);
 // #endif
 
-	sprintf(chip_path,"psf.fits");
+	sprintf(chip_path,"%s/imgs/psf.fits",parent_path);
 	read_fits(chip_path, psf);
 	pow_spec(psf, ppsf, size, size);
 	get_psf_radius(ppsf, &all_paras, psf_thresh_scale);
@@ -346,9 +346,9 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< "PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" ,Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 #ifdef EPSF
-		sprintf(buffer, "!%s/epsf_%.2f.fits", parent_path,psf_scale);
+		sprintf(buffer, "!%s/imgs/epsf_%.2f.fits", parent_path,psf_scale);
 #else
-		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
+		sprintf(buffer, "!%s/imgs/psf_%.2f.fits", parent_path,psf_scale);
 #endif
 		write_fits(buffer,psf, size, size);
 		std::cout<<"Gal Num of each thread: ";
@@ -389,7 +389,7 @@ int main(int argc, char*argv[])
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		
-		sprintf(chip_path, "gal_%d.fits", shear_id);
+		sprintf(chip_path, "%s/imgs/gal_%d.fits", parent_path,shear_id);
 		read_fits(chip_path, gal);
 
 		// loop the chips
@@ -459,13 +459,13 @@ int main(int argc, char*argv[])
 				// noisy image
 				arr_add(gal_noisy, gal, noise_1,img_len);
 				pow_spec(gal_noisy, pgal_noisy, size, size);
-				arr_deduct(pgal_dn, pgal_noisy, pnoise_2, img_len);
+				// arr_deduct(pgal_dn, pgal_noisy, pnoise_2, img_len);
 				// noise residual
 				arr_deduct(noise_pow_diff, pnoise_1, pnoise_2, img_len);
-				// noise cross term
-				arr_add(noise_cross,noise_1, noise_2, img_len);
-				pow_spec(noise_cross, temp, size, size);
-				arr_deduct(pnoise_cross, temp, pnoise_1, pnoise_2,  img_len);
+				// // noise cross term
+				// arr_add(noise_cross,noise_1, noise_2, img_len);
+				// pow_spec(noise_cross, temp, size, size);
+				// arr_deduct(pnoise_cross, temp, pnoise_1, pnoise_2,  img_len);
 				// // noise cross term estimate
 				// arr_add(noise_cross, noise_3, noise_4, img_len);
 				// pow_spec(noise_cross, temp, size, size);
@@ -578,19 +578,19 @@ int main(int argc, char*argv[])
 			gsl_free(2);
 
 
-#ifdef IMG_CHECK_LABEL
-			if(i <= IMG_CHECK_LABEL and shear_id<=IMG_CHECK_LABEL)
-			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_pow_residual.fits", parent_path, shear_id, i);
-				write_fits(chip_path, big_img_noise_residual, stamp_nx*size, stamp_nx*size);
-                sprintf(chip_path, "!%s/%d/gal_chip_%05d_cross_term.fits", parent_path, shear_id, i);
-				write_fits(chip_path, big_img_cross_term, stamp_nx*size, stamp_nx*size);
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noisy.fits", parent_path, shear_id, i);
-				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
-			}
-#endif
+// #ifdef IMG_CHECK_LABEL
+// 			if(i <= IMG_CHECK_LABEL and shear_id<=IMG_CHECK_LABEL)
+// 			{
+// 				sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+// 				write_fits(chip_path, big_img_noise_free, stamp_nx*size, stamp_nx*size);
+// 				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_pow_residual.fits", parent_path, shear_id, i);
+// 				write_fits(chip_path, big_img_noise_residual, stamp_nx*size, stamp_nx*size);
+//                 sprintf(chip_path, "!%s/%d/gal_chip_%05d_cross_term.fits", parent_path, shear_id, i);
+// 				write_fits(chip_path, big_img_cross_term, stamp_nx*size, stamp_nx*size);
+// 				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noisy.fits", parent_path, shear_id, i);
+// 				write_fits(chip_path, big_img_noisy, stamp_nx*size, stamp_nx*size);
+// 			}
+// #endif
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
