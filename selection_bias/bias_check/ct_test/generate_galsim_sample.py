@@ -10,7 +10,7 @@ import galsim
 import os
 
 sersic_idx = 0.4
-scale_radius = 0.4
+scale_radius = 0.2
 gal_flux = 8000
 noise_sig = 60
 
@@ -65,14 +65,14 @@ nx = 9
 ny = 5
 
 big_img = numpy.zeros((ny*stamp_size, nx*stamp_size),dtype=numpy.float32)
-e1 = numpy.linspace(0.1,0.7,ny)
-theta = numpy.linspace(0,90,nx)
+e1 = numpy.linspace(0.1, 0.8, ny)
+theta = numpy.linspace(0, 90, nx)
 for i in range(ny):
     for j in range(nx):
 
         tag = i*nx + j
 
-        data_path = "/mnt/perc/hklee/bias_check/ct_test/scatter_test/cpsf_galsim/imgs/%d"%tag
+        data_path = "./imgs/%d"%tag
         if not os.path.exists(data_path):
             os.makedirs(data_path)
 
