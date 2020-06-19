@@ -5821,18 +5821,23 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	}
 }
 
-void task_alloc(const int task_num, const int portion, const int rank, int &my_start, int &my_end)
+void task_alloc(const int total_task_num, const int portion, const int my_part_id, int &my_start, int &my_end, int *task_count)
 {	
 	int i,j;
-   	i = task_num/portion;
-    j = task_num%portion;
-    my_start = rank*i;
-    my_end = (rank+1)*i;
-	//std::cout<<rank<<" "<<i<<" "<<j<<" "<<my_start<<" "<<my_end<<std::endl;
-    if(rank == portion -1)
-    {
-        my_end += j;
-    }
+	int sub_num;
+	sub_num = total_task_num / portion;
+	j = total_task_num%portion;
+	for(i=0;i<portion;i++)
+	{
+		task_count[i] = sub_num;
+		if(i<j){task_count[i] +=1;}
+	}
+	my_start = 0;
+	for(i=0;i<my_part_id;i++)
+	{
+		my_start += task_count[i];
+	}
+	my_end = my_start + task_count[my_part_id];
 }
 
 void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count, int *entry_for_gather)

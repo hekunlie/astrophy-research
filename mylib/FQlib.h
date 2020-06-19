@@ -627,8 +627,8 @@ void task_alloc(const int *label_list, const int total_task_num, const int porti
 	allocated_list: array, the labels of the returned tasks	
 */
 
-void task_alloc(const int task_num, const int portion, const int rank, int &my_start, int &my_end);
-void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count, int *entry_for_gather);
+void task_alloc(const int total_task_num, const int portion, const int my_part_id, int &my_start, int &my_end, int *task_count);
+void task_alloc(const int total_task_num, const int portion, const int my_part_id, int &my_start, int &my_end, int *task_count, int *entry_for_gather);
 /* distribute the tasks */
 
 void show_arr(const double*arr, const int rows, const int cols);//checked

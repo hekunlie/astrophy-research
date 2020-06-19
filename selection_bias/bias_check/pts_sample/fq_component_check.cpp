@@ -114,8 +114,8 @@ int main(int argc, char*argv[])
 	fq_paras all_paras;
 #endif
 
-	char parent_path[300], chip_path[300], para_path[300], shear_path[300], result_path[300], log_path[300];
-	char buffer[300], log_inform[250], set_name[50];
+	char parent_path[500], chip_path[500], para_path[500], shear_path[500], result_path[500], log_path[500];
+	char buffer[500], log_inform[500], set_name[50];
 
 	
 	
@@ -140,7 +140,9 @@ int main(int argc, char*argv[])
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
 	MY_FLOAT gal_fluxs[8]{4000, 6000, 9000, 13500, 20250, 30375, 64000, 96000};
-	MY_FLOAT gal_noise_sigma[5]{48,54,60,66,72};
+	// MY_FLOAT gal_noise_sigma[5]{48,54,60,66,72};
+	MY_FLOAT gal_noise_sigma[5]{60,120,240,150,240};
+
 	int flux_tag;
 
 	int kernel_size1, kernel_size2;
@@ -181,11 +183,11 @@ int main(int argc, char*argv[])
 	all_paras.img_y = size;
 	all_paras.gal_noise_sig = gal_noise_sig;
 	
-	sprintf(log_path, "%s/logs/%02d.dat", parent_path, rank);
+	sprintf(log_path, "%s/logs/%002d.dat", parent_path, rank);
 
 #ifdef IMG_CHECK_LABEL
 	MY_FLOAT *big_img_check[10];
-	for(i=0;i<9;i++)
+	for(i=0;i<1;i++)
 	{
 		big_img_check[i] = new MY_FLOAT[stamp_nx*stamp_nx*img_len]{};
 	}
@@ -245,6 +247,9 @@ int main(int argc, char*argv[])
 		chip_st += scatter_count[i];
 	}
 	chip_ed = chip_st+scatter_count[rank];
+
+	task_alloc(total_chips, numprocs, rank, chip_st, chip_ed, scatter_count);
+	sub_chip_num = scatter_count[rank];
 	// the final data from all the source in one shear point
 	total_data_row = total_chips * stamp_num;
 	// the sub-data from the source processed by each thread
@@ -266,14 +271,14 @@ int main(int argc, char*argv[])
 		if(i<4){psf_img[i] = new MY_FLOAT[img_len]{};}
 	}
 
-	sub_noise_free_data = new MY_FLOAT[gather_count[rank]]{};
-	sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
-	sub_cross_term_data = new MY_FLOAT[gather_count[rank]]{};
+	// sub_noise_free_data = new MY_FLOAT[gather_count[rank]]{};
+	// sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
+	// sub_cross_term_data = new MY_FLOAT[gather_count[rank]]{};
 
-	for(i=0;i<7;i++)
+	for(i=0;i<3;i++)
 	{
 		sub_cross_term_est_data[i] = new MY_FLOAT[gather_count[rank]]{};
-		sub_cross_term_est_data_r[i] = new MY_FLOAT[gather_count[rank]]{};
+		// sub_cross_term_est_data_r[i] = new MY_FLOAT[gather_count[rank]]{};
 	}
 
 
@@ -337,18 +342,18 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 #ifdef EPSF
-		sprintf(buffer, "!%s/imgs/epsf_%.2f.fits", parent_path,psf_scale);
-		sprintf(chip_path, "!%s/imgs/epsf_r_%.2f.fits", parent_path,psf_scale);
+		sprintf(buffer, "!%s/epsf_%.2f.fits", parent_path,psf_scale);
+		sprintf(chip_path, "!%s/epsf_r_%.2f.fits", parent_path,psf_scale);
 
 #else
 		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
 		sprintf(chip_path, "!%s/psf_r_%.2f.fits", parent_path,psf_scale);
 #endif
-		write_fits(buffer,psf_img[0], size, size);
-		write_fits(chip_path,psf_img[2], size, size);
+		// write_fits(buffer,psf_img[0], size, size);
+		// write_fits(chip_path,psf_img[2], size, size);
 
 		std::cout<<"Gal Num of each thread: ";
-		show_arr(scatter_count,1,numprocs);
+		// show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
 	}
 	for(i=0;i<10;i++)
@@ -407,60 +412,77 @@ int main(int argc, char*argv[])
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
 
+			sprintf(chip_path, "%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			read_fits(chip_path, big_img_check[0]);
+
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d read", rank,shear_id, i);
+			write_log(log_path, log_inform);
+			if (rank == 0)
+			{
+				std::cout << log_inform << std::endl;
+			}
+			
 			// loop the stamps
 			for (j = 0; j < stamp_num; j++)
 			{	
-
-				flux_i = gal_fluxs[flux_tag]/ num_p;
-
-				initialize_arr(point, num_p * 2, 0);				
-				for(k=0;k<10;k++)
+				if(j == 0 or j==stamp_num/5 or j == stamp_num/5*2 or j == stamp_num/5*3 or j == stamp_num/5*4)
 				{
-					initialize_arr(stamp_img[k], size*size, 0);
-					if(k<2)
-					{
-						initialize_arr(noise_img[k], size*size, 0);
-						addnoise(noise_img[k], img_len, gal_noise_sig, rng1);
-						pow_spec(noise_img[k], noise_pow_img[k], size, size);
-					}
+					sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d stamp: %d", rank,shear_id, i, j);
+					write_log(log_path, log_inform);
 				}
 
-				create_points(point, num_p, max_radius, pts_step, rng0);
+				flux_i = gal_fluxs[flux_tag]/num_p;
 
-#ifdef EPSF
-				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
-#else
-				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type);
+				// initialize_arr(point, num_p * 2, 0);				
+				// for(k=0;k<10;k++)
+				// {
+				// 	initialize_arr(stamp_img[k], size*size, 0);
+				// 	if(k<2)
+				// 	{
+				// 		initialize_arr(noise_img[k], size*size, 0);
+				// 		addnoise(noise_img[k], img_len, gal_noise_sig, rng1);
+				// 		pow_spec(noise_img[k], noise_pow_img[k], size, size);
+				// 	}
+				// }
 
-#endif
-				stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				segment(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+
+// 				create_points(point, num_p, max_radius, pts_step, rng0);
+
+// #ifdef EPSF
+// 				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
+// #else
+// 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type);
+
+// #endif
+// 				stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
 
 				// noise free
 				pow_spec(stamp_img[0], stamp_pow_img[0], size, size);
-				// noisy image
-				arr_add(stamp_img[1], stamp_img[0], noise_img[0], img_len);
-				pow_spec(stamp_img[1], stamp_pow_img[1], size, size);
-				arr_deduct(stamp_pow_img[2], stamp_pow_img[1], noise_pow_img[1], img_len);
+				// // noisy image
+				// arr_add(stamp_img[1], stamp_img[0], noise_img[0], img_len);
+				// pow_spec(stamp_img[1], stamp_pow_img[1], size, size);
+				// arr_deduct(stamp_pow_img[2], stamp_pow_img[1], noise_pow_img[1], img_len);
 				// // galaxy cross term
                 // arr_deduct(stamp_pow_img[3], stamp_pow_img[1], stamp_pow_img[0], noise_pow_img[0], img_len);
 
 
 
-				/////////////////////// Noise free /////////////////////////
-				shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
-				sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				// /////////////////////// Noise free /////////////////////////
+				// shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
+				// sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
-				/////////////////////////// noisy image /////////////////////////////////
- 				shear_est(stamp_pow_img[2], psf_img[1], &all_paras);
-				sub_noisy_data[row + j * shear_data_cols] = all_paras.n1;
-				sub_noisy_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				sub_noisy_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				sub_noisy_data[row + j * shear_data_cols + 3] = all_paras.du;
-				sub_noisy_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				// /////////////////////////// noisy image /////////////////////////////////
+ 				// shear_est(stamp_pow_img[2], psf_img[1], &all_paras);
+				// sub_noisy_data[row + j * shear_data_cols] = all_paras.n1;
+				// sub_noisy_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				// sub_noisy_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				// sub_noisy_data[row + j * shear_data_cols + 3] = all_paras.du;
+				// sub_noisy_data[row + j * shear_data_cols + 4] = all_paras.dv;
 				
 				// ////////////////// true cross-term image //////////////////////
 				// shear_est(stamp_pow_img[3], psf_img[1], &all_paras);
@@ -471,35 +493,55 @@ int main(int argc, char*argv[])
 				// sub_cross_term_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
 				// galaxy cross term estimate
-				for(k=0;k<5;k++)
+				for(k=0;k<3;k++)
 				{	
-					m=2;
-					initialize_arr(stamp_img[4],img_len, 0);
-					initialize_arr(stamp_pow_img[4],img_len, 0);
-					initialize_arr(noise_img[m], img_len, 0);
+					// m=2;
+					// initialize_arr(stamp_img[4],img_len, 0);
+					// initialize_arr(stamp_pow_img[4],img_len, 0);
+					// initialize_arr(noise_img[m], img_len, 0);
 
-					addnoise(noise_img[m], img_len, gal_noise_sigma[k], rng2);
-					pow_spec(noise_img[m], noise_pow_img[m], size, size);
+					// addnoise(noise_img[m], img_len, gal_noise_sigma[k], rng2);
+					// pow_spec(noise_img[m], noise_pow_img[m], size, size);
 
-					arr_add(stamp_img[4], stamp_img[1], noise_img[m], img_len);
-					pow_spec(stamp_img[4], stamp_pow_img[4], size, size);
-					arr_deduct(stamp_pow_img[5], stamp_pow_img[4], stamp_pow_img[1], noise_pow_img[m], img_len);
+					// arr_add(stamp_img[4], stamp_img[1], noise_img[m], img_len);
+					// pow_spec(stamp_img[4], stamp_pow_img[4], size, size);
+					// arr_deduct(stamp_pow_img[5], stamp_pow_img[4], stamp_pow_img[1], noise_pow_img[m], img_len);
 
-					////////////////// galaxy-noise cross-term-est image //////////////////////
-					shear_est(stamp_pow_img[5], psf_img[1], &all_paras);				
+
+					// ////////////////// galaxy-noise cross-term-est image //////////////////////
+					// shear_est(stamp_pow_img[5], psf_img[1], &all_paras);				
+					// sub_cross_term_est_data[k][row + j * shear_data_cols] = all_paras.n1;
+					// sub_cross_term_est_data[k][row + j * shear_data_cols + 1] = all_paras.n2;
+					// sub_cross_term_est_data[k][row + j * shear_data_cols + 2] = all_paras.dn;
+					// sub_cross_term_est_data[k][row + j * shear_data_cols + 3] = all_paras.du;
+					// sub_cross_term_est_data[k][row + j * shear_data_cols + 4] = all_paras.dv;
+
+					// ////////////////// galaxy-noise cross-term-est image rotated psf //////////////////
+					// shear_est(stamp_pow_img[5], psf_img[3], &all_paras);				
+					// sub_cross_term_est_data_r[k][row + j * shear_data_cols] = all_paras.n1;
+					// sub_cross_term_est_data_r[k][row + j * shear_data_cols + 1] = all_paras.n2;
+					// sub_cross_term_est_data_r[k][row + j * shear_data_cols + 2] = all_paras.dn;
+					// sub_cross_term_est_data_r[k][row + j * shear_data_cols + 3] = all_paras.du;
+					// sub_cross_term_est_data_r[k][row + j * shear_data_cols + 4] = all_paras.dv;
+
+					initialize_arr(noise_img[0], img_len, 0);
+					
+					addnoise(noise_img[0], img_len, gal_noise_sigma[k], rng2);
+					pow_spec(noise_img[0], noise_pow_img[0], size, size);
+
+					arr_add(stamp_img[1], stamp_img[0], noise_img[0], img_len);
+					pow_spec(stamp_img[1], stamp_pow_img[1], size, size);
+
+					arr_deduct(stamp_pow_img[2], stamp_pow_img[1], stamp_pow_img[0], noise_pow_img[0], img_len);
+
+					////////////////// galaxy-noise cross-term image //////////////////////
+					shear_est(stamp_pow_img[2], psf_img[1], &all_paras);				
 					sub_cross_term_est_data[k][row + j * shear_data_cols] = all_paras.n1;
 					sub_cross_term_est_data[k][row + j * shear_data_cols + 1] = all_paras.n2;
 					sub_cross_term_est_data[k][row + j * shear_data_cols + 2] = all_paras.dn;
 					sub_cross_term_est_data[k][row + j * shear_data_cols + 3] = all_paras.du;
 					sub_cross_term_est_data[k][row + j * shear_data_cols + 4] = all_paras.dv;
 
-					////////////////// galaxy-noise cross-term-est image rotated psf //////////////////
-					shear_est(stamp_pow_img[5], psf_img[3], &all_paras);				
-					sub_cross_term_est_data_r[k][row + j * shear_data_cols] = all_paras.n1;
-					sub_cross_term_est_data_r[k][row + j * shear_data_cols + 1] = all_paras.n2;
-					sub_cross_term_est_data_r[k][row + j * shear_data_cols + 2] = all_paras.dn;
-					sub_cross_term_est_data_r[k][row + j * shear_data_cols + 3] = all_paras.du;
-					sub_cross_term_est_data_r[k][row + j * shear_data_cols + 4] = all_paras.dv;
 				}
 
 			}
@@ -507,8 +549,8 @@ int main(int argc, char*argv[])
 			gsl_free(1);
 			gsl_free(2);
 
-			sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+			// sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			// write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
 
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
@@ -523,49 +565,49 @@ int main(int argc, char*argv[])
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
 		
-		my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-			sprintf(result_path, "%s/imgs/data/data_noise_free_%d.hdf5", parent_path,shear_id);
-			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
-		if (0 == rank)
-		{
-			sprintf(result_path, "%s/imgs/data/data_noisy_cpp_%d.hdf5", parent_path, shear_id);
-			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		// my_Gatherv(sub_cross_term_data, gather_count, total_data, numprocs, rank);
+		// my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
 		// if (0 == rank)
 		// {
-		// 	sprintf(result_path, "%s/imgs/data/data_gal_noise_cross_term_%d.hdf5", parent_path, shear_id);
+		// 	sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path,shear_id);
 		// 	write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		// }
 		// MPI_Barrier(MPI_COMM_WORLD);
 
-		for(i=0;i<5;i++)
+		// my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
+		// if (0 == rank)
+		// {
+		// 	sprintf(result_path, "%s/data/data_noisy_cpp_%d.hdf5", parent_path, shear_id);
+		// 	write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);
+
+		// my_Gatherv(sub_cross_term_data, gather_count, total_data, numprocs, rank);
+		// if (0 == rank)
+		// {
+		// 	sprintf(result_path, "%s/data/data_gal_noise_cross_term_%d.hdf5", parent_path, shear_id);
+		// 	write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
+		// }
+		// MPI_Barrier(MPI_COMM_WORLD);
+
+		for(i=0;i<3;i++)
 		{
 			MPI_Barrier(MPI_COMM_WORLD);
 
 			my_Gatherv(sub_cross_term_est_data[i], gather_count, total_data, numprocs, rank);
 			if (0 == rank)
 			{
-				sprintf(result_path, "%s/imgs/data/data_gal_noise_cross_term_est_%d_%d.hdf5", parent_path, i, shear_id);
+				sprintf(result_path, "%s/data/data_gal_noise_cross_term_vary_%d_%d.hdf5", parent_path, i, shear_id);
 				write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 
-			my_Gatherv(sub_cross_term_est_data_r[i], gather_count, total_data, numprocs, rank);
-			if (0 == rank)
-			{
-				sprintf(result_path, "%s/imgs/data/data_gal_noise_cross_term_est_r_%d_%d.hdf5", parent_path, i, shear_id);
-				write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
+			// my_Gatherv(sub_cross_term_est_data_r[i], gather_count, total_data, numprocs, rank);
+			// if (0 == rank)
+			// {
+			// 	sprintf(result_path, "%s/data/data_gal_noise_cross_term_est_r_%d_%d.hdf5", parent_path, i, shear_id);
+			// 	write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
+			// }
+			// MPI_Barrier(MPI_COMM_WORLD);
 
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
