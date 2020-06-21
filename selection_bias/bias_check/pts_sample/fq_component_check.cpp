@@ -185,6 +185,28 @@ int main(int argc, char*argv[])
 	
 	sprintf(log_path, "%s/logs/%002d.dat", parent_path, rank);
 
+	///////////////////// task distribution /////////////////////////////////////
+	int *scatter_count,*gather_count;
+	// for scatterring the flux to each thread
+	scatter_count = new int[numprocs]{};
+	// for the gatherv when finish in each shear point
+	gather_count = new int[numprocs]{};
+
+	task_alloc(total_chips, numprocs, rank, chip_st, chip_ed, scatter_count);
+	sub_chip_num = scatter_count[rank];
+	// the final data from all the source in one shear point
+	total_data_row = total_chips * stamp_num;
+	// the sub-data from the source processed by each thread
+	sub_data_row = sub_chip_num * stamp_num;
+	for(i=0;i<numprocs;i++)
+	{
+		// the real count of galaxies for each thread
+		scatter_count[i] *= stamp_num;
+		// the real amount of data of each thread
+		gather_count[i] = scatter_count[i]*shear_data_cols;
+	}
+
+
 #ifdef IMG_CHECK_LABEL
 	MY_FLOAT *big_img_check[10];
 	for(i=0;i<1;i++)
@@ -220,47 +242,6 @@ int main(int argc, char*argv[])
 	char *mg_name[5];
 
 	MY_FLOAT *total_flux, *sub_flux;
-	int *scatter_count,*gather_count;
-
-	// for scatterring the flux to each thread
-	scatter_count = new int[numprocs]{};
-	// for the gatherv when finish in each shear point
-	gather_count = new int[numprocs]{};
-
-	///////////////////// task distribution /////////////////////////////////////
-	sub_chip_num = total_chips / numprocs;
-	j = total_chips%numprocs;
-	for(i=0;i<numprocs;i++)
-	{
-		scatter_count[i] = sub_chip_num;
-	}
-	for(i=0;i<j;i++)
-	{	
-		// the chip number
-		scatter_count[i] += 1;
-	}
-	sub_chip_num = scatter_count[rank];
-	// the start- & end-label of chip of each thread
-	chip_st = 0;
-	for(i=0;i<rank;i++)
-	{
-		chip_st += scatter_count[i];
-	}
-	chip_ed = chip_st+scatter_count[rank];
-
-	task_alloc(total_chips, numprocs, rank, chip_st, chip_ed, scatter_count);
-	sub_chip_num = scatter_count[rank];
-	// the final data from all the source in one shear point
-	total_data_row = total_chips * stamp_num;
-	// the sub-data from the source processed by each thread
-	sub_data_row = sub_chip_num * stamp_num;
-	for(i=0;i<numprocs;i++)
-	{
-		// the real count of galaxies for each thread
-		scatter_count[i] *= stamp_num;
-		// the real amount of data of each thread
-		gather_count[i] = scatter_count[i]*shear_data_cols;
-	}
 	
 	for(i=0;i<10;i++)
 	{
@@ -329,9 +310,6 @@ int main(int argc, char*argv[])
 	image_rotation(psf_img[0], psf_img[2], size);
 	pow_spec(psf_img[2], psf_img[3], size, size);
 	
-	// std::cout<<rank<<std::endl;
-	// show_arr(scatter_count,1,numprocs);
-	// std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 	
 	if (0 == rank)
 	{	
@@ -354,7 +332,7 @@ int main(int argc, char*argv[])
 		// write_fits(chip_path,psf_img[2], size, size);
 
 		std::cout<<"Gal Num of each thread: ";
-		// show_arr(scatter_count,1,numprocs);
+		show_arr(scatter_count,1,numprocs);
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl<<std::endl;
 	}
 	for(i=0;i<10;i++)
@@ -435,7 +413,7 @@ int main(int argc, char*argv[])
 				// flux_i = gal_fluxs[flux_tag]/num_p;
 
 				// initialize_arr(point, num_p * 2, 0);				
-				for(k=0;k<10;k++)
+				for(k=0;k<8;k++)
 				{
 					initialize_arr(stamp_img[k], size*size, 0);
 					initialize_arr(noise_img[k], size*size, 0);
@@ -478,7 +456,7 @@ int main(int argc, char*argv[])
 				pow_spec(noise_img[4], noise_pow_img[4], size, size);
 				arr_deduct(noise_pow_img[5], noise_pow_img[4], noise_pow_img[0], noise_pow_img[1], img_len);
 				// pure galaxy noise cross term
-				arr_deduct(stamp_pow_img[6], stamp_pow_img[5], noise_pow_img[5],img_len);
+				arr_deduct(stamp_pow_img[6], stamp_pow_img[5], noise_pow_img[5], img_len);
 
 				// /////////////////////// Noise free /////////////////////////
 				// shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
