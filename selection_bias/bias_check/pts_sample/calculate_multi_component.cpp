@@ -4,27 +4,6 @@
 
 #define MY_FLOAT float
 
-void task_allot(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count)
-{
-    int i,j,m,n;
-    m = total_task_num/division_num;
-    n = total_task_num%division_num;
-
-    for(i=0;i<division_num;i++)
-    {
-        task_count[i] = m;
-        if(i<n){task_count[i] +=1;}
-    }
-    m=0;
-    n=0;
-    for(i=0;i<my_part_id;i++)
-    {
-        m+=task_count[i];
-    }
-    n = m+task_count[my_part_id];
-    my_st_id = m;
-    my_ed_id = n;
-}
 
 int main(int argc, char**argv)
 {   
@@ -107,6 +86,7 @@ int main(int argc, char**argv)
     mu_idx=3;
     mv_idx=4;
     rotation = new MY_FLOAT[5];
+    MY_FLOAT rotation_angle = Pi/4;
 
     //sprintf(result_path, "%s/shear_result_%s_fit_range_%.4f.hdf5", parent_path, data_type, fit_range[fit_range_label]);
     // sprintf(result_path, "%s/shear_result_%s_rotate_%s_minus_%s.hdf5", parent_path, data_type_1,data_type_2, data_type_3);
@@ -133,25 +113,7 @@ int main(int argc, char**argv)
     chi_check = new MY_FLOAT[2*chi_check_num]{};
  
     // shear point distribution
-    //exit(0);
-    i = shear_num/numprocs;
-    j = shear_num%numprocs;
-    for(k=0;k<numprocs;k++)
-    {
-        shear_point[k] = i;
-    }
-    for(k=0;k<j;k++)
-    {
-        shear_point[k] += 1;
-    }
-    shear_st=0;
-    shear_ed=0;
-    for(k=0;k<rank;k++)
-    {
-        shear_st += shear_point[k];
-    }
-    shear_ed = shear_st + shear_point[rank];
-
+    task_alloc(shear_num,numprocs, rank, shear_st, shear_ed, shear_point);
     for(i=0;i<numprocs;i++)
     {
         send_count[i] = shear_point[i]*4;
@@ -235,19 +197,19 @@ int main(int argc, char**argv)
             {
                 for(k=0;k<data_row;k++)
                 {
-                    estimator_rotation(Pi/2, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
+                    estimator_rotation(rotation_angle, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
                     for(m=0;m<correct_col;m++){mg[m][k] += rotation[m];} 
                 }
-                if(rank == 0){std::cout<<data_path<<" rotated, add"<<std::endl;}
+                if(rank == 0){std::cout<<data_path<<" rotated "<<rotation_angle<<", add"<<std::endl;}
             }
             else
             {
                 for(k=0;k<data_row;k++)
                 {
-                    estimator_rotation(Pi/2, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
+                    estimator_rotation(rotation_angle, mg_buf[0][k],mg_buf[1][k],mg_buf[2][k],mg_buf[3][k],mg_buf[4][k],rotation);
                     for(m=0;m<correct_col;m++){mg[m][k] -= rotation[m];} 
                 }
-                if(rank == 0){std::cout<<data_path<<" rotated, subtract"<<std::endl;}
+                if(rank == 0){std::cout<<data_path<<" rotated "<<rotation_angle<<", subtract"<<std::endl;}
             }
         }
         
