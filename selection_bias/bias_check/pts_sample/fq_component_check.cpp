@@ -412,7 +412,7 @@ int main(int argc, char*argv[])
 
 				// flux_i = gal_fluxs[flux_tag]/num_p;
 
-				// initialize_arr(point, num_p * 2, 0);				
+				initialize_arr(point, num_p * 2, 0);				
 				for(k=0;k<8;k++)
 				{
 					initialize_arr(stamp_img[k], size*size, 0);
@@ -431,7 +431,7 @@ int main(int argc, char*argv[])
 // #ifdef EPSF
 // 				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
 // #else
-// 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type);
+// 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
 // #endif
 // 				stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
@@ -448,23 +448,24 @@ int main(int argc, char*argv[])
 				arr_deduct(noise_pow_img[3], noise_pow_img[0], noise_pow_img[1], img_len);
 
 				// estimated galaxy-noise cross term (include noise-noise cross term)
-				arr_add(stamp_img[4], stamp_img[1], noise_img[1], img_len);
+				m = 2;
+				arr_add(stamp_img[4], stamp_img[1], noise_img[m], img_len);
 				pow_spec(stamp_img[4], stamp_pow_img[4], size, size);
-				arr_deduct(stamp_pow_img[5], stamp_pow_img[4], stamp_pow_img[1], noise_pow_img[1], img_len);
+				arr_deduct(stamp_pow_img[5], stamp_pow_img[4], stamp_pow_img[1], noise_pow_img[m], img_len);
 				// noise-noise cross term in estimated galaxy-noise cross term  
-				arr_add(noise_img[4], noise_img[0], noise_img[1], img_len);
+				arr_add(noise_img[4], noise_img[0], noise_img[m], img_len);
 				pow_spec(noise_img[4], noise_pow_img[4], size, size);
-				arr_deduct(noise_pow_img[5], noise_pow_img[4], noise_pow_img[0], noise_pow_img[1], img_len);
+				arr_deduct(noise_pow_img[5], noise_pow_img[4], noise_pow_img[0], noise_pow_img[m], img_len);
 				// pure galaxy noise cross term
 				arr_deduct(stamp_pow_img[6], stamp_pow_img[5], noise_pow_img[5], img_len);
 
-				// /////////////////////// Noise free /////////////////////////
-				// shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
-				// sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
-				// sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
-				// sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
-				// sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
-				// sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
+				/////////////////////// Noise free /////////////////////////
+				shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
+				sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
+				sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
+				sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
+				sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
+				sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
 				/////////////////////////// noisy image /////////////////////////////////
  				shear_est(stamp_pow_img[2], psf_img[1], &all_paras);
@@ -561,13 +562,13 @@ int main(int argc, char*argv[])
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
 		
-		// my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
-		// if (0 == rank)
-		// {
-		// 	sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path,shear_id);
-		// 	write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
-		// }
-		// MPI_Barrier(MPI_COMM_WORLD);
+		my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
+		if (0 == rank)
+		{
+			sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path,shear_id);
+			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
 
 		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)

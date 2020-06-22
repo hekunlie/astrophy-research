@@ -20,18 +20,18 @@ def quadrupole_fun(sin_cos_2theta, a1, a2):
     return a1 * sin_cos_2theta[0] + a2 * sin_cos_2theta[1]
 
 
-def get_bin(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5):
+def get_bin(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5, scale=1):
 
     if mode == 0:
         a = max(numpy.abs(numpy.percentile(data_1, percen_low)), numpy.percentile(data_1, percen_up))
         b = max(numpy.abs(numpy.percentile(data_2, percen_low)), numpy.percentile(data_2, percen_up))
         xy_max = max(a, b)
-        xy_bin = numpy.linspace(-xy_max, xy_max, bin_num + 1)
+        xy_bin = numpy.linspace(-xy_max*scale, xy_max*scale, bin_num + 1)
     #    num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
     #         print(mode, xbins-ybins)
     else:
         xy_max = max(numpy.max(numpy.abs(data_1)), numpy.max(numpy.abs(data_2)))
-        xy_bin = numpy.linspace(-xy_max, xy_max, bin_num + 1)
+        xy_bin = numpy.linspace(-xy_max*scale, xy_max*scale, bin_num + 1)
     #    num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
     #         print(mode, xbins-ybins)
     return xy_bin
