@@ -9,6 +9,27 @@ from astropy.io import fits
 import h5py
 
 
+def uni_rand(max_radius, pts_num):
+
+    pts = [numpy.array([]) for i in range(2)]
+
+    while True:
+        gap = pts_num - len(pts[0])
+        if gap == 0:
+            break
+        rand_vars = [numpy.random.uniform(-max_radius, max_radius, pts_num) for i in range(2)]
+        radius = numpy.sqrt(rand_vars[0] ** 2 + rand_vars[1] ** 2)
+        idx = radius <= max_radius
+        candi_num = idx.sum()
+
+        if candi_num <= gap:
+            for i in range(2):
+                pts[i] = numpy.append(pts[i], rand_vars[i][idx])
+        else:
+            for i in range(2):
+                pts[i] = numpy.append(pts[i], rand_vars[i][idx][:gap])
+    return numpy.array(pts)
+
 psf_type = "Moffat"
 psf_flux = 1
 psf_scale = 4
@@ -17,7 +38,7 @@ seed = 14432
 
 noise_sig = 60
 
-pts_num = 40
+pts_num = 500
 max_radius = 5
 gal_flux = 25000
 
@@ -34,13 +55,26 @@ fq = Fourier_Quad(stamp_size, seed)
 
 # dt = numpy.linspace(-numpy.pi, numpy.pi, total_num)
 
-pts = fq.ran_pts(pts_num, max_radius)
-theta = numpy.random.uniform(0, 2*numpy.pi, 3600000)
+# pts = fq.ran_pts(pts_num, max_radius)
+# theta = numpy.random.uniform(0, 2*numpy.pi, 3600000)
+
+
+
+pts = uni_rand(max_radius,600)
+print(pts)
+# img = Image_Plot()
+# img.subplots(1,1)
+# img.axs[0][0].scatter(pts[0],pts[1],s=2)
+# x = numpy.linspace(0,2*numpy.pi,100)
+# img.axs[0][0].plot(max_radius*numpy.cos(x),max_radius*numpy.sin(x))
+# img.show_img()
 
 h5f = h5py.File("./imgs/pts.hdf5","w")
 h5f['/pts'] = numpy.float32(pts)
-h5f['/theta'] = numpy.float32(theta)
+# h5f['/theta'] = numpy.float32(theta)
 h5f.close()
+
+
 # for i in range(total_num):
 #     pts_r = fq.rotate(pts,theta[i])
 #     gal_img_nf = fq.convolve_psf(pts_r, psf_scale, gal_flux / pts_num, psf_type)

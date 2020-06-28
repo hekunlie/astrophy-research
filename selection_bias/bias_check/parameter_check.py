@@ -21,11 +21,11 @@ cpus = comm.Get_size()
 
 para_path = total_path + "/parameters"
 
-chip_num = 10000
+chip_num = 100
 num_i = int(chip_num/loops)
-mag_s, mag_e = 21, 24.8
+mag_s, mag_e = 21, 24.5
 
-shear_num = 11
+shear_num = 40
 stamp_num = 10000
 
 time.sleep(rank*0.05)
@@ -59,11 +59,11 @@ for shear_id in range(shear_st, shear_ed):
         mag[sp: ep] = mag_i
         flux[sp: ep] = flux_i
 
-        print(rank,mag.mean(), mag.max(),mag.min())
+        print(rank,mag_i.mean(), mag_i.max(),mag_i.min(),flux_i.mean(), flux_i.max(),flux_i.min())
 
     plt.figure(figsize=(8,6))
-    f["/flux"] = flux
-    f["/mag"] = mag
+    f["/flux"] = numpy.float32(flux)
+    f["/mag"] = numpy.float32(mag)
     f.close()
 
     pic = para_path + "/pic/mag_%d.png"%shear_id

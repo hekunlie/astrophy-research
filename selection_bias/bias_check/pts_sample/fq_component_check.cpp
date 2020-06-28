@@ -126,7 +126,7 @@ int main(int argc, char*argv[])
     MY_FLOAT max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
-	int row, chip_st, chip_ed, shear_id, psf_type, temp_s;
+	int row, chip_st, chip_ed, shear_id, psf_type;
 	int seed_ini;
 
 	int detect_label;
@@ -142,18 +142,21 @@ int main(int argc, char*argv[])
 	MY_FLOAT gal_fluxs[8]{4000, 6000, 9000, 13500, 20250, 30375, 64000, 96000};
 	// MY_FLOAT gal_noise_sigma[5]{48,54,60,66,72};
 	MY_FLOAT gal_noise_sigma[5]{60,120,240,150,240};
+	MY_FLOAT pts_steps[4]{0.5, 1, 1.5, 2};
 
 	int flux_tag;
-
+	int pts_tag;
+	int flux_num;
 	int kernel_size1, kernel_size2;
 
 	strcpy(parent_path, argv[1]);
 	seed_ini = atoi(argv[2]);
-	flux_tag = atoi(argv[3]);
+	// flux_tag = atoi(argv[3]);
 	total_chips = atoi(argv[4]);
 	size = atoi(argv[5]);
 	shear_pairs = atoi(argv[6]);
-	pts_step = 1;//atof(argv[1]);
+	pts_tag = atof(argv[3]);
+	pts_step = pts_steps[pts_tag];
 
 	num_p = 30;
 	max_radius= 7;
@@ -163,10 +166,9 @@ int main(int argc, char*argv[])
 	psf_type = 2;
 	psf_scale = 4;//psf_scales[psf_scale_id];
 	psf_ellip = 0.10;
-
 	ellip_theta = 0;
 	psf_thresh_scale = 2.;
-	temp_s = rank;
+
 	sig_level = 1.5;
 	psf_noise_sig = 0;
     gal_noise_sig = 60;
@@ -174,6 +176,8 @@ int main(int argc, char*argv[])
     img_len = size*size;
 	img_cent = size*0.5 - 0.5;
     stamp_nx = 100;
+
+	flux_num = 1000000;
 
 	kernel_size1 = 3;
 	kernel_size2 = 5;
@@ -237,7 +241,7 @@ int main(int argc, char*argv[])
 	MY_FLOAT *sub_cross_term_est_data[5];
 	MY_FLOAT *sub_cross_term_est_data_r[5];
 
-
+	MY_FLOAT *galaxy_flux;
 	MY_FLOAT *mg_data[5];
 	char *mg_name[5];
 
@@ -263,10 +267,11 @@ int main(int argc, char*argv[])
 		sub_cross_term_est_data_r[i] = new MY_FLOAT[gather_count[rank]]{};
 	}
 
+	galaxy_flux = new MY_FLOAT[flux_num]{};
 
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
-	sss1 = 2*seed_step*shear_pairs*total_chips;
+	sss1 = seed_step*shear_pairs*1000;
 	seed_pts = sss1*rank + 1 + seed_ini;//35000;
 	seed_n1 = sss1*rank + 1 + seed_ini*2;// 4001*(rotation+1);
 	seed_n2 = sss1*rank + 1 + seed_ini*4;//2300*(rotation+1);
@@ -360,6 +365,11 @@ int main(int argc, char*argv[])
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d", rank, shear_id, chip_st, chip_ed);
 		write_log(log_path, log_inform);
 
+		// read flux
+		sprintf(shear_path,"%s/parameters/para_%d.hdf5", parent_path, shear_id);
+		sprintf(set_name,"/flux");
+		read_h5(shear_path, set_name, galaxy_flux);
+		
 		// rank 0 reads the total flux array and scatters to each thread
 		if(rank == 0)
 		{
@@ -368,6 +378,13 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
+		// initialize GSL
+		gsl_initialize(seed_pts,0);
+		gsl_initialize(seed_n1,1);
+		gsl_initialize(seed_n2,2);
+		seed_pts += seed_step;
+		seed_n1 += seed_step;
+		seed_n2 += seed_step;
 
 		// loop the chips
 		for (i = chip_st; i < chip_ed; i++)
@@ -380,14 +397,6 @@ int main(int argc, char*argv[])
 			{
 				std::cout << log_inform << std::endl;
 			}
-
-			// initialize GSL
-			gsl_initialize(seed_pts,0);
-			gsl_initialize(seed_n1,1);
-			gsl_initialize(seed_n2,2);
-			seed_pts += seed_step;
-			seed_n1 += seed_step;
-			seed_n2 += seed_step;
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
 
@@ -409,8 +418,11 @@ int main(int argc, char*argv[])
 					sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d stamp: %d", rank,shear_id, i, j);
 					write_log(log_path, log_inform);
 				}
+				
+				// flux_i = gal_fluxs[flux_tag]/num_p;
 
-				flux_i = gal_fluxs[flux_tag]/num_p;
+				n = (i*stamp_num + j)%flux_num;
+				flux_i = galaxy_flux[n]/num_p;
 
 				initialize_arr(point, num_p * 2, 0);				
 				for(k=0;k<8;k++)
@@ -434,7 +446,7 @@ int main(int argc, char*argv[])
 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
 #endif
-				stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				// stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
 
 				// noise free
 				pow_spec(stamp_img[0], stamp_pow_img[0], size, size);
@@ -458,6 +470,8 @@ int main(int argc, char*argv[])
 				arr_deduct(noise_pow_img[5], noise_pow_img[4], noise_pow_img[0], noise_pow_img[m], img_len);
 				// pure galaxy noise cross term
 				arr_deduct(stamp_pow_img[6], stamp_pow_img[5], noise_pow_img[5], img_len);
+
+				stack(big_img_check[0], stamp_img[1], j, size, stamp_nx, stamp_nx);
 
 				/////////////////////// Noise free /////////////////////////
 				shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
@@ -508,7 +522,7 @@ int main(int argc, char*argv[])
 				sub_cross_term_est_data[1][row + j * shear_data_cols + 3] = all_paras.du;
 				sub_cross_term_est_data[1][row + j * shear_data_cols + 4] = all_paras.dv;
 
-				////////////////// noise-noise cross-term in galaxy-noise cross-term est image ////////////////
+				////////////////// noise-noise cross-term in galaxy-noise cross-term est image ///////////
 				shear_est(noise_pow_img[5], psf_img[1], &all_paras);				
 				sub_cross_term_est_data[2][row + j * shear_data_cols] = all_paras.n1;
 				sub_cross_term_est_data[2][row + j * shear_data_cols + 1] = all_paras.n2;
@@ -516,7 +530,7 @@ int main(int argc, char*argv[])
 				sub_cross_term_est_data[2][row + j * shear_data_cols + 3] = all_paras.du;
 				sub_cross_term_est_data[2][row + j * shear_data_cols + 4] = all_paras.dv;
 
-				// ////////////////// galaxy-noise cross-term-est image psf_rotation ////////////////
+				////////////////// galaxy-noise cross-term-est image psf_rotation ////////////////
 				// shear_est(stamp_pow_img[5], psf_img[3], &all_paras);				
 				// sub_cross_term_est_data_r[0][row + j * shear_data_cols] = all_paras.n1;
 				// sub_cross_term_est_data_r[0][row + j * shear_data_cols + 1] = all_paras.n2;
@@ -542,13 +556,12 @@ int main(int argc, char*argv[])
 
 
 			}
-			gsl_free(0);
-			gsl_free(1);
-			gsl_free(2);
 
-			sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
-
+			if(rank == 0 and shear_id==0 and i < 3)
+			{
+				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			 	write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+			}
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
@@ -558,7 +571,10 @@ int main(int argc, char*argv[])
 			}
 		}
 		
-			
+		gsl_free(0);
+		gsl_free(1);
+		gsl_free(2);
+
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
 		
