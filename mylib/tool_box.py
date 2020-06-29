@@ -520,8 +520,8 @@ def fit_background(image, pix_num, function, pix_lb, pix_ub, my, mx, seqs, ybloc
             if sort:
                 fz_s = numpy.sort(fz)
                 bottom, upper = fz_s[int(pix_num*0.2)], fz_s[int(pix_num*0.8)]
-                idx_1 = fz >= max(pix_lb, bottom)
-                idx_2 = fz <= min(pix_ub, upper)
+                idx_1 = fz >= bottom#max(pix_lb, bottom)
+                idx_2 = fz <= upper#min(pix_ub, upper)
                 # print(function, pix_lb, bottom, pix_ub, upper)
                 if function == "flat":
                     para = fit_2d(xs[idx_1&idx_2],ys[idx_1&idx_2],fz[idx_1&idx_2],order)[0]
