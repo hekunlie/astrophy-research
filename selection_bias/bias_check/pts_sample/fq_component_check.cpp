@@ -3,7 +3,7 @@
 #include<hk_iolib.h>
 #define IMG_CHECK_LABEL 3
 #define FLUX_PDF_UNI
-#define CPSF
+#define EPSF
 
 #define SAVE_MEM
 
