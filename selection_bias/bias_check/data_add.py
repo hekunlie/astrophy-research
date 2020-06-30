@@ -24,7 +24,7 @@ rot_4theta = [[numpy.cos(4*theta), -numpy.sin(4*theta)],
 
 data_nm_1 = data_path + "/data_noise_free_%d.hdf5"%rank
 data_nm_2 = data_path + "/data_gal_noise_cross_term_%d.hdf5"%rank
-data_nm_3 = data_path + "/data_pure_gal_noise_cross_term_est_r_%d.hdf5"%rank
+data_nm_3 = data_path + "/data_pure_gal_noise_cross_term_est_%d.hdf5"%rank
 # data_nm_2 = data_path + "/data_noise_free_%d.hdf5"%rank
 
 h5f = h5py.File(data_nm_1, "r")
@@ -60,12 +60,12 @@ mv = mv + mu_ct*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
 
 if rank == 0:
     print(theta)
-    if not os.path.exists(data_path + "/mix2"):
-        os.makedirs(data_path + "/mix2")
+    if not os.path.exists(data_path + "/mix"):
+        os.makedirs(data_path + "/mix")
 
 comm.Barrier()
 
-h5f = h5py.File(data_path + "/mix2/data_mix_%d.hdf5"%rank,"w")
+h5f = h5py.File(data_path + "/mix/data_mix_%d.hdf5"%rank,"w")
 h5f["/mg1"] = numpy.float32(mg1)
 h5f["/mg2"] = numpy.float32(mg2)
 h5f["/mn"] = numpy.float32(mn)
