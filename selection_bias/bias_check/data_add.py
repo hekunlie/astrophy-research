@@ -22,17 +22,26 @@ data_path, theta_tag, nu_mode = argv[1], int(argv[2]), int(argv[3])
 # rot_4theta = [[numpy.cos(4*theta), -numpy.sin(4*theta)],
 #               [numpy.sin(4*theta), numpy.cos(4*theta)]]
 
-rotation = [[[1,0],[0,1]],
-            [[1,0],[0,-1]],
-            [[-1,0],[0,1]],
-            [[-1,0],[0,-1]],
-            [[0,1],[1,0]],
-            [[0,1],[-1,0]],
-            [[0,-1],[1,0]],
-            [[0,-1],[-1,0]]][theta_tag]
+rotation = [[[1,0],
+             [0,1]],
+            [[1,0],
+             [0,-1]],
+            [[-1,0],
+             [0,1]],
+            [[-1,0],
+             [0,-1]],
+            [[0,1],
+             [1,0]],
+            [[0,1],
+             [-1,0]],
+            [[0,-1],
+             [1,0]],
+            [[0,-1],
+             [-1,0]]][theta_tag]
 
 if rank == 0:
-    print("%d %d\n%d %d"%(rotation[0][1],rotation[0][1],rotation[1][0],rotation[1][1]))
+    print("rotation: %d %d\n"
+          "          %d %d"%(rotation[0][0],rotation[0][1],rotation[1][0],rotation[1][1]))
     if not os.path.exists(data_path + "/mix"):
         os.makedirs(data_path + "/mix")
 comm.Barrier()
@@ -72,20 +81,20 @@ for i in my_task:
     mg1 = mg1 + mg1_ct*rotation[0][0] + mg2_ct*rotation[0][1]
     mg2 = mg2 + mg1_ct*rotation[1][0] + mg2_ct*rotation[1][1]
 
-    if nu_mode == 0:
-        mn = mn + mn_ct
-        mu = mu - mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
-        mv = mv - mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
-    elif nu_mode == 1:
-        mu = mu - mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
-        mv = mv - mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
-    elif nu_mode == 2:
-        mn = mn + mn_ct
-        mu = mu + mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
-        mv = mv + mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
-    else:
-        mu = mu + mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
-        mv = mv + mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
+    # if nu_mode == 0:
+    #     mn = mn + mn_ct
+    #     mu = mu - mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
+    #     mv = mv - mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
+    # elif nu_mode == 1:
+    #     mu = mu - mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
+    #     mv = mv - mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
+    # elif nu_mode == 2:
+    #     mn = mn + mn_ct
+    #     mu = mu + mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
+    #     mv = mv + mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
+    # else:
+    #     mu = mu + mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]
+    #     mv = mv + mv_ct#*rot_4theta[1][0] + mv_ct*rot_4theta[1][1]
 
     h5f = h5py.File(data_path + "/mix/data_mix_%d.hdf5"%i,"w")
     h5f["/mg1"] = numpy.float32(mg1)
