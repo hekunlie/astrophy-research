@@ -19,8 +19,21 @@ def quadrupole_fun(sin_cos_2theta, a1, a2):
     # sin_2theta, cos_2theta
     return a1 * sin_cos_2theta[0] + a2 * sin_cos_2theta[1]
 
+def get_bin_1d(data, bin_num, mode=0, percen_low=0.5, percen_up=99.5, scale=1):
 
-def get_bin(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5, scale=1):
+    if mode == 0:
+        a = max(numpy.abs(numpy.percentile(data, percen_low)), numpy.percentile(data, percen_up))
+        bins = numpy.linspace(-a*scale, a*scale, bin_num + 1)
+    #    num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
+    #         print(mode, xbins-ybins)
+    else:
+        a = numpy.max(numpy.abs(data))
+        bins = numpy.linspace(-a*scale, a*scale, bin_num + 1)
+    #    num, d1_bins, d2_bins = numpy.histogram2d(data_1, data_2, [xy_bin, xy_bin])
+    #         print(mode, xbins-ybins)
+    return bins
+
+def get_bin_2d(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5, scale=1):
 
     if mode == 0:
         a = max(numpy.abs(numpy.percentile(data_1, percen_low)), numpy.percentile(data_1, percen_up))
@@ -37,7 +50,19 @@ def get_bin(data_1, data_2, bin_num, mode=0, percen_low=0.5, percen_up=99.5, sca
     return xy_bin
 
 
-def get_2dhist(data_1, data_2, bins):
+def get_hist_1d(data, bins):
+    bin_num = len(bins)-1
+
+    bins_mid = numpy.zeros((bin_num, bin_num))
+    num, d1_bins = numpy.histogram(data, bins)
+
+    for i in range(bin_num):
+        bins_mid[i] = (bins[i] + bins[i + 1]) / 2
+
+    return num, bins_mid, numpy.abs(bins_mid)
+
+
+def get_hist_2d(data_1, data_2, bins):
     bin_num = len(bins)-1
 
     xgrid = numpy.zeros((bin_num, bin_num))
@@ -52,7 +77,28 @@ def get_2dhist(data_1, data_2, bins):
     return num, xgrid, ygrid, numpy.sqrt(xgrid ** 2 + ygrid ** 2)
 
 
-def get_dipole(num, radius, radius_bin_num):
+def get_dipole_1d(num, radius, radius_bin_num):
+
+    radius_bin = numpy.linspace(0, radius.max(), radius_bin_num + 1)
+
+    num_dipole = numpy.zeros_like(num)
+    raidus_mask = numpy.zeros_like(num)
+    mean_num = numpy.zeros_like(num)
+
+    for i in range(radius_bin_num):
+        idx1 = radius >= radius_bin[i]
+        idx2 = radius < radius_bin[i + 1]
+        idx = idx1 & idx2
+        mean_of_annuli = num[idx].mean()
+        num_dipole[idx] = num[idx] - mean_of_annuli
+        mean_num[idx] = mean_of_annuli
+        raidus_mask[idx] = i
+
+    return numpy.nan_to_num(num_dipole), radius_bin, raidus_mask, mean_num
+
+
+def get_dipole_2d(num, radius, radius_bin_num):
+
     radius_bin = numpy.linspace(0, radius.max(), radius_bin_num + 1)
 
     num_dipole = numpy.zeros_like(num)
