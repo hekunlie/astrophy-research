@@ -264,7 +264,7 @@ int main(int argc, char*argv[])
 
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
-	sss1 = seed_step*shear_pairs*1000;
+	sss1 = seed_step*shear_pairs*total_chips;
 	seed_pts = sss1*rank + 1 + seed_ini;//35000;
 	seed_n1 = sss1*rank + 1 + seed_ini*2;// 4001*(rotation+1);
 	seed_n2 = sss1*rank + 1 + seed_ini*4;//2300*(rotation+1);
@@ -284,9 +284,9 @@ int main(int argc, char*argv[])
 		sprintf(mg_name[3], "/mu");
 		sprintf(mg_name[4], "/mv");
 	}
-	// read shear
-	g1t = new MY_FLOAT[shear_pairs]{-0.04,-0.02,0,0.02,0.04};
-	g2t = new MY_FLOAT[shear_pairs]{0,0,0,0,0};
+	// // read shear
+	// g1t = new MY_FLOAT[shear_pairs]{-0.04,-0.02,0,0.02,0.04};
+	// g2t = new MY_FLOAT[shear_pairs]{0,0,0,0,0};
 
 	// sprintf(shear_path,"%s/imgs/shear.hdf5", parent_path);
 	// sprintf(set_name,"/g1");
@@ -294,22 +294,22 @@ int main(int argc, char*argv[])
 	// sprintf(set_name,"/g2");
 	// read_h5(shear_path, set_name, g2t);
 
-	// sprintf(chip_path,"%s/imgs/psf.fits",parent_path);
-	// read_fits(chip_path,psf_img[0]);
+	sprintf(chip_path,"%s/imgs/psf.fits",parent_path);
+	read_fits(chip_path,psf_img[0]);
 
 	// create_psf_e(psf_img[0], psf_scale, size, img_cent, psf_ellip, ellip_theta, psf_type);
 	// create PSF
-	create_psf(psf_img[0], psf_scale, size, img_cent, psf_type);
+	// create_psf(psf_img[0], psf_scale, size, img_cent, psf_type);
 
 	pow_spec(psf_img[0], psf_img[1], size, size);
 	get_psf_radius(psf_img[1], &all_paras, psf_thresh_scale);
 
-	image_rotation(psf_img[0], psf_img[2], size);
-	pow_spec(psf_img[2], psf_img[3], size, size);
+	// image_rotation(psf_img[0], psf_img[2], size);
+	// pow_spec(psf_img[2], psf_img[3], size, size);
 	
-	sprintf(chip_path,"%s/pts.hdf5",parent_path);
-	sprintf(set_name,"/pts");
-	read_h5(chip_path,set_name,point);
+	// sprintf(chip_path,"%s/pts.hdf5",parent_path);
+	// sprintf(set_name,"/pts");
+	// read_h5(chip_path,set_name,point);
 
 
 	if (0 == rank)
@@ -341,15 +341,15 @@ int main(int argc, char*argv[])
 	{
 		ts = clock();
 
-		flux_i = 8000.0/num_p;
-		g1 = g1t[shear_id];
-		g2 = g2t[shear_id];
+		// flux_i = 8000.0/num_p;
+		// g1 = g1t[shear_id];
+		// g2 = g2t[shear_id];
 		
 		// convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
-		convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
+		// convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
-		// sprintf(chip_path, "%s/gal_%d.fits", parent_path,  shear_id);
-		// read_fits(chip_path, stamp_img[0]);
+		sprintf(chip_path, "%s/imgs/gal_%d.fits", parent_path,  shear_id);
+		read_fits(chip_path, stamp_img[0]);
 		if(rank == 0)
 		{std::cout<<g1<<" "<<g2<<std::endl;}
 		// loop the chips
@@ -472,7 +472,7 @@ int main(int argc, char*argv[])
 				sub_cross_term_est_data[2][row + j * shear_data_cols + 3] = all_paras.du;
 				sub_cross_term_est_data[2][row + j * shear_data_cols + 4] = all_paras.dv;
 
-				////////////////// galaxy-noise cross-term-est image psf_rotation ////////////////
+				// //////////////// galaxy-noise cross-term-est image psf_rotation ////////////////
 				// shear_est(stamp_pow_img[5], psf_img[3], &all_paras);				
 				// sub_cross_term_est_data_r[0][row + j * shear_data_cols] = all_paras.n1;
 				// sub_cross_term_est_data_r[0][row + j * shear_data_cols + 1] = all_paras.n2;
@@ -505,7 +505,7 @@ int main(int argc, char*argv[])
 
 			if(rank == 0 and shear_id==0 and i < 3)
 			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noisy.fits", parent_path, shear_id, i);
+				sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noisy.fits", parent_path, shear_id, i);
 			 	write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
 			}
 			t2 = clock();
