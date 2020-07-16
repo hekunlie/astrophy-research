@@ -625,6 +625,26 @@ def pow_test(img):
     mask[0,cent+1:] = a
     return mask
 
+def rfft_tran_1d(x,fx,t,order):
+    dx = x[1]-x[0]
+    a0 = numpy.sum(fx*dx)/t
+    coeff = [[a0,0]]
+    for i in range(1,order):
+        sin_ai = numpy.sum(numpy.sin(2*numpy.pi*x*i/t)*2/t*fx*dx)
+        cos_ai = numpy.sum(numpy.cos(2*numpy.pi*x*i/t)*2/t*fx*dx)
+        coeff.append([sin_ai,cos_ai])
+    return coeff
+
+def rfft_itran_1d(x,t,coeff):
+    fx = coeff[0][0]
+    components = [[numpy.ones(len(x),)*coeff[0][0],numpy.zeros((len(x), ))]]
+    for i in range(1,len(coeff)):
+        ai = numpy.sin(2*numpy.pi*i*x/t)*coeff[i][0]
+        bi = numpy.cos(2*numpy.pi*i*x/t)*coeff[i][1]
+        components.append([ai,bi])
+        fx += ai + bi
+    return fx,components
+
 def image_fft(image):
     return fft.fftshift(fft.fft2(image))
 
