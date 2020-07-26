@@ -342,6 +342,9 @@ def exp_fun(x, ampli, sig, mu):
     # for fitting
     return ampli * numpy.exp(-(x - mu) ** 2 / 2 / sig ** 2)
 
+def gauss_fun(x,y,a,sig):
+    # for fitting
+    return a/2/numpy.pi/sig/sig*numpy.exp(-(x**2+y**2)/2/sig/sig)
 
 def fxy(x, a, b, c, d, e, f):
     """
@@ -401,6 +404,17 @@ def gauss_fit(x, f, method='scipy'):
     else:
         # developing
         return None
+
+def gauss_fit_2d(x,y,fxy):
+    """
+    fit 2d gaussian f=A/2/pi/sigma/sigma*exp(-(x^2+y^2)/2/sigma^2)
+    :param x:
+    :param y:
+    :param fxy:
+    :return: list of parameters
+    """
+    # res = curve_fit()
+    pass
 
 
 def fit_1d(x, y, order, method):

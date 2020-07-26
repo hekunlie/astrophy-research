@@ -62,6 +62,20 @@ class Image_Plot:
         self.figure = fig
         self.axs = sub_fig
 
+    def scatter_pts(self, iy,ix, x, y, fxy, pts_size=3, color_map='YlOrRd',sci_cb=True):
+        norm = plt.Normalize(vmin=numpy.min(fxy), vmax=numpy.max(fxy))
+        cmap = plt.get_cmap(color_map)
+        cl = cmap(norm(fxy))
+
+        self.axs[iy][ix].scatter(x, y, color=cl, s=pts_size)
+
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm._A = []
+        cb = self.figure.colorbar(sm, ax=self.axs[iy][ix])
+        if sci_cb:
+            cb.formatter.set_powerlimits((0, 0))
+            cb.update_ticks()
+
     def axis_type(self, axis_nm, spine, tick_len=None, tick_width=None, direction="in"):
 
         if not tick_len:
