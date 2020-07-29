@@ -60,7 +60,7 @@ int main(int argc, char**argv)
     // data shape
     strcpy(parent_path, argv[1]);
     shear_num = 40;//atoi(argv[8]);
-    data_row = 1600*10000;//atoi(argv[9])*10000;
+    data_row = 1200*10000;//atoi(argv[9])*10000;
     
     strcpy(result_nm, argv[2]);
     strcpy(data_type_1, argv[3]);
