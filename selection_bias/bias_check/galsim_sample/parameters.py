@@ -19,20 +19,21 @@ cpus = comm.Get_size()
 
 para_path = argv[1]
 
-total_num = 40000000
+total_num = 20000000
 
-seed = 12334 + rank*12
+seed = 1234 + rank*1212
 
 rng = numpy.random.RandomState(seed)
 
-disc_e_i = tool_box.ran_generator(tool_box.bulge_e_pdf, total_num, seed, 0, 0.7, 0, 2.1)[0]
+# disc_e_i = tool_box.ran_generator(tool_box.bulge_e_pdf, total_num, seed, 0, 0.7, 0, 2.1)[0]
+disc_e_i = rng.uniform(0, 0.266, total_num)
 # disc_e_i = 0.6
 
 theta = rng.uniform(0, 2*numpy.pi, total_num)
 disc_e1_i, disc_e2_i = disc_e_i*numpy.cos(theta), disc_e_i*numpy.sin(theta)
 
-e1 = numpy.zeros((total_num,))
-e2 = numpy.zeros((total_num,))
+e1 = numpy.zeros((total_num,),dtype=numpy.float32)
+e2 = numpy.zeros((total_num,),dtype=numpy.float32)
 e1[:] = disc_e1_i
 e2[:] = disc_e2_i
 

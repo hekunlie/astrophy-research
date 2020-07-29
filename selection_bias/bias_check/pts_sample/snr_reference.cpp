@@ -127,15 +127,19 @@ int main(int argc, char*argv[])
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
 	MY_FLOAT gal_flux[8], noise_sigma[5];
+    MY_FLOAT flux_st;
     int ix, iy, tag;
 
-    for(i=0;i<8;i++){gal_flux[i] = (i+11)*1000;}
-    for(i=0;i<5;i++){noise_sigma[i] = i*10+30;}
 
 	strcpy(parent_path, argv[1]);
 	seed_ini = atoi(argv[2]);
 	total_chips = atoi(argv[3]);
 	size = atoi(argv[4]);
+    flux_st = atof(argv[5]);
+
+    for(i=0;i<8;i++){ gal_flux[i] = (i+flux_st)*1000; }
+    for(i=0;i<5;i++){ noise_sigma[i] = i*10+30; }
+
 
     iy = rank/8;
     ix = rank%8;
@@ -258,7 +262,7 @@ int main(int argc, char*argv[])
         gsl_free(1);
 
         // show_arr(snr_data,10,3);
-
+        
         sprintf(chip_path, "!%s/img/gal_chip_%d_%d_noise_free.fits", parent_path, iy, ix);
         write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
         sprintf(chip_path, "!%s/img/gal_chip_%d_%d_noisy.fits", parent_path, iy, ix);

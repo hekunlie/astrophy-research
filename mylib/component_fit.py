@@ -101,9 +101,9 @@ def get_dipole_2d(num, radius, radius_bin_num):
 
     radius_bin = numpy.linspace(0, radius.max(), radius_bin_num + 1)
 
-    num_dipole = numpy.zeros_like(num)
-    raidus_mask = numpy.zeros_like(num)
-    mean_num = numpy.zeros_like(num)
+    num_dipole = numpy.zeros_like(num)-2
+    radius_mask = numpy.zeros_like(num)-2
+    mean_num = numpy.zeros_like(num)-2
 
     for i in range(radius_bin_num):
         idx1 = radius >= radius_bin[i]
@@ -112,9 +112,21 @@ def get_dipole_2d(num, radius, radius_bin_num):
         mean_of_annuli = num[idx].mean()
         num_dipole[idx] = num[idx] - mean_of_annuli
         mean_num[idx] = mean_of_annuli
-        raidus_mask[idx] = i
+        radius_mask[idx] = i
+    x,y = num.shape
+    x2 = int(x/2)
+    for i in range(y):
+        for j in range(0,x2):
+            if radius_mask[i,x2+j] < -1:
+                radius_mask[i, x2 + j] = radius_mask[i,x2+j-1]
+                num_dipole[i,x2 + j] = num_dipole[i,x2 + j-1]
+                mean_num[i,x2 + j] = mean_num[i,x2 + j-1]
+            if radius_mask[i,x2-1-j] < -1:
+                radius_mask[i, x2-1 - j] = radius_mask[i,x2-1-j+1]
+                num_dipole[i, x2-1 - j] = num_dipole[i, x2-1 - j + 1]
+                mean_num[i, x2-1 - j] = mean_num[i, x2-1 - j + 1]
 
-    return numpy.nan_to_num(num_dipole), radius_bin, raidus_mask, mean_num
+    return num_dipole, radius_bin, radius_mask, mean_num
 
 
 def get_quadrupole(num_dipole, xgrid, ygrid, radius_bin, radius_bin_num):

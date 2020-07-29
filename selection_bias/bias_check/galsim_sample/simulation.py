@@ -21,16 +21,16 @@ ts = time.clock()
 parent_path = argv[1]
 tag = int(argv[2])
 
-gal_fluxs = [3000, 6000, 9000, 16000, 800000]
+gal_fluxs = [3000, 8000, 9000, 16000, 800000]
 
 seed_step = 1
 
-sersic_idx = 0.31
-scale_radius = 0.3
+sersic_idx = 0.35
+scale_radius = 0.35
 gal_flux = gal_fluxs[tag]
 noise_sig = 60
-shear_num = 40
-total_chips = 4000
+shear_num = 20
+total_chips = 2000
 pixel_scale = 0.187
 stamp_size = 48
 stamp_nx = 100
@@ -49,7 +49,7 @@ if rank == 0:
     psf.drawImage(image=psf_img, scale=pixel_scale)
     psf_arr = numpy.float32(psf_img.array)
     hdu = fits.PrimaryHDU(psf_arr)
-    psf_path = parent_path + '/psf.fits'
+    psf_path = parent_path + '/imgs/psf.fits'
     hdu.writeto(psf_path, overwrite=True)
 
 
