@@ -343,7 +343,7 @@ int main(int argc, char*argv[])
 		sprintf(chip_path, "!%s/psf_r_%.2f.fits", parent_path,psf_scale);
 #endif
 		write_fits(buffer,psf_img[0], size, size);
-		// write_fits(chip_path,psf_img[2], size, size);
+		write_fits(chip_path,psf_img[2], size, size);
 
 		std::cout<<"Gal Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
