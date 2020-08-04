@@ -22,22 +22,25 @@ data_path, theta_tag, nu_mode = argv[1], int(argv[2]), int(argv[3])
 # rot_4theta = [[numpy.cos(4*theta), -numpy.sin(4*theta)],
 #               [numpy.sin(4*theta), numpy.cos(4*theta)]]
 
-rotation = [[[1,0],
-             [0,1]],
-            [[1,0],
-             [0,-1]],
-            [[-1,0],
-             [0,1]],
-            [[-1,0],
-             [0,-1]],
-            [[0,1],
-             [1,0]],
-            [[0,1],
-             [-1,0]],
-            [[0,-1],
-             [1,0]],
-            [[0,-1],
-             [-1,0]]][theta_tag]
+# rotation = [[[1,0],
+#              [0,1]],
+#             [[1,0],
+#              [0,-1]],
+#             [[-1,0],
+#              [0,1]],
+#             [[-1,0],
+#              [0,-1]],
+#             [[0,1],
+#              [1,0]],
+#             [[0,1],
+#              [-1,0]],
+#             [[0,-1],
+#              [1,0]],
+#             [[0,-1],
+#              [-1,0]]][theta_tag]
+
+rotation = [[0,-1],
+             [1,0]]
 
 if rank == 0:
     print("rotation: %d %d\n"
@@ -49,38 +52,39 @@ comm.Barrier()
 my_task = tool_box.alloc([i for i in range(40)], numprocs)[rank]
 
 for i in my_task:
-    data_nm_1 = data_path + "/data_noise_free_%d.hdf5"%i
-    data_nm_2 = data_path + "/data_gal_noise_cross_term_%d.hdf5"%i
+    data_nm_1 = data_path + "/data_noisy_cpp_%d.hdf5"%i
+    data_nm_2 = data_path + "/data_noise_free_%d.hdf5"%i
+    # data_nm_2 = data_path + "/data_gal_noise_cross_term_%d.hdf5"%i
     data_nm_3 = data_path + "/data_pure_gal_noise_cross_term_est_r_%d.hdf5"%i
     # data_nm_2 = data_path + "/data_noise_free_%d.hdf5"%i
 
     h5f = h5py.File(data_nm_1, "r")
-    mg1 = h5f["/mg1"][()]
-    mg2 = h5f["/mg2"][()]
+    # mg1 = h5f["/mg1"][()]
+    # mg2 = h5f["/mg2"][()]
     mn = h5f["/mn"][()]
     mu = h5f["/mu"][()]
     mv = h5f["/mv"][()]
     h5f.close()
 
     h5f = h5py.File(data_nm_2, "r")
-    mg1 += h5f["/mg1"][()]
-    mg2 += h5f["/mg2"][()]
-    mn += h5f["/mn"][()]
-    mu += h5f["/mu"][()]
-    mv += h5f["/mv"][()]
+    mg1 = h5f["/mg1"][()]
+    mg2 = h5f["/mg2"][()]
+    # mn = h5f["/mn"][()]
+    # mu = h5f["/mu"][()]
+    # mv = h5f["/mv"][()]
     h5f.close()
 
-    h5f = h5py.File(data_nm_3, "r")
-    mg1_ct = h5f["/mg1"][()]
-    mg2_ct = h5f["/mg2"][()]
-    mn_ct = h5f["/mn"][()]
-    mu_ct = h5f["/mu"][()]
-    mv_ct = h5f["/mv"][()]
-    h5f.close()
+    # h5f = h5py.File(data_nm_3, "r")
+    # mg1_ct = h5f["/mg1"][()]
+    # mg2_ct = h5f["/mg2"][()]
+    # mn_ct = h5f["/mn"][()]
+    # mu_ct = h5f["/mu"][()]
+    # mv_ct = h5f["/mv"][()]
+    # h5f.close()
 
-    mg1 = mg1 + mg1_ct*rotation[0][0] + mg2_ct*rotation[0][1]
-    mg2 = mg2 + mg1_ct*rotation[1][0] + mg2_ct*rotation[1][1]
-
+    # mg1 = mg1 + mg1_ct*rotation[0][0] + mg2_ct*rotation[0][1]
+    # mg2 = mg2 + mg1_ct*rotation[1][0] + mg2_ct*rotation[1][1]
+    #
     # if nu_mode == 0:
     #     mn = mn + mn_ct
     #     mu = mu - mu_ct#*rot_4theta[0][0] + mv_ct*rot_4theta[0][1]

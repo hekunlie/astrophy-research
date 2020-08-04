@@ -24,6 +24,14 @@ void arr_sqrt(MY_FLOAT *arr_in, MY_FLOAT *arr_out, const int length)
     }
 }
 
+void arr_scale(MY_FLOAT *arr1, const MY_FLOAT scale,const int length)
+{
+    for(int i=0;i<length;i++)
+    {
+        arr1[i] += arr1[i]*scale;
+    }
+}
+
 
 void arr_add(MY_FLOAT *arr1, const MY_FLOAT*arr2,const int length)
 {
@@ -139,7 +147,7 @@ int main(int argc, char*argv[])
 	MY_FLOAT psf_ellip, ellip_theta;
 	MY_FLOAT img_cent;
 	MY_FLOAT pts_step;
-	MY_FLOAT gal_fluxs[5]{4000, 8000, 18000, 35000, 82000};
+	MY_FLOAT gal_fluxs[7]{4000, 6000, 9000, 13500, 20250, 30375, 45562},flux_scale;
 	// MY_FLOAT gal_noise_sigma[5]{48,54,60,66,72};
 	MY_FLOAT gal_noise_sigma[5]{60,120,240,150,240};
 	MY_FLOAT pts_steps[4]{0.5, 1, 1.5, 2};
@@ -160,7 +168,7 @@ int main(int argc, char*argv[])
 
 
 	num_p = 30;
-	max_radius= 7;
+	max_radius= 6;
 	stamp_num = 10000;
 	shear_data_cols = 5;
 
@@ -178,8 +186,10 @@ int main(int argc, char*argv[])
 	img_cent = size*0.5 - 0.5;
     stamp_nx = 100;
 
+	
+	flux_scale = gal_fluxs[flux_tag]/gal_fluxs[0];
 	flux_i = gal_fluxs[flux_tag]/num_p;
-
+	
 	flux_num = 1000000;
 
 	kernel_size1 = 3;
@@ -277,10 +287,10 @@ int main(int argc, char*argv[])
 
 	// seed distribution, different thread gets different seed
 	seed_step = 1;
-	sss1 = seed_step*shear_pairs*total_chips;
+	sss1 = 2*seed_step*shear_pairs*total_chips;
 	seed_pts = sss1*rank + 1 + seed_ini;//35000;
-	seed_n1 = sss1*rank + 1 + seed_ini*2;// 4001*(rotation+1);
-	seed_n2 = sss1*rank + 1 + seed_ini*4;//2300*(rotation+1);
+	seed_n1 = sss1*rank + 1 + seed_ini;// 4001*(rotation+1);
+	seed_n2 = sss1*rank + 1 + seed_ini;//2300*(rotation+1);
 
 	if (0 == rank)
 	{
@@ -321,9 +331,6 @@ int main(int argc, char*argv[])
 	image_rotation(psf_img[0], psf_img[2], size);
 	pow_spec(psf_img[2], psf_img[3], size, size);
 
-	arr_sqrt(psf_img[1], psf_img[4],img_len);
-	arr_sqrt(psf_img[3], psf_img[5],img_len);
-
 	
 	if (0 == rank)
 	{	
@@ -335,8 +342,8 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 #ifdef EPSF
-		sprintf(buffer, "!%s/epsf_%.2f.fits", parent_path,psf_scale);
-		sprintf(chip_path, "!%s/epsf_r_%.2f.fits", parent_path,psf_scale);
+		sprintf(buffer, "!%s/imgs/epsf_%.2f.fits", parent_path,psf_scale);
+		sprintf(chip_path, "!%s/imgs/epsf_r_%.2f.fits", parent_path,psf_scale);
 
 #else
 		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
@@ -383,7 +390,7 @@ int main(int argc, char*argv[])
 		if(rank == 0)
 		{
 			std::cout<<"---------------------------------------------------------------------------"<<std::endl;
-			std::cout<<"g1: "<<g1<<" g2: "<<g2<<" FLux:"<<flux_i<<std::endl;
+			std::cout<<"g1: "<<g1<<" g2: "<<g2<<" FLux:"<<flux_i<<" Flux Scale:"<<flux_scale<<std::endl;
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -397,10 +404,10 @@ int main(int argc, char*argv[])
 			// initialize GSL
 			gsl_initialize(seed_pts,0);
 			gsl_initialize(seed_n1,1);
-			// gsl_initialize(seed_n2,2);
+			gsl_initialize(seed_n2,2);
 			seed_pts += seed_step;
 			seed_n1 += seed_step;
-			// seed_n2 += seed_step;
+			seed_n2 += seed_step;
 
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed: %d, %d", rank,shear_id, i, seed_pts, seed_n1);
 			write_log(log_path, log_inform);
@@ -411,15 +418,15 @@ int main(int argc, char*argv[])
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
 
-			// sprintf(chip_path, "%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			// read_fits(chip_path, big_img_check[0]);
+			sprintf(chip_path, "%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			read_fits(chip_path, big_img_check[0]);
 
-			// sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d read", rank,shear_id, i);
-			// write_log(log_path, log_inform);
-			// if (rank == 0)
-			// {
-			// 	std::cout << log_inform << std::endl;
-			// }
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d read", rank,shear_id, i);
+			write_log(log_path, log_inform);
+			if (rank == 0)
+			{
+				std::cout << log_inform << std::endl;
+			}
 			
 			// loop the stamps
 			for (j = 0; j < stamp_num; j++)
@@ -445,20 +452,21 @@ int main(int argc, char*argv[])
 					pow_spec(noise_img[k], noise_pow_img[k], size, size);
 				}
 
-				// segment(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				segment(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				arr_scale(stamp_img[0], flux_scale, img_len);
 
-				create_points(point, num_p, max_radius, pts_step, rng0);
+// 				create_points(point, num_p, max_radius, pts_step, rng0);
 
-#ifdef EPSF
-				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
-#else
-				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
+// #ifdef EPSF
+// 				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
+// #else
+// 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
-#endif
-				if(rank == 0 and shear_id==0 and i < 3)
-				{
-					stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
-				}
+// #endif
+				//if(rank == 0 and shear_id==0 and i < 3)
+				// {
+					// stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				// }
 				// noise free
 				pow_spec(stamp_img[0], stamp_pow_img[0], size, size);
 				// noisy image
@@ -594,11 +602,11 @@ int main(int argc, char*argv[])
 			gsl_free(0);
 			gsl_free(1);
 			// gsl_free(2);
-			if(rank == 0 and shear_id==0 and i < 3)
-			{
-				sprintf(chip_path, "!%s/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			 	write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
-			}
+			// if(rank == 0 and shear_id==0 and i < 3)
+			// {
+				// sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			 	// write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+			// }
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
 			write_log(log_path, log_inform);
@@ -616,7 +624,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/data/data_noise_free_%d.hdf5", parent_path,shear_id);
+			sprintf(result_path, "%s/data_%d/data_noise_free_%d.hdf5", parent_path,flux_tag,shear_id);
 			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -624,7 +632,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/data/data_noisy_cpp_%d.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/data_%d/data_noisy_cpp_%d.hdf5", parent_path, flux_tag,shear_id);
 			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -658,7 +666,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_cross_term_est_data[0], gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/data/data_gal_noise_cross_term_est_%d.hdf5", parent_path,shear_id);
+			sprintf(result_path, "%s/data_%d/data_gal_noise_cross_term_est_%d.hdf5", parent_path,flux_tag,shear_id);
 			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -684,7 +692,7 @@ int main(int argc, char*argv[])
 		my_Gatherv(sub_cross_term_est_data_r[0], gather_count, total_data, numprocs, rank);
 		if (0 == rank)
 		{
-			sprintf(result_path, "%s/data/data_gal_noise_cross_term_est_r_%d.hdf5", parent_path, shear_id);
+			sprintf(result_path, "%s/data_%d/data_gal_noise_cross_term_est_r_%d.hdf5", parent_path, flux_tag, shear_id);
 			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
