@@ -15,33 +15,80 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
-mode = argv[1]
+mode = argv[2]
 
-total_path = "/mnt/ddnfs/data_users/hkli/CFHT/catalog/fourier_cata"
+area_num = 4
+chip_num = 32
 
-if mode == "prepare":
+total_path = argv[1]
 
-    fields, field_name = tool_box.field_dict("nname_all.dat")
+if mode == "cata_name":
+    if rank == 0:
+
+        files_nm = os.listdir(total_path)
+        fields = []
+        all_files = []
+        # this is how they name the fields
+        xlbs = ["p%d" % abs(i) if i > 0 else "m%d" % abs(i) for i in range(-5, 6)]
+        ylbs = ["m%d" % abs(i) if i <= 0 else "p%d" % abs(i) for i in range(-5, 6)]
+        print(xlbs)
+        print(ylbs)
+
+        for j in range(area_num):
+            for ylb in ylbs:
+                for xlb in xlbs:
+                    field_nm = "w%d%s%s" % (j + 1, xlb, ylb)
+                    if field_nm in files_nm:
+                        print(field_nm)
+                        fields.append(field_nm + "\n")
+
+                        all_files.append(field_nm + "\n")
+
+                        sub_expos = []
+
+                        # find the exposures
+                        sub_files = os.listdir(total_path + "/%s/result/"%field_nm)
+                        for nm in sub_files:
+                            if "_all.cat" in nm:
+                                sub_expos.append(int(nm.split("p")[0]))
+                        # sort the exposure labels from small to large
+                        sub_expos = sorted(sub_expos)
+                        # check the existence of chips
+                        for expo in sub_expos:
+                            for i in range(1, chip_num + 1):
+                                chip_nm = "%dp_%d_shear.dat" % (expo, i)
+                                if os.path.exists(total_path + "/%s/result/%s" % (field_nm, chip_nm)):
+                                    all_files.append(chip_nm + "\n")
+                                    print(chip_nm)
+
+        with open(total_path + "/nname_all.dat", "w") as f:
+            f.writelines(all_files)
+        with open(total_path + "/nname.dat", "w") as f:
+            f.writelines(fields)
+        print(len(fields))
+
+elif mode == "hdf5_cata":
+    # convert the .dat to .hdf5
+
+    fields, field_name = tool_box.field_dict(total_path + "/nname_all.dat")
     if rank == 0:
         print(len(field_name))
 
-    field_name_sub = tool_box.alloc(field_name, cpus)[rank]
+    field_name_sub = tool_box.alloc(field_name, cpus,"seq")[rank]
 
     field_avail_sub = []
 
     for fns in field_name_sub:
 
         # read the the field data
-        field_src_path = total_path + "/original_cata/%s"%fns
+        field_src_path = total_path + "/%s/result"%fns
 
         try:
-            fdat = numpy.loadtxt(field_src_path + "/result/%s.cat"%fns,dtype=numpy.float32)
+            fdat = numpy.loadtxt(field_src_path + "/%s.cat"%fns, dtype=numpy.float32)
 
-            field_dst_path = total_path + "/hdf5_cata/%s" % fns
-            if not os.path.exists(field_dst_path):
-                os.makedirs(field_dst_path)
+            field_dst_path = field_src_path + "/%s.hdf5" % fns
 
-            h5f = h5py.File(field_dst_path + "/%s.hdf5"%fns, "w")
+            h5f = h5py.File(field_dst_path, "w")
             h5f["/field"] = fdat
             h5f["/field"].attrs["gal_num"] = fdat.shape[0]
 
@@ -52,11 +99,12 @@ if mode == "prepare":
             expo_label = 0
             for exp_nm in expos:
                 try:
-                    edat = numpy.loadtxt(field_src_path + "/result/%s_all.cat" % exp_nm, dtype=numpy.float32)
+                    edat = numpy.loadtxt(field_src_path + "/%s_all.cat" % exp_nm, dtype=numpy.float32)
                     h5f["/expo_%d"%expo_label] = edat
                     h5f["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
                     h5f["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
                     expo_label += 1
+
                 except:
                     print("%d %s-%s empty!" % (rank, fns, exp_nm))
 
@@ -76,14 +124,14 @@ if mode == "prepare":
         for fsb in field_collection:
             field_avail.extend(fsb)
         print(len(field_avail))
-        with open(total_path + "/hdf5_cata/nname_avail.dat","w") as f:
+        with open(total_path + "/nname_avail.dat","w") as f:
             f.writelines(field_avail)
 
 else:
     # collection
-    result_path = total_path + "/hdf5_cata/total.hdf5"
+    result_path = total_path + "/total.hdf5"
 
-    fields, field_name = tool_box.field_dict(total_path + "/hdf5_cata/nname_avail.dat")
+    fields, field_name = tool_box.field_dict(total_path + "/nname_avail.dat")
     if rank == 0:
         print(len(field_name))
         h5f = h5py.File(result_path, "w")
@@ -102,7 +150,7 @@ else:
         if len(my_sub_area_list) > 0:
             for tag, fns in enumerate(my_sub_area_list):
 
-                h5f = h5py.File(total_path + "/hdf5_cata/%s/%s.hdf5" %(fns, fns),"r")
+                h5f = h5py.File(total_path + "/%s/result/%s.hdf5" %(fns, fns),"r")
                 temp = h5f["/field"][()]
 
                 if tag == 0:

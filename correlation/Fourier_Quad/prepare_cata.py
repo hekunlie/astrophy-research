@@ -26,6 +26,8 @@ deg2arc = numpy.pi/180
 ra_idx = 29
 dec_idx = 30
 redshift_idx = 10
+redshift_bin_num = 6
+red_shift_bin = [0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3]
 
 # star number on each chip
 nstar_idx = 21
@@ -54,6 +56,8 @@ mn_idx = 35
 mu_idx = 36
 mv_idx = 37
 
+# exposure label
+expo_idx = 38
 
 fourier_cata_path = "/mnt/ddnfs/data_users/hkli/CFHT/catalog/fourier_cata/hdf5_cata"
 result_cata_path = "/mnt/ddnfs/data_users/hkli/CFHT/correlation/cata"
@@ -117,56 +121,42 @@ if cmd == "prepare":
 
         # read each exposure
         expos_num = h5f_src["/expos_num"][()][0]
+        h5f_src.close()
 
-        target_label = 0
-        source_num_in_expo = [[], []]
+        # selection
+        idx1 = src_data[:, nstar_idx] >= nstar_thresh
+        idx2 = src_data[:, flux2_alt_idx] >= flux2_alt_thresh
+        idx3 = numpy.abs(src_data[:, gf1_idx]) <= gf1_thresh
+        idx4 = numpy.abs(src_data[:, gf2_idx]) <= gf2_thresh
+        idx5 = src_data[:, imax_idx] <= imax_thresh
+        idx6 = src_data[:, jmax_idx] <= jmax_thresh
 
-        for iexpo in range(expos_num):
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
 
-            src_expo_data = h5f_src["/expo_%d"%iexpo][()]
+        num_in_z_bin = numpy.zeros((redshift_bin_num,), dtype=numpy.intc)
 
-            src_expo_name = int(h5f_src["/expo_%d"%iexpo].attrs["exposure_name"].split("p")[0])
-            src_num = src_expo_data.shape[0]
+        for i in range(redshift_bin_num):
+            idx_z1 = src_data[:,redshift_idx] >= red_shift_bin[i]
+            idx_z2 = src_data[:,redshift_idx] < red_shift_bin[i+1]
+            idx_final = idx & idx_z1 & idx_z2
 
-            # selection
-            idx1 = src_expo_data[:, nstar_idx] >= nstar_thresh
-            idx2 = src_expo_data[:, flux2_alt_idx] >= flux2_alt_thresh
-            idx3 = numpy.abs(src_expo_data[:, gf1_idx]) <= gf1_thresh
-            idx4 = numpy.abs(src_expo_data[:, gf2_idx]) <= gf2_thresh
-            idx5 = src_expo_data[:,imax_idx] <= imax_thresh
-            idx6 = src_expo_data[:,jmax_idx] <= jmax_thresh
+            final_num = idx_final.sum()
+            final_data = src_data[idx_final]
 
-            idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
-            select_num = idx.sum()
+            if final_num > 1:
+                dst_data = numpy.zeros((final_num, 10), dtype=numpy.float32)
 
-            if select_num > 1:
-
-                dec_s = src_expo_data[:, dec_idx][idx]
-                ra_s = src_expo_data[:,ra_idx][idx]
-                redshift_s = src_expo_data[:,redshift_idx][idx]
-
-                # shear estimators
-                mg1_s = src_expo_data[:,mg1_idx][idx]
-                mg2_s = src_expo_data[:,mg2_idx][idx]
-                mn_s = src_expo_data[:,mn_idx][idx]
-                mu_s = src_expo_data[:,mu_idx][idx]
-                mv_s = src_expo_data[:,mv_idx][idx]
-
-                dst_data = numpy.zeros((select_num, 9), dtype=numpy.float32)
-                expo_label = numpy.zeros((select_num, 1), dtype=numpy.intc) + src_expo_name
-
-                source_num_in_expo[0].append(select_num)
-                source_num_in_expo[1].append(src_expo_name)
+                num_in_z_bin[i] = final_num
 
                 # assign the galaxies to the block in each exposure of each field
                 for i in range(dec_bin_num):
-                    idx1 = dec_s >= dec_bin[i]
-                    idx2 = dec_s < dec_bin[i+1]
+                    idx1 = final_data[:, dec_idx] >= dec_bin[i]
+                    idx2 = final_data[:, dec_idx] < dec_bin[i+1]
                     idx_d = idx1 & idx2
 
                     for j in range(ra_bin_num):
-                        idx3 = ra_s >= ra_bin[j]
-                        idx4 = ra_s < ra_bin[j+1]
+                        idx3 = final_data[:, ra_idx] >= ra_bin[j]
+                        idx4 = final_data[:, ra_idx] < ra_bin[j+1]
 
                         idx_block = idx_d & idx3 & idx4
 
@@ -178,77 +168,156 @@ if cmd == "prepare":
                         block_st[ij] = st
                         block_ed[ij] = ed
 
-                        dst_data[st:ed, 0] = mg1_s[idx_block]
-                        dst_data[st:ed, 1] = mg2_s[idx_block]
-                        dst_data[st:ed, 2] = mn_s[idx_block]
-                        dst_data[st:ed, 3] = mu_s[idx_block]
-                        dst_data[st:ed, 4] = mv_s[idx_block]
+                        dst_data[st:ed, 0] = final_data[:, mg1_idx][idx_block]
+                        dst_data[st:ed, 1] = final_data[:, mg2_idx][idx_block]
+                        dst_data[st:ed, 2] = final_data[:, mn_idx][idx_block]
+                        dst_data[st:ed, 3] = final_data[:, mu_idx][idx_block]
+                        dst_data[st:ed, 4] = final_data[:, mv_idx][idx_block]
 
-                        dst_data[st:ed, 5] = dec_s[idx_block]
-                        dst_data[st:ed, 6] = ra_s[idx_block]
-                        dst_data[st:ed, 7] = redshift_s[idx_block]
+                        dst_data[st:ed, 5] = final_data[:, dec_idx][idx_block]
+                        dst_data[st:ed, 7] = final_data[:, ra_idx][idx_block]
+                        dst_data[st:ed, 9] = final_data[:, redshift_idx][idx_block]
+                        dst_data[st:ed, 8] = final_data[:, expo_idx][idx_block]
 
-                dst_data[:,8] = numpy.cos(dst_data[:,5]*deg2arc)
+                dst_data[:, 6] = numpy.cos(final_data[:, dec_idx]*deg2arc)
+                h5f_dst["/field"] = dst_data
+        h5f_dst["/num_in_zbin"] = num_in_z_bin
+        
 
-                h5f_dst["/expo_%d/mg1"%target_label] = dst_data[:, 0]
-                h5f_dst["/expo_%d/mg2"%target_label] = dst_data[:, 1]
-                h5f_dst["/expo_%d/mn"%target_label] = dst_data[:, 2]
-                h5f_dst["/expo_%d/mu"%target_label] = dst_data[:, 3]
-                h5f_dst["/expo_%d/mv"%target_label] = dst_data[:, 4]
 
-                h5f_dst["/expo_%d/dec"%target_label] = dst_data[:,5]
-                h5f_dst["/expo_%d/ra"%target_label] = dst_data[:,6]
-                h5f_dst["/expo_%d/redshift"%target_label] = dst_data[:,7]
-                h5f_dst["/expo_%d/cos_dec" % target_label] = dst_data[:, 8]
 
-                h5f_dst["/expo_%d/gal_num_in_block"%target_label] = gal_num_in_block
-                h5f_dst["/expo_%d/block_start"%target_label] = block_st
-                h5f_dst["/expo_%d/block_end"%target_label] = block_ed
-                h5f_dst["/expo_%d/block_dec"%target_label] = block_dec
-                h5f_dst["/expo_%d/block_ra"%target_label] = block_ra
-
-                h5f_dst["/expo_%d/ra_bin"%target_label] = ra_bin
-                h5f_dst["/expo_%d/dec_bin"%target_label] = dec_bin
-
-                h5f_dst["/expo_%d"%target_label].attrs["exposure_name"] = src_expo_name
-
-                if target_label == 0:
-                    stack_data = dst_data
-                    stack_expo_label = expo_label
-                else:
-                    stack_data = numpy.row_stack((stack_data, dst_data))
-                    stack_expo_label = numpy.row_stack((stack_expo_label, expo_label))
-
-                target_label += 1
-                # print(rank,"%s-%s   %d    %d"%(field_dst_path,src_expo_name, select_num, src_num))
-        # start & end label of each exposure in the stacked data (field)
-        expo_st = []
-        expo_ed = []
-        for iexpo in range(target_label):
-            expo_st.append(sum(source_num_in_expo[1][:iexpo]))
-            expo_ed.append(expo_st[iexpo] + source_num_in_expo[1][iexpo])
-
-        h5f_src.clear()
-
-        if target_label < 1:
-            h5f_dst.close()
-            os.remove(field_dst_path)
-        else:
-            field_avail_sub.append("%s\t%d\t%d\n"%(field_dst_path, target_label, expos_num))
-            field_avail_nm_sub.append("%s\n"%fns)
-
-            h5f_dst["/expo_start"] = numpy.array(expo_st,dtype=numpy.intc)
-            h5f_dst["/expo_end"] = numpy.array(expo_ed,dtype=numpy.intc)
-            h5f_dst["/field_ra"] = ra_field
-            h5f_dst["/field_dec"] = dec_field
-
-            h5f_dst["/field_expo_label"] = stack_expo_label
-            h5f_dst["/total_gal_num"] = numpy.array([stack_data.shape[0]],dtype=numpy.intc)
-            h5f_dst["/field"] = stack_data
-            h5f_dst["/expos_num"] = numpy.array([target_label])
-
-            h5f_dst["/expos_info"] = numpy.array(source_num_in_expo, dtype=numpy.intc)
-            h5f_dst.close()
+        # target_label = 0
+        # source_num_in_expo = [[], []]
+        #
+        # for iexpo in range(expos_num):
+        #
+        #     src_expo_data = h5f_src["/expo_%d"%iexpo][()]
+        #
+        #     src_expo_name = int(h5f_src["/expo_%d"%iexpo].attrs["exposure_name"].split("p")[0])
+        #     src_num = src_expo_data.shape[0]
+        #
+        #     # selection
+        #     idx1 = src_expo_data[:, nstar_idx] >= nstar_thresh
+        #     idx2 = src_expo_data[:, flux2_alt_idx] >= flux2_alt_thresh
+        #     idx3 = numpy.abs(src_expo_data[:, gf1_idx]) <= gf1_thresh
+        #     idx4 = numpy.abs(src_expo_data[:, gf2_idx]) <= gf2_thresh
+        #     idx5 = src_expo_data[:,imax_idx] <= imax_thresh
+        #     idx6 = src_expo_data[:,jmax_idx] <= jmax_thresh
+        #
+        #     idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
+        #     select_num = idx.sum()
+        #
+        #     if select_num > 1:
+        #
+        #         dec_s = src_expo_data[:, dec_idx][idx]
+        #         ra_s = src_expo_data[:,ra_idx][idx]
+        #         redshift_s = src_expo_data[:,redshift_idx][idx]
+        #
+        #         # shear estimators
+        #         mg1_s = src_expo_data[:,mg1_idx][idx]
+        #         mg2_s = src_expo_data[:,mg2_idx][idx]
+        #         mn_s = src_expo_data[:,mn_idx][idx]
+        #         mu_s = src_expo_data[:,mu_idx][idx]
+        #         mv_s = src_expo_data[:,mv_idx][idx]
+        #
+        #         dst_data = numpy.zeros((select_num, 9), dtype=numpy.float32)
+        #         expo_label = numpy.zeros((select_num, 1), dtype=numpy.intc) + src_expo_name
+        #
+        #         source_num_in_expo[0].append(select_num)
+        #         source_num_in_expo[1].append(src_expo_name)
+        #
+        #         # assign the galaxies to the block in each exposure of each field
+        #         for i in range(dec_bin_num):
+        #             idx1 = dec_s >= dec_bin[i]
+        #             idx2 = dec_s < dec_bin[i+1]
+        #             idx_d = idx1 & idx2
+        #
+        #             for j in range(ra_bin_num):
+        #                 idx3 = ra_s >= ra_bin[j]
+        #                 idx4 = ra_s < ra_bin[j+1]
+        #
+        #                 idx_block = idx_d & idx3 & idx4
+        #
+        #                 ij = i*ra_bin_num+j
+        #                 gal_num_in_block[ij] = idx_block.sum()
+        #
+        #                 st = gal_num_in_block[:ij].sum()
+        #                 ed = st + gal_num_in_block[ij]
+        #                 block_st[ij] = st
+        #                 block_ed[ij] = ed
+        #
+        #                 dst_data[st:ed, 0] = mg1_s[idx_block]
+        #                 dst_data[st:ed, 1] = mg2_s[idx_block]
+        #                 dst_data[st:ed, 2] = mn_s[idx_block]
+        #                 dst_data[st:ed, 3] = mu_s[idx_block]
+        #                 dst_data[st:ed, 4] = mv_s[idx_block]
+        #
+        #                 dst_data[st:ed, 5] = dec_s[idx_block]
+        #                 dst_data[st:ed, 6] = ra_s[idx_block]
+        #                 dst_data[st:ed, 7] = redshift_s[idx_block]
+        #
+        #         dst_data[:, 8] = numpy.cos(dst_data[:,5]*deg2arc)
+        #         dst_data[:, 9] = numpy.cos(dst_data[:,5]*deg2arc)
+        #
+        #         h5f_dst["/expo_%d/mg1"%target_label] = dst_data[:, 0]
+        #         h5f_dst["/expo_%d/mg2"%target_label] = dst_data[:, 1]
+        #         h5f_dst["/expo_%d/mn"%target_label] = dst_data[:, 2]
+        #         h5f_dst["/expo_%d/mu"%target_label] = dst_data[:, 3]
+        #         h5f_dst["/expo_%d/mv"%target_label] = dst_data[:, 4]
+        #
+        #         h5f_dst["/expo_%d/dec"%target_label] = dst_data[:,5]
+        #         h5f_dst["/expo_%d/ra"%target_label] = dst_data[:,6]
+        #         h5f_dst["/expo_%d/redshift"%target_label] = dst_data[:,7]
+        #         h5f_dst["/expo_%d/cos_dec" % target_label] = dst_data[:, 8]
+        #
+        #         h5f_dst["/expo_%d/gal_num_in_block"%target_label] = gal_num_in_block
+        #         h5f_dst["/expo_%d/block_start"%target_label] = block_st
+        #         h5f_dst["/expo_%d/block_end"%target_label] = block_ed
+        #         h5f_dst["/expo_%d/block_dec"%target_label] = block_dec
+        #         h5f_dst["/expo_%d/block_ra"%target_label] = block_ra
+        #
+        #         h5f_dst["/expo_%d/ra_bin"%target_label] = ra_bin
+        #         h5f_dst["/expo_%d/dec_bin"%target_label] = dec_bin
+        #
+        #         h5f_dst["/expo_%d"%target_label].attrs["exposure_name"] = src_expo_name
+        #
+        #         if target_label == 0:
+        #             stack_data = dst_data
+        #             stack_expo_label = expo_label
+        #         else:
+        #             stack_data = numpy.row_stack((stack_data, dst_data))
+        #             stack_expo_label = numpy.row_stack((stack_expo_label, expo_label))
+        #
+        #         target_label += 1
+        #         # print(rank,"%s-%s   %d    %d"%(field_dst_path,src_expo_name, select_num, src_num))
+        # # start & end label of each exposure in the stacked data (field)
+        # expo_st = []
+        # expo_ed = []
+        # for iexpo in range(target_label):
+        #     expo_st.append(sum(source_num_in_expo[1][:iexpo]))
+        #     expo_ed.append(expo_st[iexpo] + source_num_in_expo[1][iexpo])
+        #
+        # h5f_src.clear()
+        #
+        # if target_label < 1:
+        #     h5f_dst.close()
+        #     os.remove(field_dst_path)
+        # else:
+        #     field_avail_sub.append("%s\t%d\t%d\n"%(field_dst_path, target_label, expos_num))
+        #     field_avail_nm_sub.append("%s\n"%fns)
+        #
+        #     h5f_dst["/expo_start"] = numpy.array(expo_st,dtype=numpy.intc)
+        #     h5f_dst["/expo_end"] = numpy.array(expo_ed,dtype=numpy.intc)
+        #     h5f_dst["/field_ra"] = ra_field
+        #     h5f_dst["/field_dec"] = dec_field
+        #
+        #     h5f_dst["/field_expo_label"] = stack_expo_label
+        #     h5f_dst["/total_gal_num"] = numpy.array([stack_data.shape[0]],dtype=numpy.intc)
+        #     h5f_dst["/field"] = stack_data
+        #     h5f_dst["/expos_num"] = numpy.array([target_label])
+        #
+        #     h5f_dst["/expos_info"] = numpy.array(source_num_in_expo, dtype=numpy.intc)
+        #     h5f_dst.close()
 
     comm.Barrier()
 

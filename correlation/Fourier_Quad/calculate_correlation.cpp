@@ -24,42 +24,55 @@ int main(int argc, char *argv[])
 
     int i,j,k,m,n;
     int total_expos_num, total_field_num;
+    int red_shift_bin_num, z1,z2;
+
 
     strcpy(source_list, argv[1]);
     strcpy(data_path,argv[2]);
-    total_expos_num = atoi(argv[3]);
-    total_field_num = atoi(argv[4]);
+    red_shift_bin_num = atoi(argv[3]);
+
+    // total_expos_num = atoi(argv[3]);
+    // total_field_num = atoi(argv[4]);
 
 
 
-    // read the information of each exposure file
-    initialize(source_list, &field_info, total_expos_num, numprocs, rank);
-    std::cout<<"Initialization"<<std::endl;
-    MPI_Barrier(MPI_COMM_WORLD);
+    // // read the information of each exposure file
+    // initialize(source_list, &field_info, total_expos_num, numprocs, rank);
+    // std::cout<<"Initialization"<<std::endl;
+    // MPI_Barrier(MPI_COMM_WORLD);
 
 
-    find_pairs(&field_info);
+    // find_pairs(&field_info);
 
 
 
-    for(j=0; j<numprocs;j++)
+    // for(j=0; j<numprocs;j++)
+    // {
+    //     if(j==rank)
+    //     {
+    //         std::cout<<total_expos_num<<std::endl;
+
+    //         for(i=0;i<total_expos_num;i++)
+    //         {
+    //             std::cout<<field_info.field_name[i]<<" "<<field_info.exposure_name[i]
+    //             <<" "<<field_info.field_label[i]
+    //             <<" "<<field_info.exposure_label[i]<<" "<<field_info.exposure_num_of_field[i]
+    //             <<" "<<field_info.field_cen_ra[i]<<" "<<field_info.field_cen_dec[i]
+    //             <<" "<<field_info.delta_ra[i]<<" "<<field_info.delta_dec[i]
+    //             <<" "<<field_info.my_exposure_num<<" "<<field_info.my_exposure_st
+    //             <<" "<<field_info.my_exposure_ed<<std::endl;
+    //         }
+    //     }
+    //     MPI_Barrier(MPI_COMM_WORLD);
+    // }
+
+    for(z1=0;z1<red_shift_bin_num;z1++)
     {
-        if(j==rank)
-        {
-            std::cout<<total_expos_num<<std::endl;
-
-            for(i=0;i<total_expos_num;i++)
-            {
-                std::cout<<field_info.field_name[i]<<" "<<field_info.exposure_name[i]
-                <<" "<<field_info.field_label[i]
-                <<" "<<field_info.exposure_label[i]<<" "<<field_info.exposure_num_of_field[i]
-                <<" "<<field_info.field_cen_ra[i]<<" "<<field_info.field_cen_dec[i]
-                <<" "<<field_info.delta_ra[i]<<" "<<field_info.delta_dec[i]
-                <<" "<<field_info.my_exposure_num<<" "<<field_info.my_exposure_st
-                <<" "<<field_info.my_exposure_ed<<std::endl;
-            }
+        for(z2=z1;z2<red_shift_bin_num;z2++)
+        {   
+            if(rank == 0)
+            {std::cout<<z1<<" "<<z2<<std::endl;}
         }
-        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     MPI_Finalize();

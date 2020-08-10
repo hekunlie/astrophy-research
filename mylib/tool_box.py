@@ -1290,7 +1290,7 @@ def field_dict(file_list_path):
             file_dict.setdefault(field, {})
             fields.append(field)
         else:
-            chip = c.split(".fits")[0]
+            chip = c.split("_shear.dat")[0]
             expo = c.split("_")[0]
             if expo in file_dict[field].keys():
                 file_dict[field][expo].append(chip)
