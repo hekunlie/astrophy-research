@@ -19,8 +19,19 @@ mode = argv[1]
 
 total_path = "/mnt/ddnfs/data_users/hkli/CFHT/catalog/fourier_cata"
 
-if mode == "prepare":
+area_num = 4
 
+if mode == "prepare":
+    if rank == 0:
+        original_path = total_path + "/original_cata"
+        files = os.listdir(original_path)
+        for i in range(1,1+area_num):
+            for fn in files:
+                if "w%d"%i in fn:
+                    pass
+
+
+    comm.Barrier()
     fields, field_name = tool_box.field_dict("nname_all.dat")
     if rank == 0:
         print(len(field_name))
