@@ -107,7 +107,8 @@ if cmd == "prepare":
         dec_center = (dec_min + dec_max)/2
         ddec = (dec_max - dec_min)/2
 
-        field_pos = numpy.array([ra_center, dec_center, dra, ddec, numpy.sqrt(dra**2 + ddec**2)],dtype=numpy.float32)
+        field_pos = numpy.array([ra_center, dec_center, dra, ddec,
+                                 numpy.sqrt(dra**2 + ddec**2),numpy.cos(dec_center/deg2arcmin*deg2rad)],dtype=numpy.float32)
 
         grid_pad = grid_size*0.1
         dec_bin_num = int((dec_max + grid_pad - (dec_min - grid_pad))/grid_size)+1
@@ -133,8 +134,9 @@ if cmd == "prepare":
         expos_num = h5f_src["/expos_num"][()][0]
         h5f_src.close()
 
-        field_avail_sub.append("%s\t%d\t%f\t%f\t%f\t%f\t%f\n" % (field_dst_path, expos_num, field_pos[0],
-                                                                 field_pos[1], field_pos[2], field_pos[3], field_pos[4]))
+        field_avail_sub.append("%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
+                               %(field_dst_path, expos_num, field_pos[0],
+                                  field_pos[1], field_pos[2], field_pos[3], field_pos[4], field_pos[5]))
 
         # selection
         idx1 = src_data[:, nstar_idx] >= nstar_thresh

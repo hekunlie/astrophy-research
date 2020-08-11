@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
     {
         for(i=0;i<total_field_num;i++)
         {
-            std::cout<<field_info.field_name[i]<<" "<<field_info.exposure_num_of_field[i]
-            <<" "<<field_info.field_cen_ra[i]<<" "<<field_info.field_cen_dec[i]
-            <<" "<<field_info.delta_ra[i]<<" "<<field_info.delta_dec[i]
-            <<" "<<field_info.delta_len[i]<<std::endl;
+            std::cout<<field_info.field_name[i]<<"  "<<field_info.exposure_num_of_field[i]
+            <<"  "<<field_info.field_cen_ra[i]<<"  "<<field_info.field_cen_dec[i]
+            <<"  "<<field_info.delta_ra[i]<<"  "<<field_info.delta_dec[i]
+            <<"  "<<field_info.delta_len[i]<<"  "<<field_info.field_cen_cos_dec[i]<<std::endl;
         }
         for(i=0; i<numprocs; i++){std::cout<<field_info.field_num_each_rank[i]<<" ";}
         std::cout<<std::endl;

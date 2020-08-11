@@ -1,12 +1,10 @@
 #include<iostream>
+#include<algorithm>
 
 int main()
 {   
-    int i;
-    for(i=0;i<10;i++)
-    {
-        std::cout<<i<<std::endl;
-    }
-    std::cin>>i;
+    float i,b;
+    b=3;
+    i = std::max(i, b);
     return 0;
 }

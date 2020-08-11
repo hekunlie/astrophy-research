@@ -30,7 +30,7 @@ void read_file(char *file_path, data_info *field_info, int &read_file_num)
         strs >> field_info->delta_ra[line_count];
         strs >> field_info->delta_dec[line_count];
         strs >> field_info->delta_len[line_count];
-
+        strs >> field_info->field_cen_cos_dec[line_count];
 
         // std::cout << str << std::endl;
         line_count += 1;
@@ -39,10 +39,27 @@ void read_file(char *file_path, data_info *field_info, int &read_file_num)
 
 }
 
+void read_field_data(char *file_path, data_info *field_info, int zbin_label_0, int zbin_label_1)
+{
+    int i, j;
+    char set_name[100];
+    for(i=0; i<field_info->total_field_num; i++)
+    {
+        sprintf(set_name, "/total_num_in_zbin");
+        read_h5(field_info->field_name[i], set_name, field_info->num_in_zbin);
+
+        j = field_info->num_in_zbin[zbin_label_0]*field_info->field_data_col;
+        field_info->field_data_z1[i] = new float[j]{};
+        j = field_info->num_in_zbin[zbin_label_1]*field_info->field_data_col;
+        field_info->field_data_z2[i] = new float[j]{};
+
+    }
+}
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank)
 {
     int i;
+    char set_name[100];
 
     field_info->total_field_num = total_field_num;
 
@@ -52,20 +69,40 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
         field_info->field_name[i] = new char[400];  
     }
 
-    field_info->exposure_num_of_field = new int[total_field_num];
+    field_info->exposure_num_of_field = new int[total_field_num]{};
      
-    field_info->field_cen_ra = new float[total_field_num];  
-    field_info->field_cen_dec = new float[total_field_num]; 
+    field_info->field_cen_ra = new float[total_field_num]{};  
+    field_info->field_cen_dec = new float[total_field_num]{}; 
 
-    field_info->delta_ra = new float[total_field_num];  
-    field_info->delta_dec = new float[total_field_num];
-    field_info->delta_len = new float[total_field_num];
+    field_info->delta_ra = new float[total_field_num]{};  
+    field_info->delta_dec = new float[total_field_num]{};
+    field_info->delta_len = new float[total_field_num]{};
+    field_info->field_cen_cos_dec = new float[total_field_num]{};
 
-    
+    field_info->total_gal_num_z1 = new int[total_field_num]{};
+    field_info->total_gal_num_z2 = new int[total_field_num]{};
+
+    // read the infomation of each field
     read_file(file_path, field_info, i);
+    // std::cout<<"READ"<<std::endl;
 
-    // tell the cpus from where their tasks start
 
+    // read radius bin
+    sprintf(set_name,"/theta_bin");
+    read_h5_datasize(field_info->field_name[0], set_name,i);
+    field_info->theta_bin = new float[i]{};
+    field_info->theta_bin_num = i -1;
+    read_h5(field_info->field_name[0], set_name, field_info->theta_bin);
+
+    // read redshift bin
+    sprintf(set_name,"/redshift_bin");
+    read_h5_datasize(field_info->field_name[0], set_name,i);
+    field_info->zbin = new float[i]{};
+    field_info->zbin_num = i -1;
+    field_info->num_in_zbin = new int[i]{};
+    read_h5(field_info->field_name[0], set_name, field_info->zbin);
+
+    // task distribution
     field_info->field_num_each_rank = new int[total_field_num]{};
     task_distribution(numprocs, rank, field_info);
 

@@ -8,13 +8,35 @@
 struct data_info
 {
     char *field_name[MAX_FIELD];
-    
+
+    ///////// for 2d correlation /////////
+    float *field_data[MAX_FIELD];
+    /////////////////////////////////////
+
+    ////////// for tomography ///////////
+    float *field_data_z1[MAX_FIELD];// field data, G1, G2 .. of zbin 1
+    float *field_data_z2[MAX_FIELD];// field data, G1, G2 .. of zbin 2
+    int *total_gal_num_z1;// gal num in each field of zbin 1
+    int *total_gal_num_z2;// gal num in each field of zbin 2
+    // redshift bin
+    int zbin_num;
+    int *num_in_zbin;
+    float *zbin;
+    /////////////////////////////////////
+
+    // radius bin
+    int theta_bin_num;
+    float *theta_bin;
+
+    int field_data_col;
+
     int total_field_num;
 
     int *exposure_num_of_field;
     
     float *field_cen_ra;
     float *field_cen_dec;
+    float *field_cen_cos_dec;
     float *delta_ra;
     float *delta_dec;
     float *delta_len;
