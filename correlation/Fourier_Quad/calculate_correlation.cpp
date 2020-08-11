@@ -23,57 +23,72 @@ int main(int argc, char *argv[])
     data_info field_info;
 
     int i,j,k,m,n;
-    int total_expos_num, total_field_num;
+    int total_expos_num;
     int red_shift_bin_num, z1,z2;
 
+    int ir, radius_bin_num;
+    int my_fnm, target_fnm, total_field_num;
 
     strcpy(source_list, argv[1]);
     strcpy(data_path,argv[2]);
-    red_shift_bin_num = atoi(argv[3]);
+    z1 = atoi(argv[3]);
+    z2 = atoi(argv[4]);
 
-    // total_expos_num = atoi(argv[3]);
-    // total_field_num = atoi(argv[4]);
-
-
-
-    // // read the information of each exposure file
-    // initialize(source_list, &field_info, total_expos_num, numprocs, rank);
-    // std::cout<<"Initialization"<<std::endl;
-    // MPI_Barrier(MPI_COMM_WORLD);
-
-
-    // find_pairs(&field_info);
+    total_field_num = atoi(argv[5]);
 
 
 
-    // for(j=0; j<numprocs;j++)
-    // {
-    //     if(j==rank)
-    //     {
-    //         std::cout<<total_expos_num<<std::endl;
+    // read the information of each exposure file
+    initialize(source_list, &field_info, total_field_num, numprocs, rank);
+    if(rank == 0){std::cout<<"Initialization"<<std::endl;}
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    //         for(i=0;i<total_expos_num;i++)
-    //         {
-    //             std::cout<<field_info.field_name[i]<<" "<<field_info.exposure_name[i]
-    //             <<" "<<field_info.field_label[i]
-    //             <<" "<<field_info.exposure_label[i]<<" "<<field_info.exposure_num_of_field[i]
-    //             <<" "<<field_info.field_cen_ra[i]<<" "<<field_info.field_cen_dec[i]
-    //             <<" "<<field_info.delta_ra[i]<<" "<<field_info.delta_dec[i]
-    //             <<" "<<field_info.my_exposure_num<<" "<<field_info.my_exposure_st
-    //             <<" "<<field_info.my_exposure_ed<<std::endl;
-    //         }
-    //     }
-    //     MPI_Barrier(MPI_COMM_WORLD);
-    // }
 
-    for(z1=0;z1<red_shift_bin_num;z1++)
+    if(rank==0)
     {
-        for(z2=z1;z2<red_shift_bin_num;z2++)
-        {   
-            if(rank == 0)
-            {std::cout<<z1<<" "<<z2<<std::endl;}
+        for(i=0;i<total_field_num;i++)
+        {
+            std::cout<<field_info.field_name[i]<<" "<<field_info.exposure_num_of_field[i]
+            <<" "<<field_info.field_cen_ra[i]<<" "<<field_info.field_cen_dec[i]
+            <<" "<<field_info.delta_ra[i]<<" "<<field_info.delta_dec[i]
+            <<" "<<field_info.delta_len[i]<<std::endl;
         }
+        for(i=0; i<numprocs; i++){std::cout<<field_info.field_num_each_rank[i]<<" ";}
+        std::cout<<std::endl;
     }
+
+    for(j=0; j<numprocs;j++)
+    {
+        if(j==rank)
+        {
+            std::cout<<rank<<" "<<field_info.my_field_st<<" "<<field_info.my_field_ed<<std::endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(rank == 0){std::cout<<"Redshifit: "<<z1<<" "<<z2<<std::endl;}
+
+
+
+        
+    // loop the fields
+    for(my_fnm=0; my_fnm < total_field_num; my_fnm++)
+    {
+        // loop the radius bin
+        for(ir=0;ir<radius_bin_num;ir++)
+        {
+            // search the target fields
+            for(target_fnm=my_fnm; target_fnm<total_field_num; target_fnm++)
+            {
+                // find the needed fields
+                // dx^2 + dy^2 - sqrt(dra^2+ddec^2)*2 <= max radius
+                ;
+            }
+        }
+
+    }
+
 
     MPI_Finalize();
     
