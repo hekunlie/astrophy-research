@@ -49,6 +49,8 @@ struct data_info
 
 void read_file(char *file_path, data_info *field_info, int &read_file_num);
 
+void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1);
+
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank);
 // allocate the array & read the file of information of all exposures
 

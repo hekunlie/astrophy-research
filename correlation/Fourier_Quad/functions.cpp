@@ -39,22 +39,46 @@ void read_file(char *file_path, data_info *field_info, int &read_file_num)
 
 }
 
-void read_field_data(char *file_path, data_info *field_info, int zbin_label_0, int zbin_label_1)
+void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1)
 {
     int i, j;
     char set_name[100];
     for(i=0; i<field_info->total_field_num; i++)
-    {
+    {   
+        // std::cout<<"Read "<<field_info->field_name[i]<<std::endl;
+        // read the gal num in each zbin stored in each field file
         sprintf(set_name, "/total_num_in_zbin");
         read_h5(field_info->field_name[i], set_name, field_info->num_in_zbin);
+        field_info->total_gal_num_z1[i] = field_info->num_in_zbin[zbin_label_0];
+        field_info->total_gal_num_z2[i] = field_info->num_in_zbin[zbin_label_1];
 
+        // read the array length to get the data column
+        if(i == 0)
+        {   
+            // array length, all elements, of zbin i
+            sprintf(set_name, "/z%d/field",zbin_label_0);
+            read_h5_datasize(field_info->field_name[i], set_name, j);
+            // data col = data length/gal_num, it's the same for all fields
+            field_info->field_data_col = j / field_info->num_in_zbin[zbin_label_0];
+        }
+
+
+        // read all the fields
+        // zbin i
         j = field_info->num_in_zbin[zbin_label_0]*field_info->field_data_col;
         field_info->field_data_z1[i] = new float[j]{};
+        sprintf(set_name, "/z%d/field",zbin_label_0);
+        read_h5(field_info->field_name[i], set_name, field_info->field_data_z1[i]);
+        // zbin j
         j = field_info->num_in_zbin[zbin_label_1]*field_info->field_data_col;
         field_info->field_data_z2[i] = new float[j]{};
+        sprintf(set_name, "/z%d/field",zbin_label_0);
+        read_h5(field_info->field_name[i], set_name, field_info->field_data_z1[i]);
+
 
     }
 }
+
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank)
 {
@@ -101,6 +125,7 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     field_info->zbin_num = i -1;
     field_info->num_in_zbin = new int[i]{};
     read_h5(field_info->field_name[0], set_name, field_info->zbin);
+
 
     // task distribution
     field_info->field_num_each_rank = new int[total_field_num]{};

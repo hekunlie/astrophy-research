@@ -70,8 +70,16 @@ int main(int argc, char *argv[])
     if(rank == 0){std::cout<<"Redshifit: "<<z1<<" "<<z2<<std::endl;}
 
 
+    read_field_data(&field_info, z1, z2);
+    if(rank == 0)
+    {
+        for(i=0; i<total_field_num; i++)
+        {
+            std::cout<<field_info.field_data_col<<"  "<<field_info.total_gal_num_z1[i]<<"  "<<field_info.total_gal_num_z2[i]<<std::endl;
+        }
+    }
 
-        
+    
     // loop the fields
     for(my_fnm=0; my_fnm < total_field_num; my_fnm++)
     {
@@ -89,7 +97,7 @@ int main(int argc, char *argv[])
 
     }
 
-
+    
     MPI_Finalize();
     
     return 0;
