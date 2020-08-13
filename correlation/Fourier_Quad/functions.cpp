@@ -108,7 +108,6 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
 
     // read the infomation of each field
     read_file(file_path, field_info, i);
-    // std::cout<<"READ"<<std::endl;
 
 
     // read radius bin
@@ -154,6 +153,18 @@ void task_distribution(int portion, int my_id, data_info *field_info)
     }
     field_info->my_field_st = j;
     field_info->my_field_ed = j + field_info->field_num_each_rank[my_id];
+
+}
+
+
+
+void fast_hist(float data, float*bins, int *num_in_bin, int bin_num)
+{
+    int i;
+    for(i=0; i<bin_num; i++)
+    {
+        if(data > bins[i] and data <= bins[i+1]){num_in_bin[i] += 1;break;}
+    }
 
 }
 

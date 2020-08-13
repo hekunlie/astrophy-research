@@ -52,10 +52,10 @@ void read_file(char *file_path, data_info *field_info, int &read_file_num);
 void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1);
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank);
-// allocate the array & read the file of information of all exposures
 
 void task_distribution(int portion, int my_id, data_info *field_info);
 
+void fast_hist(float data, float*bins, int *num_in_bin, int bin_num);
 
 void find_pairs(data_info *field_info);
 #endif

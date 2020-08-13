@@ -1,8 +1,8 @@
 // #include<FQlib.h>
 #include<hk_mpi.h>
 #include<functions.h>
-
-
+#include<ctime>
+#include<FQlib.h>
 
 int main(int argc, char *argv[])
 {
@@ -77,9 +77,16 @@ int main(int argc, char *argv[])
         {
             std::cout<<field_info.field_data_col<<"  "<<field_info.total_gal_num_z1[i]<<"  "<<field_info.total_gal_num_z2[i]<<std::endl;
         }
+        for(i=0; i<field_info.zbin_num+1; i++)
+        {std::cout<<field_info.zbin[i]<<"  ";}
+        std::cout<<std::endl;
+        
+        for(i=0; i<field_info.theta_bin_num+1; i++)
+        {std::cout<<field_info.theta_bin[i]<<"  ";}
+        std::cout<<std::endl;
     }
 
-    
+
     // loop the fields
     for(my_fnm=0; my_fnm < total_field_num; my_fnm++)
     {
