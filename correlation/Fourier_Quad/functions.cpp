@@ -1,6 +1,6 @@
 #include"functions.h"
 
-void read_file(char *file_path, data_info *field_info, int &read_file_num)
+void read_inform(char *file_path, data_info *field_info, int &read_file_num)
 {
     std::ifstream infile;
 	std::string str;
@@ -27,9 +27,9 @@ void read_file(char *file_path, data_info *field_info, int &read_file_num)
         strs >> field_info->field_cen_ra[line_count];
         strs >> field_info->field_cen_dec[line_count];
 
-        strs >> field_info->delta_ra[line_count];
-        strs >> field_info->delta_dec[line_count];
-        strs >> field_info->delta_len[line_count];
+        strs >> field_info->field_delta_ra[line_count];
+        strs >> field_info->field_delta_dec[line_count];
+        strs >> field_info->field_delta_len[line_count];
         strs >> field_info->field_cen_cos_dec[line_count];
 
         // std::cout << str << std::endl;
@@ -63,19 +63,54 @@ void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1)
         }
 
 
-        // read all the fields
+        ///////////////// read all the fields  //////////////////////////
         // zbin i
         j = field_info->num_in_zbin[zbin_label_0]*field_info->field_data_col;
-        field_info->field_data_z1[i] = new float[j]{};
+        field_info->field_data_z1[i] = new MY_FLOAT[j]{};
         sprintf(set_name, "/z%d/field",zbin_label_0);
         read_h5(field_info->field_name[i], set_name, field_info->field_data_z1[i]);
         // zbin j
         j = field_info->num_in_zbin[zbin_label_1]*field_info->field_data_col;
-        field_info->field_data_z2[i] = new float[j]{};
-        sprintf(set_name, "/z%d/field",zbin_label_0);
-        read_h5(field_info->field_name[i], set_name, field_info->field_data_z1[i]);
+        field_info->field_data_z2[i] = new MY_FLOAT[j]{};
+        sprintf(set_name, "/z%d/field",zbin_label_1);
+        read_h5(field_info->field_name[i], set_name, field_info->field_data_z2[i]);
 
 
+        //////////// read the block inform in each field  //////////////////////////
+        if(i==0){ field_info->block_num = new int[field_info->total_field_num]{}; }
+        // number of block in each field
+        sprintf(set_name, "/block_cen_ra");
+        read_h5_datasize(field_info->field_name[i], set_name, j);
+        field_info->block_num[i] = j;
+
+        // RA of the center of each block
+        field_info->block_cen_ra[i] = new MY_FLOAT[j];
+        sprintf(set_name, "/block_cen_ra");
+        read_h5(field_info->field_name[i], set_name, field_info->block_cen_ra[i]);
+
+        // Dec of the center of each block
+        field_info->block_cen_dec[i] = new MY_FLOAT[j];
+        sprintf(set_name, "/block_cen_dec");
+        read_h5(field_info->field_name[i], set_name, field_info->block_cen_dec[i]);
+        
+        // cos(Dec) of the center of each block
+        field_info->block_cen_cos_dec[i] = new MY_FLOAT[j];
+        sprintf(set_name, "/block_cen_cos_dec");
+        read_h5(field_info->field_name[i], set_name, field_info->block_cen_cos_dec[i]);
+
+        // block start & end 
+        field_info->block_st_z1[i] = new MY_FLOAT[j];
+        field_info->block_st_z2[i] = new MY_FLOAT[j];
+        field_info->block_ed_z1[i] = new MY_FLOAT[j];
+        field_info->block_ed_z2[i] = new MY_FLOAT[j];
+        sprintf(set_name, "/z%d/block_st", zbin_label_0);
+        read_h5(field_info->field_name[i], set_name, field_info->block_st_z1[i]);
+        sprintf(set_name, "/z%d/block_st", zbin_label_1);
+        read_h5(field_info->field_name[i], set_name, field_info->block_st_z2[i]);
+        sprintf(set_name, "/z%d/block_ed", zbin_label_0);
+        read_h5(field_info->field_name[i], set_name, field_info->block_ed_z1[i]);
+        sprintf(set_name, "/z%d/block_ed", zbin_label_1);
+        read_h5(field_info->field_name[i], set_name, field_info->block_ed_z2[i]);
     }
 }
 
@@ -95,36 +130,49 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
 
     field_info->exposure_num_of_field = new int[total_field_num]{};
      
-    field_info->field_cen_ra = new float[total_field_num]{};  
-    field_info->field_cen_dec = new float[total_field_num]{}; 
+    field_info->field_cen_ra = new MY_FLOAT[total_field_num]{};  
+    field_info->field_cen_dec = new MY_FLOAT[total_field_num]{}; 
 
-    field_info->delta_ra = new float[total_field_num]{};  
-    field_info->delta_dec = new float[total_field_num]{};
-    field_info->delta_len = new float[total_field_num]{};
-    field_info->field_cen_cos_dec = new float[total_field_num]{};
+    field_info->field_delta_ra = new MY_FLOAT[total_field_num]{};  
+    field_info->field_delta_dec = new MY_FLOAT[total_field_num]{};
+    field_info->field_delta_len = new MY_FLOAT[total_field_num]{};
+    field_info->field_cen_cos_dec = new MY_FLOAT[total_field_num]{};
 
     field_info->total_gal_num_z1 = new int[total_field_num]{};
     field_info->total_gal_num_z2 = new int[total_field_num]{};
+    
 
     // read the infomation of each field
-    read_file(file_path, field_info, i);
+    read_inform(file_path, field_info, i);
 
 
     // read radius bin
     sprintf(set_name,"/theta_bin");
     read_h5_datasize(field_info->field_name[0], set_name,i);
-    field_info->theta_bin = new float[i]{};
+    field_info->theta_bin = new MY_FLOAT[i]{};
     field_info->theta_bin_num = i -1;
     read_h5(field_info->field_name[0], set_name, field_info->theta_bin);
 
     // read redshift bin
     sprintf(set_name,"/redshift_bin");
     read_h5_datasize(field_info->field_name[0], set_name,i);
-    field_info->zbin = new float[i]{};
+    field_info->zbin = new MY_FLOAT[i]{};
     field_info->zbin_num = i -1;
     field_info->num_in_zbin = new int[i]{};
     read_h5(field_info->field_name[0], set_name, field_info->zbin);
 
+    // read the inform of the PDF_SYM
+    sprintf(set_name, "/chi_guess");
+    read_h5_datasize(field_info->field_name[0], set_name, i);
+    field_info->chi_guess_num = i;
+    field_info->chi_guess = new MY_FLOAT[field_info->chi_guess_num];
+    read_h5(field_info->field_name[0], set_name, field_info->chi_guess);
+    // the num count of each bin (for the PDF_SYM)
+    // for each theta bin, there're chi_guess_num * chi_bin_num elements
+    for(i=0; i<field_info->theta_bin_num; i++)
+    {
+        field_info->num_count[i] = new double[field_info->chi_guess_num*field_info->chi_bin_num]{};
+    }
 
     // task distribution
     field_info->field_num_each_rank = new int[total_field_num]{};
@@ -158,7 +206,7 @@ void task_distribution(int portion, int my_id, data_info *field_info)
 
 
 
-void fast_hist(float data, float*bins, int *num_in_bin, int bin_num)
+void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num)
 {
     int i;
     for(i=0; i<bin_num; i++)

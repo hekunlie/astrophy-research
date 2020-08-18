@@ -32,6 +32,7 @@ redshift_idx = 10
 redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
+chi_guess_bin =
 # star number on each chip
 nstar_idx = 21
 nstar_thresh = 12
@@ -61,6 +62,7 @@ mv_idx = 37
 
 # exposure label
 expo_idx = 38
+
 
 fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
 result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
@@ -123,7 +125,14 @@ if cmd == "prepare":
         for i in range(dec_bin_num):
             for j in range(ra_bin_num):
                 ij = i*ra_bin_num + j
-                block_pos[ij] = (ra_bin[j]+ra_bin[j+1])/2, (dec_bin[i] + dec_bin[i+1])/2, grid_size/2, grid_size/numpy.sqrt(2)
+                block_pos[ij,:2] = (ra_bin[j]+ra_bin[j+1])/2, (dec_bin[i] + dec_bin[i+1])/2
+        block_pos[:,2] = numpy.cos(block_pos[:,1]/deg2arcmin*deg2rad)
+        block_pos[:,3] = numpy.sqrt(grid_size/2*grid_size/2 + grid_size/2*grid_size/2*block_pos[:,2])
+
+        h5f_dst["/block_cen_ra"] = block_pos[:,0]
+        h5f_dst["/block_cen_dec"] = block_pos[:,1]
+        h5f_dst["/block_cen_cos_dec"] = block_pos[:,2]
+        h5f_dst["/block_len"] = block_pos[:,3]
 
 
         gal_num_in_block = numpy.zeros((block_num, ), dtype=numpy.intc)
@@ -189,20 +198,18 @@ if cmd == "prepare":
                         dst_data[st:ed, 3] = final_data[:, mu_idx][idx_block]
                         dst_data[st:ed, 4] = final_data[:, mv_idx][idx_block]
 
-                        dst_data[st:ed, 5] = final_data[:, dec_idx][idx_block]
-                        dst_data[st:ed, 7] = final_data[:, ra_idx][idx_block]
+                        dst_data[st:ed, 6] = final_data[:, dec_idx][idx_block]
+                        dst_data[st:ed, 5] = final_data[:, ra_idx][idx_block]
                         dst_data[st:ed, 9] = final_data[:, redshift_idx][idx_block]
                         dst_data[st:ed, 8] = final_data[:, expo_idx][idx_block]-1
 
-                dst_data[:, 6] = numpy.cos(dst_data[:, 5]/deg2arcmin * deg2rad)
+                dst_data[:, 7] = numpy.cos(dst_data[:, 5]/deg2arcmin * deg2rad)
 
                 h5f_dst["/z%d/field"%iz] = dst_data
 
                 h5f_dst["/z%d/gal_num_in_block"%iz] = gal_num_in_block
                 h5f_dst["/z%d/bock_st"%iz] = block_st
                 h5f_dst["/z%d/block_ed"%iz] = block_ed
-                h5f_dst["/z%d/block_pos"%iz] = block_pos
-
                 h5f_dst["/z%d/ra_bin"%iz] = ra_bin
                 h5f_dst["/z%d/dec_bin"%iz] = dec_bin
 
