@@ -9,8 +9,8 @@
 
 struct data_info
 {
+    char *field_name_path[MAX_FIELD];
     char *field_name[MAX_FIELD];
-
     // data column index meaning (defined in the prepare_data.py)
     // remind to check the index before running
     int mg1_idx = 0;
@@ -29,6 +29,7 @@ struct data_info
     /////////////////////////////////////
 
     ////////// for tomography ///////////
+    int zbin_label_0, zbin_label_1;
     MY_FLOAT *field_data_z1[MAX_FIELD];// field data, G1, G2 .. of zbin 1
     MY_FLOAT *field_data_z2[MAX_FIELD];// field data, G1, G2 .. of zbin 2
     int *total_gal_num_z1;// gal num in each field of zbin 1
@@ -77,7 +78,7 @@ struct data_info
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
     int chi_guess_num;
-    
+
     int chi_bin_num=10;
     double *num_count[MAX_FIELD];
 };
@@ -85,7 +86,7 @@ struct data_info
 
 void read_inform(char *file_path, data_info *field_info, int &read_file_num);
 
-void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1);
+void read_field_data(data_info *field_info);
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank);
 
@@ -93,7 +94,9 @@ void task_distribution(int portion, int my_id, data_info *field_info);
 
 void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num);
 
-void find_pairs(data_info *field_info);
+void find_pairs_same_field(data_info *field_info, int field_label);
+void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
+
 #endif
 
 

@@ -20,6 +20,7 @@ void read_inform(char *file_path, data_info *field_info, int &read_file_num)
                 
         strs << str;
 
+        strs >> field_info->field_name_path[line_count];
         strs >> field_info->field_name[line_count];
 
         strs >> field_info->exposure_num_of_field[line_count];
@@ -39,78 +40,78 @@ void read_inform(char *file_path, data_info *field_info, int &read_file_num)
 
 }
 
-void read_field_data(data_info *field_info, int zbin_label_0, int zbin_label_1)
+void read_field_data(data_info *field_info)
 {
     int i, j;
     char set_name[100];
     for(i=0; i<field_info->total_field_num; i++)
     {   
-        // std::cout<<"Read "<<field_info->field_name[i]<<std::endl;
+        // std::cout<<"Read "<<field_info->field_name_path[i]<<std::endl;
         // read the gal num in each zbin stored in each field file
         sprintf(set_name, "/total_num_in_zbin");
-        read_h5(field_info->field_name[i], set_name, field_info->num_in_zbin);
-        field_info->total_gal_num_z1[i] = field_info->num_in_zbin[zbin_label_0];
-        field_info->total_gal_num_z2[i] = field_info->num_in_zbin[zbin_label_1];
+        read_h5(field_info->field_name_path[i], set_name, field_info->num_in_zbin);
+        field_info->total_gal_num_z1[i] = field_info->num_in_zbin[field_info->zbin_label_0];
+        field_info->total_gal_num_z2[i] = field_info->num_in_zbin[field_info->zbin_label_1];
 
         // read the array length to get the data column
         if(i == 0)
         {   
             // array length, all elements, of zbin i
-            sprintf(set_name, "/z%d/field",zbin_label_0);
-            read_h5_datasize(field_info->field_name[i], set_name, j);
+            sprintf(set_name, "/z%d/field",field_info->zbin_label_0);
+            read_h5_datasize(field_info->field_name_path[i], set_name, j);
             // data col = data length/gal_num, it's the same for all fields
-            field_info->field_data_col = j / field_info->num_in_zbin[zbin_label_0];
+            field_info->field_data_col = j / field_info->num_in_zbin[field_info->zbin_label_0];
         }
 
 
         ///////////////// read all the fields  //////////////////////////
         // zbin i
-        j = field_info->num_in_zbin[zbin_label_0]*field_info->field_data_col;
+        j = field_info->num_in_zbin[field_info->zbin_label_0]*field_info->field_data_col;
         field_info->field_data_z1[i] = new MY_FLOAT[j]{};
-        sprintf(set_name, "/z%d/field",zbin_label_0);
-        read_h5(field_info->field_name[i], set_name, field_info->field_data_z1[i]);
+        sprintf(set_name, "/z%d/field",field_info->zbin_label_0);
+        read_h5(field_info->field_name_path[i], set_name, field_info->field_data_z1[i]);
         // zbin j
-        j = field_info->num_in_zbin[zbin_label_1]*field_info->field_data_col;
+        j = field_info->num_in_zbin[field_info->zbin_label_1]*field_info->field_data_col;
         field_info->field_data_z2[i] = new MY_FLOAT[j]{};
-        sprintf(set_name, "/z%d/field",zbin_label_1);
-        read_h5(field_info->field_name[i], set_name, field_info->field_data_z2[i]);
+        sprintf(set_name, "/z%d/field",field_info->zbin_label_1);
+        read_h5(field_info->field_name_path[i], set_name, field_info->field_data_z2[i]);
 
 
         //////////// read the block inform in each field  //////////////////////////
         if(i==0){ field_info->block_num = new int[field_info->total_field_num]{}; }
         // number of block in each field
         sprintf(set_name, "/block_cen_ra");
-        read_h5_datasize(field_info->field_name[i], set_name, j);
+        read_h5_datasize(field_info->field_name_path[i], set_name, j);
         field_info->block_num[i] = j;
 
         // RA of the center of each block
         field_info->block_cen_ra[i] = new MY_FLOAT[j];
         sprintf(set_name, "/block_cen_ra");
-        read_h5(field_info->field_name[i], set_name, field_info->block_cen_ra[i]);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_cen_ra[i]);
 
         // Dec of the center of each block
         field_info->block_cen_dec[i] = new MY_FLOAT[j];
         sprintf(set_name, "/block_cen_dec");
-        read_h5(field_info->field_name[i], set_name, field_info->block_cen_dec[i]);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_cen_dec[i]);
         
         // cos(Dec) of the center of each block
         field_info->block_cen_cos_dec[i] = new MY_FLOAT[j];
         sprintf(set_name, "/block_cen_cos_dec");
-        read_h5(field_info->field_name[i], set_name, field_info->block_cen_cos_dec[i]);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_cen_cos_dec[i]);
 
         // block start & end 
         field_info->block_st_z1[i] = new MY_FLOAT[j];
         field_info->block_st_z2[i] = new MY_FLOAT[j];
         field_info->block_ed_z1[i] = new MY_FLOAT[j];
         field_info->block_ed_z2[i] = new MY_FLOAT[j];
-        sprintf(set_name, "/z%d/block_st", zbin_label_0);
-        read_h5(field_info->field_name[i], set_name, field_info->block_st_z1[i]);
-        sprintf(set_name, "/z%d/block_st", zbin_label_1);
-        read_h5(field_info->field_name[i], set_name, field_info->block_st_z2[i]);
-        sprintf(set_name, "/z%d/block_ed", zbin_label_0);
-        read_h5(field_info->field_name[i], set_name, field_info->block_ed_z1[i]);
-        sprintf(set_name, "/z%d/block_ed", zbin_label_1);
-        read_h5(field_info->field_name[i], set_name, field_info->block_ed_z2[i]);
+        sprintf(set_name, "/z%d/block_st", field_info->zbin_label_0);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_st_z1[i]);
+        sprintf(set_name, "/z%d/block_st", field_info->zbin_label_1);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_st_z2[i]);
+        sprintf(set_name, "/z%d/block_ed", field_info->zbin_label_0);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_ed_z1[i]);
+        sprintf(set_name, "/z%d/block_ed", field_info->zbin_label_1);
+        read_h5(field_info->field_name_path[i], set_name, field_info->block_ed_z2[i]);
     }
 }
 
@@ -125,7 +126,8 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     for(i=0;i<total_field_num;i++)
     {   
         // the field file directories
-        field_info->field_name[i] = new char[400];  
+        field_info->field_name_path[i] = new char[400];
+        field_info->field_name[i] = new char[50];  
     }
 
     field_info->exposure_num_of_field = new int[total_field_num]{};
@@ -148,25 +150,25 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
 
     // read radius bin
     sprintf(set_name,"/theta_bin");
-    read_h5_datasize(field_info->field_name[0], set_name,i);
+    read_h5_datasize(field_info->field_name_path[0], set_name,i);
     field_info->theta_bin = new MY_FLOAT[i]{};
     field_info->theta_bin_num = i -1;
-    read_h5(field_info->field_name[0], set_name, field_info->theta_bin);
+    read_h5(field_info->field_name_path[0], set_name, field_info->theta_bin);
 
     // read redshift bin
     sprintf(set_name,"/redshift_bin");
-    read_h5_datasize(field_info->field_name[0], set_name,i);
+    read_h5_datasize(field_info->field_name_path[0], set_name,i);
     field_info->zbin = new MY_FLOAT[i]{};
     field_info->zbin_num = i -1;
     field_info->num_in_zbin = new int[i]{};
-    read_h5(field_info->field_name[0], set_name, field_info->zbin);
+    read_h5(field_info->field_name_path[0], set_name, field_info->zbin);
 
     // read the inform of the PDF_SYM
     sprintf(set_name, "/chi_guess");
-    read_h5_datasize(field_info->field_name[0], set_name, i);
+    read_h5_datasize(field_info->field_name_path[0], set_name, i);
     field_info->chi_guess_num = i;
     field_info->chi_guess = new MY_FLOAT[field_info->chi_guess_num];
-    read_h5(field_info->field_name[0], set_name, field_info->chi_guess);
+    read_h5(field_info->field_name_path[0], set_name, field_info->chi_guess);
     // the num count of each bin (for the PDF_SYM)
     // for each theta bin, there're chi_guess_num * chi_bin_num elements
     for(i=0; i<field_info->theta_bin_num; i++)
@@ -216,19 +218,100 @@ void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num)
 
 }
 
-void find_pairs(data_info *field_info)
+void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1)
 {
     int i, j, k;
-    int expos_st, expos_ed, expos_num;
 
-    double radius;
-    double expos_ra_1, expos_dec_1, expos_dra_1, expos_ddec_1;
-    double expos_ra_2, expos_dec_2, expos_dra_2, expos_ddec_2;
+    int ib1, ib2;
 
+    MY_FLOAT mg1_z1, mg2_z1, mn_z1, mu_z1;
+    MY_FLOAT mg1_z2, mg2_z2, mn_z2, mu_z2;
 
-    for(i=expos_st; i<expos_ed; i++)
-    {
-        ;
+    MY_FLOAT delta_ra, delta_dec, delta_radius;
+    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    for(ib1=0; ib1<field_info->block_num[field_label_0]; ib1++)
+    {   
+        for(ib2=0; ib2<field_info->block_num[field_label_1]; ib2++)
+        {
+            ;
+              // for(i=0; i<field_info.block_num[my_fnm]; i++)
+        // {   
+        //     m = i*field_info.field_data_col;
+
+        //     ra_z1 = field_info.field_data_z1[my_fnm][m+field_info.ra_idx];
+        //     dec_z1 = field_info.field_data_z1[my_fnm][m+field_info.dec_idx];
+        //     cos_dec_z1 = field_info.field_data_z1[my_fnm][m+field_info.cos_dec_idx];
+
+        //     mg1_z1 = field_info.field_data_z1[my_fnm][n+field_info.mg1_idx];
+        //     mg2_z1 = field_info.field_data_z1[my_fnm][n+field_info.mg1_idx];
+
+        //     mn_z1 = field_info.field_data_z1[my_fnm][n+field_info.mn_idx];
+        //     mu_z1 = field_info.field_data_z1[my_fnm][n+field_info.mu_idx];
+
+        //     for(j=i; j<field_info.block_num[my_fnm]; j++)
+        //     {   
+        //         n = j*field_info.field_data_col;
+        //         ra_z2 = field_info.field_data_z2[my_fnm][n+field_info.ra_idx];
+        //         dec_z2 = field_info.field_data_z2[my_fnm][n+field_info.dec_idx];
+        //         cos_dec_z2 = field_info.field_data_z2[my_fnm][n+field_info.cos_dec_idx];
+                
+        //         // the seperation angle (arc minute)
+        //         delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+        //         delta_dec = dec_z2 - dec_z1;
+        //         delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+ 
+        //         // shear estimators rotation (position angle defined as East of North)
+        //         sin_theta = delta_ra/delta_radius;
+        //         cos_theta = delta_dec/delta_radius;
+
+        //         sin_2theta = 2*sin_theta*cos_theta;
+        //         cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
+
+        //         sin_4theta = 2*sin_2theta*cos_2theta;
+        //         cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
+
+        //         mg1_z2 = field_info.field_data_z2[my_fnm][n+field_info.mg1_idx]*cos_2theta - 
+        //             field_info.field_data_z2[my_fnm][n+field_info.mg2_idx]*sin_2theta;
+        //         mg2_z2 = field_info.field_data_z2[my_fnm][n+field_info.mg1_idx]*sin_2theta + 
+        //             field_info.field_data_z2[my_fnm][n+field_info.mg2_idx]*cos_2theta;
+
+        //         mn_z2 = field_info.field_data_z2[my_fnm][n+field_info.mn_idx];
+
+        //         mu_z2 = field_info.field_data_z2[my_fnm][n+field_info.mu_idx]*cos_4theta - 
+        //             field_info.field_data_z2[my_fnm][n+field_info.mv_idx]*sin_4theta;
+        //         for(ic=0; ic<chi_num; ic++)
+        //         {
+                    
+        //         }
+        //         // loop the radius bin
+        //         for(ir=0;ir<radius_bin_num;ir++)
+        //         {
+
+        //         }
+        //     }
+        // }
+        }
     }
+}
 
+void find_pairs_same_field(data_info *field_info, int field_label)
+{
+    int i, j, k;
+
+    int ib1, ib2;
+
+    MY_FLOAT mg1_z1, mg2_z1, mn_z1, mu_z1;
+    MY_FLOAT mg1_z2, mg2_z2, mn_z2, mu_z2;
+
+    MY_FLOAT delta_ra, delta_dec, delta_radius;
+    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
+    {   
+        for(ib2=ib1; ib2<field_info->block_num[field_label]; ib2++)
+        {
+            ;
+        }
+    }
 }

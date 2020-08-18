@@ -24,7 +24,7 @@ theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
 deg2arcmin = 60
 deg2rad = numpy.pi/180
 
-grid_size = 20 #arcmin
+grid_size = 15 #arcmin
 
 ra_idx = 29
 dec_idx = 30
@@ -32,7 +32,9 @@ redshift_idx = 10
 redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
-chi_guess_bin =
+# chi guess bin for PDF_SYM
+chi_guess_bin = tool_box.set_bin_log(10**(-7)*5, 10**(-3), 35).astype(numpy.float32)
+
 # star number on each chip
 nstar_idx = 21
 nstar_thresh = 12
@@ -74,7 +76,6 @@ if cmd == "prepare":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
-
     fields, field_name = tool_box.field_dict(fourier_cata_path + "/nname_avail.dat")
     if rank == 0:
         print("Prepare catalog files")
@@ -89,6 +90,7 @@ if cmd == "prepare":
         field_dst_path = result_cata_path + "/%s.hdf5" % fns
         h5f_dst = h5py.File(field_dst_path,"w")
 
+        h5f_dst["/chi_guess"] = chi_guess_bin
         h5f_dst["/theta_bin"] = theta_bin
         h5f_dst["/theta_bin_num"] = numpy.array([theta_bin_num],dtype=numpy.intc)
         h5f_dst["/redshift_bin"] = redshift_bin
@@ -143,8 +145,8 @@ if cmd == "prepare":
         expos_num = h5f_src["/expos_num"][()][0]
         h5f_src.close()
 
-        field_avail_sub.append("%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
-                               %(field_dst_path, expos_num, field_pos[0],
+        field_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
+                               %(field_dst_path, fns, expos_num, field_pos[0],
                                   field_pos[1], field_pos[2], field_pos[3], field_pos[4], field_pos[5]))
 
         # selection
@@ -208,7 +210,7 @@ if cmd == "prepare":
                 h5f_dst["/z%d/field"%iz] = dst_data
 
                 h5f_dst["/z%d/gal_num_in_block"%iz] = gal_num_in_block
-                h5f_dst["/z%d/bock_st"%iz] = block_st
+                h5f_dst["/z%d/block_st"%iz] = block_st
                 h5f_dst["/z%d/block_ed"%iz] = block_ed
                 h5f_dst["/z%d/ra_bin"%iz] = ra_bin
                 h5f_dst["/z%d/dec_bin"%iz] = dec_bin
