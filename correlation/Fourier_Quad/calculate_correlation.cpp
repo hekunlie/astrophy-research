@@ -1,7 +1,7 @@
 #include<hk_mpi.h>
 #include<functions.h>
 #include<ctime>
-#include<FQlib.h>
+
 
 #define PRINT_INFO
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     int ic, chi_num;
 
     strcpy(source_list, argv[1]);
-    strcpy(data_path,argv[2]);
+    strcpy(field_info.parent_path,argv[2]);
 
     field_info.zbin_label_0 = atoi(argv[3]);
     field_info.zbin_label_1 = atoi(argv[4]);
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         {
             std::cout<<"block num: "<<field_info.block_num[i]
             <<"  total gal nun z1: "<<field_info.total_gal_num_z1[i]
-            <<"  total gal nun z1: "<<field_info.total_gal_num_z2[i]<<std::endl;
+            <<"  total gal nun z2: "<<field_info.total_gal_num_z2[i]<<std::endl;
         }
         std::cout<<"Field each cpu:"<<std::endl;
         show_arr(field_info.field_num_each_rank,1,numprocs);
@@ -110,12 +110,12 @@ int main(int argc, char *argv[])
     for(my_fnm=field_info.my_field_st; my_fnm < field_info.my_field_ed; my_fnm++)
     {   
         ////////////////  search pairs in the current field  ////////////////////
-        find_pairs_same_field(&field_info, my_fnm);
+        ;//find_pairs_same_field(&field_info, my_fnm);
 
         // ////////////////// search pairs in the target fields  //////////////////////
         for(target_fnm=my_fnm; target_fnm<total_field_num; target_fnm++)
         {
-            find_pairs_diff_field(&field_info, my_fnm,target_fnm);
+            ;// find_pairs_diff_field(&field_info, my_fnm,target_fnm);
         }
     }
 

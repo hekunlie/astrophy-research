@@ -2,6 +2,7 @@
 #define FUNCTIONS_H
 
 #include<hk_iolib.h>
+#include<FQlib.h>
 
 #define MAX_FIELD 2000
 
@@ -9,6 +10,7 @@
 
 struct data_info
 {
+    char parent_path[500];
     char *field_name_path[MAX_FIELD];
     char *field_name[MAX_FIELD];
     // data column index meaning (defined in the prepare_data.py)
@@ -21,8 +23,7 @@ struct data_info
     int ra_idx = 5;
     int dec_idx = 6;
     int cos_dec_idx = 7;
-    int expo_label = 8;
-    int redshift_idx = 9;
+    int redshift_idx = 8;
 
     ///////// for 2d correlation /////////
     MY_FLOAT *field_data[MAX_FIELD];
@@ -32,6 +33,12 @@ struct data_info
     int zbin_label_0, zbin_label_1;
     MY_FLOAT *field_data_z1[MAX_FIELD];// field data, G1, G2 .. of zbin 1
     MY_FLOAT *field_data_z2[MAX_FIELD];// field data, G1, G2 .. of zbin 2
+    
+    int *field_block_label_z1[MAX_FIELD]; // block labels
+    int *field_block_label_z2[MAX_FIELD];
+    int *field_expo_label_z1[MAX_FIELD]; // exposure labels
+    int *field_expo_label_z2[MAX_FIELD];
+
     int *total_gal_num_z1;// gal num in each field of zbin 1
     int *total_gal_num_z2;// gal num in each field of zbin 2
     // redshift bin
@@ -80,7 +87,13 @@ struct data_info
     int chi_guess_num;
 
     int chi_bin_num=10;
-    double *num_count[MAX_FIELD];
+    double *num_count_chit[MAX_FIELD];
+    double *num_count_chix[MAX_FIELD];
+
+    int gg_len;
+    MY_FLOAT *gg_tt[200];
+    MY_FLOAT *gg_xx[200];
+
 };
 
 

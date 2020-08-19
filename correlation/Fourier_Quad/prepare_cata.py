@@ -26,8 +26,8 @@ deg2rad = numpy.pi/180
 
 grid_size = 15 #arcmin
 
-ra_idx = 29
-dec_idx = 30
+ra_idx = 0
+dec_idx = 1
 redshift_idx = 10
 redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
@@ -75,6 +75,8 @@ if cmd == "prepare":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     cpus = comm.Get_size()
+    # rank = 0
+    # cpus = 1
 
     fields, field_name = tool_box.field_dict(fourier_cata_path + "/nname_avail.dat")
     if rank == 0:
@@ -100,8 +102,10 @@ if cmd == "prepare":
         h5f_src = h5py.File(fourier_cata_path + "/%s/result/%s.hdf5" % (fns,fns), "r")
         src_data = h5f_src["/field"][()]
 
-        ra = src_data[:,ra_idx]*deg2arcmin
-        dec = src_data[:,dec_idx]*deg2arcmin
+        src_data[:, ra_idx] = src_data[:,ra_idx]*deg2arcmin
+        src_data[:, dec_idx] = src_data[:,dec_idx]*deg2arcmin
+        ra = src_data[:,ra_idx]
+        dec = src_data[:,dec_idx]
 
         # find the center and the 4 corners
         ra_min, ra_max = ra.min(), ra.max()
@@ -123,6 +127,10 @@ if cmd == "prepare":
         dec_bin = numpy.array([dec_min - grid_pad + grid_size*i for i in range(dec_bin_num+1)], dtype=numpy.float32)
         ra_bin = numpy.array([ra_min - grid_pad + grid_size*i for i in range(ra_bin_num+1)], dtype=numpy.float32)
 
+        # print(dec_bin)
+        # print(ra_bin)
+        # print(dec_min, dec_max, dec_bin_num)
+        # print(ra_min, ra_max, ra_bin_num)
         block_pos = numpy.zeros((block_num, 4),dtype=numpy.float32)
         for i in range(dec_bin_num):
             for j in range(ra_bin_num):
@@ -168,9 +176,10 @@ if cmd == "prepare":
 
             final_num = idx_final.sum()
             final_data = src_data[idx_final]
-
+            # print(fns, iz, final_num, final_data.shape)
             if final_num > 1:
-                dst_data = numpy.zeros((final_num, 10), dtype=numpy.float32)
+                dst_data = numpy.zeros((final_num, 11), dtype=numpy.float32)
+                test_mask = numpy.zeros((final_num, ), dtype=numpy.intc)
 
                 total_num_in_z_bin[iz] = final_num
 
@@ -179,7 +188,7 @@ if cmd == "prepare":
                     idx1 = final_data[:, dec_idx] >= dec_bin[i]
                     idx2 = final_data[:, dec_idx] < dec_bin[i+1]
                     idx_d = idx1 & idx2
-
+                    # print(idx_d.sum())
                     for j in range(ra_bin_num):
                         idx3 = final_data[:, ra_idx] >= ra_bin[j]
                         idx4 = final_data[:, ra_idx] < ra_bin[j+1]
@@ -188,7 +197,7 @@ if cmd == "prepare":
 
                         ij = i*ra_bin_num+j
                         gal_num_in_block[ij] = idx_block.sum()
-
+                        # print(iz, ij, idx_block.sum())
                         st = gal_num_in_block[:ij].sum()
                         ed = st + gal_num_in_block[ij]
                         block_st[ij] = st
@@ -200,20 +209,28 @@ if cmd == "prepare":
                         dst_data[st:ed, 3] = final_data[:, mu_idx][idx_block]
                         dst_data[st:ed, 4] = final_data[:, mv_idx][idx_block]
 
-                        dst_data[st:ed, 6] = final_data[:, dec_idx][idx_block]
                         dst_data[st:ed, 5] = final_data[:, ra_idx][idx_block]
-                        dst_data[st:ed, 9] = final_data[:, redshift_idx][idx_block]
-                        dst_data[st:ed, 8] = final_data[:, expo_idx][idx_block]-1
+                        dst_data[st:ed, 6] = final_data[:, dec_idx][idx_block]
+                        dst_data[st:ed, 8] = final_data[:, redshift_idx][idx_block]
 
-                dst_data[:, 7] = numpy.cos(dst_data[:, 5]/deg2arcmin * deg2rad)
+                        dst_data[st:ed, 9] = final_data[:, expo_idx][idx_block]
+                        dst_data[st:ed, 10] = ij
 
-                h5f_dst["/z%d/field"%iz] = dst_data
+                        test_mask[st:ed] = 1
+                # print(gal_num_in_block)
+                if test_mask.sum() != final_num:
+                    print("%d  %s z%d wrong in mask(%d!=%d)"%(rank, fns, iz, test_mask.sum(), final_num))
+                dst_data[:, 7] = numpy.cos(dst_data[:, 6]/deg2arcmin * deg2rad)
+
+                h5f_dst["/z%d/field"%iz] = dst_data[:,:9]
 
                 h5f_dst["/z%d/gal_num_in_block"%iz] = gal_num_in_block
                 h5f_dst["/z%d/block_st"%iz] = block_st
                 h5f_dst["/z%d/block_ed"%iz] = block_ed
                 h5f_dst["/z%d/ra_bin"%iz] = ra_bin
                 h5f_dst["/z%d/dec_bin"%iz] = dec_bin
+                h5f_dst["/z%d/exposure_label"%iz] = dst_data[:,9].astype(dtype=numpy.intc)
+                h5f_dst["/z%d/block_label"%iz] = dst_data[:,10].astype(dtype=numpy.intc)
 
         h5f_dst["/field_pos"] = field_pos
         h5f_dst["/expo_num"] = numpy.array([expos_num], dtype=numpy.intc)
