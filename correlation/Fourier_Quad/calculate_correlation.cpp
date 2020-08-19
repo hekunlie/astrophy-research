@@ -103,6 +103,8 @@ int main(int argc, char *argv[])
 
         std::cout<<std::endl<<"Bin num for PDF_SYM: "<<field_info.chi_bin_num<<std::endl;
 
+        std::cout<<std::endl<<field_info.parent_path<<std::endl;
+        std::cout<<std::endl<<field_info.gg_len<<std::endl;        
     }
 
 

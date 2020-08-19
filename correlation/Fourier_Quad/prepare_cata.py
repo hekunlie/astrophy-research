@@ -77,7 +77,18 @@ if cmd == "prepare":
     cpus = comm.Get_size()
     # rank = 0
     # cpus = 1
+    if rank == 0:
+        h5f_cor = h5py.File(result_cata_path+"/gg_cor.hdf5","w")
+        for i in range(len(chi_guess_bin)):
+            mean = [0,0]
+            cov = [[chi_guess_bin[i],chi_guess_bin[i]/4],
+                    [chi_guess_bin[i]/4, chi_guess_bin[i]]]
+            gg = tool_box.rand_gauss2n(2000000,mean,cov)
+            h5f_cor["/%d/g11"%i]=gg[0].astype(dtype=numpy.float32)
+            h5f_cor["/%d/g22"%i]=gg[1].astype(dtype=numpy.float32)
+        h5f_cor.close()
 
+    comm.Barrier()
     fields, field_name = tool_box.field_dict(fourier_cata_path + "/nname_avail.dat")
     if rank == 0:
         print("Prepare catalog files")

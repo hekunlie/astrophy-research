@@ -197,12 +197,18 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     }
     for(i=0; i<field_info->chi_guess_num; i++)
     {
-        sprintf(set_name,"/gg_t");
-        sprintf(data_path,"%s/cata/cor_%d.hdf5", i);
+        sprintf(set_name,"/%d/g11",i);
+        sprintf(data_path,"%s/cata/gg_cor.hdf5", field_info->parent_path);
         read_h5_datasize(data_path, set_name, field_info->gg_len);
 
         field_info->gg_tt[i] = new MY_FLOAT[field_info->gg_len]{};
-        field_info->gg_tt[i] = new MY_FLOAT[field_info->gg_len]{};
+        field_info->gg_xx[i] = new MY_FLOAT[field_info->gg_len]{};
+        
+        sprintf(set_name,"/%d/g11",i);
+        read_h5(data_path, set_name, field_info->gg_tt[i]);
+        sprintf(set_name,"/%d/g22",i);
+        read_h5(data_path, set_name, field_info->gg_xx[i]);
+
     }
 
     // task distribution
@@ -395,11 +401,15 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     MY_FLOAT ra_z1, dec_z1, cos_dec_z1;
     MY_FLOAT ra_z2, dec_z2, cos_dec_z2;
 
-    MY_FLOAT mg1_z1, mg2_z1, mn_z1, mu_z1;
-    MY_FLOAT mg1_z2, mg2_z2, mn_z2, mu_z2;
+    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
+    MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
+    MY_FLOAT temp;
 
     MY_FLOAT delta_ra, delta_dec, delta_radius;
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    int *ggt_bin_label = new int[field_info->chi_guess_num];
+    int *ggx_bin_label = new int[field_info->chi_guess_num];
 
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
@@ -421,11 +431,22 @@ void find_pairs_same_field(data_info *field_info, int field_label)
             mg1_z1 = field_info->field_data_z1[field_label][m+field_info->mg1_idx];
             mg2_z1 = field_info->field_data_z1[field_label][m+field_info->mg2_idx];
 
-            mn_z1 = field_info->field_data_z1[field_label][m+field_info->mn_idx];
-            mu_z1 = field_info->field_data_z1[field_label][m+field_info->mu_idx];
+            mnu1_z1 = field_info->field_data_z1[field_label][m+field_info->mn_idx] +
+                        field_info->field_data_z1[field_label][m+field_info->mu_idx];
+            mnu2_z1 = field_info->field_data_z1[field_label][m+field_info->mu_idx] -
+                        field_info->field_data_z1[field_label][m+field_info->mu_idx];
 
             expo_label_0 = field_info->field_expo_label_z1[field_label][i];
 
+            for(ic=0; ic<field_info->chi_guess_num; ic++)
+            {   
+                field_info->loop_label = field_info->loop_label%field_info->gg_len;
+
+                temp = mg1_z1 - field_info->gg_tt[ic][field_info->loop_label]*mnu1_z1;
+                temp = mg2_z1 - field_info->gg_tt[ic][field_info->loop_label]*mnu2_z1;
+                field_info->loop_label += 1;
+
+            }
             for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
             {
                 for(j=field_info->block_st_z2[field_label][ib2]; j<field_info->block_ed_z2[field_label][ib2]; j++)
@@ -457,11 +478,17 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                     cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
 
 
-                    mg1_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx];
-                    mg2_z2 = field_info->field_data_z2[field_label][n+field_info->mg2_idx];
+                    mg1_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*cos_2theta - 
+                            field_info->field_data_z2[field_label][n+field_info->mg2_idx]*sin_2theta;
+                    mg2_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*sin_2theta + 
+                            field_info->field_data_z2[field_label][n+field_info->mg2_idx]*cos_2theta;
 
-                    mn_z2 = field_info->field_data_z2[field_label][n+field_info->mn_idx];
-                    mu_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx];
+                    mnu1_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx]*cos_4theta -
+                            field_info->field_data_z2[field_label][n+field_info->mv_idx]*sin_4theta;
+                    mnu2_z2 = mnu1_z2;
+
+                    mnu1_z2 += field_info->field_data_z2[field_label][n+field_info->mu_idx];
+                    mnu2_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx] - mnu2_z2;
 
 
                 }

@@ -86,6 +86,9 @@ struct data_info
     MY_FLOAT *chi_guess;
     int chi_guess_num;
 
+    MY_FLOAT *mg_bin;
+    int mg_bin_num;
+
     int chi_bin_num=10;
     double *num_count_chit[MAX_FIELD];
     double *num_count_chix[MAX_FIELD];
@@ -93,7 +96,7 @@ struct data_info
     int gg_len;
     MY_FLOAT *gg_tt[200];
     MY_FLOAT *gg_xx[200];
-
+    int loop_label;
 };
 
 
