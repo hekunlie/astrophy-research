@@ -94,8 +94,8 @@ struct data_info
     double *num_count_chix[MAX_FIELD];
 
     int gg_len;
-    MY_FLOAT *gg_tt[200];
-    MY_FLOAT *gg_xx[200];
+    MY_FLOAT *gg_1[200];
+    MY_FLOAT *gg_2[200];
     int loop_label;
 };
 

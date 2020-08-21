@@ -135,9 +135,9 @@ void read_field_data(data_info *field_info)
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank)
 {
-    int i;
+    int i, j;
     char set_name[100];
-    char data_path[500];
+    char data_path[600];
 
     field_info->total_field_num = total_field_num;
 
@@ -166,48 +166,59 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     read_inform(file_path, field_info, i);
 
 
+    ///////////////// read the inform of the PDF_SYM  ////////////////
+    sprintf(data_path,"%s/cata/gg_cor.hdf5", field_info->parent_path);
     // read radius bin
     sprintf(set_name,"/theta_bin");
-    read_h5_datasize(field_info->field_name_path[0], set_name,i);
-    field_info->theta_bin = new MY_FLOAT[i]{};
-    field_info->theta_bin_num = i -1;
-    read_h5(field_info->field_name_path[0], set_name, field_info->theta_bin);
+    read_h5_datasize(data_path, set_name,j);
+    field_info->theta_bin = new MY_FLOAT[j]{};
+    field_info->theta_bin_num = j -1;
+    read_h5(data_path, set_name, field_info->theta_bin);
 
     // read redshift bin
     sprintf(set_name,"/redshift_bin");
-    read_h5_datasize(field_info->field_name_path[0], set_name,i);
-    field_info->zbin = new MY_FLOAT[i]{};
-    field_info->zbin_num = i -1;
-    field_info->num_in_zbin = new int[i]{};
-    read_h5(field_info->field_name_path[0], set_name, field_info->zbin);
+    read_h5_datasize(data_path, set_name,j);
+    field_info->zbin = new MY_FLOAT[j]{};
+    field_info->zbin_num = j -1;
+    field_info->num_in_zbin = new int[j]{};
+    read_h5(data_path, set_name, field_info->zbin);
 
-    // read the inform of the PDF_SYM
+
     sprintf(set_name, "/chi_guess");
-    read_h5_datasize(field_info->field_name_path[0], set_name, i);
-    field_info->chi_guess_num = i;
+    read_h5_datasize(data_path, set_name, field_info->chi_guess_num);
     field_info->chi_guess = new MY_FLOAT[field_info->chi_guess_num];
-    read_h5(field_info->field_name_path[0], set_name, field_info->chi_guess);
-    // the num count of each bin (for the PDF_SYM)
-    // for each theta bin, there're chi_guess_num * chi_bin_num* chi_bin_num elements
-    // tangential and cross components
-    for(i=0; i<field_info->theta_bin_num; i++)
-    {
-        field_info->num_count_chit[i] = new double[field_info->chi_guess_num*field_info->chi_bin_num*field_info->chi_bin_num]{};
-        field_info->num_count_chix[i] = new double[field_info->chi_guess_num*field_info->chi_bin_num*field_info->chi_bin_num]{};
-    }
+    read_h5(data_path, set_name, field_info->chi_guess);
+
+    sprintf(set_name, "/mg_bin");
+    read_h5_datasize(data_path, set_name, j);
+    field_info->mg_bin = new MY_FLOAT[j];
+    field_info->mg_bin_num = j -1;
+    read_h5(data_path, set_name, field_info->mg_bin);
+
     for(i=0; i<field_info->chi_guess_num; i++)
     {
+        if(i == 0)
+        {
+            // the num count of each bin (for the PDF_SYM)
+            // for each theta bin, there're chi_guess_num * chi_bin_num* chi_bin_num elements
+            // tangential and cross components
+            for(j=0; j<field_info->theta_bin_num; j++)
+            {
+                field_info->num_count_chit[j] = new double[field_info->chi_guess_num*field_info->mg_bin_num*field_info->mg_bin_num]{};
+                field_info->num_count_chix[j] = new double[field_info->chi_guess_num*field_info->mg_bin_num*field_info->mg_bin_num]{};
+            }
+        }
+
         sprintf(set_name,"/%d/g11",i);
-        sprintf(data_path,"%s/cata/gg_cor.hdf5", field_info->parent_path);
         read_h5_datasize(data_path, set_name, field_info->gg_len);
 
-        field_info->gg_tt[i] = new MY_FLOAT[field_info->gg_len]{};
-        field_info->gg_xx[i] = new MY_FLOAT[field_info->gg_len]{};
+        field_info->gg_1[i] = new MY_FLOAT[field_info->gg_len]{};
+        field_info->gg_2[i] = new MY_FLOAT[field_info->gg_len]{};
         
         sprintf(set_name,"/%d/g11",i);
-        read_h5(data_path, set_name, field_info->gg_tt[i]);
+        read_h5(data_path, set_name, field_info->gg_1[i]);
         sprintf(set_name,"/%d/g22",i);
-        read_h5(data_path, set_name, field_info->gg_xx[i]);
+        read_h5(data_path, set_name, field_info->gg_2[i]);
 
     }
 
@@ -243,14 +254,17 @@ void task_distribution(int portion, int my_id, data_info *field_info)
 
 
 
-void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num)
+void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy)
 {
     int i;
     for(i=0; i<bin_num; i++)
     {
-        if(data > bins[i] and data <= bins[i+1]){num_in_bin[i] += 1;break;}
+        if(x > bins[i] and x <= bins[i+1]){ix=i;break;}
     }
-
+    for(i=0; i<bin_num; i++)
+    {
+        if(y > bins[i] and y <= bins[i+1]){iy=i;break;}
+    }
 }
 
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1)
@@ -397,19 +411,23 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
     int ib1, ib2;
     int expo_label_0, expo_label_1;
-    int ir,ic;
+    int ir, theta_tag, ic;
     MY_FLOAT ra_z1, dec_z1, cos_dec_z1;
     MY_FLOAT ra_z2, dec_z2, cos_dec_z2;
 
     MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
     MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
-    MY_FLOAT temp;
+    MY_FLOAT temp_x, temp_y;
+    int ix, iy;
+    int chi_block_len = field_info->chi_bin_num*field_info->chi_bin_num;
 
     MY_FLOAT delta_ra, delta_dec, delta_radius;
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
 
     int *ggt_bin_label = new int[field_info->chi_guess_num];
     int *ggx_bin_label = new int[field_info->chi_guess_num];
+
+    int loop_label = 0;
 
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
@@ -438,57 +456,75 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
             expo_label_0 = field_info->field_expo_label_z1[field_label][i];
 
-            for(ic=0; ic<field_info->chi_guess_num; ic++)
-            {   
-                field_info->loop_label = field_info->loop_label%field_info->gg_len;
-
-                temp = mg1_z1 - field_info->gg_tt[ic][field_info->loop_label]*mnu1_z1;
-                temp = mg2_z1 - field_info->gg_tt[ic][field_info->loop_label]*mnu2_z1;
-                field_info->loop_label += 1;
-
-            }
+    
             for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
             {
                 for(j=field_info->block_st_z2[field_label][ib2]; j<field_info->block_ed_z2[field_label][ib2]; j++)
                 {   
-                    if(field_info->field_expo_label_z2[field_label][j] ==  expo_label_0)
+                    if(field_info->field_expo_label_z2[field_label][j] !=  expo_label_0)
+                    {
+                        // loop the grid in the second zbin, zbin_label_1
+                        n = j*field_info->field_data_col;
+
+                        ra_z2 = field_info->field_data_z2[field_label][n+field_info->ra_idx];
+                        dec_z2 = field_info->field_data_z2[field_label][n+field_info->dec_idx];
+                        cos_dec_z2 = field_info->field_data_z2[field_label][n+field_info->cos_dec_idx];
+
+                        // the seperation angle (arc minute)
+                        delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+                        delta_dec = dec_z2 - dec_z1;
+                        delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+                        for(ir=0; ir<field_info->theta_bin_num; ir++)
+                        {
+                            if(delta_radius > field_info->theta_bin[i] and delta_radius <= field_info->theta_bin[i+1])
+                            {theta_tag=ir;break;}
+                        }
+                        // shear estimators rotation (position angle defined as East of North)
+                        sin_theta = delta_ra/delta_radius;
+                        cos_theta = delta_dec/delta_radius;
+
+                        sin_2theta = 2*sin_theta*cos_theta;
+                        cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
+
+                        sin_4theta = 2*sin_2theta*cos_2theta;
+                        cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
+
+
+                        mg1_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*cos_2theta - 
+                                field_info->field_data_z2[field_label][n+field_info->mg2_idx]*sin_2theta;
+                        mg2_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*sin_2theta + 
+                                field_info->field_data_z2[field_label][n+field_info->mg2_idx]*cos_2theta;
+
+                        mnu1_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx]*cos_4theta -
+                                field_info->field_data_z2[field_label][n+field_info->mv_idx]*sin_4theta;
+                        mnu2_z2 = mnu1_z2;
+
+                        mnu1_z2 += field_info->field_data_z2[field_label][n+field_info->mu_idx];
+                        mnu2_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx] - mnu2_z2;
+
+                        for(ic=0; ic<field_info->chi_guess_num; ic++)
+                        {   
+                            if(loop_label == field_info->gg_len){loop_label = 0;}
+
+                            temp_x = mg1_z1 - field_info->gg_1[ic][loop_label]*mnu1_z1;
+                            temp_y = mg1_z2 - field_info->gg_2[ic][loop_label]*mnu1_z2;
+                            hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
+                            field_info->num_count_chit[theta_tag][ic*chi_block_len+iy*field_info->mg_bin_num+ix] += 1;
+
+                            temp_x = mg2_z1 - field_info->gg_1[ic][loop_label]*mnu2_z1;
+                            temp_y = mg2_z2 - field_info->gg_2[ic][loop_label]*mnu2_z2;
+                            hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
+                            field_info->num_count_chix[theta_tag][ic*chi_block_len+iy*field_info->mg_bin_num+ix] += 1;
+
+                            loop_label += 1;
+                        }
+
+                    }
+                    else
                     {
                         continue;
                     }
-                    // loop the grid in the second zbin, zbin_label_1
-                    n = j*field_info->field_data_col;
-
-                    ra_z2 = field_info->field_data_z2[field_label][n+field_info->ra_idx];
-                    dec_z2 = field_info->field_data_z2[field_label][n+field_info->dec_idx];
-                    cos_dec_z2 = field_info->field_data_z2[field_label][n+field_info->cos_dec_idx];
-
-                    // the seperation angle (arc minute)
-                    delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
-                    delta_dec = dec_z2 - dec_z1;
-                    delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
-
-                    // shear estimators rotation (position angle defined as East of North)
-                    sin_theta = delta_ra/delta_radius;
-                    cos_theta = delta_dec/delta_radius;
-
-                    sin_2theta = 2*sin_theta*cos_theta;
-                    cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
-
-                    sin_4theta = 2*sin_2theta*cos_2theta;
-                    cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
-
-
-                    mg1_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*cos_2theta - 
-                            field_info->field_data_z2[field_label][n+field_info->mg2_idx]*sin_2theta;
-                    mg2_z2 = field_info->field_data_z2[field_label][n+field_info->mg1_idx]*sin_2theta + 
-                            field_info->field_data_z2[field_label][n+field_info->mg2_idx]*cos_2theta;
-
-                    mnu1_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx]*cos_4theta -
-                            field_info->field_data_z2[field_label][n+field_info->mv_idx]*sin_4theta;
-                    mnu2_z2 = mnu1_z2;
-
-                    mnu1_z2 += field_info->field_data_z2[field_label][n+field_info->mu_idx];
-                    mnu2_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx] - mnu2_z2;
+                                        
 
 
                 }

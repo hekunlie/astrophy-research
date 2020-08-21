@@ -34,6 +34,7 @@ redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.
 
 # chi guess bin for PDF_SYM
 chi_guess_bin = tool_box.set_bin_log(10**(-7)*5, 10**(-3), 35).astype(numpy.float32)
+mg_bin_num = 10
 
 # star number on each chip
 nstar_idx = 21
@@ -77,18 +78,28 @@ if cmd == "prepare":
     cpus = comm.Get_size()
     # rank = 0
     # cpus = 1
+
+    # for correlation calculation
     if rank == 0:
         h5f_cor = h5py.File(result_cata_path+"/gg_cor.hdf5","w")
         for i in range(len(chi_guess_bin)):
             mean = [0,0]
-            cov = [[chi_guess_bin[i],chi_guess_bin[i]/4],
-                    [chi_guess_bin[i]/4, chi_guess_bin[i]]]
+            cov = [[chi_guess_bin[i]*2,chi_guess_bin[i]],
+                    [chi_guess_bin[i], chi_guess_bin[i]*2]]
             gg = tool_box.rand_gauss2n(2000000,mean,cov)
-            h5f_cor["/%d/g11"%i]=gg[0].astype(dtype=numpy.float32)
-            h5f_cor["/%d/g22"%i]=gg[1].astype(dtype=numpy.float32)
+            h5f_cor["/%d/g11"%i] = gg[0].astype(dtype=numpy.float32)
+            h5f_cor["/%d/g22"%i] = gg[1].astype(dtype=numpy.float32)
+
+        h5f_cor["/chi_guess"] = chi_guess_bin
+        h5f_cor["/theta_bin"] = theta_bin
+        h5f_cor["/theta_bin_num"] = numpy.array([theta_bin_num],dtype=numpy.intc)
+        h5f_cor["/redshift_bin"] = redshift_bin
+        h5f_cor["/redshift_bin_num"] = numpy.array([redshift_bin_num],dtype=numpy.intc)
+
         h5f_cor.close()
 
     comm.Barrier()
+
     fields, field_name = tool_box.field_dict(fourier_cata_path + "/nname_avail.dat")
     if rank == 0:
         print("Prepare catalog files")
@@ -102,12 +113,6 @@ if cmd == "prepare":
 
         field_dst_path = result_cata_path + "/%s.hdf5" % fns
         h5f_dst = h5py.File(field_dst_path,"w")
-
-        h5f_dst["/chi_guess"] = chi_guess_bin
-        h5f_dst["/theta_bin"] = theta_bin
-        h5f_dst["/theta_bin_num"] = numpy.array([theta_bin_num],dtype=numpy.intc)
-        h5f_dst["/redshift_bin"] = redshift_bin
-        h5f_dst["/redshift_bin_num"] = numpy.array([redshift_bin_num],dtype=numpy.intc)
 
         # read the the field data
         h5f_src = h5py.File(fourier_cata_path + "/%s/result/%s.hdf5" % (fns,fns), "r")
@@ -261,6 +266,22 @@ if cmd == "prepare":
 
         with open(result_cata_path + "/source_list.dat", "w") as f:
             f.writelines(buffer_field)
+
+        # set up bins for G1(or G2) for PDF_SYM
+        for i in range(5):
+            h5f_src = h5py.File(fourier_cata_path + "/%s/result/%s.hdf5" % (field_name[i], field_name[i]), "r")
+            temp = h5f_src["/field"][()][:,mg1_idx:mg2_idx+1]
+            if i == 0:
+                src_data = temp
+            else:
+                src_data = numpy.row_stack((src_data, temp))
+
+        mg_bin = tool_box.set_bin(temp[:,0], mg_bin_num, 100000)
+
+        h5f_cor = h5py.File(result_cata_path + "/gg_cor.hdf5", "r+")
+
+        h5f_cor["/mg_bin"] = mg_bin.astype(dtype=numpy.float32)
+        h5f_cor.close()
 
     comm.Barrier()
 
