@@ -129,10 +129,11 @@ if cmd == "prepare":
         dra = (ra_max - ra_min)/2
         dec_min, dec_max = dec.min(), dec.max()
         dec_center = (dec_min + dec_max)/2
+        cos_dec_center = numpy.cos(dec_center/deg2arcmin*deg2rad)
         ddec = (dec_max - dec_min)/2
 
         field_pos = numpy.array([ra_center, dec_center, dra, ddec,
-                                 numpy.sqrt(dra**2 + ddec**2),numpy.cos(dec_center/deg2arcmin*deg2rad)],dtype=numpy.float32)
+                                 numpy.sqrt((dra*cos_dec_center)**2 + ddec**2),cos_dec_center],dtype=numpy.float32)
 
         grid_pad = grid_size*0.1
         dec_bin_num = int((dec_max + grid_pad - (dec_min - grid_pad))/grid_size)+1
@@ -153,12 +154,12 @@ if cmd == "prepare":
                 ij = i*ra_bin_num + j
                 block_pos[ij,:2] = (ra_bin[j]+ra_bin[j+1])/2, (dec_bin[i] + dec_bin[i+1])/2
         block_pos[:,2] = numpy.cos(block_pos[:,1]/deg2arcmin*deg2rad)
-        block_pos[:,3] = numpy.sqrt(grid_size/2*grid_size/2 + grid_size/2*grid_size/2*block_pos[:,2])
+        block_pos[:,3] = numpy.sqrt(grid_size/2*grid_size/2 + grid_size/2*block_pos[:,2]*grid_size/2*block_pos[:,2])
 
         h5f_dst["/block_cen_ra"] = block_pos[:,0]
         h5f_dst["/block_cen_dec"] = block_pos[:,1]
         h5f_dst["/block_cen_cos_dec"] = block_pos[:,2]
-        h5f_dst["/block_len"] = block_pos[:,3]
+        h5f_dst["/block_delta_len"] = block_pos[:,3]
 
 
         gal_num_in_block = numpy.zeros((block_num, ), dtype=numpy.intc)

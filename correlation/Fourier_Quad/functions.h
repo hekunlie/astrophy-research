@@ -61,9 +61,9 @@ struct data_info
     MY_FLOAT *field_cen_ra;
     MY_FLOAT *field_cen_dec;
     MY_FLOAT *field_cen_cos_dec;
-    MY_FLOAT *field_delta_ra;
-    MY_FLOAT *field_delta_dec;
-    MY_FLOAT *field_delta_len;
+    MY_FLOAT *field_delta_ra; // half width of RA
+    MY_FLOAT *field_delta_dec;// half width of DEC
+    MY_FLOAT *field_delta_len; // sqrt((delta_ra*cen_cos_dec)^2 + delta_dec^2)
     
     // about the block in the field
     MY_FLOAT *block_st_z1[MAX_FIELD];
@@ -90,6 +90,8 @@ struct data_info
     int mg_bin_num;
 
     int chi_bin_num;
+    int chi_block_len, ir_chi_block_len, iexpo_chi_block_len;
+    int *field_chi_block_len;
     double *num_count_chit[MAX_FIELD];
     double *num_count_chix[MAX_FIELD];
 
@@ -109,6 +111,9 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
 void task_distribution(int portion, int my_id, data_info *field_info);
 
 void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num);
+
+void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
+// if lable == 1, calculate, else, not
 
 void find_pairs_same_field(data_info *field_info, int field_label);
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);

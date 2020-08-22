@@ -8,8 +8,7 @@
 int main(int argc, char *argv[])
 {
     /*
-        argv[1]: the parent path that includes "./data", "./result"
-        argv[2] ~ argv[i]: the sky area name in the "catalog.hdf5", like "w1", "w2"...
+
     */
 
 	int rank, numprocs;
@@ -20,13 +19,14 @@ int main(int argc, char *argv[])
     char source_list[300];
     char data_path[300], result_path[300];
     char set_name[50], temp_char[50];
-    char log_inform[400];
-    double st1, st2, st3, st4;
+    char log_inform[500], log_path[600];
+
+    double st1, st2, st3, st4, st5, tt;
 
     data_info field_info;
 
-    int i,j,k,m,n;
-    int my_fnm, target_fnm, total_field_num;
+    int i,j;
+    int my_fnm, target_fnm, total_field_num, label;
 
 
     strcpy(source_list, argv[1]);
@@ -37,9 +37,18 @@ int main(int argc, char *argv[])
 
     total_field_num = atoi(argv[5]);
 
+    sprintf(log_path, "%s/log/%d_log.dat",field_info.parent_path, rank);
+    
 
     // read the information of each exposure file
     initialize(source_list, &field_info, total_field_num, numprocs, rank);
+
+    // read the catalog of redshift bin z1 & z2
+    read_field_data(&field_info);
+
+
+    
+
     if(rank == 0){std::cout<<"Initialization"<<std::endl;}
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -52,19 +61,12 @@ int main(int argc, char *argv[])
             <<"  "<<field_info.field_cen_ra[i]<<"  "<<field_info.field_cen_dec[i]
             <<"  "<<field_info.field_delta_ra[i]<<"  "<<field_info.field_delta_dec[i]
             <<"  "<<field_info.field_delta_len[i]<<"  "<<field_info.field_cen_cos_dec[i]<<std::endl;
-        }
-    }    
-
-    // read the catalog of redshift bin z1 & z2
-    read_field_data(&field_info);
-    if(rank == 0)
-    {
-        for(i=0; i<total_field_num; i++)
-        {
+            
             std::cout<<"block num: "<<field_info.block_num[i]
             <<"  total gal nun z1: "<<field_info.total_gal_num_z1[i]
             <<"  total gal nun z2: "<<field_info.total_gal_num_z2[i]<<std::endl;
         }
+
         std::cout<<"Field each cpu:"<<std::endl;
         show_arr(field_info.field_num_each_rank,1,numprocs);
         std::cout<<std::endl;
@@ -91,10 +93,11 @@ int main(int argc, char *argv[])
         sprintf(log_inform,"Z1: %.2f ~ %.2f, Z2: %.2f ~ %.2f",field_info.zbin[field_info.zbin_label_0],
         field_info.zbin[field_info.zbin_label_0+1],field_info.zbin[field_info.zbin_label_1],field_info.zbin[field_info.zbin_label_1+1]);
         std::cout<<log_inform<<std::endl;
-
+        
         std::cout<<"Radius bin:"<<std::endl;
         show_arr(field_info.theta_bin, 1, field_info.theta_bin_num+1);
         std::cout<<std::endl;
+
 
         std::cout<<"Chi guess: "<<field_info.chi_guess_num<<" points"<<std::endl;
         show_arr(field_info.chi_guess, 1, field_info.chi_guess_num);
@@ -111,46 +114,61 @@ int main(int argc, char *argv[])
     for(my_fnm=field_info.my_field_st; my_fnm < field_info.my_field_ed; my_fnm++)
     {   
         ////////////////  search pairs in the current field  ////////////////////
-        // zbin 0
         st1 = clock();
         sprintf(log_inform,"Start: %s(%d) num: %d",field_info.field_name[my_fnm], my_fnm,field_info.total_gal_num_z1[my_fnm]);
-        std::cout<<log_inform<<std::endl;
+        if(rank == 0){std::cout<<log_inform<<std::endl;}
+        write_log(log_path, log_inform);
+        
+        sprintf(log_inform,"Search own field: %s(%d)",field_info.field_name[my_fnm], my_fnm);
+        if(rank == 0){std::cout<<log_inform<<std::endl;}
+        write_log(log_path, log_inform);
 
         if (field_info.total_gal_num_z1[my_fnm] > 0)
         {
-            ;//find_pairs_same_field(&field_info, my_fnm);
+            find_pairs_same_field(&field_info, my_fnm);
         }
         else
         {
             continue;
         }
-                
-        
+        st2 = clock();
+        tt =  (st2 - st1)/CLOCKS_PER_SEC;
+
+        sprintf(log_inform,"Finish own field: %s(%d). %.2f sec",field_info.field_name[my_fnm], my_fnm, tt);
+        if(rank == 0){std::cout<<log_inform<<std::endl;}
+        write_log(log_path, log_inform);
+
         ////////////////// search pairs in the target fields  //////////////////////
-        // zbin 1
         for(target_fnm=my_fnm; target_fnm<total_field_num; target_fnm++)
         {   
-            st2 = clock();
+            st3 = clock();
             sprintf(log_inform,"Search: (%s) %s(%d) num: %d",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, field_info.total_gal_num_z2[target_fnm]);
-            std::cout<<log_inform<<std::endl;
+            if(rank == 0){std::cout<<log_inform<<std::endl;}
+            write_log(log_path, log_inform);
 
-            if(field_info.total_gal_num_z2[target_fnm]>0)
+            field_distance(&field_info, my_fnm, target_fnm, label);
+
+            if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
             {
-                ;//find_pairs_diff_field(&field_info, my_fnm, target_fnm);
+                find_pairs_diff_field(&field_info, my_fnm, target_fnm);
             }
             else
             {
                 continue;
             }
-            st3 = clock();
-            st4 = (st3-st2)/CLOCKS_PER_SEC;
-            sprintf(log_inform,"Finish search: (%s) %s(%d)  %.2f sec",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, st4);
-            std::cout<<log_inform<<std::endl;
+
+            st4 = clock();
+            tt = (st4-st3)/CLOCKS_PER_SEC;
+            sprintf(log_inform,"Finish search: (%s) %s(%d). %.2f sec",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, st4);
+            if(rank == 0){std::cout<<log_inform<<std::endl;}
+            write_log(log_path, log_inform);
+
         }
-        st4 = clock();
-        st3 = (st4-st1)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"Finish: %s(%d)  %.2f sec",field_info.field_name[my_fnm], my_fnm, st3);
-        std::cout<<log_inform<<std::endl<<std::endl;
+        st5 = clock();
+        tt = (st5-st1)/CLOCKS_PER_SEC;
+        sprintf(log_inform,"Finish: %s(%d). %.2f sec",field_info.field_name[my_fnm], my_fnm, tt);
+        if(rank == 0){std::cout<<log_inform<<std::endl;}
+        write_log(log_path, log_inform);
     }
 
     
