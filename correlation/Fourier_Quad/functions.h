@@ -89,7 +89,7 @@ struct data_info
     MY_FLOAT *mg_bin;
     int mg_bin_num;
 
-    int chi_bin_num=10;
+    int chi_bin_num;
     double *num_count_chit[MAX_FIELD];
     double *num_count_chix[MAX_FIELD];
 
