@@ -216,6 +216,8 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
         field_info->num_count_chit[i] = new double[field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i]]{};
         field_info->num_count_chix[i] = new double[field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i]]{};
     }
+    field_info->total_num_count_chit = new double[field_info->iexpo_chi_block_len]{};
+
     // read the correlated shear pairs generated before for time-saving
     for(i=0; i<field_info->chi_guess_num; i++)
     {
@@ -237,6 +239,35 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
 
 }
 
+void initialize_field_chi_block(data_info *field_info, int field_label)
+{
+    for(int i=0; i<field_info->field_chi_block_len[field_label]; i++)
+    {
+        field_info->num_count_chit[field_label][i] = 0;
+    }
+}
+
+void initialize_total_chi_block(data_info *field_info)
+{
+    for(int i=0; i<field_info->iexpo_chi_block_len; i++)
+    {
+        field_info->total_num_count_chit[i] = 0;
+        field_info->total_num_count_chix[i] = 0;
+    }
+}
+
+void collect_chi_block(data_info *field_info, int field_label)
+{
+    int i,j;
+    for(i=0;i<field_info->exposure_num_of_field[field_label]; i++)
+    {
+        for(j=0; j<field_info->iexpo_chi_block_len; j++)
+        {
+            field_info->total_num_count_chit[j] = field_info->num_count_chit[field_label][j + i*field_info->iexpo_chi_block_len];
+            field_info->total_num_count_chix[j] = field_info->num_count_chix[field_label][j + i*field_info->iexpo_chi_block_len];
+        }
+    }
+}
 
 void task_distribution(int portion, int my_id, data_info *field_info)
 {   
@@ -633,6 +664,43 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     
     delete[] block_label_mask;
     delete[] target_block_label;
+}
+
+void save_field_chi_block(data_info*field_info, int field_label)
+{
+    int i, j, k;
+    char result_path[600], set_name[50];
+    double *expo_chi_buff, *radius_chi_buf;
+    double temp;
+
+    expo_chi_buff = new double[field_info->iexpo_chi_block_len];
+    radius_chi_buf = new double[field_info->ir_chi_block_len];
+
+    sprintf(set_name,"/data");
+    for(i=0; i<field_info->exposure_num_of_field[field_label]; i++)
+    {   
+        temp = 0;
+        for(j=0; field_info->iexpo_chi_block_len; j++)
+        {
+            temp += field_info->num_count_chit[field_label][i*field_info->iexpo_chi_block_len+j];
+        }
+
+        k = 0;
+        if(fabs(temp) > 1)
+        {
+            sprintf(result_path, "%s/result/%s-%d.hdf5",field_info->parent_path, field_info->field_name[field_label], k);
+            // write_h5(result_path, set_name, field_info->num_count_chit, )
+            for(j=0; j<field_info->theta_bin_num; j++)
+            {
+
+            }
+            k++;
+        }
+
+    }
+
+    delete[] expo_chi_buff;
+    delete[] radius_chi_buf;
 }
 
 void find_pairs_same_field_(data_info *field_info, int field_label)

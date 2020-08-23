@@ -92,8 +92,12 @@ struct data_info
     int chi_bin_num;
     int chi_block_len, ir_chi_block_len, iexpo_chi_block_len;
     int *field_chi_block_len;
+    // of each field, for errorbar estimation
     double *num_count_chit[MAX_FIELD];
     double *num_count_chix[MAX_FIELD];
+    // of all fields, for the signal estimation
+    double *total_num_count_chit;
+    double *total_num_count_chix;
 
     int gg_len;
     MY_FLOAT *gg_1[200];
@@ -108,9 +112,15 @@ void read_field_data(data_info *field_info);
 
 void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank);
 
+void initialize_field_chi_block(data_info *field_info, int field_label);
+
+void initialize_total_chi_block(data_info *field_info);
+
+void collect_chi_block(data_info *field_info, int field_label);
+
 void task_distribution(int portion, int my_id, data_info *field_info);
 
-void fast_hist(MY_FLOAT data, MY_FLOAT*bins, int *num_in_bin, int bin_num);
+void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy);
 
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
 // if lable == 1, calculate, else, not
@@ -118,6 +128,7 @@ void field_distance(data_info *field_info, int field_label_0, int field_label_1,
 void find_pairs_same_field(data_info *field_info, int field_label);
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
 
+void save_field_chi_block(data_info*field_info, int field_label);
 #endif
 
 

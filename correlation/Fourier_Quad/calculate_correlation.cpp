@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     data_info field_info;
 
     int i,j;
-    int my_fnm, target_fnm, total_field_num, label;
+    int my_fnm, target_fnm, total_field_num, label, num_label;
 
 
     strcpy(source_list, argv[1]);
@@ -109,10 +109,12 @@ int main(int argc, char *argv[])
         std::cout<<std::endl<<field_info.gg_len<<std::endl<<std::endl;        
     }
 
-
+    initialize_total_chi_block(&field_info);
     // loop the fields
     for(my_fnm=field_info.my_field_st; my_fnm < field_info.my_field_ed; my_fnm++)
     {   
+        initialize_field_chi_block(&field_info,my_fnm);
+        
         ////////////////  search pairs in the current field  ////////////////////
         st1 = clock();
         sprintf(log_inform,"Start: %s(%d) num: %d",field_info.field_name[my_fnm], my_fnm,field_info.total_gal_num_z1[my_fnm]);
@@ -126,9 +128,11 @@ int main(int argc, char *argv[])
         if (field_info.total_gal_num_z1[my_fnm] > 0)
         {
             find_pairs_same_field(&field_info, my_fnm);
+            num_label = 1;
         }
         else
-        {
+        {   
+            num_label= 0;
             continue;
         }
         st2 = clock();
@@ -138,32 +142,42 @@ int main(int argc, char *argv[])
         if(rank == 0){std::cout<<log_inform<<std::endl;}
         write_log(log_path, log_inform);
 
-        ////////////////// search pairs in the target fields  //////////////////////
-        for(target_fnm=my_fnm; target_fnm<total_field_num; target_fnm++)
-        {   
-            st3 = clock();
-            sprintf(log_inform,"Search: (%s) %s(%d) num: %d",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, field_info.total_gal_num_z2[target_fnm]);
-            if(rank == 0){std::cout<<log_inform<<std::endl;}
-            write_log(log_path, log_inform);
+        if(num_label == 1)
+        {
+            ////////////////// search pairs in the target fields  //////////////////////
+            for(target_fnm=my_fnm; target_fnm<total_field_num; target_fnm++)
+            {   
+                st3 = clock();
+                sprintf(log_inform,"Search: (%s) %s(%d) num: %d",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, field_info.total_gal_num_z2[target_fnm]);
+                if(rank == 0){std::cout<<log_inform<<std::endl;}
+                write_log(log_path, log_inform);
 
-            field_distance(&field_info, my_fnm, target_fnm, label);
+                field_distance(&field_info, my_fnm, target_fnm, label);
 
-            if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
-            {
-                find_pairs_diff_field(&field_info, my_fnm, target_fnm);
+                if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
+                {
+                    find_pairs_diff_field(&field_info, my_fnm, target_fnm);
+                }
+                else
+                {
+                    continue;
+                }
+
+                st4 = clock();
+                tt = (st4-st3)/CLOCKS_PER_SEC;
+                sprintf(log_inform,"Finish search: (%s) %s(%d). %.2f sec",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, st4);
+                if(rank == 0){std::cout<<log_inform<<std::endl;}
+                write_log(log_path, log_inform);
+
             }
-            else
-            {
-                continue;
-            }
-
-            st4 = clock();
-            tt = (st4-st3)/CLOCKS_PER_SEC;
-            sprintf(log_inform,"Finish search: (%s) %s(%d). %.2f sec",field_info.field_name[my_fnm],field_info.field_name[target_fnm], target_fnm, st4);
-            if(rank == 0){std::cout<<log_inform<<std::endl;}
-            write_log(log_path, log_inform);
-
         }
+
+        if(num_label == 1)
+        {
+            collect_chi_block(&field_info, my_fnm);
+            save_field_chi_block(&field_info, my_fnm);
+        }
+
         st5 = clock();
         tt = (st5-st1)/CLOCKS_PER_SEC;
         sprintf(log_inform,"Finish: %s(%d). %.2f sec",field_info.field_name[my_fnm], my_fnm, tt);
