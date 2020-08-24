@@ -67,8 +67,10 @@ mv_idx = 37
 expo_idx = 38
 
 
-fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
-result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+fourier_cata_path = "/coma/hklee/fourier_cata/original_cata"
+result_cata_path = "/coma/hklee/correlation/cata"
+# fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
+# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
 cmd = argv[1]
 if cmd == "prepare":

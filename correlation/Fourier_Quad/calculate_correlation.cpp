@@ -105,11 +105,15 @@ int main(int argc, char *argv[])
         std::cout<<std::endl<<"Bin num for PDF_SYM: "<<field_info.chi_bin_num<<std::endl;
         show_arr(field_info.mg_bin, 1, field_info.mg_bin_num+1);
 
-        std::cout<<std::endl<<field_info.parent_path<<std::endl;
-        std::cout<<std::endl<<field_info.gg_len<<std::endl<<std::endl;        
-    }
+        std::cout<<std::endl<<field_info.mg_bin_num<<" "<<field_info.chi_block_len<<" "<<field_info.ir_chi_block_len<<" "<<
+        field_info.iexpo_chi_block_len<<std::endl<<std::endl;
 
+        std::cout<<std::endl<<field_info.parent_path<<std::endl;
+        std::cout<<std::endl<<field_info.gg_len<<std::endl<<std::endl;     
+    }
+    std::cout<<123<<" "<<field_info.iexpo_chi_block_len<<std::endl;
     initialize_total_chi_block(&field_info);
+    std::cout<<123<<std::endl;
     // loop the fields
     for(my_fnm=field_info.my_field_st; my_fnm < field_info.my_field_ed; my_fnm++)
     {   
@@ -127,7 +131,7 @@ int main(int argc, char *argv[])
 
         if (field_info.total_gal_num_z1[my_fnm] > 0)
         {
-            find_pairs_same_field(&field_info, my_fnm);
+            // find_pairs_same_field(&field_info, my_fnm);
             num_label = 1;
         }
         else
@@ -154,14 +158,14 @@ int main(int argc, char *argv[])
 
                 field_distance(&field_info, my_fnm, target_fnm, label);
 
-                if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
-                {
-                    find_pairs_diff_field(&field_info, my_fnm, target_fnm);
-                }
-                else
-                {
-                    continue;
-                }
+                // if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
+                // {
+                //     find_pairs_diff_field(&field_info, my_fnm, target_fnm);
+                // }
+                // else
+                // {
+                //     continue;
+                // }
 
                 st4 = clock();
                 tt = (st4-st3)/CLOCKS_PER_SEC;

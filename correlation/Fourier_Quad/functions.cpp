@@ -217,6 +217,7 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
         field_info->num_count_chix[i] = new double[field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i]]{};
     }
     field_info->total_num_count_chit = new double[field_info->iexpo_chi_block_len]{};
+    field_info->total_num_count_chix = new double[field_info->iexpo_chi_block_len]{};
 
     // read the correlated shear pairs generated before for time-saving
     for(i=0; i<field_info->chi_guess_num; i++)
@@ -668,38 +669,50 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
 void save_field_chi_block(data_info*field_info, int field_label)
 {
-    int i, j, k;
+    int i, j, k, m, n, p;
     char result_path[600], set_name[50];
     double *expo_chi_buff, *radius_chi_buf;
     double temp;
 
-    expo_chi_buff = new double[field_info->iexpo_chi_block_len];
     radius_chi_buf = new double[field_info->ir_chi_block_len];
 
-    sprintf(set_name,"/data");
+    p = field_info->chi_guess_num*field_info->mg_bin_num;
+    
     for(i=0; i<field_info->exposure_num_of_field[field_label]; i++)
     {   
+        k = 0;
         temp = 0;
         for(j=0; field_info->iexpo_chi_block_len; j++)
         {
             temp += field_info->num_count_chit[field_label][i*field_info->iexpo_chi_block_len+j];
         }
-
-        k = 0;
+        // if there're number counts in chi block of this exposure, it will be saved to file
         if(fabs(temp) > 1)
         {
             sprintf(result_path, "%s/result/%s-%d.hdf5",field_info->parent_path, field_info->field_name[field_label], k);
-            // write_h5(result_path, set_name, field_info->num_count_chit, )
+
             for(j=0; j<field_info->theta_bin_num; j++)
             {
+                n = i*field_info->iexpo_chi_block_len + j*field_info->ir_chi_block_len;
+                for(m=0; m<field_info->ir_chi_block_len; m++)
+                {
+                    radius_chi_buf[m] = field_info->num_count_chit[field_label][n+m];
+                }
 
+                sprintf(set_name,"/theta_%d", j);
+                if(file_exist(result_path))
+                {
+                    write_h5(result_path, set_name, radius_chi_buf, p, field_info->mg_bin_num, false);
+                }
+                else
+                {
+                    write_h5(result_path, set_name, radius_chi_buf, p, field_info->mg_bin_num, true);
+                }
             }
             k++;
         }
 
     }
-
-    delete[] expo_chi_buff;
     delete[] radius_chi_buf;
 }
 

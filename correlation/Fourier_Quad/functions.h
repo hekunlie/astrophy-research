@@ -43,6 +43,7 @@ struct data_info
     int *total_gal_num_z2;// gal num in each field of zbin 2
     // redshift bin
     int zbin_num;
+    // read the gal num in each zbin of field
     int *num_in_zbin;
     MY_FLOAT *zbin;
     /////////////////////////////////////
