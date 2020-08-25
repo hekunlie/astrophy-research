@@ -544,10 +544,10 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
     MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
 
-    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1, mnu1;
+    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
     MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
     MY_FLOAT temp_x, temp_y;
-    int ix, iy, in, im;
+    int ix, iy, im, im1,im2;
     int iexpo_len, ir_len, ic_len;
 
     MY_FLOAT delta_ra, delta_dec, delta_radius;
@@ -599,7 +599,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
-        st1 = clock();
+        // st1 = clock();
         for(i=field_info->block_st_z1[field_label][ib1]; i<field_info->block_ed_z1[field_label][ib1]; i++)
         {
             // loop the grid in the first zbin, zbin_label_0
@@ -687,40 +687,41 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
                                 temp_x = mg1_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu1_z1;
                                 temp_y = mg1_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu1_z2;
-                                // hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
                                 
-                                hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
 
-                                // for(im=0;im<field_info->mg_bin_num;im++)
-                                // {
-                                //     if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1])
-                                //     {ix = im; break;}
-                                // }
-                                // for(im=0;im<field_info->mg_bin_num;im++)
-                                // {
-                                //     if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1])
-                                //     {iy = im; break;}
-                                // }
+                                if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
+                                else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                
+                                for(im=im1; im<im2; im++)
+                                {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
 
+                                if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
+                                else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+
+                                for(im=im1; im<im2; im++)
+                                {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
                                 field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                                // std::cout<<iy<<" "<<ix<<std::endl;
 
                                 temp_x = mg2_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu2_z1;
                                 temp_y = mg2_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu2_z2;
-                                // // hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
 
-                                hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
 
-                                // for(im=0;im<field_info->mg_bin_num;im++)
-                                // {
-                                //     if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1])
-                                //     {ix = im; break;}
-                                // }
-                                // for(im=0;im<field_info->mg_bin_num;im++)
-                                // {
-                                //     if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1])
-                                //     {iy = im; break;}
-                                // }
+                                if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
+                                else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                
+                                for(im=im1; im<im2; im++)
+                                {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
+
+                                if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
+                                else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                
+                                for(im=im1; im<im2; im++)
+                                {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                                // std::cout<<iy<<" "<<ix<<std::endl;
                                 field_info->loop_label += 1;
                             }
                         }
@@ -732,8 +733,8 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                 }
             }
         }
-        st2 = clock();
-        std::cout<<"One block "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+        // st2 = clock();
+        // std::cout<<"One block "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
     }
     
     delete[] block_label_mask;

@@ -151,44 +151,44 @@ int main(int argc, char *argv[])
         // fnm_st = field_info.theta_bin_num*field_info.chi_guess_num*field_info.mg_bin_num;
         // show_arr(field_info.total_num_count_chit,fnm_st,10);
         // MPI_Barrier(MPI_COMM_WORLD);
-        exit(0);
-        if(num_label == 1)
-        {   
-            if(field_info.zbin_label_0 ==  field_info.zbin_label_1){fnm_st = my_fnm + 1;}
-            else{fnm_st = 0;}
-            ////////////////// search pairs in the target fields  //////////////////////
-            for(target_fnm=fnm_st; target_fnm<total_field_num; target_fnm++)
-            {   
-                if(target_fnm != my_fnm)
-                {
-                    st3 = clock();
+        
+        // if(num_label == 1)
+        // {   
+        //     if(field_info.zbin_label_0 ==  field_info.zbin_label_1){fnm_st = my_fnm + 1;}
+        //     else{fnm_st = 0;}
+        //     ////////////////// search pairs in the target fields  //////////////////////
+        //     for(target_fnm=fnm_st; target_fnm<total_field_num; target_fnm++)
+        //     {   
+        //         if(target_fnm != my_fnm)
+        //         {
+        //             st3 = clock();
 
-                    field_distance(&field_info, my_fnm, target_fnm, label);
+        //             field_distance(&field_info, my_fnm, target_fnm, label);
 
-                    if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
-                    {
+        //             if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
+        //             {
 
-                        sprintf(log_inform,"Search: (%d-%s) %d-%s num: %d",my_fnm,field_info.field_name[my_fnm],
-                        target_fnm, field_info.field_name[target_fnm],field_info.total_gal_num_z2[target_fnm]);
-                        if(rank == 0){std::cout<<log_inform<<std::endl;}
-                        write_log(log_path, log_inform);
+        //                 sprintf(log_inform,"Search: (%d-%s) %d-%s num: %d",my_fnm,field_info.field_name[my_fnm],
+        //                 target_fnm, field_info.field_name[target_fnm],field_info.total_gal_num_z2[target_fnm]);
+        //                 if(rank == 0){std::cout<<log_inform<<std::endl;}
+        //                 write_log(log_path, log_inform);
 
-                        find_pairs_diff_field(&field_info, my_fnm, target_fnm);
+        //                 find_pairs_diff_field(&field_info, my_fnm, target_fnm);
 
-                        st4 = clock();
-                        tt = (st4-st3)/CLOCKS_PER_SEC;
-                        sprintf(log_inform,"Finish search: (%d-%s) %d-%s. %.2f sec",my_fnm,field_info.field_name[my_fnm],
-                        target_fnm,field_info.field_name[target_fnm], tt);
-                        if(rank == 0){std::cout<<log_inform<<std::endl;}
-                        write_log(log_path, log_inform);
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-            }
-        }
+        //                 st4 = clock();
+        //                 tt = (st4-st3)/CLOCKS_PER_SEC;
+        //                 sprintf(log_inform,"Finish search: (%d-%s) %d-%s. %.2f sec",my_fnm,field_info.field_name[my_fnm],
+        //                 target_fnm,field_info.field_name[target_fnm], tt);
+        //                 if(rank == 0){std::cout<<log_inform<<std::endl;}
+        //                 write_log(log_path, log_inform);
+        //             }
+        //             else
+        //             {
+        //                 continue;
+        //             }
+        //         }
+        //     }
+        // }
 
         st5 = clock();
         tt = (st5-st1)/CLOCKS_PER_SEC;
@@ -201,8 +201,8 @@ int main(int argc, char *argv[])
         write_log(log_path, log_inform);
         if(num_label == 1)
         {
-            collect_chi_block(&field_info, my_fnm);
-            save_field_chi_block(&field_info, my_fnm);
+            ;// collect_chi_block(&field_info, my_fnm);
+            // save_field_chi_block(&field_info, my_fnm);
         }        
         
     }
