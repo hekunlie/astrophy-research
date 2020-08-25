@@ -88,7 +88,7 @@ struct data_info
     int chi_guess_num;
 
     MY_FLOAT *mg_bin;
-    int mg_bin_num;
+    int mg_bin_num, mg_bin_num2;
 
     int chi_bin_num;
     int chi_block_len, ir_chi_block_len, iexpo_chi_block_len;
@@ -122,6 +122,9 @@ void collect_chi_block(data_info *field_info, int field_label);
 void task_distribution(int portion, int my_id, data_info *field_info);
 
 void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy);
+
+void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
+
 
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
 // if lable == 1, calculate, else, not

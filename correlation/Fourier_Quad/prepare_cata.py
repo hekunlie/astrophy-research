@@ -248,7 +248,7 @@ if cmd == "prepare":
                 h5f_dst["/z%d/block_ed"%iz] = block_ed
                 h5f_dst["/z%d/ra_bin"%iz] = ra_bin
                 h5f_dst["/z%d/dec_bin"%iz] = dec_bin
-                h5f_dst["/z%d/exposure_label"%iz] = dst_data[:,9].astype(dtype=numpy.intc)
+                h5f_dst["/z%d/exposure_label"%iz] = (dst_data[:,9] - dst_data[:,9].min()).astype(dtype=numpy.intc)
                 h5f_dst["/z%d/block_label"%iz] = dst_data[:,10].astype(dtype=numpy.intc)
 
         h5f_dst["/field_pos"] = field_pos
