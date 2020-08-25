@@ -521,8 +521,9 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     int *target_block_label = new int[field_info->block_num[field_label]]{};
     int *block_label_mask = new int[field_info->block_num[field_label]]{};
     int target_block_num = 0;
-    // decide the blocks in the target field, field_label_1, to calculation
-    for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
+
+    // decide which the blocks in the target field, field_label_1, to calculation
+    for(ib2=0; ib2<field_info->block_num[field_label]; ib2++)
     {
         block_label_mask[ib2] = 1;
     }
@@ -586,10 +587,13 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                         field_info->field_data_z1[field_label][m+field_info->mu_idx];
 
             expo_label_0 = field_info->field_expo_label_z1[field_label][i];
+            show_arr(field_info->field_expo_label_z1[field_label],20,1);
             iexpo_len = expo_label_0*field_info->iexpo_chi_block_len;
     
-            for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
+            for(k=0; k<target_block_num; k++)
             {
+                ib2=target_block_label[k];
+
                 for(j=field_info->block_st_z2[field_label][ib2]; j<field_info->block_ed_z2[field_label][ib2]; j++)
                 {   
                     if(field_info->field_expo_label_z2[field_label][j] !=  expo_label_0)
@@ -612,7 +616,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                             if(delta_radius > field_info->theta_bin[i] and delta_radius <= field_info->theta_bin[i+1])
                             {theta_tag=ir;break;}
                         }
-                        std::cout<<theta_tag<<std::endl;
+                        
                         if(theta_tag > -1)
                         {
                             // shear estimators rotation (position angle defined as East of North)
@@ -637,25 +641,28 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
                             mnu1_z2 += field_info->field_data_z2[field_label][n+field_info->mu_idx];
                             mnu2_z2 = field_info->field_data_z2[field_label][n+field_info->mu_idx] - mnu2_z2;
-
+                            
                             // the key part of PDF_SYM
                             ir_len = theta_tag*field_info->ir_chi_block_len + iexpo_len;
+
                             for(ic=0; ic<field_info->chi_guess_num; ic++)
                             {   
                                 if(field_info->loop_label == field_info->gg_len){field_info->loop_label = 0;}
 
                                 ic_len = ic*field_info->chi_block_len + ir_len;
+                                std::cout<<theta_tag<<" "<<expo_label_0<<" "<<ic_len<<std::endl;
 
                                 temp_x = mg1_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu1_z1;
                                 temp_y = mg1_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu1_z2;
                                 hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
                                 field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
-
+                                std::cout<<theta_tag<<" "<<ic_len + iy*field_info->mg_bin_num+ix<<std::endl;
+                                
                                 temp_x = mg2_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu2_z1;
                                 temp_y = mg2_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu2_z2;
                                 hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
-
+                                std::cout<<theta_tag<<" "<<ic_len + iy*field_info->mg_bin_num+ix<<std::endl;
                                 field_info->loop_label += 1;
                             }
                         }

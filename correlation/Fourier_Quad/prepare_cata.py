@@ -232,7 +232,7 @@ if cmd == "prepare":
                         dst_data[st:ed, 6] = final_data[:, dec_idx][idx_block]
                         dst_data[st:ed, 8] = final_data[:, redshift_idx][idx_block]
 
-                        dst_data[st:ed, 9] = final_data[:, expo_idx][idx_block]
+                        dst_data[st:ed, 9] = final_data[:, expo_idx][idx_block] - 1
                         dst_data[st:ed, 10] = ij
 
                         test_mask[st:ed] = 1
