@@ -213,8 +213,8 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     for(i=0; i<field_info->total_field_num; i++)
     {                      
         field_info->field_chi_block_len[i] = field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i];
-        field_info->num_count_chit[i] = new double[field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i]]{};
-        field_info->num_count_chix[i] = new double[field_info->iexpo_chi_block_len*field_info->exposure_num_of_field[i]]{};
+        field_info->num_count_chit[i] = new double[field_info->field_chi_block_len[i]]{};
+        field_info->num_count_chix[i] = new double[field_info->field_chi_block_len[i]]{};
     }
     field_info->total_num_count_chit = new double[field_info->iexpo_chi_block_len]{};
     field_info->total_num_count_chix = new double[field_info->iexpo_chi_block_len]{};
@@ -249,9 +249,11 @@ void initialize_field_chi_block(data_info *field_info, int field_label)
 }
 
 void initialize_total_chi_block(data_info *field_info)
-{
-    for(int i=0; i<field_info->iexpo_chi_block_len; i++)
-    {
+{   
+    int i;
+    
+    for(i=0; i<field_info->iexpo_chi_block_len; i++)
+    {   
         field_info->total_num_count_chit[i] = 0;
         field_info->total_num_count_chix[i] = 0;
     }
@@ -259,13 +261,14 @@ void initialize_total_chi_block(data_info *field_info)
 
 void collect_chi_block(data_info *field_info, int field_label)
 {
-    int i,j;
+    int i,j, k;
     for(i=0;i<field_info->exposure_num_of_field[field_label]; i++)
-    {
+    {   
+        k = i*field_info->iexpo_chi_block_len;
         for(j=0; j<field_info->iexpo_chi_block_len; j++)
         {
-            field_info->total_num_count_chit[j] = field_info->num_count_chit[field_label][j + i*field_info->iexpo_chi_block_len];
-            field_info->total_num_count_chix[j] = field_info->num_count_chix[field_label][j + i*field_info->iexpo_chi_block_len];
+            field_info->total_num_count_chit[j] = field_info->num_count_chit[field_label][j + k];
+            field_info->total_num_count_chix[j] = field_info->num_count_chix[field_label][j + k];
         }
     }
 }
@@ -324,14 +327,16 @@ void field_distance(data_info *field_info, int field_label_0, int field_label_1,
     cos_dec_2 = field_info->field_cen_cos_dec[field_label_1];
     delta_len_2 = field_info->field_delta_len[field_label_1];
 
-        // the seperation angle (arc minute)
+    // the seperation angle (arc minute)
     delta_ra = (ra_2 - ra_1)*cos_dec_1;
     delta_dec = dec_2 - dec_1;
     delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_1 - delta_len_2;
-
+    
     label = 0;
-    if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num+1])
-    {
+    if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num])
+    {   
+        // std::cout<<ra_1<<" "<<dec_1<<std::endl;
+        // std::cout<<ra_2<<" "<<dec_2<<" "<<delta_radius<<" "<< field_info->theta_bin[field_info->theta_bin_num]<<std::endl;
         label = 1;
     }
 }
@@ -382,7 +387,7 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
             delta_dec = dec_z2 - dec_z1;
             delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_z1 - delta_len_z2;
 
-            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num+1] and block_label_mask[ib2] == 1)
+            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num] and block_label_mask[ib2] == 1)
             {
                 target_block_label[target_block_num] = ib2;
                 block_label_mask[ib2] = 0;
@@ -546,7 +551,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
             delta_dec = dec_z2 - dec_z1;
             delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_z1 - delta_len_z2;
 
-            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num+1] and block_label_mask[ib2] == 1)
+            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num] and block_label_mask[ib2] == 1)
             {
                 target_block_label[target_block_num] = ib2;
                 block_label_mask[ib2] = 0;
@@ -554,7 +559,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
             }
         }
     }
-
+    
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
         // if search pairs between different zbin, if should loop all the grids
@@ -600,13 +605,14 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                         delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
                         delta_dec = dec_z2 - dec_z1;
                         delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
-
+                        
                         theta_tag = -1;
                         for(ir=0; ir<field_info->theta_bin_num; ir++)
                         {
                             if(delta_radius > field_info->theta_bin[i] and delta_radius <= field_info->theta_bin[i+1])
                             {theta_tag=ir;break;}
                         }
+                        std::cout<<theta_tag<<std::endl;
                         if(theta_tag > -1)
                         {
                             // shear estimators rotation (position angle defined as East of North)
@@ -671,7 +677,7 @@ void save_field_chi_block(data_info*field_info, int field_label)
 {
     int i, j, k, m, n, p;
     char result_path[600], set_name[50];
-    double *expo_chi_buff, *radius_chi_buf;
+    double *radius_chi_buf;
     double temp;
 
     radius_chi_buf = new double[field_info->ir_chi_block_len];
@@ -682,10 +688,12 @@ void save_field_chi_block(data_info*field_info, int field_label)
     {   
         k = 0;
         temp = 0;
-        for(j=0; field_info->iexpo_chi_block_len; j++)
+        // std::cout<<i<<" "<<temp<<" "<<field_info->exposure_num_of_field[field_label]<<std::endl;
+        for(j=0; j<field_info->iexpo_chi_block_len; j++)
         {
             temp += field_info->num_count_chit[field_label][i*field_info->iexpo_chi_block_len+j];
         }
+        // std::cout<<i<<" "<<temp<<std::endl;
         // if there're number counts in chi block of this exposure, it will be saved to file
         if(fabs(temp) > 1)
         {
