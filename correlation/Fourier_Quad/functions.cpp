@@ -199,7 +199,7 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     field_info->mg_bin_num = j -1;
     field_info->mg_bin_num2 = (j-1)/2;
     field_info->mg_bin_num1 = field_info->mg_bin_num2/2;
-    field_info->mg_bin_num3 = field_info->mg_bin_num1+ field_info->mg_bin_num2;
+    field_info->mg_bin_num3 = field_info->mg_bin_num1 + field_info->mg_bin_num2;
 
     read_h5(data_path, set_name, field_info->mg_bin);
 
@@ -237,6 +237,7 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
         sprintf(set_name,"/%d/g22",i);
         read_h5(data_path, set_name, field_info->gg_2[i]);
     }
+    field_info->loop_label = 0;
 
     // task distribution
     field_info->field_num_each_rank = new int[total_field_num]{};
@@ -322,28 +323,28 @@ void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_nu
     {
         for(i=0; i<bin_num2; i++)
         {
-            if(x > bins[i] and x <= bins[i+1]){ix=i;break;}
+            if(x >= bins[i] and x < bins[i+1]){ix=i;break;}
         }
     }
     else
     {
         for(i=bin_num2; i<bin_num; i++)
         {
-            if(x > bins[i] and x <= bins[i+1]){ix=i;break;}
+            if(x >= bins[i] and x < bins[i+1]){ix=i;break;}
         }
     }
     if(y < 0)
     {
         for(i=0; i<bin_num2; i++)
         {
-            if(y > bins[i] and y <= bins[i+1]){iy=i;break;}
+            if(y >= bins[i] and y < bins[i+1]){iy=i;break;}
         }
     }
     else
     {
         for(i=bin_num2; i<bin_num; i++)
         {
-            if(y > bins[i] and y <= bins[i+1]){iy=i;break;}
+            if(y >= bins[i] and y < bins[i+1]){iy=i;break;}
         }
     }
 }
@@ -598,6 +599,9 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     int target_block_num = 0;
     double st1, st2;
 
+    int loop_label;
+    loop_label = field_info->loop_label;
+    std::cout<<loop_label<<std::endl;
     // decide which the blocks in the target field, field_label_1, to calculation
     for(ib2=0; ib2<field_info->block_num[field_label]; ib2++)
     {
@@ -720,15 +724,17 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
                             for(ic=0; ic<field_info->chi_guess_num; ic++)
                             {   
-                                if(field_info->loop_label == field_info->gg_len){field_info->loop_label = 0;}
+                                if(loop_label >= field_info->gg_len){loop_label = 0;}
 
                                 ic_len = ic*field_info->chi_block_len + ir_len;
                                 // std::cout<<theta_tag<<" "<<expo_label_0<<" "<<ic_len<<std::endl;
-
-                                temp_x = mg1_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu1_z1;
-                                temp_y = mg1_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu1_z2;
+                                // std::cout<<loop_label<<std::endl;
+                                temp_x = mg1_z1 - field_info->gg_1[ic][loop_label]*mnu1_z1;
+                                temp_y = mg1_z2 - field_info->gg_2[ic][loop_label]*mnu1_z2;
                                 
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
+                                field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
 
                                 // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
                                 // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
@@ -742,48 +748,50 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 // for(im=im1; im<im2; im++)
                                 // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
 
-                                if(temp_x < 0)
-                                {
-                                    if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
-                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                    else
-                                    { im1 = 0; im2=field_info->mg_bin_num1;}
-                                }
-                                else
-                                {
-                                    if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
-                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                    else
-                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                }
-                                for(im=im1; im<im2; im++)
-                                {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
+                                // if(temp_x < 0)
+                                // {
+                                //     if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
+                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                //     else
+                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
+                                // }
+                                // else
+                                // {
+                                //     if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
+                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                //     else
+                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                // }
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
                                 
-                                if(temp_y < 0)
-                                {
-                                    if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
-                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                    else
-                                    { im1 = 0; im2=field_info->mg_bin_num1;}
-                                }
-                                else
-                                {
-                                    if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
-                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                    else
-                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                }
-                                for(im=im1; im<im2; im++)
-                                {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
-
-                                field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                                // if(temp_y < 0)
+                                // {
+                                //     if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
+                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                //     else
+                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
+                                // }
+                                // else
+                                // {
+                                //     if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
+                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                //     else
+                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                // }
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
                                 // std::cout<<iy<<" "<<ix<<std::endl;
 
-                                temp_x = mg2_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu2_z1;
-                                temp_y = mg2_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu2_z2;
+                                field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                                
+
+                                temp_x = mg2_z1 - field_info->gg_1[ic][loop_label]*mnu2_z1;
+                                temp_y = mg2_z2 - field_info->gg_2[ic][loop_label]*mnu2_z2;
 
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
-
+                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
+                                field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
                                 // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
                                 // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
                                 
@@ -796,44 +804,44 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 // for(im=im1; im<im2; im++)
                                 // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
 
-                                if(temp_x < 0)
-                                {
-                                    if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
-                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                    else
-                                    { im1 = 0; im2=field_info->mg_bin_num1;}
-                                }
-                                else
-                                {
-                                    if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
-                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                    else
-                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                }
-                                for(im=im1; im<im2; im++)
-                                {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
+                                // if(temp_x < 0)
+                                // {
+                                //     if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
+                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                //     else
+                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
+                                // }
+                                // else
+                                // {
+                                //     if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
+                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                //     else
+                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                // }
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
                                 
-                                if(temp_y < 0)
-                                {
-                                    if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
-                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                    else
-                                    { im1 = 0; im2=field_info->mg_bin_num1;}
-                                }
-                                else
-                                {
-                                    if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
-                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                    else
-                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                }
-                                for(im=im1; im<im2; im++)
-                                {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
-
+                                // if(temp_y < 0)
+                                // {
+                                //     if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
+                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                //     else
+                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
+                                // }
+                                // else
+                                // {
+                                //     if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
+                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                //     else
+                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                // }
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
+                                // std::cout<<iy<<" "<<ix<<std::endl;
 
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
                                 // std::cout<<iy<<" "<<ix<<std::endl;
-                                field_info->loop_label += 1;
+                                loop_label += 1;
                             }
                         }
                     }
@@ -847,7 +855,8 @@ void find_pairs_same_field(data_info *field_info, int field_label)
         // st2 = clock();
         // std::cout<<"One block "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
     }
-    
+    field_info->loop_label = loop_label;
+
     delete[] block_label_mask;
     delete[] target_block_label;
 }

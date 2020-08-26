@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
         std::cout<<"Chi guess: "<<field_info.chi_guess_num<<" points"<<std::endl;
         show_arr(field_info.chi_guess, 1, field_info.chi_guess_num);
-
+        std::cout<<std::endl;
         std::cout<<"Bin num for PDF_SYM: "<<field_info.mg_bin_num<<" "<<field_info.mg_bin_num1<<" "<<field_info.mg_bin_num2<<" "<<field_info.mg_bin_num3<<std::endl;
         show_arr(field_info.mg_bin, 1, field_info.mg_bin_num+1);
 
