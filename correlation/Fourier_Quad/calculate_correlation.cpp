@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     data_info field_info;
 
     int i,j;
-    int my_fnm, target_fnm,fnm_st, total_field_num, label, num_label;
+    int fnm_1, fnm_2, total_field_num, label, num_label;
 
 
     strcpy(source_list, argv[1]);
@@ -41,20 +41,24 @@ int main(int argc, char *argv[])
     
 
     // read the information of each exposure file
-    initialize(source_list, &field_info, total_field_num, numprocs, rank);
+    initialize(source_list, &field_info, total_field_num);
 
     // read the catalog of redshift bin z1 & z2
     read_field_data(&field_info);
 
+    // find all the potential field pair for calculation (i, j),
+    // does not include the field itself i!= j
+    task_prepare(numprocs, rank, &field_info);
 
     
 
+    ////////////////////////////////  PRINT INFO  ////////////////////////////////////////////
     if(rank == 0){std::cout<<"Initialization"<<std::endl;}
     MPI_Barrier(MPI_COMM_WORLD);
 
-#ifdef PRINT_INFO
     if(rank==0)
     {
+#ifdef PRINT_INFO
         for(i=0;i<total_field_num;i++)
         {
             std::cout<<field_info.field_name_path[i]<<"  "<<field_info.field_name[i]<<"  "<<field_info.exposure_num_of_field[i]
@@ -66,23 +70,25 @@ int main(int argc, char *argv[])
             <<"  total gal nun z1: "<<field_info.total_gal_num_z1[i]
             <<"  total gal nun z2: "<<field_info.total_gal_num_z2[i]<<std::endl;
         }
-
-        std::cout<<"Field each cpu:"<<std::endl;
-        show_arr(field_info.field_num_each_rank,1,numprocs);
+#endif
+        std::cout<<"Field pair for each cpu:"<<std::endl;
+        show_arr(field_info.field_pair_num_each_rank,1,numprocs);
         std::cout<<std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+    sprintf(log_inform, "Rank %d. Total field pairs: %d. My field pairs: %d ~ %d.", rank, field_info.field_pair_num,field_info.my_field_pair_st,field_info.my_field_pair_ed);
+    write_log(log_path, log_inform);
     for(j=0; j<numprocs;j++)
     {
         if(j==rank)
         {
-            std::cout<<rank<<" My field: "<<field_info.my_field_st<<"~"<<field_info.my_field_ed<<std::endl;
+            std::cout<<log_inform<<std::endl;
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-#endif
+
 
     if(rank == 0)
     {
@@ -112,91 +118,48 @@ int main(int argc, char *argv[])
         std::cout<<std::endl<<field_info.gg_len<<std::endl<<std::endl;     
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    ////////////////////////////////  PRINT INFO-end  ////////////////////////////////////////////
+
+
 
     initialize_total_chi_block(&field_info);
+    // initialize_field_chi_block(&field_info,my_fnm);
 
-    // loop the fields
-    for(my_fnm=field_info.my_field_st; my_fnm < field_info.my_field_ed; my_fnm++)
+    // loop the field pairs
+    for(i=field_info.my_field_pair_st; i < field_info.my_field_pair_ed; i++)
     {   
-        initialize_field_chi_block(&field_info,my_fnm);
+        // field pair label
+        fnm_1 = field_info.field_pair_label_1[i];
+        fnm_2 = field_info.field_pair_label_2[i];
+
         
         ////////////////  search pairs in the current field  ////////////////////
         st1 = clock();
-        sprintf(log_inform,"Start: %d-%s num: %d",my_fnm, field_info.field_name[my_fnm], field_info.total_gal_num_z1[my_fnm]);
+        sprintf(log_inform,"Start: %d-%s(%d) <-> %d-%s(%d)",fnm_1, field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1],
+        fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2]);
         if(rank == 0){std::cout<<log_inform<<std::endl;}
         write_log(log_path, log_inform);
         
-        sprintf(log_inform,"Search own field: %d-%s",my_fnm,field_info.field_name[my_fnm]);
-        if(rank == 0){std::cout<<log_inform<<std::endl;}
-        write_log(log_path, log_inform);
+        // if (fnm_1 == fnm_2)
+        // {
+        //     find_pairs_same_field(&field_info, fnm_1);
+        // }
+        // else
+        // {   
+        //     ;//find_pairs_diff_field(&field_info, fnm_1, fnm_2);
+        // }
 
-        if (field_info.total_gal_num_z1[my_fnm] > 0)
-        {
-            find_pairs_same_field(&field_info, my_fnm);
-            num_label = 1;
-        }
-        else
-        {   
-            num_label= 0;
-            continue;
-        }
+        find_pairs(&field_info, fnm_1, fnm_2);
+
         st2 = clock();
         tt =  (st2 - st1)/CLOCKS_PER_SEC;
 
-        sprintf(log_inform,"Finish own field: %d-%s. %.2f sec", my_fnm, field_info.field_name[my_fnm], tt);
-        if(rank == 0){std::cout<<log_inform<<std::endl;}
-        write_log(log_path, log_inform);
-
-        // collect_chi_block(&field_info, my_fnm);
-        // fnm_st = field_info.theta_bin_num*field_info.chi_guess_num*field_info.mg_bin_num;
-        // show_arr(field_info.total_num_count_chit,fnm_st,10);
-        // MPI_Barrier(MPI_COMM_WORLD);
-        
-        // if(num_label == 1)
-        // {   
-        //     if(field_info.zbin_label_0 ==  field_info.zbin_label_1){fnm_st = my_fnm + 1;}
-        //     else{fnm_st = 0;}
-        //     ////////////////// search pairs in the target fields  //////////////////////
-        //     for(target_fnm=fnm_st; target_fnm<total_field_num; target_fnm++)
-        //     {   
-        //         if(target_fnm != my_fnm)
-        //         {
-        //             st3 = clock();
-
-        //             field_distance(&field_info, my_fnm, target_fnm, label);
-
-        //             if(label == 1 and field_info.total_gal_num_z2[target_fnm]>0)
-        //             {
-
-        //                 sprintf(log_inform,"Search: (%d-%s) %d-%s num: %d",my_fnm,field_info.field_name[my_fnm],
-        //                 target_fnm, field_info.field_name[target_fnm],field_info.total_gal_num_z2[target_fnm]);
-        //                 if(rank == 0){std::cout<<log_inform<<std::endl;}
-        //                 write_log(log_path, log_inform);
-
-        //                 find_pairs_diff_field(&field_info, my_fnm, target_fnm);
-
-        //                 st4 = clock();
-        //                 tt = (st4-st3)/CLOCKS_PER_SEC;
-        //                 sprintf(log_inform,"Finish search: (%d-%s) %d-%s. %.2f sec",my_fnm,field_info.field_name[my_fnm],
-        //                 target_fnm,field_info.field_name[target_fnm], tt);
-        //                 if(rank == 0){std::cout<<log_inform<<std::endl;}
-        //                 write_log(log_path, log_inform);
-        //             }
-        //             else
-        //             {
-        //                 continue;
-        //             }
-        //         }
-        //     }
-        // }
-
-        st5 = clock();
-        tt = (st5-st1)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"Finish: %d-%s. %.2f sec",my_fnm, field_info.field_name[my_fnm], tt);
+        sprintf(log_inform,"Finish: %d-%s(%d) <-> %d-%s(%d) in %.2f sec.",fnm_1, field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1],
+        fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2], tt);
         if(rank == 0)
         {
             std::cout<<log_inform<<std::endl;
-            std::cout<<"===================================================="<<std::endl;
+            std::cout<<"================================================================="<<std::endl;
         }
         write_log(log_path, log_inform);
         if(num_label == 1)

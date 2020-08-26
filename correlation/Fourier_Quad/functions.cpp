@@ -137,7 +137,7 @@ void read_field_data(data_info *field_info)
 }
 
 
-void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank)
+void initialize(char *file_path, data_info *field_info, int total_field_num)
 {
     int i, j;
     char set_name[100];
@@ -238,11 +238,6 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
         read_h5(data_path, set_name, field_info->gg_2[i]);
     }
     field_info->loop_label = 0;
-
-    // task distribution
-    field_info->field_num_each_rank = new int[total_field_num]{};
-    task_distribution(numprocs, rank, field_info);
-
 }
 
 void initialize_field_chi_block(data_info *field_info, int field_label)
@@ -281,26 +276,74 @@ void collect_chi_block(data_info *field_info, int field_label)
 void task_distribution(int portion, int my_id, data_info *field_info)
 {   
     int i, j, m, n;
-    m = field_info->total_field_num/portion;
-    n = field_info->total_field_num%portion;
+    m = field_info->field_pair_num/portion;
+    n = field_info->field_pair_num%portion;
 
-    for(i=0; i<field_info->total_field_num; i++)
+    for(i=0; i<portion; i++)
     {
-        field_info->field_num_each_rank[i] = m;
-        if(i<n){field_info->field_num_each_rank[i]+=1;}
+        field_info->field_pair_num_each_rank[i] = m;
+        if(i<n){field_info->field_pair_num_each_rank[i]+=1;}
     }
     
 
     j = 0;
     for(i=0; i<my_id; i++)
     {
-        j += field_info->field_num_each_rank[i];
+        j += field_info->field_pair_num_each_rank[i];
     }
-    field_info->my_field_st = j;
-    field_info->my_field_ed = j + field_info->field_num_each_rank[my_id];
+    field_info->my_field_pair_st = j;
+    field_info->my_field_pair_ed = j + field_info->field_pair_num_each_rank[my_id];
 
 }
 
+void task_prepare(int numprocs, int rank, data_info *field_info)
+{
+    int i, ii, j, k;
+    int field_pair_count = 0;
+    k = field_info->total_field_num*field_info->total_field_num;
+    int *field_pair_1 = new int[k]{};
+    int *field_pair_2 = new int[k]{};
+    
+    for(i=0; i<field_info->total_field_num; i++)
+    {   
+        // to avoid double counting the pairs
+        ii = i;
+        if(field_info->zbin_label_0 != field_info->zbin_label_1){ii = 0;}
+
+        if(field_info->total_gal_num_z1[i] > 0)
+        {
+            for(j=ii; j<field_info->total_field_num; j++)
+            {   
+                if(field_info->total_gal_num_z2[j] > 0)
+                {
+                    field_distance(field_info, i, j, k);
+                    if(k == 1)
+                    {
+                        field_pair_1[field_pair_count] = i;
+                        field_pair_2[field_pair_count] = j;
+                        field_pair_count += 1;
+                    }                  
+                }
+            }
+        }
+    }
+    field_info->field_pair_label_1 = new int[field_pair_count];
+    field_info->field_pair_label_2 = new int[field_pair_count];    
+    field_info->field_pair_num = field_pair_count;
+
+    for(i=0;i<field_pair_count;i++)
+    {
+        field_info->field_pair_label_1[i] = field_pair_1[i];
+        field_info->field_pair_label_2[i] = field_pair_2[i];
+    }
+
+    // task distribution
+    field_info->field_pair_num_each_rank = new int[numprocs]{};
+    task_distribution(numprocs, rank, field_info);
+
+    delete[] field_pair_1;
+    delete[] field_pair_2;
+}
 
 
 void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy)
@@ -601,7 +644,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
     int loop_label;
     loop_label = field_info->loop_label;
-    std::cout<<loop_label<<std::endl;
+
     // decide which the blocks in the target field, field_label_1, to calculation
     for(ib2=0; ib2<field_info->block_num[field_label]; ib2++)
     {
@@ -735,52 +778,6 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
                                 hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
                                 field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
-
-                                // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
-                                // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
-                                
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
-
-                                // if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
-                                // else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
-
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
-
-                                // if(temp_x < 0)
-                                // {
-                                //     if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
-                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                //     else
-                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
-                                // }
-                                // else
-                                // {
-                                //     if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
-                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                //     else
-                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                // }
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
-                                
-                                // if(temp_y < 0)
-                                // {
-                                //     if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
-                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                //     else
-                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
-                                // }
-                                // else
-                                // {
-                                //     if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
-                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                //     else
-                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                // }
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
                                 // std::cout<<iy<<" "<<ix<<std::endl;
 
                                 field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
@@ -792,51 +789,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
                                 hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
                                 field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
-                                // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
-                                // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
-                                
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
-
-                                // if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
-                                // else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
-                                
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
-
-                                // if(temp_x < 0)
-                                // {
-                                //     if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
-                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                //     else
-                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
-                                // }
-                                // else
-                                // {
-                                //     if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
-                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                //     else
-                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                // }
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
-                                
-                                // if(temp_y < 0)
-                                // {
-                                //     if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
-                                //     { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
-                                //     else
-                                //     { im1 = 0; im2=field_info->mg_bin_num1;}
-                                // }
-                                // else
-                                // {
-                                //     if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
-                                //     { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
-                                //     else
-                                //     { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
-                                // }
-                                // for(im=im1; im<im2; im++)
-                                // {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
+   
                                 // std::cout<<iy<<" "<<ix<<std::endl;
 
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
@@ -860,6 +813,200 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     delete[] block_label_mask;
     delete[] target_block_label;
 }
+
+void find_pairs(data_info *field_info, int field_label_0, int field_label_1)
+{
+    int i, j, m, n, k;
+
+    int ib1, ib2;
+    int expo_label_0;
+    int ir, theta_tag, ic;
+    MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
+    MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
+
+    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
+    MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
+    MY_FLOAT temp_x, temp_y;
+    int ix, iy, im, im1,im2;
+    int iexpo_len, ir_len, ic_len;
+
+    MY_FLOAT delta_ra, delta_dec, delta_radius;
+    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    int *target_block_label = new int[field_info->block_num[field_label_1]]{};
+    int *block_label_mask = new int[field_info->block_num[field_label_1]]{};
+    int target_block_num = 0;
+    double st1, st2;
+
+    int loop_label;
+    loop_label = field_info->loop_label;
+
+    // decide which the blocks in the target field, field_label_1, to calculation
+    // it will calculate the distance of all the block pairs, if the distance is 
+    // smaller than the biggest separation angle, this block in "field_label_1"
+    // will be labeled as tagert block, it will be included in the calculation.
+    // it will loop all the galaxy pairs which is labeled by the
+    // block, then this pair will distributed to the right separation angle bin.
+    for(ib2=0; ib2<field_info->block_num[field_label_1]; ib2++)
+    {
+        block_label_mask[ib2] = 1;
+    }
+    for(ib1=0; ib1<field_info->block_num[field_label_0]; ib1++)
+    {
+        ra_z1 = field_info->block_cen_ra[field_label_0][ib1];
+        dec_z1 = field_info->block_cen_dec[field_label_0][ib1];
+        cos_dec_z1 = field_info->block_cen_cos_dec[field_label_0][ib1];
+        delta_len_z1 = field_info->block_delta_len[field_label_0][ib1];
+
+        // if search pairs between different zbin, if should loop all the grids
+        // else it should search in the grid that has a label larger than "ib1"
+        // to avoid double counting
+        if(field_label_0 == field_label_1 and field_info->zbin_label_0 == field_info->zbin_label_1){k=ib1;}
+        else{k=0;}
+
+        for(ib2=k; ib2<field_info->block_num[field_label_1]; ib2++)
+        {
+            ra_z2 = field_info->block_cen_ra[field_label_1][ib2];
+            dec_z2 = field_info->block_cen_dec[field_label_1][ib2];
+            cos_dec_z2 = field_info->block_cen_cos_dec[field_label_1][ib2];
+            delta_len_z2 = field_info->block_delta_len[field_label_1][ib2];
+
+            // the seperation angle (arc minute)
+            delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+            delta_dec = dec_z2 - dec_z1;
+            delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_z1 - delta_len_z2;
+
+            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num] and block_label_mask[ib2] == 1)
+            {
+                target_block_label[target_block_num] = ib2;
+                block_label_mask[ib2] = 0;
+                target_block_num += 1;
+            }
+        }
+    }
+    
+    for(ib1=0; ib1<field_info->block_num[field_label_0]; ib1++)
+    {   
+        // st1 = clock();
+        for(i=field_info->block_st_z1[field_label_0][ib1]; i<field_info->block_ed_z1[field_label_0][ib1]; i++)
+        {
+            // loop the grid in the first zbin, zbin_label_0
+            m = i*field_info->field_data_col;
+
+            ra_z1 = field_info->field_data_z1[field_label_0][m+field_info->ra_idx];
+            dec_z1 = field_info->field_data_z1[field_label_0][m+field_info->dec_idx];
+            cos_dec_z1 = field_info->field_data_z1[field_label_0][m+field_info->cos_dec_idx];
+
+            mg1_z1 = field_info->field_data_z1[field_label_0][m+field_info->mg1_idx];
+            mg2_z1 = field_info->field_data_z1[field_label_0][m+field_info->mg2_idx];
+
+            mnu1_z1 = field_info->field_data_z1[field_label_0][m+field_info->mn_idx] +
+                        field_info->field_data_z1[field_label_0][m+field_info->mu_idx];
+            mnu2_z1 = field_info->field_data_z1[field_label_0][m+field_info->mu_idx] -
+                        field_info->field_data_z1[field_label_0][m+field_info->mu_idx];
+
+            expo_label_0 = field_info->field_expo_label_z1[field_label_0][i];
+            
+            iexpo_len = expo_label_0*field_info->iexpo_chi_block_len;
+
+
+            for(k=0; k<target_block_num; k++)
+            {
+                ib2=target_block_label[k];
+
+                for(j=field_info->block_st_z2[field_label_1][ib2]; j<field_info->block_ed_z2[field_label_1][ib2]; j++)
+                {   
+
+                    // loop the grid in the second zbin, zbin_label_1
+                    n = j*field_info->field_data_col;
+
+                    ra_z2 = field_info->field_data_z2[field_label_1][n+field_info->ra_idx];
+                    dec_z2 = field_info->field_data_z2[field_label_1][n+field_info->dec_idx];
+                    cos_dec_z2 = field_info->field_data_z2[field_label_1][n+field_info->cos_dec_idx];
+
+                    // the seperation angle (arc minute)
+                    delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+                    delta_dec = dec_z2 - dec_z1;
+                    delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+                    
+                    theta_tag = -1;
+                    for(ir=0; ir<field_info->theta_bin_num; ir++)
+                    {
+                        if(delta_radius > field_info->theta_bin[ir] and delta_radius <= field_info->theta_bin[ir+1])
+                        {theta_tag=ir;break;}
+                    }
+                    // std::cout<<delta_radius<<" "<<field_info->theta_bin[theta_tag]<<" "<<field_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
+                    if(theta_tag > -1)
+                    {
+                        // shear estimators rotation (position angle defined as East of North)
+                        sin_theta = delta_ra/delta_radius;
+                        cos_theta = delta_dec/delta_radius;
+
+                        sin_2theta = 2*sin_theta*cos_theta;
+                        cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
+
+                        sin_4theta = 2*sin_2theta*cos_2theta;
+                        cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
+
+
+                        mg1_z2 = field_info->field_data_z2[field_label_1][n+field_info->mg1_idx]*cos_2theta - 
+                                field_info->field_data_z2[field_label_1][n+field_info->mg2_idx]*sin_2theta;
+                        mg2_z2 = field_info->field_data_z2[field_label_1][n+field_info->mg1_idx]*sin_2theta + 
+                                field_info->field_data_z2[field_label_1][n+field_info->mg2_idx]*cos_2theta;
+
+                        mnu1_z2 = field_info->field_data_z2[field_label_1][n+field_info->mu_idx]*cos_4theta -
+                                field_info->field_data_z2[field_label_1][n+field_info->mv_idx]*sin_4theta;
+                        mnu2_z2 = mnu1_z2;
+
+                        mnu1_z2 += field_info->field_data_z2[field_label_1][n+field_info->mn_idx];
+                        mnu2_z2 = field_info->field_data_z2[field_label_1][n+field_info->mn_idx] - mnu2_z2;
+                        
+                        // the key part of PDF_SYM
+                        ir_len = theta_tag*field_info->ir_chi_block_len + iexpo_len;
+
+                        for(ic=0; ic<field_info->chi_guess_num; ic++)
+                        {   
+                            if(loop_label >= field_info->gg_len){loop_label = 0;}
+
+                            ic_len = ic*field_info->chi_block_len + ir_len;
+                            // std::cout<<theta_tag<<" "<<expo_label_0<<" "<<ic_len<<std::endl;
+                            // std::cout<<loop_label<<std::endl;
+                            temp_x = mg1_z1 - field_info->gg_1[ic][loop_label]*mnu1_z1;
+                            temp_y = mg1_z2 - field_info->gg_2[ic][loop_label]*mnu1_z2;
+                            
+                            // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                            hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
+                            field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
+
+                            field_info->num_count_chit[field_label_0][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                            
+
+                            temp_x = mg2_z1 - field_info->gg_1[ic][loop_label]*mnu2_z1;
+                            temp_y = mg2_z2 - field_info->gg_2[ic][loop_label]*mnu2_z2;
+
+                            // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                            hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
+                            field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
+                           
+                            // std::cout<<iy<<" "<<ix<<std::endl;
+
+                            field_info->num_count_chix[field_label_0][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                            // std::cout<<iy<<" "<<ix<<std::endl;
+                            loop_label += 1;
+                        }
+                    }
+                }
+            }
+        }
+        // st2 = clock();
+        // std::cout<<"One block "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+    }
+    field_info->loop_label = loop_label;
+
+    delete[] block_label_mask;
+    delete[] target_block_label;
+}
+
 
 void save_field_chi_block(data_info*field_info, int field_label)
 {

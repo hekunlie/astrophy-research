@@ -80,8 +80,11 @@ struct data_info
     int *block_num;
 
     // mpi task distribution
-    int *field_num_each_rank;
-    int my_field_st, my_field_ed;
+    int *field_pair_num_each_rank;
+    int my_field_pair_st, my_field_pair_ed;
+    int *field_pair_label_1;
+    int *field_pair_label_2;
+    int field_pair_num;
 
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
@@ -111,7 +114,7 @@ void read_inform(char *file_path, data_info *field_info, int &read_file_num);
 
 void read_field_data(data_info *field_info);
 
-void initialize(char *file_path, data_info *field_info, int total_field_num, int numprocs, int rank);
+void initialize(char *file_path, data_info *field_info, int total_field_num);
 
 void initialize_field_chi_block(data_info *field_info, int field_label);
 
@@ -120,6 +123,8 @@ void initialize_total_chi_block(data_info *field_info);
 void collect_chi_block(data_info *field_info, int field_label);
 
 void task_distribution(int portion, int my_id, data_info *field_info);
+
+void task_prepare(int numprocs, int rank, data_info *field_info);
 
 void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy);
 
@@ -132,6 +137,7 @@ void field_distance(data_info *field_info, int field_label_0, int field_label_1,
 
 void find_pairs_same_field(data_info *field_info, int field_label);
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
+void find_pairs(data_info *field_info, int field_label_0, int field_label_1);
 
 void save_field_chi_block(data_info*field_info, int field_label);
 #endif
