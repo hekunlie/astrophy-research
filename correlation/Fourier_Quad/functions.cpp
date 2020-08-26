@@ -473,8 +473,9 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
     MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
     MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
     MY_FLOAT temp_x, temp_y;
-    int ix, iy;
+    int ix, iy, im, im1,im2;
     int iexpo_len, ir_len, ic_len;
+    MY_FLOAT gg_1, gg_2;
 
     MY_FLOAT delta_ra, delta_dec, delta_radius;
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
@@ -482,8 +483,24 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
     int *target_block_label = new int[field_info->block_num[field_label_1]]{};
     int *block_label_mask = new int[field_info->block_num[field_label_1]]{};
     int target_block_num = 0;
-    // decide the blocks in the target field, field_label_1, to calculation
-    for(ib2=k; ib2<field_info->block_num[field_label_1]; ib2++)
+    double st1, st2;
+    double pairs = 0;
+
+    int loop_label;
+    loop_label = field_info->loop_label;
+    int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
+    mg_bin_num = field_info->mg_bin_num;
+    mg_bin_num1 = field_info->mg_bin_num1;
+    mg_bin_num2 = field_info->mg_bin_num2;
+    mg_bin_num3 = field_info->mg_bin_num3;
+
+    // decide which the blocks in the target field, field_label_1, to calculation
+    // it will calculate the distance of all the block pairs, if the distance is 
+    // smaller than the biggest separation angle, this block in "field_label_1"
+    // will be labeled as tagert block, it will be included in the calculation.
+    // it will loop all the galaxy pairs which is labeled by the
+    // block, then this pair will distributed to the right separation angle bin.
+    for(ib2=0; ib2<field_info->block_num[field_label_1]; ib2++)
     {
         block_label_mask[ib2] = 1;
     }
@@ -514,9 +531,10 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
             }
         }
     }
-
+    
     for(ib1=0; ib1<field_info->block_num[field_label_0]; ib1++)
     {   
+        // st1 = clock();
         for(i=field_info->block_st_z1[field_label_0][ib1]; i<field_info->block_ed_z1[field_label_0][ib1]; i++)
         {
             // loop the grid in the first zbin, zbin_label_0
@@ -531,15 +549,16 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
 
             mnu1_z1 = field_info->field_data_z1[field_label_0][m+field_info->mn_idx] +
                         field_info->field_data_z1[field_label_0][m+field_info->mu_idx];
-            mnu2_z1 = field_info->field_data_z1[field_label_0][m+field_info->mu_idx] -
+            mnu2_z1 = field_info->field_data_z1[field_label_0][m+field_info->mn_idx] -
                         field_info->field_data_z1[field_label_0][m+field_info->mu_idx];
 
             expo_label_0 = field_info->field_expo_label_z1[field_label_0][i];
+            
             iexpo_len = expo_label_0*field_info->iexpo_chi_block_len;
-    
+
             for(k=0; k<target_block_num; k++)
             {
-                ib2 = target_block_label[k];
+                ib2=target_block_label[k];
 
                 for(j=field_info->block_st_z2[field_label_1][ib2]; j<field_info->block_ed_z2[field_label_1][ib2]; j++)
                 {   
@@ -554,16 +573,18 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
                     delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
                     delta_dec = dec_z2 - dec_z1;
                     delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
-
+                    
                     theta_tag = -1;
                     for(ir=0; ir<field_info->theta_bin_num; ir++)
                     {
                         if(delta_radius > field_info->theta_bin[ir] and delta_radius <= field_info->theta_bin[ir+1])
                         {theta_tag=ir;break;}
                     }
-
+                    // std::cout<<delta_radius<<" "<<field_info->theta_bin[theta_tag]<<" "<<field_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
                     if(theta_tag > -1)
-                    {
+                    {   
+                        // pairs+= 1;
+
                         // shear estimators rotation (position angle defined as East of North)
                         sin_theta = delta_ra/delta_radius;
                         cos_theta = delta_dec/delta_radius;
@@ -584,38 +605,55 @@ void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_l
                                 field_info->field_data_z2[field_label_1][n+field_info->mv_idx]*sin_4theta;
                         mnu2_z2 = mnu1_z2;
 
-                        mnu1_z2 += field_info->field_data_z2[field_label_1][n+field_info->mn_idx];
+                        mnu1_z2 = field_info->field_data_z2[field_label_1][n+field_info->mn_idx] + mnu2_z2;
                         mnu2_z2 = field_info->field_data_z2[field_label_1][n+field_info->mn_idx] - mnu2_z2;
-
+                        
                         // the key part of PDF_SYM
                         ir_len = theta_tag*field_info->ir_chi_block_len + iexpo_len;
+
                         for(ic=0; ic<field_info->chi_guess_num; ic++)
                         {   
-                            if(field_info->loop_label == field_info->gg_len){field_info->loop_label = 0;}
+                            if(loop_label >= field_info->gg_len){loop_label = 0;}
 
                             ic_len = ic*field_info->chi_block_len + ir_len;
+                            gg_1 = field_info->gg_1[ic][loop_label];
+                            gg_2 = field_info->gg_2[ic][loop_label];
+                            // std::cout<<theta_tag<<" "<<expo_label_0<<" "<<ic_len<<std::endl;
+                            // std::cout<<loop_label<<std::endl;
+                            temp_x = mg1_z1 - gg_1*mnu1_z1;
+                            temp_y = mg1_z2 - gg_2*mnu1_z2;
+                            
+                            // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                            hist_2d_new(temp_x, temp_y, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix, iy);
+                            // std::cout<<iy<<" "<<ix<<std::endl;
 
-                            temp_x = mg1_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu1_z1;
-                            temp_y = mg1_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu1_z2;
-                            hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
-                            field_info->num_count_chit[field_label_0][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                            field_info->num_count_chit[field_label_0][ic_len + iy*mg_bin_num+ix] += 1;
+                            
 
-                            temp_x = mg2_z1 - field_info->gg_1[ic][field_info->loop_label]*mnu2_z1;
-                            temp_y = mg2_z2 - field_info->gg_2[ic][field_info->loop_label]*mnu2_z2;
-                            hist_2d(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, ix, iy);
+                            temp_x = mg2_z1 - gg_1*mnu2_z1;
+                            temp_y = mg2_z2 - gg_2*mnu2_z2;
+
+                            // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                            hist_2d_new(temp_x, temp_y, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix, iy);
+
+                            // std::cout<<iy<<" "<<ix<<std::endl;
+
                             field_info->num_count_chix[field_label_0][ic_len + iy*field_info->mg_bin_num+ix] += 1;
-
-                            field_info->loop_label += 1;
+                            // std::cout<<iy<<" "<<ix<<std::endl;
+                            loop_label += 1;
                         }
                     }
-             
                 }
             }
         }
+        // st2 = clock();
+        // std::cout<<"Block "<<ib1<<" "<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+        // pairs = 0;
     }
+    field_info->loop_label = loop_label;
 
-    delete[] target_block_label;
     delete[] block_label_mask;
+    delete[] target_block_label;
 }
 
 void find_pairs_same_field(data_info *field_info, int field_label)
@@ -634,55 +672,23 @@ void find_pairs_same_field(data_info *field_info, int field_label)
     int ix, iy, im, im1,im2;
     int iexpo_len, ir_len, ic_len;
 
+    MY_FLOAT gg_1, gg_2;
+    
     MY_FLOAT delta_ra, delta_dec, delta_radius;
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
 
-    int *target_block_label = new int[field_info->block_num[field_label]]{};
-    int *block_label_mask = new int[field_info->block_num[field_label]]{};
-    int target_block_num = 0;
     double st1, st2;
 
+    double pairs = 0;
+    
     int loop_label;
     loop_label = field_info->loop_label;
+    int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
+    mg_bin_num = field_info->mg_bin_num;
+    mg_bin_num1 = field_info->mg_bin_num1;
+    mg_bin_num2 = field_info->mg_bin_num2;
+    mg_bin_num3 = field_info->mg_bin_num3;
 
-    // decide which the blocks in the target field, field_label_1, to calculation
-    for(ib2=0; ib2<field_info->block_num[field_label]; ib2++)
-    {
-        block_label_mask[ib2] = 1;
-    }
-    for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
-    {
-        ra_z1 = field_info->block_cen_ra[field_label][ib1];
-        dec_z1 = field_info->block_cen_dec[field_label][ib1];
-        cos_dec_z1 = field_info->block_cen_cos_dec[field_label][ib1];
-        delta_len_z1 = field_info->block_delta_len[field_label][ib1];
-
-        // if search pairs between different zbin, if should loop all the grids
-        // else it should search in the grid that has a label larger than "ib1"
-        // to avoid double counting
-        if(field_info->zbin_label_0 != field_info->zbin_label_1){k=0;}
-        else{k=ib1;}
-
-        for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
-        {
-            ra_z2 = field_info->block_cen_ra[field_label][ib2];
-            dec_z2 = field_info->block_cen_dec[field_label][ib2];
-            cos_dec_z2 = field_info->block_cen_cos_dec[field_label][ib2];
-            delta_len_z2 = field_info->block_delta_len[field_label][ib2];
-
-            // the seperation angle (arc minute)
-            delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
-            delta_dec = dec_z2 - dec_z1;
-            delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_z1 - delta_len_z2;
-
-            if(delta_radius <= field_info->theta_bin[field_info->theta_bin_num] and block_label_mask[ib2] == 1)
-            {
-                target_block_label[target_block_num] = ib2;
-                block_label_mask[ib2] = 0;
-                target_block_num += 1;
-            }
-        }
-    }
     
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
@@ -701,19 +707,18 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
             mnu1_z1 = field_info->field_data_z1[field_label][m+field_info->mn_idx] +
                         field_info->field_data_z1[field_label][m+field_info->mu_idx];
-            mnu2_z1 = field_info->field_data_z1[field_label][m+field_info->mu_idx] -
+            mnu2_z1 = field_info->field_data_z1[field_label][m+field_info->mn_idx] -
                         field_info->field_data_z1[field_label][m+field_info->mu_idx];
 
             expo_label_0 = field_info->field_expo_label_z1[field_label][i];
             
             iexpo_len = expo_label_0*field_info->iexpo_chi_block_len;
 
-            
+            if(field_info->zbin_label_0 != field_info->zbin_label_1){k=0;}
+            else{k=ib1;}
 
-            for(k=0; k<target_block_num; k++)
+            for(ib2=k; ib2<field_info->block_num[field_label]; ib2++)
             {
-                ib2=target_block_label[k];
-
                 for(j=field_info->block_st_z2[field_label][ib2]; j<field_info->block_ed_z2[field_label][ib2]; j++)
                 {   
                     if(field_info->field_expo_label_z2[field_label][j] !=  expo_label_0)
@@ -738,7 +743,8 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                         }
                         // std::cout<<delta_radius<<" "<<field_info->theta_bin[theta_tag]<<" "<<field_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
                         if(theta_tag > -1)
-                        {
+                        {   
+                            // pairs += 1;
                             // shear estimators rotation (position angle defined as East of North)
                             sin_theta = delta_ra/delta_radius;
                             cos_theta = delta_dec/delta_radius;
@@ -770,30 +776,29 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 if(loop_label >= field_info->gg_len){loop_label = 0;}
 
                                 ic_len = ic*field_info->chi_block_len + ir_len;
-                                // std::cout<<theta_tag<<" "<<expo_label_0<<" "<<ic_len<<std::endl;
-                                // std::cout<<loop_label<<std::endl;
-                                temp_x = mg1_z1 - field_info->gg_1[ic][loop_label]*mnu1_z1;
-                                temp_y = mg1_z2 - field_info->gg_2[ic][loop_label]*mnu1_z2;
+                                gg_1 = field_info->gg_1[ic][loop_label];
+                                gg_2 = field_info->gg_2[ic][loop_label];
+
+                                temp_x = mg1_z1 - gg_1*mnu1_z1;
+                                temp_y = mg1_z2 - gg_2*mnu1_z2;
                                 
-                                // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
-                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
-                                field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
-                                // std::cout<<iy<<" "<<ix<<std::endl;
+                            //     // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix, iy);
+                            //     // std::cout<<iy<<" "<<ix<<std::endl;
 
-                                field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
+                                field_info->num_count_chit[field_label][ic_len + iy*mg_bin_num+ix] += 1;
                                 
 
-                                temp_x = mg2_z1 - field_info->gg_1[ic][loop_label]*mnu2_z1;
-                                temp_y = mg2_z2 - field_info->gg_2[ic][loop_label]*mnu2_z2;
+                                temp_x = mg2_z1 - gg_1*mnu2_z1;
+                                temp_y = mg2_z2 - gg_2*mnu2_z2;
 
-                                // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
-                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num,field_info->mg_bin_num1, 
-                                field_info->mg_bin_num2, field_info->mg_bin_num3, ix, iy);
+                            //     // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                hist_2d_new(temp_x, temp_y, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix, iy);
    
-                                // std::cout<<iy<<" "<<ix<<std::endl;
+                            //     // std::cout<<iy<<" "<<ix<<std::endl;
 
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
-                                // std::cout<<iy<<" "<<ix<<std::endl;
+                            //     // std::cout<<iy<<" "<<ix<<std::endl;
                                 loop_label += 1;
                             }
                         }
@@ -806,12 +811,10 @@ void find_pairs_same_field(data_info *field_info, int field_label)
             }
         }
         // st2 = clock();
-        // std::cout<<"One block "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+        // std::cout<<"Block "<<ib1<<", "<<pairs<<" pairs, "<<(st2-st1)/CLOCKS_PER_SEC<<" Sec"<<std::endl;
+        // pairs = 0;
     }
     field_info->loop_label = loop_label;
-
-    delete[] block_label_mask;
-    delete[] target_block_label;
 }
 
 void find_pairs(data_info *field_info, int field_label_0, int field_label_1)

@@ -140,16 +140,16 @@ int main(int argc, char *argv[])
         if(rank == 0){std::cout<<log_inform<<std::endl;}
         write_log(log_path, log_inform);
         
-        // if (fnm_1 == fnm_2)
-        // {
-        //     find_pairs_same_field(&field_info, fnm_1);
-        // }
-        // else
-        // {   
-        //     ;//find_pairs_diff_field(&field_info, fnm_1, fnm_2);
-        // }
+        if (fnm_1 == fnm_2)
+        {
+            find_pairs_same_field(&field_info, fnm_1);
+        }
+        else
+        {   
+            find_pairs_diff_field(&field_info, fnm_1, fnm_2);
+        }
 
-        find_pairs(&field_info, fnm_1, fnm_2);
+        // find_pairs(&field_info, fnm_1, fnm_2);
 
         st2 = clock();
         tt =  (st2 - st1)/CLOCKS_PER_SEC;
