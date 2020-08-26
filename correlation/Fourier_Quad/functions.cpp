@@ -198,6 +198,9 @@ void initialize(char *file_path, data_info *field_info, int total_field_num, int
     field_info->mg_bin = new MY_FLOAT[j];
     field_info->mg_bin_num = j -1;
     field_info->mg_bin_num2 = (j-1)/2;
+    field_info->mg_bin_num1 = field_info->mg_bin_num2/2;
+    field_info->mg_bin_num3 = field_info->mg_bin_num1+ field_info->mg_bin_num2;
+
     read_h5(data_path, set_name, field_info->mg_bin);
 
     // the fundmental block size for number counting in the PDF_SYM
@@ -345,6 +348,43 @@ void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_nu
     }
 }
 
+void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy)
+{   
+    int im, im1, im2;
+    if(x < 0)
+    {
+        if(x >= bins[bin_num1])
+        { im1 = bin_num1; im2=bin_num2;}
+        else
+        { im1 = 0; im2=bin_num1;}
+    }
+    else
+    {
+        if(x < bins[bin_num3])
+        { im1 = bin_num2; im2=bin_num3;}
+        else
+        { im1 = bin_num3; im2=bin_num;}
+    }
+    for(im=im1; im<im2; im++)
+    {if(x >= bins[im] and x < bins[im+1]){ix=im;break;}}
+    
+    if(y < 0)
+    {
+        if(y >= bins[bin_num1])
+        { im1 = bin_num1; im2=bin_num2;}
+        else
+        { im1 = 0; im2=bin_num1;}
+    }
+    else
+    {
+        if(y < bins[bin_num3])
+        { im1 = bin_num2; im2=bin_num3;}
+        else
+        { im1 = bin_num3; im2=bin_num;}
+    }
+    for(im=im1; im<im2; im++)
+    {if(y >= bins[im] and y < bins[im+1]){iy=im;break;}}
+}
 
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label)
 {
@@ -690,17 +730,52 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                                 
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
 
-                                if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
-                                else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
+                                // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
                                 
-                                for(im=im1; im<im2; im++)
-                                {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
 
-                                if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
-                                else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                // if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
+                                // else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
 
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
+
+                                if(temp_x < 0)
+                                {
+                                    if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
+                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                    else
+                                    { im1 = 0; im2=field_info->mg_bin_num1;}
+                                }
+                                else
+                                {
+                                    if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
+                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                    else
+                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                }
                                 for(im=im1; im<im2; im++)
-                                {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
+                                {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
+                                
+                                if(temp_y < 0)
+                                {
+                                    if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
+                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                    else
+                                    { im1 = 0; im2=field_info->mg_bin_num1;}
+                                }
+                                else
+                                {
+                                    if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
+                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                    else
+                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                }
+                                for(im=im1; im<im2; im++)
+                                {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
+
                                 field_info->num_count_chit[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
                                 // std::cout<<iy<<" "<<ix<<std::endl;
 
@@ -709,17 +784,53 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
                                 // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
 
-                                if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
-                                else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                // if(temp_x < 0) { im1 = 0; im2 = field_info->mg_bin_num2; }
+                                // else { im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
                                 
-                                for(im=im1; im<im2; im++)
-                                {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_x > field_info->mg_bin[im] and temp_x <= field_info->mg_bin[im+1]){ix=im;break;}}
 
-                                if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
-                                else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
+                                // if(temp_y < 0) { im1 = 0; im2 = field_info->mg_bin_num2;}
+                                // else{im1 = field_info->mg_bin_num2; im2 = field_info->mg_bin_num;}
                                 
+                                // for(im=im1; im<im2; im++)
+                                // {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
+
+                                if(temp_x < 0)
+                                {
+                                    if(temp_x >= field_info->mg_bin[field_info->mg_bin_num1])
+                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                    else
+                                    { im1 = 0; im2=field_info->mg_bin_num1;}
+                                }
+                                else
+                                {
+                                    if(temp_x < field_info->mg_bin[field_info->mg_bin_num3])
+                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                    else
+                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                }
                                 for(im=im1; im<im2; im++)
-                                {if(temp_y > field_info->mg_bin[im] and temp_y <= field_info->mg_bin[im+1]){iy=im;break;}}
+                                {if(temp_x >= field_info->mg_bin[im] and temp_x < field_info->mg_bin[im+1]){ix=im;break;}}
+                                
+                                if(temp_y < 0)
+                                {
+                                    if(temp_y >= field_info->mg_bin[field_info->mg_bin_num1])
+                                    { im1 = field_info->mg_bin_num1; im2=field_info->mg_bin_num2;}
+                                    else
+                                    { im1 = 0; im2=field_info->mg_bin_num1;}
+                                }
+                                else
+                                {
+                                    if(temp_y < field_info->mg_bin[field_info->mg_bin_num3])
+                                    { im1 = field_info->mg_bin_num2; im2=field_info->mg_bin_num3;}
+                                    else
+                                    { im1 = field_info->mg_bin_num3; im2=field_info->mg_bin_num;}
+                                }
+                                for(im=im1; im<im2; im++)
+                                {if(temp_y >= field_info->mg_bin[im] and temp_y < field_info->mg_bin[im+1]){iy=im;break;}}
+
+
                                 field_info->num_count_chix[field_label][ic_len + iy*field_info->mg_bin_num+ix] += 1;
                                 // std::cout<<iy<<" "<<ix<<std::endl;
                                 field_info->loop_label += 1;

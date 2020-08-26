@@ -88,7 +88,7 @@ struct data_info
     int chi_guess_num;
 
     MY_FLOAT *mg_bin;
-    int mg_bin_num, mg_bin_num2;
+    int mg_bin_num, mg_bin_num1, mg_bin_num2, mg_bin_num3;
 
     int chi_bin_num;
     int chi_block_len, ir_chi_block_len, iexpo_chi_block_len;
