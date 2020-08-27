@@ -86,19 +86,18 @@ Fourier\_Quad method provides two statistical approaches for shear recovery from
 \end{eqnarray}
 It is precise to the second order of shear in accuracy\citep{Zhang2015}. \cite{Zhang2015} have shown the appealing advantage of Fourier\_Quad that including the extreme faint sources or even point sources would not bias the shear measurement. However, an appropriate weight should be considered in Eq.\ref{mean} because the bright galaxies will dominate in the ensemble average and enlarge the estimate of error bar.
 
-To approach the lower statistical error bound, \cite{Zhang2017} propose a new shear recovery method in the Fourier\_Quad framework which is called the PDF\_SYM approach. It recovers the shear signal by symmetrizing the probability distribution function (PDF) of the shear estimators. \cite{Zhang2017} show that the PDF of $\hat{G}_{1/2}$, $G_{1/2} - \hat{g}_{1/2}(N +/- U)$, would be maximally symmetrical respect to zero if the shear estimate, $\hat{g}_{1/2}$ is the true one (see the Ref. for more details). 
+To approach the lower statistical error bound, \cite{Zhang2017} propose a new shear recovery method in the Fourier\_Quad framework which is called the PDF\_SYM approach. It recovers the shear signal by symmetrizing the probability distribution function (PDF) of the shear estimators. \cite{Zhang2017} show that the PDF of $\hat{G}_{1/2}$ would be maximally symmetrical respect to zero if the shear estimate, $\hat{g}_{1/2}$ is the true one (see the Ref. for more details). 
 \begin{eqnarray}
-\hat{G}_{1}
-&=& \int d^2\vec{k} P_k T(\vec{k})M(\vec{k}), 
-\; \hat{G}_{2} = \int d^2\vec{k} Q_k T(\vec{k})M(\vec{k}),\\ \nonumber
+\hat{G}_{1} &=& G_1 - \hat{g}_{1}(N + U) = \int d^2\vec{k} P_k T(\vec{k})M(\vec{k}), \\ \nonumber
+\hat{G}_{2} &=& G_2 - \hat{g}_{2}(N - U) = \int d^2\vec{k} Q_k T(\vec{k})M(\vec{k}),\\ \nonumber
 P_k &=& k_x^2-k_y^2 + \hat{g}_1\left[2k^2-\beta^2\left(k^4+k_x^4-6k_x^2k_y^2+k_y^4\right)\right],\\ \nonumber
 Q_k &=& 2k_xk_y+\hat{g}_2\left[2k^2-\beta^2\left(k^4-k_x^4+6k_x^2k_y^2-k_y^4\right)\right].
 \end{eqnarray}
-The PDF\_SYM approach estimates each component of shear ($g_1$ or $g_2$) independently. It needs two additional shear estimators, $U$ and $V$. The $V$ term is kept for the rotation with $U$. 
+It needs two additional shear estimators, $U$ and $V$. The $V$ term is kept for the rotation with $U$. The PDF\_SYM approach estimates each component of shear ($g_1$ or $g_2$) independently. Therefore, when estimating one component, it is convenient to ignore the other one or set it zero.   
 
 Unlike the weighted sum of shear estimators used by the other methods, the PDF\_SYM approach includes the full PDF of the shear estimators and do not weight down the faint sources. Therefore, it could make full use of the additional information from faint sources to achieve a lower statistical error. The PDF\_SYM approach would be a promising method for shear recovery in the Fourier\_Quad framework.
 
-Recently, we find the PDF\_SYM approach would be biased by the very faint galaxies. Figure \ref{fig:pts_mc} shows the multiplicative and additive bias from the sample of different SNR. The multiplicative bias is about $1\%$ level when the SNR decreases to about $10$. If the PSF has some anisotropy ($e \sim 0.1$), we could also find significant additive bias ($\sim 6\times 10^{-4}$) at the same SNR level. However, the average approach is immune to this bias even applied to the extreme noisy sample. 
+Recently, we find the PDF\_SYM approach would be biased by the very faint galaxies. Figure \ref{fig:pts_mc} shows the multiplicative and additive bias from the sample of different SNR. The multiplicative bias would increase to about $1\%$ level when the SNR is about $10$. If the PSF has some anisotropy ($e \sim 0.1$), we could also find additive bias ($\sim 6\times 10^{-4}$) at the same SNR level. However, the average approach is immune to this bias even applied to the extreme noisy sample. 
 
 
 % While $\sim 1\%$ bias has been found at the very faint end, it would not be a serious problem for the real measurement that includes samples from faint to bright. The result of a more realistic simulation will be shown in Section \ref{sec:improve}.
@@ -145,7 +144,7 @@ B&=& U_1U_3-U_2^2,\\ \nonumber
 \left(U_1,U_2,U_3\right)&=&2\sigma^2\Delta^4\sum_k\vert F_k\vert^2\left(A_k^2,A_kB_k,B_k^2\right)
 \end{eqnarray}
 
-The PDF\_SYM approach only involves $1$-D PDF of $G_1$ or $G_2$. Therefore, for example, let us consider the $1$-D PDF of $G_1$. By integrating the $G_2$, we would obtain
+The $1$-D PDF of $G_1$($G_2$) is needed by the PDF\_SYM approach for $g_1$($g_2$) estimating. Therefore, for example, let us consider the PDF of $G_1$. By integrating the $G_2$, we would have
 \begin{eqnarray}
 \label{1d_PDF}
 &&\int_{-\infty}^{\infty}dG_2 P_G\left(G_1,G_2\right)\\ \nonumber
@@ -199,7 +198,7 @@ $H(r_c-r)$ is the Heaviside step function, $r_d$ is the scale length and $r_c$ i
 
 \subsubsection{Test result}
 
-In the image simulation, we could separate the components of $M(\vec{k})$ for measurement independently. We test different combinations of the components from $M(\vec{k})$. We find that the noise power spectrum residual, $\Delta N(\vec{k})$, would not bias the measurement. While, the result will be biased if the $C(\vec{k})$ term is included in the measurement. Furthermore, we find that both multiplicative and additive bias will vanish when $\vert \widetilde{W}_{P}(\vec{k})\vert$ rather than $\vert \widetilde{W}_{P}(\vec{k})\vert^2$ is used in the PSF deconvolution ($T(\vec{k})$ factor) for the $C(\vec{k})$. The results are presented in Figure \ref{fig:pts_componets}.
+In the image simulation, we could separate the components of $M(\vec{k})$ for measurement independently. We test different combinations of the components from $M(\vec{k})$. We find that the noise power spectrum residual, $\Delta N(\vec{k})$, would not bias the measurement. While, the result will be biased if the $C(\vec{k})$ term is included in the measurement. Furthermore, we find that both multiplicative and additive bias will vanish when $\vert \widetilde{W}_{P}(\vec{k})\vert$ rather than $\vert \widetilde{W}_{P}(\vec{k})\vert^2$ is used in the PSF deconvolution ($T(\vec{k})$ factor) for the $C(\vec{k})$. We present the comparison in Figure \ref{fig:pts_componets}.
 
 %Figure \ref{fig:pts_componets} shows that the mixture of galaxy image Fourier transform and that of the background noise image, $\left\vert C(\vec{k})\right\vert^2$, causes both multiplicative and additive bias in the measurement. Furthermore, only the PDF\_SYM approach is biased by $\left\vert C(\vec{k})\right\vert^2$.
 
@@ -211,7 +210,7 @@ In the image simulation, we could separate the components of $M(\vec{k})$ for me
 \end{figure*}
 
 \subsection{Improvement to the sub-percent precision}\label{sec:improve}
-Although an appropriate PSF deconvolution for the $C(\vec{k})$ term would correct the bias, the components separation could not be achieved in the real measurement. 
+Although an appropriate PSF deconvolution for the $C(\vec{k})$ term would correct the bias, image components separation could not be achieved in the real data. It should be noted that what we have for measurement are the noisy images and the shear estimators measured from that. Among the components of $M(\vec{k})$, the $C(\vec{k})$ part is the one that easy to estimate. We propose a new method for bias correction. 
 
 use the formulae to show the way of correction by new crossing term
 
