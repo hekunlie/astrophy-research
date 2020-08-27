@@ -130,6 +130,7 @@ void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &i
 
 void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
 void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);
+void hist_2d_new(MY_FLOAT x, MY_FLOAT y, data_info *field_info, int &ix, int &iy);
 
 
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
