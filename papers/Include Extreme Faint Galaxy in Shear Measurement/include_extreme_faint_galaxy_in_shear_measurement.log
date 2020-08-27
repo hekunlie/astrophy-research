@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2019.9.9)  14 AUG 2020 00:02
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2019.9.9)  26 AUG 2020 19:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -425,7 +425,11 @@ Class revtex4-1 Info: cite was not loaded (OK!) on input line 21.
 Class revtex4-1 Info: mcite was not loaded (OK!) on input line 21.
 Class revtex4-1 Info: multicol was not loaded (OK!) on input line 21.
 
-(./include_extreme_faint_galaxy_in_shear_measurement.aux)
+(./include_extreme_faint_galaxy_in_shear_measurement.aux
+
+LaTeX Warning: Label `1d_PDF' multiply defined.
+
+)
 \openout1 = `include_extreme_faint_galaxy_in_shear_measurement.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 21.
@@ -442,8 +446,7 @@ LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 21.
 LaTeX Font Info:    ... okay on input line 21.
 LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 21.
 LaTeX Font Info:    ... okay on input line 21.
-
-(d:/Program Files/texlive/2019/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+ (d:/Program Files/texlive/2019/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count151
 \scratchdimen=\dimen131
@@ -512,67 +515,71 @@ Overfull \hbox (4.21767pt too wide) in paragraph at lines 52--53
 []\OT1/cmr/m/n/10 introduce some as-pects of Fourier[]Quad and PDF[]SYM 
  []
 
+[1{d:/Program Files/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+<figures/pts_sample_mc.pdf, id=57, 1083.43086pt x 349.54965pt>
+File: figures/pts_sample_mc.pdf Graphic file (type pdf)
+<use figures/pts_sample_mc.pdf>
+Package pdftex.def Info: figures/pts_sample_mc.pdf  used on input line 109.
+(pdftex.def)             Requested size: 461.80255pt x 148.99133pt.
 
-Overfull \hbox (3.96532pt too wide) in alignment at lines 68--72
+Overfull \hbox (0.96248pt too wide) in alignment at lines 155--162
  [][][] []
  []
 
-[1{d:/Program Files/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<figures/pts_sample_mc.pdf, id=51, 1083.43086pt x 349.54965pt>
-File: figures/pts_sample_mc.pdf Graphic file (type pdf)
-<use figures/pts_sample_mc.pdf>
-Package pdftex.def Info: figures/pts_sample_mc.pdf  used on input line 103.
-(pdftex.def)             Requested size: 461.80255pt x 148.99133pt.
-<figures/pts_sample_components.pdf, id=54, 1083.43086pt x 349.54965pt>
+[2] [3 <./figures/pts_sample_mc.pdf>]
+<figures/pts_sample_components.pdf, id=189, 1083.43086pt x 349.54965pt>
 File: figures/pts_sample_components.pdf Graphic file (type pdf)
 <use figures/pts_sample_components.pdf>
 Package pdftex.def Info: figures/pts_sample_components.pdf  used on input line 
-132.
+209.
 (pdftex.def)             Requested size: 461.80255pt x 148.99133pt.
-[2] [3 <./figures/pts_sample_mc.pdf> <./figures/pts_sample_components.pdf
-
-pdfTeX warning: pdflatex.exe (file ./figures/pts_sample_components.pdf): PDF in
-clusion: multiple pdfs with page group included in a single page
->]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 172.
+ [4] [5 <./figures/pts_sample_components.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 268.
  (./include_extreme_faint_galaxy_in_shear_measurement.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 172.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 172.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 268.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 268.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
  ) 
 Here is how much of TeX's memory you used:
- 8805 strings out of 492623
- 123110 string characters out of 6126683
- 298510 words of memory out of 5000000
- 12602 multiletter control sequences out of 15000+600000
- 13741 words of font info for 55 fonts, out of 8000000 for 9000
+ 8834 strings out of 492623
+ 123467 string characters out of 6126683
+ 277997 words of memory out of 5000000
+ 12611 multiletter control sequences out of 15000+600000
+ 14086 words of font info for 56 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 35i,11n,37p,757b,359s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 35i,11n,37p,1029b,358s stack positions out of 5000i,500n,10000p,200000b,80000s
 <d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx
 8.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/
 cmbx9.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts
 /cm/cmcsc10.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/am
 sfonts/cm/cmex10.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/publ
-ic/amsfonts/cm/cmmi10.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1
-/public/amsfonts/cm/cmmi5.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/t
-ype1/public/amsfonts/cm/cmmi7.pfb><d:/Program Files/texlive/2019/texmf-dist/fon
-ts/type1/public/amsfonts/cm/cmmi9.pfb><d:/Program Files/texlive/2019/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmr10.pfb><d:/Program Files/texlive/2019/texmf-
-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><d:/Program Files/texlive/2019/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><d:/Program Files/texlive/2019/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><d:/Program Files/texlive/20
-19/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><d:/Program Files/texlive
-/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><d:/Program Files/te
-xlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><d:/Program File
-s/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb><d:/Program 
-Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb><d:/Prog
-ram Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb><d:
-/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmti8.pfb
->
-Output written on include_extreme_faint_galaxy_in_shear_measurement.pdf (3 page
-s, 282941 bytes).
+ic/amsfonts/cmextra/cmex9.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmmi10.pfb><d:/Program Files/texlive/2019/texmf-dist/fo
+nts/type1/public/amsfonts/cm/cmmi5.pfb><d:/Program Files/texlive/2019/texmf-dis
+t/fonts/type1/public/amsfonts/cm/cmmi6.pfb><d:/Program Files/texlive/2019/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb><d:/Program Files/texlive/2019/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb><d:/Program Files/texlive/20
+19/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><d:/Program Files/texliv
+e/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb><d:/Program Files/tex
+live/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb><d:/Program Files/
+texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb><d:/Program Fil
+es/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb><d:/Program 
+Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><d:/Pro
+gram Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb><d:
+/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
+><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9
+.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts/cm/c
+mti10.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmti8.pfb><d:/Program Files/texlive/2019/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmti9.pfb>
+Output written on include_extreme_faint_galaxy_in_shear_measurement.pdf (5 page
+s, 326856 bytes).
 PDF statistics:
- 346 PDF objects out of 1000 (max. 8388607)
- 146 compressed objects within 2 object streams
- 27 named destinations out of 1000 (max. 500000)
+ 399 PDF objects out of 1000 (max. 8388607)
+ 200 compressed objects within 2 object streams
+ 46 named destinations out of 1000 (max. 500000)
  11 words of extra memory for PDF output out of 10000 (max. 10000000)
 

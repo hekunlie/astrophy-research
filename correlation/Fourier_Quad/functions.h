@@ -130,13 +130,15 @@ void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &i
 
 void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
 void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);
-void hist_2d_new(MY_FLOAT x, MY_FLOAT y, data_info *field_info, int &ix, int &iy);
+void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &ix, int &iy);//faster than above
 
+void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT former_x, MY_FLOAT former_y, int former_ix, int former_iy, MY_FLOAT x, MY_FLOAT y, int &ix, int &iy);
+void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
 
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
 // if lable == 1, calculate, else, not
 
-void find_pairs_same_field(data_info *field_info, int field_label);
+void find_pairs_same_field(data_info *field_info, MY_FLOAT *ggcor_1, MY_FLOAT *ggcor_2, int field_label);
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
 void find_pairs(data_info *field_info, int field_label_0, int field_label_1);
 

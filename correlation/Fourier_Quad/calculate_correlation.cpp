@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 
     data_info field_info;
 
+    MY_FLOAT *ggcor_1, *ggcor_2, *gg_read;
+
     int i,j;
     int fnm_1, fnm_2, total_field_num, label, num_label;
 
@@ -46,6 +48,28 @@ int main(int argc, char *argv[])
     // read the catalog of redshift bin z1 & z2
     read_field_data(&field_info);
 
+    sprintf(data_path,"%s/cata/gg_cor.hdf5", field_info.parent_path);
+
+    ggcor_1 = new MY_FLOAT[field_info.chi_guess_num*field_info.gg_len];
+    ggcor_2 = new MY_FLOAT[field_info.chi_guess_num*field_info.gg_len];
+    gg_read = new MY_FLOAT[field_info.gg_len];
+
+    for(i=0; i<field_info.chi_guess_num; i++)
+    {
+        sprintf(set_name,"/%d/g11",i);
+        read_h5(data_path, set_name, gg_read);
+        for(j=0;j<field_info.gg_len; j++)
+        {
+            ggcor_1[i*field_info.gg_len+j] = gg_read[j];
+        }
+        
+        sprintf(set_name,"/%d/g22",i);
+        read_h5(data_path, set_name, gg_read);
+        for(j=0;j<field_info.gg_len; j++)
+        {
+            ggcor_2[i*field_info.gg_len+j] = gg_read[j];
+        }
+    }
     // find all the potential field pair for calculation (i, j),
     // does not include the field itself i!= j
     task_prepare(numprocs, rank, &field_info);
@@ -126,6 +150,7 @@ int main(int argc, char *argv[])
     // initialize_field_chi_block(&field_info,my_fnm);
 
     // loop the field pairs
+    st1 = clock();
     for(i=field_info.my_field_pair_st; i < field_info.my_field_pair_ed; i++)
     {   
         // field pair label
@@ -134,15 +159,15 @@ int main(int argc, char *argv[])
 
         
         ////////////////  search pairs in the current field  ////////////////////
-        st1 = clock();
-        sprintf(log_inform,"Start: %d-%s(%d) <-> %d-%s(%d)",fnm_1, field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1],
-        fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2]);
+        st2 = clock();
+        sprintf(log_inform,"Start %d (%d ~ %d) field pair: %d-%s(%d) <-> %d-%s(%d)", i, field_info.my_field_pair_st,field_info.my_field_pair_ed, fnm_1, 
+        field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1], fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2]);
         if(rank == 0){std::cout<<log_inform<<std::endl;}
         write_log(log_path, log_inform);
         
         if (fnm_1 == fnm_2)
         {
-            find_pairs_same_field(&field_info, fnm_1);
+            find_pairs_same_field(&field_info,ggcor_1,ggcor_2, fnm_1);
         }
         else
         {   
@@ -151,15 +176,15 @@ int main(int argc, char *argv[])
 
         // find_pairs(&field_info, fnm_1, fnm_2);
 
-        st2 = clock();
-        tt =  (st2 - st1)/CLOCKS_PER_SEC;
+        st3 = clock();
+        tt =  (st3 - st2)/CLOCKS_PER_SEC;
 
-        sprintf(log_inform,"Finish: %d-%s(%d) <-> %d-%s(%d) in %.2f sec.",fnm_1, field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1],
-        fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2], tt);
+        sprintf(log_inform,"Finish %d (%d ~ %d) field pair: %d-%s(%d) <-> %d-%s(%d) in %.2f sec.",i,field_info.my_field_pair_st,field_info.my_field_pair_ed,fnm_1, 
+        field_info.field_name[fnm_1], field_info.total_gal_num_z1[fnm_1], fnm_2, field_info.field_name[fnm_2],field_info.total_gal_num_z2[fnm_2], tt);
         if(rank == 0)
         {
             std::cout<<log_inform<<std::endl;
-            std::cout<<"================================================================="<<std::endl;
+            std::cout<<"========================================================================================="<<std::endl;
         }
         write_log(log_path, log_inform);
         if(num_label == 1)
@@ -169,8 +194,15 @@ int main(int argc, char *argv[])
         }        
         
     }
-
-    
+    st4 = clock();
+    tt =  (st4 - st1)/CLOCKS_PER_SEC;
+    sprintf(log_inform,"All field pair finished in %.2f sec. (%d ~ %d)", tt,field_info.my_field_pair_st,field_info.my_field_pair_ed);
+    if(rank == 0)
+    {
+        std::cout<<log_inform<<std::endl;
+        std::cout<<"========================================================================================="<<std::endl;
+    }
+    write_log(log_path, log_inform);
     MPI_Finalize();
     
     return 0;

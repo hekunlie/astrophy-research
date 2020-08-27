@@ -64,6 +64,37 @@ void hist_2d_fast_new(MY_FLOAT x,  MY_FLOAT*bins, int bin_num, int bin_num1,int 
     }
 }
 
+void cal(MY_FLOAT a, MY_FLOAT b, int ia, int ib, MY_FLOAT c,MY_FLOAT d, int &ic,int &id)
+{
+
+    if (a>c){ic = ia;}
+    else{ic = ia -1;}
+
+    if (b>d){id = ib;}
+    else{id = ib -1;}
+    
+}
+void cal(MY_FLOAT* abcd, int ia, int ib, int &ic,int &id)
+{
+
+    if (abcd[0]>abcd[2]){ic = ia;}
+    else{ic = ia -1;}
+
+    if (abcd[1]>abcd[3]){id = ib;}
+    else{id = ib -1;}
+    
+}
+
+void cal(MY_FLOAT* abcd, int *i_ab, int &ic,int &id)
+{
+
+    if (abcd[0]>abcd[2]){ic = i_ab[0];}
+    else{ic = i_ab[0] -1;}
+
+    if (abcd[1]>abcd[3]){id = i_ab[1];}
+    else{id = i_ab[1] -1;}
+    
+}
 int main()
 {
 
@@ -75,7 +106,8 @@ int main()
     data_num = 259661;
     MY_FLOAT *data = new MY_FLOAT[data_num]{};
     
-    int loop_num = 2000;
+    int loop_num = 100000;
+    int loop_num_1 = 30000;
     bin_num = 10;
     bin_num2 = bin_num/2;
     bin_num1 = bin_num2/2;
@@ -85,6 +117,16 @@ int main()
     MY_FLOAT *count1 = new MY_FLOAT[bin_num]{};
     MY_FLOAT *count2 = new MY_FLOAT[bin_num]{};
     MY_FLOAT *count3 = new MY_FLOAT[bin_num]{};
+
+    MY_FLOAT a,b,c,d;
+    int ia, ib, ic, id;
+    MY_FLOAT *abcd = new MY_FLOAT[4]{1,2,3,4};
+    MY_FLOAT abcd_[4] = {1,2,3,4};
+    ia = 0;
+    ib = 0;
+    ic = 0;
+    id = 0;
+    int i_ab[2] = {0,0};
 
     sprintf(set_name,"/data");
     sprintf(data_path,"test.hdf5");
@@ -118,33 +160,76 @@ int main()
     // }
     // st2 = clock();
     // std::cout<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
-    for(i=0;i<loop_num;i++)
+    // for(i=0;i<loop_num;i++)
+    // {   
+    //     for(j=0;j<data_num;j++)
+    //     {hist_2d(data[j], mg_bin, bin_num, k); count1[k] += 1;}
+    // }
+    // st2 = clock();
+    // for(i=0;i<loop_num;i++)
+    // {   
+    //     for(j=0;j<data_num;j++)
+    //     {hist_2d_fast(data[j], mg_bin, bin_num,bin_num2, k);count2[k] += 1;}
+    // }
+    // st3 = clock();
+    // for(i=0;i<loop_num;i++)
+    // {   
+    //     for(j=0;j<data_num;j++)
+    //     {hist_2d_fast_new(data[j], mg_bin, bin_num,bin_num1,bin_num2,bin_num3, k);count3[k] += 1;}
+    // }
+    // st4 = clock();
+    // show_arr(count1, 1, bin_num);
+    // show_arr(count2, 1, bin_num);
+    // show_arr(count2, 1, bin_num);
+
+    // for(i=0; i<bin_num; i++)
+    // {
+    //     std::cout<<count1[i] - count2[i]<<" "<<count2[i] - count3[i]<<" "<<count1[i] - count3[i]<<std::endl;
+    // }
+    for(i=0;i<loop_num_1;i++)
     {   
-        for(j=0;j<data_num;j++)
-        {hist_2d(data[j], mg_bin, bin_num, k); count1[k] += 1;}
-    }
+        a = i;
+        b = i;
+        c = i;
+        d = i;
+        ia = 0;
+        ib = 0;
+        for(j=0;j<loop_num;j++)
+        {
+            cal(a,b,ia,ib,c,d,ic,id);
+        }
+    }   
+
     st2 = clock();
-    for(i=0;i<loop_num;i++)
-    {   
-        for(j=0;j<data_num;j++)
-        {hist_2d_fast(data[j], mg_bin, bin_num,bin_num2, k);count2[k] += 1;}
-    }
+    for(i=0;i<loop_num_1;i++)
+    { 
+        a = i;
+        b = i;
+        c = i;
+        d = i;
+        ia = 0;
+        ib = 0;
+        for(j=0;j<loop_num;j++)
+        {
+            cal(abcd,ia,ib,ic, id);
+        }
+    }  
     st3 = clock();
-    for(i=0;i<loop_num;i++)
-    {   
-        for(j=0;j<data_num;j++)
-        {hist_2d_fast_new(data[j], mg_bin, bin_num,bin_num1,bin_num2,bin_num3, k);count3[k] += 1;}
-    }
+    
+    for(i=0;i<loop_num_1;i++)
+    { 
+        a = i;
+        b = i;
+        c = i;
+        d = i;
+        i_ab[0] = 0;
+        i_ab[1] = 0;
+        for(j=0;j<loop_num;j++)
+        {
+            cal(abcd, i_ab, ic, id);
+        }
+    }  
     st4 = clock();
-    show_arr(count1, 1, bin_num);
-    show_arr(count2, 1, bin_num);
-    show_arr(count2, 1, bin_num);
-
-    for(i=0; i<bin_num; i++)
-    {
-        std::cout<<count1[i] - count2[i]<<" "<<count2[i] - count3[i]<<" "<<count1[i] - count3[i]<<std::endl;
-    }
-
     std::cout<<(st2-st1)/CLOCKS_PER_SEC<<" "<<(st3-st2)/CLOCKS_PER_SEC<<" "<<(st4-st3)/CLOCKS_PER_SEC<<std::endl;
 
 
