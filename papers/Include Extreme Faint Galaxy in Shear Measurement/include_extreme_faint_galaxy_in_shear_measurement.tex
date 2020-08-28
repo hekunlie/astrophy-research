@@ -110,7 +110,7 @@ Recently, we find the PDF\_SYM approach would be biased by the very faint galaxi
 \end{figure*}
 
 
-\subsection{Bias due to the mixture of source and noise}
+\subsection{Bias due to the source and noise mix}\label{sec:bias_cal}
 To reveal the origin of the bias, let us start from the components of noisy galaxy image which could be written as a sum of source and noise image, \ie$f_S(\vec{x}) = f_G(\vec{x}) + f_N(\vec{x})$. Therefore, the modified power spectrum of galaxy image, $M(\vec{k})$, can be rewritten as 
 \begin{eqnarray}
 M(\vec{k}) =  \left\vert\widetilde{f}_G(\vec{k})\right\vert^2+ C(\vec{k}) + \Delta N(\vec{k}).
@@ -210,7 +210,27 @@ In the image simulation, we could separate the components of $M(\vec{k})$ for me
 \end{figure*}
 
 \subsection{Improvement to the sub-percent precision}\label{sec:improve}
-Although an appropriate PSF deconvolution for the $C(\vec{k})$ term would correct the bias, image components separation could not be achieved in the real data. It should be noted that what we have for measurement are the noisy images and the shear estimators measured from that. Among the components of $M(\vec{k})$, the $C(\vec{k})$ part is the one that easy to estimate. We propose a new method for bias correction. 
+Although an appropriate PSF deconvolution for the $C(\vec{k})$ term would correct the bias, image components separation could not be achieved in the real data. It should be noted that what we have for measurement are the noisy images and the shear estimators measured from that. Among the components of $M(\vec{k})$, the $C(\vec{k})$ part is the one that easy to estimate. We propose a new method that utilizes the shear estimators from the estimated $C(\vec{k})$ to correct the bias. 
+
+Recall that the original measurement, Eq.(\ref{FQ_TM}), employs the power spectrum of a noise image to subtract the contamination to shear estimators from the background noise. However, this operation leaves an annoying term, $C(\vec{k})$, to the shear measurement. In our new method, we need a second noise image, $f_{B^{\prime}}(\vec{x})$, to estimate this component. Then, we would get the shear estimators from this component by applying the shear measurement to it. There are three steps:
+\begin{itemize}
+	\item Add the second noise image to the original noisy galaxy image, $f_S(\vec{x})$, to get a new image, $f_{S^{\prime}}(\vec{x})$.
+	\begin{eqnarray}
+	f_{S^{\prime}}(\vec{x}) = f_G(\vec{x}) + f_N(\vec{x}) + f_{B^{\prime}}(\vec{x}).
+	\end{eqnarray}
+	
+	\item Subtract the power spectrum of the new noise image and that of the original noisy galaxy image from the power spectrum of the new image above.
+	\begin{eqnarray}
+	C^{\prime}(\vec{k})=&&\left\vert \widetilde{f}_{S^{\prime}}(\vec{x})\right\vert^2 - \left\vert \widetilde{f}_{S}(\vec{x})\right\vert^2 - \left\vert \widetilde{f}_{B}(\vec{x})\right\vert^2 \\ \nonumber
+	 =&& \widetilde{f}_{G}^{*}(\vec{k})\widetilde{f}_B(\vec{k}) + \widetilde{f}_{G}(\vec{k})\widetilde{f}_{B}^{*}(\vec{k}).
+	\end{eqnarray}
+	The noise-noise power mixture, $\widetilde{f}_{N}^{*}(\vec{k})\widetilde{f}_B(\vec{k}) + \widetilde{f}_{N}(\vec{k})\widetilde{f}_{B}^{*}(\vec{k})$, has been neglected because we find it would not change the result in our new method.
+	
+	\item Apply the shear measurement to $C^{\prime}$ to get the new shear estimator: $G_1^C$, $G_2^C$, $N^C$, $U^C$, and $V^C$.
+
+\end{itemize}
+The calculation of Section \ref{sec:bias_cal} indicates that the noise part in $C(\vec{k})$ is not import because it vanishes at last. Therefore, utilizing $C^{\prime}(\vec{k})$ is a promising way to solve this problem. 
+
 
 use the formulae to show the way of correction by new crossing term
 
