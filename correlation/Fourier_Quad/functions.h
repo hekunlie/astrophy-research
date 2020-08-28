@@ -104,8 +104,8 @@ struct data_info
     double *total_num_count_chix;
 
     int gg_len;
-    MY_FLOAT *gg_1[200];
-    MY_FLOAT *gg_2[200];
+    MY_FLOAT *gg_1;
+    MY_FLOAT *gg_2;
     int loop_label=0;
 };
 
@@ -138,9 +138,8 @@ void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &i
 void field_distance(data_info *field_info, int field_label_0, int field_label_1, int &label);
 // if lable == 1, calculate, else, not
 
-void find_pairs_same_field(data_info *field_info, MY_FLOAT *ggcor_1, MY_FLOAT *ggcor_2, int field_label);
+void find_pairs_same_field(data_info *field_info, int field_label);
 void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
-void find_pairs(data_info *field_info, int field_label_0, int field_label_1);
 
 void save_field_chi_block(data_info*field_info, int field_label);
 #endif

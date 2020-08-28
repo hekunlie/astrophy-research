@@ -48,28 +48,6 @@ int main(int argc, char *argv[])
     // read the catalog of redshift bin z1 & z2
     read_field_data(&field_info);
 
-    sprintf(data_path,"%s/cata/gg_cor.hdf5", field_info.parent_path);
-
-    ggcor_1 = new MY_FLOAT[field_info.chi_guess_num*field_info.gg_len];
-    ggcor_2 = new MY_FLOAT[field_info.chi_guess_num*field_info.gg_len];
-    gg_read = new MY_FLOAT[field_info.gg_len];
-
-    for(i=0; i<field_info.chi_guess_num; i++)
-    {
-        sprintf(set_name,"/%d/g11",i);
-        read_h5(data_path, set_name, gg_read);
-        for(j=0;j<field_info.gg_len; j++)
-        {
-            ggcor_1[i*field_info.gg_len+j] = gg_read[j];
-        }
-        
-        sprintf(set_name,"/%d/g22",i);
-        read_h5(data_path, set_name, gg_read);
-        for(j=0;j<field_info.gg_len; j++)
-        {
-            ggcor_2[i*field_info.gg_len+j] = gg_read[j];
-        }
-    }
     // find all the potential field pair for calculation (i, j),
     // does not include the field itself i!= j
     task_prepare(numprocs, rank, &field_info);
@@ -167,7 +145,7 @@ int main(int argc, char *argv[])
         
         if (fnm_1 == fnm_2)
         {
-            find_pairs_same_field(&field_info,ggcor_1,ggcor_2, fnm_1);
+            find_pairs_same_field(&field_info,fnm_1);
         }
         else
         {   

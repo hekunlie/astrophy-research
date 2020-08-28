@@ -33,7 +33,9 @@ redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_bin = tool_box.set_bin_log(10**(-7)*5, 10**(-3), 35).astype(numpy.float32)
+chi_guess_num = 40
+chi_guess_bin = tool_box.set_bin_log(10**(-7), 10**(-3), chi_guess_num).astype(numpy.float32)
+cor_gg_len = 1000000
 mg_bin_num = 10
 
 # star number on each chip
@@ -84,14 +86,25 @@ if cmd == "prepare":
     # for correlation calculation
     if rank == 0:
         h5f_cor = h5py.File(result_cata_path+"/gg_cor.hdf5","w")
-        for i in range(len(chi_guess_bin)):
+
+        for i in range(chi_guess_num):
+
             mean = [0,0]
+
             cov = [[chi_guess_bin[i]*2,chi_guess_bin[i]],
                     [chi_guess_bin[i], chi_guess_bin[i]*2]]
-            gg = tool_box.rand_gauss2n(2000000,mean,cov)
-            h5f_cor["/%d/g11"%i] = gg[0].astype(dtype=numpy.float32)
-            h5f_cor["/%d/g22"%i] = gg[1].astype(dtype=numpy.float32)
 
+            gg = tool_box.rand_gauss2n(cor_gg_len,mean,cov).astype(dtype=numpy.float32)
+
+            if i == 0:
+                gg_1 = gg[0]
+                gg_2 = gg[1]
+            else:
+                gg_1 = numpy.column_stack((gg_1, gg[0]))
+                gg_2 = numpy.column_stack((gg_2, gg[1]))
+        print(gg_1.shape)
+        h5f_cor["/g11"] = gg_1.reshape((chi_guess_num*cor_gg_len,))
+        h5f_cor["/g22"] = gg_2.reshape((chi_guess_num*cor_gg_len,))
         h5f_cor["/chi_guess"] = chi_guess_bin
         h5f_cor["/theta_bin"] = theta_bin
         h5f_cor["/theta_bin_num"] = numpy.array([theta_bin_num],dtype=numpy.intc)
