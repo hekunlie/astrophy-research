@@ -803,7 +803,7 @@ void find_pairs_same_field(data_info *field_info, int field_label)
 
     for(ib1=0; ib1<field_info->block_num[field_label]; ib1++)
     {   
-        st1 = clock();
+        // st1 = clock();
         for(i=field_info->block_st_z1[field_label][ib1]; i<field_info->block_ed_z1[field_label][ib1]; i++)
         {
             // loop the grid in the first zbin, zbin_label_0
@@ -885,68 +885,53 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                             gg_1 = field_info->gg_1[loop_label];// field_info->gg_1[0][loop_label];
                             gg_2 = field_info->gg_2[loop_label];// field_info->gg_2[0][loop_label];
 
-                            temp_x_tt = mg1_z1 - gg_1*mnu1_z1;
-                            temp_y_tt = mg1_z2 - gg_2*mnu1_z2;
-                            temp_tt[2] = temp_x_tt;
-                            temp_tt[3] = temp_y_tt;
-                            hist_2d_new(temp_x_tt, temp_y_tt, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+
+                            temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                            temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                            hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
                             
                             // std::cout<<0<<" "<<temp_x_tt<<" "<<temp_y_tt<<" "<<ix_tt<<" "<<iy_tt<<std::endl;
                             field_info->num_count_chit[field_label][ir_len + iy_tt*mg_bin_num+ix_tt] += 1;
                             
-                            // temp_x_xx = mg2_z1 - gg_1*mnu2_z1;
-                            // temp_y_xx = mg2_z2 - gg_2*mnu2_z2;
+                            temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                            temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
 
-                            // hist_2d_new(temp_x_xx, temp_y_xx,  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                            // field_info->num_count_chix[field_label][ir_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                            hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                            field_info->num_count_chix[field_label][ir_len + iy_xx*mg_bin_num+ix_xx] += 1;
                             loop_label += 1;
                             // std::cout<<ic<<" "<<temp_x_xx<<" "<<temp_y_xx<<" "<<ix_xx<<" "<<iy_xx<<std::endl;
                             for(ic=1; ic<chi_guess_num; ic++)
                             {   
-
                                 ic_len = ic*chi_block_len + ir_len;
 
                                 gg_1 = field_info->gg_1[loop_label];
                                 gg_2 = field_info->gg_2[loop_label];
 
-                                // former_temp_x_tt = temp_x_tt;
-                                // former_temp_y_tt = temp_y_tt;
-                                // former_ix_tt = ix_tt;
-                                // former_iy_tt = iy_tt;
                                 bin_para_tt[0] = ix_tt;
                                 bin_para_tt[1] = iy_tt;
 
                                 temp_tt[0] = temp_tt[2];
                                 temp_tt[1] = temp_tt[3];
 
-                                // temp_x_tt = mg1_z1 - gg_1*mnu1_z1;
-                                // temp_y_tt = mg1_z2 - gg_2*mnu1_z2;
                                 temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
                                 temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                                // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
                                 // hist_2d_new(temp_x_tt, temp_y_tt, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
-                                // hist_2d_new(temp_x_tt, temp_y_tt, field_info->mg_bin, bin_num_para, ix_tt, iy_tt);
                                 hist_2d_new(field_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
-
-                                // hist_2d_new(field_info->mg_bin, mg_bin_num, former_temp_x_tt,former_temp_y_tt,former_ix_tt,former_iy_tt,temp_x_tt, temp_y_tt, ix_tt, iy_tt);
-
-                                // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<std::endl;
 
                                 field_info->num_count_chit[field_label][ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                                 
+                                bin_para_xx[0] = ix_xx;
+                                bin_para_xx[1] = iy_xx;
+                                
+                                temp_xx[0] = temp_xx[2];
+                                temp_xx[1] = temp_xx[3];
 
-                                // // former_temp_x_xx = temp_x_xx;
-                                // // former_temp_y_xx = temp_y_xx;
-                                // // former_ix_xx = ix_xx;
-                                // // former_iy_xx = iy_xx;
-                                // temp_x_xx = mg2_z1 - gg_1*mnu2_z1;
-                                // temp_y_xx = mg2_z2 - gg_2*mnu2_z2;
-                                // bin_para_xx[0] = ix_xx;
-                                // bin_para_xx[1] = iy_xx;
-                                // // hist_2d_fast(temp_x, temp_y, field_info->mg_bin, field_info->mg_bin_num, field_info->mg_bin_num2,ix, iy);
+                                temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                                temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+
                                 // hist_2d_new(temp_x_xx, temp_y_xx,  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                                // // hist_2d_new(field_info->mg_bin, mg_bin_num, former_temp_x_xx,former_temp_y_xx,former_ix_xx,former_iy_xx,temp_x_xx, temp_y_xx, ix_xx, iy_xx);
-                                // field_info->num_count_chix[field_label][ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                                hist_2d_new(field_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
+                                field_info->num_count_chix[field_label][ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
 
                                 loop_label += 1;
                             }
@@ -961,13 +946,21 @@ void find_pairs_same_field(data_info *field_info, int field_label)
                 }
             }
         }
-        st2 = clock();
-        std::cout<<"Block "<<ib1<<", "<<pairs<<" pairs, "<<(st2-st1)/CLOCKS_PER_SEC<<" Sec"<<std::endl;
-        pairs = 0;
+        // st2 = clock();
+        // std::cout<<"Block "<<ib1<<", "<<pairs<<" pairs, "<<(st2-st1)/CLOCKS_PER_SEC<<" Sec"<<std::endl;
+        // pairs = 0;
     }
     field_info->loop_label = loop_label;
 }
 
+void find_pairs_same_expo(data_info *field_info, int expo_label)
+{
+
+}
+void find_pairs_diff_expo(data_info *field_info, int expo_label_0, int expo_label_1)
+{
+    
+}
 
 void save_field_chi_block(data_info*field_info, int field_label)
 {

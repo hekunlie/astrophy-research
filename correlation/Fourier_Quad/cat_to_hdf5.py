@@ -104,7 +104,9 @@ elif mode == "hdf5_cata":
                     h5f["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
                     h5f["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
                     expo_label += 1
-
+                    h5f_expo = h5py.File(field_src_path + "/%s_all.hdf5" % exp_nm,"w")
+                    h5f_expo["/data"] = edat
+                    h5f_expo.close()
                 except:
                     print("%d %s-%s empty!" % (rank, fns, exp_nm))
 
