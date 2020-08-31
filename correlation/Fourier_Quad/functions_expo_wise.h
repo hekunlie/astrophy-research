@@ -4,7 +4,7 @@
 #include<hk_iolib.h>
 #include<FQlib.h>
 
-#define MAX_EXPO 3000
+#define MAX_EXPO 2000
 
 #define MY_FLOAT float
 
@@ -30,7 +30,6 @@ struct data_info
     MY_FLOAT *expo_data[MAX_EXPO];
     int expo_data_col;
 
-    MY_FLOAT *expo_data_z1[MAX_EXPO];// exposure data, G1, G2 .. 
     int *expo_num_in_zbin[MAX_EXPO];// gal num in each zbin of each exposure
     int *expo_zbin_st[MAX_EXPO];// the start & end row of each zbin in each exposure
     int *expo_zbin_ed[MAX_EXPO];
@@ -56,14 +55,12 @@ struct data_info
     // mpi task distribution
     int *expo_pair_num_each_rank;
     int my_expo_pair_st, my_expo_pair_ed;
-    int *expo_pair_label_1;
-    int *expo_pair_label_2;
-    int expo_pair_num;
+    int *task_expo_label;
+    int task_expo_num;
 
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
     int chi_guess_num;
-    int chi_bin_num;
     int chi_block_len, ir_chi_block_len, iz_chi_block_len,expo_chi_block_len;
     
     MY_FLOAT *mg_bin;
@@ -73,9 +70,9 @@ struct data_info
     // of each field, for errorbar estimation
     double *num_count_chit[MAX_EXPO];
     double *num_count_chix[MAX_EXPO];
-    // of all fields, for the signal estimation
-    double *total_num_count_chit;
-    double *total_num_count_chix;
+    // number counting of each exposure for the signal estimation
+    double *expo_num_count_chit;
+    double *expo_num_count_chix;
 
     int gg_len;
     MY_FLOAT *gg_1;
@@ -90,11 +87,11 @@ void read_list(char *file_path, data_info *field_info, int &read_file_num);
 
 void read_data(data_info *field_info);
 
-void initialize_field_chi_block(data_info *field_info, int field_label);
-
-void initialize_total_chi_block(data_info *field_info);
+void initialize_expo_chi_block(data_info *field_info);
 
 void collect_chi_block(data_info *field_info, int field_label);
+
+void save_expo_chi_block(data_info*field_info, int expo_label);
 
 void task_distribution(int portion, int my_id, data_info *field_info);
 
@@ -112,13 +109,9 @@ void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &i
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
 // if lable == 1, calculate, else, not
 
-void find_pairs_same_field(data_info *field_info, int field_label);
-void find_pairs_diff_field(data_info *field_info, int field_label_0, int field_label_1);
+void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
 
-void find_pairs_same_expo(data_info *field_info, int expo_label);
-void find_pairs_diff_expo(data_info *field_info, int expo_label_0, int expo_label_1);
 
-void save_field_chi_block(data_info*field_info, int field_label);
 #endif
 
 

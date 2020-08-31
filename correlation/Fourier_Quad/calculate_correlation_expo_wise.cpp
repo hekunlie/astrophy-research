@@ -3,7 +3,7 @@
 #include<ctime>
 
 
-#define PRINT_INFO
+#define NOT_PRINT_INFO
 
 int main(int argc, char *argv[])
 {
@@ -24,8 +24,6 @@ int main(int argc, char *argv[])
     double st1, st2, st3, st4, st5, tt;
 
     data_info expo_info;
-
-    MY_FLOAT *ggcor_1, *ggcor_2, *gg_read;
 
     int i,j;
     int fnm_1, fnm_2, total_expo_num, label, num_label;
@@ -72,26 +70,11 @@ int main(int argc, char *argv[])
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-    sprintf(log_inform, "Rank %d. Total field pairs: %d. My field pairs: %d ~ %d.", rank, expo_info.expo_pair_num,
-    expo_info.my_expo_pair_st,expo_info.my_expo_pair_ed);
-    write_log(log_path, log_inform);
-    for(j=0; j<numprocs;j++)
-    {
-        if(j==rank)
-        {
-            std::cout<<log_inform<<std::endl;
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-
-
     if(rank == 0)
     {
         std::cout<<"Redshift bin:"<<std::endl;
         show_arr(expo_info.zbin, 1, expo_info.zbin_num+1);
-        std::cout<<log_inform<<std::endl;
-        
+                
         std::cout<<"Radius bin:"<<std::endl;
         show_arr(expo_info.theta_bin, 1, expo_info.theta_bin_num+1);
         std::cout<<std::endl;
@@ -114,63 +97,56 @@ int main(int argc, char *argv[])
 
 
 
-    initialize_total_chi_block(&expo_info);
-    // initialize_expo_chi_block(&expo_info,my_fnm);
+    // exit(0);
 
-    // // loop the field pairs
-    // st1 = clock();
-    // for(i=expo_info.my_expo_pair_st; i < expo_info.my_expo_pair_ed; i++)
-    // {   
-    //     // field pair label
-    //     fnm_1 = expo_info.expo_pair_label_1[i];
-    //     fnm_2 = expo_info.expo_pair_label_2[i];
+    // loop the expo pairs
+    st1 = clock();
+    for(i=0; i < expo_info.task_expo_num; i++)
+    {   
+        // expo pair label
+        fnm_1 = expo_info.task_expo_label[i];
 
+        initialize_expo_chi_block(&expo_info);
+
+        for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
+        {    
+            expo_distance(&expo_info,fnm_1, fnm_2, label);
+            if(label == 1)
+            {
+                st2 = clock();
+                sprintf(log_inform,"Start %d/%d expo pair: %d-%s(%d) <-> %d-%s(%d)", i+1, expo_info.task_expo_num, fnm_1, 
+                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], fnm_2, expo_info.expo_name[fnm_2],expo_info.expo_gal_num[fnm_2]);
+                if(rank == 0){std::cout<<log_inform<<std::endl;}
+                write_log(log_path, log_inform);
+
+                ////////////////  search pairs ////////////////////
+                find_pairs(&expo_info, fnm_1, fnm_2);
+
+                st3 = clock();
+                tt =  (st3 - st2)/CLOCKS_PER_SEC;
+                sprintf(log_inform,"Finish in %.2f sec.", tt);
+                
+                if(rank == 0)
+                {
+                    std::cout<<log_inform<<std::endl;
+                    std::cout<<"========================================================================================="<<std::endl;
+                }
+                write_log(log_path, log_inform);
+            }
         
-    //     ////////////////  search pairs in the current field  ////////////////////
-    //     st2 = clock();
-    //     sprintf(log_inform,"Start %d (%d ~ %d) field pair: %d-%s(%d) <-> %d-%s(%d)", i, expo_info.my_expo_pair_st,expo_info.my_expo_pair_ed, fnm_1, 
-    //     expo_info.expo_name[fnm_1], expo_info.total_gal_num_z1[fnm_1], fnm_2, expo_info.expo_name[fnm_2],expo_info.total_gal_num_z2[fnm_2]);
-    //     if(rank == 0){std::cout<<log_inform<<std::endl;}
-    //     write_log(log_path, log_inform);
+        }
+        save_expo_chi_block(&expo_info, fnm_1);     
         
-    //     if (fnm_1 == fnm_2)
-    //     {
-    //         find_pairs_same_field(&expo_info,fnm_1);
-    //     }
-    //     else
-    //     {   
-    //         find_pairs_diff_field(&expo_info, fnm_1, fnm_2);
-    //     }
-
-    //     // find_pairs(&expo_info, fnm_1, fnm_2);
-
-    //     st3 = clock();
-    //     tt =  (st3 - st2)/CLOCKS_PER_SEC;
-
-    //     sprintf(log_inform,"Finish %d (%d ~ %d) field pair: %d-%s(%d) <-> %d-%s(%d) in %.2f sec.",i,expo_info.my_expo_pair_st,expo_info.my_expo_pair_ed,fnm_1, 
-    //     expo_info.expo_name[fnm_1], expo_info.total_gal_num_z1[fnm_1], fnm_2, expo_info.expo_name[fnm_2],expo_info.total_gal_num_z2[fnm_2], tt);
-    //     if(rank == 0)
-    //     {
-    //         std::cout<<log_inform<<std::endl;
-    //         std::cout<<"========================================================================================="<<std::endl;
-    //     }
-    //     write_log(log_path, log_inform);
-    //     if(num_label == 1)
-    //     {
-    //         ;// collect_chi_block(&expo_info, my_fnm);
-    //         // save_expo_chi_block(&expo_info, my_fnm);
-    //     }        
-        
-    // }
-    // st4 = clock();
-    // tt =  (st4 - st1)/CLOCKS_PER_SEC;
-    // sprintf(log_inform,"All field pair finished in %.2f sec. (%d ~ %d)", tt,expo_info.my_expo_pair_st,expo_info.my_expo_pair_ed);
-    // if(rank == 0)
-    // {
-    //     std::cout<<log_inform<<std::endl;
-    //     std::cout<<"========================================================================================="<<std::endl;
-    // }
-    // write_log(log_path, log_inform);
+    }
+    st4 = clock();
+    tt =  (st4 - st1)/CLOCKS_PER_SEC;
+    sprintf(log_inform,"All expo pairs finished in %.2f sec. (%d ~ %d)", tt,expo_info.my_expo_pair_st,expo_info.my_expo_pair_ed);
+    if(rank == 0)
+    {
+        std::cout<<log_inform<<std::endl;
+        std::cout<<"========================================================================================="<<std::endl;
+    }
+    write_log(log_path, log_inform);
     MPI_Finalize();
     
     return 0;

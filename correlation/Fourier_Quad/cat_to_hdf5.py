@@ -79,10 +79,8 @@ elif mode == "hdf5_cata":
     field_avail_sub = []
 
     for fns in field_name_sub:
-
         # read the the field data
         field_src_path = total_path + "/%s/result"%fns
-
         try:
             fdat = numpy.loadtxt(field_src_path + "/%s.cat"%fns, dtype=numpy.float32)
 
@@ -118,7 +116,7 @@ elif mode == "hdf5_cata":
             field_avail_sub.append(fns+"\n")
 
         except:
-            print("%d %s empty!"%(rank, fns))
+            print("%d %s/%s.cat empty!"%(rank, field_src_path, fns),os.path.exists(field_src_path + "/%s.cat"%fns))
 
     field_collection = comm.gather(field_avail_sub, root=0)
     if rank == 0:

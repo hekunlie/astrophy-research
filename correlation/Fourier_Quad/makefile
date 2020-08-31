@@ -3,22 +3,22 @@ HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
 HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio
 COR_FUNCTIONS_APTH=/home/hklee/work/mylib/functions.cpp
 
-CODE_NAME=calculate_correlation.cpp
-FINAL_NAME=cal_cor
+CODE_NAME_F=calculate_correlation.cpp
+FINAL_NAME_F=cal_cor
 
-compile:
-	mpicxx -I.  $(CODE_NAME) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions.cpp -o $(FINAL_NAME) -std=c++11
+compile_f:
+	mpicxx -I.  $(CODE_NAME_F) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions.cpp -o $(FINAL_NAME_F) -std=c++11
 clean:
-	rm $(FINAL_NAME)
+	rm $(FINAL_NAME_F)
 
 
-CODE_NAME=calculate_correlation_expo_wise.cpp
-FINAL_NAME=cal_cor
+CODE_NAME_E=calculate_correlation_expo_wise.cpp
+FINAL_NAME_E=cal_cor
 
-compile_expo:
-	mpicxx -I.  $(CODE_NAME) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -o $(FINAL_NAME) -std=c++11
+compile_e:
+	mpicxx -I.  $(CODE_NAME_E) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -o $(FINAL_NAME_E) -std=c++11
 clean_expo:
-	rm $(FINAL_NAME)
+	rm $(FINAL_NAME_E)
 
 
 CODE_NAME=calculate_correlation_expo_wise.cpp

@@ -68,11 +68,11 @@ mv_idx = 37
 # exposure label
 expo_idx = 38
 
-
-fourier_cata_path = "/coma/hklee/fourier_cata/original_cata"
-result_cata_path = "/coma/hklee/correlation/cata"
-# fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
-# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+#
+# fourier_cata_path = "/coma/hklee/fourier_cata/original_cata"
+# result_cata_path = "/coma/hklee/correlation/cata"
+fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
+result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
 cmd = argv[1]
 
@@ -267,7 +267,7 @@ if cmd == "prepare_exposure_wise":
 
         with open(result_cata_path + "/source_list.dat", "w") as f:
             f.writelines(buffer_expo)
-        print(buffer_expo)
+        # print(buffer_expo)
         print("Prepare catalog files")
         # print(total_expos)
         print(len(field_name), "fields", len(total_expos), " exposures")
