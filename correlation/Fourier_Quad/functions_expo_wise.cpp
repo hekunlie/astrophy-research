@@ -283,7 +283,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     chi_block_len = expo_info->chi_block_len;
     gg_len = expo_info->gg_len;
 
-    // st1 = clock();
+    st1 = clock();
     for(ig1=0; ig1<expo_info->expo_gal_num[expo_label_0]; ig1++)
     {   
         
@@ -326,7 +326,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
             // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
             if(theta_tag > -1)
             {   
-                // pairs+= 1;
+                pairs+= 1;
 
                 // shear estimators rotation (position angle defined as East of North)
                 sin_theta = delta_ra/delta_radius;
@@ -356,12 +356,10 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
                 iz2 = expo_info->expo_zbin_label[expo_label_1][ig2];
 
                 ////////////////////// the key part of PDF_SYM //////////////////////////////
-                ir_len = theta_tag*ir_chi_block_len + (iz1 + iz2)*expo_info->iz_chi_block_len;
-                ic_len = ir_len;
+                ic_len = theta_tag*ir_chi_block_len + (iz1 + iz2)*expo_info->iz_chi_block_len;
 
                 gg_1 = expo_info->gg_1[loop_label];
                 gg_2 = expo_info->gg_2[loop_label];
-
 
                 temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
                 temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
@@ -393,7 +391,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
 
                     temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
                     temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                    // hist_2d_new(temp_x_tt, temp_y_tt, field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                    // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
                     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
 
                     expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
@@ -407,7 +405,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
                     temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
                     temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
 
-                    // hist_2d_new(temp_x_xx, temp_y_xx,  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                    // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
                     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
                     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
                     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
@@ -422,8 +420,8 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
         }
     }
     // st2 = clock();
-    // std::cout<<"Block "<<ig1<<" "<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
-    // pairs = 0;
+    // std::cout<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+    expo_info->gg_pairs = pairs;
     expo_info->loop_label = loop_label;
 }
 
@@ -456,6 +454,20 @@ void save_expo_chi_block(data_info *expo_info, int expo_label)
     write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, true);
     sprintf(set_name, "/x");
     write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, false);
+}
+
+void save_expo_chi_block(data_info *expo_info, int expo_label, char *file_name)
+{   
+    int row, col;
+    char result_path[600], set_name[50];
+
+    col = expo_info->mg_bin_num;
+    row = expo_info->expo_chi_block_len/col;
+
+    sprintf(set_name, "/t");
+    write_h5(file_name, set_name, expo_info->expo_num_count_chit, row, col, true);
+    sprintf(set_name, "/x");
+    write_h5(file_name, set_name, expo_info->expo_num_count_chit, row, col, false);
 }
 
 void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy)

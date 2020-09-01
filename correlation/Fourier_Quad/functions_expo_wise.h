@@ -73,7 +73,8 @@ struct data_info
     // number counting of each exposure for the signal estimation
     double *expo_num_count_chit;
     double *expo_num_count_chix;
-
+    double gg_pairs;
+    
     int gg_len;
     MY_FLOAT *gg_1;
     MY_FLOAT *gg_2;
@@ -92,6 +93,9 @@ void initialize_expo_chi_block(data_info *field_info);
 void collect_chi_block(data_info *field_info, int field_label);
 
 void save_expo_chi_block(data_info*field_info, int expo_label);
+
+void save_expo_chi_block(data_info *expo_info, int expo_label, char *file_name)
+;
 
 void task_distribution(int portion, int my_id, data_info *field_info);
 

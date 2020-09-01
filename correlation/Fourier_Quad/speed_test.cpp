@@ -95,19 +95,21 @@ void cal(MY_FLOAT* abcd, int *i_ab, int &ic,int &id)
     else{id = i_ab[1] -1;}
     
 }
-int main()
+int main(int argc, char **argv)
 {
 
     double st1, st2, st3, st4, st5, st6;
-    int i, j, k;
+    double tt1, tt2, tt3, tt4;
+    int i, j, k,m,n;
     
     char data_path[400], set_name[50];
     int data_num, bin_num, bin_num1, bin_num2, bin_num3;
-    data_num = 259661;
+    data_num = 10000;
     MY_FLOAT *data = new MY_FLOAT[data_num]{};
-    
-    int loop_num = 100000;
-    int loop_num_1 = 30000;
+    register MY_FLOAT re_data[10000];
+
+    int loop_num = atoi(argv[1]);
+    int loop_num_1 = atoi(argv[2]);
     bin_num = 10;
     bin_num2 = bin_num/2;
     bin_num1 = bin_num2/2;
@@ -128,12 +130,12 @@ int main()
     id = 0;
     int i_ab[2] = {0,0};
 
-    sprintf(set_name,"/data");
-    sprintf(data_path,"test.hdf5");
-    read_h5(data_path, set_name, data);
+    // sprintf(set_name,"/data");
+    // sprintf(data_path,"test.hdf5");
+    // read_h5(data_path, set_name, data);
 
-    set_bin(data, data_num, mg_bin, bin_num,1000);
-    show_arr(mg_bin, 1, bin_num+1);
+    // set_bin(data, data_num, mg_bin, bin_num,1000);
+    // show_arr(mg_bin, 1, bin_num+1);
 
     st1 = clock();
     // k = 0;
@@ -186,52 +188,88 @@ int main()
     // {
     //     std::cout<<count1[i] - count2[i]<<" "<<count2[i] - count3[i]<<" "<<count1[i] - count3[i]<<std::endl;
     // }
-    for(i=0;i<loop_num_1;i++)
-    {   
-        a = i;
-        b = i;
-        c = i;
-        d = i;
-        ia = 0;
-        ib = 0;
-        for(j=0;j<loop_num;j++)
-        {
-            cal(a,b,ia,ib,c,d,ic,id);
-        }
-    }   
+    // for(i=0;i<loop_num_1;i++)
+    // {   
+    //     a = i;
+    //     b = i;
+    //     c = i;
+    //     d = i;
+    //     ia = 0;
+    //     ib = 0;
+    //     for(j=0;j<loop_num;j++)
+    //     {
+    //         cal(a,b,ia,ib,c,d,ic,id);
+    //     }
+    // }   
+
+    // st2 = clock();
+    // for(i=0;i<loop_num_1;i++)
+    // { 
+    //     a = i;
+    //     b = i;
+    //     c = i;
+    //     d = i;
+    //     ia = 0;
+    //     ib = 0;
+    //     for(j=0;j<loop_num;j++)
+    //     {
+    //         cal(abcd,ia,ib,ic, id);
+    //     }
+    // }  
+    // st3 = clock();
+    
+    // for(i=0;i<loop_num_1;i++)
+    // { 
+    //     a = i;
+    //     b = i;
+    //     c = i;
+    //     d = i;
+    //     i_ab[0] = 0;
+    //     i_ab[1] = 0;
+    //     for(j=0;j<loop_num;j++)
+    //     {
+    //         cal(abcd, i_ab, ic, id);
+    //     }
+    // }
+    // st4 = clock();
+    // std::cout<<(st2-st1)/CLOCKS_PER_SEC<<" "<<(st3-st2)/CLOCKS_PER_SEC<<" "<<(st4-st3)/CLOCKS_PER_SEC<<std::endl;
 
     st2 = clock();
-    for(i=0;i<loop_num_1;i++)
-    { 
-        a = i;
-        b = i;
-        c = i;
-        d = i;
-        ia = 0;
-        ib = 0;
+    k = 0;
+    m = 0;
+    // n = 1000;
+    // for(i=0;i<1000;i++){re_data[i] = data[i];}
+    for(i=0; i<loop_num_1; i++)
+    {
         for(j=0;j<loop_num;j++)
         {
-            cal(abcd,ia,ib,ic, id);
+            a = re_data[k];
+            if(k >= 10000)
+            {   
+                // if(n >= 10000){n=0;}
+                // for(m=0;m<1000;m++){re_data[m] = data[m+n];}
+                k = 0;
+            }
+            // n += 1000;
+            k++;
         }
-    }  
+    }
     st3 = clock();
-    
-    for(i=0;i<loop_num_1;i++)
-    { 
-        a = i;
-        b = i;
-        c = i;
-        d = i;
-        i_ab[0] = 0;
-        i_ab[1] = 0;
+    k = 0;
+    for(i=0; i<loop_num_1; i++)
+    {
         for(j=0;j<loop_num;j++)
         {
-            cal(abcd, i_ab, ic, id);
+            a = *(data+k);
+            if(k >= data_num){k=0;}
+            k++;
         }
-    }  
+    }
     st4 = clock();
-    std::cout<<(st2-st1)/CLOCKS_PER_SEC<<" "<<(st3-st2)/CLOCKS_PER_SEC<<" "<<(st4-st3)/CLOCKS_PER_SEC<<std::endl;
+    tt1 = (st2-st1)/CLOCKS_PER_SEC;
+    tt2 = (st3-st2)/CLOCKS_PER_SEC;
+    tt3 = (st4-st3)/CLOCKS_PER_SEC;
 
-
+    std::cout<<tt1<<" "<<tt2<<" "<<tt3<<" "<<tt3/tt2<<std::endl;
     return 0;
 }

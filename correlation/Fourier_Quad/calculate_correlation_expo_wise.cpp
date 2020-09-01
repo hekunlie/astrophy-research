@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
 
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
     
+    // strcpy(result_path, argv[4]);
 
     // read the information of each exposure file
     initialize(source_list, &expo_info, total_expo_num);
@@ -124,19 +125,20 @@ int main(int argc, char *argv[])
 
                 st3 = clock();
                 tt =  (st3 - st2)/CLOCKS_PER_SEC;
-                sprintf(log_inform,"Finish in %.2f sec.", tt);
-                
-                if(rank == 0)
-                {
-                    std::cout<<log_inform<<std::endl;
-                    std::cout<<"========================================================================================="<<std::endl;
-                }
+                sprintf(log_inform,"Finish in %.2f sec. %.0f pairs.", tt, expo_info.gg_pairs);
+                if(rank == 0){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
             }
-        
+            
+            save_expo_chi_block(&expo_info, fnm_1);  
+            // exit(0);
         }
-        save_expo_chi_block(&expo_info, fnm_1);     
-        
+           
+        if(rank == 0)
+        {
+            std::cout<<log_inform<<std::endl;
+            std::cout<<"========================================================================================="<<std::endl;
+        }
     }
     st4 = clock();
     tt =  (st4 - st1)/CLOCKS_PER_SEC;
