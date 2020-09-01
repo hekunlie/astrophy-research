@@ -592,6 +592,7 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /* general methods */
 /********************************************************************************************************************************************/
 void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
+void separation(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
 /* calculate the separation angle between two points on the sphere */
 /* RA & DEC in unit of degree */
 /* https://en.wikipedia.org/wiki/Great-circle_distance */

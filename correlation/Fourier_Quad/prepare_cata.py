@@ -33,9 +33,9 @@ redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 40
+chi_guess_num = 32
 chi_guess_bin = tool_box.set_bin_log(10**(-7), 10**(-3), chi_guess_num).astype(numpy.float32)
-cor_gg_len = 1000000
+cor_gg_len = 524288
 mg_bin_num = 10
 
 # star number on each chip
@@ -152,9 +152,10 @@ if cmd == "prepare_exposure_wise":
 
     total_expos = []
     for fnm in field_name:
-        sub_exp = fields[fnm]
-        for expo in sub_exp:
-            total_expos.append((fnm, expo))
+        if "w1" in fnm:
+            sub_exp = fields[fnm]
+            for expo in sub_exp:
+                total_expos.append((fnm, expo))
 
 
 

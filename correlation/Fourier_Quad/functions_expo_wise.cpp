@@ -1,6 +1,6 @@
 #include"functions_expo_wise.h"
 
-void initialize(char *file_path, data_info *expo_info, int total_expo_num)
+void initialize(data_info *expo_info, int total_expo_num)
 {
     int i, j;
     char set_name[100];
@@ -23,8 +23,9 @@ void initialize(char *file_path, data_info *expo_info, int total_expo_num)
     expo_info->expo_cen_cos_dec = new MY_FLOAT[total_expo_num]{};
     expo_info->expo_gal_num = new int[total_expo_num]{};
 
+    sprintf(data_path,"%s/cata/source_list.dat", expo_info->parent_path);
     // read the infomation of each expo
-    read_list(file_path, expo_info, i);
+    read_list(data_path, expo_info, i);
 
 
     ///////////////// read the inform of the PDF_SYM  ////////////////
@@ -262,7 +263,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     int ir_len, ic_len;
     MY_FLOAT gg_1, gg_2, gg_len;
 
-    MY_FLOAT delta_ra, delta_dec, delta_radius;
+    MY_FLOAT delta_ra, delta_dec, delta_radius, delta_radius_check;
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
 
     double st1, st2;
@@ -316,7 +317,9 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
             delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
             delta_dec = dec_z2 - dec_z1;
             delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
-            
+            // separation(ra_z1/60, dec_z1/60, ra_z2/60, dec_z2/60, delta_radius_check);
+            // std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<std::endl;
+
             theta_tag = -1;
             for(ir=0; ir<expo_info->theta_bin_num; ir++)
             {
@@ -366,7 +369,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
                 hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
                 
                 
-                expo_info->expo_num_count_chix[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                 
                 temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
                 temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
@@ -374,6 +377,10 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
                 hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
                 expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
                 loop_label += 1;
+
+                // if(ic_len == 0)
+                // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
                 // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
                 // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
                 for(ic=1; ic<chi_guess_num; ic++)
@@ -408,9 +415,15 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
                     // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
                     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
                     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                    loop_label += 1;
+
+
                     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
                     // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                    loop_label += 1;
+                    // if(ic_len == 0)
+                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    
                 }
                 if(loop_label >= gg_len){loop_label = 0;}
                 ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
@@ -453,7 +466,7 @@ void save_expo_chi_block(data_info *expo_info, int expo_label)
     sprintf(set_name, "/t");
     write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, true);
     sprintf(set_name, "/x");
-    write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, false);
+    write_h5(result_path, set_name, expo_info->expo_num_count_chix, row, col, false);
 }
 
 void save_expo_chi_block(data_info *expo_info, int expo_label, char *file_name)
@@ -467,7 +480,7 @@ void save_expo_chi_block(data_info *expo_info, int expo_label, char *file_name)
     sprintf(set_name, "/t");
     write_h5(file_name, set_name, expo_info->expo_num_count_chit, row, col, true);
     sprintf(set_name, "/x");
-    write_h5(file_name, set_name, expo_info->expo_num_count_chit, row, col, false);
+    write_h5(file_name, set_name, expo_info->expo_num_count_chix, row, col, false);
 }
 
 void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy)

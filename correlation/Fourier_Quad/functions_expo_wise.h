@@ -82,7 +82,7 @@ struct data_info
 };
 
 
-void initialize(char *file_path, data_info *field_info, int total_field_num);
+void initialize(data_info *field_info, int total_field_num);
 
 void read_list(char *file_path, data_info *field_info, int &read_file_num);
 

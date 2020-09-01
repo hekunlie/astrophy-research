@@ -271,5 +271,9 @@ int main(int argc, char **argv)
     tt3 = (st4-st3)/CLOCKS_PER_SEC;
 
     std::cout<<tt1<<" "<<tt2<<" "<<tt3<<" "<<tt3/tt2<<std::endl;
+    char log_inform[100];
+    a = atof(argv[3]);
+    sprintf(log_inform, "%g, %.0f",a,a);
+    std::cout<<log_inform<<std::endl;
     return 0;
 }
