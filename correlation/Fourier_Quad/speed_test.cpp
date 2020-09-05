@@ -1,4 +1,4 @@
-#include<FQlib.h>
+// #include<FQlib.h>
 #include<hk_iolib.h>
 
 #define MY_FLOAT float

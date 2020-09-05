@@ -35,6 +35,12 @@ struct data_info
     int *expo_zbin_ed[MAX_EXPO];
     int *expo_zbin_label[MAX_EXPO];// label of zbin, each gal
 
+    int data_read_label_1, data_read_label_2;
+    MY_FLOAT *expo_data_1;
+    MY_FLOAT *expo_data_2;
+    int *expo_zbin_label_1;
+    int *expo_zbin_label_2;
+
     int *expo_gal_num;// gal num in each exposure
     // about the position of each exposure
     MY_FLOAT *expo_cen_ra;
@@ -51,17 +57,31 @@ struct data_info
     // radius bin
     int theta_bin_num;
     MY_FLOAT *theta_bin;  
-
+    // save the separation of each pair
+    MY_FLOAT *theta;
+    // for the calculation of the mean theta at last
+    // the x position in the last figure
+    double *theta_accum, *theta_num_accum;
+    int theta_accum_len;
+    // for the last step of chi squared calculation, get_corr.cpp
+    double *expo_theta_accum[MAX_EXPO];
+    double *expo_theta_num_accum[MAX_EXPO];
+    int theta_accum_len_true;
+    
     // mpi task distribution
     int *expo_pair_num_each_rank;
     int my_expo_pair_st, my_expo_pair_ed;
     int *task_expo_label;
     int task_expo_num;
 
+
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
     int chi_guess_num;
     int chi_block_len, ir_chi_block_len, iz_chi_block_len,expo_chi_block_len;
+
+    // for the last step of chi squared calculation, get_corr.cpp
+    int expo_chi_block_len_true;
     
     MY_FLOAT *mg_bin;
     int mg_bin_num, mg_bin_num1, mg_bin_num2, mg_bin_num3;
@@ -78,7 +98,7 @@ struct data_info
     int gg_len;
     MY_FLOAT *gg_1;
     MY_FLOAT *gg_2;
-    int loop_label=0;
+    int loop_label;
 };
 
 
@@ -88,34 +108,34 @@ void read_list(char *file_path, data_info *field_info, int &read_file_num);
 
 void read_data(data_info *field_info);
 
+void read_expo_data_1(data_info *field_info, int expo_label);
+void read_expo_data_2(data_info *field_info, int expo_label);
+
 void initialize_expo_chi_block(data_info *field_info);
 
 void collect_chi_block(data_info *field_info, int field_label);
 
-void save_expo_chi_block(data_info*field_info, int expo_label);
+void save_expo_data(data_info*field_info, int expo_label);
 
-void save_expo_chi_block(data_info *expo_info, int expo_label, char *file_name)
-;
+void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
 
 void task_distribution(int portion, int my_id, data_info *field_info);
 
 void task_prepare(int numprocs, int rank, data_info *field_info);
 
-void hist_2d(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int &ix, int &iy);
-
 void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
 void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);
 void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &ix, int &iy);//faster than above
 
-void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT former_x, MY_FLOAT former_y, int former_ix, int former_iy, MY_FLOAT x, MY_FLOAT y, int &ix, int &iy);
 void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
 
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
 // if lable == 1, calculate, else, not
 
 void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
-
-
+// read all exposures
+void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
+// read the exposure needed
 #endif
 
 

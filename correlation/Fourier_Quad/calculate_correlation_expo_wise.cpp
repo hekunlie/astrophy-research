@@ -7,9 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-    /*
-
-    */
 
 	int rank, numprocs;
 	MPI_Init(&argc, &argv);
@@ -21,12 +18,12 @@ int main(int argc, char *argv[])
     char set_name[50], temp_char[50];
     char log_inform[500], log_path[600];
 
-    double st1, st2, st3, st4, st5, st6, tt;
-
     data_info expo_info;
-
+    double st1, st2, st3, st4, st5, st6, tt;
     int i,j;
     int fnm_1, fnm_2, total_expo_num, label;
+    double count_sum;
+
 
     strcpy(expo_info.parent_path, argv[1]);
     total_expo_num = atoi(argv[2]);
@@ -38,8 +35,8 @@ int main(int argc, char *argv[])
     // read the information of each exposure file
     initialize(&expo_info, total_expo_num);
 
-    // read the catalog of redshift bin z1 & z2
-    read_data(&expo_info);
+    // // read the catalog of redshift bin z1 & z2
+    // read_data(&expo_info);
 
     // find all the potential expo pair for calculation (i, j),
     // does not include the expo itself i!= j
@@ -96,7 +93,7 @@ int main(int argc, char *argv[])
     ////////////////////////////////  PRINT INFO-end  ////////////////////////////////////////////
 
 
-    // loop the expo pairs
+    ////////////////////////////////// loop the expo pairs  ////////////////////////////////
     st1 = clock();
     for(i=0; i < expo_info.task_expo_num; i++)
     {   
@@ -104,14 +101,18 @@ int main(int argc, char *argv[])
         // expo pair label
         fnm_1 = expo_info.task_expo_label[i];
 
+        read_expo_data_1(&expo_info,fnm_1);
+
+        initialize_expo_chi_block(&expo_info);
+
+
         sprintf(log_inform,"Start %d/%d. expo  %d-%s(%d)", i+1, expo_info.task_expo_num, 
                 fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
         if(rank == 0){std::cout<<log_inform<<std::endl;}
         write_log(log_path, log_inform);
 
-
-        initialize_expo_chi_block(&expo_info);
-
+        // only search pairs from the exposures have a bigger exposure label
+        // to avoid double counting
         for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
         {    
             expo_distance(&expo_info,fnm_1, fnm_2, label);
@@ -123,8 +124,11 @@ int main(int argc, char *argv[])
                 if(rank == 0){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
 
+
+                read_expo_data_2(&expo_info, fnm_2);
                 ////////////////  search pairs ////////////////////
-                find_pairs(&expo_info, fnm_1, fnm_2);
+                find_pairs_new(&expo_info, fnm_1, fnm_2);
+
 
                 st4 = clock();
                 tt =  (st4 - st3)/CLOCKS_PER_SEC;
@@ -132,16 +136,27 @@ int main(int argc, char *argv[])
                 if(rank == 0){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
             }
-            
-            save_expo_chi_block(&expo_info, fnm_1);  
-            // exit(0);
         }
+
+        // if no pair has been found, no result file will be written down
+        sum_arr(expo_info.expo_num_count_chit,expo_info.expo_chi_block_len,0,expo_info.expo_chi_block_len,count_sum);
+        if(count_sum > 1){save_expo_data(&expo_info, fnm_1);}
+        else
+        {
+            printf(log_inform,"expo %d-%s(%d) no pair has been found", i+1, expo_info.task_expo_num, fnm_1,
+                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
+            std::cout<<log_inform<<std::endl;
+        }
+        
+
         st5 = clock();
         tt =  (st5 - st2)/CLOCKS_PER_SEC;
         sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
                 expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
+        write_log(log_path, log_inform);
         if(rank == 0)
-        {
+        {   
+            std::cout<<log_inform<<std::endl;
             std::cout<<"========================================================================================="<<std::endl<<std::endl;
         }
     }
@@ -155,6 +170,9 @@ int main(int argc, char *argv[])
         std::cout<<"========================================================================================="<<std::endl;
     }
     write_log(log_path, log_inform);
+    ////////////////////////////////// loop the expo pairs-end ////////////////////////////////
+
+
     MPI_Finalize();
     
     return 0;

@@ -2,6 +2,7 @@
 #include<ctime>
 #include<fstream>
 #include<iostream>
+#include<hk_iolib.h>
 
 void write_log(char*filename, char *inform)
 {   
@@ -29,7 +30,17 @@ int main(int argc, char **argv)
     char inform[200];
     char log_path[200];
     sprintf(log_path,"logs.dat");
+    sprintf(inform,"This is %d-%d", myid, numprocs);
+    for(int i=0; i<numprocs; i++)
+    {
+        if(i == myid)
+        {   
+            std::cout<<inform<<std::endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
 
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
 }

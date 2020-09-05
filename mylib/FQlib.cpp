@@ -6696,36 +6696,36 @@ void addnoise(float *image, const int pixel_num, const float sigma, const gsl_rn
 }
 
 
-void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result, const gsl_rng *gsl_rand_rng)
-{	
-	int i, j;
-	gsl_matrix *covs = gsl_matrix_alloc(num, num);
-	gsl_vector *mus = gsl_vector_alloc(num);
-	gsl_vector *res = gsl_vector_alloc(num);
+// void rand_multi_gauss(const double*cov, const double *mu, const int num, double *result, const gsl_rng *gsl_rand_rng)
+// {	
+// 	int i, j;
+// 	gsl_matrix *covs = gsl_matrix_alloc(num, num);
+// 	gsl_vector *mus = gsl_vector_alloc(num);
+// 	gsl_vector *res = gsl_vector_alloc(num);
 
-	for (i = 0; i < num; i++)
-	{
-		gsl_vector_set(mus, i, mu[i]);
-		for (j = 0; j < num; j++)
-		{
-			gsl_matrix_set(covs, i, j, cov[i*num + j]);
-			//std::cout << gsl_matrix_get(covs, i, j) << ", ";
-		}
-		//std::cout << std::endl;
-	}
+// 	for (i = 0; i < num; i++)
+// 	{
+// 		gsl_vector_set(mus, i, mu[i]);
+// 		for (j = 0; j < num; j++)
+// 		{
+// 			gsl_matrix_set(covs, i, j, cov[i*num + j]);
+// 			//std::cout << gsl_matrix_get(covs, i, j) << ", ";
+// 		}
+// 		//std::cout << std::endl;
+// 	}
 
-	gsl_linalg_cholesky_decomp(covs);
-	gsl_ran_multivariate_gaussian(gsl_rand_rng, mus, covs, res);
+// 	gsl_linalg_cholesky_decomp(covs);
+// 	gsl_ran_multivariate_gaussian(gsl_rand_rng, mus, covs, res);
 
-	for (i = 0; i < num; i++)
-	{
-		result[i] = gsl_vector_get(res, i);
-	}
+// 	for (i = 0; i < num; i++)
+// 	{
+// 		result[i] = gsl_vector_get(res, i);
+// 	}
 
-	gsl_matrix_free(covs);
-	gsl_vector_free(mus);
-	gsl_vector_free(res);
-}
+// 	gsl_matrix_free(covs);
+// 	gsl_vector_free(mus);
+// 	gsl_vector_free(res);
+// }
 
 void rand_gauss(double sigma, double mean, double &rand_n, const gsl_rng *gsl_rand_rng)
 {

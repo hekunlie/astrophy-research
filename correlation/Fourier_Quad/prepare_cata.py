@@ -33,9 +33,15 @@ redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 32
-chi_guess_bin = tool_box.set_bin_log(10**(-7), 10**(-3), chi_guess_num).astype(numpy.float32)
-cor_gg_len = 524288
+chi_guess_num = 25
+inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
+chi_guess_bin_p = tool_box.set_bin_log(10**(-6), 10**(-3), chi_guess_num).astype(numpy.float32)
+chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
+chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
+chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
+
+chi_guess_num = int(chi_guess_num*2)
+cor_gg_len = 500000
 mg_bin_num = 10
 
 # star number on each chip
@@ -110,8 +116,8 @@ if cmd == "correlation":
 
             mean = [0, 0]
 
-            cov = [[chi_guess_bin[i] * 2, chi_guess_bin[i]],
-                   [chi_guess_bin[i], chi_guess_bin[i] * 2]]
+            cov = [[numpy.abs(chi_guess_bin[i] * 2), chi_guess_bin[i]],
+                   [chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
 
             gg = tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
 
@@ -152,12 +158,10 @@ if cmd == "prepare_exposure_wise":
 
     total_expos = []
     for fnm in field_name:
-        if "w1" in fnm:
-            sub_exp = fields[fnm]
-            for expo in sub_exp:
-                total_expos.append((fnm, expo))
-
-
+        # if "w1" not in fnm:
+        sub_exp = fields[fnm]
+        for expo in sub_exp:
+            total_expos.append((fnm, expo))
 
     my_expos = tool_box.alloc(total_expos,cpus, method="order")[rank]
     expo_avail_sub = []
