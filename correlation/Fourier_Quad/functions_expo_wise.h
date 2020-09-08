@@ -5,7 +5,7 @@
 #include<FQlib.h>
 
 #define MAX_EXPO 2000
-
+#define MAX_RESAMPLE 2000
 #define MY_FLOAT float
 
 struct data_info
@@ -63,11 +63,8 @@ struct data_info
     // the x position in the last figure
     double *theta_accum, *theta_num_accum;
     int theta_accum_len;
-    // for the last step of chi squared calculation, get_corr.cpp
-    double *expo_theta_accum[MAX_EXPO];
-    double *expo_theta_num_accum[MAX_EXPO];
-    int theta_accum_len_true;
-    
+
+
     // mpi task distribution
     int *expo_pair_num_each_rank;
     int my_expo_pair_st, my_expo_pair_ed;
@@ -79,9 +76,6 @@ struct data_info
     MY_FLOAT *chi_guess;
     int chi_guess_num;
     int chi_block_len, ir_chi_block_len, iz_chi_block_len,expo_chi_block_len;
-
-    // for the last step of chi squared calculation, get_corr.cpp
-    int expo_chi_block_len_true;
     
     MY_FLOAT *mg_bin;
     int mg_bin_num, mg_bin_num1, mg_bin_num2, mg_bin_num3;
@@ -99,6 +93,26 @@ struct data_info
     MY_FLOAT *gg_1;
     MY_FLOAT *gg_2;
     int loop_label;
+
+    // for the last step of chi squared calculation, get_corr.cpp
+    double *corr_cal_expo_theta_accum[MAX_EXPO];
+    double *corr_cal_expo_theta_num_accum[MAX_EXPO];
+    double *corr_cal_expo_num_count_chit[MAX_EXPO];
+    double *corr_cal_expo_num_count_chix[MAX_EXPO];
+    
+    double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
+    double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
+    
+    int theta_accum_len_true;
+    int expo_chi_block_len_true;
+
+    int resample_num;
+    int corr_cal_chi_len;
+    int corr_cal_final_data_num;
+    double *corr_cal_mean_theta;
+    double *corr_cal_chi_tt[MAX_RESAMPLE], *corr_cal_chi_xx[MAX_RESAMPLE];
+    double *corr_cal_gtt[MAX_RESAMPLE], *corr_cal_gxx[MAX_RESAMPLE];
+    double *corr_cal_gtt_sig[MAX_RESAMPLE], *corr_cal_gxx_sig[MAX_RESAMPLE];
 };
 
 

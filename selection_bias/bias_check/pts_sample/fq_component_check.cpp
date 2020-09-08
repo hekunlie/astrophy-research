@@ -308,6 +308,9 @@ int main(int argc, char*argv[])
 		sprintf(mg_name[4], "/mv");
 	}
 
+	galaxy_flux = new MY_FLOAT[total_data_row];
+
+
 	// read shear
 	g1t = new MY_FLOAT[shear_pairs]{};
 	g2t = new MY_FLOAT[shear_pairs]{};
@@ -383,10 +386,10 @@ int main(int argc, char*argv[])
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d", rank, shear_id, chip_st, chip_ed);
 		write_log(log_path, log_inform);
 
-		// // read flux
-		// sprintf(shear_path,"%s/parameters/para_%d.hdf5", parent_path, shear_id);
-		// sprintf(set_name,"/flux");
-		// read_h5(shear_path, set_name, galaxy_flux);
+		// read flux
+		sprintf(shear_path,"%s/parameters/para_%d.hdf5", parent_path, shear_id);
+		sprintf(set_name,"/flux");
+		read_h5(shear_path, set_name, galaxy_flux);
 		
 		// rank 0 reads the total flux array and scatters to each thread
 		if(rank == 0)
@@ -420,8 +423,8 @@ int main(int argc, char*argv[])
 
 			row = (i-chip_st)*stamp_num*shear_data_cols;
 
-			sprintf(chip_path, "%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			read_fits(chip_path, big_img_check[0]);
+			// sprintf(chip_path, "%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			// read_fits(chip_path, big_img_check[0]);
 
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d read", rank,shear_id, i);
 			write_log(log_path, log_inform);
@@ -439,8 +442,8 @@ int main(int argc, char*argv[])
 					write_log(log_path, log_inform);
 				}
 
-				// n = (i*stamp_num + j)%flux_num;
-				// flux_i = galaxy_flux[n]/num_p;
+				n = i*stamp_num + j;
+				flux_i = galaxy_flux[n]/num_p;
 
 				initialize_arr(point, num_p * 2, 0);				
 				for(k=0;k<8;k++)
@@ -454,20 +457,20 @@ int main(int argc, char*argv[])
 					pow_spec(noise_img[k], noise_pow_img[k], size, size);
 				}
 
-				segment(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
-				arr_scale(stamp_img[0], flux_scale, img_len);
+				// segment(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+				// arr_scale(stamp_img[0], flux_scale, img_len);
 
-// 				create_points(point, num_p, max_radius, pts_step, rng0);
+				create_points(point, num_p, max_radius, pts_step, rng0);
 
-// #ifdef EPSF
-// 				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
-// #else
-// 				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
+#ifdef EPSF
+				convolve_e(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale,psf_type,psf_ellip, ellip_theta);
+#else
+				convolve(point,num_p,flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
-// #endif
+#endif
 				//if(rank == 0 and shear_id==0 and i < 3)
 				// {
-					// stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+					stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
 				// }
 				// noise free
 				pow_spec(stamp_img[0], stamp_pow_img[0], size, size);
@@ -604,8 +607,8 @@ int main(int argc, char*argv[])
 
 			// if(rank == 0 and shear_id==0 and i < 3)
 			// {
-				// sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
-			 	// write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+				sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
+			 	write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
 			// }
 			t2 = clock();
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
