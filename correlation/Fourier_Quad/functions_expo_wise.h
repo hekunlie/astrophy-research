@@ -95,6 +95,8 @@ struct data_info
     int loop_label;
 
     // for the last step of chi squared calculation, get_corr.cpp
+    char result_path[550];
+    char set_name[50];
     double *corr_cal_expo_theta_accum[MAX_EXPO];
     double *corr_cal_expo_theta_num_accum[MAX_EXPO];
     double *corr_cal_expo_num_count_chit[MAX_EXPO];
@@ -107,12 +109,16 @@ struct data_info
     int expo_chi_block_len_true;
 
     int resample_num;
-    int corr_cal_chi_len;
+    int corr_cal_chi_num;
     int corr_cal_final_data_num;
-    double *corr_cal_mean_theta;
+    double *corr_cal_mean_theta[MAX_RESAMPLE];
     double *corr_cal_chi_tt[MAX_RESAMPLE], *corr_cal_chi_xx[MAX_RESAMPLE];
     double *corr_cal_gtt[MAX_RESAMPLE], *corr_cal_gxx[MAX_RESAMPLE];
     double *corr_cal_gtt_sig[MAX_RESAMPLE], *corr_cal_gxx_sig[MAX_RESAMPLE];
+    double *corr_cal_chi_guess;
+
+    int *jackknife_sample_label;
+    int jackknife_label;
 };
 
 

@@ -9,7 +9,7 @@ void read_result_list(data_info *all_paras, int read_col_idx)
     std::ifstream infile;
 	std::string str, str_;
 	std::stringstream strs;
-    char temp[50];
+    char temp[100];
     char temp_path[600];
     char cat_path[600];
     char result_path[600];
@@ -48,8 +48,11 @@ void read_result_list(data_info *all_paras, int read_col_idx)
                 if(file_exist(temp_path))
                 {   
                     all_paras->expo_name_path[all_paras->total_expo_num] = new char[600];
+                    all_paras->expo_name[all_paras->total_expo_num] = new char[100];
 
                     sprintf(all_paras->expo_name_path[all_paras->total_expo_num], "%s", temp_path);
+                    sprintf(all_paras->expo_name[all_paras->total_expo_num], "%s", temp);
+
 
                     all_paras->total_expo_num++;
                 }
@@ -70,7 +73,7 @@ void read_result_list(data_info *all_paras, int read_col_idx)
 
 void read_para(data_info *all_paras)
 {   
-    int j;
+    int i, j, m, n;
     char set_name[60], data_path[600];
 
     sprintf(data_path,"%s/cata/gg_cor.hdf5", all_paras->parent_path);
@@ -81,6 +84,7 @@ void read_para(data_info *all_paras)
     all_paras->theta_bin_num = j -1;
     read_h5(data_path, set_name, all_paras->theta_bin);
 
+
     // read redshift bin
     sprintf(set_name,"/redshift_bin");
     read_h5_datasize(data_path, set_name,j);
@@ -88,10 +92,14 @@ void read_para(data_info *all_paras)
     all_paras->zbin_num = j -1;
     read_h5(data_path, set_name, all_paras->zbin);
 
+
     sprintf(set_name, "/chi_guess");
     read_h5_datasize(data_path, set_name, all_paras->chi_guess_num);
     all_paras->chi_guess = new MY_FLOAT[all_paras->chi_guess_num];
+    all_paras->corr_cal_chi_guess = new double[all_paras->chi_guess_num];
     read_h5(data_path, set_name, all_paras->chi_guess);
+    for(j=0; j<all_paras->chi_guess_num; j++){all_paras->corr_cal_chi_guess[j] = all_paras->chi_guess[j];}
+
 
     sprintf(set_name, "/mg_bin");
     read_h5_datasize(data_path, set_name, j);
@@ -99,12 +107,13 @@ void read_para(data_info *all_paras)
     all_paras->mg_bin_num = j -1;
     read_h5(data_path, set_name, all_paras->mg_bin);
 
+
     std::cout<<"G bin: "<<all_paras->mg_bin_num<<std::endl;
     show_arr(all_paras->mg_bin,1,all_paras->mg_bin_num+1);
     std::cout<<std::endl;
 
     std::cout<<"Chi guess bin: "<<all_paras->chi_guess_num<<std::endl;
-    show_arr(all_paras->chi_guess,1,all_paras->chi_guess_num);
+    show_arr(all_paras->corr_cal_chi_guess,1,all_paras->chi_guess_num);
     std::cout<<std::endl;
     
     std::cout<<"theta bin: "<<all_paras->theta_bin_num<<std::endl;
@@ -144,27 +153,55 @@ void read_para(data_info *all_paras)
     // stack all the exposure data
     all_paras->corr_cal_stack_num_count_chit = new double [all_paras->expo_chi_block_len_true]{};
     all_paras->corr_cal_stack_num_count_chix = new double [all_paras->expo_chi_block_len_true]{};
-    all_paras->corr_cal_mean_theta = new double[all_paras->expo_chi_block_len_true]{};
 
+    
     all_paras->corr_cal_stack_expo_theta_accum = new double[all_paras->theta_accum_len_true]{};
     all_paras->corr_cal_stack_expo_theta_num_accum = new double[all_paras->theta_accum_len_true]{};
 
-
+    initialize_arr(all_paras->corr_cal_stack_num_count_chit, all_paras->expo_chi_block_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_num_count_chix, all_paras->expo_chi_block_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_expo_theta_accum, all_paras->theta_accum_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_expo_theta_num_accum, all_paras->theta_accum_len_true, 0);
     // for the PDF calculation
-    all_paras->corr_cal_chi_len = all_paras->chi_guess_num*all_paras->theta_bin_num*((all_paras->zbin_num*all_paras->zbin_num + all_paras->zbin_num)/2);
+    all_paras->corr_cal_chi_num = all_paras->chi_guess_num*all_paras->theta_bin_num*((all_paras->zbin_num*all_paras->zbin_num + all_paras->zbin_num)/2);
     all_paras->corr_cal_final_data_num = all_paras->theta_bin_num*((all_paras->zbin_num*all_paras->zbin_num + all_paras->zbin_num)/2);
     for(j=0; j<all_paras->resample_num+1; j++)
     {
         
-        all_paras->corr_cal_chi_tt[j] = new double[all_paras->corr_cal_chi_len];
-        all_paras->corr_cal_chi_xx[j] = new double[all_paras->corr_cal_chi_len];
+        all_paras->corr_cal_chi_tt[j] = new double[all_paras->corr_cal_chi_num];
+        all_paras->corr_cal_chi_xx[j] = new double[all_paras->corr_cal_chi_num];
 
         all_paras->corr_cal_gtt[j]  = new double[all_paras->corr_cal_final_data_num];
         all_paras->corr_cal_gxx[j]  = new double[all_paras->corr_cal_final_data_num];
         all_paras->corr_cal_gtt_sig[j]  = new double[all_paras->corr_cal_final_data_num];
         all_paras->corr_cal_gxx_sig[j]  = new double[all_paras->corr_cal_final_data_num];
+
+        all_paras->corr_cal_mean_theta[j] = new double[all_paras->expo_chi_block_len_true]{};
     }
 
+
+    // for jackknife
+    // the sub-sample labels
+    all_paras->jackknife_sample_label = new int[all_paras->total_expo_num];
+    m = all_paras->total_expo_num/all_paras->resample_num;
+    n = all_paras->total_expo_num%all_paras->resample_num;
+    for(i=0; i<n; i++)
+    {   
+
+        for(j=0;j<m+1; j++)
+        {
+            all_paras->jackknife_sample_label[i*(m+1)+j] = i+1;
+        }
+    }
+    for(i=n; i<all_paras->resample_num; i++)
+    {   
+
+        for(j=0;j<m; j++)
+        {
+            all_paras->jackknife_sample_label[n*(m+1) + (i-n)*m+j] = i+1;
+        }
+    }
+    
 }
 
 void read_result_data(data_info*all_paras)
@@ -173,6 +210,7 @@ void read_result_data(data_info*all_paras)
     int i, j, k, tag;
     int st, st_ij, st_ji, m;
     
+
     for(i=0;i<all_paras->total_expo_num; i++)
     {   
 
@@ -211,8 +249,8 @@ void read_result_data(data_info*all_paras)
             for(k=j+1; k<all_paras->zbin_num; k++)
             {   
                 tag = (j*all_paras->zbin_num + k - (j*j+j)/2)*all_paras->theta_bin_num;
-                if(i == 0 or i == 10)
-                {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
+                // if(i == 0 or i == 10)
+                // {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
 
                 st_ij = (j*all_paras->zbin_num + k)*all_paras->theta_bin_num;
                 st_ji = (k*all_paras->zbin_num + j)*all_paras->theta_bin_num;
@@ -226,7 +264,7 @@ void read_result_data(data_info*all_paras)
             //////////////////////////////////////////////////////////////////////////////////
 
 
-            ///////////////////////////////////  chi  ////////////////////////////////////////
+            ///////////////////////////////////  number count  ////////////////////////////////////////
             // z[i,i] part
             st = (j*all_paras->zbin_num + j)*all_paras->iz_chi_block_len;
             tag = (j*all_paras->zbin_num - j*(j-1)/2)*all_paras->iz_chi_block_len;
@@ -243,8 +281,8 @@ void read_result_data(data_info*all_paras)
             for(k=j+1; k<all_paras->zbin_num; k++)
             {   
                 tag = (j*all_paras->zbin_num + k - (j*j+j)/2)*all_paras->iz_chi_block_len;
-                if(i == 0 or i == 10)
-                {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
+                // if(i == 0 or i == 10)
+                // {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
 
                 st_ij = (j*all_paras->zbin_num + k)*all_paras->iz_chi_block_len;
                 st_ji = (k*all_paras->zbin_num + j)*all_paras->iz_chi_block_len;
@@ -257,13 +295,22 @@ void read_result_data(data_info*all_paras)
             }
             //////////////////////////////////////////////////////////////////////////////////
         }
-
+        sprintf(data_path,"%s/result/%s_num_count_zstack.hdf5", all_paras->parent_path, all_paras->expo_name[i]);
+        sprintf(set_name,"/tt");
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chit[i], 1, all_paras->expo_chi_block_len_true, true);
+        sprintf(set_name,"/xx");
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chix[i], 1, all_paras->expo_chi_block_len_true, false);
+        sprintf(set_name,"/theta");
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_accum[i], 1, all_paras->theta_accum_len_true, false);
+        sprintf(set_name,"/theta_num");
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_num_accum[i], 1, all_paras->theta_accum_len_true, false);
+        
         // stack all the exposure data
+
         for(j=0;j<all_paras->expo_chi_block_len_true;j++)
         {
             all_paras->corr_cal_stack_num_count_chit[j] += all_paras->corr_cal_expo_num_count_chit[i][j];
             all_paras->corr_cal_stack_num_count_chix[j] += all_paras->corr_cal_expo_num_count_chix[i][j];
-
         }
         for(j=0;j<all_paras->theta_accum_len_true;j++)
         {
@@ -273,10 +320,34 @@ void read_result_data(data_info*all_paras)
     }
 }
 
-void resample(data_info *all_paras,int resample_label)
+void resample_jackknife(data_info *all_paras,int resample_label)
 {
-    ;
+    int i,j,k;
+    
+    initialize_arr(all_paras->corr_cal_stack_num_count_chit, all_paras->expo_chi_block_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_num_count_chix, all_paras->expo_chi_block_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_expo_theta_accum, all_paras->theta_accum_len_true, 0);
+    initialize_arr(all_paras->corr_cal_stack_expo_theta_num_accum, all_paras->theta_accum_len_true, 0);
+    for(i=0;i<all_paras->total_expo_num;i++)
+    {      
+        // stack the sub-sample exposure data
+        if(all_paras->jackknife_sample_label[i] == resample_label)
+        {
+            for(j=0;j<all_paras->expo_chi_block_len_true;j++)
+            {
+                all_paras->corr_cal_stack_num_count_chit[j] += all_paras->corr_cal_expo_num_count_chit[i][j];
+                all_paras->corr_cal_stack_num_count_chix[j] += all_paras->corr_cal_expo_num_count_chix[i][j];
+            }
+            for(j=0;j<all_paras->theta_accum_len_true;j++)
+            {
+                all_paras->corr_cal_stack_expo_theta_accum[j] += all_paras->corr_cal_expo_theta_accum[i][j];
+                all_paras->corr_cal_stack_expo_theta_num_accum[j] += all_paras->corr_cal_expo_theta_num_accum[i][j];
+            }
+        }
+    }
+    
 }
+
 void chisq_2d(double *num_count, int mg_bin_num, double &chisq)
 {
     int i, j, k;
@@ -315,11 +386,13 @@ void corr_calculate(data_info *all_paras, int resample_label)
     double chisq_tt, chisq_xx;
     double *temp_tt = new double[mg_bin_num*mg_bin_num]{};
     double *temp_xx = new double[mg_bin_num*mg_bin_num]{};
+
     double *chi_gtt_fit = new double[all_paras->chi_guess_num];
     double *chi_gxx_fit = new double[all_paras->chi_guess_num];
+    double gh, gh_sig, chi_min_fit;
 
     // calculate chi squared
-    for(i=0;i<all_paras->corr_cal_chi_len;i++)
+    for(i=0;i<all_paras->corr_cal_chi_num;i++)
     {
         for(j=0;j<mg_bin_num*mg_bin_num;j++)
         {
@@ -338,21 +411,53 @@ void corr_calculate(data_info *all_paras, int resample_label)
     for(i=0; i<all_paras->corr_cal_final_data_num;i++)
     {   
         tag = i*all_paras->chi_guess_num;
+        // std::cout<<i<<std::endl;
         for(j=0;j<all_paras->chi_guess_num;j++)
         {
             chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[resample_label][tag + j];
             chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[resample_label][tag + j];
         }
+        if(resample_label == 1)
+        {
+            show_arr(chi_gtt_fit,1,all_paras->chi_guess_num);
+            show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
+        }
+
+        fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, 150);
+        all_paras->corr_cal_gtt[resample_label][i] = gh;
+        all_paras->corr_cal_gtt_sig[resample_label][i] = gh_sig;
+
+        fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, 150);
+        all_paras->corr_cal_gxx[resample_label][i] = gh;
+        all_paras->corr_cal_gxx_sig[resample_label][i] = gh_sig;
     }
 
 
     // calculate the mean theta
     for(i=0;i<all_paras->theta_accum_len_true;i++)
     {
-        all_paras->corr_cal_mean_theta[i] = all_paras->corr_cal_stack_expo_theta_accum[i]/all_paras->corr_cal_stack_expo_theta_num_accum[i];
+        all_paras->corr_cal_mean_theta[resample_label][i] = all_paras->corr_cal_stack_expo_theta_accum[i]/all_paras->corr_cal_stack_expo_theta_num_accum[i];
     }
+    
 
-    std::cout<<all_paras->corr_cal_chi_len<<" "<<all_paras->corr_cal_final_data_num<<" "<<all_paras->theta_accum_len_true<<std::endl;
+    // write down the result
+    bool overwrite;
+    if(resample_label == 0){overwrite = true;}
+    else{overwrite = false;}
+
+    sprintf(all_paras->set_name, "/%d/chi_tt", resample_label);
+    write_h5(all_paras->result_path, all_paras->set_name, all_paras->corr_cal_gtt[resample_label], 1, all_paras->corr_cal_final_data_num, overwrite);
+    sprintf(all_paras->set_name, "/%d/chi_tt_sig", resample_label);
+    write_h5(all_paras->result_path, all_paras->set_name, all_paras->corr_cal_gtt_sig[resample_label], 1, all_paras->corr_cal_final_data_num, false);
+    sprintf(all_paras->set_name, "/%d/chi_xx", resample_label);
+    write_h5(all_paras->result_path, all_paras->set_name, all_paras->corr_cal_gxx[resample_label], 1, all_paras->corr_cal_final_data_num, false);
+    sprintf(all_paras->set_name, "/%d/chi_xx_sig", resample_label);
+    write_h5(all_paras->result_path, all_paras->set_name, all_paras->corr_cal_gxx_sig[resample_label], 1, all_paras->corr_cal_final_data_num, false);
+    sprintf(all_paras->set_name, "/%d/theta", resample_label);
+    write_h5(all_paras->result_path, all_paras->set_name, all_paras->corr_cal_mean_theta[resample_label], 1, all_paras->theta_accum_len_true, false);
+
+
+    std::cout<<"chi block num: "<<all_paras->corr_cal_chi_num<<" Final data point num: "<<all_paras->corr_cal_final_data_num<<" Theta point num: "<<all_paras->theta_accum_len_true<<std::endl;
     delete[] temp_tt;
     delete[] temp_xx;
     delete[] chi_gtt_fit;
@@ -370,7 +475,7 @@ int main(int argc, char **argv)
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
     char source_list[300];
-    char parent_path[400], cat_path[450], result_path[450];
+    char parent_path[400], cat_path[450], result_path[450], inform[400];
     char *result_file_path[4000];
 
     int result_file_num;
@@ -381,24 +486,37 @@ int main(int argc, char **argv)
     
     strcpy(all_paras.parent_path, argv[1]);
     all_paras.resample_num = atoi(argv[2]);
-    
+    sprintf(all_paras.result_path,"%s/result/result.hdf5",all_paras.parent_path);
+
+    sprintf(inform,"Reading file list");
+    if(rank == 0){std::cout<<inform<<std::endl;}
     read_result_list(&all_paras, 1);
 
+
+    sprintf(inform,"Reading parameters");
+    if(rank == 0){std::cout<<inform<<std::endl;}
     read_para(&all_paras);
+
+
+    sprintf(inform,"Reading result files");
+    if(rank == 0){std::cout<<inform<<std::endl;}
     read_result_data(&all_paras);
 
 
+    sprintf(inform,"Calculate");
+    if(rank == 0){std::cout<<inform<<std::endl;}
     for(i=0; i<all_paras.resample_num+1; i++)
     {
         // 0 means the result will be stored in the first row,
         // the signal from the whole sample
         // else the i'th row is the result from i'th jackknife or bootstrap
+        std::cout<<"Sampling "<<i<<std::endl;
         if(i == 0){corr_calculate(&all_paras, i);}
-        // else
-        // {
-        //     resample(&all_paras,i-1);
-        //     corr_calculate(&all_paras, i);
-        // }
+        else
+        {
+            resample_jackknife(&all_paras,i);
+            corr_calculate(&all_paras, i);
+        }
         
     }
 
