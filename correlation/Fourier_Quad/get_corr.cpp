@@ -209,7 +209,7 @@ void read_result_data(data_info*all_paras)
     char set_name[60], data_path[600];
     int i, j, k, tag;
     int st, st_ij, st_ji, m;
-    
+    int row, col;
 
     for(i=0;i<all_paras->total_expo_num; i++)
     {   
@@ -295,15 +295,20 @@ void read_result_data(data_info*all_paras)
             }
             //////////////////////////////////////////////////////////////////////////////////
         }
+        row = all_paras->expo_chi_block_len_true/all_paras->mg_bin_num;
+        col = all_paras->mg_bin_num;
         sprintf(data_path,"%s/result/%s_num_count_zstack.hdf5", all_paras->parent_path, all_paras->expo_name[i]);
         sprintf(set_name,"/tt");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chit[i], 1, all_paras->expo_chi_block_len_true, true);
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chit[i], row, col, true);
         sprintf(set_name,"/xx");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chix[i], 1, all_paras->expo_chi_block_len_true, false);
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_num_count_chix[i],row, col, false);
+
+        row = all_paras->theta_accum_len_true/all_paras->theta_bin_num;
+        col = all_paras->theta_bin_num;
         sprintf(set_name,"/theta");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_accum[i], 1, all_paras->theta_accum_len_true, false);
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_accum[i], row, col, false);
         sprintf(set_name,"/theta_num");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_num_accum[i], 1, all_paras->theta_accum_len_true, false);
+        write_h5(data_path, set_name, all_paras->corr_cal_expo_theta_num_accum[i], row, col, false);
         
         // stack all the exposure data
 
@@ -331,7 +336,7 @@ void resample_jackknife(data_info *all_paras,int resample_label)
     for(i=0;i<all_paras->total_expo_num;i++)
     {      
         // stack the sub-sample exposure data
-        if(all_paras->jackknife_sample_label[i] == resample_label)
+        if(all_paras->jackknife_sample_label[i] != resample_label)
         {
             for(j=0;j<all_paras->expo_chi_block_len_true;j++)
             {
@@ -503,22 +508,22 @@ int main(int argc, char **argv)
     read_result_data(&all_paras);
 
 
-    sprintf(inform,"Calculate");
-    if(rank == 0){std::cout<<inform<<std::endl;}
-    for(i=0; i<all_paras.resample_num+1; i++)
-    {
-        // 0 means the result will be stored in the first row,
-        // the signal from the whole sample
-        // else the i'th row is the result from i'th jackknife or bootstrap
-        std::cout<<"Sampling "<<i<<std::endl;
-        if(i == 0){corr_calculate(&all_paras, i);}
-        else
-        {
-            resample_jackknife(&all_paras,i);
-            corr_calculate(&all_paras, i);
-        }
+    // sprintf(inform,"Calculate");
+    // if(rank == 0){std::cout<<inform<<std::endl;}
+    // for(i=0; i<all_paras.resample_num+1; i++)
+    // {
+    //     // 0 means the result will be stored in the first row,
+    //     // the signal from the whole sample
+    //     // else the i'th row is the result from i'th jackknife or bootstrap
+    //     std::cout<<"Sampling "<<i<<std::endl;
+    //     if(i == 0){corr_calculate(&all_paras, i);}
+    //     else
+    //     {
+    //         resample_jackknife(&all_paras,i);
+    //         corr_calculate(&all_paras, i);
+    //     }
         
-    }
+    // }
 
     // double chisq_test;
     // int nx;
