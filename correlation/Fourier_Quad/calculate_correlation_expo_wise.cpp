@@ -103,9 +103,7 @@ int main(int argc, char *argv[])
 
         read_expo_data_1(&expo_info,fnm_1);
 
-        initialize_expo_chi_block(&expo_info);
-
-
+        
         sprintf(log_inform,"Start %d/%d. expo  %d-%s(%d)", i+1, expo_info.task_expo_num, 
                 fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
         if(rank == 0){std::cout<<log_inform<<std::endl;}
@@ -115,63 +113,56 @@ int main(int argc, char *argv[])
         // to avoid double counting
         for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
         {    
-            expo_distance(&expo_info,fnm_1, fnm_2, label);
-            // continue;
+            expo_distance(&expo_info, fnm_1, fnm_2, label);
+
             if(label == 1)
-            {
+            {   
                 st3 = clock();
+                
                 sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], 
                         fnm_2, expo_info.expo_name[fnm_2],expo_info.expo_gal_num[fnm_2]);
                 if(rank == 0){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
 
+                initialize_expo_chi_block(&expo_info);
 
                 read_expo_data_2(&expo_info, fnm_2);
                 ////////////////  search pairs ////////////////////
                 find_pairs_new(&expo_info, fnm_1, fnm_2);
 
+                if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, fnm_1,fnm_2, rank);}
 
                 st4 = clock();
                 tt =  (st4 - st3)/CLOCKS_PER_SEC;
                 sprintf(log_inform,"Finish in %.2f sec. %g pairs.", tt, expo_info.gg_pairs);
                 if(rank == 0){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
+                
             }
         }
 
-        // // if no pair has been found, no result file will be written down
-        // sum_arr(expo_info.expo_num_count_chit,expo_info.expo_chi_block_len,0,expo_info.expo_chi_block_len,count_sum);
-        // if(count_sum > 1){save_expo_data(&expo_info, fnm_1);}
-        // else
-        // {
-        //     printf(log_inform,"expo %d-%s(%d) no pair has been found", i+1, expo_info.task_expo_num, fnm_1,
-        //         expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
-        //     std::cout<<log_inform<<std::endl;
-        // }
-        
-
-        // st5 = clock();
-        // tt =  (st5 - st2)/CLOCKS_PER_SEC;
-        // sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
-        //         expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
-        // write_log(log_path, log_inform);
-        // if(rank == 0)
-        // {   
-        //     std::cout<<log_inform<<std::endl;
-        //     std::cout<<"========================================================================================="<<std::endl<<std::endl;
-        // }
+        st5 = clock();
+        tt =  (st5 - st2)/CLOCKS_PER_SEC;
+        sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
+                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
+        write_log(log_path, log_inform);
+        if(rank == 0)
+        {   
+            std::cout<<log_inform<<std::endl;
+            std::cout<<"========================================================================================="<<std::endl<<std::endl;
+        }
     }
 
-    // st6 = clock();
-    // tt =  (st6 - st1)/CLOCKS_PER_SEC;
-    // sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
-    // if(rank == 0)
-    // {
-    //     std::cout<<log_inform<<std::endl;
-    //     std::cout<<"========================================================================================="<<std::endl;
-    // }
-    // write_log(log_path, log_inform);
-    ////////////////////////////////// loop the expo pairs-end ////////////////////////////////
+    st6 = clock();
+    tt =  (st6 - st1)/CLOCKS_PER_SEC;
+    sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
+    if(rank == 0)
+    {
+        std::cout<<log_inform<<std::endl;
+        std::cout<<"========================================================================================="<<std::endl;
+    }
+    write_log(log_path, log_inform);
+    //////////////////////////////// loop the expo pairs-end ////////////////////////////////
 
 
     MPI_Finalize();

@@ -106,7 +106,9 @@ struct data_info
     int gg_len;
     MY_FLOAT *gg_1;
     MY_FLOAT *gg_2;
-    int loop_label=0;
+    int loop_label;
+
+    int file_tag;
 };
 
 

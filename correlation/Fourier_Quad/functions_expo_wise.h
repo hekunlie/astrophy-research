@@ -71,6 +71,7 @@ struct data_info
     int *task_expo_label;
     int task_expo_num;
 
+    int result_file_tag;
 
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
@@ -135,7 +136,7 @@ void initialize_expo_chi_block(data_info *field_info);
 
 void collect_chi_block(data_info *field_info, int field_label);
 
-void save_expo_data(data_info*field_info, int expo_label);
+void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int rank);
 
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
 

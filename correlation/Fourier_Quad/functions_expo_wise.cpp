@@ -99,6 +99,7 @@ void initialize(data_info *expo_info, int total_expo_num)
     expo_info->loop_label = 0;
     expo_info->data_read_label_1 = 0;
     expo_info->data_read_label_2 = 0;
+    expo_info->result_file_tag = 0;
 }
 
 void read_list(char *file_path, data_info *expo_info, int &read_file_num)
@@ -490,6 +491,8 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
 
     int ir, theta_tag, theta_accum_tag, ic;
     int iz1, iz2, iz1_;
+
+    int gal_num_1, gal_num_2;
     MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
     MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
     MY_FLOAT diff;
@@ -531,8 +534,11 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
+
     st1 = clock();
-    for(ig1=0; ig1<expo_info->expo_gal_num[expo_label_0]; ig1++)
+    for(ig1=0; ig1<gal_num_1; ig1++)
     {   
         
         // loop the grid in the first zbin, zbin_label_0
@@ -552,7 +558,7 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
         iz1 = expo_info->expo_zbin_label_1[ig1];
         iz1_ = iz1*expo_info->zbin_num;
 
-        for(ig2=0; ig2<expo_info->expo_gal_num[expo_label_1]; ig2++)
+        for(ig2=0; ig2<gal_num_2; ig2++)
         {   
             n = ig2*expo_info->expo_data_col;
 
@@ -730,7 +736,7 @@ void collect_chi_block(data_info *expo_info, int expo_label)
     ;
 }
 
-void save_expo_data(data_info *expo_info, int expo_label)
+void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, int rank)
 {   
     int row, col;
     char result_path[600], set_name[50];
@@ -738,17 +744,24 @@ void save_expo_data(data_info *expo_info, int expo_label)
     col = expo_info->mg_bin_num;
     row = expo_info->expo_chi_block_len/col;
 
-    sprintf(result_path, "%s/result/%s_num_count.hdf5", expo_info->parent_path, expo_info->expo_name[expo_label]);
-    sprintf(set_name, "/t");
-    write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, true);
-    sprintf(set_name, "/x");
+    sprintf(result_path, "%s/result/core_%s_num_count.hdf5", expo_info->parent_path, rank);
+    sprintf(set_name, "/%d-%d/tt",expo_label_1, expo_label_2);
+    
+    if(expo_info->result_file_tag == 0)
+    {
+        write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, true);
+        expo_info->result_file_tag=1;
+    }
+    else{write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, false);}
+
+    sprintf(set_name, "/%d-%d/xx",expo_label_1, expo_label_2);
     write_h5(result_path, set_name, expo_info->expo_num_count_chix, row, col, false);
 
     col = expo_info->theta_bin_num;
     row = expo_info->zbin_num*expo_info->zbin_num;
-    sprintf(set_name, "/theta");
+    sprintf(set_name, "/%d-%d/theta",expo_label_1, expo_label_2);
     write_h5(result_path, set_name, expo_info->theta_accum, row, col, false);
-    sprintf(set_name, "/theta_num");
+    sprintf(set_name, "/%d-%d/theta_num",expo_label_1, expo_label_2);
     write_h5(result_path, set_name, expo_info->theta_num_accum, row, col, false);
 }
 

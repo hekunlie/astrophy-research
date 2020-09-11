@@ -29,6 +29,8 @@ grid_size = 15 #arcmin
 ra_idx = 0
 dec_idx = 1
 redshift_idx = 10
+
+redshift_sep_thresh = 0.01
 redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
@@ -183,6 +185,14 @@ if cmd == "prepare_exposure_wise":
 
         idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8
 
+        # redshift = data[:, redshift_idx][idx]
+        # mask = numpy.zeros_like(redshift,dtype=numpy.intc)
+        # for i in range(idx.sum()):
+        #     redshift_diff = numpy.abs(redshift-redshift[i])
+        #     idx_9 = redshift_diff <= redshift_sep_thresh
+        #     if idx_9.sum() > 1:
+        #         mask[idx_9] = 1
+        # idx_9 = mask == 0
         src_num = idx.sum()
 
         if src_num > 0:
