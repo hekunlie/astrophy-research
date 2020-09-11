@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
 
     if(rank == 0)
     {
-        std::cout<<"Redshift bin:"<<std::endl;
+        std::cout<<"Redshift bin: "<<expo_info.zbin_num<<std::endl;
         show_arr(expo_info.zbin, 1, expo_info.zbin_num+1);
                 
-        std::cout<<"Radius bin:"<<std::endl;
+        std::cout<<"Theta bin: "<<expo_info.theta_bin_num<<std::endl;
         show_arr(expo_info.theta_bin, 1, expo_info.theta_bin_num+1);
         std::cout<<std::endl;
 
@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
         for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
         {    
             expo_distance(&expo_info,fnm_1, fnm_2, label);
+            // continue;
             if(label == 1)
             {
                 st3 = clock();
@@ -138,38 +139,38 @@ int main(int argc, char *argv[])
             }
         }
 
-        // if no pair has been found, no result file will be written down
-        sum_arr(expo_info.expo_num_count_chit,expo_info.expo_chi_block_len,0,expo_info.expo_chi_block_len,count_sum);
-        if(count_sum > 1){save_expo_data(&expo_info, fnm_1);}
-        else
-        {
-            printf(log_inform,"expo %d-%s(%d) no pair has been found", i+1, expo_info.task_expo_num, fnm_1,
-                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
-            std::cout<<log_inform<<std::endl;
-        }
+        // // if no pair has been found, no result file will be written down
+        // sum_arr(expo_info.expo_num_count_chit,expo_info.expo_chi_block_len,0,expo_info.expo_chi_block_len,count_sum);
+        // if(count_sum > 1){save_expo_data(&expo_info, fnm_1);}
+        // else
+        // {
+        //     printf(log_inform,"expo %d-%s(%d) no pair has been found", i+1, expo_info.task_expo_num, fnm_1,
+        //         expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
+        //     std::cout<<log_inform<<std::endl;
+        // }
         
 
-        st5 = clock();
-        tt =  (st5 - st2)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
-                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
-        write_log(log_path, log_inform);
-        if(rank == 0)
-        {   
-            std::cout<<log_inform<<std::endl;
-            std::cout<<"========================================================================================="<<std::endl<<std::endl;
-        }
+        // st5 = clock();
+        // tt =  (st5 - st2)/CLOCKS_PER_SEC;
+        // sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
+        //         expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
+        // write_log(log_path, log_inform);
+        // if(rank == 0)
+        // {   
+        //     std::cout<<log_inform<<std::endl;
+        //     std::cout<<"========================================================================================="<<std::endl<<std::endl;
+        // }
     }
 
-    st6 = clock();
-    tt =  (st6 - st1)/CLOCKS_PER_SEC;
-    sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
-    if(rank == 0)
-    {
-        std::cout<<log_inform<<std::endl;
-        std::cout<<"========================================================================================="<<std::endl;
-    }
-    write_log(log_path, log_inform);
+    // st6 = clock();
+    // tt =  (st6 - st1)/CLOCKS_PER_SEC;
+    // sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
+    // if(rank == 0)
+    // {
+    //     std::cout<<log_inform<<std::endl;
+    //     std::cout<<"========================================================================================="<<std::endl;
+    // }
+    // write_log(log_path, log_inform);
     ////////////////////////////////// loop the expo pairs-end ////////////////////////////////
 
 

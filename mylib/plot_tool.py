@@ -182,6 +182,13 @@ class Image_Plot:
             else:
                 self.axs[iy][ix].set_xticks([])
 
+    def del_ticklabel(self, iy, ix, axis_nm):
+        for nm in axis_nm:
+            if nm == 0:
+                self.axs[iy][ix].set_yticklabels([])
+            else:
+                self.axs[iy][ix].set_xticklabels([])
+
     def set_label(self, iy, ix, axis_nm, label, font="serif", fontsize=None):
         if not fontsize:
             fontsize = self.xy_lb_size

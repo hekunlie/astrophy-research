@@ -33,9 +33,9 @@ redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 25
+chi_guess_num = 15
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-chi_guess_bin_p = tool_box.set_bin_log(10**(-6), 10**(-3), chi_guess_num).astype(numpy.float32)
+chi_guess_bin_p = tool_box.set_bin_log(10**(-6), 5*10**(-4), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
 chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
@@ -75,10 +75,10 @@ mv_idx = 37
 expo_idx = 38
 
 #
-# fourier_cata_path = "/coma/hklee/fourier_cata/original_cata"
-# result_cata_path = "/coma/hklee/correlation/cata"
-fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
-result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+fourier_cata_path = "/coma/hklee/fourier_cata/original_cata"
+result_cata_path = "/coma/hklee/correlation/cata"
+# fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata/original_cata"
+# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
 cmd = argv[1]
 

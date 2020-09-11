@@ -12,9 +12,10 @@ zbin_num = 6#int(argv[1])
 theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 
-img = Image_Plot(fig_x=4, fig_y=3,xpad=0.3,ypad=0.3)
+img = Image_Plot(fig_x=3, fig_y=2,xpad=0,ypad=0)
 img.subplots(zbin_num, zbin_num)
-
+# img.axis_type(0,6)
+# img.axis_type(1,6)
 h5f = h5py.File("D:/result.hdf5","r")
 chi_tt = h5f["/0/chi_tt"][()]
 chi_tt_sig = h5f["/0/chi_tt_sig"][()]
@@ -40,17 +41,22 @@ for i in range(zbin_num):
             st, ed = int(tag*theta_bin_num), int((tag+1)*theta_bin_num)
             # print(theta[st:ed])
 
-            img.axs[img_row][img_col].errorbar(theta, chi_p[st:ed],yerr=chi_sig[st:ed],label="$\chi_{+}$",capsize=3)
-            img.axs[img_row][img_col].errorbar(theta, chi_m[st:ed],yerr=chi_sig[st:ed],label="$\chi_{-}$",capsize=3)
-            img.axs[img_row][img_col].legend(loc="upper right")
+            img.axs[img_row][img_col].errorbar(theta, chi_p[st:ed],yerr=chi_sig[st:ed],marker="s",ms=5,label="$\\xi_{+}$",capsize=3)
+            img.axs[img_row][img_col].errorbar(theta, chi_m[st:ed],yerr=chi_sig[st:ed],marker="s",ms=5,label="$\\xi_{-}$",capsize=3)
+            img.axs[img_row][img_col].legend(loc="upper right",fontsize=18)
             img.axs[img_row][img_col].set_yscale("log")
             img.axs[img_row][img_col].set_xscale("log")
-            # if tag not in [0,6,11,15,18,20]:
-            #     img.del_axis(img_row,img_col,[1])
+
+            if tag not in [0,6,11,15,18,20]:
+                img.del_axis(img_row,img_col,[1])
+            if img_col != 0:
+                img.del_ticklabel(img_row,img_col,[0])
+
             img.axs_text(img_row, img_col, 0.8, 0.1, "%d-%d"%(i+1,j+1),text_fontsize=18,text_color="k")
+            img.axs[img_row][img_col].set_ylim(10**(-7),5*10**(-4))
             tag += 1
-        else:
-            img.del_axis(img_row,img_col,[0,1],[0,1,2,3])
+    for j in range(zbin_num-i,zbin_num):
+        img.figure.delaxes(img.axs[i][j])
 img.save_img("D:/result.png")
-img.show_img()
+# img.show_img()
 h5f.close()

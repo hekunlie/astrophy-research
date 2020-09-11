@@ -270,8 +270,8 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
     // the seperation angle (arc minute)
     delta_ra = (ra_2 - ra_1)*cos_dec_1;
     delta_dec = dec_2 - dec_1;
-    delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_1 - delta_len_2;
-    
+    delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_1 - delta_len_2;   
+
     label = 0;
     if(delta_radius <= expo_info->theta_bin[expo_info->theta_bin_num])
     {   
@@ -279,6 +279,10 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
         // std::cout<<ra_2<<" "<<dec_2<<" "<<delta_radius<<" "<< expo_info->theta_bin[expo_info->theta_bin_num]<<std::endl;
         label = 1;
     }
+    // std::cout<<expo_info->expo_name[expo_label_0]<<" "<<label<<" "<<expo_info->expo_name[expo_label_1]<<std::endl;
+    // std::cout<<ra_1<<" "<<ra_2<<std::endl;
+    // std::cout<<dec_1<<" "<<dec_2<<std::endl;
+    // std::cout<<delta_radius<<" "<<sqrt(delta_ra*delta_ra + delta_dec*delta_dec)<<std::endl;
 }
 
 void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
@@ -488,9 +492,12 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     int iz1, iz2, iz1_;
     MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
     MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
-
+    MY_FLOAT diff;
     MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
+    MY_FLOAT mg1_z1_, mg2_z1_, mn_z1_, mu_z1_, mv_z1_;;
+
     MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
+    MY_FLOAT mg1_z2_, mg2_z2_, mn_z2_, mu_z2_,mv_z2_;
 
     int ix_tt, iy_tt, ix_xx, iy_xx;
     MY_FLOAT temp_tt[4], temp_xx[4];
@@ -535,14 +542,13 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
         dec_z1 = expo_info->expo_data_1[m+expo_info->dec_idx];
         cos_dec_z1 = expo_info->expo_data_1[m+expo_info->cos_dec_idx];
 
-        mg1_z1 = expo_info->expo_data_1[m+expo_info->mg1_idx];
-        mg2_z1 = expo_info->expo_data_1[m+expo_info->mg2_idx];
+        mg1_z1_ = expo_info->expo_data_1[m+expo_info->mg1_idx];
+        mg2_z1_ = expo_info->expo_data_1[m+expo_info->mg2_idx];
 
-        mnu1_z1 = expo_info->expo_data_1[m+expo_info->mn_idx] +
-                    expo_info->expo_data_1[m+expo_info->mu_idx];
-        mnu2_z1 = expo_info->expo_data_1[m+expo_info->mn_idx] -
-                    expo_info->expo_data_1[m+expo_info->mu_idx];
-        
+        mn_z1_ = expo_info->expo_data_1[m+expo_info->mn_idx];
+        mu_z1_ = expo_info->expo_data_1[m+expo_info->mu_idx];
+        mv_z1_ = expo_info->expo_data_1[m+expo_info->mv_idx];
+
         iz1 = expo_info->expo_zbin_label_1[ig1];
         iz1_ = iz1*expo_info->zbin_num;
 
@@ -558,8 +564,14 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
             delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
             delta_dec = dec_z2 - dec_z1;
             delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+
             // separation(ra_z1/60, dec_z1/60, ra_z2/60, dec_z2/60, delta_radius_check);
-            // std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<std::endl;
+            // diff = fabs(delta_radius - delta_radius_check/Pi*180*60)/delta_radius;
+            // if( diff > 0.05)
+            // {   
+            //     std::cout<<ra_z1<<" "<<ra_z2<<" "<<dec_z1<<" "<<dec_z2<<std::endl;
+            //     std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<" "<<diff<<std::endl;
+            // }
 
             theta_tag = -1;
             for(ir=0; ir<theta_bin_num; ir++)
@@ -572,6 +584,13 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
             {   
                 pairs+= 1;
 
+                mg1_z2_ = expo_info->expo_data_2[n+expo_info->mg1_idx];
+                mg2_z2_ = expo_info->expo_data_2[n+expo_info->mg2_idx];
+
+                mn_z2_ = expo_info->expo_data_2[n+expo_info->mn_idx];
+                mu_z2_ = expo_info->expo_data_2[n+expo_info->mu_idx];
+                mv_z2_ = expo_info->expo_data_2[n+expo_info->mv_idx];
+
                 // shear estimators rotation (position angle defined as East of North)
                 sin_theta = delta_ra/delta_radius;
                 cos_theta = delta_dec/delta_radius;
@@ -582,18 +601,20 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
                 sin_4theta = 2*sin_2theta*cos_2theta;
                 cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
 
+                // rotate gal z1
+                mg1_z1 = mg1_z1_*cos_2theta - mg2_z1_*sin_2theta;
+                mg2_z1 = mg1_z1_*sin_2theta + mg2_z1_*cos_2theta;
 
-                mg1_z2 = expo_info->expo_data_2[n+expo_info->mg1_idx]*cos_2theta - 
-                        expo_info->expo_data_2[n+expo_info->mg2_idx]*sin_2theta;
-                mg2_z2 = expo_info->expo_data_2[n+expo_info->mg1_idx]*sin_2theta + 
-                        expo_info->expo_data_2[n+expo_info->mg2_idx]*cos_2theta;
+                mnu1_z1 = mu_z1_*cos_4theta - mv_z1_*sin_4theta;
+                mnu2_z1 = mn_z1_ - mnu1_z1;
+                mnu1_z1 = mn_z1_ + mnu1_z1;
+                // rotate gal z2
+                mg1_z2 = mg1_z2_*cos_2theta - mg2_z2_*sin_2theta;
+                mg2_z2 = mg1_z2_*sin_2theta + mg2_z2_*cos_2theta;
 
-                mnu1_z2 = expo_info->expo_data_2[n+expo_info->mu_idx]*cos_4theta -
-                        expo_info->expo_data_2[n+expo_info->mv_idx]*sin_4theta;
-                mnu2_z2 = mnu1_z2;
-
-                mnu1_z2 = expo_info->expo_data_2[n+expo_info->mn_idx] + mnu2_z2;
-                mnu2_z2 = expo_info->expo_data_2[n+expo_info->mn_idx] - mnu2_z2;
+                mnu1_z2 = mu_z2_*cos_4theta - mv_z2_*sin_4theta;
+                mnu2_z2 = mn_z2_ - mnu1_z2;
+                mnu1_z2 = mn_z2_ + mnu1_z2;
                 
                 // there're zbin_num *zbin_num blocks, iz1 is row, iz2 is the col, each block
                 // has a length of mg_bin_num*mg_bin_num*chi_guess_num*theta_bin_num.
@@ -601,10 +622,11 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
 
                 // record the pair separation for the mean separation in that bin
                 // which will be the x postion in the last figure
-                // theta_accum_tag = (iz1_ + iz2)*theta_bin_num + theta_tag;
+                theta_accum_tag = (iz1_ + iz2)*theta_bin_num + theta_tag;
         
-                // expo_info->theta_accum[theta_accum_tag] += 1;
-                // expo_info->theta_num_accum[theta_accum_tag] += 1;
+                expo_info->theta_accum[theta_accum_tag] += delta_radius;
+                expo_info->theta_num_accum[theta_accum_tag] += 1;
+
 
                 ////////////////////// the key part of PDF_SYM //////////////////////////////
                 ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
