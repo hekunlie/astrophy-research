@@ -94,18 +94,17 @@ int main(int argc, char *argv[])
     ////////////////////////////////  PRINT INFO-end  ////////////////////////////////////////////
 
     int task_end = 0;
-    int task_labels[2]{-1,1};
+    int task_labels[2];
     MPI_Status status;
-    
-    while(true)
-    {
-        if(rank>0)
-        {   
-            // send [-1,-1] means the thread needs task
+        
+    if(rank>0)
+    {   
+        while(true)
+        {
             // then thread 0 will send the task, epxo_pair label, to it.
             MPI_Send(task_labels, 2, MPI_INT, 0, rank, MPI_COMM_WORLD);
             MPI_Recv(task_labels, 2, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-
+            // if it receives [-1,-1], no task left, it will break the loop.
             if(task_labels[0] >-1)
             {   
                 initialize_expo_chi_block(&expo_info);
@@ -119,9 +118,12 @@ int main(int argc, char *argv[])
             }
             else{break;}
         }
-        else
-        {
-            for(i=0; i<expo_info.thread_pool.size();i++)
+    }
+    else
+    {   
+        while(true)
+        {    
+            for(i=0; i<expo_info.thread_pool.size(); i++)
             {   
                 MPI_Recv(task_labels, 2, MPI_INT, expo_info.thread_pool[i],expo_info.thread_pool[i], MPI_COMM_WORLD, &status);
                 if(task_end<expo_info.task_expo_num)
@@ -135,17 +137,17 @@ int main(int argc, char *argv[])
                     task_labels[0] = -1;
                     task_labels[1] = -1;
                     expo_info.thread_del.push_back(expo_info.thread_pool[i]);
-                }
-                
+                }                
                 MPI_Send(task_labels, 2, MPI_INT, expo_info.thread_pool[i], 0, MPI_COMM_WORLD);    
             }
 
             thread_pool_resize(&expo_info);
             
-            if(expo_info.thread_pool.size() == 0){break;}          
-        }
-        
+            if(expo_info.thread_pool.size() == 0){break;}
+        }       
     }
+        
+    
 
     ////////////////////////////////// loop the expo pairs  ////////////////////////////////
     st1 = clock();
