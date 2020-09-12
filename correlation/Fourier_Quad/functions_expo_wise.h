@@ -3,6 +3,7 @@
 
 #include<hk_iolib.h>
 #include<FQlib.h>
+#include<vector>
 
 #define MAX_EXPO 2000
 #define MAX_RESAMPLE 2000
@@ -70,8 +71,17 @@ struct data_info
     int my_expo_pair_st, my_expo_pair_ed;
     int *task_expo_label;
     int task_expo_num;
+    std::vector<int>thread_pool;
+    std::vector<int>thread_del;
+
+    std::vector<int>task_expo_pair_labels_1;
+    std::vector<int>task_expo_pair_labels_2;
+
 
     int result_file_tag;
+    int task_complete;
+    std::vector<int> expo_pair_label_1;
+    std::vector<int> expo_pair_label_2;
 
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
@@ -120,6 +130,7 @@ struct data_info
 
     int *jackknife_sample_label;
     int jackknife_label;
+    
 };
 
 
@@ -143,6 +154,9 @@ void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
 void task_distribution(int portion, int my_id, data_info *field_info);
 
 void task_prepare(int numprocs, int rank, data_info *field_info);
+
+void initialize_thread_pool(data_info*expo_info,int numprocs);
+void thread_pool_resize(data_info *expo_info);
 
 void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
 void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);

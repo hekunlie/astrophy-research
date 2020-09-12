@@ -2,7 +2,7 @@
 
 void initialize(data_info *expo_info, int total_expo_num)
 {
-    int i, j;
+    int i, j, k;
     char set_name[100];
     char data_path[600];
 
@@ -100,6 +100,8 @@ void initialize(data_info *expo_info, int total_expo_num)
     expo_info->data_read_label_1 = 0;
     expo_info->data_read_label_2 = 0;
     expo_info->result_file_tag = 0;
+    expo_info->task_complete = 0;
+
 }
 
 void read_list(char *file_path, data_info *expo_info, int &read_file_num)
@@ -221,35 +223,51 @@ void read_expo_data_2(data_info *expo_info,int expo_label)
 void task_prepare(int numprocs, int rank, data_info *expo_info)
 {
     int i, j, k, m, n;
-    int expo_pair_count = 0;
-    k = expo_info->total_expo_num*expo_info->total_expo_num;
+    // int expo_pair_count = 0;
+    // k = expo_info->total_expo_num*expo_info->total_expo_num;
 
     
-    expo_info->expo_pair_num_each_rank = new int[numprocs]{};
-    m = expo_info->total_expo_num/numprocs;
-    n = expo_info->total_expo_num%numprocs;
+    // expo_info->expo_pair_num_each_rank = new int[numprocs]{};
+    // m = expo_info->total_expo_num/numprocs;
+    // n = expo_info->total_expo_num%numprocs;
 
-    for(i=0; i<numprocs; i++)
-    {
-        expo_info->expo_pair_num_each_rank[i] = m;
-        if(i<n){expo_info->expo_pair_num_each_rank[i]+=1;}
-    }
+    // for(i=0; i<numprocs; i++)
+    // {
+    //     expo_info->expo_pair_num_each_rank[i] = m;
+    //     if(i<n){expo_info->expo_pair_num_each_rank[i]+=1;}
+    // }
     
-    expo_info->task_expo_num = expo_info->expo_pair_num_each_rank[rank];
-    expo_info->task_expo_label = new int[expo_info->task_expo_num];
+    // expo_info->task_expo_num = expo_info->expo_pair_num_each_rank[rank];
+    // expo_info->task_expo_label = new int[expo_info->task_expo_num];
     
 
-    for(i=0;i<m;i++)
-    {
-        expo_info->task_expo_label[i] = i*numprocs + rank;
-    }
-    if(rank < n)
-    {
-        expo_info->task_expo_label[m] = m*numprocs + rank;
-    }
-    // task distribution
+    // for(i=0;i<m;i++)
+    // {
+    //     expo_info->task_expo_label[i] = i*numprocs + rank;
+    // }
+    // if(rank < n)
+    // {
+    //     expo_info->task_expo_label[m] = m*numprocs + rank;
+    // }
+    // // task distribution
 
-    // task_distribution(numprocs, rank, expo_info);
+    // // task_distribution(numprocs, rank, expo_info);
+
+    for(i=0; i<expo_info->total_expo_num; i++)
+    {
+        for(j=0; j<expo_info->total_expo_num; j++)
+        {
+            expo_distance(expo_info, i,j,k);
+            if(k == 1)
+            {
+                expo_info->task_expo_pair_labels_1.push_back(i);
+                expo_info->task_expo_pair_labels_2.push_back(j);
+            }
+        }
+    }
+    expo_info->task_expo_num = expo_info->task_expo_pair_labels_1.size();
+
+
 }
 
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label)
@@ -284,6 +302,30 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
     // std::cout<<ra_1<<" "<<ra_2<<std::endl;
     // std::cout<<dec_1<<" "<<dec_2<<std::endl;
     // std::cout<<delta_radius<<" "<<sqrt(delta_ra*delta_ra + delta_dec*delta_dec)<<std::endl;
+}
+
+void initialize_thread_pool(data_info*expo_info,int numprocs)
+{
+    for(int i=1; i <numprocs; i++)
+    {
+        expo_info->thread_pool.push_back(i);
+    }
+}
+void thread_pool_resize(data_info *expo_info)
+{   
+    int i, j;
+    
+    for(i=0; i<expo_info->thread_del.size(); i++)
+    {
+        for(j=0; j<expo_info->thread_pool.size(); j++)
+        {
+            if(expo_info->thread_del[i]==expo_info->thread_pool[i])
+            {
+                expo_info->thread_pool.erase(expo_info->thread_pool.begin()+j);
+            }
+        }
+    }
+    for(i=0; i<expo_info->thread_del.size(); i++){expo_info->thread_del.pop_back();}
 }
 
 void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
@@ -738,8 +780,11 @@ void collect_chi_block(data_info *expo_info, int expo_label)
 
 void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, int rank)
 {   
-    int row, col;
+    int row, col, i;
     char result_path[600], set_name[50];
+
+    expo_info->expo_pair_label_1.push_back(expo_label_1);
+    expo_info->expo_pair_label_2.push_back(expo_label_2);
 
     col = expo_info->mg_bin_num;
     row = expo_info->expo_chi_block_len/col;
@@ -763,6 +808,22 @@ void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, in
     write_h5(result_path, set_name, expo_info->theta_accum, row, col, false);
     sprintf(set_name, "/%d-%d/theta_num",expo_label_1, expo_label_2);
     write_h5(result_path, set_name, expo_info->theta_num_accum, row, col, false);
+
+    if(expo_info->task_complete == 1)
+    {
+        col = expo_info->expo_pair_label_1.size();
+        
+        int *labels = new int[col];
+        for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_1[i];}
+        sprintf(set_name, "/pair/1");
+        write_h5(result_path, set_name, labels, 1, col, false);
+        
+        for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_2[i];}
+        sprintf(set_name, "/pair/2");
+        write_h5(result_path, set_name, labels, 1, col, false);
+        
+        delete[] labels;
+    }
 }
 
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name)
