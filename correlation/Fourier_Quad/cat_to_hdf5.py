@@ -77,10 +77,12 @@ elif mode == "hdf5_cata":
     field_name_sub = tool_box.alloc(field_name, cpus,"seq")[rank]
 
     field_avail_sub = []
+    field_all_avail_sub = []
 
     for fns in field_name_sub:
         # read the the field data
         field_src_path = total_path + "/%s/result"%fns
+        buffer = []
         try:
             fdat = numpy.loadtxt(field_src_path + "/%s.cat"%fns, dtype=numpy.float32)
 
@@ -105,6 +107,7 @@ elif mode == "hdf5_cata":
                     h5f_expo = h5py.File(field_src_path + "/%s_all.hdf5" % exp_nm,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
+                    buffer.append("%s_all.cat\n" % exp_nm)
                 except:
                     print("%d %s-%s empty!" % (rank, fns, exp_nm))
 
@@ -114,11 +117,15 @@ elif mode == "hdf5_cata":
             h5f.close()
 
             field_avail_sub.append(fns+"\n")
+            field_all_avail_sub.append(fns + "\n")
+            if len(buffer)> 0:
+                field_all_avail_sub.extend(buffer)
 
         except:
             print("%d %s/%s.cat empty!"%(rank, field_src_path, fns),os.path.exists(field_src_path + "/%s.cat"%fns))
 
     field_collection = comm.gather(field_avail_sub, root=0)
+    field_all_collection = comm.gather(field_all_avail_sub, root=0)
     if rank == 0:
         field_avail = []
         for fsb in field_collection:
@@ -126,6 +133,13 @@ elif mode == "hdf5_cata":
         print(len(field_avail))
         with open(total_path + "/nname_avail.dat","w") as f:
             f.writelines(field_avail)
+
+        field_all_avail = []
+        for fsb in field_all_collection:
+            field_all_avail.extend(fsb)
+        print(len(field_all_avail))
+        with open(total_path + "/nname_all_avail.dat","w") as f:
+            f.writelines(field_all_avail)
 
 else:
     # collection

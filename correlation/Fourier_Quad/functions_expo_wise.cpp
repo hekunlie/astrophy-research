@@ -76,6 +76,8 @@ void initialize(data_info *expo_info, int total_expo_num)
     // tomography, z[i,j] = z[j,i], save zbin_num*zbin_num blocks for saving the time in calculation
     // [i,j] = [j,i], they will be sum after the calculation
     expo_info->expo_chi_block_len = expo_info->iz_chi_block_len*expo_info->zbin_num*expo_info->zbin_num;
+    expo_info->expo_chi_block_len_true = expo_info->iz_chi_block_len*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
+
     // tangential and cross components
     expo_info->expo_num_count_chit = new double[expo_info->expo_chi_block_len]{};
     expo_info->expo_num_count_chix = new double[expo_info->expo_chi_block_len]{};
@@ -83,6 +85,12 @@ void initialize(data_info *expo_info, int total_expo_num)
     expo_info->theta_accum_len = expo_info->theta_bin_num*expo_info->zbin_num*expo_info->zbin_num;
     expo_info->theta_accum = new double[expo_info->theta_accum_len];
     expo_info->theta_num_accum = new double[expo_info->theta_accum_len];
+
+    // for the data stack in the data saving step, z[i,j] = z[i, j] =  z[j, i]
+    expo_info->corr_cal_stack_num_count_chit = new double [expo_info->expo_chi_block_len_true]{};
+    expo_info->corr_cal_stack_num_count_chix = new double [expo_info->expo_chi_block_len_true]{};
+    expo_info->corr_cal_stack_expo_theta_accum = new double[expo_info->theta_accum_len_true]{};
+    expo_info->corr_cal_stack_expo_theta_num_accum = new double[expo_info->theta_accum_len_true]{};
 
     // read the correlated shear pairs generated before for time-saving
     sprintf(set_name,"/g11");
@@ -576,8 +584,8 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
-    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
-    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/20;
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/20;
 
     st1 = clock();
     for(ig1=0; ig1<gal_num_1; ig1++)
@@ -789,7 +797,7 @@ void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, in
     col = expo_info->mg_bin_num;
     row = expo_info->expo_chi_block_len/col;
 
-    sprintf(result_path, "%s/result/core_%s_num_count.hdf5", expo_info->parent_path, rank);
+    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
     sprintf(set_name, "/%d-%d/tt",expo_label_1, expo_label_2);
     
     if(expo_info->result_file_tag == 0)
@@ -808,22 +816,29 @@ void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, in
     write_h5(result_path, set_name, expo_info->theta_accum, row, col, false);
     sprintf(set_name, "/%d-%d/theta_num",expo_label_1, expo_label_2);
     write_h5(result_path, set_name, expo_info->theta_num_accum, row, col, false);
+}
 
-    if(expo_info->task_complete == 1)
-    {
-        col = expo_info->expo_pair_label_1.size();
-        
-        int *labels = new int[col];
-        for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_1[i];}
-        sprintf(set_name, "/pair/1");
-        write_h5(result_path, set_name, labels, 1, col, false);
-        
-        for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_2[i];}
-        sprintf(set_name, "/pair/2");
-        write_h5(result_path, set_name, labels, 1, col, false);
-        
-        delete[] labels;
-    }
+void save_expo_pair_label(data_info *expo_info, int rank)
+{
+    int i, col, row;
+    char result_path[600], set_name[50];
+
+    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
+
+    col = expo_info->expo_pair_label_1.size();
+    
+    int *labels = new int[col];
+
+    for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_1[i];}
+    sprintf(set_name, "/pair/1");
+    write_h5(result_path, set_name, labels, 1, col, false);
+    
+    for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_2[i];}
+    sprintf(set_name, "/pair/2");
+    write_h5(result_path, set_name, labels, 1, col, false);
+    
+    delete[] labels;
+    
 }
 
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name)
@@ -838,6 +853,79 @@ void save_expo_data(data_info *expo_info, int expo_label, char *file_name)
     write_h5(file_name, set_name, expo_info->expo_num_count_chit, row, col, true);
     sprintf(set_name, "/x");
     write_h5(file_name, set_name, expo_info->expo_num_count_chix, row, col, false);
+}
+
+
+void merge_data(data_info *expo_info)
+{   
+    int i, j, k, m,n;
+    int st, st_ij, st_ji, tag;
+
+    for(j=0; j<expo_info->zbin_num; j++)
+    {   
+        //////////////////////////////////  theta  //////////////////////////////////////
+        // z[i,i] part
+        st = (j*expo_info->zbin_num + j)*expo_info->theta_bin_num;
+        tag = (j*expo_info->zbin_num - j*(j-1)/2)*expo_info->theta_bin_num;
+        // if(i == 0 or i == 10)
+        // {std::cout<<j<<" "<<tag<<" "<<st<<std::endl;}
+
+        for(m=0; m<expo_info->theta_bin_num; m++)
+        {
+            expo_info->corr_cal_stack_expo_theta_accum[tag+m] = expo_info->theta_accum[st+m];
+            expo_info->corr_cal_stack_expo_theta_num_accum[tag+m] = expo_info->theta_num_accum[st+m];
+        }
+
+        // z[i,j] part, i != j, z[j,i] will be added to z[i,j], for j>i
+        for(k=j+1; k<expo_info->zbin_num; k++)
+        {   
+            tag = (j*expo_info->zbin_num + k - (j*j+j)/2)*expo_info->theta_bin_num;
+            // if(i == 0 or i == 10)
+            // {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
+
+            st_ij = (j*expo_info->zbin_num + k)*expo_info->theta_bin_num;
+            st_ji = (k*expo_info->zbin_num + j)*expo_info->theta_bin_num;
+
+            for(m=0; m<expo_info->theta_bin_num; m++)
+            {
+                expo_info->corr_cal_stack_expo_theta_accum[tag+m] = expo_info->theta_accum[st_ij+m]+expo_info->theta_accum[st_ji+m];
+                expo_info->corr_cal_stack_expo_theta_num_accum[tag+m] = expo_info->theta_num_accum[st_ij+m]+expo_info->theta_num_accum[st_ji+m];
+            }
+        }
+        //////////////////////////////////////////////////////////////////////////////////
+
+
+        ///////////////////////////////////  number count  ////////////////////////////////////////
+        // z[i,i] part
+        st = (j*expo_info->zbin_num + j)*expo_info->iz_chi_block_len;
+        tag = (j*expo_info->zbin_num - j*(j-1)/2)*expo_info->iz_chi_block_len;
+        // if(i == 0 or i == 10)
+        // {std::cout<<j<<" "<<tag<<" "<<st<<std::endl;}
+
+        for(m=0; m<expo_info->iz_chi_block_len; m++)
+        {
+            expo_info->corr_cal_stack_num_count_chit[tag+m] = expo_info->expo_num_count_chit[st+m];
+            expo_info->corr_cal_stack_num_count_chix[tag+m] = expo_info->expo_num_count_chix[st+m];
+        }
+
+        // z[i,j] part, i != j, z[j,i] will be added to z[i,j], for j>i
+        for(k=j+1; k<expo_info->zbin_num; k++)
+        {   
+            tag = (j*expo_info->zbin_num + k - (j*j+j)/2)*expo_info->iz_chi_block_len;
+            // if(i == 0 or i == 10)
+            // {std::cout<<j<<" "<<k<<" "<<tag<<" "<<std::endl;}
+
+            st_ij = (j*expo_info->zbin_num + k)*expo_info->iz_chi_block_len;
+            st_ji = (k*expo_info->zbin_num + j)*expo_info->iz_chi_block_len;
+
+            for(m=0; m<expo_info->iz_chi_block_len; m++)
+            {
+                expo_info->corr_cal_stack_num_count_chit[tag+m] = expo_info->expo_num_count_chit[st_ij+m]+expo_info->expo_num_count_chit[st_ji+m];
+                expo_info->corr_cal_stack_num_count_chix[tag+m] = expo_info->expo_num_count_chix[st_ij+m]+expo_info->expo_num_count_chix[st_ji+m];
+            }
+        }
+        //////////////////////////////////////////////////////////////////////////////////
+    }
 }
 
 

@@ -21,8 +21,15 @@ int main(int argc, char *argv[])
     data_info expo_info;
     double st1, st2, st3, st4, st5, st6, tt;
     int i,j;
-    int fnm_1, fnm_2, total_expo_num, label;
+    int pair_num, total_expo_num, label;
     double count_sum;
+
+    int task_end = 0;
+    int thread_live = numprocs - 1;
+    int task_labels[2];
+    MPI_Status status;
+    MPI_Request request;
+
 
 
     strcpy(expo_info.parent_path, argv[1]);
@@ -95,12 +102,6 @@ int main(int argc, char *argv[])
 
 
     ////////////////////////////////  Start  ////////////////////////////////////////////
-    int task_end = 0;
-    int thread_live = numprocs - 1;
-    int task_labels[2];
-    MPI_Status status;
-    MPI_Request request;
-
     st1 = clock();
 
     if(rank>0)
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
                 sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
                         task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]]);
 
-                if(rank == 0){std::cout<<log_inform<<std::endl;}
+                if(rank == 1){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
 
 
@@ -136,7 +137,8 @@ int main(int argc, char *argv[])
 
                 st3 = clock();
                 tt =  (st3 - st2)/CLOCKS_PER_SEC;
-                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs got now: ", tt, expo_info.gg_pairs,expo_info.expo_pair_label_1.size());
+                pair_num = expo_info.expo_pair_label_1.size();
+                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs got now: %d", tt, expo_info.gg_pairs,pair_num);
                 if(rank == 1)
                 {                       
                     std::cout<<std::endl<<log_inform<<std::endl;
@@ -145,7 +147,8 @@ int main(int argc, char *argv[])
             }          
             else{break;}
         }
-        
+        save_expo_pair_label(&expo_info, rank);
+
         st4 = clock();
         tt =  (st4 - st1)/CLOCKS_PER_SEC;
         sprintf(log_inform,"Finish in %.2f sec.", tt);
@@ -165,11 +168,11 @@ int main(int argc, char *argv[])
             if(task_end<expo_info.task_expo_num)
             {
                 task_labels[0] = expo_info.task_expo_pair_labels_1[task_end];
-                task_labels[1] = expo_info.task_expo_pair_labels_1[task_end];
+                task_labels[1] = expo_info.task_expo_pair_labels_2[task_end];
                 task_end++;
 
-                sprintf(log_inform,"Send %d-%s(%d) <-> %d-%s(%d) to CPU %d", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
-                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]], status.MPI_SOURCE);
+                sprintf(log_inform,"Send %d-%s(%d) <-> %d-%s(%d) to CPU %d. %d/%d", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
+                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]], status.MPI_SOURCE,task_end, expo_info.task_expo_num);
                 write_log(log_path, log_inform);
             }
             else

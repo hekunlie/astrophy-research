@@ -204,6 +204,7 @@ void read_para(data_info *all_paras)
     
 }
 
+
 void read_result_data(data_info*all_paras)
 {    
     char set_name[60], data_path[600];
