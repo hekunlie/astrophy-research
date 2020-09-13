@@ -93,20 +93,36 @@ int main(int argc, char *argv[])
     MPI_Barrier(MPI_COMM_WORLD);
     ////////////////////////////////  PRINT INFO-end  ////////////////////////////////////////////
 
+
+    ////////////////////////////////  Start  ////////////////////////////////////////////
     int task_end = 0;
+    int thread_live = numprocs - 1;
     int task_labels[2];
     MPI_Status status;
-        
+    MPI_Request request;
+
+    st1 = clock();
+
     if(rank>0)
     {   
         while(true)
-        {
+        {   
+            
             // then thread 0 will send the task, epxo_pair label, to it.
             MPI_Send(task_labels, 2, MPI_INT, 0, rank, MPI_COMM_WORLD);
             MPI_Recv(task_labels, 2, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
             // if it receives [-1,-1], no task left, it will break the loop.
             if(task_labels[0] >-1)
             {   
+                st2 = clock();
+
+                sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
+                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]]);
+
+                if(rank == 0){std::cout<<log_inform<<std::endl;}
+                write_log(log_path, log_inform);
+
+
                 initialize_expo_chi_block(&expo_info);
 
                 read_expo_data_1(&expo_info, task_labels[0]);
@@ -114,115 +130,148 @@ int main(int argc, char *argv[])
                 //////////////  search pairs ////////////////////
                 find_pairs_new(&expo_info, task_labels[0], task_labels[1]);
 
+                // if more 1 pair has been found, write into the result file
                 if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, task_labels[0], task_labels[1], rank);}
-            }
-            else{break;}
-        }
-    }
-    else
-    {   
-        while(true)
-        {    
-            for(i=0; i<expo_info.thread_pool.size(); i++)
-            {   
-                MPI_Recv(task_labels, 2, MPI_INT, expo_info.thread_pool[i],expo_info.thread_pool[i], MPI_COMM_WORLD, &status);
-                if(task_end<expo_info.task_expo_num)
-                {
-                    task_labels[0] = expo_info.task_expo_pair_labels_1[task_end];
-                    task_labels[1] = expo_info.task_expo_pair_labels_1[task_end];
-                    task_end++;
-                }
-                else
-                {
-                    task_labels[0] = -1;
-                    task_labels[1] = -1;
-                    expo_info.thread_del.push_back(expo_info.thread_pool[i]);
-                }                
-                MPI_Send(task_labels, 2, MPI_INT, expo_info.thread_pool[i], 0, MPI_COMM_WORLD);    
-            }
-
-            thread_pool_resize(&expo_info);
-            
-            if(expo_info.thread_pool.size() == 0){break;}
-        }       
-    }
-        
-    
-
-    ////////////////////////////////// loop the expo pairs  ////////////////////////////////
-    st1 = clock();
-    for(i=0; i < expo_info.task_expo_num; i++)
-    {   
-        st2 = clock();
-        // expo pair label
-        fnm_1 = expo_info.task_expo_label[i];
-
-        read_expo_data_1(&expo_info,fnm_1);
-
-        
-        sprintf(log_inform,"Start %d/%d. expo  %d-%s(%d)", i+1, expo_info.task_expo_num, 
-                fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
-        if(rank == 0){std::cout<<log_inform<<std::endl;}
-        write_log(log_path, log_inform);
-
-        // only search pairs from the exposures have a bigger exposure label
-        // to avoid double counting
-        for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
-        {    
-            expo_distance(&expo_info, fnm_1, fnm_2, label);
-
-            if(label == 1)
-            {   
-                st3 = clock();
                 
-                sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], 
-                        fnm_2, expo_info.expo_name[fnm_2],expo_info.expo_gal_num[fnm_2]);
-                if(rank == 0){std::cout<<log_inform<<std::endl;}
-                write_log(log_path, log_inform);
 
-                initialize_expo_chi_block(&expo_info);
-
-                read_expo_data_2(&expo_info, fnm_2);
-                //////////////  search pairs ////////////////////
-                find_pairs_new(&expo_info, fnm_1, fnm_2);
-
-                if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, fnm_1, fnm_2, rank);}
-
-                st4 = clock();
-                tt =  (st4 - st3)/CLOCKS_PER_SEC;
-                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs now: ", tt, expo_info.gg_pairs,expo_info.expo_pair_label_1.size());
-                if(rank == 0)
+                st3 = clock();
+                tt =  (st3 - st2)/CLOCKS_PER_SEC;
+                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs got now: ", tt, expo_info.gg_pairs,expo_info.expo_pair_label_1.size());
+                if(rank == 1)
                 {                       
                     std::cout<<std::endl<<log_inform<<std::endl;
                 }
                 write_log(log_path, log_inform);
-                
+            }          
+            else{break;}
+        }
+        
+        st4 = clock();
+        tt =  (st4 - st1)/CLOCKS_PER_SEC;
+        sprintf(log_inform,"Finish in %.2f sec.", tt);
+        write_log(log_path, log_inform);
+        if(rank == 1)
+        {   
+            std::cout<<log_inform<<std::endl;
+        }
+    }
+    else
+    {   
+        while(thread_live > 0)
+        {    
+            MPI_Irecv(task_labels, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+            MPI_Wait(&request, &status);
+
+            if(task_end<expo_info.task_expo_num)
+            {
+                task_labels[0] = expo_info.task_expo_pair_labels_1[task_end];
+                task_labels[1] = expo_info.task_expo_pair_labels_1[task_end];
+                task_end++;
+
+                sprintf(log_inform,"Send %d-%s(%d) <-> %d-%s(%d) to CPU %d", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
+                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]], status.MPI_SOURCE);
+                write_log(log_path, log_inform);
             }
-            if(fnm_2 == fnm_1+5){exit(0);}
+            else
+            {
+                task_labels[0] = -1;
+                task_labels[1] = -1;
+                thread_live--;
+
+                sprintf(log_inform,"No task left for CPU %d", status.MPI_SOURCE);
+                write_log(log_path, log_inform);
+            }                
+            MPI_Send(task_labels, 2, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD);    
         }
 
-        st5 = clock();
-        tt =  (st5 - st2)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
-                expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
+        st5 = clock(); 
+        tt =  (st5 - st1)/CLOCKS_PER_SEC;
+        sprintf(log_inform,"Finish in %.2f sec.", tt);
         write_log(log_path, log_inform);
         if(rank == 0)
         {   
             std::cout<<log_inform<<std::endl;
-            std::cout<<"========================================================================================="<<std::endl<<std::endl;
-        }
+        }      
     }
+        
+    ////////////////////////////////  End  ////////////////////////////////////////////
 
-    st6 = clock();
-    tt =  (st6 - st1)/CLOCKS_PER_SEC;
-    sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
-    if(rank == 0)
-    {
-        std::cout<<log_inform<<std::endl;
-        std::cout<<"========================================================================================="<<std::endl;
-    }
-    write_log(log_path, log_inform);
-    //////////////////////////////// loop the expo pairs-end ////////////////////////////////
+
+
+    // ////////////////////////////////// loop the expo pairs  ////////////////////////////////
+    // st1 = clock();
+    // for(i=0; i < expo_info.task_expo_num; i++)
+    // {   
+    //     st2 = clock();
+    //     // expo pair label
+    //     fnm_1 = expo_info.task_expo_label[i];
+
+    //     read_expo_data_1(&expo_info,fnm_1);
+
+        
+    //     sprintf(log_inform,"Start %d/%d. expo  %d-%s(%d)", i+1, expo_info.task_expo_num, 
+    //             fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1]);
+    //     if(rank == 0){std::cout<<log_inform<<std::endl;}
+    //     write_log(log_path, log_inform);
+
+    //     // only search pairs from the exposures have a bigger exposure label
+    //     // to avoid double counting
+    //     for(fnm_2=fnm_1+1; fnm_2<expo_info.total_expo_num;fnm_2++)
+    //     {    
+    //         expo_distance(&expo_info, fnm_1, fnm_2, label);
+
+    //         if(label == 1)
+    //         {   
+    //             st3 = clock();
+                
+    //             sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", fnm_1, expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], 
+    //                     fnm_2, expo_info.expo_name[fnm_2],expo_info.expo_gal_num[fnm_2]);
+    //             if(rank == 0){std::cout<<log_inform<<std::endl;}
+    //             write_log(log_path, log_inform);
+
+    //             initialize_expo_chi_block(&expo_info);
+
+    //             read_expo_data_2(&expo_info, fnm_2);
+    //             //////////////  search pairs ////////////////////
+    //             find_pairs_new(&expo_info, fnm_1, fnm_2);
+
+    //             if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, fnm_1, fnm_2, rank);}
+
+    //             st4 = clock();
+    //             tt =  (st4 - st3)/CLOCKS_PER_SEC;
+    //             sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs now: ", tt, expo_info.gg_pairs,expo_info.expo_pair_label_1.size());
+    //             if(rank == 0)
+    //             {                       
+    //                 std::cout<<std::endl<<log_inform<<std::endl;
+    //             }
+    //             write_log(log_path, log_inform);
+                
+    //         }
+    //         if(fnm_2 == fnm_1+5){exit(0);}
+    //     }
+
+    //     st5 = clock();
+    //     tt =  (st5 - st2)/CLOCKS_PER_SEC;
+    //     sprintf(log_inform,"Finish %d/%d. expo %d-%s(%d) in %.2f sec.", i+1, expo_info.task_expo_num,fnm_1,
+    //             expo_info.expo_name[fnm_1], expo_info.expo_gal_num[fnm_1], tt);
+    //     write_log(log_path, log_inform);
+    //     if(rank == 0)
+    //     {   
+    //         std::cout<<log_inform<<std::endl;
+    //         std::cout<<"========================================================================================="<<std::endl<<std::endl;
+    //     }
+    // }
+
+    // st6 = clock();
+    // tt =  (st6 - st1)/CLOCKS_PER_SEC;
+    // sprintf(log_inform,"All expo pairs finished in %.2f sec.", tt);
+    // if(rank == 0)
+    // {
+    //     std::cout<<log_inform<<std::endl;
+    //     std::cout<<"========================================================================================="<<std::endl;
+    // }
+    // write_log(log_path, log_inform);
+    // //////////////////////////////// loop the expo pairs-end ////////////////////////////////
 
 
     MPI_Finalize();
