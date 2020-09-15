@@ -65,6 +65,11 @@ struct data_info
     double *theta_accum, *theta_num_accum;
     int theta_accum_len;
 
+    int theta_accum_len_true;
+    int expo_chi_block_len_true;
+
+    double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
+    double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
 
     // mpi task distribution
     int *expo_pair_num_each_rank;
@@ -104,22 +109,62 @@ struct data_info
     MY_FLOAT *gg_1;
     MY_FLOAT *gg_2;
     int loop_label;
+};
 
+struct corr_cal
+{
     // for the last step of chi squared calculation, get_corr.cpp
+    char parent_path[500];
     char result_path[550];
     char set_name[50];
+    
+    // the guess of chi_{\pm} of PDF_SYM
+    MY_FLOAT *chi_guess;
+    int chi_guess_num;
+    int chi_block_len, ir_chi_block_len, iz_chi_block_len,expo_chi_block_len;
+    
+    MY_FLOAT *mg_bin;
+    int mg_bin_num, mg_bin_num1, mg_bin_num2, mg_bin_num3;
+
+    int zbin_num;
+    MY_FLOAT *zbin;
+    /////////////////////////////////////
+
+    // radius bin
+    int theta_bin_num;
+    MY_FLOAT *theta_bin;  
+
+
     double *corr_cal_expo_theta_accum[MAX_EXPO];
     double *corr_cal_expo_theta_num_accum[MAX_EXPO];
     double *corr_cal_expo_num_count_chit[MAX_EXPO];
     double *corr_cal_expo_num_count_chix[MAX_EXPO];
     
+    double *expo_num_count_chit;
+    double *expo_num_count_chix;
+    double *theta_accum;
+    double *theta_num_accum;
+
     double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
     double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
     
     int theta_accum_len_true;
     int expo_chi_block_len_true;
 
+    int corr_cal_result_file_num;
+    int *corr_cal_expo_pair_label[2];
+    int *corr_cal_expo_pair_file_label;
+    int corr_cal_total_pair_num;
+
     int resample_num;
+    int corr_cal_thread_num;
+    int corr_cal_rank;
+    int my_resample_label_st, my_resample_label_ed;
+
+    int *jackknife_expo_pair_st;
+    int *jackknife_expo_pair_ed;
+    int jackknife_label;
+
     int corr_cal_chi_num;
     int corr_cal_final_data_num;
     double *corr_cal_mean_theta[MAX_RESAMPLE];
@@ -128,9 +173,6 @@ struct data_info
     double *corr_cal_gtt_sig[MAX_RESAMPLE], *corr_cal_gxx_sig[MAX_RESAMPLE];
     double *corr_cal_chi_guess;
 
-    int *jackknife_sample_label;
-    int jackknife_label;
-    
 };
 
 
@@ -152,6 +194,8 @@ void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int
 void save_expo_pair_label(data_info *expo_info, int rank);
 
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
+
+void merge_data(data_info *expo_info);
 
 void task_distribution(int portion, int my_id, data_info *field_info);
 

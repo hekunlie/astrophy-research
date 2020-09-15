@@ -76,13 +76,16 @@ void initialize(data_info *expo_info, int total_expo_num)
     // tomography, z[i,j] = z[j,i], save zbin_num*zbin_num blocks for saving the time in calculation
     // [i,j] = [j,i], they will be sum after the calculation
     expo_info->expo_chi_block_len = expo_info->iz_chi_block_len*expo_info->zbin_num*expo_info->zbin_num;
+    expo_info->theta_accum_len = expo_info->theta_bin_num*expo_info->zbin_num*expo_info->zbin_num;
+
     expo_info->expo_chi_block_len_true = expo_info->iz_chi_block_len*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
+    expo_info->theta_accum_len_true = expo_info->theta_bin_num*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
 
     // tangential and cross components
     expo_info->expo_num_count_chit = new double[expo_info->expo_chi_block_len]{};
     expo_info->expo_num_count_chix = new double[expo_info->expo_chi_block_len]{};
 
-    expo_info->theta_accum_len = expo_info->theta_bin_num*expo_info->zbin_num*expo_info->zbin_num;
+
     expo_info->theta_accum = new double[expo_info->theta_accum_len];
     expo_info->theta_num_accum = new double[expo_info->theta_accum_len];
 
@@ -263,9 +266,9 @@ void task_prepare(int numprocs, int rank, data_info *expo_info)
 
     for(i=0; i<expo_info->total_expo_num; i++)
     {
-        for(j=0; j<expo_info->total_expo_num; j++)
+        for(j=i+1; j<expo_info->total_expo_num; j++)
         {
-            expo_distance(expo_info, i,j,k);
+            expo_distance(expo_info, i,j, k);
             if(k == 1)
             {
                 expo_info->task_expo_pair_labels_1.push_back(i);
@@ -319,6 +322,7 @@ void initialize_thread_pool(data_info*expo_info,int numprocs)
         expo_info->thread_pool.push_back(i);
     }
 }
+
 void thread_pool_resize(data_info *expo_info)
 {   
     int i, j;
@@ -584,8 +588,8 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
-    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/20;
-    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/20;
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
 
     st1 = clock();
     for(ig1=0; ig1<gal_num_1; ig1++)
@@ -795,27 +799,31 @@ void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, in
     expo_info->expo_pair_label_2.push_back(expo_label_2);
 
     col = expo_info->mg_bin_num;
-    row = expo_info->expo_chi_block_len/col;
+    row = expo_info->expo_chi_block_len_true/col;
 
     sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
     sprintf(set_name, "/%d-%d/tt",expo_label_1, expo_label_2);
     
+    merge_data(expo_info);
+
     if(expo_info->result_file_tag == 0)
     {
-        write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, true);
+        write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, true);
         expo_info->result_file_tag=1;
     }
-    else{write_h5(result_path, set_name, expo_info->expo_num_count_chit, row, col, false);}
+    else{write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, false);}
 
     sprintf(set_name, "/%d-%d/xx",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->expo_num_count_chix, row, col, false);
+    write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chix, row, col, false);
+
 
     col = expo_info->theta_bin_num;
-    row = expo_info->zbin_num*expo_info->zbin_num;
+    row = expo_info->theta_accum_len_true/col;
+
     sprintf(set_name, "/%d-%d/theta",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->theta_accum, row, col, false);
+    write_h5(result_path, set_name, expo_info->corr_cal_stack_expo_theta_accum, row, col, false);
     sprintf(set_name, "/%d-%d/theta_num",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->theta_num_accum, row, col, false);
+    write_h5(result_path, set_name, expo_info->corr_cal_stack_expo_theta_num_accum, row, col, false);
 }
 
 void save_expo_pair_label(data_info *expo_info, int rank)
@@ -830,11 +838,11 @@ void save_expo_pair_label(data_info *expo_info, int rank)
     int *labels = new int[col];
 
     for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_1[i];}
-    sprintf(set_name, "/pair/1");
+    sprintf(set_name, "/pair_1");
     write_h5(result_path, set_name, labels, 1, col, false);
     
     for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_2[i];}
-    sprintf(set_name, "/pair/2");
+    sprintf(set_name, "/pair_2");
     write_h5(result_path, set_name, labels, 1, col, false);
     
     delete[] labels;

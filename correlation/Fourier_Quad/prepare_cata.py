@@ -288,7 +288,7 @@ if cmd == "prepare_exposure_wise":
         # print(buffer_expo)
         print("Prepare catalog files")
         # print(total_expos)
-        print(len(field_name), "fields", len(total_expos), " exposures")
+        print("%d fields %d (%d) exposures"%(len(field_name),  len(buffer_expo), len(total_expos)))
     comm.Barrier()
 
 
