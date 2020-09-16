@@ -111,12 +111,62 @@ struct data_info
     int loop_label;
 };
 
+
+void initialize(data_info *field_info, int total_field_num);
+
+void read_list(char *file_path, data_info *field_info, int &read_file_num);
+
+void read_data(data_info *field_info);
+
+void read_expo_data_1(data_info *field_info, int expo_label);
+void read_expo_data_2(data_info *field_info, int expo_label);
+
+void initialize_expo_chi_block(data_info *field_info);
+
+void collect_chi_block(data_info *field_info, int field_label);
+
+void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int rank);
+
+void save_expo_pair_label(data_info *expo_info, int rank);
+
+void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
+
+void merge_data(data_info *expo_info);
+
+void task_distribution(int portion, int my_id, data_info *field_info);
+
+void task_prepare(int numprocs, int rank, data_info *field_info);
+
+void initialize_thread_pool(data_info*expo_info,int numprocs);
+void thread_pool_resize(data_info *expo_info);
+
+void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
+void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);
+void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &ix, int &iy);//faster than above
+
+void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
+
+void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
+// if lable == 1, calculate, else, not
+
+void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
+// read all exposures
+void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
+// read the exposure needed
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+///////////////////////////////////// for the last step, \Xi^2 calculation and estimation of correlation function /////////////////////////////
+
 struct corr_cal
 {
     // for the last step of chi squared calculation, get_corr.cpp
     char parent_path[500];
     char result_path[550];
     char set_name[50];
+    char log_path[550];
+    char inform[600];
     
     // the guess of chi_{\pm} of PDF_SYM
     MY_FLOAT *chi_guess;
@@ -161,8 +211,14 @@ struct corr_cal
     int corr_cal_rank;
     int my_resample_label_st, my_resample_label_ed;
 
-    int *jackknife_expo_pair_st;
-    int *jackknife_expo_pair_ed;
+    // record the start & end expo label of each sub-sample
+    // "resample_num" sub-samples
+    int *jackknife_subsample_pair_st;
+    int *jackknife_subsample_pair_ed;
+    // for the MPI, distribute the resample tasks to "corr_cal_thread_num"
+    // CPUs, these two arrays record the start&end resample-task label of each CPU
+    int *jackknife_resample_st;
+    int *jackknife_resample_ed;
     int jackknife_label;
 
     int corr_cal_chi_num;
@@ -175,48 +231,22 @@ struct corr_cal
 
 };
 
+void read_para(corr_cal *all_paras);
 
-void initialize(data_info *field_info, int total_field_num);
+void prepare_data(corr_cal *all_paras);
 
-void read_list(char *file_path, data_info *field_info, int &read_file_num);
+void pre_jackknife(corr_cal *all_paras);
 
-void read_data(data_info *field_info);
+void resample_jackknife(corr_cal *all_paras,int resample_label);
 
-void read_expo_data_1(data_info *field_info, int expo_label);
-void read_expo_data_2(data_info *field_info, int expo_label);
+void chisq_2d(double *num_count, int mg_bin_num, double &chisq);
 
-void initialize_expo_chi_block(data_info *field_info);
+void corr_calculate(corr_cal *all_paras, int resample_label);
 
-void collect_chi_block(data_info *field_info, int field_label);
+void corr_task_alloc(int total_task_num, int portion, int *label_st, int *label_ed);
 
-void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int rank);
+void save_result(corr_cal *all_paras);
 
-void save_expo_pair_label(data_info *expo_info, int rank);
-
-void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
-
-void merge_data(data_info *expo_info);
-
-void task_distribution(int portion, int my_id, data_info *field_info);
-
-void task_prepare(int numprocs, int rank, data_info *field_info);
-
-void initialize_thread_pool(data_info*expo_info,int numprocs);
-void thread_pool_resize(data_info *expo_info);
-
-void hist_2d_fast(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num2, int &ix, int &iy);
-void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int bin_num, int bin_num1,int bin_num2, int bin_num3,int &ix, int &iy);
-void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &ix, int &iy);//faster than above
-
-void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
-
-void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
-// if lable == 1, calculate, else, not
-
-void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
-// read all exposures
-void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
-// read the exposure needed
 #endif
 
 
