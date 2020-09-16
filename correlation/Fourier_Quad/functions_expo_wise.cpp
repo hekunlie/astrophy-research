@@ -1518,8 +1518,8 @@ void save_result(corr_cal *all_paras)
         else{overwrite=false;}
 
         // the \chi squared  
-        row = all_paras->chi_guess_num;
-        col = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
+        col = all_paras->chi_guess_num;
+        row = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
 
         sprintf(set_name, "/%d/chi_tt",i);
         write_h5(data_path, set_name, all_paras->corr_cal_chi_tt[i], row, col, overwrite);
@@ -1528,8 +1528,8 @@ void save_result(corr_cal *all_paras)
         write_h5(data_path, set_name, all_paras->corr_cal_chi_xx[i], row, col, false);
 
         // the signal
-        row = all_paras->theta_bin_num;
-        col = all_paras->corr_cal_final_data_num/all_paras->theta_bin_num;
+        col = all_paras->theta_bin_num;
+        row = all_paras->corr_cal_final_data_num/all_paras->theta_bin_num;
 
         sprintf(set_name, "/%d/tt",i);
         write_h5(data_path, set_name, all_paras->corr_cal_gtt[i], row, col, false);
