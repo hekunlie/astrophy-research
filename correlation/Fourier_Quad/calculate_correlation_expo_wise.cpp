@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     double count_sum;
 
     int task_end = 0;
-    int thread_live = numprocs - 1;
+    int thread_live;
     int task_labels[2];
     MPI_Status status;
     MPI_Request request;
@@ -37,16 +37,14 @@ int main(int argc, char *argv[])
 
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
     
-    // strcpy(result_path, argv[4]);
-
     // read the information of each exposure file
     initialize(&expo_info, total_expo_num);
 
-    // // read the catalog of redshift bin z1 & z2
+    // read the catalog of redshift bin z1 & z2
     // read_data(&expo_info);
 
-    // find all the potential expo pair for calculation (i, j), i!= j
-    // does not include the expo itself 
+    // find all the potential expo pair for calculation, 
+    // (i, j), i!= j, does not include the expo itself 
     task_prepare(numprocs, rank, &expo_info);
 
     if(rank == 0){initialize_thread_pool(&expo_info, numprocs);}
@@ -160,6 +158,9 @@ int main(int argc, char *argv[])
     }
     else
     {   
+        // CPU 0 is the master for task distribution
+        thread_live = numprocs - 1;
+
         while(thread_live > 0)
         {    
             MPI_Irecv(task_labels, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);

@@ -1168,7 +1168,7 @@ void read_para(corr_cal *all_paras)
         std::cout<<std::endl;
 
         std::cout<<"chi^2 num: "<<all_paras->corr_cal_chi_num<<std::endl;
-        std::cout<<"expo len: "<<all_paras->expo_chi_block_len_true<<std::endl;
+        std::cout<<"expo data len: "<<all_paras->expo_chi_block_len_true<<std::endl;
         std::cout<<"final data num: "<<all_paras->corr_cal_final_data_num<<std::endl;
     }
 
@@ -1221,9 +1221,9 @@ void prepare_data(corr_cal *all_paras)
         delete[] temp[1];
     }
     
-    if(all_paras->corr_cal_rank == 0){std::cout<<"All expo pairs: "<<all_paras->corr_cal_total_pair_num<<std::endl;}
     if(all_paras->corr_cal_rank == 0)
-    {
+    {   
+        std::cout<<"All expo pairs: "<<all_paras->corr_cal_total_pair_num<<std::endl;
         sprintf(data_path, "%s/pairs.hdf5",all_paras->parent_path);
         sprintf(set_name, "/label_1");
         write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[0], 1, all_paras->corr_cal_total_pair_num, true);
@@ -1237,13 +1237,13 @@ void prepare_data(corr_cal *all_paras)
     // prepare for jackknife 
     pre_jackknife(all_paras);
     
-    // if(all_paras->corr_cal_rank == 0)
-    // {
-    //     show_arr(all_paras->jackknife_subsample_pair_st, 1, all_paras->resample_num+1);
-    //     show_arr(all_paras->jackknife_subsample_pair_ed, 1, all_paras->resample_num+1);
-    //     show_arr(all_paras->jackknife_resample_st, 1, all_paras->corr_cal_thread_num);
-    //     show_arr(all_paras->jackknife_resample_ed, 1, all_paras->corr_cal_thread_num);
-    // }
+    if(all_paras->corr_cal_rank == 0)
+    {
+        show_arr(all_paras->jackknife_subsample_pair_st, 1, all_paras->resample_num+1);
+        show_arr(all_paras->jackknife_subsample_pair_ed, 1, all_paras->resample_num+1);
+        show_arr(all_paras->jackknife_resample_st, 1, all_paras->corr_cal_thread_num);
+        show_arr(all_paras->jackknife_resample_ed, 1, all_paras->corr_cal_thread_num);
+    }
 }
 
 void pre_jackknife(corr_cal *all_paras)
@@ -1260,7 +1260,7 @@ void pre_jackknife(corr_cal *all_paras)
     all_paras->jackknife_subsample_pair_ed[0] = -1;
     
     // decide the start & end label of each sub-sample
-    // each time, the expo-pairs of which the label > start and <=end
+    // each time, the expo-pairs of which the label >= start and <end
     // will be abandoned from the calculation
     corr_task_alloc(all_paras->corr_cal_expo_num, all_paras->resample_num, &all_paras->jackknife_subsample_pair_st[1],&all_paras->jackknife_subsample_pair_ed[1]);
     
@@ -1289,7 +1289,7 @@ void pre_jackknife(corr_cal *all_paras)
         all_paras->corr_cal_gtt_sig[i]  = new double[all_paras->corr_cal_final_data_num];
         all_paras->corr_cal_gxx_sig[i]  = new double[all_paras->corr_cal_final_data_num];
 
-        all_paras->corr_cal_mean_theta[i] = new double[all_paras->expo_chi_block_len_true]{};
+        all_paras->corr_cal_mean_theta[i] = new double[all_paras->expo_chi_block_len_true];
     }
 
 }
@@ -1316,7 +1316,7 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
 
     abort_st = all_paras->jackknife_subsample_pair_st[resample_label];
     abort_ed = all_paras->jackknife_subsample_pair_ed[resample_label];
-
+    q = 0;
     for(i=0; i<all_paras->corr_cal_total_pair_num; i++)
     {   
         
@@ -1324,9 +1324,9 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
 
         m = all_paras->corr_cal_expo_pair_label[0][i];
         n = all_paras->corr_cal_expo_pair_label[1][i];
-        if(m>= abort_st and m < abort_ed){continue;}
-        if(n>= abort_st and n < abort_ed){continue;}
-
+        if(m>= abort_st and m < abort_ed){q++; continue;}
+        if(n>= abort_st and n < abort_ed){q++; continue;}
+        
         sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,file_tag);
 
         
@@ -1360,8 +1360,7 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         // }
     }
 
-
-    sprintf(all_paras->inform, "Jackknife %d resample-end",resample_label);
+    sprintf(all_paras->inform, "Jackknife %d resample-end. Throw away %d pairs.",resample_label, q);
     write_log(all_paras->log_path, all_paras->inform);
 }
 
@@ -1429,12 +1428,11 @@ void corr_calculate(corr_cal *all_paras, int resample_label)
     // fitting
     for(i=0; i<all_paras->corr_cal_final_data_num;i++)
     {   
-        tag = i*all_paras->chi_guess_num;
-        // std::cout<<i<<std::endl;
         for(j=0;j<all_paras->chi_guess_num;j++)
-        {
-            chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[resample_label][tag + j];
-            chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[resample_label][tag + j];
+        {   
+            tag = i*all_paras->chi_guess_num + j;
+            chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[resample_label][tag];
+            chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[resample_label][tag];
         }
         // if(resample_label == 1)
         // {
@@ -1465,7 +1463,7 @@ void corr_calculate(corr_cal *all_paras, int resample_label)
     delete[] chi_gtt_fit;
     delete[] chi_gxx_fit;
 
-    sprintf(all_paras->inform, "Jackknife %d calculate",resample_label);
+    sprintf(all_paras->inform, "Jackknife %d end",resample_label);
     write_log(all_paras->log_path, all_paras->inform);
 
 }
