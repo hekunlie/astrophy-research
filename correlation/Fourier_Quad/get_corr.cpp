@@ -22,8 +22,9 @@ int main(int argc, char **argv)
 
 
     strcpy(all_paras.parent_path, argv[1]);
-    all_paras.resample_num = atoi(argv[2]);
-    all_paras.corr_cal_result_file_num = atoi(argv[3]);
+    all_paras.corr_cal_expo_num = atoi(argv[2]);
+    all_paras.resample_num = atoi(argv[3]);
+    all_paras.corr_cal_result_file_num = atoi(argv[4]);
     all_paras.corr_cal_thread_num = numprocs;
     all_paras.corr_cal_rank = rank;
 

@@ -206,6 +206,8 @@ struct corr_cal
     int *corr_cal_expo_pair_file_label;
     int corr_cal_total_pair_num;
 
+    int corr_cal_expo_num;
+    
     int resample_num;
     int corr_cal_thread_num;
     int corr_cal_rank;

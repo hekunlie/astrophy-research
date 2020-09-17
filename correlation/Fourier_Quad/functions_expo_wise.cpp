@@ -1262,7 +1262,7 @@ void pre_jackknife(corr_cal *all_paras)
     // decide the start & end label of each sub-sample
     // each time, the expo-pairs of which the label > start and <=end
     // will be abandoned from the calculation
-    corr_task_alloc(all_paras->corr_cal_total_pair_num, all_paras->resample_num, &all_paras->jackknife_subsample_pair_st[1],&all_paras->jackknife_subsample_pair_ed[1]);
+    corr_task_alloc(all_paras->corr_cal_expo_num, all_paras->resample_num, &all_paras->jackknife_subsample_pair_st[1],&all_paras->jackknife_subsample_pair_ed[1]);
     
     // distribute the resample task to each thread
     // there're "resample_num+1" tasks for "corr_cal_thread_num" CPUs
