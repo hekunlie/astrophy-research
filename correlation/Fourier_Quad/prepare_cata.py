@@ -35,15 +35,15 @@ redshift_bin_num = 6
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 20
+chi_guess_num = 40
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-chi_guess_bin_p = tool_box.set_bin_log(10**(-7), 7*10**(-4), chi_guess_num).astype(numpy.float32)
+chi_guess_bin_p = tool_box.set_bin_log(10**(-7), 10**(-3), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
 chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
 
 chi_guess_num = int(chi_guess_num*2)
-cor_gg_len = 500000
+cor_gg_len = 1000000
 mg_bin_num = 10
 
 # star number on each chip

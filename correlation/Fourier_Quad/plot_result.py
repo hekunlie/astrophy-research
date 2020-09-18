@@ -13,8 +13,8 @@ zbin_num = 6#int(argv[1])
 theta_bin_num = 5#int(argv[2])
 resample_num = 300#int(argv[3])
 
-
-h5f = h5py.File("D:/result_300.hdf5","r")
+pic_nm = "D:/result_%d.png"%resample_num
+h5f = h5py.File("D:/result_%d.hdf5"%resample_num,"r")
 print(list(h5f.keys()))
 print(list(h5f["/0"].keys()))
 
@@ -111,6 +111,6 @@ for i in range(zbin_num):
 
 
 
-img.save_img("D:/result_300.png")
+img.save_img(pic_nm)
 img.close_img()
 # img.show_img()
