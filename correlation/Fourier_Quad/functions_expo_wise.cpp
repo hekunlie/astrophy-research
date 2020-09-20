@@ -1237,13 +1237,13 @@ void prepare_data(corr_cal *all_paras)
     // prepare for jackknife 
     pre_jackknife(all_paras);
     
-    if(all_paras->corr_cal_rank == 0)
-    {
-        show_arr(all_paras->jackknife_subsample_pair_st, 1, all_paras->resample_num+1);
-        show_arr(all_paras->jackknife_subsample_pair_ed, 1, all_paras->resample_num+1);
-        show_arr(all_paras->jackknife_resample_st, 1, all_paras->corr_cal_thread_num);
-        show_arr(all_paras->jackknife_resample_ed, 1, all_paras->corr_cal_thread_num);
-    }
+    // if(all_paras->corr_cal_rank == 0)
+    // {
+    //     show_arr(all_paras->jackknife_subsample_pair_st, 1, all_paras->resample_num+1);
+    //     show_arr(all_paras->jackknife_subsample_pair_ed, 1, all_paras->resample_num+1);
+    //     show_arr(all_paras->jackknife_resample_st, 1, all_paras->corr_cal_thread_num);
+    //     show_arr(all_paras->jackknife_resample_ed, 1, all_paras->corr_cal_thread_num);
+    // }
 }
 
 void pre_jackknife(corr_cal *all_paras)
