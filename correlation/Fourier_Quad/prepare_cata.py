@@ -64,7 +64,7 @@ jmax_thresh = 48
 gf1_idx = 31
 gf2_idx = 32
 gf1_thresh = 0.005
-gf2_thresh = 0.0075
+gf2_thresh = 0.005
 
 # shear estimators
 mg1_idx = 33
@@ -74,7 +74,7 @@ mu_idx = 36
 mv_idx = 37
 
 # exposure label
-expo_idx = 38
+expo_idx = 36
 
 #
 # fourier_cata_path = "/coma/hklee/fourier_cata"

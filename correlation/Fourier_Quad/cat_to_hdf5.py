@@ -18,7 +18,7 @@ cpus = comm.Get_size()
 mode = argv[2]
 
 area_num = 4
-chip_num = 32
+chip_num = 36
 
 total_path = argv[1]
 
@@ -88,33 +88,81 @@ elif mode == "hdf5_cata":
 
             field_dst_path = field_src_path + "/%s.hdf5" % fns
 
-            h5f = h5py.File(field_dst_path, "w")
-            h5f["/field"] = fdat
-            h5f["/field"].attrs["gal_num"] = fdat.shape[0]
+            h5f_field = h5py.File(field_dst_path, "w")
+            h5f_field["/field"] = fdat
+            h5f_field["/field"].attrs["gal_num"] = fdat.shape[0]
 
             expos = list(fields[fns].keys())
             expos_num = len(expos)
 
             # read the exposure files
             expo_label = 0
+            stack_chip_label = 0
             for exp_nm in expos:
+                expo_src_path = field_src_path + "/%s_all.cat" % exp_nm
+                expo_h5_path = field_src_path + "/%s_all.hdf5" % exp_nm
                 try:
-                    edat = numpy.loadtxt(field_src_path + "/%s_all.cat" % exp_nm, dtype=numpy.float32)
-                    h5f["/expo_%d"%expo_label] = edat
-                    h5f["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
-                    h5f["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
+                    edat = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
+
+                    h5f_field["/expo_%d"%expo_label] = edat
+                    h5f_field["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
+                    h5f_field["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
+
                     expo_label += 1
-                    h5f_expo = h5py.File(field_src_path + "/%s_all.hdf5" % exp_nm,"w")
+
+                    h5f_expo = h5py.File(expo_h5_path,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
                     buffer.append("%s_all.cat\n" % exp_nm)
                 except:
-                    print("%d %s-%s empty!" % (rank, fns, exp_nm))
+                    if os.path.exists(expo_src_path):
+                        print("%d Failed in reading %s %d Bytes !" % (rank, expo_src_path, os.path.getsize(expo_src_path)))
+                    else:
+                        print("%d can't find %s!" % (rank, expo_src_path))
+
+                # read & stack the chip data
+                chip_label = 0
+                for iexp in range(1, chip_num+1):
+                    chip_src_path = field_src_path + "/%s_%d_shear.dat" %(exp_nm, iexp)
+                    chip_h5_path = field_src_path + "/%s_%d_shear.hdf5" %(exp_nm, iexp)
+                    try:
+                        chip_data_raw = numpy.loadtxt(chip_src_path, dtype=numpy.float32, skiprows=1)
+                        h5f_chip = h5py.File(chip_h5_path,"w")
+                        h5f_chip["/data"] = chip_data_raw
+                        h5f_chip.close()
+
+                        if chip_label == 0:
+                            stack_chip_data_raw = chip_data_raw
+                        else:
+                            stack_chip_data_raw = numpy.row_stack((stack_chip_data_raw, chip_data_raw))
+
+                        chip_label += 1
+                    except:
+                        if os.path.exists(chip_src_path):
+                            print("Failed in read chip %s %d Bytes"%(chip_src_path, os.path.getsize(chip_src_path)))
+                        else:
+                            print("Failed in read chip %s 0 Bytes"%(chip_src_path))
+
+                if chip_label > 0:
+                    h5f_chip_stack = h5py.File(field_src_path + "/%s_all_raw.hdf5" % exp_nm, "w")
+                    h5f_chip_stack["/data"] = stack_chip_data_raw
+                    h5f_chip_stack.close()
+
+                    if stack_chip_label == 0:
+                        expo_data_raw = stack_chip_data_raw
+                    else:
+                        expo_data_raw = numpy.row_stack((expo_data_raw, stack_chip_data_raw))
+                    stack_chip_label += 1
+
+            if stack_chip_label > 0:
+                h5f_expo_raw = h5py.File(field_src_path + "/%s_raw.hdf5" % fns, "w")
+                h5f_expo_raw["/data"] = expo_data_raw
+                h5f_expo_raw.close()
 
             # how many exposures in this field
-            h5f["/expos_num"] = numpy.array([expo_label], dtype=numpy.intc)
+            h5f_field["/expos_num"] = numpy.array([expo_label], dtype=numpy.intc)
 
-            h5f.close()
+            h5f_field.close()
 
             field_avail_sub.append(fns+"\n")
             field_all_avail_sub.append(fns + "\n")
@@ -122,22 +170,27 @@ elif mode == "hdf5_cata":
                 field_all_avail_sub.extend(buffer)
 
         except:
-            print("%d %s/%s.cat empty!"%(rank, field_src_path, fns),os.path.exists(field_src_path + "/%s.cat"%fns))
+            src_cat_path = field_src_path + "/%s.cat"%fns
+            if os.path.exists(src_cat_path):
+                print("%d %s empty! %d Bytes"%(rank, src_cat_path,os.path.getsize(src_cat_path)), os.path.exists(src_cat_path))
+            else:
+                print("%d %s empty! 0 Bytes" % (rank, src_cat_path), os.path.exists(src_cat_path))
 
     field_collection = comm.gather(field_avail_sub, root=0)
     field_all_collection = comm.gather(field_all_avail_sub, root=0)
+    comm.Barrier()
     if rank == 0:
         field_avail = []
         for fsb in field_collection:
             field_avail.extend(fsb)
-        print(len(field_avail))
+        print("Totally: ",len(field_avail), " fields")
         with open(total_path + "/nname_avail.dat","w") as f:
             f.writelines(field_avail)
 
         field_all_avail = []
         for fsb in field_all_collection:
             field_all_avail.extend(fsb)
-        print(len(field_all_avail))
+        print("Totally: ",len(field_all_avail), " exposures")
         with open(total_path + "/nname_all_avail.dat","w") as f:
             f.writelines(field_all_avail)
 
