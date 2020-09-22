@@ -78,42 +78,44 @@ elif mode == "hdf5_cata":
 
     field_avail_sub = []
     field_all_avail_sub = []
+    field_all_raw_avail_sub = []
 
     for fns in field_name_sub:
         # read the the field data
         field_src_path = total_path + "/%s/result"%fns
         buffer = []
+        buffer_raw = []
         try:
             fdat = numpy.loadtxt(field_src_path + "/%s.cat"%fns, dtype=numpy.float32)
 
-            field_dst_path = field_src_path + "/%s.hdf5" % fns
-
-            h5f_field = h5py.File(field_dst_path, "w")
-            h5f_field["/field"] = fdat
-            h5f_field["/field"].attrs["gal_num"] = fdat.shape[0]
+            # field_dst_path = field_src_path + "/%s.hdf5" % fns
+            #
+            # h5f_field = h5py.File(field_dst_path, "w")
+            # h5f_field["/field"] = fdat
+            # h5f_field["/field"].attrs["gal_num"] = fdat.shape[0]
 
             expos = list(fields[fns].keys())
             expos_num = len(expos)
 
             # read the exposure files
             expo_label = 0
-            stack_chip_label = 0
+
             for exp_nm in expos:
                 expo_src_path = field_src_path + "/%s_all.cat" % exp_nm
                 expo_h5_path = field_src_path + "/%s_all.hdf5" % exp_nm
                 try:
                     edat = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
 
-                    h5f_field["/expo_%d"%expo_label] = edat
-                    h5f_field["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
-                    h5f_field["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
+                    # h5f_field["/expo_%d"%expo_label] = edat
+                    # h5f_field["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
+                    # h5f_field["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
 
                     expo_label += 1
 
                     h5f_expo = h5py.File(expo_h5_path,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
-                    buffer.append("%s_all.cat\n" % exp_nm)
+                    buffer.append(expo_h5_path)
                 except:
                     if os.path.exists(expo_src_path):
                         print("%d Failed in reading %s %d Bytes !" % (rank, expo_src_path, os.path.getsize(expo_src_path)))
@@ -147,28 +149,29 @@ elif mode == "hdf5_cata":
                     h5f_chip_stack = h5py.File(field_src_path + "/%s_all_raw.hdf5" % exp_nm, "w")
                     h5f_chip_stack["/data"] = stack_chip_data_raw
                     h5f_chip_stack.close()
+                    buffer_raw.append(field_src_path + "/%s_all_raw.hdf5" % exp_nm)
+                    # if stack_chip_label == 0:
+                    #     expo_data_raw = stack_chip_data_raw
+                    # else:
+                    #     expo_data_raw = numpy.row_stack((expo_data_raw, stack_chip_data_raw))
+                    # stack_chip_label += 1
 
-                    if stack_chip_label == 0:
-                        expo_data_raw = stack_chip_data_raw
-                    else:
-                        expo_data_raw = numpy.row_stack((expo_data_raw, stack_chip_data_raw))
-                    stack_chip_label += 1
+            # if stack_chip_label > 0:
+            #     h5f_expo_raw = h5py.File(field_src_path + "/%s_raw.hdf5" % fns, "w")
+            #     h5f_expo_raw["/data"] = expo_data_raw
+            #     h5f_expo_raw.close()
 
-            if stack_chip_label > 0:
-                h5f_expo_raw = h5py.File(field_src_path + "/%s_raw.hdf5" % fns, "w")
-                h5f_expo_raw["/data"] = expo_data_raw
-                h5f_expo_raw.close()
-
-            # how many exposures in this field
-            h5f_field["/expos_num"] = numpy.array([expo_label], dtype=numpy.intc)
-
-            h5f_field.close()
+            # # how many exposures in this field
+            # h5f_field["/expos_num"] = numpy.array([expo_label], dtype=numpy.intc)
+            #
+            # h5f_field.close()
 
             field_avail_sub.append(fns+"\n")
             field_all_avail_sub.append(fns + "\n")
             if len(buffer)> 0:
                 field_all_avail_sub.extend(buffer)
-
+            if len(buffer_raw)> 0:
+                field_all_raw_avail_sub.extend(buffer_raw)
         except:
             src_cat_path = field_src_path + "/%s.cat"%fns
             if os.path.exists(src_cat_path):
@@ -178,6 +181,7 @@ elif mode == "hdf5_cata":
 
     field_collection = comm.gather(field_avail_sub, root=0)
     field_all_collection = comm.gather(field_all_avail_sub, root=0)
+    field_all_raw_collection = comm.gather(field_all_raw_avail_sub, root=0)
     comm.Barrier()
     if rank == 0:
         field_avail = []
@@ -194,6 +198,12 @@ elif mode == "hdf5_cata":
         with open(total_path + "/nname_all_avail.dat","w") as f:
             f.writelines(field_all_avail)
 
+        field_all_raw_avail = []
+        for fsb in field_all_raw_collection:
+            field_all_raw_avail.extend(fsb)
+        print("Totally: ",len(field_all_raw_avail), " raw exposures")
+        with open(total_path + "/nname_all_raw_avail.dat","w") as f:
+            f.writelines(field_all_raw_avail)
 else:
     # collection
     result_path = total_path + "/total.hdf5"
