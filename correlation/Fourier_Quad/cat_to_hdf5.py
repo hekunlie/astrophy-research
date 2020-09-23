@@ -86,14 +86,6 @@ elif mode == "hdf5_cata":
         buffer = []
         buffer_raw = []
         try:
-            fdat = numpy.loadtxt(field_src_path + "/%s.cat"%fns, dtype=numpy.float32)
-
-            # field_dst_path = field_src_path + "/%s.hdf5" % fns
-            #
-            # h5f_field = h5py.File(field_dst_path, "w")
-            # h5f_field["/field"] = fdat
-            # h5f_field["/field"].attrs["gal_num"] = fdat.shape[0]
-
             expos = list(fields[fns].keys())
             expos_num = len(expos)
 
@@ -106,16 +98,12 @@ elif mode == "hdf5_cata":
                 try:
                     edat = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
 
-                    # h5f_field["/expo_%d"%expo_label] = edat
-                    # h5f_field["/expo_%d"%expo_label].attrs["exposure_name"] = exp_nm
-                    # h5f_field["/expo_%d"%expo_label].attrs["gal_num"] = edat.shape[0]
-
                     expo_label += 1
 
                     h5f_expo = h5py.File(expo_h5_path,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
-                    buffer.append(expo_h5_path)
+                    field_all_avail_sub.append(expo_h5_path+"\n")
                 except:
                     if os.path.exists(expo_src_path):
                         print("%d Failed in reading %s %d Bytes !" % (rank, expo_src_path, os.path.getsize(expo_src_path)))
@@ -149,29 +137,10 @@ elif mode == "hdf5_cata":
                     h5f_chip_stack = h5py.File(field_src_path + "/%s_all_raw.hdf5" % exp_nm, "w")
                     h5f_chip_stack["/data"] = stack_chip_data_raw
                     h5f_chip_stack.close()
-                    buffer_raw.append(field_src_path + "/%s_all_raw.hdf5" % exp_nm)
-                    # if stack_chip_label == 0:
-                    #     expo_data_raw = stack_chip_data_raw
-                    # else:
-                    #     expo_data_raw = numpy.row_stack((expo_data_raw, stack_chip_data_raw))
-                    # stack_chip_label += 1
-
-            # if stack_chip_label > 0:
-            #     h5f_expo_raw = h5py.File(field_src_path + "/%s_raw.hdf5" % fns, "w")
-            #     h5f_expo_raw["/data"] = expo_data_raw
-            #     h5f_expo_raw.close()
-
-            # # how many exposures in this field
-            # h5f_field["/expos_num"] = numpy.array([expo_label], dtype=numpy.intc)
-            #
-            # h5f_field.close()
+                    field_all_raw_avail_sub.append(field_src_path + "/%s_all_raw.hdf5\n" % exp_nm)
 
             field_avail_sub.append(fns+"\n")
-            field_all_avail_sub.append(fns + "\n")
-            if len(buffer)> 0:
-                field_all_avail_sub.extend(buffer)
-            if len(buffer_raw)> 0:
-                field_all_raw_avail_sub.extend(buffer_raw)
+
         except:
             src_cat_path = field_src_path + "/%s.cat"%fns
             if os.path.exists(src_cat_path):
@@ -206,55 +175,53 @@ elif mode == "hdf5_cata":
             f.writelines(field_all_raw_avail)
 else:
     # collection
-    result_path = total_path + "/total.hdf5"
 
-    fields, field_name = tool_box.field_dict(total_path + "/nname_avail.dat")
+    source_list_nm = argv[2]
+    result_nm = argv[3]
+
+    expos = []
+    with open(total_path + "/"+source_list_nm, "r") as f:
+        conts = f.readlines()
+    for nm in conts:
+        expos.append(nm.split("\n")[0])
+
     if rank == 0:
-        print(len(field_name))
-        h5f = h5py.File(result_path, "w")
-        h5f.close()
+        print(len(expos)," exposures")
 
-    area_num = 4
+    my_sub_area_list = tool_box.alloc(expos,cpus)[rank]
+    # print(rank, i, len(my_sub_area_list))
 
-    for i in range(area_num):
-        sub_area_list = []
-        for fns in field_name:
-            if "w%d" % (i + 1) in fns:
-                sub_area_list.append(fns)
-        my_sub_area_list = tool_box.alloc(sub_area_list,cpus)[rank]
-        # print(rank, i, len(my_sub_area_list))
+    if len(my_sub_area_list) > 0:
+        for tag, expo_path in enumerate(my_sub_area_list):
 
-        if len(my_sub_area_list) > 0:
-            for tag, fns in enumerate(my_sub_area_list):
+            h5f = h5py.File(expo_path,"r")
+            temp = h5f["/data"][()]
 
-                h5f = h5py.File(total_path + "/%s/result/%s.hdf5" %(fns, fns),"r")
-                temp = h5f["/field"][()]
-
-                if tag == 0:
-                    data = temp
-                else:
-                    data = numpy.row_stack((data, temp))
-                h5f.close()
-
-            sp = data.shape
-        else:
-            sp = (0,0)
-
-        sp_total = comm.gather(sp, root=0)
-        # print(i,rank, data.shape, data.dtype, sp, data[0,:5])
-        comm.Barrier()
-
-        if rank > 0 and sp[0] > 0:
-            comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
-        else:
-            for ir in range(1, cpus):
-                if sp_total[ir][0] > 0:
-                    recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
-                    comm.Recv(recv_buf,source=ir, tag=ir)
-                    data = numpy.row_stack((data, recv_buf))
-
-            h5f = h5py.File(result_path, "r+")
-            h5f["/w%d"%i] = data
+            if tag == 0:
+                data = temp
+            else:
+                data = numpy.row_stack((data, temp))
             h5f.close()
 
-        comm.Barrier()
+        sp = data.shape
+    else:
+        sp = (0,0)
+
+    sp_total = comm.gather(sp, root=0)
+    # print(i,rank, data.shape, data.dtype, sp, data[0,:5])
+    comm.Barrier()
+
+    if rank > 0 and sp[0] > 0:
+        comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
+    else:
+        for ir in range(1, cpus):
+            if sp_total[ir][0] > 0:
+                recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
+                comm.Recv(recv_buf,source=ir, tag=ir)
+                data = numpy.row_stack((data, recv_buf))
+
+        h5f = h5py.File(total_path + "/%s"%result_nm, "w")
+        h5f["/data"] = data
+        h5f.close()
+
+    comm.Barrier()
