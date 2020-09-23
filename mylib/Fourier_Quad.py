@@ -1010,14 +1010,10 @@ class Fourier_Quad:
         return g_h, g_sig, coeff
 
 
-    def find_shear_mean(self, G, N, weight=None):
+    def find_shear_mean(self, G, N, weight=1):
         num = G.shape[0]
-
         g = numpy.sum(G)/numpy.sum(N)
-        if weight:
-            g_sig = numpy.sqrt(numpy.mean((G*weight)**2)/(numpy.mean(N*weight))**2)/numpy.sqrt(num)
-        else:
-            g_sig = numpy.sqrt(numpy.mean(G**2)/numpy.mean(N)**2)/numpy.sqrt(num)
+        g_sig = numpy.sqrt(numpy.mean((G*weight)**2)/(numpy.mean(N*weight))**2)/numpy.sqrt(num)
 
         return g, g_sig
 

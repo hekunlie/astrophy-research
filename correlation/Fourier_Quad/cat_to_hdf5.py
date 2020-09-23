@@ -98,6 +98,10 @@ elif mode == "hdf5_cata":
                 try:
                     edat = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
 
+                    # Nan check
+                    idx = numpy.isnan(edat)
+                    if idx.sum() > 0:
+                        print("Find Nan in ",expo_src_path)
                     expo_label += 1
 
                     h5f_expo = h5py.File(expo_h5_path,"w")
@@ -120,6 +124,11 @@ elif mode == "hdf5_cata":
                         h5f_chip = h5py.File(chip_h5_path,"w")
                         h5f_chip["/data"] = chip_data_raw
                         h5f_chip.close()
+
+                        # Nan check
+                        idx = numpy.isnan(chip_data_raw)
+                        if idx.sum() > 0:
+                            print("Find Nan in ", chip_src_path)
 
                         if chip_label == 0:
                             stack_chip_data_raw = chip_data_raw
@@ -197,6 +206,10 @@ else:
             h5f = h5py.File(expo_path,"r")
             temp = h5f["/data"][()]
 
+            # Nan check
+            idx = numpy.isnan(temp)
+            if idx.sum() > 0:
+                print("Find Nan ", expo_path)
             if tag == 0:
                 data = temp
             else:
@@ -220,8 +233,16 @@ else:
                 comm.Recv(recv_buf,source=ir, tag=ir)
                 data = numpy.row_stack((data, recv_buf))
 
+        # Nan check
+        idx = numpy.isnan(data)
+        if idx.sum() > 0:
+            print("Find Nan in final data")
+
+        idx_v = numpy.invert(idx)
         h5f = h5py.File(total_path + "/%s"%result_nm, "w")
         h5f["/data"] = data
         h5f.close()
+
+
 
     comm.Barrier()
