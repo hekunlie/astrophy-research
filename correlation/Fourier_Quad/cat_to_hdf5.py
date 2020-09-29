@@ -25,6 +25,16 @@ total_path = argv[1]
 if mode == "cata_name":
     if rank == 0:
 
+        with open("anomaly_expo.dat", "r") as f:
+            contents = f.readlines()
+        anomaly_expo = []
+        anomaly_val = []
+        for cc in contents:
+            val, field_nm, expo = cc.rstrip().split()[1:4]
+            anomaly_expo.append(int(expo.split("p")[0]))
+            anomaly_val.append(float(val))
+            print(anomaly_expo[-1],anomaly_val[-1])
+
         files_nm = os.listdir(total_path)
         fields = []
         all_files = []
@@ -39,7 +49,7 @@ if mode == "cata_name":
                 for xlb in xlbs:
                     field_nm = "w%d%s%s" % (j + 1, xlb, ylb)
                     if field_nm in files_nm:
-                        print(field_nm)
+                        # print(field_nm)
                         fields.append(field_nm + "\n")
 
                         all_files.append(field_nm + "\n")
@@ -50,16 +60,27 @@ if mode == "cata_name":
                         sub_files = os.listdir(total_path + "/%s/result/"%field_nm)
                         for nm in sub_files:
                             if "_all.cat" in nm:
-                                sub_expos.append(int(nm.split("p")[0]))
+                                # check the anomaly of each exposure
+                                expo = int(nm.split("p")[0])
+                                expo_lb = anomaly_expo.index(expo)
+                                if anomaly_val[expo_lb] > 0.01 or anomaly_val[expo_lb] < 0:
+                                    print("Anomaly %d %.6f"%(expo,anomaly_val[expo_lb]))
+                                    continue
+                                else:
+                                    sub_expos.append(expo)
+
                         # sort the exposure labels from small to large
                         sub_expos = sorted(sub_expos)
                         # check the existence of chips
                         for expo in sub_expos:
                             for i in range(1, chip_num + 1):
                                 chip_nm = "%dp_%d_shear.dat" % (expo, i)
-                                if os.path.exists(total_path + "/%s/result/%s" % (field_nm, chip_nm)):
+                                chip_path = total_path + "/%s/result/%s" % (field_nm, chip_nm)
+                                if os.path.exists(chip_path):
                                     all_files.append(chip_nm + "\n")
-                                    print(chip_nm)
+                                    # print(chip_nm)
+                                else:
+                                    print("Can't find %s"%chip_path)
 
         with open(total_path + "/nname_all.dat", "w") as f:
             f.writelines(all_files)

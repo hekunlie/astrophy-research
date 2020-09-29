@@ -149,7 +149,8 @@ class Image_Plot:
         share_ax.tick_params(direction='in', labelsize=self.xy_tick_size, top=True, right=True, pad=self.pad_size)
         return share_ax
 
-    def axs_text(self, iy, ix, y, x, text, text_fontsize=None, text_color="green", ha="left", va="center",rotation="horizontal", ax_trans=True):
+    def axs_text(self, iy, ix, y, x, text, text_fontsize=None, text_color="green", ha="left",
+                 va="center",rotation="horizontal", ax_trans=True):
         if not text_fontsize:
             text_fontsize = self.legend_size
         if ax_trans:
