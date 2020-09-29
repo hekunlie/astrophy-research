@@ -34,14 +34,15 @@ for nm in conts:
     if field_nm not in fields:
         fields.append(field_nm)
 
-sub_fields = tool_box.alloc(fields, 20)[sub_field_tag]
+sub_fields = tool_box.alloc(fields, 80)[sub_field_tag]
 expo_count = 0
 for nm in conts:
     field_nm = nm.split("/")[4]
     if field_nm in sub_fields:
         expo_count += 1
-        continue
-    expos.append(nm.split("\n")[0])
+        expos.append(nm.split("\n")[0])
+        # continue
+    # expos.append(nm.split("\n")[0])
 
 
 if rank == 0:

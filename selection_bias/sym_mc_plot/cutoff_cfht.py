@@ -147,19 +147,32 @@ if rank == 0:
         mc2_arr[:, ic] = mc2
 
         img = Image_Plot()
-        img.subplots(1, 1)
-        img.axs[0][0].errorbar(gf1_bin, result1[:shear_num1,ic], result1[shear_num1:,ic],
+        img.subplots(1, 2)
+        img.axs[0][0].errorbar(gf1_bin, result1[:shear_num1,ic], result1[shear_num1:,ic],c="C1",
                                capsize=3, marker="o", mfc="none", label="g1")
-        img.axs[0][0].errorbar(gf2_bin, result2[:shear_num2,ic], result2[shear_num2:,ic],
+        img.axs[0][1].errorbar(gf2_bin, result2[:shear_num2,ic], result2[shear_num2:,ic],c="C1",
                                capsize=3, marker="v", mfc="none", label="g2")
 
         img.axs[0][0].plot([-0.01,0.01], [-0.01,0.01], c="k",ls="dashed")
-        text_str = "m1: %.5f(%.5f)\nc1:%.5f(%.5f)\nm2:%.5f(%.5f)\nc2:%.5f(%.5f)"\
-                   %(mc1[0],mc1[1],mc1[2],mc1[3],mc2[0],mc2[1],mc2[2],mc2[3])
-        img.axs_text(0,0,0.8,0.05,text_str)
-        img.axs[0][0].set_xlim(-0.01,0.01)
-        img.axs[0][0].set_ylim(-0.01,0.01)
+        img.axs[0][1].plot([-0.01,0.01], [-0.01,0.01], c="k",ls="dashed")
+
+        text_str = "m1: %.5f(%.5f)\nc1:%.5f(%.5f)"\
+                   %(mc1[0],mc1[1],mc1[2],mc1[3])
+        # img.axs_text(0,0,0.87,0.03,text_str)
+        img.axs[0][0].set_title(text_str)
+
+        text_str = "m2:%.5f(%.5f)\nc2:%.5f(%.5f)"\
+                   %(mc2[0],mc2[1],mc2[2],mc2[3])
+        img.axs[0][1].set_title(text_str)
+
+        img.axs[0][0].set_xlim(-0.0065, 0.0065)
+        img.axs[0][1].set_xlim(-0.0065, 0.0065)
+        xlabel = ["-0.005", "-0.0025", "0", "0.0025", "0.005"]
+        img.set_ticklabel_str(0, 0, 1, numpy.linspace(-0.005, 0.005, 5), xlabel)
+        img.set_ticklabel_str(0, 1, 1, numpy.linspace(-0.005, 0.005, 5), xlabel)
+        # img.axs[0][0].set_ylim(-0.01,0.01)
         img.axs[0][0].legend(loc="lower right")
+        img.axs[0][1].legend(loc="lower right")
         # img.save_img("./result_pic/cut_%d_%s.png" %(ic,cut_name))
         img.save_img(total_path + "/result_pic/%d.png" %sub_field_tag)
         img.close_img()
