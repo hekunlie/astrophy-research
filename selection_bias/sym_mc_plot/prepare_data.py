@@ -34,7 +34,7 @@ for nm in conts:
     if field_nm not in fields:
         fields.append(field_nm)
 
-sub_fields = tool_box.alloc(fields, 80)[sub_field_tag]
+sub_fields = tool_box.alloc(fields, 168)[sub_field_tag]
 expo_count = 0
 for nm in conts:
     field_nm = nm.split("/")[4]
@@ -46,11 +46,11 @@ for nm in conts:
 
 
 if rank == 0:
-    print(len(expos)," exposures",len(conts), expo_count)
+    print(sub_field_tag,len(expos)," exposures",len(conts), expo_count, sub_fields)
 # exit()
 my_sub_area_list = tool_box.alloc(expos,cpus)[rank]
 
-
+print(rank, my_sub_area_list,expos)
 if len(my_sub_area_list) > 0:
     for tag, expo_path in enumerate(my_sub_area_list):
 
@@ -74,6 +74,7 @@ comm.Barrier()
 if rank > 0 and sp[0] > 0:
     comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
 else:
+    print(sp_total)
     for ir in range(1, cpus):
         if sp_total[ir][0] > 0:
             recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
