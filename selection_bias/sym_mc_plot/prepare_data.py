@@ -34,7 +34,9 @@ for nm in conts:
     if field_nm not in fields:
         fields.append(field_nm)
 
-sub_fields = tool_box.alloc(fields, 168)[sub_field_tag]
+
+
+sub_fields = tool_box.alloc(fields, len(fields))[sub_field_tag]
 expo_count = 0
 for nm in conts:
     field_nm = nm.split("/")[4]
@@ -44,17 +46,53 @@ for nm in conts:
         # continue
     # expos.append(nm.split("\n")[0])
 
+my_sub_area_list = []
+fnms = os.listdir(src_path + "/%s/result"%sub_fields[0])
+for nm in fnms:
+    if "p_all_raw" in nm:
+        my_sub_area_list.append(src_path + "/%s/result/%s"%(sub_fields[0],nm))
 
 if rank == 0:
-    print(sub_field_tag,len(expos)," exposures",len(conts), expo_count, sub_fields)
+    print("Totally %d fields" % len(fields))
+    print(sub_field_tag,len(sub_fields)," fields, ", len(my_sub_area_list)," exposures",len(conts), expo_count, sub_fields)
 # exit()
-my_sub_area_list = tool_box.alloc(expos,cpus)[rank]
+# my_sub_area_list = tool_box.alloc(expos,cpus)[rank]
 
-print(rank, my_sub_area_list,expos)
-if len(my_sub_area_list) > 0:
+# print(rank, my_sub_area_list,expos)
+# if len(my_sub_area_list) > 0:
+#     for tag, expo_path in enumerate(my_sub_area_list):
+#
+#         h5f = h5py.File(expo_path,"r")
+#         temp = h5f["/data"][()]
+#
+#         if tag == 0:
+#             data = temp
+#         else:
+#             data = numpy.row_stack((data, temp))
+#         h5f.close()
+#
+#     sp = data.shape
+# else:
+#     sp = (0,0)
+#
+# sp_total = comm.gather(sp, root=0)
+
+comm.Barrier()
+
+# if rank > 0 and sp[0] > 0:
+    # comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
+if rank > 0:
+    pass
+else:
+    # for ir in range(1, cpus):
+    #     if sp_total[ir][0] > 0:
+    #         recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
+    #         comm.Recv(recv_buf,source=ir, tag=ir)
+    #         data = numpy.row_stack((data, recv_buf))
+
     for tag, expo_path in enumerate(my_sub_area_list):
 
-        h5f = h5py.File(expo_path,"r")
+        h5f = h5py.File(expo_path, "r")
         temp = h5f["/data"][()]
 
         if tag == 0:
@@ -63,23 +101,9 @@ if len(my_sub_area_list) > 0:
             data = numpy.row_stack((data, temp))
         h5f.close()
 
-    sp = data.shape
-else:
-    sp = (0,0)
-
-sp_total = comm.gather(sp, root=0)
-
-comm.Barrier()
-
-if rank > 0 and sp[0] > 0:
-    comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
-else:
-    print(sp_total)
-    for ir in range(1, cpus):
-        if sp_total[ir][0] > 0:
-            recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
-            comm.Recv(recv_buf,source=ir, tag=ir)
-            data = numpy.row_stack((data, recv_buf))
+    # h5f = h5py.File(total_path + "/selection_bias/anamoly_data/data_%d.hdf5" % sub_field_tag, "w")
+    # h5f["/data"] = data
+    # h5f.close()
 
     col_shift = 0
 
@@ -120,8 +144,8 @@ else:
     data_fq = data_sub[:,col_shift+16:]
 
 
-    bin_num1 = 50
-    bin_num2 = 50
+    bin_num1 = 32
+    bin_num2 = 32
     gf1_bin = numpy.linspace(-0.005, 0.005, bin_num1+1,dtype=numpy.float32)
     gf2_bin = numpy.linspace(-0.005, 0.005, bin_num2+1,dtype=numpy.float32)
     gf1_pts = (gf1_bin[1:] + gf1_bin[:-1])/2

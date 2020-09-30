@@ -33,79 +33,107 @@ if mode == "cata_name":
             val, field_nm, expo = cc.rstrip().split()[1:4]
             anomaly_expo.append(int(expo.split("p")[0]))
             anomaly_val.append(float(val))
-            print(anomaly_expo[-1],anomaly_val[-1])
+            # print(anomaly_expo[-1],anomaly_val[-1])
 
         files_nm = os.listdir(total_path)
         fields = []
         all_files = []
-        # this is how they name the fields
-        xlbs = ["p%d" % abs(i) if i > 0 else "m%d" % abs(i) for i in range(-5, 6)]
-        ylbs = ["m%d" % abs(i) if i <= 0 else "p%d" % abs(i) for i in range(-5, 6)]
-        print(xlbs)
-        print(ylbs)
+        # # this is how they name the fields
+        # xlbs = ["p%d" % abs(i) if i > 0 else "m%d" % abs(i) for i in range(-5, 6)]
+        # ylbs = ["m%d" % abs(i) if i <= 0 else "p%d" % abs(i) for i in range(-5, 6)]
+        # print(xlbs)
+        # print(ylbs)
 
         for j in range(area_num):
-            for ylb in ylbs:
-                for xlb in xlbs:
-                    field_nm = "w%d%s%s" % (j + 1, xlb, ylb)
-                    if field_nm in files_nm:
-                        # print(field_nm)
-                        fields.append(field_nm + "\n")
+            for fnm in files_nm:
+                if "w%d"%(j+1) in fnm:
+                    # print(field_nm)
 
-                        all_files.append(field_nm + "\n")
+                    sub_expos = []
+                    # find the exposures
+                    sub_files = os.listdir(total_path + "/%s/result/" % fnm)
+                    for nm in sub_files:
+                        if "_shear" in nm:
+                            # check the anomaly of each exposure
+                            expo = int(nm.split("p")[0])
+                            if expo not in sub_expos:
+                                sub_expos.append(expo)
 
-                        sub_expos = []
+                    if len(sub_expos) > 0:
+                        fields.append(fnm + "\n")
+                        all_files.append(fnm + "\n")
 
-                        # find the exposures
-                        sub_files = os.listdir(total_path + "/%s/result/"%field_nm)
-                        for nm in sub_files:
-                            if "_all.cat" in nm:
-                                # check the anomaly of each exposure
-                                expo = int(nm.split("p")[0])
-                                expo_lb = anomaly_expo.index(expo)
-                                if anomaly_val[expo_lb] > 0.01 or anomaly_val[expo_lb] < 0:
-                                    print("Anomaly %d %.6f"%(expo,anomaly_val[expo_lb]))
-                                    continue
-                                else:
-                                    sub_expos.append(expo)
+                    # sort the exposure labels from small to large
+                    sub_expos = sorted(sub_expos)
+                    # check the existence of chips
+                    for expo in sub_expos:
+                        for i in range(1, chip_num + 1):
+                            chip_nm = "%dp_%d_shear.dat" % (expo, i)
+                            chip_path = total_path + "/%s/result/%s" % (fnm, chip_nm)
+                            if os.path.exists(chip_path):
+                                all_files.append(chip_nm + "\n")
+                                # print(chip_nm)
+                            else:
+                                print("Can't find %s" % chip_path)
+            # for ylb in ylbs:
+            #     for xlb in xlbs:
+            #         field_nm = "w%d%s%s" % (j + 1, xlb, ylb)
+            #         if field_nm in files_nm:
+            #             # print(field_nm)
+            #             fields.append(field_nm + "\n")
+            #
+            #             all_files.append(field_nm + "\n")
+            #
+            #             sub_expos = []
+            #
+            #             # find the exposures
+            #             sub_files = os.listdir(total_path + "/%s/result/"%field_nm)
+            #             for nm in sub_files:
+            #                 if "_all.cat" in nm:
+            #                     # check the anomaly of each exposure
+            #                     expo = int(nm.split("p")[0])
+            #                     expo_lb = anomaly_expo.index(expo)
+            #                     if anomaly_val[expo_lb] > 0.01 or anomaly_val[expo_lb] < 0:
+            #                         print("Anomaly %d %.6f"%(expo,anomaly_val[expo_lb]))
+            #                         continue
+            #                     else:
+            #                         sub_expos.append(expo)
+            #
+            #             # sort the exposure labels from small to large
+            #             sub_expos = sorted(sub_expos)
+            #             # check the existence of chips
+            #             for expo in sub_expos:
+            #                 for i in range(1, chip_num + 1):
+            #                     chip_nm = "%dp_%d_shear.dat" % (expo, i)
+            #                     chip_path = total_path + "/%s/result/%s" % (field_nm, chip_nm)
+            #                     if os.path.exists(chip_path):
+            #                         all_files.append(chip_nm + "\n")
+            #                         # print(chip_nm)
+            #                     else:
+            #                         print("Can't find %s"%chip_path)
 
-                        # sort the exposure labels from small to large
-                        sub_expos = sorted(sub_expos)
-                        # check the existence of chips
-                        for expo in sub_expos:
-                            for i in range(1, chip_num + 1):
-                                chip_nm = "%dp_%d_shear.dat" % (expo, i)
-                                chip_path = total_path + "/%s/result/%s" % (field_nm, chip_nm)
-                                if os.path.exists(chip_path):
-                                    all_files.append(chip_nm + "\n")
-                                    # print(chip_nm)
-                                else:
-                                    print("Can't find %s"%chip_path)
-
-        with open(total_path + "/nname_all.dat", "w") as f:
+        with open(total_path + "/nname_field_chips.dat", "w") as f:
             f.writelines(all_files)
-        with open(total_path + "/nname.dat", "w") as f:
+        with open(total_path + "/nname_field.dat", "w") as f:
             f.writelines(fields)
         print(len(fields))
 
 elif mode == "hdf5_cata":
     # convert the .dat to .hdf5
 
-    fields, field_name = tool_box.field_dict(total_path + "/nname_all.dat")
+    fields, field_name = tool_box.field_dict(total_path + "/nname_field_chips.dat")
     if rank == 0:
         print(len(field_name))
 
-    field_name_sub = tool_box.alloc(field_name, cpus,"seq")[rank]
+    field_name_sub = tool_box.alloc(field_name, cpus, "seq")[rank]
 
-    field_avail_sub = []
-    field_all_avail_sub = []
-    field_all_raw_avail_sub = []
+    fields_sub_avail_sub = []
+    fields_sub_raw_avail_sub = []
 
     for fns in field_name_sub:
         # read the the field data
         field_src_path = total_path + "/%s/result"%fns
-        buffer = []
-        buffer_raw = []
+
         try:
             expos = list(fields[fns].keys())
             expos_num = len(expos)
@@ -128,7 +156,7 @@ elif mode == "hdf5_cata":
                     h5f_expo = h5py.File(expo_h5_path,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
-                    field_all_avail_sub.append(expo_h5_path+"\n")
+                    fields_sub_avail_sub.append(expo_h5_path+"\n")
                 except:
                     if os.path.exists(expo_src_path):
                         print("%d Failed in reading %s %d Bytes !" % (rank, expo_src_path, os.path.getsize(expo_src_path)))
@@ -146,17 +174,22 @@ elif mode == "hdf5_cata":
                         h5f_chip["/data"] = chip_data_raw
                         h5f_chip.close()
 
+                        row, col = chip_data_raw.shape
                         # Nan check
                         idx = numpy.isnan(chip_data_raw)
                         if idx.sum() > 0:
                             print("Find Nan in ", chip_src_path)
 
-                        if chip_label == 0:
-                            stack_chip_data_raw = chip_data_raw
-                        else:
-                            stack_chip_data_raw = numpy.row_stack((stack_chip_data_raw, chip_data_raw))
+                        chip_data_raw_ic = numpy.zeros((row, col+1))
+                        chip_data_raw_ic[:,0] = iexp - 1
+                        chip_data_raw_ic[:,1:] = chip_data_raw
 
+                        if chip_label == 0:
+                            stack_chip_data_raw = chip_data_raw_ic
+                        else:
+                            stack_chip_data_raw = numpy.row_stack((stack_chip_data_raw, chip_data_raw_ic))
                         chip_label += 1
+
                     except:
                         if os.path.exists(chip_src_path):
                             print("Failed in read chip %s %d Bytes"%(chip_src_path, os.path.getsize(chip_src_path)))
@@ -167,9 +200,7 @@ elif mode == "hdf5_cata":
                     h5f_chip_stack = h5py.File(field_src_path + "/%s_all_raw.hdf5" % exp_nm, "w")
                     h5f_chip_stack["/data"] = stack_chip_data_raw
                     h5f_chip_stack.close()
-                    field_all_raw_avail_sub.append(field_src_path + "/%s_all_raw.hdf5\n" % exp_nm)
-
-            field_avail_sub.append(fns+"\n")
+                    fields_sub_raw_avail_sub.append(field_src_path + "/%s_all_raw.hdf5\n" % exp_nm)
 
         except:
             src_cat_path = field_src_path + "/%s.cat"%fns
@@ -178,31 +209,25 @@ elif mode == "hdf5_cata":
             else:
                 print("%d %s empty! 0 Bytes" % (rank, src_cat_path), os.path.exists(src_cat_path))
 
-    field_collection = comm.gather(field_avail_sub, root=0)
-    field_all_collection = comm.gather(field_all_avail_sub, root=0)
-    field_all_raw_collection = comm.gather(field_all_raw_avail_sub, root=0)
+    field_collection = comm.gather(fields_sub_avail_sub, root=0)
+    field_raw_collection = comm.gather(fields_sub_raw_avail_sub, root=0)
     comm.Barrier()
     if rank == 0:
         field_avail = []
         for fsb in field_collection:
             field_avail.extend(fsb)
-        print("Totally: ",len(field_avail), " fields")
-        with open(total_path + "/nname_avail.dat","w") as f:
+        print("Totally: ",len(field_avail), " exposures")
+        with open(total_path + "/nname_field_expo_avail.dat","w") as f:
             f.writelines(field_avail)
 
-        field_all_avail = []
-        for fsb in field_all_collection:
-            field_all_avail.extend(fsb)
-        print("Totally: ",len(field_all_avail), " exposures")
-        with open(total_path + "/nname_all_avail.dat","w") as f:
-            f.writelines(field_all_avail)
+        field_raw_avail = []
+        for fsb in field_raw_collection:
+            field_raw_avail.extend(fsb)
+        print("Totally: ",len(field_raw_avail), " raw exposures")
+        with open(total_path + "/nname_field_raw_expo_avail.dat","w") as f:
+            f.writelines(field_raw_avail)
 
-        field_all_raw_avail = []
-        for fsb in field_all_raw_collection:
-            field_all_raw_avail.extend(fsb)
-        print("Totally: ",len(field_all_raw_avail), " raw exposures")
-        with open(total_path + "/nname_all_raw_avail.dat","w") as f:
-            f.writelines(field_all_raw_avail)
+
 else:
     # collection
 
