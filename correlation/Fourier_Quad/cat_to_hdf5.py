@@ -127,9 +127,10 @@ elif mode == "hdf5_cata":
 
     field_name_sub = tool_box.alloc(field_name, cpus, "seq")[rank]
 
-    fields_sub_avail_sub = []
-    fields_sub_raw_avail_sub = []
-
+    fields_expo_sub_avail = []
+    fields_expo_sub_raw_avail = []
+    fields_sub_avail = []
+    fields_raw_sub_avail = []
     exception_sub = []
     for fns in field_name_sub:
         # read the the field data
@@ -157,7 +158,8 @@ elif mode == "hdf5_cata":
                     h5f_expo = h5py.File(expo_h5_path,"w")
                     h5f_expo["/data"] = edat
                     h5f_expo.close()
-                    fields_sub_avail_sub.append(expo_h5_path+"\n")
+                    fields_expo_sub_avail.append(expo_h5_path+"\n")
+
                 except:
                     if os.path.exists(expo_src_path):
                         log_inform = "%d Failed in reading %s %d Bytes !\n" % (rank, expo_src_path, os.path.getsize(expo_src_path))
@@ -182,7 +184,7 @@ elif mode == "hdf5_cata":
                         if idx.sum() > 0:
                             log_inform = "Find Nan in %s\n"%chip_src_path
                             exception_sub.append(log_inform)
-                        chip_data_raw_ic = numpy.zeros((row, col+1))
+                        chip_data_raw_ic = numpy.zeros((row, col+1),dtype=numpy.float32)
                         chip_data_raw_ic[:,0] = iexp - 1
                         chip_data_raw_ic[:,1:] = chip_data_raw
 
@@ -204,8 +206,7 @@ elif mode == "hdf5_cata":
                     h5f_chip_stack = h5py.File(field_src_path + "/%s_all_raw.hdf5" % exp_nm, "w")
                     h5f_chip_stack["/data"] = stack_chip_data_raw
                     h5f_chip_stack.close()
-                    fields_sub_raw_avail_sub.append(field_src_path + "/%s_all_raw.hdf5\n" % exp_nm)
-
+                    fields_expo_sub_raw_avail.append(field_src_path + "/%s_all_raw.hdf5\n" % exp_nm)
         except:
             src_cat_path = field_src_path + "/%s.cat"%fns
             if os.path.exists(src_cat_path):
@@ -241,18 +242,26 @@ elif mode == "hdf5_cata":
                     stack_expo_data_raw = numpy.row_stack((stack_expo_data_raw, temp_raw))
                 stack_raw_label += 1
 
-        if stack_label > 1:
+        if stack_label > 0:
             h5f_expo = h5py.File(field_src_path + "/%s.hdf5"%fns,"w")
             h5f_expo["/data"] = stack_expo_data
             h5f_expo.close()
+            if fns not in fields_sub_avail:
+                fields_sub_avail.append(fns + "\n")
 
-        if stack_raw_label > 1:
+        if stack_raw_label > 0:
             h5f_expo = h5py.File(field_src_path + "/%s_raw.hdf5"%fns,"w")
             h5f_expo["/data"] = stack_expo_data_raw
             h5f_expo.close()
+            if fns not in fields_raw_sub_avail:
+                fields_raw_sub_avail.append(fns + "\n")
 
-    field_collection = comm.gather(fields_sub_avail_sub, root=0)
-    field_raw_collection = comm.gather(fields_sub_raw_avail_sub, root=0)
+
+    field_expo_collection = comm.gather(fields_expo_sub_avail, root=0)
+    field_expo_raw_collection = comm.gather(fields_expo_sub_raw_avail, root=0)
+    field_collection = comm.gather(fields_sub_avail, root=0)
+    field_raw_collection = comm.gather(fields_raw_sub_avail, root=0)
+
     exception_collection = comm.gather(exception_sub, root=0)
 
     comm.Barrier()
@@ -264,20 +273,29 @@ elif mode == "hdf5_cata":
         field_avail = []
         for fsb in field_collection:
             field_avail.extend(fsb)
-
-        with open(total_path + "/nname_field_expo_avail.dat","w") as f:
+        with open(total_path + "/cat_inform/nname_field_avail.dat","w") as f:
             f.writelines(field_avail)
 
         field_raw_avail = []
         for fsb in field_raw_collection:
             field_raw_avail.extend(fsb)
-
-        with open(total_path + "/nname_field_raw_expo_avail.dat","w") as f:
+        with open(total_path + "/cat_inform/nname_field_raw_avail.dat","w") as f:
             f.writelines(field_raw_avail)
 
-        exception_all.append("Totally: %d fields\n"%len(fields))
-        exception_all.append("Totally: %d exposures\n"%len(field_avail))
-        exception_all.append("Totally: %d raw exposures\n" % len(field_raw_avail))
+        field_expo_avail = []
+        for fsb in field_expo_collection:
+            field_expo_avail.extend(fsb)
+        with open(total_path + "/cat_inform/nname_field_expo_avail.dat","w") as f:
+            f.writelines(field_expo_avail)
+
+        field_expo_raw_avail = []
+        for fsb in field_expo_raw_collection:
+            field_expo_raw_avail.extend(fsb)
+        with open(total_path + "/cat_inform/nname_field_raw_expo_avail.dat","w") as f:
+            f.writelines(field_expo_raw_avail)
+
+        exception_all.append("Totally: %d (%d raw) fields\n"%(len(field_avail),len(field_raw_avail)))
+        exception_all.append("Totally: %d (%d raw) exposures\n"%(len(field_expo_avail),len(field_expo_raw_avail)))
         with open("log.dat","w") as f:
             f.writelines(exception_all)
 

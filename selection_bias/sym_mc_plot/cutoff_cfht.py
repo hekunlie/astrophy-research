@@ -18,11 +18,11 @@ cpus = comm.Get_size()
 
 total_path = argv[1]
 # cut_name = argv[2]
-sub_field_tag = int(argv[2])
+# sub_field_tag = int(argv[2])
 
 
 fq = Fourier_Quad(12,124)
-cata_name = total_path + "/data/cutoff_%d.hdf5"%sub_field_tag
+cata_name = total_path + "/cutoff.hdf5"
 
 h5f = h5py.File(cata_name, "r")
 gf1_bin = h5f["/gf1_bin"][()]
@@ -174,10 +174,10 @@ if rank == 0:
         img.axs[0][0].legend(loc="lower right")
         img.axs[0][1].legend(loc="lower right")
         # img.save_img("./result_pic/cut_%d_%s.png" %(ic,cut_name))
-        img.save_img(total_path + "/result_pic/%d.png" %sub_field_tag)
+        img.save_img(total_path + "/result_pic/0.png")
         img.close_img()
     #
-    numpy.savez(total_path + "/result_pic/result_%d.npz"%sub_field_tag, result1,mc1_arr,result2,mc2_arr)
+    # numpy.savez(total_path + "/result_pic/result_%d.npz"%sub_field_tag, result1,mc1_arr,result2,mc2_arr)
     #
     # img = Image_Plot()
     # img.subplots(1,2)

@@ -21,20 +21,20 @@ total_path = argv[1]
 
 src_path = total_path + "/fourier_cata"
 
-source_list_nm = "nname_field_raw_expo_avail.dat"
+source_list_nm = "nname_field_raw_avail.dat"
 
 ab_fields = ["w1p4m0","w1p3p2","w1p3p3","w1p3m0","w1p3m4","w1p4p3","w1p2p1","w3p2m3","w3p1p2"]
 
 fields = []
 
 
-with open(src_path + "/"+source_list_nm, "r") as f:
+with open(src_path + "/cat_inform/"+source_list_nm, "r") as f:
     conts = f.readlines()
 
 for nm in conts:
-    field_nm = nm.split("/")[4]
+    field_nm = nm.split("\n")[0]
     if field_nm not in fields and field_nm not in ab_fields:
-        fields.append(field_nm)
+        fields.append(src_path + "/%s/result/%s_raw.hdf5"%(field_nm,field_nm))
 
 if rank == 0:
     print("Totally %d fields" % len(fields))
@@ -51,8 +51,6 @@ if rank == 0:
 # exit()
 my_sub_area_list = tool_box.alloc(fields, cpus)[rank]
 
-print(rank, len(my_sub_area_list), len(fields))
-exit()
 if len(my_sub_area_list) > 0:
     for tag, expo_path in enumerate(my_sub_area_list):
         h5f = h5py.File(expo_path,"r")
@@ -67,11 +65,14 @@ if len(my_sub_area_list) > 0:
     sp = data.shape
 else:
     sp = (0,0)
+# print(rank,len(my_sub_area_list), len(fields), sp)
 
 sp_total = comm.gather(sp, root=0)
 
 comm.Barrier()
-
+# if rank == 0:
+#     print(rank,sp_total)
+# exit()
 if rank > 0 and sp[0] > 0:
     comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
 # if rank > 0:
