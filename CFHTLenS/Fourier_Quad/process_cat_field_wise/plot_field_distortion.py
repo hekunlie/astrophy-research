@@ -79,6 +79,46 @@ def plot_gf(ra, dec, gf1, gf2, pic_path, gf1_bin_num = 15, gf2_bin_num = 18,gf_b
     # img.show_img()
     img.close_img()
 
+def plot_gf_celestial(ra, dec, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_size=1,pic_path=None):
+
+    img = Image_Plot(xpad=0.2,ypad=0.1)
+    img.subplots(1, 3)
+    color_cm = 'bwr'
+
+    norm = plt.Normalize(vmin=numpy.min(gf1_scale[0]), vmax=numpy.max(gf1_scale[1]))
+    cmap = plt.get_cmap(color_cm)
+    cl = cmap(norm(gf1))
+    fig = img.axs[0][0].scatter(ra,dec, color=cl, s=dot_size)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    img.figure.colorbar(sm, ax=img.axs[0][0])
+
+    norm = plt.Normalize(vmin=numpy.min(gf2_scale[0]), vmax=numpy.max(gf2_scale[1]))
+    cmap = plt.get_cmap(color_cm)
+    cl = cmap(norm(gf2))
+    fig = img.axs[0][1].scatter(ra,dec, color=cl, s=dot_size)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    img.figure.colorbar(sm, ax=img.axs[0][1])
+
+    norm = plt.Normalize(vmin=numpy.min(gf_scale[0]), vmax=numpy.max(gf_scale[1]))
+    cmap = plt.get_cmap(color_cm)
+    cl = cmap(norm(gf))
+    fig = img.axs[0][2].scatter(ra,dec, color=cl, s=dot_size)
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    img.figure.colorbar(sm, ax=img.axs[0][2])
+
+    for i in range(3):
+        img.axis_sci_ticklabel(0,i,0)
+        img.axis_sci_ticklabel(0,i,1)
+        img.set_label(0,i,0,"y")
+        img.set_label(0,i,1,"x")
+    if pic_path:
+        img.save_img(pic_path)
+    # img.show_img()
+    img.close_img()
+
 def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_size=1,pic_path=None):
 
     chip_row, chip_col = numpy.divmod(ichip, 9)
