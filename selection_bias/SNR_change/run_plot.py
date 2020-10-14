@@ -92,19 +92,19 @@ if cmd == "stack":
         for j in range(shear_num):
             idx = pk_pool[i][:,j] > -5
             result_stack[i, j] = pk_pool[i][:,j][idx].mean()
-            error_bar_stack[i, j] = pk_pool[i][:,j][idx].std()
+            error_bar_stack[i, j] = pk_pool[i][:,j][idx].std()/numpy.sqrt(idx.sum())
 
             idx = mag_auto_pool[i][:,j] > -5
             result_stack[i + flux_num, j] = mag_auto_pool[i][:,j][idx].mean()
-            error_bar_stack[i + flux_num, j] = mag_auto_pool[i][:,j][idx].std()
+            error_bar_stack[i + flux_num, j] = mag_auto_pool[i][:,j][idx].std()/numpy.sqrt(idx.sum())
 
             idx = snr_sex_pool[i][:,j] > -5
             result_stack[i + int(2*flux_num), j] = snr_sex_pool[i][:,j][idx].mean()
-            error_bar_stack[i + int(2*flux_num), j] = snr_sex_pool[i][:,j][idx].std()
+            error_bar_stack[i + int(2*flux_num), j] = snr_sex_pool[i][:,j][idx].std()/numpy.sqrt(idx.sum())
 
             idx = rfacotr_pool[i][:,j] > -5
             result_stack[i + int(3*flux_num), j] = rfacotr_pool[i][:,j][idx].mean()
-            error_bar_stack[i + int(3*flux_num), j] = rfacotr_pool[i][:,j][idx].std()
+            error_bar_stack[i + int(3*flux_num), j] = rfacotr_pool[i][:,j][idx].std()/numpy.sqrt(idx.sum())
 
     print(result_stack)
     #     for i in range(snr_num):
