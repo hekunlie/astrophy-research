@@ -69,22 +69,23 @@ psf_quad = tool_box.get_quad(psf_img,size,psf_radius)[0]
 criterion_num = 5
 # the SNR_S, SNR_A, MAG, resolution factor, PK0 of the original galaxy
 ori_data = numpy.zeros((flux_num*criterion_num, 4))
-# flux_1: pk0, tra_SNR, 0, 0
-# flux_2: pk0, tra_SNR, 0, 0
-# flux_3: pk0, tra_SNR, 0, 0
+# flux_1: pk0, tra_snr, 0, 0
+# flux_2: pk0, tra_snr, 0, 0
+# flux_3: pk0, tra_snr, 0, 0
 # ...
-# flux_1: SEX_SNR, tra_SNR, 0, 0
-# flux_2: SEX_SNR, tra_SNR, 0, 0
-# flux_3: SEX_SNR, tra_SNR, 0, 0
+# flux_1: SEX_SNR, tra_snr, 0, 0
+# flux_2: SEX_SNR, tra_snr, 0, 0
+# flux_3: SEX_SNR, tra_snr, 0, 0
 # ...
-# flux_1: SNR_AUTO, tra_SNR, flux_auto, flux_err
+# flux_1: SNR_AUTO, tra_snr, flux_auto, flux_err
 # ...
-# MAG, tra_SNR, 0, 0
+# MAG, tra_snr, 0, 0
 # ...
-# resolution factor,0,0
+# resolution factor, tra_snr,0,0
 # ...
 
 data = numpy.zeros((flux_num*criterion_num, num))
+data_relative_err = numpy.zeros((flux_num*criterion_num, num)) - 99
 # each column:
 # pk0 of flux_1
 # pk0 of flux_2
@@ -166,28 +167,23 @@ hdu.writeto(img_path+"total_img.fits",overwrite=True)
 print("Run SEX")
 
 for i in range(flux_num):
-
     # read the original galaxy
     ori_gal_path = img_path + "gal_pre_shear_%d.fits"%i
     ori_gal = fits.open(ori_gal_path)[0].data
 
-    # the pk0
-    ori_pow = fq.pow_spec(ori_gal)
-    ori_pk0 = numpy.sqrt(ori_pow[int(size/2), int(size/2)])/size/noise_sig
     print(i)
-    # detect the source
-    detect_0 = tool_box.stamp_detector(ori_gal, size, size, 5, 5.5, detect_thresh*noise_sig)
-
+    detect_0 = tool_box.stamp_detector(ori_gal, size, size, 5, 5.5, detect_thresh * noise_sig)
     if detect_0:
-        # the traditional SNR
+
         mask_0 = detect_0[0]
         snr_tradi_0 = numpy.sum(mask_0*ori_gal)/numpy.sqrt(mask_0.sum())/noise_sig
 
-        # measure the SNR_S, SNR_A, MAG of original galaxy
+        # measure the SNR_S, SNR_A, MAG, pk0(detected sigma) of original galaxy
         ori_gal_cat_name = img_path + "gal_pre_shear_%d.cat"%i
         cmd = "sex %s -CATALOG_NAME %s" % (ori_gal_path, ori_gal_cat_name)
         sex = Popen(cmd, shell=True)
         sex.wait()
+
         try:
             ori_gal_cata = numpy.loadtxt(ori_gal_cat_name)
             cat_row = ori_gal_cata.shape
@@ -196,20 +192,27 @@ for i in range(flux_num):
             ori_flux_err = ori_gal_cata[2]
             ori_snr_auto = ori_flux_auto / ori_flux_err
             ori_sex_mag = ori_gal_cata[3]
+            ori_sex_sigma = ori_gal_cata[4]/2
 
-            ori_radius = numpy.sqrt(ori_gal_cata[4]/numpy.pi)
+            # the pk0
+            ori_pow = fq.pow_spec(ori_gal)
+            ori_pk0 = numpy.sqrt(ori_pow[int(size / 2), int(size / 2)])/ size / ori_sex_sigma
+
+            ori_radius = numpy.sqrt(ori_gal_cata[5]/numpy.pi)
             ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)[0]
             ori_r_factor = ori_gal_quad #1 - psf_quad/(ori_gal_quad + psf_quad)
             print("%d: "%i, ori_gal_cata)
         except:
             print("%d: Not found"%i)
-            ori_sex_snr, ori_snr_auto, ori_sex_mag, ori_flux_auto, ori_flux_err, ori_r_factor = -99, -99, -99, -99, -99,-99
+            ori_sex_snr, ori_snr_auto, ori_sex_mag, ori_flux_auto, ori_flux_err, ori_r_factor,ori_pk0 = \
+                -99, -99, -99, -99, -99, -99, -99
 
-        ori_data[i, 0:2] = ori_pk0, snr_tradi_0
-        ori_data[i + flux_num, 0:2] = ori_sex_snr, snr_tradi_0
-        ori_data[i + int(flux_num*2)] = ori_snr_auto, snr_tradi_0, ori_flux_auto, ori_flux_err # save additional parameters
-        ori_data[i + int(flux_num*3),0:2] = ori_sex_mag, snr_tradi_0
-        ori_data[i + int(flux_num*4),0:2] = ori_r_factor, snr_tradi_0
+        ori_data[i, 0:2] = ori_pk0,snr_tradi_0
+        ori_data[i + flux_num, 0:2] = ori_sex_snr,snr_tradi_0
+        ori_data[i + int(flux_num*2)] = ori_snr_auto,snr_tradi_0, ori_flux_auto, ori_flux_err # save additional parameters
+        ori_data[i + int(flux_num*3),0:2] = ori_sex_mag,snr_tradi_0
+        ori_data[i + int(flux_num*4),0:2] = ori_r_factor,snr_tradi_0
+
 
         # measure each sheared galaxy
         for k in range(num):
@@ -229,16 +232,16 @@ for i in range(flux_num):
                 flux_err = cata_data[2]
                 snr_auto = flux_auto / flux_err
                 sex_mag = cata_data[3]
+                ori_sex_sigma = cata_data[4] / 2
+                gal_pow = fq.pow_spec(gal_img)
+                pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)]) / size / ori_sex_sigma
 
-                gal_radius = numpy.sqrt(cata_data[4] / numpy.pi)
+                gal_radius = numpy.sqrt(cata_data[5] / numpy.pi)
                 gal_quad = tool_box.get_quad(gal_img, size, gal_radius)[0]
                 r_factor = gal_quad #1 - psf_quad / (gal_quad + psf_quad)
 
             except:
-                sex_snr, snr_auto, sex_mag, flux_auto, flux_err,r_factor = -99,-99,-99,-99,-99,-99
-
-            gal_pow = fq.pow_spec(gal_img)
-            pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)])/size/noise_sig
+                sex_snr, snr_auto, sex_mag, flux_auto, flux_err,r_factor, pk0 = -99,-99,-99,-99,-99,-99, -99
 
             data[i, k] = pk0
             data[i + flux_num, k] = sex_snr
@@ -248,6 +251,17 @@ for i in range(flux_num):
             ext_data[2,k] = flux_err
             data[i + int(flux_num*3), k] = sex_mag
             data[i + int(flux_num*4), k] = r_factor
+
+            # if ori_pk0 > 0 and pk0 > 0:
+            #     data_relative_err[i, k] = (pk0-ori_pk0)/ori_pk0
+            # if ori_sex_snr > 0 and sex_snr > 0:
+            #     data_relative_err[i + flux_num, k] = (sex_snr-ori_sex_snr)/ori_sex_snr
+            # if ori_snr_auto > 0 and snr_auto > 0:
+            #     data_relative_err[i + int(flux_num*2), k] = (snr_auto-ori_snr_auto)/ori_snr_auto
+            # if ori_sex_mag > 0 and sex_mag > 0:
+            #     data_relative_err[i + int(flux_num*3), k] = (sex_mag-ori_sex_mag)/ori_sex_mag
+            # if ori_r_factor > 0 and r_factor > 0:
+            #     data_relative_err[i + int(flux_num*4), k] = (r_factor-ori_r_factor)/ori_r_factor
 
 result_path = img_path + "result.npz"
 numpy.savez(result_path, input_g, ori_data, data, ext_data)

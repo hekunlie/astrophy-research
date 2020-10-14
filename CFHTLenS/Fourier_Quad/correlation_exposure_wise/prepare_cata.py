@@ -171,8 +171,8 @@ if cmd == "prepare":
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
         idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
         idx4 = numpy.abs(data[:, gf2_idx]) < gf2_thresh
-        idx5 = data[:, imax_idx] <= imax_thresh
-        idx6 = data[:, jmax_idx] <= jmax_thresh
+        idx5 = data[:, imax_idx] < imax_thresh
+        idx6 = data[:, jmax_idx] < jmax_thresh
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
         idx_8 = data[:, redshift_idx] < redshift_bin[redshift_bin_num]
 

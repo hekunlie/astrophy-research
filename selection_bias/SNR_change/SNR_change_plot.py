@@ -25,7 +25,7 @@ shears = file_npz["arr_0"]
 # only the 0 & 1'th column is needed
 ori_data, snr = file_npz["arr_1"][:,0],file_npz["arr_1"][:,1]
 shear_data = file_npz["arr_2"]
-
+# data_relative_err = file_npz["arr_4"]
 # plot
 img = Image_Plot()
 img.subplots(1, img_num)
@@ -39,7 +39,8 @@ fmt = '%2.f%%'
 
 for i in range(img_num):
     if i == 0:
-        img.axs[0][i].set_ylabel("Variation rate",fontsize=img.xy_lb_size)
+        img.axs[0][i].set_ylabel("relative error",fontsize=img.xy_lb_size)
+        # img.axs[1][i].set_ylabel("relative error",fontsize=img.xy_lb_size)
     # else:
     #     img.axs[0][i].set_yticklabels([])
 
@@ -58,6 +59,14 @@ for i in range(img_num):
             #          marker=markers[i],linestyle=' ',fillstyle='none')
             img.axs[0][i].scatter(shears[idx], var_rate[idx], edgecolor=colors[j], s=80, label=lb,
                      marker=markers[j], facecolor="none", linewidths=2)
+
+        # idx = data_relative_err[j + i*flux_num] > -10
+        # snr_0 = snr[j + i * flux_num]
+        # if idx.sum() > 0:
+        #     lb = "%s (%.2f)" % (labels[i], snr_0)
+        #
+        #     img.axs[1][i].scatter(shears[idx], data_relative_err[idx], edgecolor=colors[j], s=80, label=lb,
+        #                           marker=markers[j], facecolor="none", linewidths=2)
         else:
             print("Non-detected. %s - %d"%(labels[i],j))
 # ys = [0,0]
