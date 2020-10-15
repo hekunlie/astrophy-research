@@ -17,7 +17,7 @@ num_ed = int(argv[4])
 
 if cmd == "run":
     for i in range(num_st, num_ed):
-        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d %s"%(122230+i, i, source_label)
+        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d %s"%(1230+i, i, source_label)
         a = Popen(cmd, shell=True)
         a.wait()
 
@@ -147,12 +147,12 @@ if cmd == "stack":
     # print(result_stack)
 
 
-    numpy.savez("./imgs/stack_result.npz", shears, result_stack,error_bar_stack, snr_stack)
+    numpy.savez("./imgs/stack_result.npz", shears, result_stack,error_bar_stack,snr_pool, snr_stack)
 
     # plot
     img = Image_Plot(fig_x=6, fig_y=4, ypad=0.22,xpad=0)
     img.subplots(2, 2)
-    img.set_style_default()
+    # img.set_style_default()
     img.set_style()
     img.axis_type(0, "major")
     img.axis_type(1, "major")
@@ -166,7 +166,7 @@ if cmd == "stack":
                     error_bar_stack[flux_num: 2*flux_num],
                     error_bar_stack[2*flux_num: 3*flux_num],
                     error_bar_stack[3*flux_num: 4*flux_num]]
-    labels = ["P$_{k0}}$",  "MAG_AUTO", "SNR$_S$", "Resolution"]
+    labels = ["$\\nu_{F}$",  "MAG_AUTO", "SNR", "Resolution factor"]
 
     fmt = '%2.f%%'
 
@@ -193,13 +193,12 @@ if cmd == "stack":
             var_err = plot_data_err[i][j]
             if idx_s.sum() > 0:
                 idx = var_rate > -5
-                lb = "SNR_i = %.2f"%snr_0
+                lb = "SNR$_t$ = %.2f"%snr_0
                 # img.axs[m][n].scatter(shears[idx], var_rate[idx], edgecolor=colors[j], s=80, label=lb,
                 #                       marker=markers[j], facecolor="none", linewidths=img.plt_line_width)
                 img.axs[m][n].errorbar(shears[idx], var_rate[idx],var_err[idx], c=colors[j], ms=6,fmt=" ",label=lb,capsize=3,
                                        marker=markers[j], mfc="none", linewidth=img.plt_line_width)
-                print(var_rate)
-                print(var_err)
+                print(labels[i],lb,var_rate)
         if i == 0:
             text_x, text_y = 0.8, 0.1
         elif i == 1:
@@ -207,8 +206,8 @@ if cmd == "stack":
         elif i == 2:
             text_x, text_y = 0.8, 0.9
         else:
-            text_x, text_y = 0.68, 0.9
-        img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size+2)
+            text_x, text_y = 0.55, 0.9
+        img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size)
     ys = [0,0]
     for i in range(4):
         m, n = divmod(i, 2)

@@ -28,9 +28,9 @@ num = 11
 pixel_scale = 0.187
 
 if source_label == "galsim":
-    flux = numpy.array([tool_box.mag_to_flux(22.4),tool_box.mag_to_flux(23), tool_box.mag_to_flux(23.6), tool_box.mag_to_flux(24.1)])
+    flux = numpy.array([tool_box.mag_to_flux(22.4),tool_box.mag_to_flux(23.2), tool_box.mag_to_flux(23.7), tool_box.mag_to_flux(23.95)])
 else:    
-    flux = numpy.array([tool_box.mag_to_flux(23.2),tool_box.mag_to_flux(23.85), tool_box.mag_to_flux(24.3), tool_box.mag_to_flux(24.4)])
+    flux = numpy.array([tool_box.mag_to_flux(23),tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24.27), tool_box.mag_to_flux(24.36)])
 
 flux_num = len(flux)
 noise_sig = 60
