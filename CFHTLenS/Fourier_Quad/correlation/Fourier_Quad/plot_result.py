@@ -13,7 +13,7 @@ zbin_num = 6#int(argv[1])
 theta_bin_num = 5#int(argv[2])
 resample_num = 300#int(argv[3])
 
-data_path = "E:/works/correlation/CFHT/2"
+data_path = "D:/"
 pic_nm = data_path + "/result.png"
 h5f = h5py.File(data_path + "/result.hdf5","r")
 print(list(h5f.keys()))

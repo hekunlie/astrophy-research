@@ -28,9 +28,9 @@ num = 11
 pixel_scale = 0.187
 
 if source_label == "galsim":
-    flux = numpy.array([tool_box.mag_to_flux(22.4),tool_box.mag_to_flux(23.2), tool_box.mag_to_flux(23.7), tool_box.mag_to_flux(23.95)])
+    flux = numpy.array([tool_box.mag_to_flux(22.45),tool_box.mag_to_flux(23.2), tool_box.mag_to_flux(23.7), tool_box.mag_to_flux(24)])
 else:    
-    flux = numpy.array([tool_box.mag_to_flux(23),tool_box.mag_to_flux(23.8), tool_box.mag_to_flux(24.27), tool_box.mag_to_flux(24.36)])
+    flux = numpy.array([tool_box.mag_to_flux(22.7),tool_box.mag_to_flux(23.83), tool_box.mag_to_flux(24.02), tool_box.mag_to_flux(24.12)])
 
 flux_num = len(flux)
 noise_sig = 60
@@ -38,7 +38,7 @@ noise_sig = 60
 detect_thresh = 2
 
 fq = Fourier_Quad(size, seed)
-fq_p = Fourier_Quad(size, 2810)
+fq_p = Fourier_Quad(size, 2814)
 # all the images are added by the same noise
 noise = fq.draw_noise(0, noise_sig)
 
@@ -105,8 +105,8 @@ data_relative_err = numpy.zeros((flux_num*criterion_num, num)) - 99
 ext_data = numpy.zeros((3, num)) # for SNR_A
 
 pool = []
-pts_num = 100
-rand_pts = fq_p.ran_pts_e(num=pts_num, radius=7, step=1, xy_ratio=3)
+pts_num = 200
+rand_pts = fq_p.ran_pts_e(num=pts_num, radius=8, step=2, xy_ratio=3)
 
 print("Simulate")
 
@@ -192,7 +192,7 @@ for i in range(flux_num):
             ori_flux_err = ori_gal_cata[2]
             ori_snr_auto = ori_flux_auto / ori_flux_err
             ori_sex_mag = ori_gal_cata[3]
-            ori_sex_sigma = ori_gal_cata[4]/2
+            ori_sex_sigma = ori_gal_cata[4]/detect_thresh
 
             # the pk0
             ori_pow = fq.pow_spec(ori_gal)
@@ -232,7 +232,7 @@ for i in range(flux_num):
                 flux_err = cata_data[2]
                 snr_auto = flux_auto / flux_err
                 sex_mag = cata_data[3]
-                ori_sex_sigma = cata_data[4] / 2
+                ori_sex_sigma = cata_data[4] / detect_thresh
                 gal_pow = fq.pow_spec(gal_img)
                 pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)]) / size / ori_sex_sigma
 

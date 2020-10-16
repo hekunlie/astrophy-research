@@ -17,7 +17,7 @@ num_ed = int(argv[4])
 
 if cmd == "run":
     for i in range(num_st, num_ed):
-        cmd = "python SNR_change.py 100 0.7 0.7 0.6 0.7 %d %d %s"%(1230+i, i, source_label)
+        cmd = "python SNR_change.py 100 0.7 0.7 0.5 0.7 %d %d %s"%(1230+i, i, source_label)
         a = Popen(cmd, shell=True)
         a.wait()
 
@@ -75,16 +75,18 @@ if cmd == "stack":
             # print(ori_snr)
             if ori_snr > 0:
                 snr_pool[i,k-num_st] = ori_snr
-
+            if ori_snr > 0 and ori_pk0 > 0:
                 idx = pk0 > 0
                 pk_pool[i][k-num_st][idx] = (pk0[idx] - ori_pk0)/ori_pk0
-
+                if ori_pk0 < 0:
+                    print(k,i,ori_pk0,ori_snr)
+            if ori_snr > 0 and ori_snr_sex > 0:
                 idx = snr_sex > 0
                 snr_sex_pool[i][k-num_st][idx] = (snr_sex[idx] - ori_snr_sex)/ori_snr_sex
-
+            if ori_snr > 0 and ori_mag_auto > 0:
                 idx = mag_auto > 0
                 mag_auto_pool[i][k-num_st][idx] = (mag_auto[idx] - ori_mag_auto)/ori_mag_auto
-
+            if ori_snr > 0 and ori_rfactor > 0:
                 idx = rfactor > 0
                 rfacotr_pool[i][k-num_st][idx] = (rfactor[idx] - ori_rfactor)/ori_rfactor
 
@@ -147,9 +149,10 @@ if cmd == "stack":
     # print(result_stack)
 
 
-    numpy.savez("./imgs/stack_result.npz", shears, result_stack,error_bar_stack,snr_pool, snr_stack)
+    numpy.savez("./imgs/stack_result.npz", shears, result_stack,error_bar_stack,pk_pool, mag_auto_pool, snr_pool, snr_stack)
 
     # plot
+    # matplotlib.style.use('default')
     img = Image_Plot(fig_x=6, fig_y=4, ypad=0.22,xpad=0)
     img.subplots(2, 2)
     # img.set_style_default()
@@ -196,7 +199,7 @@ if cmd == "stack":
                 lb = "SNR$_t$ = %.2f"%snr_0
                 # img.axs[m][n].scatter(shears[idx], var_rate[idx], edgecolor=colors[j], s=80, label=lb,
                 #                       marker=markers[j], facecolor="none", linewidths=img.plt_line_width)
-                img.axs[m][n].errorbar(shears[idx], var_rate[idx],var_err[idx], c=colors[j], ms=6,fmt=" ",label=lb,capsize=3,
+                img.axs[m][n].errorbar(shears[idx], var_rate[idx],var_err[idx], c=colors[j], ms=9,fmt=" ",label=lb,capsize=3,
                                        marker=markers[j], mfc="none", linewidth=img.plt_line_width)
                 print(labels[i],lb,var_rate)
         if i == 0:
@@ -207,7 +210,7 @@ if cmd == "stack":
             text_x, text_y = 0.8, 0.9
         else:
             text_x, text_y = 0.55, 0.9
-        img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size)
+        img.axs_text(m, n, text_y, text_x, labels[i], text_color='k', text_fontsize=img.legend_size+2)
     ys = [0,0]
     for i in range(4):
         m, n = divmod(i, 2)
@@ -225,16 +228,16 @@ if cmd == "stack":
                 img.axs[m][n].set_ylim(-0.0025, 0.0025)
                 img.axs[m][n].set_yticks(numpy.linspace(-0.002, 0.002, 5))
             else:
-                img.axs[m][n].set_ylim(-0.0025, 0.0025)
-                img.axs[m][n].set_yticks(numpy.linspace(-0.002, 0.002, 5))
+                img.axs[m][n].set_ylim(-0.0035, 0.0035)
+                img.axs[m][n].set_yticks(numpy.linspace(-0.003, 0.003, 5))
         else:
-            img.axs[m][n].set_ylim(-0.037, 0.037)
-            img.axs[m][n].set_yticks(numpy.linspace(-0.03, 0.03, 5))
+            img.axs[m][n].set_ylim(-0.12, 0.12)
+            img.axs[m][n].set_yticks(numpy.linspace(-0.09, 0.09, 7))
         img.axs[m][n].set_xlim(-0.075, 0.075)
         img.axs[m][n].set_xticks(x_ticks)
 
         if i == 0:
-            img.axs[m][n].legend(fontsize=img.legend_size+1, loc="upper left", frameon=False,ncol=2)
+            img.axs[m][n].legend(fontsize=img.legend_size+1, loc="upper left", frameon=False,ncol=2,handletextpad=0.5)
 
     # img.subimg_adjust(h=0, w=0)
     img.save_img(pic_path_png)
