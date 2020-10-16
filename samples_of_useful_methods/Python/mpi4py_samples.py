@@ -3,30 +3,46 @@ from mpi4py import MPI
 import h5py
 import time
 
+# comm it the COMMON WORLD where all the CPUs in and communicate
 comm = MPI.COMM_WORLD
+# the identity of the CPU, different CPU has different rank, from 0 ~ 'cpus'
 rank = comm.Get_rank()
+# how many CPUs you used
 cpus = comm.Get_size()
 
 
 
 #################### Send/Recv #################
+# the data array in each CPU
 cata_data = numpy.zeros((4,4))
-data_sp = (4,4)
+# the array shape, tuple
+data_sp = cata_data.shape
+# gather all the shapes from each CPU
+# the 'data_sps' is a list of tuple collected from each CPU
 data_sps = comm.gather(data_sp, root=0)
 
+# rank 0 will collect all data, the others send data to it.
 if rank > 0:
-    # remember the data type, MPI.DOUBLE, MPI.FLOAT, ...
+    # !!!! remember the data type, MPI.DOUBLE, MPI.FLOAT, ...
     # or it will raise an error, Keyerror
     comm.Send([cata_data, MPI.DOUBLE], dest=0, tag=rank)
 else:
+    # ############ this part may not be needed #######
     if data_sp[0] > 1 and data_sp[1] > 1:
         stack_pool = [cata_data]
     else:
         stack_pool = []
+    # ################################################
 
+    # receive the data from other CPUs
+    # !!!! the start points is 1 in range() not 0
     for procs in range(1, cpus):
+        # prepare a buffer for the data, the shape must be the same
+        # with that of what the other CPUs send, you have collected them in 'data_sps'
         recvs = numpy.empty(data_sps[procs], dtype=numpy.double)
+        # receive it using the buffer,
         comm.Recv(recvs, source=procs, tag=procs)
+        # then do whatever you want ...
         if data_sps[procs][0] > 1 and data_sps[procs][1] > 1:
             stack_pool.append(recvs)
 
