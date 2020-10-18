@@ -17,8 +17,9 @@ warnings.filterwarnings('error')
 
 area_num = 4
 # theta bin
-theta_bin_num = 5
-theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin_num = 7
+theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+# theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
