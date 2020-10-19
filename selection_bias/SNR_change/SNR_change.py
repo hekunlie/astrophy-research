@@ -196,7 +196,8 @@ for i in range(flux_num):
 
             # the pk0
             ori_pow = fq.pow_spec(ori_gal)
-            ori_pk0 = numpy.sqrt(ori_pow[int(size / 2), int(size / 2)])/ size / ori_sex_sigma
+            ori_pk0 = numpy.sqrt(ori_pow[int(size / 2), int(size / 2)])/ size / noise_sig
+            # ori_pk0 = numpy.sqrt(ori_pow[int(size / 2), int(size / 2)])/ size / ori_sex_sigma
 
             ori_radius = numpy.sqrt(ori_gal_cata[5]/numpy.pi)
             ori_gal_quad = tool_box.get_quad(ori_gal,size, ori_radius)[0]
@@ -234,7 +235,8 @@ for i in range(flux_num):
                 sex_mag = cata_data[3]
                 ori_sex_sigma = cata_data[4] / detect_thresh
                 gal_pow = fq.pow_spec(gal_img)
-                pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)]) / size / ori_sex_sigma
+                pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)]) / size / noise_sig
+                # pk0 = numpy.sqrt(gal_pow[int(size / 2), int(size / 2)]) / size / ori_sex_sigma
 
                 gal_radius = numpy.sqrt(cata_data[5] / numpy.pi)
                 gal_quad = tool_box.get_quad(gal_img, size, gal_radius)[0]
