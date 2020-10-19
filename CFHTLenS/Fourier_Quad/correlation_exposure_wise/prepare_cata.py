@@ -17,8 +17,9 @@ warnings.filterwarnings('error')
 
 area_num = 4
 # theta bin
-theta_bin_num = 5
-theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin_num = 7
+theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+# theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -32,7 +33,8 @@ redshift_idx = 10
 
 redshift_sep_thresh = 0.01
 redshift_bin_num = 6
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
 chi_guess_num = 40
@@ -48,7 +50,7 @@ mg_bin_num = 10
 
 # star number on each chip
 nstar_idx = 21
-nstar_thresh = 12
+nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 28
@@ -170,7 +172,7 @@ if cmd == "prepare":
         idx1 = data[:, nstar_idx] >= nstar_thresh
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
         idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
-        idx4 = numpy.abs(data[:, gf2_idx]) < gf2_thresh
+        idx4 = numpy.abs(data[:, gf2_idx]) <= gf2_thresh
         idx5 = data[:, imax_idx] < imax_thresh
         idx6 = data[:, jmax_idx] < jmax_thresh
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
