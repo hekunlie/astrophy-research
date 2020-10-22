@@ -1080,7 +1080,7 @@ void read_para(corr_cal *all_paras)
     int i, j, m, n;
     char set_name[60], data_path[600];
 
-    sprintf(all_paras->log_path, "%s/log/cal_%d.dat", all_paras->parent_path, all_paras->corr_cal_rank);
+    sprintf(all_paras->log_path, "%s/code/jack_test/log/cal_%d.dat", all_paras->parent_path, all_paras->corr_cal_rank);
 
     sprintf(data_path,"%s/cata/gg_cor.hdf5", all_paras->parent_path);
     // read radius bin
@@ -1355,8 +1355,8 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         // k = i/q;
         // if(k%q == 0)
         // {
-        //     sprintf(all_paras->inform, "Jackknife %d read file %d%%",resample_label, k);
-        //     write_log(all_paras->log_path, all_paras->inform);
+            sprintf(all_paras->inform, "Jackknife %d read file %d, %d-%d",resample_label, file_tag, m, n);
+            write_log(all_paras->log_path, all_paras->inform);
         // }
     }
 
