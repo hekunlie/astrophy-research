@@ -15,26 +15,27 @@
 \def\eg{{\it e.g. }}
 \def\etc{{\it etc}}
 
-\shorttitle{Include the Extreme Faint Galaxy in Shear Measurement}
+\shorttitle{Bias from noise-source blending in Fourier Quad shear measurement method}
 \shortauthors{Hekun Li et al.}
 
 
 \begin{document}
 
-\title{Including the Extremely Faint Sources in the Shear Measurement}
+\title{\textbf{Bias from noise-source blending in Fourier Quad shear measurement method}}
 
 
 \correspondingauthor{Jun Zhang}
 \email{betajzhang@sjtu.edu.cn}
 
 \author{Hekun Li}
-\affiliation{Department of Physics and Astronomy, Shanghai Jiao Tong University, Shanghai 200240, China}
+\affiliation{Department of Astronomy, Shanghai Jiao Tong University, Shanghai 200240, China}
 \author{Jun Zhang*}
-\affiliation{Department of Physics and Astronomy, Shanghai Jiao Tong University, Shanghai 200240, China}
+\affiliation{Department of Astronomy, Shanghai Jiao Tong University, Shanghai 200240, China}
+\affiliation{Shanghai Key Laboratory for Particle Physics and Cosmology, Shanghai 200240, China}
 
 
 \begin{abstract}
-
+Sub-percent level precision in shear measurement is the goal of the next generation weak lensing surveys. One of the challenges is to suppress the systematic bias at low signal-to-noise ratio (SNR) end. In this paper, we focus on the Fouerier\_Quad method to investigate the effect of noise on the measurement precision at the faint end. Fourier\_Quad method provides two statistic approaches, the ensemble average and the PDF\_SYM approach, for shear recovery. We find that when using the PDF\_SYM statistic approach, the mixture of noise and source at SNR $\sim 8$ biases the measurement up to $10^{-2}$ level (multiplicative bias), and the anisotropy of the PSF causes the additive bias up to $10^{-4}$. By proposing a correction to the Fourier\_Quad method, we suppress the multiplicative (additive) bias from $10^{-2} (10^{-4})$ to $\leq10^{-3} (10^{-5})$ at SNR $\sim8$. The correction extends the lower SNR bound from $\sim 20$ to $\sim 8$ for Fourier\_Quad method. Therefore, we could achieve a lower statistical error bound in the measurement by utilizing a large number of faint sources.
 
 
 \end{abstract}
@@ -45,20 +46,11 @@
 
 \section{Introduction} \label{sec:intro}
 
-The large structure in the dark matter field perturbs the light passing through and introduces a slight but coherent distortion to the observed shapes of background galaxies. This effect is called weak gravitational lensing or cosmic shear. The statistical analysis of weak gravitational lensing is one of the most promising probes for the large structure mass distribution, the expansion history of the universe, \etc\citep{Bartelmann2001, Hoekastra2008,Kilbringer2015}. The ongoing large weak lensing surveys, such as DES \citep{Troxel2018}, KIDS \citep{Hildebrandt2016}, and HSC \citep{Hikage2019}, and the next generation surveys, such as LSST \citep{Abell2009} and Euclid \citep{Laureijs2011}, will accumulate a great amount of galaxy images for the improvement of shear measurement accuracy from one percent to sub-percent level, and, therefore, constrain the cosmological parameters more stringently. 
+The large structure in the dark matter field perturbs the light passing through and introduces a slight but coherent distortion to the observed shapes of background galaxies. This effect is called weak gravitational lensing or cosmic shear. The statistical analysis of weak gravitational lensing is one of the most promising probes for the large structure mass distribution, the expansion history of the universe, \etc\citep{Bartelmann2001, Hoekastra2008, Kilbringer2015}. The ongoing large weak lensing surveys, such as DES \citep{Troxel2018}, KIDS \citep{Hildebrandt2016}, and HSC \citep{Hikage2019}, and the next generation surveys, such as LSST \citep{Abell2009} and Euclid \citep{Laureijs2011}, will accumulate a unprecedented number of galaxy images for the improvement of shear measurement accuracy from one percent to sub-percent level, and, therefore, constrain the cosmological parameters more stringently. 
 
-The shear measurement is currently subject to many systematic errors, such as modeling bias \citep{Bernstein2010,Voigt2010,Kacprzak2014}, noise bias \citep{Refregier2012,Kacprzak2014}, and selection bias \citep{Hirata2003}, which should be controlled carefully to achieve the sub-percent level precision. 
+The shear measurement is currently subject to many systematic errors, such as modeling bias \citep{Bernstein2010,Voigt2010,Kacprzak2014}, noise bias \citep{Refregier2012,Kacprzak2014}, and selection bias \citep{Hirata2003}. In the model-fitting methods \citep{Miller2013, Zuntz2013}, if the sources could not be exactly modeled by the profile, the result would be biased, \ie modeling bias. If the response of a method to noise is non-linear, it would give rise to the noise bias \citep{Refregier2012, Viola2014, Berstein2016}. \cite{Refregier2012} find the noise bias becomes comparable with shear signal at low SNR. A selection on the combination of selection criterion, \ie magnitude, and SNR, is the common method to avoid the systematic bias on the faint end. However, an inappropriate selection would lead to the selection bias \citep{Hirata2003, Li2020}. Generally, the calibration by specific image simulation based on the survey is the current method to calibrate the systematic bias \citep{Kitching2008, Miller2013, Fenech2017}.
 
-noise bias, 
-
-precision achieved
-
-cite the previous paper, cut and calibration to avoid bias
-
-cut -- suppress noise bias -- selection bias
-
-
-We focus on the Fourier\_Quad method\citep{Zhang2008, Zhang2015} in this paper to investigate the effect of noise on measurement precision. The Fourier\_Quad method is a moment-based method that measures the shape from the Fourier transform of the galaxy image without any assumption of the galaxy morphology. \cite{Zhang2017} propose a non-weighted statistical approach for shear recovery, the PDF\_SYM approach, which utilizes the full PDF of the non-weighted shear estimators from both faint and bright galaxies to achieve a lower statistical error bound. Recently, we find the PDF\_SYM approach would be slightly biased by the extremely faint sources. The typical magnitude of the multiplicative (additive) bias would reach $\sim 10^{-2}$ ($10^{-4}$) level at SNR $\sim 10$. However, the bias vanishes on the high SNR end. In this paper, we aim to find the origin of the bias and appropriate correction to it. In Section \ref{sec:FQ}, we briefly introduce the Fourier\_Quad method and the statistical approaches for shear recovery. We investigate the bias origin in the Section \ref{sec:bias_cal}, and present the correction in Section \ref{sec:bias_corr}.
+We focus on the Fourier\_Quad method\citep{Zhang2008, Zhang2015} in this paper to investigate the effect of noise on the measurement precision. The Fourier\_Quad method is a moment-based method that measures the shape from the Fourier transform of the galaxy image without any assumption of the galaxy morphology. \cite{Zhang2017} propose a non-weighted statistical approach for shear recovery, the PDF\_SYM approach, which utilizes the full PDF of the non-weighted shear estimators from both faint and bright galaxies to achieve a lower statistical error bound. Recently, we find the PDF\_SYM approach would be slightly biased by the extremely faint sources. The typical magnitude of the multiplicative (additive) bias would reach $\sim 10^{-2}$ ($10^{-4}$) level at SNR $\sim 10$. However, the bias vanishes on the high SNR end. In this paper, we aim to find the origin of the bias and appropriate correction to it. In Section \ref{sec:FQ}, we briefly introduce the Fourier\_Quad method and the statistical approaches for shear recovery. We investigate the bias origin in the Section \ref{sec:bias_cal}, and present the correction in Section \ref{sec:bias_corr}.
 
 %\cite{Zhang2015} have shown that the statistical approach for shear recovery of Fourier\_Quad is non-biased even at SNR $\sim5$. However, when applied to a real shear measurement, it needs appropriate weights to suppress the scatter from the magnitude difference between the faint and bright galaxies. A non-biased weight is generally difficult to obtain from the noisy image.
 
@@ -68,7 +60,6 @@ We focus on the Fourier\_Quad method\citep{Zhang2008, Zhang2015} in this paper t
 
 
 \section{The Fourier\_Quad method}\label{sec:FQ}
-%introduce the details of shear measurement, average approach
 The Fourier\_Quad is a model-independent shear measurement method that estimates the shape of a galaxy based on its 2D power spectrum \citep{Zhang2008, Zhang2015, Zhang2017}. The shear estimators are defined as:
 \begin{eqnarray}
 \label{shear_estimator}
@@ -86,29 +77,36 @@ The $M(\vec{k})$ is the power spectrum of the galaxy image from which the backgr
 \end{eqnarray}
 where $\widetilde{f}_I(\vec{k})$ and $\widetilde{f}_B(\vec{k})$ are the Fourier transformations of the galaxy image and a neighboring image of background noise respectively. $F_B$ and $F_I$ are the estimates of the Poisson noise power spectrum of the background noise and source images respectively. A critical wavelength, $k_c$, is required to avoid the contamination of the source power\citep{Zhang2015}. The factor $T(\vec{k})$ is the ratio of power spectrum of the target isotropic Gaussian PSF (point spread function) to that of the original PSF, $T(\vec{k}) = |\widetilde{W}_{\beta}(\vec{k})|^2/|\widetilde{W}_{P}(\vec{k})|^2$.
 It is designed to coverts the original PSF, $W_{P}(\vec{x})$, to an isotropic Gaussian PSF, $W_{\beta}(\vec{x})$, so that the effect of PSF can be corrected rigorously and model-independently.
-%\begin{equation}
-%W_{\beta}(\vec{x})=\frac{1}{2\pi \beta^2}\exp\left[-\frac{|\vec{x}|^2}{2\beta^2}\right]
-%\end{equation}
 The scale radius, $\beta$, of $W_{\beta}(\vec{x})$ should be chosen slightly larger than that of $W_{P}(\vec{x})$ to avoid the singularities in the factor $T(\vec{k})$. 
 
 Fourier\_Quad method provides two statistical approaches for shear recovery from the estimators, the average approach, and the PDF\_SYM approach. The former approach recovers the shear signal by taking ensemble averages of the shear estimators:
 \begin{eqnarray}
-\label{mean}
+\label{method:mean}
 \frac{1}{2}\frac{\left\langle  G_1\right\rangle }{\left\langle  N\right\rangle }=g_1+O(g_{1,2}^3),\;\;\;\frac{\left\langle  G_2\right\rangle }{\left\langle  N\right\rangle }=g_2+O(g_{1,2}^3).
 \end{eqnarray}
-It is precise to the second order of shear in accuracy\citep{Zhang2015}. \cite{Zhang2015} have shown the appealing advantage of Fourier\_Quad that including the extreme faint sources or even point sources would not bias the shear measurement. An appropriate weight should be considered in Eq.\ref{mean} because the bright galaxies will dominate in the ensemble average and enlarge the estimate of the error bar. However, a non-biased weight is generally difficult to obtain from the noisy image.
+It is precise to the second order of shear in accuracy\citep{Zhang2015}. \cite{Zhang2015} have shown the appealing advantage of Fourier\_Quad that the extreme faint sources or including the point sources to the sample would not bias the shear measurement. 
 
-To approach the lower statistical error bound, \cite{Zhang2017} propose a non-weighted shear recovery method in the Fourier\_Quad framework which is called the PDF\_SYM approach. It recovers the shear signal by symmetrizing the probability distribution function (PDF) of the shear estimators. \cite{Zhang2017} show that the PDF of $\hat{G}_{1/2}$ would be maximally symmetrical respect to zero if the shear estimate, $\hat{g}_{1/2}$ is the true one (see \cite{Zhang2017} for more details). 
+%When applied to the real data, an appropriate weight should be considered in Eq.(\ref{mean}) because the bright galaxies will dominate in the ensemble average and enlarge the estimate of the error bar. However, a non-biased weight is generally difficult to obtained from the noisy image.
+
+To approach the lower statistical error bound without systematic bias, the $U$ and $V$ terms are introduced by \cite{Zhang2017} to realize a \textbf{novel statistic approach for shear recovery which is called the PDF\_SYM approach}. In the new statistic approach, the shear signal is recovered by symmetrizing the probability distribution function (PDF) of the shear-corrected estimators $\hat{G}_{1/2}$, 
 \begin{eqnarray}
+\label{method:pdf}
 \hat{G}_{1} = G_1 - \hat{g}_{1}(N + U), \;
 \hat{G}_{2} = G_2 - \hat{g}_{2}(N - U).
 \end{eqnarray}
-It needs two additional shear estimators, $U$ and $V$. The $V$ term is kept for the rotation with $U$. The PDF\_SYM approach estimates each component of shear ($g_1$ or $g_2$) independently. Therefore, when estimating one component, it is convenient to ignore the other one or set it zero.   
+\cite{Zhang2017} show that the PDF of $\hat{G}_{1/2}$ would be maximally symmetric with respect to zero if the guess of shear, $\hat{g}_{1/2}$, is the true signal (see \cite{Zhang2017} for more details).
 
-Unlike the weighted sum of shear estimators used by the other methods, the PDF\_SYM approach includes the full PDF of the shear estimators and does not weight down the faint sources. Therefore, it could make full use of the additional information from faint sources to achieve a lower statistical error. The PDF\_SYM approach would be a promising method for shear recovery in the Fourier\_Quad framework.
+%It needs two additional shear estimators, $U$ and $V$.  The PDF\_SYM approach estimates each component of shear ($g_1$ or $g_2$) independently. 
+%The $V$ term is kept for the rotation with $U$.
+%Therefore, when estimating one component, it is convenient to ignore the other one or set it zero.   
 
-Recently, we find the PDF\_SYM approach would be biased by the extremely faint galaxies. Figure \ref{fig:pts_mc} shows the multiplicative and additive bias measured from the samples of different SNR levels. The multiplicative bias could reach about $1\%$ level when the SNR is about $10$. We find the PSF anisotropy ($e \sim 0.1$) would induce additive bias ($\sim 6\times 10^{-4}$) to the measurement at the same SNR level. The bias would vanish on the high SNR end. However, the average approach is immune to this bias even applied to the extremely noisy sample. The results above are measured from the galaxy sample of different SNR generated by the random walk method. The merit of the random walk method includes precise shape distortion, less computational cost, and efficient PSF convolution (see \cite{Li2020} for more details of the random walk method and image simulation setup).
+Unlike the weighted sum of shear estimators used by the other methods, the PDF\_SYM approach includes the full PDF of the shear estimators and does not weight down the faint sources. Therefore, it could make full use of the additional information from faint sources to achieve a lower statistical error. The PDF\_SYM approach would be a promising method for shear recovery in the Fourier\_Quad framework. However, this approach have not been strictly tested before. We investigate its behavior on the extremely faint end in this paper.
 
+
+
+
+
+\section{Bias due to the noise-source mixing}\label{sec:bias_cal}
 
 \begin{figure*}[htbp]
 	\centering
@@ -116,28 +114,26 @@ Recently, we find the PDF\_SYM approach would be biased by the extremely faint g
 	\caption{The multiplicative and additive bias measured from the galaxy of different SNR level. The shaded region in the left (right) panel is between $\pm 3\times 10^{-3}$ ($\pm 3\times10^{-5}$). }\label{fig:pts_mc}
 \end{figure*}
 
+Recently, we find that the PDF\_SYM approach would be biased by the extremely faint galaxies. Figure \ref{fig:pts_mc} shows the multiplicative and additive bias measured from the samples of different SNR levels. The multiplicative bias could reach about $1\%$ level when the SNR is about $10$, and the PSF anisotropy ($e \sim 0.1$) would induce additive bias ($\sim 6\times 10^{-4}$) to the measurement at the same SNR level. The bias would vanish on the high SNR end. However, the average approach is free to the bias even applied to the extremely noisy sample. The results above are measured from the galaxy sample of different SNR generated by the random walk method. The merit of the random walk method includes precise shape distortion, less computational cost, and efficient PSF convolution (see \cite{Li2020} for more details of the random walk method and image simulation setup).
 
-\section{Bias caused by the source and noise mix}\label{sec:bias_cal}
-To reveal the underlying origin of the bias, we should start from the components of noisy galaxy image which could be written as a sum of source and noise image, \ie$f_I(\vec{x}) = f_G(\vec{x}) + f_N(\vec{x})$. The modified power spectrum of the noisy galaxy image, $M(\vec{k})$, can be rewritten as 
+To reveal the underlying origin of the bias, we should start from the components of galaxy image which can be written as a sum of the source and noise image, \ie$f_I(\vec{x}) = f_G(\vec{x}) + f_N(\vec{x})$. The modified power spectrum of the galaxy image, $M(\vec{k})$, can be rewritten as 
 \begin{eqnarray}
-M(\vec{k}) =  \left\vert\widetilde{f}_G(\vec{k})\right\vert^2+ C(\vec{k}) + \Delta N(\vec{k}).
+M(\vec{k}) =  \left\vert\widetilde{f}_G(\vec{k})\right\vert^2 + \Delta N(\vec{k}) + C(\vec{k}).
 \end{eqnarray}
-The first term is the power spectrum of the noise-free source image. $C(\vec{k})$ is the mixture term of the Fourier transform of the source and that of the background noise. $\Delta N(\vec{k})$ is the noise power spectrum residual after the background noise subtraction. 
+The first term is the power spectrum of the noise-free source image. $\Delta N(\vec{k})$ is the noise power spectrum residual,\textbf{ including the Poisson noise,} after the background noise subtraction defined in Eq.(\ref{FQ_TM}). $C(\vec{k})$ is the coupling between the Fourier transform of the source and that of the background noise. 
 \begin{eqnarray}
-& C(\vec{k})& = \widetilde{f}_{G}^{*}(\vec{k})\widetilde{f}_N(\vec{k}) + \widetilde{f}_{G}(\vec{k})\widetilde{f}_{N}^{*}(\vec{k}),\\ \nonumber
-&\Delta N(\vec{k})& = \left\vert\widetilde{f}_N(\vec{k})\right\vert^2 -\left\vert\widetilde{f}_B(\vec{k})\right\vert^2.
+C(\vec{k}) = \widetilde{f}_{G}^{*}(\vec{k})\widetilde{f}_N(\vec{k}) + \widetilde{f}_{G}(\vec{k})\widetilde{f}_{N}^{*}(\vec{k})
 \end{eqnarray}
-We have dropped the estimate of the Poisson noise power spectrum, $F_S$ and $F_B$, because they are not important here. 
+\textbf{The contributions of $C(\vec{k})$ and $\Delta N(\vec{k})$ to the shear estimators, Eq.(\ref{shear_estimator}), vanish in the ensemble average, Eq.(\ref{method:mean}). Therefore, they does not bias the ensemble average approach, and were not thought to affect the PDF\_SYM approach. However, we find that the existence of $C(\vec{k})$ biases the PDF\_SYM approach but not the ensemble average one when the SNR decrease to lower than about $30$. The $\Delta N(\vec{k})$ term does not affect the precision of shear recovery. We present the comparison in Figure (\ref{fig:pts_componets})(The other details will be discussed at the end of this section).}
 
-In the image simulation, we test different combinations of the components from $M(\vec{k})$. We find that the noise power spectrum residual, $\Delta N(\vec{k})$, would not bias the measurement. While, the result will be biased if the $C(\vec{k})$ term is included in the measurement. Furthermore, we find that both multiplicative and additive bias will vanish when $\vert \widetilde{W}_{P}(\vec{k})\vert$ rather than $\vert \widetilde{W}_{P}(\vec{k})\vert^2$ is used in the PSF deconvolution ($T(\vec{k})$ factor) for the $C(\vec{k})$. We present the comparison in Figure \ref{fig:pts_componets}.
-
+%, does not bias the measurement. While, the result is biased if the $C(\vec{k})$ term is included in the measurement.
 \begin{figure*}[htbp]
 	\centering
 	\includegraphics[width=0.9\linewidth]{figures/pts_sample_components.pdf}
 	\caption{The multiplicative and additive bias at different SNR levels measured by the original PDF\_SYM from different components of the power spectrum of the noisy galaxy image. To avoid the overlap between curves, only the $m_1$'s and $c_1$'s curves are shown. Orange curves: Measured from the power spectrum of the noise-free galaxy image. Green curves: Measured from the combination of noise-free part and the noise power spectrum residual, $\Delta N(\vec{k})$. Red curves: Measured from the combination of noise-free galaxy image power spectrum and the Fourier transform mixture, $C(\vec{k})$. The PSF power spectrum, $\vert \widetilde{W}_{P}(\vec{k})\vert^2$, is used for deconvolution. Purple curves: Same components are used for measurement as the red curves. However, $\vert \widetilde{W}_{P}(\vec{k})\vert$ is used (in $T(\vec{k})$) in PSF deconvolution for $C(\vec{k})$.}\label{fig:pts_componets}
 \end{figure*}
 
-To understand the bias mechanism, we should consider the contribution of $C(\vec{k})$ to the shear estimators in Eq.(\ref{shear_estimator}). For the simplicity in calculation, let $f_k$ and $n_k$ denotes the Fourier transform of noise free source image and that of the background noise image respectively. Assuming that the PDF\_SYM approach has been applied, we obtain
+\textbf{To understand the bias mechanism, we should consider the contribution of $C(\vec{k})$ to the shear estimators in Eq.(\ref{shear_estimator}) and its effect on the symmetry of shear estimators. In the following part of this section, we calculate the PDF of $G_1$ and $G_2$ with the contribution of $C(\vec{k})$ being taken into account, and show the asymmetry caused by it in the $1-D$ PDF of $G_1$ or $G_2$.} For convenient, we neglect the $\Delta N(\vec{k})$ in the calculation since it does not cause the bias. We use $f_k$ and $n_k$ to denote the Fourier transform of noise free source image and that of the background noise image respectively. Following Eq.(\ref{method:pdf}), the shear estimators to be symmetrized in the PDF\_SYM approach are defined as
 \begin{eqnarray}
 \label{Eq:gg}
 \hat{G}_1&=&\int{d}^2\vec{k} P_k T(\vec{k})\left(\vert f_k\vert^2 + C(\vec{k})\right) \\ \nonumber
@@ -151,71 +147,84 @@ where
 P_k = k_x^2-k_y^2&& + \hat{g}_1\left[2k^2-\beta^2\left(k^4+k_x^4-6k_x^2k_y^2+k_y^4\right)\right],\\ \nonumber
 Q_k = 2k_xk_y+&&\hat{g}_2\left[2k^2-\beta^2\left(k^4-k_x^4+6k_x^2k_y^2-k_y^4\right)\right].
 \end{eqnarray}
-Here, we have dropped the notation of integral variation for simplicity and rewritten the integration into the discrete form. $\Delta^2$ is the integral surface element.
+$\hat{g}_{1/2}$ are the assumed values of shear signal. Here, we have dropped the notation of integral variation for simplicity and rewritten the integration into the discrete form. $\Delta^2$ is the integral surface element. 
 
-For a certain galaxy, let us consider the PDF of $\hat{G}_1$ and $\hat{G}_2$ with many the background noise realizations. Assuming that the noise is mainly white noise, the PDF of $n_k^{Re}$ and $n_k^{Im}$ should be a normal distribution which is independent of $\vec{k}$. The standard deviation is assume to be $\sigma$. Then, the PDF of $\hat{G}_1$ and $\hat{G}_2$ is given by\footnote{The details of calculation in this section can be found in Appendix \ref{app}.}:
+\textbf{Here, we want to remind that an additional factor, $1/|\widetilde{W}_{P}(\vec{k})|$, remains in front of $C(\vec{k})$ after the PSF deconvolution executed by $T(\vec{k})$, $|\widetilde{W}_{\beta}(\vec{k})|^2/|\widetilde{W}_{P}(\vec{k})|^2$, since $C(\vec{k})$ only contains the Fourier transform of galaxy image. However, applying $T(\vec{k})$ to the source term, $\vert f_k\vert^2$, in Eq.(\ref{Eq:gg}) deconvolutes the original PSF well from the observed galaxy image. This difference is the key in the later discussion about the bias origin.}
+
+For one galaxy, let us consider the joint PDF of $\hat{G}_1$ and $\hat{G}_2$ with many the background noise realizations. Assuming that the noise is mainly white noise, the PDF of $n_k^{Re}$ and $n_k^{Im}$ can be considered as a normal distribution which is independent of $\vec{k}$. The standard deviation is assumed to be $\sigma$. We write the joint PDF of $n_k^{Re}$ and $n_k^{Im}$ as
+\begin{equation}
+P_N(n_k^{Re},n_k^{Im})=\frac{1}{2\pi\sigma^2}\exp\left[-\frac{\left(n_k^{Re}\right)^2+\left(n_k^{Im}\right)^2}{2\sigma^2}\right].
+\end{equation}
+Then, the PDF of $\hat{G}_1$ and $\hat{G}_2$ is given by\footnote{The details of calculation in this section can be found in Appendix.}:
+\begin{widetext}
 \begin{eqnarray}
 \label{Eq:Pgg_1}
-P_G\left(\hat{G}_1,\hat{G}_2\right)=\frac{1}{(2\pi)^2}\frac{\pi}{\sqrt{D}}\exp\left[-\frac{C}{4D}\right]
+&P_G&\left(\hat{G}_1,\hat{G}_2\right)\\ \nonumber
+&=&\prod_k\int\int dn_k^{Re}dn_k^{Im}P_N(n_k^{Re},n_k^{Im})
+\delta_D\left[\hat{G}_1-\Delta^2\sum_kA_k\left(\vert f_k\vert^2+2f_k^{Re}n_k^{Re}+2f_k^{Im}n_k^{Im}\right)\right]\\ \nonumber
+&&\times\delta_D\left[\hat{G}_2-\Delta^2\sum_kB_k\left(\vert f_k\vert^2+2f_k^{Re}n_k^{Re}+2f_k^{Im}n_k^{Im}\right)\right]\\ \nonumber
+&=&\frac{1}{(2\pi)^2}\prod_k\int\int dn_k^{Re}dn_k^{Im}P_N(n_k^{Re},n_k^{Im})
+\int\int dxdy \exp\left(ix\hat{G}_1+iy\hat{G}_2\right)\\ \nonumber
+&&\times\exp\left\{-2i\Delta^2\sum_k(xA_k+yB_k)\left(f_k^{Re}n_k^{Re}+f_k^{Im}n_k^{Im}\right)-i\Delta^2\sum_k(xA_k+yB_k)\vert f_k\vert^2\right\} \\ \nonumber
+&=&\frac{1}{(2\pi)^2}\frac{\pi}{\sqrt{U_1U_3-U_2^2}}\exp\left[-\frac{\left(\hat{G}_1-\Gamma_1\right)^2U_3-2\left(\hat{G}_1-\Gamma_1\right)\left(\hat{G}_2-\Gamma_2\right)U_2+\left(\hat{G}_2-\Gamma_2\right)^2U_1}{4(U_1U_3-U_2^2)}\right].
 \end{eqnarray}
+\end{widetext}
 where
 \begin{eqnarray}
-\label{Eq:Pgg_2}
-C &=& \left(\hat{G}_1-\Gamma_1\right)^2U_3+\left(\hat{G}_2-\Gamma_2\right)^2U_1 \\ \nonumber
-&&-2\left(\hat{G}_1-\Gamma_1\right)\left(\hat{G}_2-\Gamma_2\right)U_2,\\ \nonumber
-D&=& U_1U_3-U_2^2,\\ \nonumber
 \left(\Gamma_1,\Gamma_2\right)&=&\Delta^2\sum_k\vert f_k\vert^2\left(A_k,B_k\right)\\ \nonumber
 \left(U_1,U_2,U_3\right)&=&2\sigma^2\Delta^4\sum_k\vert f_k\vert^2\left(A_k^2,A_kB_k,B_k^2\right)
 \end{eqnarray}
+\textbf{Note that $T(\vec{k})$ is incorporated in $A_k$ and $B_k$. Therefore, an additional factor, $1/|\widetilde{W}_{P}(\vec{k})|^2$, remains in $U_{1,2,3}$ terms after the PSF deconvolution.}
 
-The $1$-D PDF of $\hat{G}_1$($\hat{G}_2$) is needed by the PDF\_SYM approach for $g_1$($g_2$) estimating. Therefore, for example, let us consider the PDF of $\hat{G}_1$. By integrating the $\hat{G}_2$, we would have
+The PDF\_SYM approach estimates each component of shear independently. Therefore, for example, let us consider the PDF of $\hat{G}_1$. By integrating the $\hat{G}_2$, we have
 \begin{eqnarray}
 \label{1d_PDF}
 &&\int_{-\infty}^{\infty}d\hat{G}_2 P_G\left(\hat{G}_1,\hat{G}_2\right)\\ \nonumber
 &=&\frac{1}{(2\pi)^2}\frac{\pi\sqrt{\pi}}{\sqrt{U_1}}\exp\left\{-\frac{\left(\hat{G}_1-\Gamma_1\right)^2}{4U_1}\right\}
 \end{eqnarray}
-where
+where the $\Gamma_1$ and $U_1$ are re-written as
 \begin{eqnarray}
 \Gamma_1&=&\int{d}^2\vec{k}\;\left(k_x^2-k_y^2\right)\exp(-\beta^2k^2)\vert f_S(\vec{k})\vert^2, \\ \nonumber
 U_1&=&2\sigma^2\Delta^2\int{d}^2\vec{k} \; \left(k_x^2-k_y^2\right)^2\exp(-2\beta^2k^2)\frac{\vert f_S(\vec{k})\vert^2}{\vert \widetilde{W}_{P}(\mathrm{M}\vec{k})\vert^2}, \\ \nonumber
 \mathrm{M}&=&\left[\begin{array}{cc}
 1-g_1 &  -g_2 \\
 -g_2 &  1+g_1 
-\end{array}\right]
+\end{array}\right].
 \end{eqnarray}
-We have assumed that the $1$-D PDF of $\hat{G}_1$ has been symmetrized by the true shear signal. Therefore, any asymmetry part, which should vanish, in the PDF will cause the bias. Assuming the ellipticity of the PSF is ($e_1$,$e_2$), and suppose the components are small. For convenience in the rest of our discussion, we set $g_2=0$, and the ellipticity $e_2$ of the PSF is also zero. Then, we can expand the power spectrum of PSF to the first order of $g_1$ and $e_1$.
-\begin{eqnarray}
-\vert \widetilde{W}_{P}(\mathrm{M}&&\vec{k})\vert^{-2} \\ \nonumber
-&&= W^{-2}W^\prime [2(e_1+g_1)(k_x^2-k_y^2)]
-+W^{-1}.
-\end{eqnarray}
-$W$ is the abbreviation of $\vert \widetilde{W}_{P}(\vec{k})\vert^{-2}$, and $W^\prime$ is first order derivative to $W$.
-Therefore, we can rewrite the functions of $\Gamma_1$ and $U_1$ as:
-\begin{eqnarray}
-U_1&=&U_{10}+\delta U,\\ \nonumber
-\Gamma_1&=&\int kdk\int d\theta \exp(-\beta^2k^2)\vert f_S(k,\theta)\vert^2k^2\cos(2\theta),
-\end{eqnarray}
-where
-\begin{eqnarray}
-U_1 &=& 2\sigma^2\Delta^2\int kdk\int d\theta\exp(-2\beta^2k^2) \\ \nonumber
-&&\times\vert f_S(k,\theta)\vert^2W^{-1}k^4 \cos^2(2\theta), \\ \nonumber
-\delta U &=& 2\sigma^2\Delta^2\int kdk\int d\theta\exp(-2\beta^2k^2) \\ \nonumber
-&&\times\vert f_S(k,\theta)\vert^2\left[ 2(e_1+g_1)W^{-2}W^\prime k^6\cos^3(2\theta)\right].
-\end{eqnarray}
-Considering to the first order of $\delta U$, we could write the $1$-D PDF of $\hat{G}_1$ as:
-\begin{eqnarray}
-\label{1d_PDF}
-&&\int_{-\infty}^{\infty}d\hat{G}_2 P_G\left(\hat{G}_1,\hat{G}_2\right)\\ \nonumber
-&\approx&\frac{1}{(2\pi)^2}\frac{\pi\sqrt{\pi}}{\sqrt{U_{10}}}\left[1-\frac{\delta U}{2U_{10}}+\frac{\left(\hat{G}_1-\Gamma_1\right)^2}{4U_{10}}\frac{\delta U}{U_{10}}\right] \\ \nonumber &\times&\exp\left\{-\frac{\left(\hat{G}_1-\Gamma_1\right)^2}{4U_{10}}\right\}
-\end{eqnarray}
-The terms proportional to $\delta U$, when averaged over galaxies, generate the asymmetry of $P_G$. 
+We have assumed that the $1$-D PDF of $\hat{G}_1$ has been symmetrized by the true shear signal. \textbf{$\hat{G}_1$, $\Gamma_1$ and $U_1$ measure the shape information from the pre-lensed galaxy profile, $f_S(\vec{k})$, and the $1$-D PDF of $\hat{G}_1$ should be symmetric with respect to zero according to the isotropy assumption in shear measurement. Therefore, any asymmetry part, which should vanish, in the PDF will cause the bias. It is obvious that the existence of $1/|\widetilde{W}_{P}(\vec{k})|^2$ in $U_1$ breaks the symmetry in the PDF of $\hat{G}_1$. Therefore, the PSF deconvolution to $C(\vec{k})$ causes the bias in PDF\_SYM approach. The bias will vanish as shown in Figure \ref{fig:pts_componets}, if we can decrease the power of $|\widetilde{W}_{P}(\vec{k})|$ in $T(\vec{k})$ applied for $C(\vec{k})$. However, this is only feasible in the simulated data.}
 
-It should be noted that $U_1$ is derived from the $C(\vec{k})$ which only contains $\widetilde{f}_G(\vec{k})$ not the power spectrum $\vert\widetilde{f}_G(\vec{k})\vert^2$. Therefore, the PSF deconvolution (the factor $T(\vec{k}) = |\widetilde{W}_{\beta}(\vec{k})|^2/|\widetilde{W}_{P}(\vec{k})|^2$) will give rise to an additional factor, $1/\vert W_{P}(\mathrm{M}\vec{k})\vert^2$, in $U_1$. However, the PSF is appropriately removed from the $\Gamma_1$ which is derived from the power spectrum of source image. So the appropriate PSF deconvolution for $C(\vec{k})$, the mixture of Fourier transform of the galaxy image and background image, is the origin of bias. See Appendix \ref{app} for more details.
+%For convenience in the rest of our discussion, we set $g_2=0$, and the ellipticity $e_2$ of the PSF is also zero. Assuming the ellipticity of the PSF is ($e_1$,$e_2$) and the components are small, we can expand the power spectrum of PSF to the first order of $g_1$ and $e_1$.
+%\begin{eqnarray}
+%\vert \widetilde{W}_{P}(\mathrm{M}&&\vec{k})\vert^{-2} \\ \nonumber
+%&&= W_k^{-2}W_k^\prime [2(e_1+g_1)(k_x^2-k_y^2)]
+%+W_k^{-1}.
+%\end{eqnarray}
+%$W_k$ is the abbreviation of $\vert \widetilde{W}_{P}(\vec{k})\vert^{2}$, and $W_k^\prime$ is first order derivative to $W_k$.
+
+
+%It should be noted that $U_1$ is derived from the $C(\vec{k})$ which only contains $\widetilde{f}_G(\vec{k})$ not the power spectrum $\vert\widetilde{f}_G(\vec{k})\vert^2$. Therefore, the PSF deconvolution (the factor $T(\vec{k}) = |\widetilde{W}_{\beta}(\vec{k})|^2/|\widetilde{W}_{P}(\vec{k})|^2$) will give rise to an additional factor, $1/\vert W_{P}(\mathrm{M}\vec{k})\vert^2$, in $U_1$. However, the PSF is appropriately removed from the $\Gamma_1$ which is derived from the power spectrum of source image. So the appropriate PSF deconvolution for $C(\vec{k})$, the mixture of Fourier transform of the source image and background noise image, is the origin of bias. See Appendix for more details.
 
 
 
 %Figure \ref{fig:pts_componets} shows that the mixture of galaxy image Fourier transform and that of the background noise image, $\left\vert C(\vec{k})\right\vert^2$, causes both multiplicative and additive bias in the measurement. Furthermore, only the PDF\_SYM approach is biased by $\left\vert C(\vec{k})\right\vert^2$.
-
+%Therefore, we can rewrite the functions of $\Gamma_1$ and $U_1$ as:
+%\begin{eqnarray}
+%U_1&=&U_{10}+\delta U,\\ \nonumber
+%%\Gamma_1&=&\int kdk\int d\theta \exp(-\beta^2k^2)\vert f_S(k,\theta)\vert^2k^2\cos(2\theta),
+%where
+%\begin{eqnarray}
+%U_10 &=& 2\sigma^2\Delta^2\int kdk\int d\theta\exp(-2\beta^2k^2) \\ \nonumber
+%&&\times\vert f_S(k,\theta)\vert^2W^{-1}k^4 \cos^2(2\theta), \\ \nonumber
+%\delta U &=& 2\sigma^2\Delta^2\int kdk\int d\theta\exp(-2\beta^2k^2) \\ \nonumber
+%&&\times\vert f_S(k,\theta)\vert^2\left[ 2(e_1+g_1)W_k^{-2}W_k^\prime k^6\cos^3(2\theta)\right].
+%\end{eqnarray}
+%Considering to the first order of $\delta U$, we could write the $1$-D PDF of $\hat{G}_1$ as:
+%\begin{eqnarray}
+%\label{1d_PDF}
+%&&\int_{-\infty}^{\infty}d\hat{G}_2 P_G\left(\hat{G}_1,\hat{G}_2\right)\\ \nonumber
+%&\approx&\frac{1}{(2\pi)^2}\frac{\pi\sqrt{\pi}}{\sqrt{U_{10}}}\left[1-\frac{\delta U}{2U_{10}}+\frac{\left(\hat{G}_1-\Gamma_1\right)^2}{4U_{10}}\frac{\delta U}{U_{10}}\right] \\ \nonumber &\times&\exp\left\{-\frac{\left(\hat{G}_1-\Gamma_1\right)^2}{4U_{10}}\right\}
+%\end{eqnarray}
+%The terms proportional to $\delta U$, when averaged over galaxies, generate the asymmetry of $P_G$. 
 
 
 
@@ -228,7 +237,7 @@ Recall that the original measurement, Eq.(\ref{FQ_TM}), employs the power spectr
 	
 	\item Apply the measurement defined in Section \ref{sec:FQ} to get the shear estimators, $G_1$, $G_2$, $N$, $U$, and $V$. This step needs the first noise image.
 
-	\item Add the second noise image to the original noisy galaxy image, $f_S(\vec{x})$, to get a new image, $f_{I^{\prime}}(\vec{x})$.
+	\item Add the second noise image, $f_{B^{\prime}}(\vec{x})$, to the original noisy galaxy image, $f_I(\vec{x})$, to get a new image, $f_{I^{\prime}}(\vec{x})$.
 	\begin{eqnarray}
 	f_{I^{\prime}}(\vec{x}) = f_G(\vec{x}) + f_N(\vec{x}) + f_{B^{\prime}}(\vec{x}).
 	\end{eqnarray}
@@ -297,13 +306,22 @@ Then, one would get the unbiased shear signal by applying the PDF\_SYM approach 
 \end{figure*}
 
 
-To understand the how this correction works, let us consider the PDF, $P_{\Delta}(\Delta G_1,\Delta G_2)$. Following the same strategy for $P_G(\hat{G}_1,\hat{G}_2)$, we have\footnote{The details of calculation in this section can be found in Appendix \ref{app}.}
+To understand how the bias is corrected by the new terms, let us consider the PDF, $P_{\Delta}(\Delta G_1,\Delta G_2)$. Following the same strategy for $P_G(\hat{G}_1,\hat{G}_2)$, we have\footnote{The details of calculation in this section can be found in Appendix.}
+%\begin{widetext}
 \begin{eqnarray}
-&&P_{\Delta}\left(\Delta G_1,\Delta G_2\right)
-=\frac{1}{(2\pi)^2}\frac{\pi}{\sqrt{D^\prime}}\exp\left[-\frac{C^\prime}{4D^\prime}\right], \\ \nonumber
-&&\quad C^\prime = \Delta G_1^2V_3-2\Delta G_1\Delta G_2V_2+\Delta G_2^2V_1, \\ \nonumber
-&&\quad D^\prime = V_1V_3-V_2^2.
+P_{\Delta}&&\left(\Delta G_1,\Delta G_2\right)\\ \nonumber
+&&=\frac{1}{(2\pi)^2}\frac{\pi}{\sqrt{V_1V_3-V_2^2}}\\ \nonumber
+&&\times\exp\left[-\frac{\Delta G_1^2V_3-2\Delta G_1\Delta G_2V_2+\Delta G_2^2V_1}{4(V_1V_3-V_2^2)}\right]
 \end{eqnarray}
+%\end{widetext}
+
+%\begin{eqnarray}
+%&&P_{\Delta}\left(\Delta G_1,\Delta G_2\right)
+%=\frac{1}{(2\pi)^2}\frac{\pi}{\sqrt{D^\prime}}\exp\left[-\frac{C^\prime}{4D^\prime}\right], \\ \nonumber
+%&&\quad C^\prime = \Delta G_1^2V_3-2\Delta G_1\Delta G_2V_2+\Delta G_2^2V_1, \\ \nonumber
+%&&\quad D^\prime = V_1V_3-V_2^2.
+%\end{eqnarray}
+
 The parameters, $V_1$, $V_2$, and $V_3$ are defined as
 \begin{eqnarray}
 &&V_1 = 2\sigma^2\Delta^2\int{d}^2\vec{k}\left(k_x^2-k_y^2\right)^2 M^\prime(\vec{k}),\\ \nonumber
@@ -342,7 +360,7 @@ The asymmetric part of $F(G_1)$ is still existent:
 \label{asym_f}
 \bar{P}_F^{ASYM}(\hat{G}_1)\propto\frac{-\hat{G}_1}{2N_s^2\sqrt{N_s}}\langle\Gamma_1\delta_{N_s}\rangle\exp\left(-\frac{\hat{G}_1^2}{4N_s}\right).
 \end{eqnarray} 
-However, we find that the term $\langle\Gamma_1\delta_{N_s}\rangle$ does not contain contributions from the PSF ellipticity, which is now in a term with spin-6 in the expression of $\delta_{N_s}$, therefore does not couple with $\Gamma_1$, a spin-2 quantity. In principle, there should still be some small amount of multiplicative bias on $g_1$, as $\delta_{N_s}$ does contain a spin-2 term from $g_1$. The magnitude of this bias is likely very small, as $\Gamma_1$ is already very small comparing to $\hat{G}_1$. This fact can also be seen in the following way: if the PSF in $T'(k)$ is not rotated by 90 degrees, there is some residual additive bias of order $10^{-4}$ when the PSF ellipticity is 0.1, because $\delta_{N_s}$, in this case, contains a term of spin-2 from $e_1$. As $g_1$ is an order of magnitude smaller than 0.1, the shear bias introduced by eq.(\ref{asym_f}) must be of order $10^{-5}$, which is not significant for our purpose.   
+However, we find that the term $\langle\Gamma_1\delta_{N_s}\rangle$ does not contain contributions from the PSF ellipticity, which is now in a term with spin-6 in the expression of $\delta_{N_s}$, therefore does not couple with $\Gamma_1$, a spin-2 quantity. In principle, there should still be some small amount of multiplicative bias on $g_1$, as $\delta_{N_s}$ does contain a spin-2 term from $g_1$. The magnitude of this bias is likely very small, as $\Gamma_1$ is already very small comparing to $\hat{G}_1$. This fact can also be seen in the following way: if the PSF in $T'(k)$ is not rotated by 90 degrees, there is some residual additive bias of order $10^{-4}$ when the PSF ellipticity is 0.1, because $\delta_{N_s}$, in this case, contains a term of spin-2 from $e_1$. As $g_1$ is an order of magnitude smaller than 0.1, the shear bias introduced by Eq.(\ref{asym_f}) must be of order $10^{-5}$, which is not significant for our purpose.   
 
 
 \section{conclusion}
@@ -400,7 +418,11 @@ The $\vert f_k\vert^2$ in $U_1$ is derived from $2f_k^{Re}n_k^{Re}+2f_k^{Im}n_k^
 
 \bibitem[Bernstein (2010)]{Bernstein2010}Bernstein G, \ 2010, \mnras, 406, 2793 
 
+\bibitem[Berstein et al.(2016)]{Berstein2016}Berstein G M, Armstrong R, Krawiec C et al. \ 2016, \mnras, 459, 4467
+ 
 \bibitem[Bridle et al.(2010)]{Bridle2010}Bridle S, Balan, S T, Bethge, M, et al. \ 2010, \mnras, 405, 2044
+
+\bibitem[Fenech et al.(2017)]{Fenech2017}Fenech Conti I, Herbonnet R, Hoekstra H, et al. \ 2017 , \mnras,  467, 1627
 
 \bibitem[Hildebrandt et al.(2016)]{Hildebrandt2016}Hildebrandt H, Viola M, Heymans C, et al. \ 2016, \mnras, 1498, 1454
 
@@ -412,11 +434,15 @@ The $\vert f_k\vert^2$ in $U_1$ is derived from $2f_k^{Re}n_k^{Re}+2f_k^{Im}n_k^
 
 \bibitem[Kacprzak et al.(2014)]{Kacprzak2014}Kacprzak T, Bridle S, Rowe B, et al. \ 2014 , \mnras, 441, 2528
 
+\bibitem[Kitching et al.(2008)]{Kitching2008}Kitching T D, Miller L, Heymans C E, et al. \ 2008, \mnras, 390, 149
+
 \bibitem[Kilbinger(2015)]{Kilbringer2015}Kilbinger M. \ 2015,  PRRh, 78, 086901
 
 \bibitem[Laureijs et al.(2011)]{Laureijs2011}Laureijs R, Amiaux J, Arduini S et al. \ 2011 , arXiv:1110.3193v1
 
 \bibitem[Li et al.(2020)]{Li2020}Li H K, Jun Z, Liu D Z et al. / 2020,  arXiv:2006.02095v1
+
+\bibitem[Miller et al.(2013)]{Miller2013}Miller L, Heymans C, Kitching T D, et al. \ 2013,  \mnras, 429, 2858
 
 \bibitem[Refregier et al.(2012)]{Refregier2012}Refregier A, Kacprzak T, Amara A, et al.  \ 2012, \mnras, 425, 1951
 
@@ -428,12 +454,15 @@ The $\vert f_k\vert^2$ in $U_1$ is derived from $2f_k^{Re}n_k^{Re}+2f_k^{Im}n_k^
 
 \bibitem[Voigt \& Bridle(2010)]{Voigt2010}Voigt L \& Bridle S, \ 2010, \mnras, 404, 458
 
+\bibitem[Viola et al.(2014)]{Viola2014}Viola L M, Kitching T D, \&Joachimi B. \ 2014, \mnras, 439, 1909
+
 \bibitem[Zhang(2008)]{Zhang2008} Zhang J. \ 2008, \mnras, 383, 113
 
 \bibitem[Zhang et al.(2015)]{Zhang2015} Zhang J, Luo W \& Sebastien F. \ 2015 \jcap, 1, 24
 
 \bibitem[Zhang et al.(2017)]{Zhang2017} Zhang J, Zhang P, Luo W. \ 2017, \apj, 834, 8
-	
+
+\bibitem[Zuntz et al.(2013)]{Zuntz2013}Zuntz J, Kacprzak T, Voigt L. \ 2013, \mnras, 434, 1604
 \end{thebibliography}
 
 \end{document}

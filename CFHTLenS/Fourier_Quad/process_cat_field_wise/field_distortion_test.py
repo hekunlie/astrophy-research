@@ -190,66 +190,101 @@ result = numpy.zeros((2, bin_num))
 #         img.save_img(pic_path + "/%s.png"%fnm)
 #         img.close_img()
 
+labels = ["upper", "lower", "left", "right"]
 sub_sample_num = divmod(len(sub_fields), 4)[0]
 sub_fields_sep = tool_box.alloc(sub_fields, sub_sample_num)
 col_shift = 0
 for sub_tag in range(sub_sample_num):
-    tag = 0
+    tag_u, tag_d, tag_l, tag_r = 0, 0 ,0 ,0
     for fnm in sub_fields_sep[sub_tag]:
         if os.path.exists(src_path + "/%s/result/%s_raw.hdf5" % (fnm, fnm)):
             h5f = h5py.File(src_path + "/%s/result/%s_raw.hdf5" % (fnm, fnm), "r")
             temp = h5f["/data"][()]
             h5f.close()
 
-            if tag == 0:
-                data = temp
+            nstar = temp[:, col_shift + 5]
+
+            flux_alt = temp[:, col_shift + 12]
+
+            ra = temp[:, col_shift + 13]
+            dec = temp[:, col_shift + 14]
+
+            ra_cent = (ra.max() + ra.min()) / 2
+            dec_cent = (dec.max() + dec.min()) / 2
+
+            idx1 = nstar >= 12
+            idx2 = flux_alt >= 3
+            idx3 = numpy.abs(temp[:, col_shift + 15]) <= 0.005
+            idx4 = numpy.abs(temp[:, col_shift + 16]) <= 0.005
+            idxs = idx1 * idx2 & idx3 & idx4
+
+            idxu = dec >= dec_cent
+            idxd = dec < dec_cent
+            idxl = ra < ra_cent
+            idxr = ra >= ra_cent
+
+            if tag_u == 0:
+                data_u = temp[idxu&idxs]
+                tag_u += 1
             else:
-                data = numpy.row_stack((data, temp))
-            tag += 1
+                data_u = numpy.row_stack((data_u,temp[idxu & idxs]))
+                tag_u += 1
 
-    if tag > 0:
-        nstar = data[:,col_shift+5]
+            if tag_d == 0:
+                data_d = temp[idxd&idxs]
+                tag_d += 1
+            else:
+                data_d = numpy.row_stack((data_d,temp[idxd & idxs]))
+                tag_d += 1
 
-        flux_alt = data[:, col_shift + 12]
+            if tag_l == 0:
+                data_l = temp[idxl&idxs]
+                tag_l += 1
+            else:
+                data_l = numpy.row_stack((data_l,temp[idxl & idxs]))
+                tag_l += 1
 
-        ra = data[:, col_shift + 13]
-        dec = data[:, col_shift + 14]
+            if tag_r == 0:
+                data_r = temp[idxr&idxs]
+                tag_r += 1
+            else:
+                data_r = numpy.row_stack((data_r,temp[idxr & idxs]))
+                tag_r += 1
 
-        ra_cent = (ra.max() + ra.min())/2
-        dec_cent = (dec.max() + dec.min())/2
+    tags = [tag_u,tag_d,tag_l, tag_r]
+    datas = []
+    if tag_u > 0:
+        datas.append(data_u)
+    else:
+        datas.append(0)
+    if tag_d > 0:
+        datas.append(data_d)
+    else:
+        datas.append(0)
+    if tag_l > 0:
+        datas.append(data_l)
+    else:
+        datas.append(0)
+    if tag_r > 0:
+        datas.append(data_r)
+    else:
+        datas.append(0)
+    # print(tags)
+    # print(datas)
+    img = Image_Plot(xpad=0.25, ypad=0.1)
+    img.subplots(2, 2)
 
-        idx1 = nstar >= 12
-        idx2 = flux_alt >= 3
-        idx3 = numpy.abs(data[:, col_shift + 15]) <= 0.005
-        idx4 = numpy.abs(data[:, col_shift + 16]) <= 0.005
-        idxs = idx1*idx2&idx3&idx4
-
-
-
-
-        idxu = dec >= dec_cent
-        idxd = dec < dec_cent
-        idxl = ra < ra_cent
-        idxr = ra >= ra_cent
-
-        region = [idxs&idxu&idxl, idxs&idxu&idxr, idxs&idxd&idxl, idxs&idxd&idxr]
-        labels = ["upper left", "upper right", "lower left", "lower right"]
-        print(data.shape[0],idxs.sum(), [region[i].sum() for i in range(4)],sum([region[i].sum() for i in range(4)]))
-
-        img = Image_Plot(xpad=0.25, ypad=0.1)
-        img.subplots(2, 2)
-
-        for i in range(4):
-            m, n = divmod(i,2)
-
+    for i in range(4):
+        if tags[i] > 0:
+            m, n = divmod(i, 2)
             result[:,:] = - 99
 
-            gf1 = data[:, col_shift + 15][region[i]]
+            gf1 = datas[i][:, col_shift + 15]
             # gf2 = data[:, col_shift + 16][idx1&idx2&region[i]]
 
-            mg1 = data[:,col_shift + 17][region[i]]
+            mg1 = datas[i][:,col_shift + 17]
             # mg2 = data[:,col_shift + 18][idx1&idx2&region[i]]
-            mnu1 = data[:,col_shift + 19][region[i]] - data[:,col_shift + 20][region[i]]
+            mnu1 = datas[i][:,col_shift + 19] - datas[i][:,col_shift + 20]
             # mu = -data[:,col_shift + 20][idx1&idx2&region[i]]
             # mv = -data[:,col_shift + 21][idx1&idx2&region[i]]
 
@@ -265,18 +300,21 @@ for sub_tag in range(sub_sample_num):
             idxp = result[0] > - 99
             img.axs[m][n].errorbar(gf_bin_c[idxp], result[0][idxp], result[1][idxp],
                                    capsize=3, c="C1", label="%s g1"%labels[i], marker="o")
-            xs = img.axs[m][n].set_xlim()
-            ys = img.axs[m][n].set_ylim()
-            max_x = max([abs(xs[0]), abs(xs[1])])
-            max_y = max([abs(ys[0]), abs(ys[1])])
-            max_range = max(max_x, max_y)
 
-            img.axs[m][n].plot([-max_range, max_range], [-max_range, max_range], linestyle="--", c="grey")
-            img.axs[m][n].legend(loc="upper left")
-            img.axs[m][n].set_xlim(-max_x, max_x)
-            img.axs[m][n].set_ylim(-max_y, max_y)
+        m,n = divmod(i,2)
+        xs = img.axs[m][n].set_xlim()
+        ys = img.axs[m][n].set_ylim()
+        max_x = max([abs(xs[0]), abs(xs[1])])
+        max_y = max([abs(ys[0]), abs(ys[1])])
+        max_range = max(max_x, max_y)
 
-            img.set_label(m,n, 0, "$g_1$")
-            img.set_label(m,n, 1, "True $g_1$")
-        img.save_img(pic_path + "/%s.png"%("_".join(sub_fields_sep[sub_tag])))
-        img.close_img()
+        img.axs[m][n].plot([-max_range, max_range], [-max_range, max_range], linestyle="--", c="grey")
+        img.axs[m][n].legend(loc="upper left")
+        img.axs[m][n].set_xlim(-max_x, max_x)
+        img.axs[m][n].set_ylim(-max_y, max_y)
+
+        img.set_label(m,n, 0, "$g_1$")
+        img.set_label(m,n, 1, "True $g_1$")
+
+    img.save_img(pic_path + "/%s.png"%("_".join(sub_fields_sep[sub_tag])))
+    img.close_img()
