@@ -13,7 +13,8 @@ int main(int argc, char **argv)
 
 
     char inform[400];
-  
+    char time_now[40];
+    
     int i;
     double st1, st2, st3, st4, st5;
     double tt1, tt2;
@@ -43,15 +44,24 @@ int main(int argc, char **argv)
     for(i=all_paras.jackknife_resample_st[rank]; i<all_paras.jackknife_resample_ed[rank]; i++)
     {   
         st2 = clock();
+        get_time(time_now, 40);
+        if(rank == 0)
+        {     
+            sprintf(inform, "%s. Jackknife %d. start.", time_now, i);
+            std::cout<<inform<<std::endl;
+        }
+
 
         resample_jackknife(&all_paras,i);
         corr_calculate(&all_paras, i);
 
         st3 = clock();
+        get_time(time_now, 40);
+
         if(rank == 0)
         {   
-            tt1 = (st3-st2)/CLOCKS_PER_SEC;
-            sprintf(inform, "Jackknife %d. %.2f sec", i,tt1);
+            tt1 = (st3-st2)/CLOCKS_PER_SEC;    
+            sprintf(inform, "%s. Jackknife %d. %.2f sec", time_now, i,tt1);
             std::cout<<inform<<std::endl;
         }
     }
