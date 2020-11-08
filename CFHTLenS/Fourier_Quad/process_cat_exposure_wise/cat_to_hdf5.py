@@ -109,10 +109,13 @@ else:
     result_nm = argv[3]
 
     expos = []
+    gal_num = []
     with open(total_path + "/"+source_list_nm, "r") as f:
         conts = f.readlines()
     for nm in conts:
-        expos.append(nm.split("\n")[0])
+        informs = nm.split("\n")
+        expos.append(informs[0])
+        gal_num.append(informs[2])
 
     if rank == 0:
         print(len(expos)," exposures")
@@ -162,7 +165,7 @@ else:
         h5f = h5py.File(total_path + "/%s"%result_nm, "w")
         h5f["/data"] = data
         h5f.close()
-
+        print("Totally %d (%d) galaxies"%(data.shape[0], sum(gal_num)))
 
 
     comm.Barrier()

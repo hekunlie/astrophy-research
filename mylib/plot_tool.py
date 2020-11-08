@@ -1,5 +1,5 @@
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy
@@ -244,3 +244,12 @@ class Image_Plot:
 
     def close_img(self):
         plt.close()
+
+    def pts_scatter(self,iy, ix, x, y, color_label, scale, dot_size=5, color_cm="bwr"):
+        norm = plt.Normalize(vmin=numpy.min(scale[0]), vmax=numpy.max(scale[1]))
+        cmap = plt.get_cmap(color_cm)
+        cl = cmap(norm(color_label))
+        fig = self.axs[iy][ix].scatter(x, y, color=cl, s=dot_size)
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm._A = []
+        self.figure.colorbar(sm, ax=self.axs[iy][ix])

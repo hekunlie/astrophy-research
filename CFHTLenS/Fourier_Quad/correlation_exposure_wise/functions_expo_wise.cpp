@@ -1080,7 +1080,7 @@ void read_para(corr_cal *all_paras)
     int i, j, m, n;
     char set_name[60], data_path[600];
 
-    sprintf(all_paras->log_path, "%s/log/cal_%d.dat", all_paras->parent_path, all_paras->corr_cal_rank);
+    sprintf(all_paras->log_path, "%s/log/cal_j%d_%d.dat", all_paras->parent_path, all_paras->resample_num, all_paras->corr_cal_rank);
 
     sprintf(data_path,"%s/cata/gg_cor.hdf5", all_paras->parent_path);
     // read radius bin
@@ -1221,18 +1221,18 @@ void prepare_data(corr_cal *all_paras)
         delete[] temp[1];
     }
     
-    if(all_paras->corr_cal_rank == 0)
-    {   
-        std::cout<<"All expo pairs: "<<all_paras->corr_cal_total_pair_num<<std::endl;
-        sprintf(data_path, "%s/pairs.hdf5",all_paras->parent_path);
-        sprintf(set_name, "/label_1");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[0], 1, all_paras->corr_cal_total_pair_num, true);
-        sprintf(set_name, "/label_2");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[1], 1, all_paras->corr_cal_total_pair_num, false);
+    // if(all_paras->corr_cal_rank == 0)
+    // {   
+    //     std::cout<<"All expo pairs: "<<all_paras->corr_cal_total_pair_num<<std::endl;
+    //     sprintf(data_path, "%s/pairs.hdf5",all_paras->parent_path);
+    //     sprintf(set_name, "/label_1");
+    //     write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[0], 1, all_paras->corr_cal_total_pair_num, true);
+    //     sprintf(set_name, "/label_2");
+    //     write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[1], 1, all_paras->corr_cal_total_pair_num, false);
 
-        sprintf(set_name, "/file_tag");
-        write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_file_label, 1, all_paras->corr_cal_total_pair_num, false);
-    }
+    //     sprintf(set_name, "/file_tag");
+    //     write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_file_label, 1, all_paras->corr_cal_total_pair_num, false);
+    // }
     
     // prepare for jackknife 
     pre_jackknife(all_paras);
@@ -1505,7 +1505,7 @@ void save_result(corr_cal *all_paras)
     int row, col;
     bool overwrite;
 
-    sprintf(data_path, "%s/result/result.hdf5", all_paras->parent_path);
+    sprintf(data_path, "%s/result/result_%d.hdf5", all_paras->parent_path, all_paras->resample_num);
 
     m = all_paras->jackknife_resample_st[all_paras->corr_cal_rank];
     n = all_paras->jackknife_resample_ed[all_paras->corr_cal_rank];

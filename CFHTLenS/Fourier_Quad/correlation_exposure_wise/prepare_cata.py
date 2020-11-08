@@ -9,6 +9,7 @@ import tool_box
 import warnings
 from sklearn.cluster import KMeans
 import time
+import prepare_tools
 
 warnings.filterwarnings('error')
 
@@ -293,167 +294,217 @@ if cmd == "prepare":
     comm.Barrier()
 
 elif cmd == "stack":
-    # stack the fields
+    # collection
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
-    result_path = result_cata_path + "/total.hdf5"
-
+    expos = []
+    gal_num = []
+    with open(result_cata_path + "/source_list.dat", "r") as f:
+        conts = f.readlines()
+    for nm in conts:
+        informs = nm.split()
+        expos.append(informs[0])
+        gal_num.append(int(informs[2]))
+    expos_num = len(expos)
     if rank == 0:
-        print("Stack field files")
-        h5f = h5py.File(result_path, "w")
-        h5f.close()
+        print(expos_num, " exposures")
 
-    for i in range(area_num):
+    expos_labels = [i for i in range(expos_num)]
+    my_sub_area_list = tool_box.alloc(expos, cpus)[rank]
+    my_sub_expos_labels = tool_box.alloc(expos_labels, cpus)[rank]
+    my_sub_gal_num = tool_box.alloc(gal_num, cpus)[rank]
+    # print(rank, i, len(my_sub_area_list))
 
-        with open(result_cata_path + "/source_list_%d.dat" % i) as f:
-            fields = f.readlines()
-        sub_area_list = []
-        for nm in fields:
-            sub_area_list.append(nm.split("\t")[0])
-        # print(sub_area_list)
-        my_sub_area_list = tool_box.alloc(sub_area_list, cpus, method="order")[rank]
-        # print(rank, i, len(my_sub_area_list))
-        gal_num = []
-        if len(my_sub_area_list) > 0:
-            for tag, fns in enumerate(my_sub_area_list):
+    if len(my_sub_area_list) > 0:
+        for tag, expo_path in enumerate(my_sub_area_list):
 
-                h5f = h5py.File(fns, "r")
+            h5f = h5py.File(expo_path, "r")
+            temp = h5f["/data"][()]
 
-                temp1 = h5f["/field"][()][:, 5:7]
-                temp2 = h5f["/field_expo_label"][()]
-
-                num = h5f["/total_gal_num"][()][0]
-                expo_info = h5f["/expos_info"][()]
-                # print(temp1.shape)
-                if num != temp1.shape[0] or expo_info[0].sum() != num:
-                    print("Wrong %s" % fns, num,temp1.shape[0], expo_info[0].sum())
-
-                if tag == 0:
-                    data1 = temp1
-                    data2 = temp2
-                else:
-                    data1 = numpy.row_stack((data1, temp1))
-                    data2 = numpy.row_stack((data2, temp2))
-                h5f.close()
-
-                gal_num.append(num)
-            sp1 = data1.shape
-            sp2 = data2.shape
-        else:
-            sp1 = (0, 0)
-            sp2 = (0, 0)
-        # print(sp1, sp2)
-
-        sp1_total = comm.gather(sp1, root=0)
-        sp2_total = comm.gather(sp2, root=0)
-
-        # print(i,rank, data.shape, data.dtype, sp, data[0,:5])
-        comm.Barrier()
-
-        if rank > 0 and sp1[0] > 0:
-            comm.Send([data1, MPI.FLOAT], dest=0, tag=rank)
-        else:
-            # print(sp1_total)
-            for ir in range(1, cpus):
-                if sp1_total[ir][0] > 0:
-                    recv_buf = numpy.empty(sp1_total[ir], dtype=numpy.float32)
-                    comm.Recv(recv_buf, source=ir, tag=ir)
-                    data1 = numpy.row_stack((data1, recv_buf))
-
-            if i == 0:
-                stack_data1 = data1
+            temp_label = numpy.zeros((my_sub_gal_num[tag],1),dtype=numpy.intc) \
+                         + my_sub_expos_labels[tag]
+            # Nan check
+            idx = numpy.isnan(temp)
+            if idx.sum() > 0:
+                print("Find Nan ", expo_path)
+            if tag == 0:
+                stack_data = temp
+                stack_expos_labels = temp_label
             else:
-                stack_data1 = numpy.row_stack((stack_data1, data1))
-
-            h5f = h5py.File(result_path, "r+")
-            h5f["/w%d" % i] = data1
-            h5f["/w%d" % i].attrs["info"] = ["dec ra"]
-            h5f.close()
-        comm.Barrier()
-
-        if rank > 0 and sp2[0] > 0:
-            comm.Send([data2, MPI.INT], dest=0, tag=rank)
-        else:
-            for ir in range(1, cpus):
-                if sp2_total[ir][0] > 0:
-                    recv_buf = numpy.empty(sp2_total[ir], dtype=numpy.intc)
-                    comm.Recv(recv_buf, source=ir, tag=ir)
-                    data2 = numpy.row_stack((data2, recv_buf))
-
-            if i == 0:
-                stack_data2 = data2
-            else:
-                stack_data2 = numpy.row_stack((stack_data2, data2))
-
-            h5f = h5py.File(result_path, "r+")
-            h5f["/w%d_expo_label" % i] = data2
-            h5f["/w%d_expo_label" % i].attrs["info"] = ["exposure labels"]
-            h5f.close()
-        comm.Barrier()
-
-        num_buffer = comm.gather(gal_num, root=0)
-        if rank == 0:
-            source_num_in_field = []
-            for snb in num_buffer:
-                if len(snb) > 0:
-                    source_num_in_field.extend(snb)
-
-            fnum = len(source_num_in_field)
-            source_num_in_field = numpy.array(source_num_in_field, dtype=numpy.intc).reshape(fnum, 1)
-            if source_num_in_field.sum() != data1.shape[0]:
-                print("Wrong-total_num !")
-
-            if i == 0:
-                stack_source_num_in_field = source_num_in_field
-            else:
-                stack_source_num_in_field = numpy.row_stack((stack_source_num_in_field, source_num_in_field))
-
-            h5f = h5py.File(result_path, "r+")
-            h5f["/w%d_gal_num" % i] = source_num_in_field
-            h5f["/w%d_gal_num" % i].attrs["info"] = ["gal num of each field"]
+                stack_data = numpy.row_stack((stack_data, temp))
+                stack_expos_labels = numpy.row_stack((stack_expos_labels, temp_label))
             h5f.close()
 
-        comm.Barrier()
+        sp = stack_data.shape
+    else:
+        sp = (0, 0)
 
-    if rank == 0:
-        h5f = h5py.File(result_path, "r+")
+    sp_total = comm.gather(sp, root=0)
+    # print(i,rank, data.shape, data.dtype, sp, data[0,:5])
+    comm.Barrier()
 
-        h5f["/total/data"] = stack_data1
-        h5f["/total/data"].attrs["info"] = ["dec ra"]
+    if rank > 0 and sp[0] > 0:
+        comm.Send([stack_data, MPI.FLOAT], dest=0, tag=rank)
+    else:
+        for ir in range(1, cpus):
+            if sp_total[ir][0] > 0:
+                recv_buf = numpy.empty(sp_total[ir], dtype=numpy.float32)
+                comm.Recv(recv_buf, source=ir, tag=ir)
+                stack_data = numpy.row_stack((stack_data, recv_buf))
 
-        h5f["/total/expo_label"] = stack_data2
-        h5f["/total/expo_label"].attrs["info"] = ["exposure labels"]
-
-        h5f["/total/gal_num"] = stack_source_num_in_field
-        h5f["/total/gal_num"].attrs["info"] = ["gal num of each field"]
-
+        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "w")
+        h5f["/data"] = stack_data
         h5f.close()
     comm.Barrier()
 
-elif cmd == "segment":
+    if rank > 0 and sp[0] > 0:
+        comm.Send([stack_expos_labels, MPI.INT], dest=0, tag=rank)
+    else:
+        for ir in range(1, cpus):
+            if sp_total[ir][0] > 0:
+                recv_buf = numpy.empty((sp_total[ir][0],1), dtype=numpy.intc)
+                comm.Recv(recv_buf, source=ir, tag=ir)
+                stack_expos_labels = numpy.row_stack((stack_expos_labels, recv_buf))
+
+        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r+")
+        h5f["/expos_label"] = stack_expos_labels[:,0]
+        h5f.close()
+        print("Totally %d (%d) galaxies" % (stack_expos_labels.shape[0], sum(gal_num)))
+    comm.Barrier()
+
+elif cmd == "kmeans":
     # Kmeans method for classification for jackknife
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    cpus = comm.Get_size()
 
     t1 = time.time()
 
-    njobs = int(argv[2])
-    ncent = 200
+    # ncent = int(argv[2])
+    # njobs = int(argv[3])
+    ncent = [75,34,56,35][rank]
+    ra_bin = [1000, 5000, 10000, 15000, 30000]
 
-    h5f = h5py.File(result_cata_path + "/total.hdf5", "r")
-
-    total = h5f["/total/data"][()]
-    expo_label = h5f["/total/expo_label"][()]
-    gal_num = h5f["/total/gal_num"][()]
+    h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
+    data = h5f["/data"][()]
     h5f.close()
 
-    y_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000), n_jobs=njobs).fit_predict(total)
+    ra_dec = data[:,5:7]
+    idx1 = ra_dec[:,0] >= ra_bin[rank]
+    idx2 = ra_dec[:,0] < ra_bin[rank+1]
+    idx = idx1 & idx2
 
-    h5f = h5py.File(result_cata_path + "/total.hdf5", "r+")
-    h5f["/total/area_labels_mini"] = y_pred
-    h5f["/total/area_labels_mini"].attrs["info"] = ["labels from Kmeans for jackknife"]
+    group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec[idx])
+
+    h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%rank, "w")
+    h5f["/data"] = group_pred
+    h5f["/ra_dec"] = ra_dec[idx]
     h5f.close()
 
     t2 = time.time()
-    print(t2-t1)
+    print("%d Total sub-sample: %d (%d ~ %d). Time: %.2f sec."%(rank, ncent, group_pred.min(), group_pred.max(), t2-t1))
+
+elif cmd == "segment":
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    cpus = comm.Get_size()
+
+    group_cata_path = result_cata_path + "/kmeans"
+    if rank == 0:
+        if os.path.exists(group_cata_path):
+            os.makedirs(group_cata_path)
+    comm.Barrier()
+
+    # the width of each exposure, arcmin
+    expos_field_width = 60
+    dra = expos_field_width/2
+    ddec = expos_field_width/2
+
+    # read the group labels from Kmeans
+    h5f = h5py.File(result_cata_path + "/group_predict.hdf5","r")
+    group_label = h5f["/data"][()]
+    h5f.close()
+    # the catalog
+    h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
+    data = h5f["/data"][()]
+    h5f.close()
+
+    group_num = group_label.max() + 1
+
+    group_list = [i for i in range(group_num)]
+
+    sub_group_list = tool_box.alloc(group_list, cpus)[rank]
+
+    expos_avail_sub = []
+    # divide the group into many exposures
+    for group_tag in sub_group_list:
+        idx = group_label == group_tag
+        sub_data = data[idx]
+        group_ra = sub_data[:,5]
+        group_dec = sub_data[:,6]
+
+        group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
+        group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
+
+        group_ra_bin, group_ra_bin_num = prepare_tools.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
+        group_dec_bin, group_dec_bin_num = prepare_tools.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+
+        count = 0
+        for i in range(group_ra_bin_num):
+            idx1 = group_ra >= group_ra_bin[i]
+            idx2 = group_ra < group_ra_bin[i+1]
+
+            for j in range(group_dec_bin_num):
+                idx3 = group_dec >= group_dec_bin[j]
+                idx4 = group_dec < group_dec_bin[j+1]
+
+                idx_sub = idx1 & idx2 & idx3 & idx4
+
+                src_num = idx_sub.sum()
+
+                if src_num > 0:
+                    expos_data = sub_data[idx_sub]
+                    sub_redshift = sub_data[:, 5]
+                    redshift_label = prepare_tools.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
+
+                    expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2
+                    expos_dec_center = (group_dec_bin[j] + group_dec_bin[j+1]) / 2
+                    cos_expos_dec_center = numpy.cos(expos_dec_center / deg2arcmin * deg2rad)
+
+                    expos_pos = numpy.array([expos_ra_center, expos_dec_center, dra, ddec,
+                                            numpy.sqrt((dra * cos_expos_dec_center) ** 2 + ddec ** 2), cos_expos_dec_center],
+                                           dtype=numpy.float32)
+
+                    expos_name = "%d-%d"%(group_tag, count)
+                    expos_path = group_cata_path + "/%s.hdf5"%expos_name
+                    h5f_expos = h5py.File(expos_path, "w")
+                    h5f_expos["/pos"] = expos_pos
+                    h5f_expos["/redshift_label"] = redshift_label
+                    h5f_expos["/data"] = expos_data
+                    h5f_expos["/expos_label"] = numpy.array([group_tag, count], dtype=numpy.intc)
+                    h5f_expos.close()
+
+                    expos_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
+                                          % (expos_path, expos_name, src_num, expos_pos[0], expos_pos[1],
+                                             expos_pos[2], expos_pos[3], expos_pos[4], expos_pos[5]))
+                    count += 1
+    comm.Barrier()
+    expo_avail_list = comm.gather(expos_avail_sub, root=0)
+
+    if rank == 0:
+        buffer_expo = []
+        for fns in expo_avail_list:
+            buffer_expo.extend(fns)
+
+        with open(group_cata_path + "/source_list.dat", "w") as f:
+            f.writelines(buffer_expo)
+
+        log_inform = "%d exposures\n"%len(buffer_expo)
+        with open("kmeans_log.dat", "w") as f:
+            f.writelines(log_inform)
+        print(log_inform)
+    comm.Barrier()

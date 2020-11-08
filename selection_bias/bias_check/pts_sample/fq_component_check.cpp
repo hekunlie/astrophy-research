@@ -386,10 +386,10 @@ int main(int argc, char*argv[])
 		sprintf(log_inform, "RANK: %03d, SHEAR %02d: my chips: %d - %d", rank, shear_id, chip_st, chip_ed);
 		write_log(log_path, log_inform);
 
-		// read flux
-		sprintf(shear_path,"%s/parameters/para_%d.hdf5", parent_path, shear_id);
-		sprintf(set_name,"/flux");
-		read_h5(shear_path, set_name, galaxy_flux);
+		// // read flux
+		// sprintf(shear_path,"%s/parameters/para_%d.hdf5", parent_path, shear_id);
+		// sprintf(set_name,"/flux");
+		// read_h5(shear_path, set_name, galaxy_flux);
 		
 		// rank 0 reads the total flux array and scatters to each thread
 		if(rank == 0)
@@ -411,8 +411,6 @@ int main(int argc, char*argv[])
 		for (i = chip_st; i < chip_ed; i++)
 		{
 			t1 = clock();
-
-
 
 			sprintf(log_inform, "RANK: %03d, SHEAR %02d:, chip: %05d, start. seed: %d, %d", rank,shear_id, i, seed_pts, seed_n1);
 			write_log(log_path, log_inform);
@@ -442,8 +440,8 @@ int main(int argc, char*argv[])
 					write_log(log_path, log_inform);
 				}
 
-				n = i*stamp_num + j;
-				flux_i = galaxy_flux[n]/num_p;
+				// n = i*stamp_num + j;
+				flux_i = 10000;//galaxy_flux[n]/num_p;
 
 				initialize_arr(point, num_p * 2, 0);				
 				for(k=0;k<8;k++)
@@ -604,14 +602,20 @@ int main(int argc, char*argv[])
 				// sub_cross_term_est_data_r[2][row + j * shear_data_cols + 4] = all_paras.dv;
 
 			}
-
+			t2 = clock();
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
+			write_log(log_path, log_inform);
+			if (rank == 0)
+			{
+				std::cout << log_inform << std::endl;
+			}
 			// if(rank == 0 and shear_id==0 and i < 3)
 			// {
 				sprintf(chip_path, "!%s/imgs/%d/gal_chip_%05d_noise_free.fits", parent_path, shear_id, i);
 			 	write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
 			// }
-			t2 = clock();
-			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, done in %.2f s.", rank, shear_id, i, (t2 - t1) / CLOCKS_PER_SEC);
+
+			sprintf(log_inform, "RANK: %03d, SHEAR %02d: chip: %05d, write to file", rank, shear_id, i);
 			write_log(log_path, log_inform);
 			if (rank == 0)
 			{
@@ -622,6 +626,12 @@ int main(int argc, char*argv[])
 		gsl_free(1);
 		// gsl_free(2);
 
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d gather data", rank, shear_id);
+		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
 
 		// finish the chip loop
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -641,6 +651,15 @@ int main(int argc, char*argv[])
 			write_data(result_path, total_data, mg_name, mg_data, total_data_row, shear_data_cols);
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
+
+
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d gather noisy data", rank, shear_id);
+		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
+
 
 		my_Gatherv(sub_cross_term_data, gather_count, total_data, numprocs, rank);
 		if (0 == rank)
@@ -666,6 +685,13 @@ int main(int argc, char*argv[])
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 
+
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d gather noise residual data", rank, shear_id);
+		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
 
 
 		my_Gatherv(sub_cross_term_est_data[0], gather_count, total_data, numprocs, rank);
@@ -693,6 +719,12 @@ int main(int argc, char*argv[])
 		MPI_Barrier(MPI_COMM_WORLD);
 
 
+		sprintf(log_inform, "RANK: %03d, SHEAR %02d gather noise cross data", rank, shear_id);
+		write_log(log_path, log_inform);
+		if (rank == 0)
+		{
+			std::cout << log_inform << std::endl;
+		}
 
 		my_Gatherv(sub_cross_term_est_data_r[0], gather_count, total_data, numprocs, rank);
 		if (0 == rank)

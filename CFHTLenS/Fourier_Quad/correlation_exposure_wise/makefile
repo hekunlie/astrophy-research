@@ -1,12 +1,12 @@
-FQLIB_PATH=/home/hklee/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
-HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
-HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio -lcurl
-COR_FUNCTIONS_APTH=/home/hklee/work/mylib/functions.cpp
+# FQLIB_PATH=/home/hklee/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
+# HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
+# HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio -lcurl
+# COR_FUNCTIONS_APTH=/home/hklee/work/mylib/functions.cpp
 
-# FQLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/FQlib.cpp -lgsl -lgslcblas -lfftw3l -lfftw3f -lm
-# HK_MPILIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_mpi.cpp
-# HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio
-# COR_FUNCTIONS_APTH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/functions.cpp
+FQLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/FQlib.cpp -lgsl -lgslcblas -lfftw3l -lfftw3f -lm
+HK_MPILIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_mpi.cpp
+HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio
+COR_FUNCTIONS_APTH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/functions.cpp
 
 
 CODE_NAME_F=calculate_correlation.cpp

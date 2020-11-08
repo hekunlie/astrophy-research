@@ -10,31 +10,32 @@ import matplotlib.pyplot as plt
 
 
 zbin_num = 6#int(argv[1])
-theta_bin_num = 5#int(argv[2])
+theta_bin_num = 7#int(argv[2])
 resample_num = 300#int(argv[3])
-
-data_path = "E:/works/correlation/CFHT/2"
-pic_nm = data_path + "/result.png"
-h5f = h5py.File(data_path + "/result.hdf5","r")
+pts_num = int(theta_bin_num*(zbin_num**2+zbin_num)/2)
+data_path = "E:/works/correlation/CFHT"
+pic_nm = data_path + "/result_%d.png"%resample_num
+result_npz = data_path + "/result_cache_%d.npz"%resample_num
+h5f = h5py.File(data_path + "/result_%d.hdf5"%resample_num,"r")
 print(list(h5f.keys()))
 print(list(h5f["/0"].keys()))
 
-xi_p = (-h5f["/0/tt"][()] - h5f["/0/xx"][()]).reshape((1,105))
-xi_m = (-h5f["/0/tt"][()] + h5f["/0/xx"][()]).reshape((1,105))
-theta = h5f["/0/theta"][()].reshape((1,105))
+xi_p = (-h5f["/0/tt"][()] - h5f["/0/xx"][()]).reshape((1,pts_num))
+xi_m = (-h5f["/0/tt"][()] + h5f["/0/xx"][()]).reshape((1,pts_num))
+theta = h5f["/0/theta"][()].reshape((1,pts_num))
 
 xi_p_sig = numpy.zeros_like(xi_p)
 xi_m_sig = numpy.zeros_like(xi_p)
 
-xi_p_sub = numpy.zeros((resample_num, 105))
-xi_m_sub = numpy.zeros((resample_num, 105))
+xi_p_sub = numpy.zeros((resample_num, pts_num))
+xi_m_sub = numpy.zeros((resample_num, pts_num))
 
 for i in range(1,resample_num+1):
 
-    xi_p_sub[i-1] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,105))
-    xi_m_sub[i-1] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,105))
+    xi_p_sub[i-1] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,pts_num))
+    xi_m_sub[i-1] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,pts_num))
 
-for i in range(105):
+for i in range(pts_num):
     xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
     xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
     # img = Image_Plot(fig_x=6, fig_y=4)
@@ -56,7 +57,7 @@ for i in range(105):
 # img.clos_img()
 # h5f.close()
 # exit()
-
+numpy.savez(result_npz, theta, xi_p, xi_m, xi_p_sig, xi_m_sig)
 
 img = Image_Plot(fig_x=4, fig_y=3,xpad=0,ypad=0,axis_linewidth=2.5, plt_line_width=3, legend_size=25,xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
@@ -98,7 +99,8 @@ for i in range(zbin_num):
             img.axs[img_row][img_col].set_yscale("log")
             img.axs[img_row][img_col].set_xscale("log")
 
-            img.axs[img_row][img_col].set_xlim(1.1, 60)
+            img.axs[img_row][img_col].set_xlim(0.8, 200)
+            img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,100], ["$1$","$5$","$10$","$100$"])
             img.axs[img_row][img_col].set_ylim(5 * 10 ** (-7), 5 * 10 ** (-4))
 
             # if tag not in [0, 6, 11, 15, 18, 20]:
