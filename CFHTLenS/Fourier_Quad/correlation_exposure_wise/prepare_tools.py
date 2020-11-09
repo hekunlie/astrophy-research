@@ -2,6 +2,7 @@ import numpy
 
 
 def set_min_bin(x_min, x_max, bin_width, dx=1):
+    # set up bins
     bin_num = 0
     xbin = []
     while True:
@@ -15,6 +16,7 @@ def set_min_bin(x_min, x_max, bin_width, dx=1):
 
 
 def get_bin_label(data, bins, bins_num):
+    # return the bin labels of each data point
     bins_label = numpy.zeros_like(data, dtype=numpy.intc)
     for i in range(bins_num):
         idx1 = data >= bins[i]

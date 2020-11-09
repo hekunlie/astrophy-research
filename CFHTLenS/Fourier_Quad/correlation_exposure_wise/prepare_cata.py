@@ -385,11 +385,13 @@ elif cmd == "kmeans":
 
     # ncent = int(argv[2])
     # njobs = int(argv[3])
+    # 200 sub-samples
     ncent = [75,34,56,35][rank]
     ra_bin = [1000, 5000, 10000, 15000, 30000]
 
     h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
     data = h5f["/data"][()]
+    expos_labels = h5f["/expos_label"][()]
     h5f.close()
 
     ra_dec = data[:,5:7]
@@ -402,12 +404,14 @@ elif cmd == "kmeans":
     h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%rank, "w")
     h5f["/data"] = group_pred
     h5f["/ra_dec"] = ra_dec[idx]
+    h5f["/expos_labels"] = expos_labels[idx]
     h5f.close()
 
     t2 = time.time()
     print("%d Total sub-sample: %d (%d ~ %d). Time: %.2f sec."%(rank, ncent, group_pred.min(), group_pred.max(), t2-t1))
 
 elif cmd == "segment":
+    # assign the source into the artificial exposures
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -419,85 +423,106 @@ elif cmd == "segment":
             os.makedirs(group_cata_path)
     comm.Barrier()
 
+    # area num
+    are_num = 4
     # the width of each exposure, arcmin
     expos_field_width = 60
     dra = expos_field_width/2
     ddec = expos_field_width/2
-
-    # read the group labels from Kmeans
-    h5f = h5py.File(result_cata_path + "/group_predict.hdf5","r")
-    group_label = h5f["/data"][()]
-    h5f.close()
-    # the catalog
-    h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
-    data = h5f["/data"][()]
-    h5f.close()
-
-    group_num = group_label.max() + 1
-
-    group_list = [i for i in range(group_num)]
-
-    sub_group_list = tool_box.alloc(group_list, cpus)[rank]
+    ra_bin = [1000, 5000, 10000, 15000, 30000]
+    ncent = []
 
     expos_avail_sub = []
-    # divide the group into many exposures
-    for group_tag in sub_group_list:
-        idx = group_label == group_tag
-        sub_data = data[idx]
-        group_ra = sub_data[:,5]
-        group_dec = sub_data[:,6]
+    expos_count = 0
+    for sub_area in range(area_num):
+        # read the group labels from Kmeans
+        h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%sub_area,"r")
+        group_label = h5f["/data"][()]
+        expos_labels = h5f["/expos_labels"][()]
+        h5f.close()
 
-        group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
-        group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
+        # the catalog
+        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
+        data = h5f["/data"][()]
+        h5f.close()
 
-        group_ra_bin, group_ra_bin_num = prepare_tools.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
-        group_dec_bin, group_dec_bin_num = prepare_tools.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+        ra_dec = data[:, 5:7]
+        idx1 = ra_dec[:, 0] >= ra_bin[sub_area]
+        idx2 = ra_dec[:, 0] < ra_bin[sub_area + 1]
+        idx_area = idx1 & idx2
+        area_data = data[idx_area]
 
-        count = 0
-        for i in range(group_ra_bin_num):
-            idx1 = group_ra >= group_ra_bin[i]
-            idx2 = group_ra < group_ra_bin[i+1]
+        group_num = group_label.max() + 1
+        ncent_before = sum(ncent)
+        ncent.append(group_num)
 
-            for j in range(group_dec_bin_num):
-                idx3 = group_dec >= group_dec_bin[j]
-                idx4 = group_dec < group_dec_bin[j+1]
+        group_list = [i for i in range(group_num)]
 
-                idx_sub = idx1 & idx2 & idx3 & idx4
+        sub_group_list = tool_box.alloc(group_list, cpus)[rank]
 
-                src_num = idx_sub.sum()
+        # divide the group into many exposures
+        for group_tag in sub_group_list:
+            # select individual group
+            idx_group = group_label == group_tag
+            sub_data = area_data[idx_group]
+            group_ra = sub_data[:,5]
+            group_dec = sub_data[:,6]
 
-                if src_num > 0:
-                    expos_data = sub_data[idx_sub]
-                    sub_redshift = sub_data[:, 5]
-                    redshift_label = prepare_tools.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
+            group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
+            group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
 
-                    expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2
-                    expos_dec_center = (group_dec_bin[j] + group_dec_bin[j+1]) / 2
-                    cos_expos_dec_center = numpy.cos(expos_dec_center / deg2arcmin * deg2rad)
+            group_ra_bin, group_ra_bin_num = prepare_tools.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
+            group_dec_bin, group_dec_bin_num = prepare_tools.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
 
-                    expos_pos = numpy.array([expos_ra_center, expos_dec_center, dra, ddec,
-                                            numpy.sqrt((dra * cos_expos_dec_center) ** 2 + ddec ** 2), cos_expos_dec_center],
-                                           dtype=numpy.float32)
+            count = 0
+            for i in range(group_ra_bin_num):
+                idx1 = group_ra >= group_ra_bin[i]
+                idx2 = group_ra < group_ra_bin[i+1]
 
-                    expos_name = "%d-%d"%(group_tag, count)
-                    expos_path = group_cata_path + "/%s.hdf5"%expos_name
-                    h5f_expos = h5py.File(expos_path, "w")
-                    h5f_expos["/pos"] = expos_pos
-                    h5f_expos["/redshift_label"] = redshift_label
-                    h5f_expos["/data"] = expos_data
-                    h5f_expos["/expos_label"] = numpy.array([group_tag, count], dtype=numpy.intc)
-                    h5f_expos.close()
+                for j in range(group_dec_bin_num):
+                    idx3 = group_dec >= group_dec_bin[j]
+                    idx4 = group_dec < group_dec_bin[j+1]
 
-                    expos_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
-                                          % (expos_path, expos_name, src_num, expos_pos[0], expos_pos[1],
-                                             expos_pos[2], expos_pos[3], expos_pos[4], expos_pos[5]))
-                    count += 1
+                    idx_sub = idx1 & idx2 & idx3 & idx4
+
+                    src_num = idx_sub.sum()
+
+                    if src_num > 0:
+                        expos_data = sub_data[idx_sub]
+                        sub_redshift = sub_data[:, 5]
+                        redshift_label = prepare_tools.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
+
+                        expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2
+                        expos_dec_center = (group_dec_bin[j] + group_dec_bin[j+1]) / 2
+                        cos_expos_dec_center = numpy.cos(expos_dec_center / deg2arcmin * deg2rad)
+
+                        expos_pos = numpy.array([expos_ra_center, expos_dec_center, dra, ddec,
+                                                numpy.sqrt((dra * cos_expos_dec_center) ** 2 + ddec ** 2), cos_expos_dec_center],
+                                               dtype=numpy.float32)
+
+                        expos_name = "%d-%d"%(group_tag+ncent_before, count)
+                        expos_path = group_cata_path + "/%s.hdf5"%expos_name
+                        h5f_expos = h5py.File(expos_path, "w")
+                        h5f_expos["/pos"] = expos_pos
+                        h5f_expos["/redshift_label"] = redshift_label
+                        h5f_expos["/data"] = expos_data
+                        h5f_expos["/expos_label"] = expos_labels[idx_sub]
+                        h5f_expos.close()
+
+                        expos_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
+                                              % (expos_path, expos_name, src_num, expos_pos[0], expos_pos[1],
+                                                 expos_pos[2], expos_pos[3], expos_pos[4], expos_pos[5]))
+                        count += 1
+                        expos_count += 1
+
     comm.Barrier()
-    expo_avail_list = comm.gather(expos_avail_sub, root=0)
+    expos_count_list = comm.gather(expos_count, root=0)
+    expos_avail_list = comm.gather(expos_avail_sub, root=0)
 
     if rank == 0:
+
         buffer_expo = []
-        for fns in expo_avail_list:
+        for fns in expos_avail_list:
             buffer_expo.extend(fns)
 
         with open(group_cata_path + "/source_list.dat", "w") as f:
@@ -507,4 +532,6 @@ elif cmd == "segment":
         with open("kmeans_log.dat", "w") as f:
             f.writelines(log_inform)
         print(log_inform)
+        print(expos_count_list)
+        print(sum(expos_count_list))
     comm.Barrier()
