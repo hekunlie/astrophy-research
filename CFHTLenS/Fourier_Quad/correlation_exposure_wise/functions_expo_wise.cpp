@@ -80,11 +80,20 @@ void initialize(data_info *expo_info, int total_expo_num)
 
     expo_info->expo_chi_block_len_true = expo_info->iz_chi_block_len*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
     expo_info->theta_accum_len_true = expo_info->theta_bin_num*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
+    
+    // the buffer, up to 512 MB, for the data of N exposure pairs, it will be written into the result file, to save the IO in jackknife
+    // each block: theta, theta_num, chi_tt, chi_xx 
+    expo_info->block_size_in_buffer = 2*(expo_info->expo_chi_block_len_true + expo_info->theta_accum_len_true);
+    expo_info->block_num_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
+    expo_info->men_buffer = new double[expo_info->block_num_in_buffer*expo_info->block_size_in_buffer]{};
+
+    expo_info->task_expo_pair_jack_label_1 = new int[expo_info->block_num_in_buffer]{};
+    expo_info->task_expo_pair_jack_label_2 = new int[expo_info->block_num_in_buffer]{};
+    expo_info->buffer_num = 0;
 
     // tangential and cross components
     expo_info->expo_num_count_chit = new double[expo_info->expo_chi_block_len]{};
     expo_info->expo_num_count_chix = new double[expo_info->expo_chi_block_len]{};
-
 
     expo_info->theta_accum = new double[expo_info->theta_accum_len];
     expo_info->theta_num_accum = new double[expo_info->theta_accum_len];

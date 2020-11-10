@@ -68,6 +68,16 @@ struct data_info
     int theta_accum_len_true;
     int expo_chi_block_len_true;
 
+    double *men_buffer;
+    // 512*1024*1024 Byte / 8 Byte, be carefull in some platforms of which the INT is short than 4 Bytes
+    int max_buffer_size = 67108864;
+    int block_num_in_buffer;
+    int block_size_in_buffer;
+    int *buffer_label, buffer_num;
+    int *task_expo_pair_jack_label_1;
+    int *task_expo_pair_jack_label_2;
+
+
     double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
     double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
 
@@ -184,23 +194,22 @@ struct corr_cal
     int theta_bin_num;
     MY_FLOAT *theta_bin;  
 
+    double *expo_num_count_chit;
+    double *expo_num_count_chix;
+    double *theta_accum;
+    double *theta_num_accum;
+
+    int theta_accum_len_true;
+    int expo_chi_block_len_true;
 
     double *corr_cal_expo_theta_accum[MAX_EXPO];
     double *corr_cal_expo_theta_num_accum[MAX_EXPO];
     double *corr_cal_expo_num_count_chit[MAX_EXPO];
     double *corr_cal_expo_num_count_chix[MAX_EXPO];
     
-    double *expo_num_count_chit;
-    double *expo_num_count_chix;
-    double *theta_accum;
-    double *theta_num_accum;
-
     double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
     double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
     
-    int theta_accum_len_true;
-    int expo_chi_block_len_true;
-
     int corr_cal_result_file_num;
     int *corr_cal_expo_pair_label[2];
     int *corr_cal_expo_pair_file_label;
@@ -208,6 +217,7 @@ struct corr_cal
 
     int corr_cal_expo_num;
     
+    int expo_jack_id;
     int resample_num;
     int corr_cal_thread_num;
     int corr_cal_rank;

@@ -34,8 +34,8 @@ redshift_idx = 10
 
 redshift_sep_thresh = 0.01
 redshift_bin_num = 6
-# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
-redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
 chi_guess_num = 40
@@ -419,14 +419,14 @@ elif cmd == "segment":
 
     group_cata_path = result_cata_path + "/kmeans"
     if rank == 0:
-        if os.path.exists(group_cata_path):
+        if not os.path.exists(group_cata_path):
             os.makedirs(group_cata_path)
     comm.Barrier()
 
     # area num
     are_num = 4
     # the width of each exposure, arcmin
-    expos_field_width = 60
+    expos_field_width = 40
     dra = expos_field_width/2
     ddec = expos_field_width/2
     ra_bin = [1000, 5000, 10000, 15000, 30000]
@@ -467,6 +467,7 @@ elif cmd == "segment":
             sub_data = area_data[idx_group]
             group_ra = sub_data[:,5]
             group_dec = sub_data[:,6]
+            sub_expos_labels = expos_labels[idx_group]
 
             group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
             group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
@@ -506,7 +507,8 @@ elif cmd == "segment":
                         h5f_expos["/pos"] = expos_pos
                         h5f_expos["/redshift_label"] = redshift_label
                         h5f_expos["/data"] = expos_data
-                        h5f_expos["/expos_label"] = expos_labels[idx_sub]
+                        h5f_expos["/expos_label"] = sub_expos_labels[idx_sub]
+                        h5f_expos["/group_label"] = numpy.array([group_tag],dtype=numpy.intc)
                         h5f_expos.close()
 
                         expos_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
