@@ -219,7 +219,9 @@ void read_data(data_info *expo_info)
         expo_info->expo_data[i] = new MY_FLOAT[expo_info->expo_gal_num[i]*expo_info->expo_data_col]{};
         sprintf(set_name, "/data");
         read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_data[i]);
-       
+
+        sprintf(set_name, "/group_label");
+        read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_data[i]);
         // // read the gal num in each zbin stored in each expo file
         // expo_info->expo_num_in_zbin[i] = new int[expo_info->zbin_num];
         // sprintf(set_name, "/num_in_zbin");

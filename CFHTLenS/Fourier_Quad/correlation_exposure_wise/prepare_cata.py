@@ -508,7 +508,7 @@ elif cmd == "segment":
                         h5f_expos["/redshift_label"] = redshift_label
                         h5f_expos["/data"] = expos_data
                         h5f_expos["/expos_label"] = sub_expos_labels[idx_sub]
-                        h5f_expos["/group_label"] = numpy.array([group_tag],dtype=numpy.intc)
+                        h5f_expos["/group_label"] = numpy.array([group_tag+ncent_before],dtype=numpy.intc)
                         h5f_expos.close()
 
                         expos_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
