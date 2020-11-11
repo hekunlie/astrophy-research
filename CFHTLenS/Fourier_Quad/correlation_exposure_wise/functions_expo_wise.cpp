@@ -1,29 +1,41 @@
 #include"functions_expo_wise.h"
 
-void initialize(data_info *expo_info, int total_expo_num)
-{
+void initialize(data_info *expo_info)
+{   
     int i, j, k;
     char set_name[100];
     char data_path[600];
 
-    expo_info->total_expo_num = total_expo_num;
+    expo_info->mg1_idx = 0;
+    expo_info->mg2_idx = 1;
+    expo_info->mn_idx = 2;
+    expo_info->mu_idx = 3;
+    expo_info->mv_idx = 4;
+    expo_info->ra_idx = 5;
+    expo_info->dec_idx = 6;
+    expo_info->cos_dec_idx = 7;
+    expo_info->redshift_idx = 8;
 
-    for(i=0;i<total_expo_num;i++)
+    sprintf(data_path,"%s/cata/source_list.dat", expo_info->parent_path);
+
+    line_count(data_path, expo_info);
+
+    for(i=0;i<expo_info->total_expo_num;i++)
     {   
         // the expo file directories
         expo_info->expo_name_path[i] = new char[400];
         expo_info->expo_name[i] = new char[100];
     }
     
-    expo_info->expo_cen_ra = new MY_FLOAT[total_expo_num]{};  
-    expo_info->expo_cen_dec = new MY_FLOAT[total_expo_num]{}; 
-    expo_info->expo_delta_ra = new MY_FLOAT[total_expo_num]{};  
-    expo_info->expo_delta_dec = new MY_FLOAT[total_expo_num]{};
-    expo_info->expo_delta_len = new MY_FLOAT[total_expo_num]{};
-    expo_info->expo_cen_cos_dec = new MY_FLOAT[total_expo_num]{};
-    expo_info->expo_gal_num = new int[total_expo_num]{};
+    expo_info->expo_cen_ra = new MY_FLOAT[expo_info->total_expo_num]{};  
+    expo_info->expo_cen_dec = new MY_FLOAT[expo_info->total_expo_num]{}; 
+    expo_info->expo_delta_ra = new MY_FLOAT[expo_info->total_expo_num]{};  
+    expo_info->expo_delta_dec = new MY_FLOAT[expo_info->total_expo_num]{};
+    expo_info->expo_delta_len = new MY_FLOAT[expo_info->total_expo_num]{};
+    expo_info->expo_cen_cos_dec = new MY_FLOAT[expo_info->total_expo_num]{};
+    expo_info->expo_gal_num = new int[expo_info->total_expo_num]{};
 
-    sprintf(data_path,"%s/cata/source_list.dat", expo_info->parent_path);
+
     // read the infomation of each expo
     read_list(data_path, expo_info, i);
 
@@ -80,16 +92,7 @@ void initialize(data_info *expo_info, int total_expo_num)
 
     expo_info->expo_chi_block_len_true = expo_info->iz_chi_block_len*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
     expo_info->theta_accum_len_true = expo_info->theta_bin_num*((expo_info->zbin_num*expo_info->zbin_num + expo_info->zbin_num)/2);
-    
-    // the buffer, up to 512 MB, for the data of N exposure pairs, it will be written into the result file, to save the IO in jackknife
-    // each block: theta, theta_num, chi_tt, chi_xx 
-    expo_info->block_size_in_buffer = 2*(expo_info->expo_chi_block_len_true + expo_info->theta_accum_len_true);
-    expo_info->block_num_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
-    expo_info->men_buffer = new double[expo_info->block_num_in_buffer*expo_info->block_size_in_buffer]{};
 
-    expo_info->task_expo_pair_jack_label_1 = new int[expo_info->block_num_in_buffer]{};
-    expo_info->task_expo_pair_jack_label_2 = new int[expo_info->block_num_in_buffer]{};
-    expo_info->buffer_num = 0;
 
     // tangential and cross components
     expo_info->expo_num_count_chit = new double[expo_info->expo_chi_block_len]{};
@@ -122,9 +125,25 @@ void initialize(data_info *expo_info, int total_expo_num)
     expo_info->result_file_tag = 0;
     expo_info->task_complete = 0;
 
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    // the buffer, up to 1 GB, for the data of N exposure pairs, 
+    // it will be written into the result file, to save the IO in Jackknife process
+    // each block (one line): theta, theta_num, chi_tt, chi_xx 
+    expo_info->max_buffer_size = 1024*1024*(1024/8);// max element num
+    expo_info->block_size_in_buffer = 2*(expo_info->expo_chi_block_len_true + expo_info->theta_accum_len_true);
+    expo_info->block_num_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
+    expo_info->actual_buffer_size = expo_info->block_num_in_buffer*expo_info->block_size_in_buffer;
+    expo_info->men_buffer = new double[expo_info->actual_buffer_size]{};
+    // layout of jack label: [i,j,....., m,n,....], pair [i,m], [j,n]....
+    expo_info->task_expo_pair_jack_label = new int[expo_info->block_num_in_buffer*2]{};
+    expo_info->total_buffer_num = 0;
+    expo_info->block_count = 0;
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
 }
 
-void read_list(char *file_path, data_info *expo_info, int &read_file_num)
+void line_count(char *file_path, data_info *expo_info)
 {
     std::ifstream infile;
 	std::string str;
@@ -139,9 +158,32 @@ void read_list(char *file_path, data_info *expo_info, int &read_file_num)
     while (!infile.eof())
     {
         str.clear();
+        getline(infile, str);
+        line_count += 1;
+    }
+    infile.close();
+    expo_info->total_expo_num = line_count-1;
+    // std::cout<<"Total "<<line_count-1<<" lines in sources list"<<std::endl;
+
+}
+
+void read_list(char *file_path, data_info *expo_info, int &read_file_num)
+{
+    std::ifstream infile;
+	std::string str;
+	std::stringstream strs;
+
+	int i, j;
+    int line_count;
+
+    infile.open(file_path);
+	line_count = 0;
+    while (!infile.eof())
+    {
+        str.clear();
         strs.clear();
         getline(infile, str);
-                
+        
         strs << str;
 
         strs >> expo_info->expo_name_path[line_count];
@@ -160,8 +202,7 @@ void read_list(char *file_path, data_info *expo_info, int &read_file_num)
         // std::cout << str << std::endl;
         line_count += 1;
     }
-    read_file_num = line_count;
-
+    infile.close();
 }
 
 void read_data(data_info *expo_info)

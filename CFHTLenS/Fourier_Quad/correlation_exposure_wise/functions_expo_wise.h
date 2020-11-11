@@ -16,15 +16,15 @@ struct data_info
     char *expo_name[MAX_EXPO];
     // data column index meaning (defined in the prepare_data.py)
     // remind to check the index before running
-    int mg1_idx = 0;
-    int mg2_idx = 1;
-    int mn_idx = 2;
-    int mu_idx = 3;
-    int mv_idx = 4;
-    int ra_idx = 5;
-    int dec_idx = 6;
-    int cos_dec_idx = 7;
-    int redshift_idx = 8;
+    int mg1_idx;
+    int mg2_idx;
+    int mn_idx;
+    int mu_idx;
+    int mv_idx;
+    int ra_idx;
+    int dec_idx;
+    int cos_dec_idx;
+    int redshift_idx;
 
     int total_expo_num;
 
@@ -41,6 +41,10 @@ struct data_info
     MY_FLOAT *expo_data_2;
     int *expo_zbin_label_1;
     int *expo_zbin_label_2;
+    // the original CFHT exposure label
+    // to avoid the pairs in the same exposures
+    int *obs_expo_label_1;
+    int *obs_expo_label_2;
 
     int *expo_gal_num;// gal num in each exposure
     // about the position of each exposure
@@ -68,14 +72,20 @@ struct data_info
     int theta_accum_len_true;
     int expo_chi_block_len_true;
 
+    // element num in buffer = 1024*1024*1024 Byte / 8 Byte, 8 Bytes for double, 
+    // be carefull in some platforms of which the INT is short than 4 Bytes
     double *men_buffer;
-    // 512*1024*1024 Byte / 8 Byte, be carefull in some platforms of which the INT is short than 4 Bytes
-    int max_buffer_size = 67108864;
+    int max_buffer_size;
+    int actual_buffer_size;
+
     int block_num_in_buffer;
     int block_size_in_buffer;
-    int *buffer_label, buffer_num;
-    int *task_expo_pair_jack_label_1;
-    int *task_expo_pair_jack_label_2;
+    int block_count;
+    int *buffer_label;
+    int total_buffer_num;
+    int *task_expo_pair_jack_label;
+    int jack_label_1, jack_label_2;
+
 
 
     double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
@@ -122,18 +132,20 @@ struct data_info
 };
 
 
-void initialize(data_info *field_info, int total_field_num);
+void initialize(data_info *expo_info);
 
-void read_list(char *file_path, data_info *field_info, int &read_file_num);
+void line_count(char *file_path, data_info* expo_info);
 
-void read_data(data_info *field_info);
+void read_list(char *file_path, data_info *expo_info, int &read_file_num);
 
-void read_expo_data_1(data_info *field_info, int expo_label);
-void read_expo_data_2(data_info *field_info, int expo_label);
+void read_data(data_info *expo_info);
 
-void initialize_expo_chi_block(data_info *field_info);
+void read_expo_data_1(data_info *expo_info, int expo_label);
+void read_expo_data_2(data_info *expo_info, int expo_label);
 
-void collect_chi_block(data_info *field_info, int field_label);
+void initialize_expo_chi_block(data_info *expo_info);
+
+void collect_chi_block(data_info *expo_info, int field_label);
 
 void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int rank);
 

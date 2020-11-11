@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     data_info expo_info;
     double st1, st2, st3, st4, st5, st6, tt;
     int i,j;
-    int pair_num, total_expo_num, label;
+    int pair_num, label;
     double count_sum;
 
     int task_end = 0;
@@ -33,12 +33,12 @@ int main(int argc, char *argv[])
 
 
     strcpy(expo_info.parent_path, argv[1]);
-    total_expo_num = atoi(argv[2]);
+   
 
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
     
     // read the information of each exposure file
-    initialize(&expo_info, total_expo_num);
+    initialize(&expo_info);
 
     // read the catalog of redshift bin z1 & z2
     // read_data(&expo_info);
@@ -67,13 +67,13 @@ int main(int argc, char *argv[])
         std::cout<<std::endl;
         // std::cout<<"Exposure pairs for each cpu:"<<std::endl;
         // show_arr(expo_info.expo_pair_num_each_rank,1,numprocs);
-        std::cout<<"Total expo pairs: "<<expo_info.task_expo_num<<std::endl;
+        std::cout<<"Totally "<<expo_info.total_expo_num<<" exposures, "<<expo_info.task_expo_num<<" exposure pairs"<<std::endl;
         std::cout<<std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0)
-    {
+    {   
         std::cout<<"Redshift bin: "<<expo_info.zbin_num<<std::endl;
         show_arr(expo_info.zbin, 1, expo_info.zbin_num+1);
                 
@@ -88,17 +88,20 @@ int main(int argc, char *argv[])
         std::cout<<"Bin num for PDF_SYM: "<<expo_info.mg_bin_num<<" "<<expo_info.mg_bin_num1<<" "<<expo_info.mg_bin_num2<<" "<<expo_info.mg_bin_num3<<std::endl;
         show_arr(expo_info.mg_bin, 1, expo_info.mg_bin_num+1);
 
-        std::cout<<std::endl<<expo_info.mg_bin_num<<" "<<expo_info.chi_block_len<<" "
-        <<expo_info.ir_chi_block_len<<" "<<expo_info.iz_chi_block_len<<" "<<
-        expo_info.expo_chi_block_len<<std::endl<<std::endl;
+        std::cout<<std::endl<<"G bins: "<<expo_info.mg_bin_num<<". Minimum Chi block len: "<<expo_info.chi_block_len<<std::endl;
+        std::cout<<"Chi block len of one point: "<<expo_info.ir_chi_block_len<<std::endl;
+        std::cout<<"Chi block len of each Z bin: "<<expo_info.iz_chi_block_len<<std::endl;
+        std::cout<<"Total Chi block len: "<<expo_info.expo_chi_block_len<<std::endl<<std::endl;
 
+        std::cout<<"Buffer size: "<<expo_info.max_buffer_size<<" elements."<<std::endl;
+        std::cout<<"Now "<<expo_info.total_buffer_num<<" buffers & "<<expo_info.block_count<<" blocks"<<std::endl;
         std::cout<<std::endl<<expo_info.parent_path<<std::endl;
         std::cout<<std::endl<<expo_info.gg_len<<std::endl<<std::endl;     
     }
     MPI_Barrier(MPI_COMM_WORLD);
     ////////////////////////////////  PRINT INFO-end  ////////////////////////////////////////////
 
-
+    exit(0);
     ////////////////////////////////  Start  ////////////////////////////////////////////
     st1 = clock();
 
