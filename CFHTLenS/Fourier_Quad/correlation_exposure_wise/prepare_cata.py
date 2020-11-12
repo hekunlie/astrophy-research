@@ -211,7 +211,7 @@ if cmd == "prepare":
             expo_pos = numpy.array([ra_center, dec_center, dra, ddec,
                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2), cos_dec_center],
                                     dtype=numpy.float32)
-
+            # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT
             dst_data = numpy.zeros((src_num, 9), dtype=numpy.float32)
 
             redshift_label = numpy.zeros((src_num,), dtype=numpy.intc)
@@ -490,7 +490,7 @@ elif cmd == "segment":
 
                     if src_num > 0:
                         expos_data = sub_data[idx_sub]
-                        sub_redshift = sub_data[:, 5]
+                        sub_redshift = expos_data[:, 8]
                         redshift_label = prepare_tools.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
 
                         expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2

@@ -77,8 +77,7 @@ struct data_info
     double *men_buffer;
     int max_buffer_size;
     int actual_buffer_size;
-
-    int block_num_in_buffer;
+    int max_block_in_buffer;
     int block_size_in_buffer;
     int block_count;
     int *buffer_label;
@@ -148,6 +147,7 @@ void initialize_expo_chi_block(data_info *expo_info);
 void collect_chi_block(data_info *expo_info, int field_label);
 
 void save_expo_data(data_info*field_info, int expo_label_1,int expo_label_2, int rank);
+void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag);
 
 void save_expo_pair_label(data_info *expo_info, int rank);
 

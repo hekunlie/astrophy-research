@@ -132,11 +132,11 @@ void initialize(data_info *expo_info)
     // each block (one line): theta, theta_num, chi_tt, chi_xx 
     expo_info->max_buffer_size = 1024*1024*(1024/8);// max element num
     expo_info->block_size_in_buffer = 2*(expo_info->expo_chi_block_len_true + expo_info->theta_accum_len_true);
-    expo_info->block_num_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
-    expo_info->actual_buffer_size = expo_info->block_num_in_buffer*expo_info->block_size_in_buffer;
+    expo_info->max_block_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
+    expo_info->actual_buffer_size = expo_info->max_block_in_buffer*expo_info->block_size_in_buffer;
     expo_info->men_buffer = new double[expo_info->actual_buffer_size]{};
-    // layout of jack label: [i,j,....., m,n,....], pair [i,m], [j,n]....
-    expo_info->task_expo_pair_jack_label = new int[expo_info->block_num_in_buffer*2]{};
+    // layout of jack label: [i,j,m,n.....], pair [i,j], [m,n]....
+    expo_info->task_expo_pair_jack_label = new int[expo_info->max_block_in_buffer*2]{};
     expo_info->total_buffer_num = 0;
     expo_info->block_count = 0;
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -220,19 +220,6 @@ void read_data(data_info *expo_info)
         sprintf(set_name, "/data");
         read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_data[i]);
        
-        // // read the gal num in each zbin stored in each expo file
-        // expo_info->expo_num_in_zbin[i] = new int[expo_info->zbin_num];
-        // sprintf(set_name, "/num_in_zbin");
-        // read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_num_in_zbin[i]);
-
-
-        // expo_info->expo_zbin_st[i] = new int[expo_info->zbin_num];
-        // sprintf(set_name, "/zbin_st");
-        // read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_zbin_st[i]);
-
-        // expo_info->expo_zbin_ed[i] = new int[expo_info->zbin_num];
-        // sprintf(set_name, "/zbin_ed");
-        // read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_zbin_ed[i]);
     }
 }
 
@@ -243,6 +230,7 @@ void read_expo_data_1(data_info *expo_info,int expo_label)
     {
         delete[] expo_info->expo_data_1;
         delete[] expo_info->expo_zbin_label_1;
+        delete[] expo_info->obs_expo_label_1;
         expo_info->data_read_label_1 = 0;
     }
 
@@ -253,6 +241,13 @@ void read_expo_data_1(data_info *expo_info,int expo_label)
     expo_info->expo_data_1 = new MY_FLOAT[expo_info->expo_gal_num[expo_label]*expo_info->expo_data_col]{};
     sprintf(set_name, "/data");
     read_h5(expo_info->expo_name_path[expo_label], set_name, expo_info->expo_data_1);
+
+    sprintf(set_name, "/group_label");
+    read_h5(expo_info->expo_name_path[expo_label], set_name, &expo_info->jack_label_1);
+
+    expo_info->obs_expo_label_1 = new int[expo_info->expo_gal_num[expo_label]]{};
+    sprintf(set_name, "/expos_label");
+    read_h5(expo_info->expo_name_path[expo_label], set_name, expo_info->obs_expo_label_1);
 
     expo_info->data_read_label_1 = 1;
     
@@ -265,6 +260,7 @@ void read_expo_data_2(data_info *expo_info,int expo_label)
     {
         delete[] expo_info->expo_data_2;
         delete[] expo_info->expo_zbin_label_2;
+        delete[] expo_info->obs_expo_label_2;
         expo_info->data_read_label_2 = 0;
     }   
 
@@ -275,6 +271,13 @@ void read_expo_data_2(data_info *expo_info,int expo_label)
     expo_info->expo_data_2 = new MY_FLOAT[expo_info->expo_gal_num[expo_label]*expo_info->expo_data_col]{};
     sprintf(set_name, "/data");
     read_h5(expo_info->expo_name_path[expo_label], set_name, expo_info->expo_data_2);
+
+    sprintf(set_name, "/group_label");
+    read_h5(expo_info->expo_name_path[expo_label], set_name, &expo_info->jack_label_2);
+
+    expo_info->obs_expo_label_2 = new int[expo_info->expo_gal_num[expo_label]]{};
+    sprintf(set_name, "/expos_label");
+    read_h5(expo_info->expo_name_path[expo_label], set_name, expo_info->obs_expo_label_2);
 
     expo_info->data_read_label_2 = 1;
     
@@ -839,6 +842,96 @@ void collect_chi_block(data_info *expo_info, int expo_label)
 {
     ;
 }
+
+void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
+{
+    int row, col;
+    int st, i,j;
+    char result_path[400], set_name[50];
+
+    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
+    
+    if(task_end_tag == 1)
+    {   
+        if(expo_info->block_count > 0)
+        {
+            // for that case in which the tasks have been completed,
+            // but the buffer has not come to the end
+            row = expo_info->block_count;
+            col = expo_info->block_size_in_buffer;
+            sprintf(set_name, "/%d/data", expo_info->total_buffer_num);
+            if(expo_info->total_buffer_num == 0)
+            {
+                write_h5(result_path, set_name, expo_info->men_buffer, row, col, true);
+            }
+            else
+            {
+                write_h5(result_path, set_name, expo_info->men_buffer, row, col, false);
+            }
+            
+            col = 2*expo_info->block_count;
+            sprintf(set_name, "/%d/jack_label", expo_info->total_buffer_num);
+            write_h5(result_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
+            
+            expo_info->total_buffer_num += 1;
+            sprintf(set_name, "/buffer_num");
+            write_h5(result_path, set_name, &expo_info->total_buffer_num, 1, 1, false);
+
+        }
+    }
+    else
+    {   
+       //if it is full, write into the disk, save it first
+        if(expo_info->block_count == expo_info->max_block_in_buffer)
+        {   
+            row = expo_info->max_block_in_buffer;
+            col = expo_info->block_size_in_buffer;
+
+            // save the main data, theta, theta_num, chi_tt, chi_xx
+            sprintf(set_name, "/%d/data", expo_info->total_buffer_num);
+            if(expo_info->total_buffer_num == 0)
+            {
+                write_h5(result_path, set_name, expo_info->men_buffer, row, col, true);
+            }
+            else
+            {
+                write_h5(result_path, set_name, expo_info->men_buffer, row, col, false);
+            }
+            // save the jack id of each block
+            col = 2*expo_info->max_block_in_buffer;
+            sprintf(set_name, "/%d/jack_label", expo_info->total_buffer_num);
+            write_h5(result_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
+
+            expo_info->total_buffer_num ++;
+            expo_info->block_count = 0;
+
+        }
+        // assign to the buffer in memory
+        
+        // theta, theta_num
+        st = expo_info->block_count*expo_info->block_size_in_buffer;
+        for(i=0; i<expo_info->theta_accum_len_true; i++)
+        {
+            expo_info->men_buffer[st + i] = expo_info->corr_cal_stack_expo_theta_accum[i];
+            expo_info->men_buffer[st + expo_info->theta_accum_len_true + i] = expo_info->corr_cal_stack_expo_theta_num_accum[i];
+        }
+
+        // chi_tt, chi_xx
+        st = expo_info->block_count*expo_info->block_size_in_buffer + 2*expo_info->theta_accum_len_true;
+        for(i=0; i<expo_info->expo_chi_block_len_true; i++)
+        {
+            expo_info->men_buffer[st + i] = expo_info->corr_cal_stack_num_count_chit[i];
+            expo_info->men_buffer[st + expo_info->expo_chi_block_len_true + i] = expo_info->corr_cal_stack_num_count_chix[i];
+        }
+
+        expo_info->task_expo_pair_jack_label[expo_info->block_count*2] = expo_info->jack_label_1;
+        expo_info->task_expo_pair_jack_label[expo_info->block_count*2 + 1] = expo_info->jack_label_2;
+
+        expo_info->block_count ++;
+        
+    }    
+}
+
 
 void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, int rank)
 {   
