@@ -130,7 +130,7 @@ void initialize(data_info *expo_info)
     // the buffer, up to 1 GB, for the data of N exposure pairs, 
     // it will be written into the result file, to save the IO in Jackknife process
     // each block (one line): theta, theta_num, chi_tt, chi_xx 
-    expo_info->max_buffer_size = 1024*1024*(1024/8);// max element num
+    expo_info->max_buffer_size = 2*1024*1024*(1024/8);// max element num
     expo_info->block_size_in_buffer = 2*(expo_info->expo_chi_block_len_true + expo_info->theta_accum_len_true);
     expo_info->max_block_in_buffer = expo_info->max_buffer_size/expo_info->block_size_in_buffer;
     expo_info->actual_buffer_size = expo_info->max_block_in_buffer*expo_info->block_size_in_buffer;
@@ -460,6 +460,9 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
 
         for(ig2=0; ig2<expo_info->expo_gal_num[expo_label_1]; ig2++)
         {   
+            // if two galaxies come from the same CFHTLenS exposure, break
+            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){break;}
+
             n = ig2*expo_info->expo_data_col;
 
             ra_z2 = expo_info->expo_data[expo_label_1][n+expo_info->ra_idx];
@@ -591,7 +594,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     expo_info->loop_label = loop_label;
 }
 
-void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
+void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_FLOAT *gg1, MY_FLOAT *gg2)
 {
     int i, j, m, n, k;
     int ig1, ig2;
@@ -641,9 +644,9 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
-    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
-    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
-
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/4;
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/4;
+    std::cout<<gal_num_1<<" "<<gal_num_2<<std::endl;
     st1 = clock();
     for(ig1=0; ig1<gal_num_1; ig1++)
     {   
@@ -747,6 +750,10 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
                 gg_1 = expo_info->gg_1[loop_label];
                 gg_2 = expo_info->gg_2[loop_label];
 
+                //gg_1 = gg1[loop_label];
+                //gg_2 = gg2[loop_label];
+
+
                 temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
                 temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
                 hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
@@ -772,7 +779,10 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
 
                     gg_1 = expo_info->gg_1[loop_label];
                     gg_2 = expo_info->gg_2[loop_label];
-
+                    
+                    //gg_1 = gg1[loop_label];
+                    //gg_2 = gg2[loop_label];
+                    
                     bin_para_tt[0] = ix_tt;
                     bin_para_tt[1] = iy_tt;
 
@@ -881,7 +891,7 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
     }
     else
     {   
-       //if it is full, write into the disk, save it first
+        //if it is full, write into the disk, save it first
         if(expo_info->block_count == expo_info->max_block_in_buffer)
         {   
             row = expo_info->max_block_in_buffer;
@@ -904,10 +914,12 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
 
             expo_info->total_buffer_num ++;
             expo_info->block_count = 0;
-
         }
+
         // assign to the buffer in memory
         
+        merge_data(expo_info);
+
         // theta, theta_num
         st = expo_info->block_count*expo_info->block_size_in_buffer;
         for(i=0; i<expo_info->theta_accum_len_true; i++)
@@ -1320,50 +1332,98 @@ void read_para(corr_cal *all_paras)
 void prepare_data(corr_cal *all_paras)
 {   
     int i, j, k, m ,n;
+    int buffer_num, block_num;
     char data_path[550];
     char set_name[50];
     int *temp[2];
+    int *buffer_num_in_file;
+    // all_paras->corr_cal_total_pair_num = 0;
+    // // no 0'th file, because the CPU 0 is the master for the task distribution
+    // for(i=1; i<all_paras->corr_cal_result_file_num; i++)
+    // {
+    //     sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
+    //     sprintf(set_name, "/pair_1");
+    //     read_h5_datasize(data_path, set_name, j);
+    //     all_paras->corr_cal_total_pair_num += j;
+    // }
+    // all_paras->corr_cal_expo_pair_label[0] = new int[all_paras->corr_cal_total_pair_num]{};
+    // all_paras->corr_cal_expo_pair_label[1] = new int[all_paras->corr_cal_total_pair_num]{};
+    // all_paras->corr_cal_expo_pair_file_label = new int[all_paras->corr_cal_total_pair_num]{};
+
+    // n = 0;
+    // for(i=1; i<all_paras->corr_cal_result_file_num; i++)
+    // {
+    //     sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
+
+    //     sprintf(set_name, "/pair_1");
+    //     read_h5_datasize(data_path, set_name, j);
+        
+    //     temp[0] = new int[j];
+    //     temp[1] = new int[j];
+
+    //     read_h5(data_path, set_name, temp[0]);
+    //     sprintf(set_name, "/pair_2");
+    //     read_h5(data_path, set_name, temp[1]);
+
+    //     for(m=0;m<j;m++)
+    //     {
+    //         all_paras->corr_cal_expo_pair_label[0][n] = temp[0][m];
+    //         all_paras->corr_cal_expo_pair_label[1][n] = temp[1][m];
+    //         all_paras->corr_cal_expo_pair_file_label[n] = i;
+    //         n++;
+    //     }
+
+    //     delete[] temp[0];
+    //     delete[] temp[1];
+    // }
+    
 
     all_paras->corr_cal_total_pair_num = 0;
+    buffer_num_in_file = new int[all_paras->corr_cal_result_file_num]{};
     // no 0'th file, because the CPU 0 is the master for the task distribution
     for(i=1; i<all_paras->corr_cal_result_file_num; i++)
     {
         sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
-        sprintf(set_name, "/pair_1");
-        read_h5_datasize(data_path, set_name, j);
-        all_paras->corr_cal_total_pair_num += j;
+        sprintf(set_name, "/buffer_num");
+        read_h5(data_path, set_name, &buffer_num);
+        buffer_num_in_file[i] = buffer_num;
+
+        for(j=0;j<buffer_num;j++)
+        {
+            sprintf(set_name, "/%d/jack_label", j);
+            read_h5_datasize(data_path, set_name, block_num);
+            all_paras->corr_cal_total_pair_num += block_num/2;
+        }
     }
-    all_paras->corr_cal_expo_pair_label[0] = new int[all_paras->corr_cal_total_pair_num]{};
-    all_paras->corr_cal_expo_pair_label[1] = new int[all_paras->corr_cal_total_pair_num]{};
-    all_paras->corr_cal_expo_pair_file_label = new int[all_paras->corr_cal_total_pair_num]{};
+    for(i=0;i<4;i++)
+    {all_paras->corr_cal_expo_pair_label[i] = new int[all_paras->corr_cal_total_pair_num]{};}
 
     n = 0;
     for(i=1; i<all_paras->corr_cal_result_file_num; i++)
     {
         sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
 
-        sprintf(set_name, "/pair_1");
-        read_h5_datasize(data_path, set_name, j);
-        
-        temp[0] = new int[j];
-        temp[1] = new int[j];
-
-        read_h5(data_path, set_name, temp[0]);
-        sprintf(set_name, "/pair_2");
-        read_h5(data_path, set_name, temp[1]);
-
-        for(m=0;m<j;m++)
+        for(j=0; j<buffer_num_in_file[i]; j++)
         {
-            all_paras->corr_cal_expo_pair_label[0][n] = temp[0][m];
-            all_paras->corr_cal_expo_pair_label[1][n] = temp[1][m];
-            all_paras->corr_cal_expo_pair_file_label[n] = i;
-            n++;
-        }
+            sprintf(set_name, "/%d/jack_label", j);
+            read_h5_datasize(data_path, set_name, block_num);
+            
+            temp[0] = new int[block_num];
+            read_h5(data_path, set_name, temp[0]);
 
-        delete[] temp[0];
-        delete[] temp[1];
+            for(k=0; k<block_num; k+=2)
+            {
+                all_paras->corr_cal_expo_pair_label[0][n] = temp[0][k];
+                all_paras->corr_cal_expo_pair_label[1][n] = temp[0][k+1];
+                all_paras->corr_cal_expo_pair_label[2][n] = j;
+                all_paras->corr_cal_expo_pair_label[3][n] = i;
+                n++;
+            }
+
+            delete[] temp[0];
+        }
     }
-    
+
     // if(all_paras->corr_cal_rank == 0)
     // {   
     //     std::cout<<"All expo pairs: "<<all_paras->corr_cal_total_pair_num<<std::endl;
@@ -1378,7 +1438,7 @@ void prepare_data(corr_cal *all_paras)
     // }
     
     // prepare for jackknife 
-    pre_jackknife(all_paras);
+    //pre_jackknife(all_paras);
     
     // if(all_paras->corr_cal_rank == 0)
     // {

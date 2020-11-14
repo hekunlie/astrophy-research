@@ -173,7 +173,7 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
 
 void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
 // read all exposures
-void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
+void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1, MY_FLOAT *gg1, MY_FLOAT *gg2);
 // read the exposure needed
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -223,7 +223,7 @@ struct corr_cal
     double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
     
     int corr_cal_result_file_num;
-    int *corr_cal_expo_pair_label[2];
+    int *corr_cal_expo_pair_label[4];
     int *corr_cal_expo_pair_file_label;
     int corr_cal_total_pair_num;
 

@@ -30,15 +30,21 @@ int main(int argc, char *argv[])
     MPI_Status status;
     MPI_Request request;
 
-
-
+    
     strcpy(expo_info.parent_path, argv[1]);
    
-
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
     
     // read the information of each exposure file
     initialize(&expo_info);
+
+    MY_FLOAT *gg1 = new MY_FLOAT[expo_info.gg_len]{};
+    MY_FLOAT *gg2 = new MY_FLOAT[expo_info.gg_len]{};
+    sprintf(data_path,"%s/cata/gg_cor.hdf5", expo_info.parent_path);
+    sprintf(set_name,"/g11");
+    read_h5(data_path, set_name, gg1);
+    sprintf(set_name,"/g22");
+    read_h5(data_path, set_name, gg2);
 
     // read the catalog of redshift bin z1 & z2
     // read_data(&expo_info);
@@ -94,7 +100,9 @@ int main(int argc, char *argv[])
         std::cout<<"Chi block len of each Z bin: "<<expo_info.iz_chi_block_len<<std::endl;
         std::cout<<"Total Chi block len: "<<expo_info.expo_chi_block_len<<std::endl<<std::endl;
 
-        std::cout<<"Buffer size: "<<expo_info.max_buffer_size<<" elements."<<std::endl;
+        std::cout<<"Buffer size: "<<expo_info.max_buffer_size<<" elements. Actual size: "<<expo_info.actual_buffer_size<<" elements"<<std::endl;
+        std::cout<<"Max block num in buffer: "<<expo_info.max_block_in_buffer <<std::endl;
+        std::cout<<"Block size: "<<expo_info.block_size_in_buffer<<" elements"<<std::endl;
         std::cout<<"Now "<<expo_info.total_buffer_num<<" buffers & "<<expo_info.block_count<<" blocks"<<std::endl;
         std::cout<<std::endl<<expo_info.parent_path<<std::endl;
         std::cout<<std::endl<<expo_info.gg_len<<std::endl<<std::endl;     
@@ -132,21 +140,27 @@ int main(int argc, char *argv[])
                 read_expo_data_2(&expo_info, task_labels[1]);
                 
                 //////////////  search pairs ////////////////////
-                find_pairs_new(&expo_info, task_labels[0], task_labels[1]);
+                find_pairs_new(&expo_info, task_labels[0], task_labels[1], gg1, gg2);
 
                 // if more 1 pair has been found, write into the result file
                 // if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, task_labels[0], task_labels[1], rank);}
 
-                if(expo_info.gg_pairs > 1){save_expo_data_new(&expo_info,  rank, 0);}
+                if(expo_info.gg_pairs > 1)
+                {
+                    expo_info.expo_pair_label_1.push_back(task_labels[0]);
+                    expo_info.expo_pair_label_2.push_back(task_labels[1]);
+                    save_expo_data_new(&expo_info,  rank, 0);
+                }
                 
 
                 st3 = clock();
                 tt =  (st3 - st2)/CLOCKS_PER_SEC;
                 pair_num = expo_info.expo_pair_label_1.size();
-                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs got now: %d", tt, expo_info.gg_pairs,pair_num);
+                sprintf(log_inform,"Finish in %.2f sec. %g pairs. Expo pairs got now: %d\nNow %d buffers, %d block in current buffer", 
+                        tt, expo_info.gg_pairs,pair_num, expo_info.total_buffer_num,expo_info.block_count);
                 if(rank == 1)
                 {                       
-                    std::cout<<std::endl<<log_inform<<std::endl;
+                    std::cout<<log_inform<<std::endl<<std::endl;
                 }
                 write_log(log_path, log_inform);
             }          
