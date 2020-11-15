@@ -134,6 +134,7 @@ struct data_info
 void initialize(data_info *expo_info);
 
 void line_count(char *file_path, data_info* expo_info);
+void line_count(char *file_path, int &lines);
 
 void read_list(char *file_path, data_info *expo_info, int &read_file_num);
 
@@ -213,7 +214,8 @@ struct corr_cal
 
     int theta_accum_len_true;
     int expo_chi_block_len_true;
-
+    int expo_block_len_in_buffer;
+    
     double *corr_cal_expo_theta_accum[MAX_EXPO];
     double *corr_cal_expo_theta_num_accum[MAX_EXPO];
     double *corr_cal_expo_num_count_chit[MAX_EXPO];
@@ -257,7 +259,7 @@ struct corr_cal
 
 void read_para(corr_cal *all_paras);
 
-void prepare_data(corr_cal *all_paras);
+void prepare_data(corr_cal *all_paras, int tag);
 
 void pre_jackknife(corr_cal *all_paras);
 

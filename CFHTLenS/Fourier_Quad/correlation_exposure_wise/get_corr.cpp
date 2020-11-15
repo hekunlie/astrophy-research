@@ -23,9 +23,8 @@ int main(int argc, char **argv)
 
 
     strcpy(all_paras.parent_path, argv[1]);
-    all_paras.corr_cal_expo_num = atoi(argv[2]);
-    all_paras.resample_num = atoi(argv[3]);
-    all_paras.corr_cal_result_file_num = atoi(argv[4]);
+    all_paras.resample_num = atoi(argv[2]);
+    all_paras.corr_cal_result_file_num = atoi(argv[3]);
     all_paras.corr_cal_thread_num = numprocs;
     all_paras.corr_cal_rank = rank;
 
@@ -35,7 +34,14 @@ int main(int argc, char **argv)
     if(rank == 0){std::cout<<inform<<std::endl;}
     
     read_para(&all_paras);
-    prepare_data(&all_paras);
+
+    // create index file
+    if(rank == 0){prepare_data(&all_paras, 0);}
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // read index file
+    if(rank > 0){prepare_data(&all_paras, 1);}
+    MPI_Barrier(MPI_COMM_WORLD);
 
 
     sprintf(inform,"Calculate %d ~ %d",all_paras.jackknife_resample_st[rank],all_paras.jackknife_resample_ed[rank]);
