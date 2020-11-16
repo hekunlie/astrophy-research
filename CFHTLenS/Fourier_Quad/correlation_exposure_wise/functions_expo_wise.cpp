@@ -1590,9 +1590,8 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     // abort_st = all_paras->jackknife_subsample_pair_st[resample_label];
     // abort_ed = all_paras->jackknife_subsample_pair_ed[resample_label];
     q = 0;
-    for(i=0; i<all_paras->corr_cal_total_pair_num; i++)
-    {   
-        
+    // for(i=0; i<all_paras->corr_cal_total_pair_num; i++)
+    // {    
         // file_tag = all_paras->corr_cal_expo_pair_file_label[i];
 
         // m = all_paras->corr_cal_expo_pair_label[0][i];
@@ -1624,15 +1623,11 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         //         all_paras->corr_cal_stack_expo_theta_num_accum[j] += all_paras->theta_num_accum[j];
         //     }
         // }
+    // }
 
-        m = all_paras->corr_cal_expo_pair_label[0][i];
-        n = all_paras->corr_cal_expo_pair_label[1][i];
-        if(m == resample_label){q++; continue;}
-        if(n == resample_label){q++; continue;}
-        
+    for(file_tag=1; file_tag<all_paras->corr_cal_result_file_num; file_tag++)
+    {           
         buffer_tag = all_paras->corr_cal_expo_pair_label[2][i];
-        file_tag = all_paras->corr_cal_expo_pair_label[3][i];
-
         sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path, file_tag);
 
         sprintf(set_name, "/%d/data", buffer_tag);
@@ -1640,9 +1635,15 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         temp_read = new double[k];
         read_h5(data_path, set_name, temp_read);
         block_num = k/all_paras->expo_block_len_in_buffer;
+
         // stack
         for(j=0; j<block_num; j++)
-        {   
+        {
+            m = all_paras->corr_cal_expo_pair_label[0][j];
+            n = all_paras->corr_cal_expo_pair_label[1][j];
+            if(m == resample_label){q++; continue;}
+            if(n == resample_label){q++; continue;}
+
             st = j*all_paras->expo_block_len_in_buffer;
             for(k=0; k<all_paras->theta_accum_len_true; k++)
             {
