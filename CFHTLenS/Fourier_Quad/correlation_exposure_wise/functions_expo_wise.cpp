@@ -1580,7 +1580,8 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     int abort_st, abort_ed;
     char set_name[60], data_path[600];
     double *temp_read;
-
+    char time_now[40];
+    
     initialize_arr(all_paras->corr_cal_stack_num_count_chit, all_paras->expo_chi_block_len_true, 0);
     initialize_arr(all_paras->corr_cal_stack_num_count_chix, all_paras->expo_chi_block_len_true, 0);
     initialize_arr(all_paras->corr_cal_stack_expo_theta_accum, all_paras->theta_accum_len_true, 0);
@@ -1656,7 +1657,13 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
                 all_paras->corr_cal_stack_num_count_chix[k] += temp_read[st + all_paras->expo_chi_block_len_true + k];
             }
         }
+        delete[] temp_read;
 
+        get_time(time_now, 40);
+        sprintf(all_paras->inform, "%s. Jackknife %d read file %d, group %d",time_now, resample_label, file_tag, buffer_tag);
+        write_log(all_paras->log_path, all_paras->inform);
+
+        if(all_paras->corr_cal_rank == 0){std::cout<<all_paras->inform<<std::endl;}
         // q = int(all_paras->corr_cal_total_pair_num*0.05);
         // k = i/q;
         // if(k%q == 0)
