@@ -246,7 +246,8 @@ struct corr_cal
     int *jackknife_resample_st;
     int *jackknife_resample_ed;
     int jackknife_label;
-
+    int *buffer_num_in_file;
+    
     int corr_cal_chi_num;
     int corr_cal_final_data_num;
     double *corr_cal_mean_theta[MAX_RESAMPLE];
