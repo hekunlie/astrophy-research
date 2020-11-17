@@ -1365,7 +1365,7 @@ void prepare_data(corr_cal *all_paras, int tag)
     char data_path[600];
     char set_name[60];
     int *temp[2];
-    int *buffer_num_in_file;
+
     // all_paras->corr_cal_total_pair_num = 0;
     // // no 0'th file, because the CPU 0 is the master for the task distribution
     // for(i=1; i<all_paras->corr_cal_result_file_num; i++)
@@ -1406,18 +1406,19 @@ void prepare_data(corr_cal *all_paras, int tag)
     //     delete[] temp[1];
     // }
     
+    all_paras->buffer_num_in_file = new int[all_paras->corr_cal_result_file_num]{};
+
     if(tag == 0)
     {     
         //std::cout<<all_paras->corr_cal_result_file_num<<" files"<<std::endl;
         all_paras->corr_cal_total_pair_num = 0;
-        buffer_num_in_file = new int[all_paras->corr_cal_result_file_num]{};
         // no 0'th file, because the CPU 0 is the master for the task distribution
         for(i=1; i<all_paras->corr_cal_result_file_num; i++)
         {
             sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
             sprintf(set_name, "/buffer_num");
             read_h5(data_path, set_name, &buffer_num);
-            buffer_num_in_file[i] = buffer_num;
+            all_paras->buffer_num_in_file[i] = buffer_num;
             for(j=0;j<buffer_num;j++)
             {
                 sprintf(set_name, "/%d/jack_label", j);
@@ -1434,7 +1435,7 @@ void prepare_data(corr_cal *all_paras, int tag)
         {
             sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
 
-            for(j=0; j<buffer_num_in_file[i]; j++)
+            for(j=0; j<all_paras->buffer_num_in_file[i]; j++)
             {
                 sprintf(set_name, "/%d/jack_label", j);
                 read_h5_datasize(data_path, set_name, block_num);
@@ -1454,7 +1455,7 @@ void prepare_data(corr_cal *all_paras, int tag)
                 delete[] temp[0];
             }
         }
-        delete[] buffer_num_in_file;
+        
         std::cout<<all_paras->corr_cal_total_pair_num<<" Pairs\n";
 
         sprintf(data_path, "%s/result/pair_index.hdf5", all_paras->parent_path);
@@ -1466,8 +1467,12 @@ void prepare_data(corr_cal *all_paras, int tag)
         write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[2],1,all_paras->corr_cal_total_pair_num,false);
         sprintf(set_name, "/file_label");
         write_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[3],1,all_paras->corr_cal_total_pair_num,false);
+        sprintf(set_name, "/buffer_num");
+        write_h5(data_path, set_name,  all_paras->buffer_num_in_file, 1, all_paras->corr_cal_result_file_num,false);
+
         sprintf(all_paras->inform, "Write jack_id list");
         write_log(all_paras->log_path, all_paras->inform);
+
     }
     else
     {
@@ -1485,6 +1490,10 @@ void prepare_data(corr_cal *all_paras, int tag)
         read_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[2]);
         sprintf(set_name, "/file_label");
         read_h5(data_path, set_name, all_paras->corr_cal_expo_pair_label[3]);
+
+        sprintf(set_name, "/buffer_num");
+        read_h5(data_path, set_name, all_paras->buffer_num_in_file);
+
         sprintf(all_paras->inform, "Read jack_id list");
         write_log(all_paras->log_path, all_paras->inform);
     }
@@ -1576,11 +1585,13 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     int i,j, k, q;
     int m, n;
     int st, ed;
-    int buffer_tag, file_tag, block_num;
+    int buffer_tag, file_tag, block_num, buffer_num;
     int abort_st, abort_ed;
     char set_name[60], data_path[600];
     double *temp_read;
-
+    int *jack_labels;
+    char time_now[40];
+    
     initialize_arr(all_paras->corr_cal_stack_num_count_chit, all_paras->expo_chi_block_len_true, 0);
     initialize_arr(all_paras->corr_cal_stack_num_count_chix, all_paras->expo_chi_block_len_true, 0);
     initialize_arr(all_paras->corr_cal_stack_expo_theta_accum, all_paras->theta_accum_len_true, 0);
@@ -1589,9 +1600,8 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     // abort_st = all_paras->jackknife_subsample_pair_st[resample_label];
     // abort_ed = all_paras->jackknife_subsample_pair_ed[resample_label];
     q = 0;
-    for(i=0; i<all_paras->corr_cal_total_pair_num; i++)
-    {   
-        
+    // for(i=0; i<all_paras->corr_cal_total_pair_num; i++)
+    // {    
         // file_tag = all_paras->corr_cal_expo_pair_file_label[i];
 
         // m = all_paras->corr_cal_expo_pair_label[0][i];
@@ -1623,40 +1633,83 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         //         all_paras->corr_cal_stack_expo_theta_num_accum[j] += all_paras->theta_num_accum[j];
         //     }
         // }
+    // }
 
-        m = all_paras->corr_cal_expo_pair_label[0][i];
-        n = all_paras->corr_cal_expo_pair_label[1][i];
-        if(m == resample_label){q++; continue;}
-        if(n == resample_label){q++; continue;}
-        
-        buffer_tag = all_paras->corr_cal_expo_pair_label[2][i];
-        file_tag = all_paras->corr_cal_expo_pair_label[3][i];
-
+    for(file_tag=1; file_tag<all_paras->corr_cal_result_file_num; file_tag++)
+    {      
+        buffer_num = all_paras->buffer_num_in_file[file_tag];
         sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path, file_tag);
+        // std::cout<<buffer_tag<<std::endl;
+        for(buffer_tag=0; buffer_tag<buffer_num; buffer_tag++)
+        {
+            get_time(time_now, 40);
+            sprintf(all_paras->inform, "%s. Jackknife %d read file %d, group %d",time_now, resample_label, file_tag, buffer_tag);
+            write_log(all_paras->log_path, all_paras->inform);
 
-        sprintf(set_name, "/%d/data", buffer_tag);
-        read_h5_datasize(data_path,set_name, k);
-        temp_read = new double[k];
-        read_h5(data_path, set_name, temp_read);
-        block_num = k/all_paras->expo_block_len_in_buffer;
-        // stack
-        for(j=0; j<block_num; j++)
-        {   
-            st = j*all_paras->expo_block_len_in_buffer;
-            for(k=0; k<all_paras->theta_accum_len_true; k++)
+            sprintf(set_name, "/%d/jack_label", buffer_tag);
+            read_h5_datasize(data_path, set_name, block_num);
+            
+            // scan the jack_label first, 
+            // if there're block needed, read the file
+            jack_labels = new int[block_num];
+            read_h5(data_path, set_name, jack_labels);
+            block_num = block_num/2;
+            q = 0;
+            for(j=0; j<block_num; j+=2)
             {
-                all_paras->corr_cal_stack_expo_theta_accum[k] += temp_read[st+k];
-                all_paras->corr_cal_stack_expo_theta_num_accum[k] += temp_read[st + all_paras->theta_accum_len_true +k];
+                m = jack_labels[j];
+                n = jack_labels[j+1];
+                if(m != resample_label and n != resample_label){q++;}
             }
 
-            st = j*all_paras->expo_block_len_in_buffer + 2*all_paras->theta_accum_len_true;
-            for(k=0; k<all_paras->expo_chi_block_len_true; k++)
+            get_time(time_now, 40);
+            sprintf(all_paras->inform, "%s. Jackknife %d read file %d, group %d, %d blocks needed",time_now, resample_label, file_tag, buffer_tag, q);
+            write_log(all_paras->log_path, all_paras->inform);
+
+            if(q > 0)
             {
-                all_paras->corr_cal_stack_num_count_chit[k] += temp_read[st + k];
-                all_paras->corr_cal_stack_num_count_chix[k] += temp_read[st + all_paras->expo_chi_block_len_true + k];
+                sprintf(set_name, "/%d/data", buffer_tag);
+                read_h5_datasize(data_path,set_name, k);
+                temp_read = new double[k];
+                read_h5(data_path, set_name, temp_read);
+                block_num = k/all_paras->expo_block_len_in_buffer;
+                q = 0;
+                // stack
+                for(j=0; j<block_num; j++)
+                {
+                    m = jack_labels[j];
+                    n = jack_labels[j+1];
+                    if(m == resample_label){q++; continue;}
+                    if(n == resample_label){q++; continue;}
+
+                    st = j*all_paras->expo_block_len_in_buffer;
+                    for(k=0; k<all_paras->theta_accum_len_true; k++)
+                    {
+                        all_paras->corr_cal_stack_expo_theta_accum[k] += temp_read[st+k];
+                        all_paras->corr_cal_stack_expo_theta_num_accum[k] += temp_read[st + all_paras->theta_accum_len_true +k];
+                    }
+
+                    st = j*all_paras->expo_block_len_in_buffer + 2*all_paras->theta_accum_len_true;
+                    for(k=0; k<all_paras->expo_chi_block_len_true; k++)
+                    {
+                        all_paras->corr_cal_stack_num_count_chit[k] += temp_read[st + k];
+                        all_paras->corr_cal_stack_num_count_chix[k] += temp_read[st + all_paras->expo_chi_block_len_true + k];
+                    }
+                }
+                delete[] temp_read;
+
+                get_time(time_now, 40);
+                sprintf(all_paras->inform, "%s. Jackknife %d read file %d, group %d -- end throw away %d pairs",time_now, resample_label, file_tag, buffer_tag, q);
+                write_log(all_paras->log_path, all_paras->inform);
+
+                if(all_paras->corr_cal_rank == 0){std::cout<<all_paras->inform<<std::endl;}
             }
+            delete[] jack_labels;
+            
         }
-
+        get_time(time_now, 40);
+        sprintf(all_paras->inform, "%s. Jackknife %d read file %d -- end",time_now, resample_label, file_tag);
+        write_log(all_paras->log_path, all_paras->inform);
         // q = int(all_paras->corr_cal_total_pair_num*0.05);
         // k = i/q;
         // if(k%q == 0)
@@ -1666,8 +1719,8 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
         // }
     }
 
-    sprintf(all_paras->inform, "Jackknife %d resample-end. Throw away %d pairs.",resample_label, q);
-    write_log(all_paras->log_path, all_paras->inform);
+    // sprintf(all_paras->inform, "Jackknife %d resample-end. Throw away %d pairs.",resample_label, q);
+    // write_log(all_paras->log_path, all_paras->inform);
 }
 
 void chisq_2d(double *num_count, int mg_bin_num, double &chisq)
