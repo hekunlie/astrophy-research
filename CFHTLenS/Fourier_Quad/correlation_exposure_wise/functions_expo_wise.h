@@ -221,8 +221,8 @@ struct corr_cal
     double *corr_cal_expo_num_count_chit[MAX_EXPO];
     double *corr_cal_expo_num_count_chix[MAX_EXPO];
     
-    double *corr_cal_stack_expo_theta_accum, *corr_cal_stack_expo_theta_num_accum;
-    double *corr_cal_stack_num_count_chit, *corr_cal_stack_num_count_chix;
+    double *corr_cal_stack_expo_theta_accum[MAX_EXPO], *corr_cal_stack_expo_theta_num_accum[MAX_EXPO];
+    double *corr_cal_stack_num_count_chit[MAX_EXPO], *corr_cal_stack_num_count_chix[MAX_EXPO];
     
     int corr_cal_result_file_num;
     int *corr_cal_expo_pair_label[4];

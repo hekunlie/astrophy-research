@@ -1295,6 +1295,46 @@ void read_para(corr_cal *all_paras)
     all_paras->mg_bin_num = j -1;
     read_h5(data_path, set_name, all_paras->mg_bin);
 
+
+    // jackknife
+    all_paras->jackknife_resample_st = new int[all_paras->corr_cal_thread_num];
+    all_paras->jackknife_resample_ed = new int[all_paras->corr_cal_thread_num];
+    corr_task_alloc(all_paras->resample_num+1, all_paras->corr_cal_thread_num, all_paras->jackknife_resample_st, all_paras->jackknife_resample_ed);
+    
+    // if(all_paras->corr_cal_rank == 0)
+    // {
+    //     show_arr(all_paras->jackknife_subsample_pair_st, 1, all_paras->resample_num+1);
+    //     show_arr(all_paras->jackknife_subsample_pair_ed, 1, all_paras->resample_num+1);
+    //     show_arr(all_paras->jackknife_resample_st, 1, all_paras->corr_cal_thread_num);
+    //     show_arr(all_paras->jackknife_resample_ed, 1, all_paras->corr_cal_thread_num);
+    // }    
+
+    m = all_paras->jackknife_resample_st[all_paras->corr_cal_rank];
+    n = all_paras->jackknife_resample_ed[all_paras->corr_cal_rank];
+    
+    for(i=m; i<n; i++)
+    {
+        all_paras->corr_cal_chi_tt[i] = new double[all_paras->corr_cal_chi_num];
+        all_paras->corr_cal_chi_xx[i] = new double[all_paras->corr_cal_chi_num];
+
+        all_paras->corr_cal_gtt[i]  = new double[all_paras->corr_cal_final_data_num];
+        all_paras->corr_cal_gxx[i]  = new double[all_paras->corr_cal_final_data_num];
+        all_paras->corr_cal_gtt_sig[i]  = new double[all_paras->corr_cal_final_data_num];
+        all_paras->corr_cal_gxx_sig[i]  = new double[all_paras->corr_cal_final_data_num];
+
+        all_paras->corr_cal_mean_theta[i] = new double[all_paras->expo_chi_block_len_true];
+
+        // stack the exposure data for jackknife
+        all_paras->corr_cal_stack_num_count_chit[i] = new double[all_paras->expo_chi_block_len_true]{};
+        all_paras->corr_cal_stack_num_count_chix[i] = new double[all_paras->expo_chi_block_len_true]{};
+
+        all_paras->corr_cal_stack_expo_theta_accum[i] = new double[all_paras->theta_accum_len_true]{};
+        all_paras->corr_cal_stack_expo_theta_num_accum[i] = new double[all_paras->theta_accum_len_true]{};
+
+    }
+
+
+
     // the fundmental block size for number counting in the PDF_SYM
     // the smallest block, mg_bin_num x mg_bin_num, for each chi guess point
     all_paras->chi_block_len = all_paras->mg_bin_num*all_paras->mg_bin_num;
@@ -1320,19 +1360,14 @@ void read_para(corr_cal *all_paras)
     all_paras->theta_num_accum = new double[all_paras->theta_accum_len_true]{};
 
 
-    // stack all the exposure data
-    all_paras->corr_cal_stack_num_count_chit = new double[all_paras->expo_chi_block_len_true]{};
-    all_paras->corr_cal_stack_num_count_chix = new double[all_paras->expo_chi_block_len_true]{};
-
-    all_paras->corr_cal_stack_expo_theta_accum = new double[all_paras->theta_accum_len_true]{};
-    all_paras->corr_cal_stack_expo_theta_num_accum = new double[all_paras->theta_accum_len_true]{};
-
     all_paras->expo_block_len_in_buffer = 2*(all_paras->expo_chi_block_len_true+all_paras->theta_accum_len_true);
 
     // for the PDF calculation
     all_paras->corr_cal_chi_num = all_paras->chi_guess_num*all_paras->theta_bin_num*((all_paras->zbin_num*all_paras->zbin_num + all_paras->zbin_num)/2);
     all_paras->corr_cal_final_data_num = all_paras->theta_bin_num*((all_paras->zbin_num*all_paras->zbin_num + all_paras->zbin_num)/2);
 
+    
+    
     if(all_paras->corr_cal_rank == 0)
     {
         std::cout<<"G bin: "<<all_paras->mg_bin_num<<std::endl;
@@ -1513,7 +1548,7 @@ void prepare_data(corr_cal *all_paras, int tag)
     // }
     
     // prepare for jackknife 
-    pre_jackknife(all_paras);
+    // pre_jackknife(all_paras);
     
     // if(all_paras->corr_cal_rank == 0)
     // {
@@ -1582,7 +1617,7 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     sprintf(all_paras->inform, "Jackknife %d resample-start",resample_label);
     write_log(all_paras->log_path, all_paras->inform);
 
-    int i,j, k, q;
+    int i,j, k, kk, q;
     int m, n;
     int st, ed;
     int buffer_tag, file_tag, block_num, buffer_num;
@@ -1590,13 +1625,19 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
     char set_name[60], data_path[600];
     double *temp_read;
     int *jack_labels;
+    int jack_st, jack_ed;
     char time_now[40];
     
-    initialize_arr(all_paras->corr_cal_stack_num_count_chit, all_paras->expo_chi_block_len_true, 0);
-    initialize_arr(all_paras->corr_cal_stack_num_count_chix, all_paras->expo_chi_block_len_true, 0);
-    initialize_arr(all_paras->corr_cal_stack_expo_theta_accum, all_paras->theta_accum_len_true, 0);
-    initialize_arr(all_paras->corr_cal_stack_expo_theta_num_accum, all_paras->theta_accum_len_true, 0);
+    jack_st = all_paras->jackknife_resample_st[all_paras->corr_cal_rank];
+    jack_ed = all_paras->jackknife_resample_ed[all_paras->corr_cal_rank];
 
+    for(i=jack_st; i<jack_ed; i++)
+    {
+        initialize_arr(all_paras->corr_cal_stack_num_count_chit[i], all_paras->expo_chi_block_len_true, 0);
+        initialize_arr(all_paras->corr_cal_stack_num_count_chix[i], all_paras->expo_chi_block_len_true, 0);
+        initialize_arr(all_paras->corr_cal_stack_expo_theta_accum[i], all_paras->theta_accum_len_true, 0);
+        initialize_arr(all_paras->corr_cal_stack_expo_theta_num_accum[i], all_paras->theta_accum_len_true, 0);
+    }
     // abort_st = all_paras->jackknife_subsample_pair_st[resample_label];
     // abort_ed = all_paras->jackknife_subsample_pair_ed[resample_label];
     q = 0;
@@ -1683,17 +1724,24 @@ void resample_jackknife(corr_cal *all_paras,int resample_label)
                     if(n == resample_label){q++; continue;}
 
                     st = j*all_paras->expo_block_len_in_buffer;
-                    for(k=0; k<all_paras->theta_accum_len_true; k++)
-                    {
-                        all_paras->corr_cal_stack_expo_theta_accum[k] += temp_read[st+k];
-                        all_paras->corr_cal_stack_expo_theta_num_accum[k] += temp_read[st + all_paras->theta_accum_len_true +k];
-                    }
 
-                    st = j*all_paras->expo_block_len_in_buffer + 2*all_paras->theta_accum_len_true;
-                    for(k=0; k<all_paras->expo_chi_block_len_true; k++)
+                    for(k=jack_st; k<jack_ed; k++)
                     {
-                        all_paras->corr_cal_stack_num_count_chit[k] += temp_read[st + k];
-                        all_paras->corr_cal_stack_num_count_chix[k] += temp_read[st + all_paras->expo_chi_block_len_true + k];
+                        if(k != m and k != n)
+                        {
+                            for(kk=0; kk<all_paras->theta_accum_len_true; kk++)
+                            {
+                                all_paras->corr_cal_stack_expo_theta_accum[k][kk] += temp_read[st+kk];
+                                all_paras->corr_cal_stack_expo_theta_num_accum[k][kk] += temp_read[st + all_paras->theta_accum_len_true +kk];
+                            }
+
+                            st = j*all_paras->expo_block_len_in_buffer + 2*all_paras->theta_accum_len_true;
+                            for(kk=0; kk<all_paras->expo_chi_block_len_true; kk++)
+                            {
+                                all_paras->corr_cal_stack_num_count_chit[k][kk] += temp_read[st + kk];
+                                all_paras->corr_cal_stack_num_count_chix[k][kk] += temp_read[st + all_paras->expo_chi_block_len_true + kk];
+                            }
+                        }
                     }
                 }
                 delete[] temp_read;
