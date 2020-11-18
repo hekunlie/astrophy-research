@@ -11,52 +11,36 @@ import matplotlib.pyplot as plt
 
 zbin_num = 6#int(argv[1])
 theta_bin_num = 7#int(argv[2])
-resample_num = 300#int(argv[3])
+resample_num = 200#int(argv[3])
 pts_num = int(theta_bin_num*(zbin_num**2+zbin_num)/2)
 data_path = "E:/works/correlation/CFHT"
 pic_nm = data_path + "/result_%d.png"%resample_num
 result_npz = data_path + "/result_cache_%d.npz"%resample_num
 h5f = h5py.File(data_path + "/result_%d.hdf5"%resample_num,"r")
 print(list(h5f.keys()))
-print(list(h5f["/0"].keys()))
+# print(list(h5f["/0"].keys()))
 
-xi_p = (-h5f["/0/tt"][()] - h5f["/0/xx"][()]).reshape((1,pts_num))
-xi_m = (-h5f["/0/tt"][()] + h5f["/0/xx"][()]).reshape((1,pts_num))
-theta = h5f["/0/theta"][()].reshape((1,pts_num))
+
+xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
+xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
+theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
 
 xi_p_sig = numpy.zeros_like(xi_p)
 xi_m_sig = numpy.zeros_like(xi_p)
 
+# results of each jack
 xi_p_sub = numpy.zeros((resample_num, pts_num))
 xi_m_sub = numpy.zeros((resample_num, pts_num))
 
-for i in range(1,resample_num+1):
+for i in range(resample_num):
 
-    xi_p_sub[i-1] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,pts_num))
-    xi_m_sub[i-1] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,pts_num))
+    xi_p_sub[i] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,pts_num))
+    xi_m_sub[i] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,pts_num))
 
 for i in range(pts_num):
     xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
     xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
-    # img = Image_Plot(fig_x=6, fig_y=4)
-    # img.subplots(1, 1)
-    # # img.axs[0][0].hist(xi_p_sub[:,i],50)
-    # img.axs[0][0].scatter(range(resample_num),xi_p_sub[:,i])
-    # img.axs[0][0].set_yscale("symlog")
-    # # img.axs[0][0].set_ylim(10**(-7),10**(-4))
-    # img.show_img()
-# print(xi_p_sig)
-# y = -h5f["/0/xx"][()].reshape((1,105))[0,:5]
-# print(y.max(), y.min())
-# img = Image_Plot(fig_x=6, fig_y=4)
-# img.subplots(1,1)
-# img.axs[0][0].scatter(range(105)[:5],y)
-# img.axs[0][0].set_yscale("log")
-# img.axs[0][0].set_ylim(10**(-7),10**(-4))
-# img.show_img()
-# img.clos_img()
-# h5f.close()
-# exit()
+
 numpy.savez(result_npz, theta, xi_p, xi_m, xi_p_sig, xi_m_sig)
 
 img = Image_Plot(fig_x=4, fig_y=3,xpad=0,ypad=0,axis_linewidth=2.5, plt_line_width=3, legend_size=25,xy_tick_size=25)

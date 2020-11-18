@@ -138,8 +138,6 @@ void line_count(char *file_path, int &lines);
 
 void read_list(char *file_path, data_info *expo_info, int &read_file_num);
 
-void read_data(data_info *expo_info);
-
 void read_expo_data_1(data_info *expo_info, int expo_label);
 void read_expo_data_2(data_info *expo_info, int expo_label);
 
@@ -172,9 +170,8 @@ void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &i
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
 // if lable == 1, calculate, else, not
 
-void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
 // read all exposures
-void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1, MY_FLOAT *gg1, MY_FLOAT *gg2);
+void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
 // read the exposure needed
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

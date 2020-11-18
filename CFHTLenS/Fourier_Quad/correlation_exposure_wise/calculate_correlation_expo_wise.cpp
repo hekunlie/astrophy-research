@@ -38,17 +38,6 @@ int main(int argc, char *argv[])
     // read the information of each exposure file
     initialize(&expo_info);
 
-    MY_FLOAT *gg1 = new MY_FLOAT[expo_info.gg_len]{};
-    MY_FLOAT *gg2 = new MY_FLOAT[expo_info.gg_len]{};
-    sprintf(data_path,"%s/cata/gg_cor.hdf5", expo_info.parent_path);
-    sprintf(set_name,"/g11");
-    read_h5(data_path, set_name, gg1);
-    sprintf(set_name,"/g22");
-    read_h5(data_path, set_name, gg2);
-
-    // read the catalog of redshift bin z1 & z2
-    // read_data(&expo_info);
-
     // find all the potential expo pair for calculation, 
     // (i, j), i!= j, does not include the expo itself 
     task_prepare(numprocs, rank, &expo_info);
@@ -140,7 +129,7 @@ int main(int argc, char *argv[])
                 read_expo_data_2(&expo_info, task_labels[1]);
                 
                 //////////////  search pairs ////////////////////
-                find_pairs_new(&expo_info, task_labels[0], task_labels[1], gg1, gg2);
+                find_pairs(&expo_info, task_labels[0], task_labels[1]);
 
                 // if more 1 pair has been found, write into the result file
                 // if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, task_labels[0], task_labels[1], rank);}

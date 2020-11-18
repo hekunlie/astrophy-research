@@ -227,23 +227,6 @@ void read_list(char *file_path, data_info *expo_info, int &read_file_num)
     infile.close();
 }
 
-void read_data(data_info *expo_info)
-{
-    int i, j;
-    char set_name[100];
-    for(i=0; i<expo_info->total_expo_num; i++)
-    {   
-        ///////////////// read all the expos  //////////////////////////
-        expo_info->expo_zbin_label[i] = new int[expo_info->expo_gal_num[i]]{};
-        sprintf(set_name, "/redshift_label");
-        read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_zbin_label[i]);
-
-        expo_info->expo_data[i] = new MY_FLOAT[expo_info->expo_gal_num[i]*expo_info->expo_data_col]{};
-        sprintf(set_name, "/data");
-        read_h5(expo_info->expo_name_path[i], set_name, expo_info->expo_data[i]);
-       
-    }
-}
 
 void read_expo_data_1(data_info *expo_info,int expo_label)
 {
@@ -341,7 +324,7 @@ void task_prepare(int numprocs, int rank, data_info *expo_info)
 
     for(i=0; i<expo_info->total_expo_num; i++)
     {
-        for(j=i+1; j<expo_info->total_expo_num; j++)
+        for(j=i; j<expo_info->total_expo_num; j++)
         {
             expo_distance(expo_info, i,j, k);
             if(k == 1)
@@ -415,211 +398,12 @@ void thread_pool_resize(data_info *expo_info)
     for(i=0; i<expo_info->thread_del.size(); i++){expo_info->thread_del.pop_back();}
 }
 
+
+
 void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
 {
     int i, j, m, n, k;
-    int ig1, ig2;
-
-    int ir, theta_tag, ic;
-    int iz1, iz2;
-    MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
-    MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
-
-    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
-    MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
-    MY_FLOAT temp_x, temp_y;
-    int ix_tt, iy_tt, ix_xx, iy_xx;
-    MY_FLOAT temp_tt[4], temp_xx[4];
-    int bin_para_tt[2], bin_para_xx[2];
-
-    int ix, iy, im, im1,im2;
-    int chi_guess_num;
-    int expo_chi_block_len, ir_chi_block_len,chi_block_len;
-    int ir_len, ic_len;
-    MY_FLOAT gg_1, gg_2, gg_len;
-
-    MY_FLOAT delta_ra, delta_dec, delta_radius, delta_radius_check;
-    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
-
-    double st1, st2;
-    double pairs = 0;
-
-    int loop_label;
-    loop_label = expo_info->loop_label;
-
-    int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
-    mg_bin_num = expo_info->mg_bin_num;
-    mg_bin_num1 = expo_info->mg_bin_num1;
-    mg_bin_num2 = expo_info->mg_bin_num2;
-    mg_bin_num3 = expo_info->mg_bin_num3;
-
-    chi_guess_num = expo_info->chi_guess_num;
-    expo_chi_block_len = expo_info->expo_chi_block_len;
-    ir_chi_block_len = expo_info->ir_chi_block_len;
-    chi_block_len = expo_info->chi_block_len;
-    gg_len = expo_info->gg_len;
-
-    st1 = clock();
-    for(ig1=0; ig1<expo_info->expo_gal_num[expo_label_0]; ig1++)
-    {   
-        
-        // loop the grid in the first zbin, zbin_label_0
-        m = ig1*expo_info->expo_data_col;
-
-        ra_z1 = expo_info->expo_data[expo_label_0][m+expo_info->ra_idx];
-        dec_z1 = expo_info->expo_data[expo_label_0][m+expo_info->dec_idx];
-        cos_dec_z1 = expo_info->expo_data[expo_label_0][m+expo_info->cos_dec_idx];
-
-        mg1_z1 = expo_info->expo_data[expo_label_0][m+expo_info->mg1_idx];
-        mg2_z1 = expo_info->expo_data[expo_label_0][m+expo_info->mg2_idx];
-
-        mnu1_z1 = expo_info->expo_data[expo_label_0][m+expo_info->mn_idx] +
-                    expo_info->expo_data[expo_label_0][m+expo_info->mu_idx];
-        mnu2_z1 = expo_info->expo_data[expo_label_0][m+expo_info->mn_idx] -
-                    expo_info->expo_data[expo_label_0][m+expo_info->mu_idx];
-        
-        iz1 = expo_info->expo_zbin_label[expo_label_0][ig1]*expo_info->zbin_num;
-
-        for(ig2=0; ig2<expo_info->expo_gal_num[expo_label_1]; ig2++)
-        {   
-            // if two galaxies come from the same CFHTLenS exposure, break
-            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){break;}
-
-            n = ig2*expo_info->expo_data_col;
-
-            ra_z2 = expo_info->expo_data[expo_label_1][n+expo_info->ra_idx];
-            dec_z2 = expo_info->expo_data[expo_label_1][n+expo_info->dec_idx];
-            cos_dec_z2 = expo_info->expo_data[expo_label_1][n+expo_info->cos_dec_idx];
-
-            // the seperation angle (arc minute)
-            delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
-            delta_dec = dec_z2 - dec_z1;
-            delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
-            // separation(ra_z1/60, dec_z1/60, ra_z2/60, dec_z2/60, delta_radius_check);
-            // std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<std::endl;
-
-            theta_tag = -1;
-            for(ir=0; ir<expo_info->theta_bin_num; ir++)
-            {
-                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
-                {theta_tag=ir;break;}
-            }
-            // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
-            if(theta_tag > -1)
-            {   
-                pairs+= 1;
-
-                // shear estimators rotation (position angle defined as East of North)
-                sin_theta = delta_ra/delta_radius;
-                cos_theta = delta_dec/delta_radius;
-
-                sin_2theta = 2*sin_theta*cos_theta;
-                cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
-
-                sin_4theta = 2*sin_2theta*cos_2theta;
-                cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
-
-
-                mg1_z2 = expo_info->expo_data[expo_label_1][n+expo_info->mg1_idx]*cos_2theta - 
-                        expo_info->expo_data[expo_label_1][n+expo_info->mg2_idx]*sin_2theta;
-                mg2_z2 = expo_info->expo_data[expo_label_1][n+expo_info->mg1_idx]*sin_2theta + 
-                        expo_info->expo_data[expo_label_1][n+expo_info->mg2_idx]*cos_2theta;
-
-                mnu1_z2 = expo_info->expo_data[expo_label_1][n+expo_info->mu_idx]*cos_4theta -
-                        expo_info->expo_data[expo_label_1][n+expo_info->mv_idx]*sin_4theta;
-                mnu2_z2 = mnu1_z2;
-
-                mnu1_z2 = expo_info->expo_data[expo_label_1][n+expo_info->mn_idx] + mnu2_z2;
-                mnu2_z2 = expo_info->expo_data[expo_label_1][n+expo_info->mn_idx] - mnu2_z2;
-                
-                // there're zbin_num *zbin_num blocks, iz1 is row, iz2 is the col, each block
-                // has a length of mg_bin_num*mg_bin_num*chi_guess_num*theta_bin_num.
-                iz2 = expo_info->expo_zbin_label[expo_label_1][ig2];
-
-                ////////////////////// the key part of PDF_SYM //////////////////////////////
-                ic_len = theta_tag*ir_chi_block_len + (iz1 + iz2)*expo_info->iz_chi_block_len;
-
-                gg_1 = expo_info->gg_1[loop_label];
-                gg_2 = expo_info->gg_2[loop_label];
-
-                temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
-                
-                
-                expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
-                
-                temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
-
-                hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                loop_label += 1;
-
-                // if(ic_len == 0)
-                // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
-                // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                for(ic=1; ic<chi_guess_num; ic++)
-                {   
-                    ic_len += chi_block_len;
-
-                    gg_1 = expo_info->gg_1[loop_label];
-                    gg_2 = expo_info->gg_2[loop_label];
-
-                    bin_para_tt[0] = ix_tt;
-                    bin_para_tt[1] = iy_tt;
-
-                    temp_tt[0] = temp_tt[2];
-                    temp_tt[1] = temp_tt[3];
-
-                    temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                    temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                    // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
-                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
-
-                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
-                    
-                    bin_para_xx[0] = ix_xx;
-                    bin_para_xx[1] = iy_xx;
-                    
-                    temp_xx[0] = temp_xx[2];
-                    temp_xx[1] = temp_xx[3];
-
-                    temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                    temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
-
-                    // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
-                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                    loop_label += 1;
-
-
-                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                    // if(ic_len == 0)
-                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
-                    
-                }
-                if(loop_label >= gg_len){loop_label = 0;}
-                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
-                
-            }
-
-        }
-    }
-    // st2 = clock();
-    // std::cout<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
-    expo_info->gg_pairs = pairs;
-    expo_info->loop_label = loop_label;
-}
-
-void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_FLOAT *gg1, MY_FLOAT *gg2)
-{
-    int i, j, m, n, k;
-    int ig1, ig2;
+    int ig1, ig2, ig_st;
 
     int ir, theta_tag, theta_accum_tag, ic;
     int iz1, iz2, iz1_;
@@ -666,9 +450,11 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
-    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/4;
-    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/4;
-    std::cout<<gal_num_1<<" "<<gal_num_2<<std::endl;
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/2;
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/2;
+    
+
+
     st1 = clock();
     for(ig1=0; ig1<gal_num_1; ig1++)
     {   
@@ -690,8 +476,14 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_
         iz1 = expo_info->expo_zbin_label_1[ig1];
         iz1_ = iz1*expo_info->zbin_num;
 
-        for(ig2=0; ig2<gal_num_2; ig2++)
+        if(expo_label_0 == expo_label_1){ig_st = ig1+1;}
+        else{ig_st = 0;}
+
+        for(ig2=ig_st; ig2<gal_num_2; ig2++)
         {   
+
+            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){continue;}
+
             n = ig2*expo_info->expo_data_col;
 
             ra_z2 = expo_info->expo_data_2[n+expo_info->ra_idx];
@@ -772,10 +564,6 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_
                 gg_1 = expo_info->gg_1[loop_label];
                 gg_2 = expo_info->gg_2[loop_label];
 
-                //gg_1 = gg1[loop_label];
-                //gg_2 = gg2[loop_label];
-
-
                 temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
                 temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
                 hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
@@ -801,10 +589,7 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1,MY_
 
                     gg_1 = expo_info->gg_1[loop_label];
                     gg_2 = expo_info->gg_2[loop_label];
-                    
-                    //gg_1 = gg1[loop_label];
-                    //gg_2 = gg2[loop_label];
-                    
+                                    
                     bin_para_tt[0] = ix_tt;
                     bin_para_tt[1] = iy_tt;
 

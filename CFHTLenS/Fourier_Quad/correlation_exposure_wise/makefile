@@ -22,7 +22,7 @@ CODE_NAME_E=calculate_correlation_expo_wise.cpp
 FINAL_NAME_E=cal_cor
 
 compile_e:
-	mpicxx -I.  $(CODE_NAME_E) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -O -o $(FINAL_NAME_E) -std=c++11
+	mpicxx -I.  $(CODE_NAME_E) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -O1 -o $(FINAL_NAME_E) -std=c++11
 clean_e:
 	rm $(FINAL_NAME_E)
 
