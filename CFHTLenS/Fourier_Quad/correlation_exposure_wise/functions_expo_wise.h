@@ -245,6 +245,7 @@ struct corr_cal
     // CPUs, these two arrays record the start&end resample-task label of each CPU
     int *jackknife_resample_st;
     int *jackknife_resample_ed;
+    int my_jack_st, my_jack_ed;
     int jackknife_label;
     int *buffer_num_in_file;
     
@@ -264,11 +265,11 @@ void prepare_data(corr_cal *all_paras, int tag);
 
 void pre_jackknife(corr_cal *all_paras);
 
-void resample_jackknife(corr_cal *all_paras,int resample_label);
+void resample_jackknife(corr_cal *all_paras);
 
 void chisq_2d(double *num_count, int mg_bin_num, double &chisq);
 
-void corr_calculate(corr_cal *all_paras, int resample_label);
+void corr_calculate(corr_cal *all_paras);
 
 void corr_task_alloc(int total_task_num, int portion, int *label_st, int *label_ed);
 
