@@ -98,8 +98,8 @@ void initialize(data_info *expo_info)
     expo_info->expo_num_count_chit = new double[expo_info->expo_chi_block_len]{};
     expo_info->expo_num_count_chix = new double[expo_info->expo_chi_block_len]{};
 
-    expo_info->theta_accum = new double[expo_info->theta_accum_len];
-    expo_info->theta_num_accum = new double[expo_info->theta_accum_len];
+    expo_info->theta_accum = new double[expo_info->theta_accum_len]{};
+    expo_info->theta_num_accum = new double[expo_info->theta_accum_len]{};
 
     // for the data stack in the data saving step, z[i,j] = z[i, j] =  z[j, i]
     expo_info->corr_cal_stack_num_count_chit = new double [expo_info->expo_chi_block_len_true]{};
@@ -450,8 +450,8 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     gg_len = expo_info->gg_len;
     theta_bin_num = expo_info->theta_bin_num;
 
-    gal_num_1 = expo_info->expo_gal_num[expo_label_0]/2;
-    gal_num_2 = expo_info->expo_gal_num[expo_label_1]/2;
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
     
 
 
@@ -670,6 +670,7 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
     
     if(task_end_tag == 1)
     {   
+        // if the progress comes to the end, force it to save the buffer (may not be full)
         if(expo_info->block_count > 0)
         {
             // for that case in which the tasks have been completed,
@@ -1351,7 +1352,7 @@ void pre_jackknife(corr_cal *all_paras)
         all_paras->corr_cal_gtt_sig[i]  = new double[all_paras->corr_cal_final_data_num];
         all_paras->corr_cal_gxx_sig[i]  = new double[all_paras->corr_cal_final_data_num];
 
-        all_paras->corr_cal_mean_theta[i] = new double[all_paras->expo_chi_block_len_true];
+        all_paras->corr_cal_mean_theta[i] = new double[all_paras->theta_accum_len_true];
 
         // stack the exposure data for jackknife
         all_paras->corr_cal_stack_num_count_chit[i] = new double[all_paras->expo_chi_block_len_true]{};
@@ -1455,10 +1456,10 @@ void resample_jackknife(corr_cal *all_paras)
             read_h5(data_path, set_name, jack_labels);
             block_num = block_num/2;
             block_need = 0;
-            for(j=0; j<block_num; j+=2)
+            for(j=0; j<block_num; j++)
             {
-                m = jack_labels[j];
-                n = jack_labels[j+1];
+                m = jack_labels[2*j];
+                n = jack_labels[2*j+1];
 
                 for(k=all_paras->my_jack_st; k<all_paras->my_jack_ed; k++)
                 {
@@ -1481,8 +1482,8 @@ void resample_jackknife(corr_cal *all_paras)
                 // stack
                 for(j=0; j<block_num; j++)
                 {
-                    m = jack_labels[j];
-                    n = jack_labels[j+1];
+                    m = jack_labels[2*j];
+                    n = jack_labels[2*j+1];
 
                     st = j*all_paras->expo_block_len_in_buffer;
 
@@ -1493,8 +1494,8 @@ void resample_jackknife(corr_cal *all_paras)
                             // if the exposure pair labels does not contain the jack_id, add the data to the buffer
                             for(kk=0; kk<all_paras->theta_accum_len_true; kk++)
                             {
-                                all_paras->corr_cal_stack_expo_theta_accum[k][kk] += temp_read[st+kk];
-                                all_paras->corr_cal_stack_expo_theta_num_accum[k][kk] += temp_read[st + all_paras->theta_accum_len_true +kk];
+                                all_paras->corr_cal_stack_expo_theta_accum[k][kk] += temp_read[st + kk];
+                                all_paras->corr_cal_stack_expo_theta_num_accum[k][kk] += temp_read[st + all_paras->theta_accum_len_true + kk];
                             }
 
                             st = j*all_paras->expo_block_len_in_buffer + 2*all_paras->theta_accum_len_true;

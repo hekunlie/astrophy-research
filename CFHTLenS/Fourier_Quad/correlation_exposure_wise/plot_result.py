@@ -24,6 +24,8 @@ print(list(h5f.keys()))
 xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
 xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
 theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
+print(theta.reshape((21,7)))
+
 
 xi_p_sig = numpy.zeros_like(xi_p)
 xi_m_sig = numpy.zeros_like(xi_p)
