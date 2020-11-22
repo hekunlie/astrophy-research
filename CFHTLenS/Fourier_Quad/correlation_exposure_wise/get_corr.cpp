@@ -51,31 +51,6 @@ int main(int argc, char **argv)
     resample_jackknife(&all_paras);
     corr_calculate(&all_paras);
 
-    // for(i=all_paras.jackknife_resample_st[rank]; i<all_paras.jackknife_resample_ed[rank]; i++)
-    // {   
-    //     st2 = clock();
-    //     get_time(time_now, 40);
-    //     if(rank == 0)
-    //     {     
-    //         sprintf(inform, "%s. Jackknife %d. start.", time_now, i);
-    //         std::cout<<inform<<std::endl;
-    //     }
-
-
-    //     resample_jackknife(&all_paras,i);
-    //     corr_calculate(&all_paras, i);
-
-    //     st3 = clock();
-    //     get_time(time_now, 40);
-
-    //     if(rank == 0)
-    //     {   
-    //         tt1 = (st3-st2)/CLOCKS_PER_SEC;    
-    //         sprintf(inform, "%s. Jackknife %d. %.2f sec", time_now, i,tt1);
-    //         std::cout<<inform<<std::endl;
-    //     }
-    // }
-
     MPI_Barrier(MPI_COMM_WORLD);
     
     st4 = clock();
