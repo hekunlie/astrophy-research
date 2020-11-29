@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 
 
 zbin_num = 6#int(argv[1])
-theta_bin_num = 7#int(argv[2])
+theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 pts_num = int(theta_bin_num*(zbin_num**2+zbin_num)/2)
 data_path = "E:/works/correlation/CFHT"
-pic_nm = data_path + "/result_%d.png"%resample_num
+pic_nm = data_path + "/result_%d_same_expo.png"%resample_num
 result_npz = data_path + "/result_cache_%d.npz"%resample_num
-h5f = h5py.File(data_path + "/result_%d.hdf5"%resample_num,"r")
+h5f = h5py.File(data_path + "/result_%d_same_expo.hdf5"%resample_num,"r")
 print(list(h5f.keys()))
 # print(list(h5f["/0"].keys()))
 
@@ -24,7 +24,7 @@ print(list(h5f.keys()))
 xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
 xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
 theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
-print(theta.reshape((21,7)))
+# print(theta.reshape((21,7)))
 
 
 xi_p_sig = numpy.zeros_like(xi_p)
@@ -85,8 +85,11 @@ for i in range(zbin_num):
             img.axs[img_row][img_col].set_yscale("log")
             img.axs[img_row][img_col].set_xscale("log")
 
-            img.axs[img_row][img_col].set_xlim(0.8, 200)
-            img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,100], ["$1$","$5$","$10$","$100$"])
+            img.axs[img_row][img_col].set_xlim(0.8, 60)
+            img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+
+            # img.axs[img_row][img_col].set_xlim(0.8, 200)
+            # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,100], ["$1$","$5$","$10$","$100$"])
             img.axs[img_row][img_col].set_ylim(5 * 10 ** (-7), 5 * 10 ** (-4))
 
             # if tag not in [0, 6, 11, 15, 18, 20]:

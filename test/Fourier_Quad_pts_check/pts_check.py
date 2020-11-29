@@ -29,7 +29,8 @@ fq = Fourier_Quad(stamp_size, seed)
 
 psf_img = fq.cre_psf(psf_scale, psf_flux, psf_type)
 psf_pow = fq.pow_spec(psf_img)
-fq.get_radius(psf_pow, 2)
+fq.get_radius_new(psf_pow, 2)
+
 print(fq.hlr)
 img = Image_Plot()
 img.subplots(1,2)
@@ -45,9 +46,9 @@ temp = numpy.zeros((rotation*num_scale,3))
 g1_result = numpy.zeros((2,shear_num))
 g2_result = numpy.zeros((2,shear_num))
 
-for i in range(shear_num):
-    g1 = g1_input[i]
-    g2 = g2_input[i]
+for i in range(1):
+    g1 = 0.01#g1_input[i]
+    g2 = 0.02#g2_input[i]
 
     for j in range(num_scale):
 
@@ -85,6 +86,8 @@ for i in range(shear_num):
 
     g2_result[0,i] = gh2
     g2_result[1,i] = gh2_sig
+    print("%.5f(%.5f)  %.5f(%.5f)"%(gh1, gh1_sig, gh2, gh2_sig))
+
 
 mc1 = numpy.array(tool_box.data_fit(g1_input, g1_result[0],g1_result[0]))
 mc2 = numpy.array(tool_box.data_fit(g2_input, g2_result[0],g2_result[0]))

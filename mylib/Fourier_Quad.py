@@ -74,7 +74,7 @@ class Fourier_Quad:
             psf_ps = psf_image
         else:
             psf_ps = self.pow_spec(psf_image)
-        # hlr = self.get_radius_new(psf_ps, 2)[0]
+        # self.get_radius_new(psf_ps, 2)
         wb, beta = self.wbeta(self.hlr)
         maxi = numpy.max(psf_ps)
         idx = psf_ps < maxi / 100000.

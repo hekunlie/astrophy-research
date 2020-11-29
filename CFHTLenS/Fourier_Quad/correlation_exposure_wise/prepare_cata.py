@@ -55,7 +55,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 28
-flux2_alt_thresh = 3
+flux2_alt_thresh = 2
 
 # selection on the bad pixels
 imax_idx = 22
@@ -181,14 +181,6 @@ if cmd == "prepare":
 
         idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8
 
-        # redshift = data[:, redshift_idx][idx]
-        # mask = numpy.zeros_like(redshift,dtype=numpy.intc)
-        # for i in range(idx.sum()):
-        #     redshift_diff = numpy.abs(redshift-redshift[i])
-        #     idx_9 = redshift_diff <= redshift_sep_thresh
-        #     if idx_9.sum() > 1:
-        #         mask[idx_9] = 1
-        # idx_9 = mask == 0
         src_num = idx.sum()
 
         if src_num > 0:
@@ -214,56 +206,39 @@ if cmd == "prepare":
             # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT
             dst_data = numpy.zeros((src_num, 9), dtype=numpy.float32)
 
+            dst_data[:, 0] = src_data[:, mg1_idx]
+            dst_data[:, 1] = src_data[:, mg2_idx]
+            dst_data[:, 2] = src_data[:, mn_idx]
+            # the signs of U & V are different with that in the paper
+            dst_data[:, 3] = -src_data[:, mu_idx]
+            dst_data[:, 4] = -src_data[:, mv_idx]
+
+            dst_data[:, 5] = src_data[:, ra_idx]
+            dst_data[:, 6] = src_data[:, dec_idx]
+            dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
+            dst_data[:, 8] = src_data[:, redshift_idx]
+
             redshift_label = numpy.zeros((src_num,), dtype=numpy.intc)
 
             test_mask = numpy.zeros((src_num, ), dtype=numpy.intc)
-
-            total_num_in_z_bin = numpy.zeros((redshift_bin_num, ), dtype=numpy.intc)
-            iz_st = numpy.zeros((redshift_bin_num, ), dtype=numpy.intc)
-            iz_ed = numpy.zeros((redshift_bin_num, ), dtype=numpy.intc)
 
             for iz in range(redshift_bin_num):
                 idx_z1 = src_data[:,redshift_idx] >= redshift_bin[iz]
                 idx_z2 = src_data[:,redshift_idx] < redshift_bin[iz+1]
                 idx = idx_z1 & idx_z2
 
-                total_num_in_z_bin[iz] = idx.sum()
-
-                st = total_num_in_z_bin[:iz].sum()
-                ed = st + total_num_in_z_bin[iz]
-                # print(iz, st, ed)
-
-                iz_st[iz] = st
-                iz_ed[iz] = ed
-
-                dst_data[st:ed, 0] = src_data[:, mg1_idx][idx]
-                dst_data[st:ed, 1] = src_data[:, mg2_idx][idx]
-                dst_data[st:ed, 2] = src_data[:, mn_idx][idx]
-                # the signs of U & V are different with that in the paper
-                dst_data[st:ed, 3] = -src_data[:, mu_idx][idx]
-                dst_data[st:ed, 4] = -src_data[:, mv_idx][idx]
-
-                dst_data[st:ed, 5] = src_data[:, ra_idx][idx]
-                dst_data[st:ed, 6] = src_data[:, dec_idx][idx]
-                dst_data[st:ed, 8] = src_data[:, redshift_idx][idx]
-                redshift_label[st:ed] = iz
-                test_mask[st:ed] = 1
+                redshift_label[idx] = iz
+                test_mask[idx] = 1
 
             if test_mask.sum() != src_num:
                 log_inform = "%d %s wrong in mask(%d!=%d)\n" % (rank, expo_name, test_mask.sum(), src_num)
                 exception_sub.append(log_inform)
 
-            dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
-            # print(total_num_in_z_bin)
             expo_dst_path = result_cata_path + "/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")
-
             h5f_dst["/pos"] = expo_pos
             h5f_dst["/redshift_label"] = redshift_label
             h5f_dst["/data"] = dst_data
-            h5f_dst["/num_in_zbin"] = total_num_in_z_bin
-            h5f_dst["/zbin_st"] = iz_st
-            h5f_dst["/zbin_ed"] = iz_ed
             h5f_dst.close()
 
             expo_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
@@ -386,17 +361,33 @@ elif cmd == "kmeans":
     # ncent = int(argv[2])
     # njobs = int(argv[3])
     # 200 sub-samples
-    ncent = [75,34,56,35][rank]
+    # ncent = [75, 34, 56, 35][rank]
     ra_bin = [1000, 5000, 10000, 15000, 30000]
+    total_cent = 300
+
 
     h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
     data = h5f["/data"][()]
     expos_labels = h5f["/expos_label"][()]
     h5f.close()
 
+    total_src_num = data.shape[0]
+
     ra_dec = data[:,5:7]
-    idx1 = ra_dec[:,0] >= ra_bin[rank]
-    idx2 = ra_dec[:,0] < ra_bin[rank+1]
+    src_num_each_area = numpy.zeros((area_num,),dtype=numpy.intc)
+    for i in range(area_num):
+        idx1 = ra_dec[:,0] >= ra_bin[i]
+        idx2 = ra_dec[:,0] < ra_bin[i+1]
+        idx = idx1 & idx2
+        src_num_each_area[i] = idx.sum()
+
+    ncents, ratio = prepare_tools.even_area(src_num_each_area, area_num, total_cent)
+    if rank == 0:
+        print(ncents)
+        print(ratio)
+    ncent = ncents[rank]
+    idx1 = ra_dec[:, 0] >= ra_bin[rank]
+    idx2 = ra_dec[:, 0] < ra_bin[rank + 1]
     idx = idx1 & idx2
 
     group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec[idx])
