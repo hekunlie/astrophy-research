@@ -1364,18 +1364,18 @@ void resample_jackknife(corr_cal *all_paras)
 
         }
 
-        if(all_paras->corr_cal_rank == all_paras->corr_cal_thread_num - 1)
-        {
-            if(file_tag == 5 or file_tag == 10 or file_tag == 20)
-            {   
-                std::cout<<"All stacked: "<<std::endl;
-                for(i=0; i<all_paras->theta_accum_len_true; i++)
-                {
-                    std::cout<<all_paras->corr_cal_stack_expo_theta_accum[200][i]/all_paras->corr_cal_stack_expo_theta_num_accum[200][i]<<" ";
-                }
-                std::cout<<std::endl;
-            }
-        }
+        // if(all_paras->corr_cal_rank == all_paras->corr_cal_thread_num - 1)
+        // {
+        //     if(file_tag == 5 or file_tag == 10 or file_tag == 20)
+        //     {   
+        //         std::cout<<"All stacked: "<<std::endl;
+        //         for(i=0; i<all_paras->theta_accum_len_true; i++)
+        //         {
+        //             std::cout<<all_paras->corr_cal_stack_expo_theta_accum[200][i]/all_paras->corr_cal_stack_expo_theta_num_accum[200][i]<<" ";
+        //         }
+        //         std::cout<<std::endl;
+        //     }
+        // }
 
         get_time(time_now, 40);
         sprintf(all_paras->inform, "%s. file %d -- end",time_now, file_tag);

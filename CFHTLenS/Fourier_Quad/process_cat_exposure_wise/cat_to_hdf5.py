@@ -31,7 +31,7 @@ if mode == "cata_name":
         #     anomaly_val.append(float(val))
         #     # print(anomaly_expo[-1],anomaly_val[-1])
 
-        files_nm = os.listdir(total_path + "/cat")
+        files_nm = os.listdir(total_path + "/cat_ori")
         all_files = []
 
         for fnm in files_nm:
@@ -46,6 +46,20 @@ if mode == "cata_name":
 elif mode == "hdf5_cata":
     # convert the .dat to .hdf5
 
+    # read the photoz data
+    # RA DEC Z_B ODDS Pz_full(70 cols)
+    for i in range(cpus):
+        if i == rank:
+            h5f = h5py.File(total_path + "/CFHT_pz.hdf5","r")
+            pz_data = h5f["/data"][()]
+            h5f.close()
+            print("%d Read Pz cata"%rank)
+
+        comm.Barrier()
+    comm.Barrier()
+
+    zbin = numpy.array([0.025 + i * 0.05 for i in range(70)])
+
     exposures_candidates = []
     with open(total_path + "/cat_inform/exposure_name.dat", "r") as f:
         contents = f.readlines()
@@ -59,18 +73,60 @@ elif mode == "hdf5_cata":
 
     for fns in exposures_candidates_sub:
         # read the the field data
-        expo_src_path = total_path + "/cat/%s.cat" % fns
+        expo_src_path = total_path + "/cat_ori/%s.cat" % fns
         expo_h5_path = total_path + "/cat_hdf5/%s.hdf5" % fns
         try:
-            edat = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
+            src_data = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
+            row, col = src_data.shape
+
+            # for Z_E, Z_E_nor, ODDS
+            dst_data = numpy.zeros_like((row, col+3), dtype=numpy.float32)
+            dst_data[:,:col] = src_data
+
+            ra_min, ra_max = src_data[:,0].min(), src_data[:,0].max()
+            dra = (ra_max - ra_min)*0.05
+            dec_min, dec_max = src_data[:,1].min(), src_data[:,1].max()
+            ddec = (dec_max - dec_min) * 0.05
+
+            idx1 = pz_data[:,0] >= ra_min - dra
+            idx2 = pz_data[:,0] <= ra_max + dra
+            idx3 = pz_data[:,1] >= dec_min - ddec
+            idx4 = pz_data[:,1] <= dec_max + ddec
+            idx = idx1 & idx2 & idx3 & idx4
+            pz_data_sub = pz_data[idx]
+            pz_data_sub_num = idx.sum()
+            labels = numpy.arange(0, pz_data_sub_num)
+
+            src_num = src_data.shape[0]
+            for i in range(src_num):
+                diff_ra, diff_dec = numpy.abs(pz_data_sub[0] - src_data[i,0]), numpy.abs(pz_data_sub[1] - src_data[i,1])
+                diff_z = numpy.abs(pz_data_sub[2] - src_data[i,10])
+                idx_1 = diff_ra <= 0.00001
+                idx_2 = diff_dec <= 0.00001
+                idx_3 = diff_z <= 0.00001
+                idx_ = idx_1 & idx_1 & idx_3
+                match_num = idx_.sum()
+                if match_num == 1:
+                    target_idx = labels[idx_1]
+                else:
+                    print("Find %d pts!!!"%match_num)
+                    exit()
+
+                # the expectation of Z
+                pz = pz_data_sub[target_idx,4:] # some of the P(z) does not be normalized
+                pz_norm = pz/pz.sum()
+
+                dst_data[i,col] = numpy.sum(zbin*pz)
+                dst_data[i,col+1] = numpy.sum(zbin*pz_norm)
+                dst_data[i,col+2] = pz_data_sub[target_idx,3]
 
             # Nan check
-            idx = numpy.isnan(edat)
+            idx = numpy.isnan(src_data)
             if idx.sum() > 0:
                 print("Find Nan in ", expo_src_path)
 
             h5f_expo = h5py.File(expo_h5_path, "w")
-            h5f_expo["/data"] = edat
+            h5f_expo["/data"] = dst_data
             h5f_expo.close()
 
             exposures_candidates_avail_sub.append(expo_h5_path + "\n")
@@ -98,9 +154,12 @@ elif mode == "hdf5_cata":
         with open(total_path + "/cat_inform/exposure_avail.dat","w") as f:
             f.writelines(exposures_avail)
 
-        exception_all.append("Totally: %d/%d available exposures\n"%(len(exposures_avail),len(exposures_candidates)))
+        exception_all.append("Totally: %d/%d available exposures\n"
+                             "The expectation of Z calculated from the P(z) and normalized P(z), "
+                             "and the ODDS have been added to the hdf5 cat\n"%(len(exposures_avail),len(exposures_candidates)))
         with open("log.dat","w") as f:
             f.writelines(exception_all)
+
 
 else:
     # collection
