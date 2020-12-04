@@ -78,9 +78,18 @@ elif mode == "hdf5_cata":
         try:
             src_data = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
             row, col = src_data.shape
+        except:
+            if os.path.exists(expo_src_path):
+                log_inform = "%d Failed in reading %s %d Bytes !\n" % (
+                    rank, expo_src_path, os.path.getsize(expo_src_path))
+            else:
+                log_inform = "%d can't find %s!\n" % (rank, expo_src_path)
+            exception_sub.append(log_inform)
+            row, col = 0, 0
 
+        if row > 0:
             # for Z_E, Z_E_nor, ODDS
-            dst_data = numpy.zeros_like((row, col+3), dtype=numpy.float32)
+            dst_data = numpy.zeros((row, col+3), dtype=numpy.float32)
             dst_data[:,:col] = src_data
 
             ra_min, ra_max = src_data[:,0].min(), src_data[:,0].max()
@@ -99,26 +108,28 @@ elif mode == "hdf5_cata":
 
             src_num = src_data.shape[0]
             for i in range(src_num):
-                diff_ra, diff_dec = numpy.abs(pz_data_sub[0] - src_data[i,0]), numpy.abs(pz_data_sub[1] - src_data[i,1])
-                diff_z = numpy.abs(pz_data_sub[2] - src_data[i,10])
-                idx_1 = diff_ra <= 0.00001
-                idx_2 = diff_dec <= 0.00001
-                idx_3 = diff_z <= 0.00001
-                idx_ = idx_1 & idx_1 & idx_3
+                diff_rad = numpy.abs(pz_data_sub[:,0] - src_data[i,0]) + numpy.abs(pz_data_sub[:,1] - src_data[i,1])
+                diff_z = numpy.abs(pz_data_sub[:,2] - src_data[i,10])
+
+                idx_1 = diff_rad <= 0.0001
+                idx_2 = diff_z <= 0.0001
+                idx_ = idx_1 & idx_2
                 match_num = idx_.sum()
+
                 if match_num == 1:
-                    target_idx = labels[idx_1]
+                    target_idx = labels[idx_]
                 else:
+                    print(idx_1.sum(), idx_2.sum(), idx_.sum())
+                    print(diff_rad.min(),diff_z.min())
                     print("Find %d pts!!!"%match_num)
+                    print("%.4f %.4f  %.3f"%(src_data[i,0],src_data[i,1], src_data[i,10]))
                     exit()
-
-                # the expectation of Z
-                pz = pz_data_sub[target_idx,4:] # some of the P(z) does not be normalized
-                pz_norm = pz/pz.sum()
-
-                dst_data[i,col] = numpy.sum(zbin*pz)
-                dst_data[i,col+1] = numpy.sum(zbin*pz_norm)
-                dst_data[i,col+2] = pz_data_sub[target_idx,3]
+                # ODDS
+                dst_data[i,col] = pz_data_sub[target_idx, 3]
+                # expectation of Z
+                dst_data[i,col+1] = pz_data_sub[target_idx, 4]
+                # sum of P(z)
+                dst_data[i,col+2] = pz_data_sub[target_idx, 5]
 
             # Nan check
             idx = numpy.isnan(src_data)
@@ -130,14 +141,6 @@ elif mode == "hdf5_cata":
             h5f_expo.close()
 
             exposures_candidates_avail_sub.append(expo_h5_path + "\n")
-
-        except:
-            if os.path.exists(expo_src_path):
-                log_inform = "%d Failed in reading %s %d Bytes !\n" % (
-                rank, expo_src_path, os.path.getsize(expo_src_path))
-            else:
-                log_inform = "%d can't find %s!\n" % (rank, expo_src_path)
-            exception_sub.append(log_inform)
 
     exposures_candidates_avail = comm.gather(exposures_candidates_avail_sub, root=0)
     exception_collection = comm.gather(exception_sub, root=0)
