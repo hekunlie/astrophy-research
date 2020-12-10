@@ -76,8 +76,8 @@ mn_idx = 35
 mu_idx = 36
 mv_idx = 37
 
-# exposure label
-expo_idx = 36
+# about PhotoZ
+
 
 #
 fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"

@@ -53,7 +53,7 @@ elif mode == "hdf5_cata":
             h5f = h5py.File(total_path + "/CFHT_pz.hdf5","r")
             pz_data = h5f["/data"][()]
             h5f.close()
-            print("%d Read Pz cata"%rank)
+            # print("%d Read Pz cata"%rank)
 
         comm.Barrier()
     comm.Barrier()
@@ -111,17 +111,25 @@ elif mode == "hdf5_cata":
                 diff_rad = numpy.abs(pz_data_sub[:,0] - src_data[i,0]) + numpy.abs(pz_data_sub[:,1] - src_data[i,1])
                 diff_z = numpy.abs(pz_data_sub[:,2] - src_data[i,10])
 
-                idx_1 = diff_rad <= 0.0001
-                idx_2 = diff_z <= 0.0001
+                diff_rad_min = diff_rad.min()
+                diff_z_min = diff_z.min()
+
+                idx_1 = diff_rad == diff_rad.min()
+                idx_2 = diff_z == diff_z.min()
                 idx_ = idx_1 & idx_2
                 match_num = idx_.sum()
+
+                if diff_rad_min >= 0.0001:
+                    print("Can't find match points!!! diff_radius_min: %.5f"%diff_rad_min)
+                    print(labels[idx_1])
+                    exit()
 
                 if match_num == 1:
                     target_idx = labels[idx_]
                 else:
+                    print("Find %d pts!!!"%match_num)
                     print(idx_1.sum(), idx_2.sum(), idx_.sum())
                     print(diff_rad.min(),diff_z.min())
-                    print("Find %d pts!!!"%match_num)
                     print("%.4f %.4f  %.3f"%(src_data[i,0],src_data[i,1], src_data[i,10]))
                     exit()
                 # ODDS

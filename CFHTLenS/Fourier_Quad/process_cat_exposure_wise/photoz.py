@@ -7,7 +7,7 @@ import h5py
 
 
 # prepare the photoz cat from the full Pz
-
+# ra dec Z_B ODDS P(Z)(70 columns)
 cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 with open(cata_path + "/CFHT_pz_ori.tsv", "r") as f:
     cc = f.readlines()
