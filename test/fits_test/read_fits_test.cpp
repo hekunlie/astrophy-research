@@ -1,5 +1,6 @@
 #include<FQlib.h>
 #include<hk_iolib.h>
+#include<fitsio2.h>
 
 void read_fits_new(const char *filename, const int hdu_label, float *buffer_ptr, int move)
 {
@@ -10,11 +11,14 @@ void read_fits_new(const char *filename, const int hdu_label, float *buffer_ptr,
 	long naxes[2],fpixel = 1, nbuffer, npixels, totpix;
     int naxis=0, bitpix=0, hud_num=0;
 	double datamin, datamax, nullval = 0;
+    int nullcheck = 1;
+    float *img_buffer = new float[2046*4094];
+    char *bnuall = new char[2046*4094];
 
     int ii, jj;
 
 	fits_open_file(&fptr, filename, READONLY, &status);
-
+ 
     // fits_read_key(fptr, TINT,"NAXIS1", &ii, NULL, &status);
 
     // fits_read_key(fptr, TINT, "NAXIS2", &jj, NULL, &status);
@@ -28,6 +32,7 @@ void read_fits_new(const char *filename, const int hdu_label, float *buffer_ptr,
     std::cout<<hud_num<<" "<<hdupos_ini<<std::endl;
     // fits_is_compressed_image(fptr, &status);
     char *name = new char[50];
+    char *comment = new char[100];
     char card[FLEN_CARD];
 
     for(hdupos=hdupos_ini; hdupos < hud_num+1; hdupos++)  /* Main loop through each extension */
@@ -35,6 +40,8 @@ void read_fits_new(const char *filename, const int hdu_label, float *buffer_ptr,
         std::cout<<hdupos<<" "<<status<<std::endl;
         if(hdupos !=  hdupos_ini)
         {fits_movabs_hdu(fptr, hdupos, &hdutype, &status);}
+
+        // imcomp_decompress_tile(fptr,hdupos,2046*4094, TFLOAT, nullcheck, &nullval, img_buffer, bnuall, &anynull, &status);
         // for(jj=1;jj<6;jj++)
         // {
         //     fits_read_record(fptr, jj, card, &status);
@@ -45,17 +52,17 @@ void read_fits_new(const char *filename, const int hdu_label, float *buffer_ptr,
         // sprintf(name,"NAXIS1");
         fits_read_key(fptr, TINT,"NAXIS", &ii, NULL, &status);
         // sprintf(name,"NAXIS2");
-        // fits_read_key(fptr, TINT, "NAXIS2", &jj, NULL, &status);
+        // fits_read_key(fptr, TINT, "NAXIS2", &jj, comment, &status);
         // std::cout<<hdupos<<" "<<(fptr->Fptr)->zndim<<" "<<status<<" "<<" "<<ii<<" "<<jj<<std::endl;
 
-        fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);
+        fits_read_keys_lng(fptr, "ZNAXIS", 1, 2, naxes, &nfound, &status);
 
-        for(ii=0; ii<(fptr->Fptr)->zndim; ii++)
-        {std::cout<<(fptr->Fptr)->tilesize[ii]<<" ";}
-        std::cout<<std::endl;
+        // for(ii=0; ii<(fptr->Fptr)->zndim; ii++)
+        // {std::cout<<(fptr->Fptr)->tilesize[ii]<<" ";}
+        // std::cout<<std::endl;
 
 
-        // std::cout<<hdupos<<" "<<(fptr->Fptr)->zndim<<" "<<status<<" "<<" "<<naxes[0]<<" "<<naxes[1]<<" "<<ii<<std::endl;
+        std::cout<<hdupos<<" "<<(fptr->Fptr)->zndim<<" "<<status<<" "<<" "<<naxes[0]<<" "<<naxes[1]<<" "<<ii<<" "<<jj<<" "<<comment<<std::endl;
 
     }
 

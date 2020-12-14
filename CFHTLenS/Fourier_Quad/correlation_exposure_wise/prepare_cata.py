@@ -28,8 +28,11 @@ deg2rad = numpy.pi/180
 
 grid_size = 15 #arcmin
 
+# position in CFHTLens catalog
 ra_idx = 0
 dec_idx = 1
+
+
 redshift_idx = 10
 
 redshift_sep_thresh = 0.01
@@ -55,7 +58,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 28
-flux2_alt_thresh = 2
+flux2_alt_thresh = 2.5
 
 # selection on the bad pixels
 imax_idx = 22
@@ -77,7 +80,11 @@ mu_idx = 36
 mv_idx = 37
 
 # about PhotoZ
-
+odd_idx = 38
+odd_thresh = 0.5
+redshift_e_idx = 39
+# pz_sum_idx = 40
+# pz_sum_thresh = 0.001
 
 #
 fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
@@ -178,8 +185,8 @@ if cmd == "prepare":
         idx6 = data[:, jmax_idx] < jmax_thresh
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
         idx_8 = data[:, redshift_idx] < redshift_bin[redshift_bin_num]
-
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8
+        idx_9 = data[:,odd_idx] >= odd_thresh
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8 & idx_9
 
         src_num = idx.sum()
 
@@ -203,8 +210,8 @@ if cmd == "prepare":
             expo_pos = numpy.array([ra_center, dec_center, dra, ddec,
                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2), cos_dec_center],
                                     dtype=numpy.float32)
-            # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT
-            dst_data = numpy.zeros((src_num, 9), dtype=numpy.float32)
+            # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT, REDSHIFT_E
+            dst_data = numpy.zeros((src_num, 10), dtype=numpy.float32)
 
             dst_data[:, 0] = src_data[:, mg1_idx]
             dst_data[:, 1] = src_data[:, mg2_idx]
@@ -217,6 +224,7 @@ if cmd == "prepare":
             dst_data[:, 6] = src_data[:, dec_idx]
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
             dst_data[:, 8] = src_data[:, redshift_idx]
+            dst_data[:, 9] = src_data[:, redshift_e_idx]
 
             redshift_label = numpy.zeros((src_num,), dtype=numpy.intc)
 
