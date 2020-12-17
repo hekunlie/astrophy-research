@@ -152,6 +152,8 @@ void save_expo_pair_label(data_info *expo_info, int rank);
 
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name);
 
+void save_source_mask(data_info *expo_info, int expo_label);
+
 void merge_data(data_info *expo_info);
 
 void task_distribution(int portion, int my_id, data_info *field_info);

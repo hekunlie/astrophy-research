@@ -453,7 +453,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     gal_num_1 = expo_info->expo_gal_num[expo_label_0];
     gal_num_2 = expo_info->expo_gal_num[expo_label_1];
     
-
+    // int *mask = new int[gal_num_1]{};
 
     st1 = clock();
     for(ig1=0; ig1<gal_num_1; ig1++)

@@ -87,10 +87,10 @@ redshift_e_idx = 39
 # pz_sum_thresh = 0.001
 
 #
-fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
-result_cata_path = "/coma/hklee/CFHT/correlation/cata"
-# fourier_cata_path = "/mnt/perc/hklee/CFHT/catalog/fourier_cata"
-# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+# fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
+# result_cata_path = "/coma/hklee/CFHT/correlation/cata"
+fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
 cmd = argv[1]
 
