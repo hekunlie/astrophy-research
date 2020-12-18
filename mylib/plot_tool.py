@@ -1,7 +1,8 @@
-# import platform
-# if platform.system() == 'Linux':
-#     matplotlib.use('Agg')
+import platform
 import matplotlib
+if platform.system() == 'Linux':
+    matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import numpy

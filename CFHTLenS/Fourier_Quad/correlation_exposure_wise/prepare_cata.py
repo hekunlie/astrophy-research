@@ -89,8 +89,12 @@ redshift_e_idx = 39
 #
 # fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 # result_cata_path = "/coma/hklee/CFHT/correlation/cata"
-fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+
+# fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
 cmd = argv[1]
 
@@ -371,43 +375,45 @@ elif cmd == "kmeans":
     # 200 sub-samples
     # ncent = [75, 34, 56, 35][rank]
     ra_bin = [1000, 5000, 10000, 15000, 30000]
-    total_cent = 300
+    total_cent = 200
 
+    if rank < len(ra_bin) - 1:
 
-    h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
-    data = h5f["/data"][()]
-    expos_labels = h5f["/expos_label"][()]
-    h5f.close()
+        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
+        data = h5f["/data"][()]
+        expos_labels = h5f["/expos_label"][()]
+        h5f.close()
 
-    total_src_num = data.shape[0]
+        total_src_num = data.shape[0]
 
-    ra_dec = data[:,5:7]
-    src_num_each_area = numpy.zeros((area_num,),dtype=numpy.intc)
-    for i in range(area_num):
-        idx1 = ra_dec[:,0] >= ra_bin[i]
-        idx2 = ra_dec[:,0] < ra_bin[i+1]
+        ra_dec = data[:,5:7]
+        src_num_each_area = numpy.zeros((area_num,),dtype=numpy.intc)
+        for i in range(area_num):
+            idx1 = ra_dec[:,0] >= ra_bin[i]
+            idx2 = ra_dec[:,0] < ra_bin[i+1]
+            idx = idx1 & idx2
+            src_num_each_area[i] = idx.sum()
+
+        ncents, ratio = prepare_tools.even_area(src_num_each_area, area_num, total_cent)
+        if rank == 0:
+            print(ncents)
+            print(ratio)
+        ncent = ncents[rank]
+        idx1 = ra_dec[:, 0] >= ra_bin[rank]
+        idx2 = ra_dec[:, 0] < ra_bin[rank + 1]
         idx = idx1 & idx2
-        src_num_each_area[i] = idx.sum()
 
-    ncents, ratio = prepare_tools.even_area(src_num_each_area, area_num, total_cent)
-    if rank == 0:
-        print(ncents)
-        print(ratio)
-    ncent = ncents[rank]
-    idx1 = ra_dec[:, 0] >= ra_bin[rank]
-    idx2 = ra_dec[:, 0] < ra_bin[rank + 1]
-    idx = idx1 & idx2
+        group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec[idx])
 
-    group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec[idx])
+        h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%rank, "w")
+        h5f["/data"] = group_pred
+        h5f["/ra_dec"] = ra_dec[idx]
+        h5f["/expos_labels"] = expos_labels[idx]
+        h5f.close()
 
-    h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%rank, "w")
-    h5f["/data"] = group_pred
-    h5f["/ra_dec"] = ra_dec[idx]
-    h5f["/expos_labels"] = expos_labels[idx]
-    h5f.close()
-
-    t2 = time.time()
-    print("%d Total sub-sample: %d (%d ~ %d). Time: %.2f sec."%(rank, ncent, group_pred.min(), group_pred.max(), t2-t1))
+        t2 = time.time()
+        print("%d Total sub-sample: %d (%d ~ %d). Time: %.2f sec."%(rank, ncent, group_pred.min(), group_pred.max(), t2-t1))
+    comm.Barrier()
 
 elif cmd == "segment":
     # assign the source into the artificial exposures
