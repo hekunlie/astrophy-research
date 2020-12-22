@@ -83,7 +83,7 @@ mv_idx = 37
 odd_idx = 38
 odd_thresh = 0.5
 redshift_e_idx = 39
-# pz_sum_idx = 40
+pz_sum_idx = 40
 # pz_sum_thresh = 0.001
 
 #
