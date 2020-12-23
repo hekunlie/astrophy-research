@@ -14,10 +14,10 @@ theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 pts_num = int(theta_bin_num*(zbin_num**2+zbin_num)/2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
-pic_nm_p = data_path + "/chi_plus_result_%d_diff_expo.png"%resample_num
-pic_nm_m = data_path + "/chi_minus_result_%d_diff_expo.png"%resample_num
+pic_nm_p = data_path + "/chi_plus_result_%d_same_expo.png"%resample_num
+pic_nm_m = data_path + "/chi_minus_result_%d_same_expo.png"%resample_num
 result_npz = data_path + "/result_cache_%d.npz"%resample_num
-h5f = h5py.File(data_path + "/result_%d_diff_expo.hdf5"%resample_num,"r")
+h5f = h5py.File(data_path + "/result_%d_same_expo.hdf5"%resample_num,"r")
 print(list(h5f.keys()))
 # print(list(h5f["/0"].keys()))
 
