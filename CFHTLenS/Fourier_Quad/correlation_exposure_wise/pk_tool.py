@@ -1,3 +1,12 @@
+def get_lrange(kmin,kmax, zmin, zmax, H0, Omeg_m0):
+    cosmos = FlatLambdaCDM(H0=H0,Om0=Omeg_m0)
+    dist_min = cosmos.comoving_distance(zmax).value*H0/100
+    dist_max = cosmos.comoving_distance(zmax).value*H0/100
+    lmax = kmax*dist_max
+    lmin = kmin*dist_min
+    print("%.4f < l <%.4f"%(lmin, lmax))
+    return lmin, lmax
+
 def z2dist(zebin, H0, omega_m0, omega_k=0):
     cosmos = FlatLambdaCDM(H0, omega_m0)
     h = H0 / 100
