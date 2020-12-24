@@ -13,8 +13,11 @@ ax.scatter(ra[idx], dec[idx], color=cl, s=3)
 sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
 sm._A = []
 
-plt.colorbar(sm, ax=ax)
-
+clb = plt.colorbar(sm, ax=ax)
+or
+clb = img.figure.colorbar(sm, ax=img.axs[0][0])
+# label
+clb.ax.set_ylabel("Z")
 
 # colorbar of subfigure
 img = Image_Plot()
