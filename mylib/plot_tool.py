@@ -30,6 +30,7 @@ class Image_Plot:
         self.axs = None
         self.row = None
         self.col = None
+        self.line_styles = None
 
     def set_style_default(self):
         matplotlib.style.use('default')
@@ -64,6 +65,14 @@ class Image_Plot:
 
         self.figure = fig
         self.axs = sub_fig
+
+        ls = ["solid", "dashdot", "dashed", "dotted"]
+        default_ls = []
+        for i in range(len(ls)):
+            for j in range(10):
+                default_ls.append([ls[i],"C%d"%j])
+        self.line_styles = default_ls
+
 
     def scatter_pts(self, iy,ix, x, y, fxy, pts_size=3, color_map='YlOrRd',sci_cb=True):
         norm = plt.Normalize(vmin=numpy.min(fxy), vmax=numpy.max(fxy))
