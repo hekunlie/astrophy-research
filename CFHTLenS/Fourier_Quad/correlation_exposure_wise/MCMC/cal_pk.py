@@ -11,54 +11,55 @@ import time
 import scipy
 import h5py
 
+img_nm = "/mnt/perc/hklee/CFHT/correlation/code/MCMC/tomo_pk.png"
+cache_nm = "/mnt/perc/hklee/CFHT/correlation/code/MCMC/tomo_pk.npz"
+
+h5f = h5py.File("/mnt/perc/hklee/CFHT/correlation/cata/stack_data.hdf5","r")
+data = h5f["/data"][()]
+h5f.close()
+
 
 # parameters
 c = 299792.458  # Km/s
-H0 = 67.5 #Km/s/Mpc
+H0 = 67.37  # Km/s/Mpc
 h = H0 / 100  # Km/s/Mpc
-As = 2e-9
-ns = 0.965
+As = 2.097e-9
+ns = 0.9652
 
-omg_cm0 = 0.26
-omg_cm0h2 = 0.26*h**2
+omg_cm0 = 0.2639
+omg_cm0h2 = omg_cm0 * h ** 2
 
-omg_bm0 = 0.05
-omg_bm0h2 = 0.05*h**2
+omg_bm0 = 0.0492
+omg_bm0h2 = omg_bm0 * h ** 2
 
-omg_m0 = omg_cm0+omg_bm0
+omg_m0 = omg_cm0 + omg_bm0
+omg_m0h2 = omg_cm0h2 + omg_bm0h2
 
-alpha = 9 / 4 * omg_m0 ** 2 * (100/c) ** 4  # h^4 \cdot Mpc^{-4}
-print(alpha)
+alpha = 9 / 4 * omg_m0 ** 2 * (100 / c) ** 4  # h^4 \cdot Mpc^{-4}
+
 
 kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 3, 4, 300
 
 zmin, interp_zmax = 0, 4
 
-Lpts_min, Lpts_max, Lpts_num = 10, 8000, 10000
+Lpts_min, Lpts_max, Lpts_num = 10, 7000, 6000
 
-theta_num  = 50
-theta_min, theta_max = 0.8, 60 # arcmin
-theta = numpy.linspace(theta_min, theta_max,theta_num)
-theta_radian = theta/60/180*numpy.pi
-
+theta_num = 50
+theta_min, theta_max = 0.8, 60  # arcmin
+theta = numpy.linspace(theta_min, theta_max, theta_num)
+theta_radian = theta / 60 / 180 * numpy.pi
 
 redshift_bin_num = 6
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3], dtype=numpy.float32)
 
-nz_bin_num = 400
-
-# read data
-h5f = h5py.File("/mnt/perc/hklee/CFHT/correlation/cata/stack_data.hdf5","r")
-data = h5f["/data"][()]
-h5f.close()
-
+nz_bin_num = 300
 
 ts = time.time()
 # tomo panel num
 tomo_panel_num = int((redshift_bin_num * redshift_bin_num + redshift_bin_num) / 2)
 
 # histogram
-zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, 8], redshift_bin, data[:, 9], nz_bin_num)
+zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, 8], redshift_bin, data[:, 9], nz_bin_num, 2.2)
 
 inv_scale_factor_sq = (1 + zebin_cent) ** 2
 
@@ -95,8 +96,8 @@ zfit = numpy.linspace(zmin, interp_zmax, 150)
 
 camb_result = cf_tool.get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, zfit, kmax=interp_kmax)[0]
 pk_interp = camb_result.get_matter_power_interpolator(nonlinear=True, hubble_units=True, k_hunit=True)
-sigma8_now = camb_result.get_sigma8()[-1]
-print("sigma8: %.4f" % sigma8_now)
+sigma8 = camb_result.get_sigma8()
+
 
 for i in range(nz_bin_num):
     idx = integ_kh[i] > 0
@@ -113,10 +114,13 @@ for i in range(tomo_panel_num):
         xi_plus[i, j] = numpy.sum(((integ_part[1:] + integ_part[:-1]) / 2 * dLpts)) / 2 / numpy.pi
 
 te = time.time()
-print(te - ts)
+print("%.2f sec"%(te - ts))
 
-numpy.savez("tomo_pk.npz", qx, integ_factor, PLs, xi_plus)
+print("Cosmological parameters: H0: %.2f \nOmega_cm %.4f(%.4f) Omega_bm: %.4f(%.4f)  Omega_m: %.4f(%.4f) \nAs: %g. ns: %.4f sigma8: %.4f"%
+      (H0, omg_cm0, omg_cm0h2,omg_bm0, omg_bm0h2,omg_m0, omg_m0h2, As,ns, sigma8[-1]))
 
+# save the data
+numpy.savez(cache_nm, zebin_cent, qx, integ_factor, Lpts, PLs, theta, xi_plus, sigma8[-1])
 
 labels = ["%d-%d" % (i, j) for i in range(1, redshift_bin_num + 1) for j in range(i, redshift_bin_num + 1)]
 
@@ -142,7 +146,7 @@ for i in range(3):
 for i in range(tomo_panel_num):
     ls, c = img.line_styles[i]
     img.axs[1][0].plot(Lpts, Lpts * (Lpts + 1) * PLs[i] / numpy.pi / 2, label=labels[i], ls=ls, c=c)
-    img.axs[1][1].plot(theta, chi_plus[i], label=labels[i], ls=ls, c=c)
+    img.axs[1][1].plot(theta, xi_plus[i], label=labels[i], ls=ls, c=c)
 
 # img.axs[0][0].set_xlim(0.7,10000)
 img.axs[1][0].set_ylim(1e-10, 1e-3)
@@ -160,4 +164,6 @@ img.axs[1][0].legend(ncol=3)
 img.axs[1][1].legend(ncol=3)
 
 img.figure.delaxes(img.axs[1][2])
-img.save_img("tomo_pk.png")
+img.save_img(img_nm)
+# img.show_img()
+img.close_img()
