@@ -48,10 +48,9 @@ def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=-1):
     return zehist, ze_bin, ze_bin_cent
 
 
-def get_lenq(nz, com_dist):
+def get_lenq(nz, com_dist, tomo_num, zpts_num):
     # nz: PDF of each tomo_bin, [tomo_bin_num, zhist_num],
     #       one row for one tomo_bin
-    tomo_num, zpts_num = nz.shape
     qx = numpy.zeros((tomo_num, zpts_num))
 
     for i in range(tomo_num):

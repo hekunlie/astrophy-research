@@ -16,6 +16,15 @@ resample_num = 200#int(argv[3])
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
 
+pk_lines_tag = 0
+if os.path.exists(data_path + "/tomo_pk.npz"):
+    npz = numpy.load(data_path + "/tomo_pk.npz")
+    pk_lines = npz["arr_6"]
+    pk_theta = npz["arr_5"]
+
+    pk_lines_tag = 1
+    print("Find Pk lines")
+
 # chi_plus
 img = Image_Plot(fig_x=4, fig_y=3,xpad=0,ypad=0,axis_linewidth=2.5, plt_line_width=3, legend_size=35,xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
@@ -85,6 +94,11 @@ for ii in range(2):
 
                 img.axs_text(img_row, img_col, 0.8, 0.8, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size, text_color="k")
 
+                if ii == 0 and pk_lines_tag == 1:
+                    pk_line_label = "Planck2018:\n$\Omega_m=0.313$\n$\sigma_8=0.8097$"
+                    img.axs[img_row][img_col].plot(pk_theta, pk_lines[tag], c="k",ls="dashdot", label=pk_line_label)
+
+
                 # img.axs[img_row][img_col].set_xticks(fontsize=img.legend_size)
                 # img.axs[img_row][img_col].set_yticks(fontsize=img.legend_size)
                 img.axs[img_row][img_col].set_yscale("log")
@@ -110,6 +124,7 @@ for ii in range(2):
 
 img.save_img(pic_nm_p)
 img.close_img()
+print(pic_nm_p)
 # img.show_img()
 exit()
 # chi_minus
