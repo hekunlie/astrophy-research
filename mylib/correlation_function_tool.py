@@ -3,6 +3,7 @@ import numpy
 from astropy.cosmology import FlatLambdaCDM
 import camb
 from camb import model, initialpower
+import scipy
 
 
 def tomo_panel_num(tomo_bin_num):
@@ -48,9 +49,10 @@ def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=-1):
     return zehist, ze_bin, ze_bin_cent
 
 
-def get_lenq(nz, com_dist, tomo_num, zpts_num):
+def get_lenq(nz, com_dist):
     # nz: PDF of each tomo_bin, [tomo_bin_num, zhist_num],
     #       one row for one tomo_bin
+    tomo_num, zpts_num = nz.shape
     qx = numpy.zeros((tomo_num, zpts_num))
 
     for i in range(tomo_num):
@@ -108,7 +110,7 @@ def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
         # k = L/com_dist at Z
         integ_k[:, i] = Lpts[i] / com_dist
 
-    print("k h/Mpc ~[%.4f, %.4f]" % (integ_k.min(), integ_k.max()))
+    # print("k h/Mpc ~[%.4f, %.4f]" % (integ_k.min(), integ_k.max()))
 
     # only in the interval, [kmin, kmax], will be calculated
     idx = integ_k < kmin
@@ -125,3 +127,98 @@ def get_PL(integ_pk, Lpts_num, integ_factor, delta_com_dist):
         integ_part = integ_pk[:, i] * integ_factor
         PL[i] = numpy.sum((integ_part[1:] + integ_part[:-1]) / 2 * delta_com_dist)
     return PL
+
+
+
+def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian):
+    '''
+    calculate the xi_+ using camb for mcmc or ...
+    :param As: Amplitude of initial power spectrum
+    :param Omega_cm0: cold dark matter density
+    :param Omega_bm0: baryonic matter density
+    :param h: H0 = 100*h Km/s/Mpc
+    :param zpts: (n,) array, the redshift points for the integral, the centers of the redshift bins
+    :param inv_scale_factor_sq: (n, ) array,  (1+zpts)^2
+    :param zhist: (m, n) array, galaxy number density at each zpts point,
+                    "m" tomographic z bin, "n" true z bin for each tomo z bin
+    :param z4pk_interp: (n,), z points for power spectrum interpolation in camb,
+                        [zmax, 0], at most 100 points
+    :param theta_radian: theta, separation, in unit of radian
+    :return: xi_+ of each tomo panel at the given theta points,
+            Pk(L) of each tomo panel at the given theta points,
+            sigma8 at Z=0
+    '''
+    ############### parameters  #############################
+    # some of them should be modified for different purpose #
+    #########################################################
+    c = 299792.458  # Km/s
+    ns = 0.965
+    H0 = 100*h
+    omg_cm0h2 = Omega_cm0 * h ** 2
+
+    omg_bm0h2 = Omega_bm0 * h ** 2
+
+    omg_m0 = Omega_cm0 + Omega_bm0
+
+    alpha = 9 / 4 * omg_m0 ** 2 * (100 / c) ** 4  # h^4 \cdot Mpc^{-4}
+
+    theta_num = theta_radian.shape[0]
+
+    Lpts_min, Lpts_max, Lpts_num = 10, 7000, 6000
+
+    kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 3, 4, 300
+
+    # tomo panel num
+    tomo_bin_num, zpts_num = zhist.shape
+    tomo_panel_num = int((tomo_bin_num * tomo_bin_num + tomo_bin_num) / 2)
+
+    # comoving distance Mpc/h
+    com_dist = z2dist(zpts, H0, omg_m0)
+    delta_com_dist = com_dist[1:] - com_dist[:-1]
+
+    # lense efficiency
+    qx = get_lenq(zhist, com_dist)
+
+    # g(x)^2/a(x)^2 in the integration
+    integ_factor = numpy.zeros((tomo_panel_num, zpts_num))
+    tag = 0
+    for i in range(tomo_bin_num):
+        for j in range(i, tomo_bin_num):
+            integ_factor[tag] = qx[i] * qx[j] * inv_scale_factor_sq
+            tag += 1
+
+    # set up bins for L of P(L), and decide the ks needed
+    Lpts, dLpts, integ_kh = ready4PL(Lpts_min, Lpts_max, Lpts_num, kmin, cal_kmax, com_dist, zpts_num)
+
+    # L*Bessel_0(L*theta) in the final integral
+    integ_Lpts_theta = numpy.zeros((theta_num, Lpts_num))
+    for i in range(theta_num):
+        integ_Lpts_theta[i] = Lpts*scipy.special.j0(theta_radian[i] * Lpts)
+
+    # Pk interpolation
+    integ_pk = numpy.zeros((zpts_num, Lpts_num))
+    PLs = numpy.zeros((tomo_panel_num, Lpts_num))
+    # the theoretical line
+    xi_plus = numpy.zeros((tomo_panel_num, theta_num))
+
+    # calculate Pk using Camb
+    camb_result = get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, z4pk_interp, kmax=interp_kmax)[0]
+    pk_interp = camb_result.get_matter_power_interpolator(nonlinear=True, hubble_units=True, k_hunit=True)
+    sigma8 = camb_result.get_sigma8()
+
+    # get the Pk at given z points
+    # only calculate the "k" < kmax ~ 2
+    for i in range(zpts_num):
+        idx = integ_kh[i] > 0
+        integ_pk[i][idx] = pk_interp.P(zpts[i], integ_kh[i][idx])
+
+    for i in range(tomo_panel_num):
+        # get P(L)
+        PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], delta_com_dist) * alpha
+
+        # calculate the \chi_plus(\theta) , the theoretical line
+        for j in range(theta_num):
+            integ_part = integ_Lpts_theta[j] * PLs[i]
+            xi_plus[i, j] = numpy.sum(((integ_part[1:] + integ_part[:-1]) / 2 * dLpts)) / 2 / numpy.pi
+
+    return xi_plus, PLs, Lpts, sigma8[-1]
