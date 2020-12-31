@@ -19,3 +19,4 @@ test.py
 test.py
 *.pyc
 *.pyc
+mylib/__pycache__/plot_tool.cpython-37.pyc
