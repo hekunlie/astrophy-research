@@ -221,4 +221,4 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
             integ_part = integ_Lpts_theta[j] * PLs[i]
             xi_plus[i, j] = numpy.sum(((integ_part[1:] + integ_part[:-1]) / 2 * dLpts)) / 2 / numpy.pi
 
-    return xi_plus, PLs, Lpts, sigma8[-1]
+    return xi_plus, sigma8[-1], PLs, Lpts

@@ -32,6 +32,8 @@ img.set_style()
 pic_nm_p = data_path + "/chi_plus_result_%d_compare.png" % resample_num
 
 expo_type = ["diff_expo","same_expo"]
+
+cov = []
 for ii in range(2):
 
     # pic_nm_p = data_path + "/chi_plus_result_%d_%s.png"%(resample_num,expo_type[ii])
@@ -46,7 +48,6 @@ for ii in range(2):
     xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
     theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
     # print(theta.reshape((21,7)))
-
 
     xi_p_sig = numpy.zeros_like(xi_p)
     xi_m_sig = numpy.zeros_like(xi_p)
@@ -64,7 +65,11 @@ for ii in range(2):
         xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
         xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
 
-# numpy.savez(result_npz, theta, xi_p, xi_m, xi_p_sig, xi_m_sig)
+    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)
+    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)
+    cov.append([cov_p,cov_m])
+
+    numpy.savez(result_npz, theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m)
 
     if ii == 0:
         for i in range(zbin_num):
@@ -126,7 +131,36 @@ img.save_img(pic_nm_p)
 img.close_img()
 print(pic_nm_p)
 # img.show_img()
+
+for ii in range(2):
+    img = Image_Plot(fig_x=4, fig_y=3,xpad=0.15,ypad=0.15,axis_linewidth=2.5, plt_line_width=3, legend_size=25,xy_tick_size=25)
+    img.subplots(2, 2)
+    img.set_style()
+    for i in range(len(cov)):
+        for j in range(len(cov[i])):
+            if ii == 0:
+                cov_scale = numpy.zeros_like(cov[i][j])
+                y, x = cov[i][j].shape
+                for p in range(y):
+                    for q in range(x):
+                        cov_scale[p, q] = cov[i][j][p, q] / numpy.sqrt(cov[i][j][p, p] * cov[i][j][q, q])
+
+                fig = img.axs[i][j].imshow(cov_scale)
+            else:
+                fig = img.axs[i][j].imshow(cov[i][j])
+
+            img.figure.colorbar(fig, ax=img.axs[i][j])
+            img.del_axis(i,j,[0,1])
+        img.axs[i][0].set_title("$\\xi_{+}$")
+        img.axs[i][1].set_title("$\\xi_{-}$")
+    if ii == 0:
+        img.save_img(data_path + "/cov_matrix_normalized.png")
+    else:
+        img.save_img(data_path + "/cov_matrix.png")
+    img.close_img()
+
 exit()
+
 # chi_minus
 img = Image_Plot(fig_x=4, fig_y=3,xpad=0,ypad=0,axis_linewidth=2.5, plt_line_width=3, legend_size=25,xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
