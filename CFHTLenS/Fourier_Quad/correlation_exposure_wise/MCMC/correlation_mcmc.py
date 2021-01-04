@@ -15,13 +15,13 @@ import h5py
 
 def log_prior(paras):
     As, omega_m0, omega_bm0_ratio, h = paras
-    if -5 < As < 0 and 0 < omega_m0 < 0.5 and 0 < omega_bm0_ratio < 1 and 0.3 < h < 1:
+    if 0 < As < 5 and 0 < omega_m0 < 0.5 and 0 < omega_bm0_ratio < 1 and 0.3 < h < 1:
         return 0.0
     else:
         return -numpy.inf
 
 
-def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_sq, zhist, z4pk_interp, sigma8_buffer, step_count):
+def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_sq, zhist, z4pk_interp):
 
     lp = log_prior(paras)
 
@@ -29,22 +29,23 @@ def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_
         # print(lp)
         return -numpy.inf
     else:
-        print(lp)
+        # print(lp)
         t1 = time.time()
         As, omega_m0, omega_bm0_ratio, h = paras
         omega_bm0 = omega_m0*omega_bm0_ratio
         omega_cm0 = omega_m0 - omega_bm0
 
         As = As/10**9
-        print(As)
+        # print(paras)
         xi_theoretical, sigma8 = cf_tool.get_pk(As, omega_cm0, omega_bm0, h,
                                                   zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
 
         diff = xi - xi_theoretical*xi_scale
-        sigma8_buffer[step_count[0]] = sigma8
-        step_count[0] += 1
+        print(diff.shape,cov_inv.shape)
+        # sigma8_buffer[step_count[0]] = sigma8
+        # step_count[0] += 1
         t2 = time.time()
-        print(t2-t1)
+        print("%.2f"%(t2-t1), paras)
         return lp - 0.5*numpy.dot(diff, numpy.dot(cov_inv, diff))
 
 
@@ -69,6 +70,7 @@ data_num = theta_radian.shape[0]
 # prob_coeff = numpy.log(1./(2*numpy.pi)**(data_num/2)/numpy.linalg.det(cov_p)**(0.5))
 
 print("Data vector len: ", data_num)
+print(theta_radian.shape,xi_p.shape)
 # print(cov_p)
 # print(numpy.linalg.det(cov_p))
 # print(numpy.dot(xi_p,numpy.dot(cov_inv, xi_p)))
@@ -106,16 +108,16 @@ sigma8_buffer = numpy.zeros((nsteps,))
 
 sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, args=(theta_radian, xi_p,xi_scale,
                                                                cov_inv, zebin_cent,
-                                                               inv_scale_factor_sq, zehist, z4pk_interp,
-                                                               sigma8_buffer,step_count))
+                                                               inv_scale_factor_sq, zehist, z4pk_interp
+                                                               ))
 
 start = time.time()
 
 sampler.run_mcmc(initial, nsteps, progress=True)
 
-# flat_samples = sampler.get_chain(discard=300, thin=15, flat=True)
+flat_samples = sampler.get_chain(discard=10, thin=15, flat=True)
 
-# numpy.save("./samples.npz", flat_samples)
+numpy.save("./samples.npz", flat_samples)
 
 end = time.time()
 multi_time = end - start
