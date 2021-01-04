@@ -4,6 +4,7 @@ from astropy.cosmology import FlatLambdaCDM
 import camb
 from camb import model, initialpower
 import scipy
+import time
 
 
 def tomo_panel_num(tomo_bin_num):
@@ -143,11 +144,13 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
                     "m" tomographic z bin, "n" true z bin for each tomo z bin
     :param z4pk_interp: (n,), z points for power spectrum interpolation in camb,
                         [zmax, 0], at most 100 points
-    :param theta_radian: theta, separation, in unit of radian
+    :param theta_radian: (m, n), theta, separation, in unit of radian
+                        "m" tomographic z bin, "n" theta points
     :return: xi_+ of each tomo panel at the given theta points,
             Pk(L) of each tomo panel at the given theta points,
             sigma8 at Z=0
     '''
+    # t1 = time.time()
     ############### parameters  #############################
     # some of them should be modified for different purpose #
     #########################################################
@@ -162,7 +165,7 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
 
     alpha = 9 / 4 * omg_m0 ** 2 * (100 / c) ** 4  # h^4 \cdot Mpc^{-4}
 
-    theta_num = theta_radian.shape[0]
+    theta_num = theta_radian.shape[1]
 
     Lpts_min, Lpts_max, Lpts_num = 10, 7000, 6000
 
@@ -179,6 +182,8 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
     # lense efficiency
     qx = get_lenq(zhist, com_dist)
 
+    # t2 = time.time()
+
     # g(x)^2/a(x)^2 in the integration
     integ_factor = numpy.zeros((tomo_panel_num, zpts_num))
     tag = 0
@@ -186,15 +191,16 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
         for j in range(i, tomo_bin_num):
             integ_factor[tag] = qx[i] * qx[j] * inv_scale_factor_sq
             tag += 1
-
+    # t3 = time.time()
     # set up bins for L of P(L), and decide the ks needed
     Lpts, dLpts, integ_kh = ready4PL(Lpts_min, Lpts_max, Lpts_num, kmin, cal_kmax, com_dist, zpts_num)
 
     # L*Bessel_0(L*theta) in the final integral
-    integ_Lpts_theta = numpy.zeros((theta_num, Lpts_num))
-    for i in range(theta_num):
-        integ_Lpts_theta[i] = Lpts*scipy.special.j0(theta_radian[i] * Lpts)
-
+    integ_Lpts_theta = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
+    for i in range(tomo_panel_num):
+        for j in range(theta_num):
+            integ_Lpts_theta[i,j,:] = Lpts*scipy.special.j0(theta_radian[i,j] * Lpts)
+    # t4 = time.time()
     # Pk interpolation
     integ_pk = numpy.zeros((zpts_num, Lpts_num))
     PLs = numpy.zeros((tomo_panel_num, Lpts_num))
@@ -205,20 +211,21 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
     camb_result = get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, z4pk_interp, kmax=interp_kmax)[0]
     pk_interp = camb_result.get_matter_power_interpolator(nonlinear=True, hubble_units=True, k_hunit=True)
     sigma8 = camb_result.get_sigma8()
-
+    # t5 = time.time()
     # get the Pk at given z points
     # only calculate the "k" < kmax ~ 2
     for i in range(zpts_num):
         idx = integ_kh[i] > 0
         integ_pk[i][idx] = pk_interp.P(zpts[i], integ_kh[i][idx])
-
+    # t6 = time.time()
     for i in range(tomo_panel_num):
         # get P(L)
         PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], delta_com_dist) * alpha
 
         # calculate the \chi_plus(\theta) , the theoretical line
         for j in range(theta_num):
-            integ_part = integ_Lpts_theta[j] * PLs[i]
+            integ_part = integ_Lpts_theta[i,j,:] * PLs[i]
             xi_plus[i, j] = numpy.sum(((integ_part[1:] + integ_part[:-1]) / 2 * dLpts)) / 2 / numpy.pi
-
+    # t7 = time.time()
+    # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
     return xi_plus, sigma8[-1], PLs, Lpts
