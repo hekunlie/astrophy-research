@@ -147,7 +147,6 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
                         [zmax, 0], at most 150 points
     :param theta_radian: (2m, n), theta, separation, in unit of radian
                         "m" tomographic z bin, "n" theta points
-                        0~m rows for xi_+, m~2m rows for xi_-
     :return: xi_+/- of each tomo panel at the given theta points,
             Pk(L) of each tomo panel at the given theta points,
             sigma8 at Z=0
