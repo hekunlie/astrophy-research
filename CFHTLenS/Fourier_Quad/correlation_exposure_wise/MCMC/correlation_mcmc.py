@@ -93,14 +93,11 @@ z4pk_interp = numpy.linspace(interp_zmax, zmin, 100)
 
 ################# read the result data ############################
 
-xi_scale = 10**6
+xi_scale = 1#10**6
 
 # expo_type = "diff_expo"
 expo_type = ["diff_expo","same_expo"][expo]
 
-# if rank == 0:
-#     if not os.path.exists("./data/%s"%expo_type):
-#         os.makedirs("./data/%s"%expo_type)
 
 resample_num = 200
 
@@ -112,11 +109,12 @@ data_num = theta_radian.shape[1]
 theta_radian = theta_radian.reshape((tomo_panel_num, int(data_num*1.0/tomo_panel_num)))
 xi_p = npz["arr_1"][0]*xi_scale
 cov_p = npz["arr_3"]*xi_scale*xi_scale
-cov_inv = numpy.linalg.inv(cov_p)
+cov_inv = numpy.linalg.pinv(cov_p)
 
 # prob_coeff = numpy.log(1./(2*numpy.pi)**(data_num/2)/numpy.linalg.det(cov_p)**(0.5))
 
 print("Data vector len: ", theta_radian.shape)
+
 
 
 # exit()

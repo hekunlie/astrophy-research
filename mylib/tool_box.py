@@ -13,6 +13,7 @@ import configparser
 import logging
 import time
 from numpy import fft
+import h5py
 
 
 ################################################################
@@ -1527,3 +1528,50 @@ def config(path, cmd, contents, write=False):
 
 def get_time_now():
     return time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+
+
+
+def get_result_data(result_h5file_path, pts_num, resample_num):
+    '''
+    read data from the result file of the correlation calculation from C++ code
+    :param result_h5file_path: directory to the result file, hdf5
+    :param pts_num: total data points of xi_+ or xi_- in tomo panels, they are the same
+    :param resample_num: jackknife or bootstrap times
+    :return:
+    '''
+    h5f = h5py.File(result_h5file_path, "r")
+    xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
+    xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
+
+    xi_pm = numpy.zeros((1, int(2*pts_num)))
+    xi_pm[0, :pts_num] = xi_p
+    xi_pm[0, pts_num:] = xi_m
+
+    theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
+    # print(theta.reshape((21,7)))
+
+    xi_p_sig = numpy.zeros_like(xi_p)
+    xi_m_sig = numpy.zeros_like(xi_p)
+
+    # results of each jack
+    xi_p_sub = numpy.zeros((resample_num, pts_num))
+    xi_m_sub = numpy.zeros((resample_num, pts_num))
+
+    for i in range(resample_num):
+        xi_p_sub[i] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,pts_num))
+        xi_m_sub[i] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,pts_num))
+
+    h5f.close()
+
+    for i in range(pts_num):
+        xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
+        xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
+
+    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)
+    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)
+    xi_pm_sub = numpy.zeros((resample_num, int(2*pts_num)))
+    xi_pm_sub[:, :pts_num] = xi_p_sub
+    xi_pm_sub[:, pts_num:] = xi_m_sub
+    cov_pm = numpy.cov(xi_pm_sub.T, rowvar=True)
+
+    return theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm

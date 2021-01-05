@@ -7,6 +7,7 @@ from plot_tool import Image_Plot
 import h5py
 import numpy
 import matplotlib.pyplot as plt
+import tool_box
 
 
 zbin_num = 6#int(argv[1])
@@ -39,37 +40,22 @@ for ii in range(2):
     # pic_nm_p = data_path + "/chi_plus_result_%d_%s.png"%(resample_num,expo_type[ii])
     # pic_nm_m = data_path + "/chi_minus_result_%d_%s.png"%(resample_num,expo_type[ii])
     result_npz = data_path + "/result_cache_%d_%s.npz"%(resample_num,expo_type[ii])
-    h5f = h5py.File(data_path + "/result_%d_%s.hdf5"%(resample_num,expo_type[ii]),"r")
-    print(list(h5f.keys()))
+    file_path = data_path + "/result_%d_%s.hdf5"%(resample_num,expo_type[ii])
+
     # print(list(h5f["/0"].keys()))
 
+    theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm = tool_box.get_result_data(file_path, pts_num, resample_num)
 
-    xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
-    xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,pts_num))
-    theta = h5f["/%d/theta"%resample_num][()].reshape((1,pts_num))
-    # print(theta.reshape((21,7)))
+    inv_cov_p = numpy.linalg.inv(cov_p)
+    inv_cov_m = numpy.linalg.inv(cov_m)
+    inv_cov_pm = numpy.linalg.inv(cov_pm)
 
-    xi_p_sig = numpy.zeros_like(xi_p)
-    xi_m_sig = numpy.zeros_like(xi_p)
+    cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
 
-    # results of each jack
-    xi_p_sub = numpy.zeros((resample_num, pts_num))
-    xi_m_sub = numpy.zeros((resample_num, pts_num))
-
-    for i in range(resample_num):
-
-        xi_p_sub[i] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,pts_num))
-        xi_m_sub[i] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,pts_num))
-
-    for i in range(pts_num):
-        xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
-        xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
-
-    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)
-    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)
-    cov.append([cov_p,cov_m])
-
-    numpy.savez(result_npz, theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m)
+    numpy.savez(result_npz, theta,
+                xi_p, xi_p_sig, cov_p, inv_cov_p,
+                xi_m, xi_m_sig, cov_m, inv_cov_m,
+                xi_pm, cov_pm, inv_cov_pm)
 
     if ii == 0:
         for i in range(zbin_num):
@@ -132,31 +118,42 @@ img.close_img()
 print(pic_nm_p)
 # img.show_img()
 
-for ii in range(2):
-    img = Image_Plot(fig_x=4, fig_y=3,xpad=0.15,ypad=0.15,axis_linewidth=2.5, plt_line_width=3, legend_size=25,xy_tick_size=25)
-    img.subplots(2, 2)
+for i in range(len(cov)):
+
+    img = Image_Plot(fig_x=4, fig_y=3, xpad=0.15, ypad=0.15, axis_linewidth=2.5,
+                     plt_line_width=3, legend_size=25, xy_tick_size=25)
+    img.subplots(3, 3)
     img.set_style()
-    for i in range(len(cov)):
-        for j in range(len(cov[i])):
-            if ii == 0:
-                cov_scale = numpy.zeros_like(cov[i][j])
-                y, x = cov[i][j].shape
+
+    for j in range(3):
+        for k in range(3):
+            if k == 2:
+                arr = cov[i][j][0]
+                cov_scale = numpy.zeros_like(arr)
+                y, x = arr.shape
+                print(y, x)
                 for p in range(y):
                     for q in range(x):
-                        cov_scale[p, q] = cov[i][j][p, q] / numpy.sqrt(cov[i][j][p, p] * cov[i][j][q, q])
+                        cov_scale[p, q] = arr[p, q] / numpy.sqrt(arr[p, p] * arr[q, q])
 
-                fig = img.axs[i][j].imshow(cov_scale)
+                fig = img.axs[j][k].imshow(cov_scale)
             else:
-                fig = img.axs[i][j].imshow(cov[i][j])
+                fig = img.axs[j][k].imshow(cov[i][j][k])
 
-            img.figure.colorbar(fig, ax=img.axs[i][j])
-            img.del_axis(i,j,[0,1])
-        img.axs[i][0].set_title("$\\xi_{+}$")
-        img.axs[i][1].set_title("$\\xi_{-}$")
-    if ii == 0:
-        img.save_img(data_path + "/cov_matrix_normalized.png")
-    else:
-        img.save_img(data_path + "/cov_matrix.png")
+            img.figure.colorbar(fig, ax=img.axs[j][k])
+            img.del_axis(j,k,[0,1])
+
+    img.axs[0][0].set_title("%s $\\xi_{+}$"%expo_type[i])
+    img.axs[0][1].set_title("%s inv $\\xi_{+}$"%expo_type[i])
+    img.axs[0][2].set_title("%s normalized $\\xi_{+}$"%expo_type[i])
+    img.axs[1][0].set_title("%s $\\xi_{-}$" % expo_type[i])
+    img.axs[1][1].set_title("%s inv $\\xi_{-}$" % expo_type[i])
+    img.axs[1][2].set_title("%s normalized $\\xi_{-}$" % expo_type[i])
+    img.axs[2][0].set_title("%s $\\xi_{+}+\\xi_{-}$" % expo_type[i])
+    img.axs[2][1].set_title("%s inv $\\xi_{+}+\\xi_{-}$" % expo_type[i])
+    img.axs[2][2].set_title("%s normalized $\\xi_{+}+\\xi_{-}$" % expo_type[i])
+
+    img.save_img(data_path + "/cov_matrix_%s.png"%expo_type[i])
     img.close_img()
 
 exit()
