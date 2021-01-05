@@ -21,7 +21,7 @@ def log_prior(paras):
         return -numpy.inf
 
 
-def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_sq, zhist, z4pk_interp):
+def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist, z4pk_interp):
 
     lp = log_prior(paras)
 
@@ -35,17 +35,17 @@ def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_
         omega_bm0 = omega_m0*omega_bm0_ratio
         omega_cm0 = omega_m0 - omega_bm0
 
-        As = As/10**9
+        As = As*10**(-9)
         # print(paras)
         try:
             xi_theoretical, sigma8 = cf_tool.get_pk(As, omega_cm0, omega_bm0, h,
                                                       zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
 
-            diff = xi - xi_theoretical.flatten()*xi_scale
+            diff = xi - xi_theoretical.flatten()
             chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
             return chi_sq
         except:
-            print(paras)
+            print(As,omega_cm0,omega_bm0,h)
             return -numpy.inf
 
         # sigma8_buffer[step_count[0]] = sigma8
@@ -88,11 +88,8 @@ z4pk_interp = numpy.linspace(interp_zmax, zmin, 100)
 
 ################# read the result data ############################
 
-xi_scale = 10**6
-
 # expo_type = "diff_expo"
 expo_type = ["diff_expo","same_expo"][expo]
-
 
 resample_num = 200
 
@@ -102,34 +99,17 @@ theta_radian = npz["arr_0"]/60/180*numpy.pi
 data_num = theta_radian.shape[1]
 theta_radian = theta_radian.reshape((tomo_panel_num, int(data_num*1.0/tomo_panel_num)))
 
-
-xi_p = npz["arr_9"][0]
-cov_p = npz["arr_10"]
-cov_inv = numpy.linalg.pinv(cov_p)
-# cov_inv = npz["arr_11"]
-
-xisq1 = numpy.dot(xi_p, numpy.dot(cov_inv, xi_p))
-print(xisq1)
-
-xi_p = npz["arr_9"][0]*xi_scale
-cov_p = npz["arr_10"]*xi_scale*xi_scale
-cov_inv = numpy.linalg.inv(cov_p)
-
-xisq2 = numpy.dot(xi_p, numpy.dot(cov_inv, xi_p))
-print(xisq2)
-print(xisq2 - xisq1)
+xi = npz["arr_9"][0]
+cov_inv = npz["arr_11"]
 
 
-print("Data vector len: ", xi_p.shape)
+print("Data vector len: ", xi.shape)
 
 # prob_coeff = numpy.log(1./(2*numpy.pi)**(data_num/2)/numpy.linalg.det(cov_p)**(0.5))
 
-
-exit()
-
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini )#+ rank*10)
-nwalkers, ndim = 32, 4
+nwalkers, ndim = 48, 4
 initial = numpy.zeros((nwalkers, ndim))
 para_lim = [[1,5],[0.1,0.5],[0.05,0.5],[0.1,1]]
 for i in range(ndim):
@@ -141,8 +121,7 @@ for i in range(ndim):
 # sigma8_buffer = numpy.zeros((nsteps,))
 
 with Pool(thread) as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, pool=pool, args=(theta_radian, xi_p, xi_scale,
-                                                                    cov_inv, zebin_cent,
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, pool=pool, args=(theta_radian, xi, cov_inv, zebin_cent,
                                                                     inv_scale_factor_sq, zehist, z4pk_interp))
 
     sampler.run_mcmc(initial, nsteps, progress=True)
@@ -150,7 +129,7 @@ with Pool(thread) as pool:
 
 flat_samples = sampler.get_chain(discard=10, thin=1, flat=True)
 
-numpy.save("./data/%s/samples_%d.npz"%(expo_type,rank), flat_samples)
+numpy.save("./data/chain_%s.npz"%expo_type, flat_samples)
 
 end = time.time()
 multi_time = end - start
