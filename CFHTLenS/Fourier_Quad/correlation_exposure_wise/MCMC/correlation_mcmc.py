@@ -10,11 +10,12 @@ import emcee
 import time
 import h5py
 from mpi4py import MPI
+from multiprocessing import Pool
 
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-cpus = comm.Get_size()
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# cpus = comm.Get_size()
 
 
 
@@ -42,17 +43,22 @@ def log_prob(paras, theta_radian, xi, xi_scale, cov_inv, zpts, inv_scale_factor_
 
         As = As/10**9
         # print(paras)
-        xi_theoretical, sigma8 = cf_tool.get_pk(As, omega_cm0, omega_bm0, h,
-                                                  zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
+        try:
+            xi_theoretical, sigma8 = cf_tool.get_pk(As, omega_cm0, omega_bm0, h,
+                                                      zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
 
-        diff = xi - xi_theoretical.flatten()*xi_scale
-        chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
+            diff = xi - xi_theoretical.flatten()*xi_scale
+            chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
+            return chi_sq
+        except:
+            print(paras)
+            return -numpy.inf
 
         # sigma8_buffer[step_count[0]] = sigma8
         # step_count[0] += 1
         # t2 = time.time()
         # print("%.2f"%(t2-t1), paras,chi_sq)
-        return chi_sq
+
 
 
 
@@ -62,6 +68,7 @@ start = time.time()
 expo = int(argv[1])
 seed_ini = int(argv[2])
 nsteps = int(argv[3])
+thread = int(argv[4])
 ################### read the z data #############################
 h5f = h5py.File("./stack_data.hdf5","r")
 data = h5f["/data"][()]
@@ -91,9 +98,9 @@ xi_scale = 10**6
 # expo_type = "diff_expo"
 expo_type = ["diff_expo","same_expo"][expo]
 
-if rank == 0:
-    if not os.path.exists("./data/%s"%expo_type):
-        os.makedirs("./data/%s"%expo_type)
+# if rank == 0:
+#     if not os.path.exists("./data/%s"%expo_type):
+#         os.makedirs("./data/%s"%expo_type)
 
 resample_num = 200
 
@@ -115,8 +122,8 @@ print("Data vector len: ", theta_radian.shape)
 # exit()
 
 ################### initialize emcee #############################
-numpy.random.seed(seed_ini + rank*10)
-nwalkers, ndim = 8, 4
+numpy.random.seed(seed_ini )#+ rank*10)
+nwalkers, ndim = 32, 4
 initial = numpy.zeros((nwalkers, ndim))
 para_lim = [[1,5],[0.1,0.5],[0.05,0.5],[0.1,1]]
 for i in range(ndim):
@@ -127,18 +134,24 @@ for i in range(ndim):
 # step_count = numpy.zeros((1,),dtype=numpy.intc)
 # sigma8_buffer = numpy.zeros((nsteps,))
 
+with Pool(thread) as pool:
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, pool=pool, args=(theta_radian, xi_p, xi_scale,
+                                                                    cov_inv, zebin_cent,
+                                                                    inv_scale_factor_sq, zehist, z4pk_interp))
 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, args=(theta_radian, xi_p,xi_scale,
-                                                               cov_inv, zebin_cent,
-                                                               inv_scale_factor_sq, zehist, z4pk_interp))
-if rank == 0:
     sampler.run_mcmc(initial, nsteps, progress=True)
-else:
-    sampler.run_mcmc(initial, nsteps, progress=False)
 
-flat_samples = sampler.get_chain(discard=10, thin=1, flat=True)
-
-numpy.save("./data/%s/samples_%d.npz"%(expo_type,rank), flat_samples)
+# sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, args=(theta_radian, xi_p,xi_scale,
+#                                                                cov_inv, zebin_cent,
+#                                                                inv_scale_factor_sq, zehist, z4pk_interp))
+# if rank == 0:
+#     sampler.run_mcmc(initial, nsteps, progress=True)
+# else:
+#     sampler.run_mcmc(initial, nsteps, progress=False)
+#
+# flat_samples = sampler.get_chain(discard=10, thin=1, flat=True)
+#
+# numpy.save("./data/%s/samples_%d.npz"%(expo_type,rank), flat_samples)
 
 end = time.time()
 multi_time = end - start
