@@ -1454,7 +1454,7 @@ def config(path, cmd, contents, write=False):
                 can be a mixture of "add, get, sect_del, opt_del"
                 if the config file doesn't exist, it will be ignored
                 "add" : add a section or an option in a section if the
-                        option exists, it will be raplaced by new value
+                        option exists, it will be replaced by new value
                 "get" : get the value of a option in a section
                 "sect_del" : delete the section in the configure file
                 "opt_del" : delete the option in a section

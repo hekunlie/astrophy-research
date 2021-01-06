@@ -66,7 +66,7 @@ thread = int(argv[4])
 
 
 ################### read the z data #############################
-h5f = h5py.File("/mnt/perc/hklee/CFHT/correlation/cata/stack_data.hdf5","r")
+h5f = h5py.File("./data/stack_data.hdf5","r")
 data = h5f["/data"][()]
 h5f.close()
 
@@ -93,7 +93,7 @@ expo_type = ["diff_expo","same_expo"][expo]
 
 resample_num = 200
 
-npz = numpy.load("./result_cache_%d_%s.npz"%(resample_num,expo_type))
+npz = numpy.load("./data/result_cache_%d_%s.npz"%(resample_num,expo_type))
 # arcmin to radian
 theta_radian = npz["arr_0"]/60/180*numpy.pi
 data_num = theta_radian.shape[1]
@@ -109,7 +109,7 @@ print("Data vector len: ", xi.shape)
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini )#+ rank*10)
-nwalkers, ndim = 48, 4
+nwalkers, ndim = thread, 4
 initial = numpy.zeros((nwalkers, ndim))
 para_lim = [[1,5],[0.1,0.5],[0.05,0.5],[0.1,1]]
 for i in range(ndim):
@@ -129,7 +129,7 @@ with Pool(thread) as pool:
 
 flat_samples = sampler.get_chain(discard=10, thin=1, flat=True)
 
-numpy.save("./data/chain_%s.npz"%expo_type, flat_samples)
+numpy.savez("./data/chain_%s.npz"%expo_type, flat_samples)
 
 end = time.time()
 multi_time = end - start
