@@ -108,7 +108,7 @@ print("Data vector len: ", xi.shape)
 # prob_coeff = numpy.log(1./(2*numpy.pi)**(data_num/2)/numpy.linalg.det(cov_p)**(0.5))
 
 ################### initialize emcee #############################
-numpy.random.seed(seed_ini )#+ rank*10)
+numpy.random.seed(seed_ini)#+ rank*10)
 nwalkers, ndim = thread, 4
 initial = numpy.zeros((nwalkers, ndim))
 para_lim = [[1,5],[0.1,0.5],[0.05,0.5],[0.1,1]]
@@ -117,19 +117,16 @@ for i in range(ndim):
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)
 
 
-# step_count = numpy.zeros((1,),dtype=numpy.intc)
-# sigma8_buffer = numpy.zeros((nsteps,))
-
 with Pool(thread) as pool:
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, pool=pool, args=(theta_radian, xi, cov_inv, zebin_cent,
                                                                     inv_scale_factor_sq, zehist, z4pk_interp))
 
     sampler.run_mcmc(initial, nsteps, progress=True)
 
+chain = sampler.get_chain()
+flat_chain = sampler.get_chain(discard=3000, thin=1, flat=True)
 
-flat_samples = sampler.get_chain(discard=10, thin=1, flat=True)
-
-numpy.savez("./data/chain_%s.npz"%expo_type, flat_samples)
+numpy.savez("./data/chain_%s.npz"%expo_type, chain, flat_chain)
 
 end = time.time()
 multi_time = end - start

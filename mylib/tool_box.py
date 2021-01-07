@@ -1567,11 +1567,13 @@ def get_result_data(result_h5file_path, pts_num, resample_num):
         xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
         xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
 
-    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)
-    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)
+
     xi_pm_sub = numpy.zeros((resample_num, int(2*pts_num)))
     xi_pm_sub[:, :pts_num] = xi_p_sub
     xi_pm_sub[:, pts_num:] = xi_m_sub
-    cov_pm = numpy.cov(xi_pm_sub.T, rowvar=True)
+
+    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)*(resample_num-1)
+    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)*(resample_num-1)
+    cov_pm = numpy.cov(xi_pm_sub.T, rowvar=True)*(resample_num-1)
 
     return theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm

@@ -15,7 +15,7 @@ theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
+data_path = "J:/works/correlation/cut_2.5_smooth"
 
 pk_lines_tag = 0
 if os.path.exists(data_path + "/tomo_pk.npz"):
@@ -46,9 +46,9 @@ for ii in range(2):
 
     theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm = tool_box.get_result_data(file_path, pts_num, resample_num)
 
-    inv_cov_p = numpy.linalg.pinv(cov_p*(resample_num-1))
-    inv_cov_m = numpy.linalg.pinv(cov_m*(resample_num-1))
-    inv_cov_pm = numpy.linalg.pinv(cov_pm*(resample_num-1))
+    inv_cov_p = numpy.linalg.pinv(cov_p)
+    inv_cov_m = numpy.linalg.pinv(cov_m)
+    inv_cov_pm = numpy.linalg.pinv(cov_pm)
 
     cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
 
