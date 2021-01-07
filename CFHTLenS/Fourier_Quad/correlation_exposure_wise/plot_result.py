@@ -46,9 +46,9 @@ for ii in range(2):
 
     theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm = tool_box.get_result_data(file_path, pts_num, resample_num)
 
-    inv_cov_p = numpy.linalg.pinv(cov_p)
-    inv_cov_m = numpy.linalg.pinv(cov_m)
-    inv_cov_pm = numpy.linalg.pinv(cov_pm)
+    inv_cov_p = numpy.linalg.pinv(cov_p*(resample_num-1))
+    inv_cov_m = numpy.linalg.pinv(cov_m*(resample_num-1))
+    inv_cov_pm = numpy.linalg.pinv(cov_pm*(resample_num-1))
 
     cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
 
