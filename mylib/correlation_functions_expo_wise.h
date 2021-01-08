@@ -1,5 +1,5 @@
-#ifndef FUNCTIONS_H
-#define FUNCTIONS_H
+#ifndef CORRELATION_FUNCTIONS_H
+#define CORRELATION_FUNCTIONS_H
 
 #include<hk_iolib.h>
 #include<FQlib.h>
@@ -170,7 +170,7 @@ void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &i
 void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
 
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
-// if lable == 1, calculate, else, not
+// if label == 1, calculate, else, not
 
 // read all exposures
 void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
