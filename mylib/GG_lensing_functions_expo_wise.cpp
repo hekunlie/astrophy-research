@@ -157,7 +157,12 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                         break;
                     }
                 }
+                
+                if(bin_tag > -1)
+                {
 
+
+                }
                 
 
             }
