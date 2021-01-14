@@ -203,7 +203,6 @@ def edge_extend(mask, ysize, xsize, obj_list, extend_step):
                         if (0 <= ix < xsize) and mask[iy, ix] == 0:
                             obj.append((iy, ix))
                             mask[iy, ix] = sub_mask
-    return mask
 
 
 def get_quad(img, size, weight_sigma):
@@ -1567,7 +1566,6 @@ def get_result_data(result_h5file_path, pts_num, resample_num):
         xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
         xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
 
-
     xi_pm_sub = numpy.zeros((resample_num, int(2*pts_num)))
     xi_pm_sub[:, :pts_num] = xi_p_sub
     xi_pm_sub[:, pts_num:] = xi_m_sub
@@ -1577,3 +1575,50 @@ def get_result_data(result_h5file_path, pts_num, resample_num):
     cov_pm = numpy.cov(xi_pm_sub.T, rowvar=True)*(resample_num-1)
 
     return theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm
+
+
+def find_overlap(ra1, dec1, ra2, dec2, margin, bin_num):
+    """
+    find the overlap part between two surveys, based on the first survey
+    :param ra1:
+    :param dec1:
+    :param ra2:
+    :param dec2:
+    :param margin: additional part around the edge of survey 1
+    :param bin_num: for the 2d bin
+    :return:
+    """
+    ra_min, ra_max = ra1.min(), ra1.max()
+    dec_min, dec_max = dec1.min(), dec1.max()
+
+    label = numpy.zeros_like(ra2)
+
+    ra_bin = numpy.linspace(ra_min - margin, ra_max + margin, bin_num + 1)
+    dec_bin = numpy.linspace(dec_min - margin, dec_max + margin, bin_num + 1)
+    extend_step = int(margin / (ra_bin[1] - ra_bin[0])) + 1
+
+    mask = numpy.histogram2d(dec1, ra1, [dec_bin, ra_bin])[0]
+
+    source_area = []
+    for iy in range(bin_num):
+        for ix in range(bin_num):
+            if mask[iy, ix] > 0:
+                source_area.append([iy, ix])
+
+    edge_extend(mask, bin_num, bin_num, source_area, extend_step)
+
+    for iy in range(bin_num):
+        for ix in range(bin_num):
+            if mask[iy, ix] > 0:
+                idx_i1 = dec2 >= dec_bin[iy]
+                idx_i2 = dec2 < dec_bin[iy + 1]
+                idx_j1 = ra2 >= ra_bin[ix]
+                idx_j2 = ra2 < ra_bin[ix + 1]
+
+                idx_ij = idx_i1 & idx_i2 & idx_j1 & idx_j2
+
+                if idx_ij.sum() > 0:
+                    label[idx_ij] = 1
+    idx_n = label > 0
+
+    return label, idx_n

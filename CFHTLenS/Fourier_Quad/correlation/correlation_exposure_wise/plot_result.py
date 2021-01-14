@@ -16,10 +16,13 @@ resample_num = 200#int(argv[3])
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
+pic_nm_p = data_path + "/xi_plus_mcmc_result_%d_compare.png" % resample_num
+pic_nm_m = data_path + "/xi_minus_mcmc_result_%d_compare.png" % resample_num
+pk_line_label = "MCMC:\n$As = 1.0\\times10^{-9}$\n$\Omega_m=0.27$"
 
 pk_lines_tag = 0
-if os.path.exists(data_path + "/theoretical_pk.npz"):
-    npz = numpy.load(data_path + "/theoretical_pk.npz")
+if os.path.exists(data_path + "/mcmc_best_pk.npz"):
+    npz = numpy.load(data_path + "/mcmc_best_pk.npz")
     xi_p_theoretical_lines = npz["arr_0"]
     xi_m_theoretical_lines = npz["arr_1"]
     xi_theta = npz["arr_2"]
@@ -100,7 +103,7 @@ img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2.5, plt_line_
                  xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
 img.set_style()
-pic_nm = data_path + "/xi_plus_result_%d_compare.png" % resample_num
+
 
 for ii in range(2):
 
@@ -134,7 +137,7 @@ for ii in range(2):
                 img.axs_text(img_row, img_col, 0.8, 0.8, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size, text_color="k")
 
                 if ii == 0 and pk_lines_tag == 1:
-                    pk_line_label = "Planck2018:\n$\Omega_m=0.313$\n$\sigma_8=0.8097$"
+
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag], c="k",ls="dashdot", label=pk_line_label)
 
                 img.axs[img_row][img_col].set_yscale("log")
@@ -152,9 +155,9 @@ for ii in range(2):
 
 
 
-img.save_img(pic_nm)
+img.save_img(pic_nm_p)
 img.close_img()
-print(pic_nm)
+print(pic_nm_p)
 # img.show_img()
 
 
@@ -197,7 +200,6 @@ for ii in range(2):
                 img.axs_text(img_row, img_col, 0.8, 0.8, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size, text_color="k")
 
                 if ii == 0 and pk_lines_tag == 1:
-                    pk_line_label = "Planck2018:\n$\Omega_m=0.313$\n$\sigma_8=0.8097$"
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag], c="k",ls="dashdot", label=pk_line_label)
 
                 img.axs[img_row][img_col].set_yscale("log")
@@ -213,8 +215,8 @@ for ii in range(2):
 
                 tag += 1
 
-img.save_img(pic_nm)
+img.save_img(pic_nm_m)
 img.close_img()
-print(pic_nm)
+print(pic_nm_m)
 
 

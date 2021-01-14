@@ -1,10 +1,14 @@
 #ifndef GGL_FUNCTIONS_H
 #define GGL_FUNCTIONS_H
 
+#include<hk_iolib.h>
+#include<FQlib.h>
+
+
 #define MAX_JACK 2000
 #define MAX_EXPO_NUM 50000
 #define MY_FLOAT float
-#define GGL_COM_DIST_STACK
+#define GGL_PROP_DIST_STACK
 
 struct ggl_data_info
 {
@@ -16,8 +20,6 @@ struct ggl_data_info
     MY_FLOAT *sepration_bin;
 
     int pair_count;
-    int foreground_expo_label;
-    int background_expo_label;
 
     ////////////////////  for the SYM_PDF method of Fourier_Quad  ///////////////////////
     // bin num for G1,G2
@@ -31,7 +33,7 @@ struct ggl_data_info
     int chi_len;
     int signal_chi_len;
 
-    
+
     // total source count in the PDF, 7 parts
     // the first one, len = signal_chi_len, for the \Delta\Sigma, excess surface density
     // the second one, len = signal_chi_len, for the cross \Delta\Sigma, should be consitent with 0, systematic check
@@ -49,49 +51,58 @@ struct ggl_data_info
 
     int pos_inform_num;
 
-    ///////////////////  the informs of each foreground exposure //////////////
-    // the position informs of each foreground exposure file
-    MY_FLOAT *foreground_pos_infoms[MAX_EXPO_NUM];
-    char *foreground_expo_path[MAX_EXPO_NUM];
-    int *foreground_data_row[MAX_EXPO_NUM];
-    int *foreground_data_col[MAX_EXPO_NUM];
-    int foreground_expo_num;
+    ///////////////////  the informs of each len exposure //////////////
+    int len_expo_label;
+    // the position informs of each len exposure file
+    char *len_expo_path[MAX_EXPO_NUM];
+    int *len_data_row;
+    int len_data_col;
+    int len_expo_num;
   
-    MY_FLOAT *foreground_expo_data;
+    MY_FLOAT *len_expo_data;
+    int len_expo_read_tag;
 
-    int foreground_ra_col;
-    int foreground_dec_col;
-    int foreground_cos_dec_col;
-    int foreground_z_col;
-    int foreground_com_dist_col;
+    int len_ra_col;
+    int len_dec_col;
+    int len_cos_dec_col;
+    int len_z_col;
+    int len_com_dist_col;
+    int len_jackid_col;
 
 
-    ///////////////////  the informs of each background exposure //////////////
-    MY_FLOAT *background_pos_informs[MAX_EXPO_NUM];
-    char *background_expo_path[MAX_EXPO_NUM];
-    int *background_data_row[MAX_EXPO_NUM];
-    int *background_data_col[MAX_EXPO_NUM];
-    int background_expo_num;
+    ///////////////////  the informs of each source exposure //////////////
+    MY_FLOAT *src_pos_informs[MAX_EXPO_NUM];
+    char *src_expo_path[MAX_EXPO_NUM];
+    int *src_data_row;
+    int *src_expo_needed_tag;
+    int src_data_col;
+    int src_expo_num;
 
-    MY_FLOAT *background_expo_data;
+    MY_FLOAT *src_expo_data;
+    int src_expo_read_tag;
+    int src_mg1_col;
+    int src_mg2_col;
+    int src_mn_col;
+    int src_mu_col;
+    int src_mv_col;
 
-    int background_ra_col;
-    int background_dec_col;
-    int background_cos_dec_col;
-    int background_z_col;
-    int background_com_dist_col;
+    int src_ra_col;
+    int src_dec_col;
+    int src_cos_dec_col;
+    int src_z_col;
 
-    int background_mg1_col;
-    int background_mg2_col;
-    int background_mn_col;
-    int background_mu_col;
-    int background_mv_col;
-    
+
     MY_FLOAT back_dz;
-
+    MY_FLOAT *separation_bin;
+    int sep_bin_num;
+    
 };
 
 void ggl_initialize(ggl_data_info *data_info);
 
+void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
+void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);
+
+void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label);
 
 #endif
