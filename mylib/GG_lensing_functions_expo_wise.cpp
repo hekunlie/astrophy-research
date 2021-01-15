@@ -338,3 +338,4 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     sprintf(times,"Finished in %.2f sec", (ed-st)/CLOCKS_PER_SEC);
     std::cout<<times<<std::endl;
 }
+
