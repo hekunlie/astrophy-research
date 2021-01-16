@@ -68,6 +68,7 @@ struct ggl_data_info
     int len_cos_dec_col;
     int len_z_col;
     int len_com_dist_col;
+    int len_prop_dist_col;
     int len_jackid_col;
 
 
@@ -91,7 +92,10 @@ struct ggl_data_info
     int src_dec_col;
     int src_cos_dec_col;
     int src_z_col;
+    int src_zerr_col;
     int src_com_dist_col;
+    int src_prop_dist_col;
+
 
     MY_FLOAT back_dz;
     MY_FLOAT *separation_bin;

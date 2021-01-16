@@ -7,7 +7,8 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->len_cos_dec_col = 2;
     data_info->len_z_col = 3;
     data_info->len_com_dist_col = 4;
-    data_info->len_jackid_col = 5;
+    data_info->len_prop_dist_col = 5;
+    data_info->len_jackid_col = 6;
     
     data_info->src_mg1_col = 0;
     data_info->src_mg2_col = 1;
@@ -19,12 +20,13 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->src_dec_col = 6;
     data_info->src_cos_dec_col = 7;
     data_info->src_z_col = 8;
-
+    data_info->src_zerr_col = 9;
+    data_info->src_prop_dist_col = 10;
+    
 
     // no len/src data array exists in memory
     data_info->len_expo_read_tag = 0;
     data_info->src_expo_read_tag = 0;
-
 
     data_info->back_dz = 0.05;
 
@@ -110,7 +112,7 @@ void find_src_needed(ggl_data_info *data_info, int len_expo_label)
         // if stack the signal in physical coordinate
 #ifdef GGL_PROP_DIST_STACK
         max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
-        data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]*(1+data_info->len_expo_data[ifg_row + data_info->len_z_col]);
+        data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
 #else
         max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
         data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
@@ -190,7 +192,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int jack_id;
 
     MY_FLOAT len_ra, len_dec, src_ra, src_dec;
-    MY_FLOAT len_z, len_com_dist, src_z, src_com_dist;
+    MY_FLOAT len_z, len_dist, src_z, src_dist;
     MY_FLOAT dra, ddec, delta_radius;
     MY_FLOAT sep_dist, sep_theta;
     MY_FLOAT sigma_crit, coeff;
@@ -220,13 +222,13 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
             len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
             len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
             len_z = data_info->len_expo_data[ifg_row + data_info->len_z_col];
-            len_com_dist = data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
+            len_dist = data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
 
             // stacking in physical or comoving coordinate
 #ifdef GGL_PROP_DIST_STACK
-            coeff = (1+len_z)/len_com_dist;
+            coeff = 1./len_dist;
 #else
-            coeff = 1./len_com_dist/(1+len_z);
+            coeff = 1./len_dist/(1+len_z)/(1+len_z);
 #endif            
             for(ibkg=0; ibkg<data_info->src_data_row[bkg]; ibkg++)
             {   
@@ -236,14 +238,14 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 src_ra = data_info->src_expo_data[ibkg_row + data_info->src_ra_col];
                 src_dec = data_info->src_expo_data[ibkg_row + data_info->src_dec_col];
-                src_com_dist = data_info->src_expo_data[ibkg_row + data_info->src_com_dist_col];
+                src_dist = data_info->src_expo_data[ibkg_row + data_info->src_prop_dist_col];
 
-                sigma_crit = coeff*src_com_dist/(src_com_dist - len_com_dist);
+                sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
                 separation(len_ra, len_dec, src_ra, src_dec, sep_theta);
 
 #ifdef GGL_PROP_DIST_STACK
-                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]/(1+len_z);
+                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
 #else
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
 #endif
