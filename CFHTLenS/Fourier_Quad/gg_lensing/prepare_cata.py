@@ -31,8 +31,6 @@ separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(nump
 deg2arcmin = 60
 deg2rad = numpy.pi/180
 
-grid_size = 40 #arcmin
-
 # position in CFHTLens catalog
 ra_idx = 0
 dec_idx = 1
@@ -55,7 +53,6 @@ delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 tan_shear_guess = numpy.linspace(-0.05, 0.1, chi_guess_num, dtype=numpy.float32)
-
 
 mg_bin_num = 10
 
@@ -87,21 +84,22 @@ mu_idx = 36
 mv_idx = 37
 
 # about PhotoZ
-odd_idx = 38
-odd_thresh = 0.5
-redshift_e_idx = 39
-pz_sum_idx = 40
-# pz_sum_thresh = 0.001
+Z_B_idx = 10
+Z_B_MIN_idx = 38
+Z_B_MAX_idx = 39
+odd_idx = 40
+odd_thresh = 0.7
+
 
 #
 # fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 # result_cata_path = "/coma/hklee/CFHT/correlation/cata"
 
-# fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
+fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-result_cata_path = "/home/hklee/work/CFHT/gg_lensing/cata"
+# fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+# result_cata_path = "/home/hklee/work/CFHT/gg_lensing/cata"
 
 cmd = argv[1]
 
@@ -151,13 +149,15 @@ if cmd == "prepare_foreground":
 
     foreground_path_ori = "/mnt/perc/hklee/CFHT/catalog/foreground/cmass"
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
-    result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
+
 
     files = ["cmass_w1.hdf5", "cmass_w2.hdf5","cmass_w3.hdf5","cmass_w4.hdf5"]
 
     if rank == 0:
-        if not os.path.exists(result_cata_path):
-            os.makedirs(result_cata_path)
+        if not os.path.exists(result_cata_path + "/foreground"):
+            os.makedirs(result_cata_path + "/foreground")
+        if not os.path.exists(result_cata_path + "/background"):
+            os.makedirs(result_cata_path + "/background")
 
         src_num = numpy.zeros((len(files), ), dtype=numpy.intc)
         src_st = numpy.zeros((len(files), ), dtype=numpy.intc)
@@ -203,11 +203,7 @@ if cmd == "prepare_foreground":
         h5f.close()
 
     # assign the source into the artificial exposures
-
-    # the width of each exposure, degree
-    expos_field_width = 60/60
-    dra = expos_field_width/2
-    ddec = expos_field_width/2
+    min_src_num = 100
 
     expos_avail_sub = []
     expos_count = 0
@@ -215,45 +211,42 @@ if cmd == "prepare_foreground":
     group_list = [i for i in range(cent_num)]
 
     sub_group_list = tool_box.alloc(group_list, cpus)[rank]
-    group_label = total_data[:,6]
+    group_label = total_data[:,6].astype(dtype=numpy.intc)
+
     # divide the group into many exposures
     for group_tag in sub_group_list:
+
         # select individual group
         idx_group = group_label == group_tag
         sub_data = total_data[idx_group]
-        group_ra = sub_data[:,0]
-        group_dec = sub_data[:,1]
 
-        group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
-        group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
+        ground_src_num = idx_group.sum()
 
-        group_ra_bin, group_ra_bin_num = prepare_tools.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
-        group_dec_bin, group_dec_bin_num = prepare_tools.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+        if ground_src_num <= min_src_num:
+            expos_name = "%d-0" %group_tag
+            expos_path = result_cata_path + "/foreground/%s.hdf5" % expos_name
+            h5f_expos = h5py.File(expos_path, "w")
+            h5f_expos["/data"] = sub_data
+            h5f_expos.close()
 
-        count = 0
-        for i in range(group_ra_bin_num):
-            idx1 = group_ra >= group_ra_bin[i]
-            idx2 = group_ra < group_ra_bin[i+1]
+            expos_avail_sub.append("%s\t%s\t%d\t%d\n"
+                                   % (expos_path, expos_name, ground_src_num, group_tag))
+            expos_count += 1
+        else:
+            m, n = divmod(ground_src_num, min_src_num)
+            nums_distrib = tool_box.alloc([1 for i in range(ground_src_num)], m)
+            nums = [sum(nums_distrib[i]) for i in range(m)]
+            nums_st = [sum(nums[:i]) for i in range(m)]
+            for count in range(m):
+                expos_name = "%d-%d" % (group_tag, count)
+                expos_path = result_cata_path + "/foreground/%s.hdf5" % expos_name
+                h5f_expos = h5py.File(expos_path, "w")
+                h5f_expos["/data"] = sub_data[nums_st[count]: nums_st[count]+nums[count]]
+                h5f_expos.close()
 
-            for j in range(group_dec_bin_num):
-                idx3 = group_dec >= group_dec_bin[j]
-                idx4 = group_dec < group_dec_bin[j+1]
-
-                idx_sub = idx1 & idx2 & idx3 & idx4
-
-                src_num = idx_sub.sum()
-
-                if src_num > 0:
-                    expos_name = "%d-%d"%(group_tag, count)
-                    expos_path = result_cata_path + "/%s.hdf5"%expos_name
-                    h5f_expos = h5py.File(expos_path, "w")
-                    h5f_expos["/data"] = sub_data[idx_sub]
-                    h5f_expos.close()
-
-                    expos_avail_sub.append("%s\t%s\t%d\t%d\n"
-                                          % (expos_path, expos_name, src_num, group_tag))
-                    count += 1
-                    expos_count += 1
+                expos_avail_sub.append("%s\t%s\t%d\t%d\n"
+                                       % (expos_path, expos_name, ground_src_num, group_tag))
+                expos_count += 1
 
     comm.Barrier()
     expos_count_list = comm.gather(expos_count, root=0)
@@ -265,7 +258,7 @@ if cmd == "prepare_foreground":
         for fns in expos_avail_list:
             buffer_expo.extend(fns)
 
-        with open(result_cata_path + "/foreground_list.dat", "w") as f:
+        with open(result_cata_path + "/foreground/foreground_list.dat", "w") as f:
             f.writelines(buffer_expo)
 
         log_inform = "%d exposures\n"%len(buffer_expo)
@@ -275,108 +268,107 @@ if cmd == "prepare_foreground":
         print(expos_count_list)
         print(sum(expos_count_list))
     comm.Barrier()
-#
-#
-# elif cmd == "prepare_background":
-#
-#     comm = MPI.COMM_WORLD
-#     rank = comm.Get_rank()
-#     cpus = comm.Get_size()
-#
-#     total_expos = []
-#     with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
-#         f_lines = f.readlines()
-#     for ff in f_lines:
-#         total_expos.append(ff.split("\n")[0])
-#
-#     my_expos = tool_box.alloc(total_expos,cpus, method="order")[rank]
-#     expo_avail_sub = []
-#     exception_sub = []
-#
-#     for cat_path in my_expos:
-#         expo_name = cat_path.split("/")[-1]
-#
-#         h5f_src = h5py.File(cat_path,"r")
-#         data = h5f_src["/data"][()]
-#         h5f_src.close()
-#
-#         # selection
-#         idx1 = data[:, nstar_idx] >= nstar_thresh
-#         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
-#         idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
-#         idx4 = numpy.abs(data[:, gf2_idx]) <= gf2_thresh
-#         idx5 = data[:, imax_idx] < imax_thresh
-#         idx6 = data[:, jmax_idx] < jmax_thresh
-#         idx7 = data[:,odd_idx] >= odd_thresh
-#         idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx7
-#
-#         src_num = idx.sum()
-#
-#         if src_num > 0:
-#             src_data = data[idx]
-#
-#             src_data[:, ra_idx] = src_data[:, ra_idx] * deg2arcmin
-#             src_data[:, dec_idx] = src_data[:, dec_idx] * deg2arcmin
-#             ra = src_data[:, ra_idx]
-#             dec = src_data[:, dec_idx]
-#
-#             # find the center and the 4 corners
-#             ra_min, ra_max = ra.min(), ra.max()
-#             ra_center = (ra_min + ra_max) / 2
-#             dra = (ra_max - ra_min) / 2
-#             dec_min, dec_max = dec.min(), dec.max()
-#             dec_center = (dec_min + dec_max) / 2
-#             cos_dec_center = numpy.cos(dec_center / deg2arcmin * deg2rad)
-#             ddec = (dec_max - dec_min) / 2
-#
-#             expo_pos = numpy.array([ra_center, dec_center, dra, ddec,
-#                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2), cos_dec_center],
-#                                     dtype=numpy.float32)
-#             # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT, COM_DISTANCE
-#             dst_data = numpy.zeros((src_num, 10), dtype=numpy.float32)
-#
-#             dst_data[:, 0] = src_data[:, mg1_idx]
-#             dst_data[:, 1] = src_data[:, mg2_idx]
-#             dst_data[:, 2] = src_data[:, mn_idx]
-#             # the signs of U & V are different with that in the paper
-#             dst_data[:, 3] = -src_data[:, mu_idx]
-#             dst_data[:, 4] = -src_data[:, mv_idx]
-#
-#             dst_data[:, 5] = src_data[:, ra_idx]
-#             dst_data[:, 6] = src_data[:, dec_idx]
-#             dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
-#             dst_data[:, 8] = src_data[:, redshift_idx]
-#             dst_data[:, 9] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100 # in unit of h/Mpc
-#
-#             expo_dst_path = result_cata_path + "/%s" %expo_name
-#             h5f_dst = h5py.File(expo_dst_path,"w")
-#             h5f_dst["/pos"] = expo_pos
-#             h5f_dst["/data"] = dst_data
-#             h5f_dst.close()
-#
-#             expo_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\t%f\t%f\n"
-#                                    %(expo_dst_path, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
-#                                      expo_pos[3], expo_pos[4], expo_pos[5]))
-#         # exit()
-#     comm.Barrier()
-#
-#     expo_avail_list = comm.gather(expo_avail_sub, root=0)
-#     exception_collection = comm.gather(exception_sub, root=0)
-#
-#     if rank == 0:
-#         buffer_expo = []
-#         for fns in expo_avail_list:
-#             buffer_expo.extend(fns)
-#
-#         with open(result_cata_path + "/background_source_list.dat", "w") as f:
-#             f.writelines(buffer_expo)
-#
-#         exception_all = []
-#         for ec in exception_collection:
-#             exception_all.extend(ec)
-#         log_inform = "%d (%d) exposures\n"%(len(buffer_expo), len(total_expos))
-#         exception_all.append(log_inform)
-#         with open("log.dat", "w") as f:
-#             f.writelines(exception_all)
-#         print(log_inform)
-#     comm.Barrier()
+
+
+elif cmd == "prepare_background":
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    cpus = comm.Get_size()
+
+    total_expos = []
+    with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+        f_lines = f.readlines()
+    for ff in f_lines:
+        total_expos.append(ff.split("\n")[0])
+
+    my_expos = tool_box.alloc(total_expos,cpus, method="order")[rank]
+    expo_avail_sub = []
+    exception_sub = []
+
+    for cat_path in my_expos:
+        expo_name = cat_path.split("/")[-1]
+
+        h5f_src = h5py.File(cat_path,"r")
+        data = h5f_src["/data"][()]
+        h5f_src.close()
+
+        # selection
+        idx1 = data[:, nstar_idx] >= nstar_thresh
+        idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
+        idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
+        idx4 = numpy.abs(data[:, gf2_idx]) <= gf2_thresh
+        idx5 = data[:, imax_idx] < imax_thresh
+        idx6 = data[:, jmax_idx] < jmax_thresh
+        idx7 = data[:,odd_idx] >= odd_thresh
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx7
+
+        src_num = idx.sum()
+
+        if src_num > 0:
+            src_data = data[idx]
+
+            ra = src_data[:, ra_idx]
+            dec = src_data[:, dec_idx]
+
+            # find the center and the 4 corners
+            ra_min, ra_max = ra.min(), ra.max()
+            ra_center = (ra_min + ra_max) / 2
+            dra = (ra_max - ra_min) / 2
+            dec_min, dec_max = dec.min(), dec.max()
+            dec_center = (dec_min + dec_max) / 2
+            cos_dec_center = numpy.cos(dec_center * deg2rad)
+            ddec = (dec_max - dec_min) / 2
+
+            expo_pos = numpy.array([ra_center, dec_center, cos_dec_center,
+                                     numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2)], dtype=numpy.float32)
+
+            # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT, COM_DISTANCE
+            dst_data = numpy.zeros((src_num, 11), dtype=numpy.float32)
+
+            dst_data[:, 0] = src_data[:, mg1_idx]
+            dst_data[:, 1] = src_data[:, mg2_idx]
+            dst_data[:, 2] = src_data[:, mn_idx]
+            # the signs of U & V are different with that in the paper
+            dst_data[:, 3] = -src_data[:, mu_idx]
+            dst_data[:, 4] = -src_data[:, mv_idx]
+
+            dst_data[:, 5] = src_data[:, ra_idx]
+            dst_data[:, 6] = src_data[:, dec_idx]
+            dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
+            dst_data[:, 8] = src_data[:, Z_B_idx]
+            dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
+            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100/(1+dst_data[:, 8]) # in unit of h/Mpc
+
+            expo_dst_path = result_cata_path + "/background/%s" %expo_name
+            h5f_dst = h5py.File(expo_dst_path,"w")
+            h5f_dst["/pos"] = expo_pos
+            h5f_dst["/data"] = dst_data
+            h5f_dst.close()
+
+            expo_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\n"
+                                   %(expo_dst_path, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
+                                     expo_pos[3]))
+        # exit()
+    comm.Barrier()
+
+    expo_avail_list = comm.gather(expo_avail_sub, root=0)
+    exception_collection = comm.gather(exception_sub, root=0)
+
+    if rank == 0:
+        buffer_expo = []
+        for fns in expo_avail_list:
+            buffer_expo.extend(fns)
+
+        with open(result_cata_path + "/background/background_source_list.dat", "w") as f:
+            f.writelines(buffer_expo)
+
+        exception_all = []
+        for ec in exception_collection:
+            exception_all.extend(ec)
+        log_inform = "%d (%d) exposures\n"%(len(buffer_expo), len(total_expos))
+        exception_all.append(log_inform)
+        with open("log.dat", "w") as f:
+            f.writelines(exception_all)
+        print(log_inform)
+    comm.Barrier()
