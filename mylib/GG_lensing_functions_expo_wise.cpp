@@ -1,7 +1,11 @@
 #include<GG_lensing_functions_expo_wise.h>
 
+
+
 void ggl_initialize(ggl_data_info *data_info)
-{
+{   
+    int i;
+
     data_info->len_ra_col = 0;
     data_info->len_dec_col = 1;
     data_info->len_cos_dec_col = 2;
@@ -30,29 +34,197 @@ void ggl_initialize(ggl_data_info *data_info)
 
     data_info->back_dz = 0.05;
 
-    data_info->pos_inform_num = 6;
+    data_info->pos_inform_num = 4;
 
     // when read a len exposure, it will calculate the separation between the 
     // len and src and labelled the src exposures.
     data_info->src_expo_needed_tag = new int[data_info->src_expo_num];
     initialize_arr(data_info->src_expo_needed_tag, data_info->src_expo_num,-1);
+    
 
+    // read G bins
+    sprintf(data_info->ggl_pdf_inform_path,"%s/cata/pdf_inform.hdf5", data_info->ggl_total_path);
+    sprintf(data_info->set_name,"/mg_bin");
+    read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->mg_bin_num);
+    data_info->mg_bin = new MY_FLOAT[data_info->mg_bin_num];
+    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->mg_bin);
+    data_info->mg_bin_num = data_info->mg_bin_num - 1;
+
+
+    // read signal guesses
+    sprintf(data_info->set_name,"/delta_sigma_guess");
+    read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->pdf_guess_num);
     data_info->gt_guess = new MY_FLOAT[data_info->pdf_guess_num];
     data_info->delta_sigma_guess = new MY_FLOAT[data_info->pdf_guess_num];
-    data_info->mg_bin = new MY_FLOAT[data_info->mg_bin_num];
 
-    data_info->sepration_bin = new MY_FLOAT[data_info->signal_pts_num+1];
+    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->delta_sigma_guess);
+    sprintf(data_info->set_name,"/g_guess");
+    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->gt_guess);
+
+    sprintf(data_info->set_name,"/separation_bin");
+    read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->sep_bin_num);
+    data_info->sepration_bin = new MY_FLOAT[data_info->sep_bin_num];
+    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->sepration_bin);
+    data_info->signal_pts_num = data_info->sep_bin_num - 1;
+    data_info->sep_bin_num = data_info->sep_bin_num - 1;
+
+
 
     data_info->chi_theta_block_len = data_info->pdf_guess_num*data_info->mg_bin_num;
     data_info->chi_signal_block_len = data_info->signal_pts_num*data_info->chi_theta_block_len;
     data_info->chi_jack_block_len = data_info->chi_signal_block_len*4 + data_info->signal_pts_num*3;
+    data_info->total_chi_count_len = data_info->chi_jack_block_len*(data_info->jack_num+1);
     // all pair data will be stacked into the last block in total_chi_count for the estimation of signals
-    data_info->worker_total_chi_count = new double[data_info->chi_jack_block_len*(data_info->jack_num+1)];
+    data_info->worker_total_chi_count = new double[data_info->total_chi_count_len];
     data_info->worker_sub_chi_count = new double[data_info->chi_jack_block_len];
-
-    initialize_arr(data_info->worker_total_chi_count, data_info->chi_jack_block_len*(data_info->jack_num+1), 0);
+    if(data_info->rank == 0)
+    {
+        data_info->total_chi_count = new double[data_info->total_chi_count_len];
+        initialize_arr(data_info->total_chi_count, data_info->total_chi_count_len, 0);
+    }
+    initialize_arr(data_info->worker_total_chi_count, data_info->total_chi_count_len, 0);
     initialize_arr(data_info->worker_sub_chi_count, data_info->chi_jack_block_len, 0);
+    
 
+    // read fore/background exposure informs
+    sprintf(data_info->ggl_foreground_inform_path, "%s/foreground/foreground_list.dat", data_info->ggl_total_path);
+    sprintf(data_info->ggl_background_inform_path, "%s/background/background_list.dat", data_info->ggl_total_path);
+    line_count(data_info->ggl_foreground_inform_path, data_info->len_expo_num);
+    line_count(data_info->ggl_background_inform_path, data_info->src_expo_num);
+
+    for(i=0; i<data_info->len_expo_num; i++)
+    {
+         data_info->len_expo_path[i] = new char[450];
+         data_info->len_expo_name[i] = new char[50];
+    }
+    data_info->len_data_row = new int[data_info->len_expo_num];
+    data_info->len_expo_jackid = new int[data_info->len_expo_num];
+
+    for(i=0; i<data_info->src_expo_num; i++)
+    { 
+        data_info->src_expo_path[i] = new char[450];
+        data_info->src_expo_name[i] = new char[50];
+        data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num*data_info->src_expo_num];
+    }
+    data_info->src_data_row = new int[data_info->src_expo_num];
+
+    ggl_read_len_list(data_info->ggl_foreground_inform_path, data_info);
+    ggl_read_src_list(data_info->ggl_background_inform_path, data_info);
+
+    if(data_info->rank == 0)
+    {   
+        char cal_inform[500];
+        std::cout<<data_info->ggl_total_path<<std::endl;
+
+        sprintf(cal_inform, "Foreground %d expos.  Background %d expos\n", data_info->len_expo_num, data_info->src_expo_num);
+        std::cout<<cal_inform;
+
+        sprintf(cal_inform,"G bins: %d.\n", data_info->mg_bin_num);
+        std::cout<<cal_inform;
+        show_arr(data_info->mg_bin,1,data_info->mg_bin_num+1);
+        std::cout<<std::endl;
+
+        sprintf(cal_inform,"PDF_guess_num: %d.\n", data_info->pdf_guess_num);
+        std::cout<<cal_inform;
+        show_arr(data_info->gt_guess,1,data_info->pdf_guess_num);
+        std::cout<<std::endl;
+        show_arr(data_info->delta_sigma_guess,1,data_info->pdf_guess_num);
+        std::cout<<std::endl;
+
+        sprintf(cal_inform,"Separation bins: %d", data_info->sep_bin_num);
+        std::cout<<cal_inform;
+        show_arr(data_info->sepration_bin,1,data_info->sep_bin_num+1);
+        std::cout<<std::endl;
+    }
+}
+
+
+void line_count(char *file_path, int &lines)
+{
+    std::ifstream infile;
+	std::string str;
+	std::stringstream strs;
+
+	int i, j;
+    int line_count;
+
+    infile.open(file_path);
+	line_count = 0;
+
+    while (!infile.eof())
+    {
+        str.clear();
+        getline(infile, str);
+        line_count += 1;
+    }
+    infile.close();
+    lines = line_count-1;
+    // std::cout<<"Total "<<line_count-1<<" lines in sources list"<<std::endl;
+}
+
+
+void ggl_read_len_list(char *file_path, ggl_data_info* data_info)
+{
+    std::ifstream infile;
+	std::string str;
+	std::stringstream strs;
+
+	int i, j;
+    int line_count;
+
+    infile.open(file_path);
+	line_count = 0;
+    while (!infile.eof())
+    {
+        str.clear();
+        strs.clear();
+        getline(infile, str);
+        
+        strs << str;
+
+        strs >> data_info->len_expo_path[line_count];
+        strs >> data_info->len_expo_name[line_count];
+        strs >> data_info->len_data_row[line_count];
+        strs >> data_info->len_expo_jackid[line_count];
+
+        // std::cout << str << std::endl;
+        line_count += 1;
+    }
+    infile.close();
+}
+
+
+void ggl_read_src_list(char *file_path, ggl_data_info* data_info)
+{
+    std::ifstream infile;
+	std::string str;
+	std::stringstream strs;
+
+	int i, j;
+    int line_count;
+
+    infile.open(file_path);
+	line_count = 0;
+    while (!infile.eof())
+    {
+        str.clear();
+        strs.clear();
+        getline(infile, str);
+        
+        strs << str;
+
+        strs >> data_info->src_expo_path[line_count];
+        strs >> data_info->src_expo_name[line_count];
+        strs >> data_info->src_data_row[line_count];
+        strs >> data_info->src_pos_informs[data_info->pos_inform_num][0];
+        strs >> data_info->src_pos_informs[data_info->pos_inform_num][1];
+        strs >> data_info->src_pos_informs[data_info->pos_inform_num][2];
+        strs >> data_info->src_pos_informs[data_info->pos_inform_num][3];
+
+        // std::cout << str << std::endl;
+        line_count += 1;
+    }
+    infile.close();
 }
 
 
@@ -341,3 +513,59 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     std::cout<<times<<std::endl;
 }
 
+
+void ggl_collect_chi(ggl_data_info *data_info)
+{
+    int i, j;
+    MPI_Status status;
+
+    if (data_info->rank > 0)
+    {
+        MPI_Send(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);
+    }
+    else
+    {
+        for(i=1;i<data_info->numprocs;i++)
+        {
+            MPI_Recv(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+            
+            for(j=0;j<data_info->total_chi_count_len;j++)
+            {data_info->total_chi_count[j] += data_info->worker_total_chi_count[j];}
+        }
+    }   
+}
+
+void ggl_cal_signals(ggl_data_info * data_info)
+{   
+    if(data_info->rank == 0)
+    {
+        int i, j, k, row;
+        double temp;
+
+        double *temp_count = new double[data_info->mg_bin_num];
+        double *chisq = new double[data_info->pdf_guess_num];
+
+        double *delta_sigma_t = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+        double *delta_sigma_t = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+        double *gt = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+        double *gx = new double[(data_info->jack_num+1)*data_info->signal_pts_num];       
+
+        double *theta = new double[data_info->signal_pts_num];
+        double *radius = new double[data_info->signal_pts_num];
+        double *count = new double[data_info->signal_pts_num];
+
+        for(i=0; i<data_info->jack_id+1; i++)
+        {
+            for(j=0;j<data_info->pdf_guess_num;j++)
+            {
+                row = i*data_info->chi_jack_block_len + j*data_info->pdf_guess_num*data_info->mg_bin_num;
+                for(k=0;k<data_info->mg_bin_num;k++)
+                {
+                    temp_count[k] = data_info->total_chi_count[row+k];
+                }
+                
+            }
+        }
+
+    }
+}

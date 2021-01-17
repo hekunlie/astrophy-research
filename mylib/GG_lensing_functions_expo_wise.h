@@ -4,10 +4,12 @@
 #define MAX_JACK 2000
 #define MAX_EXPO_NUM 50000
 #define MY_FLOAT float
+#define MY_MPI_TYPE MPI_FLOAT
 #define GGL_PROP_DIST_STACK
 
 
 #include<hk_iolib.h>
+#include<hk_mpi.h>
 #include<FQlib.h>
 
 struct ggl_data_info
@@ -21,6 +23,15 @@ struct ggl_data_info
 
     int pair_count;
 
+    int rank, numprocs;
+
+    char ggl_total_path[400];
+    char set_name[50];
+    char ggl_pdf_inform_path[450];
+    char ggl_foreground_inform_path[450];
+    char ggl_background_inform_path[450];
+
+
     ////////////////////  for the SYM_PDF method of Fourier_Quad  ///////////////////////
     // bin num for G1,G2
     int mg_bin_num;
@@ -32,6 +43,7 @@ struct ggl_data_info
 
     int chi_theta_block_len, chi_jack_block_len;
     int chi_signal_block_len;
+    int total_chi_count_len;
 
     // total source count in the PDF, 7 parts
     // the first one, len = chi_signal_block_len, for the \Delta\Sigma, excess surface density
@@ -56,7 +68,9 @@ struct ggl_data_info
     int len_expo_label;
     // the position informs of each len exposure file
     char *len_expo_path[MAX_EXPO_NUM];
+    char *len_expo_name[MAX_EXPO_NUM];
     int *len_data_row;
+    int *len_expo_jackid;
     int len_data_col;
     int len_expo_num;
   
@@ -75,6 +89,7 @@ struct ggl_data_info
     ///////////////////  the informs of each source exposure //////////////
     MY_FLOAT *src_pos_informs[MAX_EXPO_NUM];
     char *src_expo_path[MAX_EXPO_NUM];
+    char *src_expo_name[MAX_EXPO_NUM];
     int *src_data_row;
     int *src_expo_needed_tag;
     int src_data_col;
@@ -103,7 +118,13 @@ struct ggl_data_info
     
 };
 
+
+
 void ggl_initialize(ggl_data_info *data_info);
+
+void ggl_read_list(char *file_path, ggl_data_info* expo_info);
+
+void line_count(char *file_path, int &lines);
 
 void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
 void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);
@@ -116,4 +137,7 @@ void ggl_rotate_estimator(MY_FLOAT G1, MY_FLOAT G2, MY_FLOAT U, MY_FLOAT V, MY_F
 
 void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, int &bin_tag);
 
+void ggl_collect_chi(ggl_data_info *data_info);
+
+void ggl_cal_signals(ggl_data_info * data_info);
 #endif

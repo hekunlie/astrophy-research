@@ -245,7 +245,7 @@ if cmd == "prepare_foreground":
                 h5f_expos.close()
 
                 expos_avail_sub.append("%s\t%s\t%d\t%d\n"
-                                       % (expos_path, expos_name, ground_src_num, group_tag))
+                                       % (expos_path, expos_name, nums[count], group_tag))
                 expos_count += 1
 
     comm.Barrier()
