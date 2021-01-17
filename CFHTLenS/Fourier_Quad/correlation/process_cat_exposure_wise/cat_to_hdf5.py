@@ -45,12 +45,12 @@ if mode == "cata_name":
 
 elif mode == "hdf5_cata":
     # convert the .dat to .hdf5
-
+    CFHT_pz_path = argv[3]
     # read the photoz data
-    # RA DEC Z_B ODDS Pz_full(70 cols)
+    # RA DEC Z_B Z_B_MIN Z_B_MAX ODDS Z_E Pz_full(70 cols)
     for i in range(cpus):
         if i == rank:
-            h5f = h5py.File(total_path + "/CFHT_pz.hdf5","r")
+            h5f = h5py.File(CFHT_pz_path,"r")
             pz_data = h5f["/data"][()]
             h5f.close()
             # print("%d Read Pz cata"%rank)
@@ -58,7 +58,7 @@ elif mode == "hdf5_cata":
         comm.Barrier()
     comm.Barrier()
 
-    zbin = numpy.array([0.025 + i * 0.05 for i in range(70)])
+    # zbin = numpy.array([0.025 + i * 0.05 for i in range(70)])
 
     exposures_candidates = []
     with open(total_path + "/cat_inform/exposure_name.dat", "r") as f:
@@ -88,14 +88,14 @@ elif mode == "hdf5_cata":
             row, col = 0, 0
 
         if row > 0:
-            # for Z_E, Z_E_nor, ODDS
-            dst_data = numpy.zeros((row, col+3), dtype=numpy.float32)
+            # for Z_B_MIN, Z_B_MAX, ODDS, Z_E, sum(Pz)
+            dst_data = numpy.zeros((row, col+5), dtype=numpy.float32)
             dst_data[:,:col] = src_data
 
             ra_min, ra_max = src_data[:,0].min(), src_data[:,0].max()
-            dra = (ra_max - ra_min)*0.05
+            dra = (ra_max - ra_min)*0.06
             dec_min, dec_max = src_data[:,1].min(), src_data[:,1].max()
-            ddec = (dec_max - dec_min) * 0.05
+            ddec = (dec_max - dec_min) * 0.06
 
             idx1 = pz_data[:,0] >= ra_min - dra
             idx2 = pz_data[:,0] <= ra_max + dra
@@ -132,12 +132,17 @@ elif mode == "hdf5_cata":
                     print(diff_rad.min(),diff_z.min())
                     print("%.4f %.4f  %.3f"%(src_data[i,0],src_data[i,1], src_data[i,10]))
                     exit()
-                # ODDS
+
+                # Z_B_MIN
                 dst_data[i,col] = pz_data_sub[target_idx, 3]
-                # expectation of Z
+                # Z_B_MAX
                 dst_data[i,col+1] = pz_data_sub[target_idx, 4]
-                # sum of P(z)
+                # ODDS
                 dst_data[i,col+2] = pz_data_sub[target_idx, 5]
+                # expectation of Z
+                dst_data[i,col+3] = pz_data_sub[target_idx, 6]
+                # sum(Pz)
+                dst_data[i,col+4] = pz_data_sub[target_idx, 7]
 
             # Nan check
             idx = numpy.isnan(src_data)

@@ -4,29 +4,30 @@ from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
 import numpy
 import h5py
-
+from tqdm import tqdm
 
 # prepare the photoz cat from the full Pz
-# ra dec Z_B ODDS P(Z)(70 columns)
-cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
-with open(cata_path + "/CFHT_pz_ori.tsv", "r") as f:
+# ra, dec, Z_B, Z_B_MIN, Z_B_MAX, ODDS, P(Z)(70 columns)
+cata_path = "/mnt/perc/hklee/CFHT/catalog"
+
+with open(cata_path + "/CFHTLens_Pz.tsv", "r") as f:
     cc = f.readlines()
 row = len(cc) - 1
-col = 74
+col = 76
 print(row, " obj")
 
 zbin = numpy.array([0.025 + i * 0.05 for i in range(70)])
 
 if argv[1] == "prepare":
 
-    data_1 = numpy.zeros((row, 6), dtype=numpy.float32)
+    data_1 = numpy.zeros((row, 8), dtype=numpy.float32)
     data_2 = numpy.zeros((row, 70), dtype=numpy.float32)
 
     pz_ab = []
     data_ab = []
-    for i in range(row):
+    for i in tqdm(range(row)):
 
-        cc_s = cc[i+1].replace(",","\t").split("\t")
+        cc_s = cc[i+1].replace("\"","").replace(" ","").split(",")
 
         if len(cc_s) != col:
             print("Line %d. Column does not match!!!"%i)
@@ -35,9 +36,9 @@ if argv[1] == "prepare":
             print(cc_s)
             exit()
 
-        for tag, element in enumerate(cc_s[:4]):
+        for tag, element in enumerate(cc_s[:6]):
             data_1[i, tag] = float(element)
-        for tag, element in enumerate(cc_s[4:]):
+        for tag, element in enumerate(cc_s[6:]):
             data_2[i, tag] = float(element)
 
         # the expectation of Z
@@ -52,8 +53,8 @@ if argv[1] == "prepare":
         #     data_ab.append(data_1[i])
 
         pz_norm = pz / pz_sum
-        data_1[i, 4] = numpy.sum(pz_norm*zbin)
-        data_1[i, 5] = pz_sum
+        data_1[i, 6] = numpy.sum(pz_norm*zbin)
+        data_1[i, 7] = pz_sum
 
     # pz_ab = numpy.array(pz_ab)
     # data_ab = numpy.array(data_ab)
@@ -62,6 +63,7 @@ if argv[1] == "prepare":
 
     h5f = h5py.File(cata_path + "/CFHT_pz.hdf5", "w")
     h5f["/data"] = data_1
+    h5f["/data"].attrs["/col_name"] = ["ra, dec, Z_B, Z_B_MIN, Z_B_MAX, ODDS, Z_expect, Pz_sum"]
     h5f["/pz"] = data_2
     h5f.close()
 
