@@ -143,29 +143,6 @@ void initialize(data_info *expo_info)
 
 }
 
-void line_count(char *file_path, int &lines)
-{
-    std::ifstream infile;
-	std::string str;
-	std::stringstream strs;
-
-	int i, j;
-    int line_count;
-
-    infile.open(file_path);
-	line_count = 0;
-
-    while (!infile.eof())
-    {
-        str.clear();
-        getline(infile, str);
-        line_count += 1;
-    }
-    infile.close();
-    lines = line_count-1;
-    // std::cout<<"Total "<<line_count-1<<" lines in sources list"<<std::endl;
-}
-
 void line_count(char *file_path, data_info *expo_info)
 {
     std::ifstream infile;
@@ -335,8 +312,6 @@ void task_prepare(int numprocs, int rank, data_info *expo_info)
         }
     }
     expo_info->task_expo_num = expo_info->task_expo_pair_labels_1.size();
-
-
 }
 
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label)

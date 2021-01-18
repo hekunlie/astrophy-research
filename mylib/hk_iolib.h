@@ -19,6 +19,9 @@
 /* file reading and writting*/
 /********************************************************************************************************************************************/
 
+void line_count(char *file_path, int &lines);
+/* count the lines in text file */
+
 void char_to_str(const char *char_in, std::string &string_out);//checked
 /* convert a char to string */
 void char_stack(char **char_in, const int chars_num, char *char_out,std::string linker="_");

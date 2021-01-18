@@ -1,5 +1,5 @@
-#ifndef GGL_FUNCTIONS_H
-#define GGL_FUNCTIONS_H
+#ifndef SCI_LIB_H
+#define SCI_LIB_H
 
 #define MAX_JACK 2000
 #define MAX_EXPO_NUM 50000
@@ -11,15 +11,20 @@
 #include<hk_iolib.h>
 #include<hk_mpi.h>
 #include<FQlib.h>
+#include<vector>
 
+/////////////////////////  GGL part  /////////////////////////////////////////
 struct ggl_data_info
 {
     int jack_id;
     int jack_num;
+    
     // the signal number, theta or comoving distance point number
     int signal_pts_num;
     
-    MY_FLOAT *sepration_bin;
+    MY_FLOAT back_dz;
+    MY_FLOAT *separation_bin;
+    int sep_bin_num;
 
     int pair_count;
 
@@ -37,8 +42,8 @@ struct ggl_data_info
     int mg_bin_num;
     int pdf_guess_num;
 
-    MY_FLOAT *gt_guess;
-    MY_FLOAT *delta_sigma_guess;
+    double *gt_guess;
+    double *delta_sigma_guess;
     MY_FLOAT *mg_bin;
 
     int chi_theta_block_len, chi_jack_block_len;
@@ -61,12 +66,12 @@ struct ggl_data_info
     double *worker_total_chi_count;
 
 
-
     int pos_inform_num;
 
     ///////////////////  the informs of each len exposure //////////////
     int len_expo_label;
     // the position informs of each len exposure file
+    
     char *len_expo_path[MAX_EXPO_NUM];
     char *len_expo_name[MAX_EXPO_NUM];
     int *len_data_row;
@@ -75,6 +80,8 @@ struct ggl_data_info
     int len_expo_num;
   
     MY_FLOAT *len_expo_data;
+    MY_FLOAT *len_width_informs; // the width of eahc len exposure file in unit of radian
+    MY_FLOAT *len_nearest_dist; // comoving or physical distance
     int len_expo_read_tag;
 
     int len_ra_col;
@@ -85,6 +92,7 @@ struct ggl_data_info
     int len_prop_dist_col;
     int len_jackid_col;
 
+    int len_expo_num_remain;
 
     ///////////////////  the informs of each source exposure //////////////
     MY_FLOAT *src_pos_informs[MAX_EXPO_NUM];
@@ -110,21 +118,19 @@ struct ggl_data_info
     int src_zerr_col;
     int src_com_dist_col;
     int src_prop_dist_col;
-
-
-    MY_FLOAT back_dz;
-    MY_FLOAT *separation_bin;
-    int sep_bin_num;
     
+
+    //////////////////  task distribution  //////////////////////
+    std::vector<int> task_len_expo_labels;
+    std::vector<int> task_src_expo_labels;
+    int task_expo_num;
 };
-
-
 
 void ggl_initialize(ggl_data_info *data_info);
 
-void ggl_read_list(char *file_path, ggl_data_info* expo_info);
+// void ggl_task_prepare(ggl_data_info *data_info);
 
-void line_count(char *file_path, int &lines);
+void ggl_read_list(char *file_path, ggl_data_info* expo_info);
 
 void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
 void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);
@@ -140,4 +146,7 @@ void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, i
 void ggl_collect_chi(ggl_data_info *data_info);
 
 void ggl_cal_signals(ggl_data_info * data_info);
+
+void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err);
+
 #endif

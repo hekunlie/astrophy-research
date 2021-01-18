@@ -134,7 +134,6 @@ struct data_info
 void initialize(data_info *expo_info);
 
 void line_count(char *file_path, data_info* expo_info);
-void line_count(char *file_path, int &lines);
 
 void read_list(char *file_path, data_info *expo_info, int &read_file_num);
 

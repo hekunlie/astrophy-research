@@ -5,6 +5,28 @@ std::ofstream default_loggers;
 /********************************************************************************************************************************************/
 /* file reading and writting*/
 /********************************************************************************************************************************************/
+void line_count(char *file_path, int &lines)
+{
+    std::ifstream infile;
+	std::string str;
+	std::stringstream strs;
+
+	int i, j;
+    int line_count;
+
+    infile.open(file_path);
+	line_count = 0;
+
+    while (!infile.eof())
+    {
+        str.clear();
+        getline(infile, str);
+        line_count += 1;
+    }
+    infile.close();
+    lines = line_count-1;
+    // std::cout<<"Total "<<line_count-1<<" lines in sources list"<<std::endl;
+}
 
 void char_to_str( const char *char_in, std::string &string_out)
 {

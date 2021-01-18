@@ -1,4 +1,4 @@
-#include<GG_lensing_functions_expo_wise.h>
+#include<science_cal_lib.h>
 #include<iostream>
 
 
@@ -19,6 +19,32 @@ int main(int argc, char *argv[])
 
     ggl_initialize(&data_info);
 
+    int foreground_expo_label = -1;
+    int thread_live;
+    MPI_Status status;
+    MPI_Request request;
+    
+    if(rank > 0)
+    {
+       while(true)
+       {
+            // then thread 0 will send the task, epxo_pair label, to it.
+            MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, rank, MPI_COMM_WORLD);
+            MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+       } 
+    }
+    else
+    {   
+        // CPU 0 is the master for task distribution
+        thread_live = numprocs - 1;
+
+        while (thread_live>0)
+        {
+            MPI_Irecv(&foreground_expo_label, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+            MPI_Wait(&request, &status);
+        }
+        
+    }
     
     for( long i=0;i<10000000;i++)
     {atan2(tan(i*i*i*i*i*i),cos(i*i*i*i))* cos(i*i*i*i)*tan(i*i*i*i*i*i);}

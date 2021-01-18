@@ -10,7 +10,7 @@ import warnings
 from sklearn.cluster import KMeans
 from astropy.cosmology import FlatLambdaCDM
 import time
-import prepare_tools
+
 
 warnings.filterwarnings('error')
 
@@ -21,7 +21,6 @@ omega_m0 = 0.27
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
-area_num = 4
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
 sep_bin_num = 13
 bin_st, bin_ed = 0.8, 21
@@ -131,8 +130,8 @@ if cmd == "prepare_pdf":
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
         h5f["/mg_bin"] = mg_bin
-        h5f["/g_guess"] = tan_shear_guess
-        h5f["/delta_sigma_guess"] = delta_sigma_guess
+        h5f["/g_guess"] = tan_shear_guess.astype(dtype=numpy.float64)
+        h5f["/delta_sigma_guess"] = delta_sigma_guess.astype(dtype=numpy.float64)
         h5f["/separation_bin"] = separation_bin
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
         h5f.close()
