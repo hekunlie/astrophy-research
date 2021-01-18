@@ -378,6 +378,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     initialize_arr(data_info->worker_sub_chi_count, data_info->chi_jack_block_len, 0);
     
+    ggl_read_len_exp(data_info, len_expo_label);
+    
     for(bkg=0; bkg<data_info->src_expo_num; bkg++)
     {   
         if(data_info->src_expo_needed_tag[bkg]< 0){continue;}

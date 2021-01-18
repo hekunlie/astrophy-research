@@ -143,6 +143,8 @@ void ggl_rotate_estimator(MY_FLOAT G1, MY_FLOAT G2, MY_FLOAT U, MY_FLOAT V, MY_F
 
 void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, int &bin_tag);
 
+void ggl_find_pair(ggl_data_info *data_info, int len_expo_label);
+
 void ggl_collect_chi(ggl_data_info *data_info);
 
 void ggl_cal_signals(ggl_data_info * data_info);
