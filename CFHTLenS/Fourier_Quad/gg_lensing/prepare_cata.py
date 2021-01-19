@@ -17,13 +17,13 @@ warnings.filterwarnings('error')
 
 # parameters
 # cosmological parameters
-omega_m0 = 0.27
+omega_m0 = 0.31
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
 sep_bin_num = 13
-bin_st, bin_ed = 0.8, 21
+bin_st, bin_ed = 0.04, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -39,19 +39,21 @@ redshift_idx = 10
 
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 150
-num_p = int(6/8*chi_guess_num)
-num_m = chi_guess_num - num_p
+chi_guess_num = 200
+# num_p = int(6/8*chi_guess_num)
+# num_m = chi_guess_num - num_p
 
-delta_sigma_guess_bin_p = numpy.linspace(0.1, 600, num_p).astype(numpy.float32)
-delta_sigma_guess_bin_m = numpy.linspace(0.1, 200, num_m).astype(numpy.float32)
+# delta_sigma_guess_bin_p = numpy.linspace(0.1, 500, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_m = numpy.linspace(0.1, 100, num_m).astype(numpy.float64)
+#
+# delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+# delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_m
+# delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
+# delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
-delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float32)
-delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_m
-delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
-delta_sigma_guess = numpy.sort(delta_sigma_guess)
+delta_sigma_guess = numpy.linspace(-100, 500, chi_guess_num).astype(numpy.float64)
 
-tan_shear_guess = numpy.linspace(-0.05, 0.1, chi_guess_num, dtype=numpy.float32)
+tan_shear_guess = numpy.linspace(-0.1, 0.1, chi_guess_num, dtype=numpy.float64)
 
 mg_bin_num = 10
 
@@ -87,7 +89,7 @@ Z_B_idx = 10
 Z_B_MIN_idx = 38
 Z_B_MAX_idx = 39
 odd_idx = 40
-odd_thresh = 0.7
+odd_thresh = 0.5
 
 
 #
@@ -129,9 +131,9 @@ if cmd == "prepare_pdf":
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_bin"] = mg_bin
-        h5f["/g_guess"] = tan_shear_guess.astype(dtype=numpy.float64)
-        h5f["/delta_sigma_guess"] = delta_sigma_guess.astype(dtype=numpy.float64)
+        h5f["/mg_bin"] = mg_bin*1000
+        h5f["/g_guess"] = tan_shear_guess
+        h5f["/delta_sigma_guess"] = delta_sigma_guess
         h5f["/separation_bin"] = separation_bin
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
         h5f.close()
@@ -257,7 +259,7 @@ if cmd == "prepare_foreground":
         for fns in expos_avail_list:
             buffer_expo.extend(fns)
 
-        with open(result_cata_path + "/foreground/foreground_list.dat", "w") as f:
+        with open(result_cata_path + "/foreground/foreground_source_list.dat", "w") as f:
             f.writelines(buffer_expo)
 
         log_inform = "%d exposures\n"%len(buffer_expo)
@@ -322,7 +324,7 @@ elif cmd == "prepare_background":
             expo_pos = numpy.array([ra_center, dec_center, cos_dec_center,
                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2)], dtype=numpy.float32)
 
-            # G1, G2, N, U, V, RA, DEC, COS(DEC), REDSHIFT, COM_DISTANCE
+            # G1, G2, N, U, V, RA, DEC, COS(DEC), Z, Z_ERR, PHYSICAL DISTANCE
             dst_data = numpy.zeros((src_num, 11), dtype=numpy.float32)
 
             dst_data[:, 0] = src_data[:, mg1_idx]
@@ -337,7 +339,7 @@ elif cmd == "prepare_background":
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
             dst_data[:, 8] = src_data[:, Z_B_idx]
             dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
-            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100/(1+dst_data[:, 8]) # in unit of h/Mpc
+            dst_data[:, 10] = cosmos.angular_diameter_distance(dst_data[:,8]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")

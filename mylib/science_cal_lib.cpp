@@ -1,5 +1,112 @@
 #include<science_cal_lib.h>
 
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, 
+double &result, const double precision_thresh, const bool integ_only)
+{
+	// Int f(x) = (f_1+f_2)/2*dx + (f_2+f_3)/2*dx + (f_3+f_4)/2*dx...
+	//				= (f_1 + 2*f_2 + 2*f_3 + .. 2*f_{n-1} + f_n)/2*dx
+	//				= ((f_1+f_n)/2 + f_2 + f_3 + .. + f_{n-1})*dx
+	int i, j, bin_num, bin_num_0;
+	int max_iters = 50, iters = 0;
+	double res_1, res_2, d_res;
+	double dz, z;
+	double scale = 1000 * C_0_hat;
+
+	// run first time, if it converges, it returns the result
+	// else, do the while block
+	bin_num = 5;
+	dz = (high_z - low_z) / (bin_num - 1);
+	res_1 = 0;
+	// (f_1 + f_n)/2
+	res_2 = (1. / sqrt(pow(1 + low_z, 3)*omg_m + omg_lam) + 1. / sqrt(pow(1 + high_z, 3)*omg_m + omg_lam))*0.5;
+	// add the median value
+	for (j = 1; j < bin_num - 1; j++)
+	{
+		z = low_z + j * dz;
+		res_2 = res_2 + 1. / sqrt(pow(1 + z, 3)*omg_m + omg_lam);
+	}
+	while (true)
+	{
+		d_res = fabs((res_2* dz - res_1)*scale);
+		if (d_res < precision_thresh)
+		{
+			break;
+		}
+		if (iters > max_iters)
+		{
+			std::cout << "com_dist() Max iteration, doesn't converge, " << d_res << "( " << precision_thresh << " )." << std::endl;
+			exit(0);
+		}
+		res_1 = res_2 * dz;
+
+		dz = dz * 0.5;
+
+		for (j = 0; j < bin_num - 1; j++)
+		{
+			z = low_z + (2 * j + 1) * dz;
+			res_2 = res_2 + 1. / sqrt(pow(1 + z, 3)*omg_m + omg_lam);
+		}
+		bin_num = bin_num + bin_num - 1;
+		iters++;
+	}
+	if (integ_only)
+	{
+		result = (res_2 * dz + res_1)*0.5;
+	}
+	else
+	{
+		result = (res_2 * dz + res_1)*0.5*scale;
+	}
+}
+
+/*void com_distance(const double low_z, const double high_z, const double omg_m,
+ const double omg_lam, double &result, const double precision_thresh, int integ_tag)
+{
+	int i, j, bin_num;
+	int max_run = 500;
+	double result_1, result_2, d_res;
+	double dz, z1, z2;
+
+	bin_num = 20;
+	result_1 = 0;
+	for (i = 0; i < max_run; i++)
+	{
+		dz = (high_z - low_z) / bin_num;
+		result_2 = 0;
+		for (j = 0; j < bin_num; j++)
+		{
+			z1 = low_z + j * dz;
+			z2 = z1 + dz;
+			result_2 = result_2 + 1. / sqrt(pow(1 + z1, 3)*omg_m + omg_lam) + 1. / sqrt(pow(1 + z2, 3)*omg_m + omg_lam);
+			//result_2 = result_2 + 1. / sqrt(z1*omg_m + pow(z1, 4)*omg_lam) + 1. / sqrt(z2*omg_m + pow(z2, 4)*omg_lam);
+		}
+		if (integ_tag == 0)
+		{
+			result_2 = result_2 * dz*0.5 * 1000 * C_0_hat;
+		}
+		else
+		{
+			result_2 = result_2 * dz*0.5;
+		}
+		if (fabs(result_2 - result_1) <= precision_thresh)
+		{
+			// comoving distance  [ Mpc/h ]
+			result = (result_2 + result_1) *0.5;
+			break;
+		}
+		else
+		{
+			result_1 = result_2;
+			bin_num *= 2;
+		}
+	}
+	if (i == max_run)
+	{
+		std::cout << "Max iteration, doesn't converge, " << result_2 - result_1 << "." << std::endl;
+		exit(0);
+	}
+}*/
+
 
 /////////////////////////  GGL part  /////////////////////////////////////////
 void ggl_initialize(ggl_data_info *data_info)
@@ -32,15 +139,51 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->len_expo_read_tag = 0;
     data_info->src_expo_read_tag = 0;
 
-    data_info->back_dz = 0.05;
+    data_info->back_dz = 0.1;
 
     data_info->pos_inform_num = 4;
 
-    // when read a len exposure, it will calculate the separation between the 
-    // len and src and labelled the src exposures.
+    data_info->crit_coeff = 1662895.2081868195;
+
+
+    // read fore/background exposure informs
+    sprintf(data_info->ggl_foreground_inform_path, "%s/cata/foreground/foreground_source_list.dat", data_info->ggl_total_path);
+    sprintf(data_info->ggl_background_inform_path, "%s/cata/background/background_source_list.dat", data_info->ggl_total_path);
+    line_count(data_info->ggl_foreground_inform_path, data_info->len_expo_num);
+    line_count(data_info->ggl_background_inform_path, data_info->src_expo_num);
+    
+    if(data_info->rank == 0)
+    {   
+        std::cout<<data_info->ggl_total_path<<std::endl;
+        sprintf(data_info->log_infrom, "Foreground %d expos.  Background %d expos\n", data_info->len_expo_num, data_info->src_expo_num);
+        std::cout<<data_info->log_infrom;
+    }
+
+    // data_info->len_nearest_dist = new MY_FLOAT[data_info->len_expo_num];
+
+    for(i=0; i<data_info->len_expo_num; i++)
+    {
+         data_info->len_expo_path[i] = new char[450];
+         data_info->len_expo_name[i] = new char[50];
+    }
+    data_info->len_data_row = new int[data_info->len_expo_num];
+    data_info->len_expo_jackid = new int[data_info->len_expo_num];
     data_info->src_expo_needed_tag = new int[data_info->src_expo_num];
     initialize_arr(data_info->src_expo_needed_tag, data_info->src_expo_num,-1);
+
+
+    for(i=0; i<data_info->src_expo_num; i++)
+    { 
+        data_info->src_expo_path[i] = new char[450];
+        data_info->src_expo_name[i] = new char[50];
+        data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num*data_info->src_expo_num];
+    }
+    data_info->src_data_row = new int[data_info->src_expo_num];
     
+
+    ggl_read_len_list(data_info->ggl_foreground_inform_path, data_info);
+    ggl_read_src_list(data_info->ggl_background_inform_path, data_info);
+
 
     // read G bins
     sprintf(data_info->ggl_pdf_inform_path,"%s/cata/pdf_inform.hdf5", data_info->ggl_total_path);
@@ -49,7 +192,6 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->mg_bin = new MY_FLOAT[data_info->mg_bin_num];
     read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->mg_bin);
     data_info->mg_bin_num = data_info->mg_bin_num - 1;
-
 
     // read signal guesses
     sprintf(data_info->set_name,"/delta_sigma_guess");
@@ -84,63 +226,32 @@ void ggl_initialize(ggl_data_info *data_info)
     }
     initialize_arr(data_info->worker_total_chi_count, data_info->total_chi_count_len, 0);
     initialize_arr(data_info->worker_sub_chi_count, data_info->chi_jack_block_len, 0);
-    
-
-    // read fore/background exposure informs
-    sprintf(data_info->ggl_foreground_inform_path, "%s/foreground/foreground_list.dat", data_info->ggl_total_path);
-    sprintf(data_info->ggl_background_inform_path, "%s/background/background_list.dat", data_info->ggl_total_path);
-    line_count(data_info->ggl_foreground_inform_path, data_info->len_expo_num);
-    line_count(data_info->ggl_background_inform_path, data_info->src_expo_num);
-
-    // for task distribution
-    data_info->len_expo_num_remain = data_info->len_expo_num;
-
-    // data_info->len_nearest_dist = new MY_FLOAT[data_info->len_expo_num];
-
-
-    for(i=0; i<data_info->len_expo_num; i++)
-    {
-         data_info->len_expo_path[i] = new char[450];
-         data_info->len_expo_name[i] = new char[50];
-    }
-    data_info->len_data_row = new int[data_info->len_expo_num];
-    data_info->len_expo_jackid = new int[data_info->len_expo_num];
-
-    for(i=0; i<data_info->src_expo_num; i++)
-    { 
-        data_info->src_expo_path[i] = new char[450];
-        data_info->src_expo_name[i] = new char[50];
-        data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num*data_info->src_expo_num];
-    }
-    data_info->src_data_row = new int[data_info->src_expo_num];
-
-    ggl_read_len_list(data_info->ggl_foreground_inform_path, data_info);
-    ggl_read_src_list(data_info->ggl_background_inform_path, data_info);
 
     if(data_info->rank == 0)
-    {   
-        char cal_inform[500];
-        std::cout<<data_info->ggl_total_path<<std::endl;
-
-        sprintf(cal_inform, "Foreground %d expos.  Background %d expos\n", data_info->len_expo_num, data_info->src_expo_num);
-        std::cout<<cal_inform;
-
-        sprintf(cal_inform,"G bins: %d.\n", data_info->mg_bin_num);
-        std::cout<<cal_inform;
+    {  
+        sprintf(data_info->log_infrom,"G bins: %d.\n", data_info->mg_bin_num);
+        std::cout<<data_info->log_infrom;
         show_arr(data_info->mg_bin,1,data_info->mg_bin_num+1);
         std::cout<<std::endl;
 
-        sprintf(cal_inform,"PDF_guess_num: %d.\n", data_info->pdf_guess_num);
-        std::cout<<cal_inform;
-        show_arr(data_info->gt_guess,1,data_info->pdf_guess_num);
-        std::cout<<std::endl;
-        show_arr(data_info->delta_sigma_guess,1,data_info->pdf_guess_num);
-        std::cout<<std::endl;
+        sprintf(data_info->log_infrom,"PDF_guess_num: %d.\n", data_info->pdf_guess_num);
+        std::cout<<data_info->log_infrom;
+        // show_arr(data_info->gt_guess,1,data_info->pdf_guess_num);
+        // std::cout<<std::endl;
+        // show_arr(data_info->delta_sigma_guess,1,data_info->pdf_guess_num);
+        // std::cout<<std::endl;
 
-        sprintf(cal_inform,"Separation bins: %d", data_info->sep_bin_num);
-        std::cout<<cal_inform;
+        sprintf(data_info->log_infrom,"Separation bins: %d\n", data_info->sep_bin_num);
+        std::cout<<data_info->log_infrom;
         show_arr(data_info->separation_bin,1,data_info->sep_bin_num+1);
         std::cout<<std::endl;
+
+        sprintf(data_info->log_infrom,"Chi len\nof one pts: %d\nof %d pts: %d\nof one jack: %d\nof %d jackknife: %d\n", 
+        data_info->chi_theta_block_len, data_info->signal_pts_num, 
+        data_info->chi_signal_block_len,data_info->chi_jack_block_len,
+        data_info->jack_num, data_info->total_chi_count_len);
+        std::cout<<data_info->log_infrom;
+
     }
 }
 
@@ -186,9 +297,12 @@ void ggl_read_len_list(char *file_path, ggl_data_info* data_info)
         strs << str;
 
         strs >> data_info->len_expo_path[line_count];
+        // file name
         strs >> data_info->len_expo_name[line_count];
+        // galaxy count
         strs >> data_info->len_data_row[line_count];
-        strs >> data_info->len_nearest_dist[line_count];
+        // strs >> data_info->len_nearest_dist[line_count];
+        // jack id
         strs >> data_info->len_expo_jackid[line_count];
 
         // std::cout << str << std::endl;
@@ -217,11 +331,17 @@ void ggl_read_src_list(char *file_path, ggl_data_info* data_info)
         strs << str;
 
         strs >> data_info->src_expo_path[line_count];
+        // file name
         strs >> data_info->src_expo_name[line_count];
+        // galaxy count
         strs >> data_info->src_data_row[line_count];
+        // ra of the exposure center
         strs >> data_info->src_pos_informs[data_info->pos_inform_num][0];
+        // dec of the exposure center
         strs >> data_info->src_pos_informs[data_info->pos_inform_num][1];
+        // cos(dec) of the exposure center
         strs >> data_info->src_pos_informs[data_info->pos_inform_num][2];
+        // half of the diagonal 
         strs >> data_info->src_pos_informs[data_info->pos_inform_num][3];
 
         // std::cout << str << std::endl;
@@ -239,10 +359,12 @@ void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label)
     int size;
     sprintf(set_name,"/data");
     
-    size = data_info->len_data_col*data_info->len_data_row[len_expo_label];
+    read_h5_datasize(data_info->len_expo_path[len_expo_label], set_name,size);
     data_info->len_expo_data = new MY_FLOAT[size];
     read_h5(data_info->len_expo_path[len_expo_label], set_name, data_info->len_expo_data);
-    
+
+    data_info->len_data_col = size/data_info->len_data_row[len_expo_label];
+
     data_info->len_expo_read_tag = 1;
 }
 
@@ -255,10 +377,12 @@ void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label)
     int size;
     sprintf(set_name,"/data");
     
-    size = data_info->src_data_col*data_info->src_data_row[src_expo_label];
+    read_h5_datasize(data_info->src_expo_path[src_expo_label], set_name, size);
     data_info->src_expo_data = new MY_FLOAT[size];
     read_h5(data_info->src_expo_path[src_expo_label], set_name, data_info->src_expo_data);
     
+    data_info->src_data_col = size/data_info->src_data_row[src_expo_label];
+
     data_info->src_expo_read_tag = 1;
 }
 
@@ -277,24 +401,22 @@ void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label)
         len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
         len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
         len_cos_dec = data_info->len_expo_data[ifg_row + data_info->len_cos_dec_col];
-        
-        max_sep_theta = data_info->separation_bin[data_info->sep_bin_num+1]/
-        data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]*1.2;
 
-        // if stack the signal in physical coordinate
+        // if stack the signal in physical coordinate,
+        // 1.2 for safety, enlarges the search radius
 #ifdef GGL_PROP_DIST_STACK
         max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
-        data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
+        data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col]*180/Pi;
 #else
         max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
-        data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
+        data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]*180/Pi;
 #endif
 
         for(bkg=0; bkg<data_info->src_expo_num; bkg++)
         {
             dra = (len_ra - data_info->src_pos_informs[bkg][0])*len_cos_dec;
             ddec = len_dec - data_info->src_pos_informs[bkg][1];
-            sep_theta = (sqrt(dra*dra + ddec*ddec) - data_info->src_pos_informs[bkg][2])/180*Pi;
+            sep_theta = sqrt(dra*dra + ddec*ddec) - data_info->src_pos_informs[bkg][2];
 
             if(sep_theta <= max_sep_theta){data_info->src_expo_needed_tag[bkg] = 1;}
         }
@@ -361,6 +483,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     MY_FLOAT len_ra, len_dec, src_ra, src_dec;
     MY_FLOAT len_z, len_dist, src_z, src_dist;
+    MY_FLOAT len_z_err, len_z_dz;
     MY_FLOAT dra, ddec, delta_radius;
     MY_FLOAT sep_dist, sep_theta;
     MY_FLOAT sigma_crit, coeff;
@@ -377,12 +500,15 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     st = clock();
 
     initialize_arr(data_info->worker_sub_chi_count, data_info->chi_jack_block_len, 0);
-    
+
     ggl_read_len_exp(data_info, len_expo_label);
-    
+
+    ggl_find_src_needed(data_info, len_expo_label);
+
+
     for(bkg=0; bkg<data_info->src_expo_num; bkg++)
     {   
-        if(data_info->src_expo_needed_tag[bkg]< 0){continue;}
+        if(data_info->src_expo_needed_tag[bkg]< 1){continue;}
         
         ggl_read_src_exp(data_info, bkg);
 
@@ -394,17 +520,22 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
             len_z = data_info->len_expo_data[ifg_row + data_info->len_z_col];
             len_dist = data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
 
+            len_z_err = len_z + data_info->len_expo_data[ifg_row + data_info->src_zerr_col];
+            len_z_dz = len_z + data_info->back_dz;
+
             // stacking in physical or comoving coordinate
 #ifdef GGL_PROP_DIST_STACK
-            coeff = 1./len_dist;
+            coeff = data_info->crit_coeff/len_dist;
 #else
-            coeff = 1./len_dist/(1+len_z)/(1+len_z);
+            coeff = data_info->crit_coeff/len_dist/(1+len_z)/(1+len_z);
 #endif            
             for(ibkg=0; ibkg<data_info->src_data_row[bkg]; ibkg++)
             {   
                 ibkg_row = ibkg*data_info->src_data_col;
-                src_z = data_info->src_expo_data[ibkg_row + data_info->src_z_col] - data_info->back_dz;
-                if(len_z <= src_z){continue;}
+                src_z = data_info->src_expo_data[ibkg_row + data_info->src_z_col];
+
+                if(len_z_err >= src_z or len_z_dz >= src_z){continue;}
+
 
                 src_ra = data_info->src_expo_data[ibkg_row + data_info->src_ra_col];
                 src_dec = data_info->src_expo_data[ibkg_row + data_info->src_dec_col];
@@ -507,7 +638,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ed = clock();
     char times[100];
-    sprintf(times,"Finished in %.2f sec", (ed-st)/CLOCKS_PER_SEC);
+    sprintf(times,"%d %d Finished in %.2f sec",data_info->rank, len_expo_label, (ed-st)/CLOCKS_PER_SEC);
     std::cout<<times<<std::endl;
 }
 
@@ -519,13 +650,14 @@ void ggl_collect_chi(ggl_data_info *data_info)
     if (data_info->rank > 0)
     {
         MPI_Send(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);
+        std::cout<<"S"<<data_info->rank<<std::endl;
     }
     else
     {
         for(i=1;i<data_info->numprocs;i++)
         {
             MPI_Recv(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-            
+            std::cout<<"S"<<i<<std::endl;
             for(j=0;j<data_info->total_chi_count_len;j++)
             {data_info->total_chi_count[j] += data_info->worker_total_chi_count[j];}
         }

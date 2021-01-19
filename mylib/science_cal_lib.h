@@ -1,6 +1,13 @@
 #ifndef SCI_LIB_H
 #define SCI_LIB_H
 
+
+#include<hk_iolib.h>
+#include<hk_mpi.h>
+#include<FQlib.h>
+#include<vector>
+
+
 #define MAX_JACK 2000
 #define MAX_EXPO_NUM 50000
 #define MY_FLOAT float
@@ -8,14 +15,33 @@
 #define GGL_PROP_DIST_STACK
 
 
-#include<hk_iolib.h>
-#include<hk_mpi.h>
-#include<FQlib.h>
-#include<vector>
+
+const double C_0_hat = 2.99792458; // 10^8
+const double C_0 = 2.99792458*1.e8;// speed of light m/s
+
+const double H_0_hat = 0.70;
+const double H_0 = 70; //  Km/s/Mpc
+
+const double G_0_hat= 6.6740831; //  10^{-11}
+const double G_0 = 6.6740831*1.e-11; //  m^3 s^{-2} Kg^{-1}
+
+const double One_Light_Year_hat = 9.4607304725808;// 10^15
+const double One_Light_Year = 9.4607304725808*1.e15;// meter
+
+const double One_Mpc_hat = 3.085677581; // 10^22
+const double One_Mpc = 3.085677581*1.e22;// meter
+
+const double M_sun_hat = 1.9885;
+const double M_sun = 1.9885*1.e30;//Kg
+
+void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh, const bool integ_only);
+
 
 /////////////////////////  GGL part  /////////////////////////////////////////
 struct ggl_data_info
-{
+{   
+    char log_infrom[500];
+
     int jack_id;
     int jack_num;
     
@@ -65,7 +91,8 @@ struct ggl_data_info
     double *worker_sub_chi_count;
     double *worker_total_chi_count;
 
-
+    MY_FLOAT crit_coeff;
+    
     int pos_inform_num;
 
     ///////////////////  the informs of each len exposure //////////////
@@ -80,7 +107,7 @@ struct ggl_data_info
     int len_expo_num;
   
     MY_FLOAT *len_expo_data;
-    MY_FLOAT *len_width_informs; // the width of eahc len exposure file in unit of radian
+    MY_FLOAT *len_width_informs; // the width of each len exposure file in unit of radian
     MY_FLOAT *len_nearest_dist; // comoving or physical distance
     int len_expo_read_tag;
 
@@ -92,7 +119,6 @@ struct ggl_data_info
     int len_prop_dist_col;
     int len_jackid_col;
 
-    int len_expo_num_remain;
 
     ///////////////////  the informs of each source exposure //////////////
     MY_FLOAT *src_pos_informs[MAX_EXPO_NUM];
@@ -130,7 +156,8 @@ void ggl_initialize(ggl_data_info *data_info);
 
 // void ggl_task_prepare(ggl_data_info *data_info);
 
-void ggl_read_list(char *file_path, ggl_data_info* expo_info);
+void ggl_read_len_list(char *file_path, ggl_data_info* expo_info);
+void ggl_read_src_list(char *file_path, ggl_data_info* expo_info);
 
 void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
 void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);

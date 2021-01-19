@@ -10,21 +10,28 @@ void line_count(char *file_path, int &lines)
     std::ifstream infile;
 	std::string str;
 	std::stringstream strs;
+	if(file_exist(file_path))
+	{
+		int i, j;
+		int line_count;
 
-	int i, j;
-    int line_count;
+		infile.open(file_path);
+		line_count = 0;
 
-    infile.open(file_path);
-	line_count = 0;
-
-    while (!infile.eof())
-    {
-        str.clear();
-        getline(infile, str);
-        line_count += 1;
-    }
-    infile.close();
-    lines = line_count-1;
+		while (!infile.eof())
+		{
+			str.clear();
+			getline(infile, str);
+			line_count += 1;
+		}
+		infile.close();
+		lines = line_count-1;
+	}
+	else
+	{
+		std::cout<<"Can't find "<<file_path<<std::endl;
+		exit(0);
+	}
     // std::cout<<"Total "<<line_count-1<<" lines in sources list"<<std::endl;
 }
 
