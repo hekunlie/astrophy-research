@@ -14,8 +14,8 @@ from multiprocessing import Pool
 
 
 def log_prior(paras):
-    As, omega_m0, omega_bm0_ratio, h = paras
-    if 1 < As < 5 and 0.05 < omega_m0 < 0.5 and 0.05 < omega_bm0_ratio < 0.5 and 0.4 < h < 1:
+    As, omega_m0, omega_bm0_ratio = paras
+    if 1 < As < 5 and 0.05 < omega_m0 < 0.5 and 0.05 < omega_bm0_ratio < 0.5:
         return 0.0
     else:
         return -numpy.inf
@@ -31,10 +31,10 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
     else:
         # print(lp)
         # t1 = time.time()
-        As, omega_m0, omega_bm0_ratio, h = paras
+        As, omega_m0, omega_bm0_ratio = paras
         omega_bm0 = omega_m0*omega_bm0_ratio
         omega_cm0 = omega_m0 - omega_bm0
-
+        h = 0.6737
         As = As*10**(-9)
         # print(paras)
         try:
@@ -45,7 +45,7 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
             chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
             return chi_sq
         except:
-            print(As,omega_cm0,omega_bm0,h)
+            print(As,omega_cm0,omega_bm0)
             return -numpy.inf
 
         # sigma8_buffer[step_count[0]] = sigma8
@@ -70,8 +70,8 @@ h5f = h5py.File("./data/stack_data.hdf5","r")
 data = h5f["/data"][()]
 h5f.close()
 
-redshift_bin_num = 6
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+redshift_bin_num = 5
+redshift_bin = numpy.array([0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 nz_bin_num = 340
 
@@ -109,9 +109,9 @@ print("Data vector len: ", xi.shape)
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
-nwalkers, ndim = thread, 4
+nwalkers, ndim = thread, 3
 initial = numpy.zeros((nwalkers, ndim))
-para_lim = [[1,5],[0.1,0.5],[0.05,0.5],[0.1,1]]
+para_lim = [[1,5],[0.1,0.5],[0.05,0.5]]
 for i in range(ndim):
     a,b = para_lim[i]
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)
@@ -123,8 +123,10 @@ with Pool(thread) as pool:
 
     sampler.run_mcmc(initial, nsteps, progress=True)
 
+emcee.backends.HDFBackend("./chain_cache.hdf5")
+
 chain = sampler.get_chain()
-flat_chain = sampler.get_chain(discard=3000, thin=1, flat=True)
+flat_chain = sampler.get_chain(discard=5000, thin=15, flat=True)
 
 numpy.savez("./data/chain_%s.npz"%expo_type, chain, flat_chain)
 
