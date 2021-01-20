@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
     int task_label;
     MPI_Status status;
     MPI_Request request;
+    double time_st, time_ed;
+
+    time_st = clock();
 
     // initialization
     strcpy(data_info.ggl_total_path, argv[1]);
@@ -82,7 +85,9 @@ int main(int argc, char *argv[])
 
     std::cout<<rank<<std::endl;
     ggl_collect_chi(&data_info);
-
+    time_ed = clock();
+    sprintf(data_info.log_infrom,"worker %d. Finish in %.2f sec\n", data_info.rank, (time_ed-time_st)/CLOCKS_PER_SEC);
+    std::cout<<data_info.log_infrom; 
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Finalize();

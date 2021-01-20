@@ -176,7 +176,7 @@ void ggl_initialize(ggl_data_info *data_info)
     { 
         data_info->src_expo_path[i] = new char[450];
         data_info->src_expo_name[i] = new char[50];
-        data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num*data_info->src_expo_num];
+        data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num];
     }
     data_info->src_data_row = new int[data_info->src_expo_num];
     
@@ -336,13 +336,13 @@ void ggl_read_src_list(char *file_path, ggl_data_info* data_info)
         // galaxy count
         strs >> data_info->src_data_row[line_count];
         // ra of the exposure center
-        strs >> data_info->src_pos_informs[data_info->pos_inform_num][0];
+        strs >> data_info->src_pos_informs[line_count][0];
         // dec of the exposure center
-        strs >> data_info->src_pos_informs[data_info->pos_inform_num][1];
+        strs >> data_info->src_pos_informs[line_count][1];
         // cos(dec) of the exposure center
-        strs >> data_info->src_pos_informs[data_info->pos_inform_num][2];
+        strs >> data_info->src_pos_informs[line_count][2];
         // half of the diagonal 
-        strs >> data_info->src_pos_informs[data_info->pos_inform_num][3];
+        strs >> data_info->src_pos_informs[line_count][3];
 
         // std::cout << str << std::endl;
         line_count += 1;
@@ -395,29 +395,32 @@ void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label)
 
     initialize_arr(data_info->src_expo_needed_tag, data_info->src_expo_num, -1);
 
+    //std::cout<<len_expo_label<<" "<<data_info->len_data_row[len_expo_label]<<std::endl;
+
+
     for(ifg=0; ifg<data_info->len_data_row[len_expo_label]; ifg++)
     {   
+
         ifg_row = ifg*data_info->len_data_col;
         len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
         len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
         len_cos_dec = data_info->len_expo_data[ifg_row + data_info->len_cos_dec_col];
 
         // if stack the signal in physical coordinate,
-        // 1.2 for safety, enlarges the search radius
+        // 1.5 for safety, enlarges the search radius
 #ifdef GGL_PROP_DIST_STACK
-        max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
+        max_sep_theta = 1.5*data_info->separation_bin[data_info->sep_bin_num]/
         data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col]*180/Pi;
 #else
-        max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num+1]/
+        max_sep_theta = 1.5*data_info->separation_bin[data_info->sep_bin_num+1]/
         data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]*180/Pi;
-#endif
-
+#endif       
         for(bkg=0; bkg<data_info->src_expo_num; bkg++)
         {
-            dra = (len_ra - data_info->src_pos_informs[bkg][0])*len_cos_dec;
-            ddec = len_dec - data_info->src_pos_informs[bkg][1];
+            dra = (data_info->src_pos_informs[bkg][0] - len_ra)*len_cos_dec;
+            ddec = data_info->src_pos_informs[bkg][1] - len_dec;
             sep_theta = sqrt(dra*dra + ddec*ddec) - data_info->src_pos_informs[bkg][2];
-
+            // std::cout<<data_info->src_pos_informs[bkg][0]<<" "<<data_info->src_pos_informs[bkg][1]<<" "<<len_ra<<" "<<len_dec<<std::endl;
             if(sep_theta <= max_sep_theta){data_info->src_expo_needed_tag[bkg] = 1;}
         }
     }
@@ -495,7 +498,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int pre_bin_tag_shear1, pre_bin_tag_shear2, bin_tag_shear1, bin_tag_shear2;
 
     MY_FLOAT rotation_mat[6];
-
+    int pair_count = 0;
 
     st = clock();
 
@@ -505,11 +508,10 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ggl_find_src_needed(data_info, len_expo_label);
 
-
     for(bkg=0; bkg<data_info->src_expo_num; bkg++)
     {   
         if(data_info->src_expo_needed_tag[bkg]< 1){continue;}
-        
+
         ggl_read_src_exp(data_info, bkg);
 
         for(ifg=0; ifg<data_info->len_data_row[len_expo_label]; ifg++)
@@ -559,6 +561,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                 
                 if(sep_bin_tag > -1)
                 {   
+                    pair_count ++;
 
                     data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + sep_bin_tag] += sep_theta;
                     data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + data_info->signal_pts_num + sep_bin_tag] += sep_dist;
@@ -638,7 +641,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ed = clock();
     char times[100];
-    sprintf(times,"%d %d Finished in %.2f sec",data_info->rank, len_expo_label, (ed-st)/CLOCKS_PER_SEC);
+    sprintf(times,"worker %d. %d Lens file. Finished in %.2f sec. %d Lenses, %d pairs",
+            data_info->rank, len_expo_label, (ed-st)/CLOCKS_PER_SEC, data_info->len_data_row[len_expo_label], pair_count);
     std::cout<<times<<std::endl;
 }
 
@@ -650,14 +654,13 @@ void ggl_collect_chi(ggl_data_info *data_info)
     if (data_info->rank > 0)
     {
         MPI_Send(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);
-        std::cout<<"S"<<data_info->rank<<std::endl;
     }
     else
     {
         for(i=1;i<data_info->numprocs;i++)
         {
             MPI_Recv(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-            std::cout<<"S"<<i<<std::endl;
+        
             for(j=0;j<data_info->total_chi_count_len;j++)
             {data_info->total_chi_count[j] += data_info->worker_total_chi_count[j];}
         }
