@@ -14,6 +14,9 @@ zbin_num = 6#int(argv[1])
 theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 
+# discard the first bin
+discard_bins = [0]
+
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
 pic_nm_p = data_path + "/xi_plus_mcmc_result_%d_compare.png" % resample_num
@@ -43,21 +46,26 @@ for ii in range(2):
 
     # print(list(h5f["/0"].keys()))
 
-    theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm = tool_box.get_result_data(file_path, pts_num, resample_num)
-    datas.append([theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm])
+    results = tool_box.get_result_data(file_path, theta_bin_num,zbin_num, resample_num)
+    theta, xi_p, xi_p_sig, xi_p_sub, xi_m, xi_m_sig, xi_m_sub = results
 
-    inv_cov_p = numpy.linalg.pinv(cov_p)
-    inv_cov_m = numpy.linalg.pinv(cov_m)
-    inv_cov_pm = numpy.linalg.pinv(cov_pm)
+    use_cols = tool_box.get_zbin_mask(zbin_num, theta_bin_num, discard_bins)
+    idx = use_cols > 0
+    cov_p, inv_cov_p, cov_m, inv_cov_m, cov_pm, inv_cov_pm = tool_box.get_cov(xi_p_sub[idx], xi_m_sub[idx])
+    n1, n2 = xi_p[idx].shape[0], xi_m[idx].shape[0]
+    xi_pm = numpy.zeros((n1+n2, ))
+    xi_pm[:n1] = xi_p[idx]
+    xi_pm[n1:] = xi_m[idx]
+
+    datas.append([theta, xi_p, xi_p_sig, xi_m, xi_m_sig, use_cols])
 
     cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
 
-    numpy.savez(result_npz, theta,
-                xi_p, xi_p_sig, cov_p, inv_cov_p,
-                xi_m, xi_m_sig, cov_m, inv_cov_m,
+    numpy.savez(result_npz, theta[idx],
+                xi_p[idx], xi_p_sig[idx], cov_p, inv_cov_p,
+                xi_m[idx], xi_m_sig[idx], cov_m, inv_cov_m,
                 xi_pm, cov_pm, inv_cov_pm)
-
-
+    print(result_npz)
 
 for i in range(len(cov)):
 
@@ -72,7 +80,7 @@ for i in range(len(cov)):
                 arr = cov[i][j][0]
                 cov_scale = numpy.zeros_like(arr)
                 y, x = arr.shape
-                print(y, x)
+                print(y,x)
                 for p in range(y):
                     for q in range(x):
                         cov_scale[p, q] = arr[p, q] / numpy.sqrt(arr[p, p] * arr[q, q])
@@ -108,6 +116,8 @@ img.set_style()
 for ii in range(2):
 
     theta, xi_p, xi_p_sig = datas[ii][:3]
+    use_cols = datas[ii][-1]
+
     if ii == 0:
         for i in range(zbin_num):
             for j in range(zbin_num-i,zbin_num):
@@ -119,22 +129,30 @@ for ii in range(2):
     img.axis_type(1,"minor",5)
 
     tag = 0
+    legend_tag = 0
     for i in range(zbin_num):
         for j in range(zbin_num):
             img_row = zbin_num - j - 1
             img_col = i
+            st, ed = int(tag * theta_bin_num), int((tag + 1) * theta_bin_num)
+
             if j >= i:
-                st, ed = int(tag*theta_bin_num), int((tag+1)*theta_bin_num)
                 # print(theta[st:ed])
+                alpha = 0.4
+                if use_cols[st:ed].sum() > 1:
+                    alpha = 1
 
-                img.axs[img_row][img_col].errorbar(theta[0,st:ed]+theta[0,st:ed]*0.1*ii, xi_p[0,st:ed],yerr=xi_p_sig[0,st:ed],
+                img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_p[st:ed],yerr=xi_p_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
-                                                   marker="o",fmt=" ",mfc="none",ms=12,label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5)
-                if tag == 0:
-                    img.axs[img_row][img_col].legend(loc="lower left",bbox_to_anchor=(4,1),
-                                                     fancybox=False,fontsize=img.legend_size)
+                                                   marker="o",fmt=" ",mfc="none",ms=12,
+                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5, alpha=alpha)
+                if use_cols[st:ed].sum() > 1 and legend_tag == 0:
+                    legend_tag = 1
+                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
+                                                     fancybox=False, fontsize=img.legend_size)
 
-                img.axs_text(img_row, img_col, 0.8, 0.8, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size, text_color="k")
+                img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1),
+                             text_fontsize=img.legend_size-3, text_color="k")
 
                 if ii == 0 and pk_lines_tag == 1:
 
@@ -153,8 +171,6 @@ for ii in range(2):
 
                 tag += 1
 
-
-
 img.save_img(pic_nm_p)
 img.close_img()
 print(pic_nm_p)
@@ -170,7 +186,8 @@ pic_nm = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 
 for ii in range(2):
 
-    theta, xi_m, xi_m_sig = datas[ii][0],datas[ii][4],datas[ii][5]
+    theta, xi_m, xi_m_sig = datas[ii][0],datas[ii][3],datas[ii][4]
+    use_cols = datas[ii][-1]
     if ii == 0:
         for i in range(zbin_num):
             for j in range(zbin_num-i,zbin_num):
@@ -182,22 +199,28 @@ for ii in range(2):
     img.axis_type(1,"minor",5)
 
     tag = 0
+    legend_tag = 0
     for i in range(zbin_num):
         for j in range(zbin_num):
             img_row = zbin_num - j - 1
             img_col = i
+            st, ed = int(tag * theta_bin_num), int((tag + 1) * theta_bin_num)
             if j >= i:
-                st, ed = int(tag*theta_bin_num), int((tag+1)*theta_bin_num)
                 # print(theta[st:ed])
-
-                img.axs[img_row][img_col].errorbar(theta[0,st:ed]+theta[0,st:ed]*0.1*ii, xi_m[0,st:ed],yerr=xi_m_sig[0,st:ed],
+                alpha = 0.4
+                if use_cols[st:ed].sum() > 1:
+                    alpha = 1
+                img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_m[st:ed],yerr=xi_m_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
-                                                   marker="o",fmt=" ",mfc="none",ms=12,label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5)
-                if tag == 0:
-                    img.axs[img_row][img_col].legend(loc="lower left",bbox_to_anchor=(4,1),
-                                                     fancybox=False,fontsize=img.legend_size)
+                                                   marker="o",fmt=" ",mfc="none",ms=12,
+                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5,alpha=alpha)
+                if use_cols[st:ed].sum() > 1 and legend_tag == 0:
+                    legend_tag = 1
+                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
+                                                     fancybox=False, fontsize=img.legend_size)
 
-                img.axs_text(img_row, img_col, 0.8, 0.8, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size, text_color="k")
+                img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1),
+                             text_fontsize=img.legend_size-3, text_color="k")
 
                 if ii == 0 and pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag], c="k",ls="dashdot", label=pk_line_label)

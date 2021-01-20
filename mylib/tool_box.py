@@ -1530,7 +1530,7 @@ def get_time_now():
 
 
 
-def get_result_data(result_h5file_path, theta_num, zbin_num, resample_num, discard_bins):
+def get_result_data(result_h5file_path, theta_num, zbin_num, resample_num):
     '''
     read data from the result file of the correlation calculation from C++ code
     :param result_h5file_path: directory to the result file, hdf5
@@ -1539,46 +1539,71 @@ def get_result_data(result_h5file_path, theta_num, zbin_num, resample_num, disca
     :param discard_bins: list, bins to be ignored
     :return:
     '''
-
     total_pts_num = int(theta_num * (zbin_num ** 2 + zbin_num) / 2)
 
     h5f = h5py.File(result_h5file_path, "r")
-    xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).reshape((1,total_pts_num))
-    xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).reshape((1,total_pts_num))
+    xi_p = (-h5f["/%d/tt"%resample_num][()] - h5f["/%d/xx"%resample_num][()]).flatten()
+    xi_m = (-h5f["/%d/tt"%resample_num][()] + h5f["/%d/xx"%resample_num][()]).flatten()
 
-    xi_pm = numpy.zeros((1, int(2*total_pts_num)))
-    xi_pm[0, :total_pts_num] = xi_p
-    xi_pm[0, total_pts_num:] = xi_m
+    theta = h5f["/%d/theta"%resample_num][()].flatten()
 
-    theta = h5f["/%d/theta"%resample_num][()].reshape((1,total_pts_num))
-    # print(theta.reshape((21,7)))
+    xi_pm = numpy.zeros((int(2*total_pts_num,)))
+    xi_pm[:total_pts_num] = xi_p
+    xi_pm[total_pts_num:] = xi_m
 
     xi_p_sig = numpy.zeros_like(xi_p)
     xi_m_sig = numpy.zeros_like(xi_p)
 
     # results of each jack
-    xi_p_sub = numpy.zeros((resample_num, total_pts_num))
-    xi_m_sub = numpy.zeros((resample_num, total_pts_num))
+    xi_p_sub = numpy.zeros((total_pts_num, resample_num))
+    xi_m_sub = numpy.zeros((total_pts_num, resample_num))
 
     for i in range(resample_num):
-        xi_p_sub[i] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).reshape((1,total_pts_num))
-        xi_m_sub[i] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).reshape((1,total_pts_num))
+        xi_p_sub[:,i] = (-h5f["/%d/tt"%i][()] - h5f["/%d/xx"%i][()]).flatten()
+        xi_m_sub[:,i] = (-h5f["/%d/tt"%i][()] + h5f["/%d/xx"%i][()]).flatten()
 
     h5f.close()
 
     for i in range(total_pts_num):
-        xi_p_sig[:,i] = xi_p_sub[:,i].std()*numpy.sqrt(resample_num-1)
-        xi_m_sig[:,i] = xi_m_sub[:,i].std()*numpy.sqrt(resample_num-1)
+        xi_p_sig[i] = xi_p_sub[i].std()*numpy.sqrt(resample_num-1)
+        xi_m_sig[i] = xi_m_sub[i].std()*numpy.sqrt(resample_num-1)
 
-    xi_pm_sub = numpy.zeros((resample_num, int(2*total_pts_num)))
-    xi_pm_sub[:, :total_pts_num] = xi_p_sub
-    xi_pm_sub[:, total_pts_num:] = xi_m_sub
+    return theta, xi_p, xi_p_sig, xi_p_sub, xi_m, xi_m_sig, xi_m_sub
 
-    cov_p = numpy.cov(xi_p_sub.T, rowvar=True)*(resample_num-1)
-    cov_m = numpy.cov(xi_m_sub.T, rowvar=True)*(resample_num-1)
-    cov_pm = numpy.cov(xi_pm_sub.T, rowvar=True)*(resample_num-1)
 
-    return theta, xi_p, xi_p_sig, cov_p, xi_m, xi_m_sig, cov_m, xi_pm, cov_pm
+def get_zbin_mask(zbin_num, theta_num, discard_bins):
+    total_pts_num = int(theta_num * (zbin_num ** 2 + zbin_num) / 2)
+    use_cols = numpy.zeros((total_pts_num,), dtype=numpy.intc)
+    tag = 0
+    for i in range(zbin_num):
+        for j in range(i, zbin_num):
+            if i not in discard_bins and j not in discard_bins:
+                st, ed = tag * theta_num, (tag + 1) * theta_num
+                use_cols[st:ed] = 1
+            tag += 1
+    return use_cols
+
+def get_cov(xi_p, xi_m, stack=True):
+    theta_nun_1, resample_num = xi_p.shape
+    theta_nun_2, resample_num = xi_m.shape
+
+    cov_p = numpy.cov(xi_p, rowvar=True)*(resample_num-1)
+    cov_m = numpy.cov(xi_m, rowvar=True)*(resample_num-1)
+
+    inv_cov_p = numpy.linalg.pinv(cov_p)
+    inv_cov_m = numpy.linalg.pinv(cov_m)
+
+    if stack:
+        xi_pm = numpy.zeros((theta_nun_1+theta_nun_2, resample_num))
+        xi_pm[:theta_nun_1] = xi_p
+        xi_pm[theta_nun_1:] = xi_m
+
+        cov_pm = numpy.cov(xi_pm, rowvar=True)*(resample_num-1)
+        inv_cov_pm = numpy.linalg.pinv(cov_pm)
+
+        return cov_p, inv_cov_p, cov_m, inv_cov_m, cov_pm, inv_cov_pm
+    else:
+        return cov_p, inv_cov_p, cov_m, inv_cov_m
 
 
 def find_overlap(ra1, dec1, ra2, dec2, margin, bin_num):

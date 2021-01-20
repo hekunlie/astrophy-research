@@ -168,7 +168,7 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
 
     theta_num = theta_radian.shape[1]
 
-    Lpts_min, Lpts_max, Lpts_num = 10, 7000, 6000
+    Lpts_min, Lpts_max, Lpts_num = 10, 8000, 7000
 
     kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 3, 4, 300
 

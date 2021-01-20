@@ -75,7 +75,7 @@ redshift_bin = numpy.array([0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float
 
 nz_bin_num = 340
 
-zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, 8], redshift_bin, data[:, 9], nz_bin_num, 2.8)
+zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, 8], redshift_bin, data[:, 9], nz_bin_num, 3)
 
 tomo_panel_num = int((redshift_bin_num * redshift_bin_num + redshift_bin_num) / 2)
 
@@ -94,24 +94,26 @@ expo_type = ["diff_expo","same_expo"][expo]
 resample_num = 200
 
 npz = numpy.load("./data/result_cache_%d_%s.npz"%(resample_num,expo_type))
-# arcmin to radian
-theta_radian = npz["arr_0"]/60/180*numpy.pi
-data_num = theta_radian.shape[1]
-theta_radian = theta_radian.reshape((tomo_panel_num, int(data_num*1.0/tomo_panel_num)))
 
-xi = npz["arr_9"][0]
+theta = npz["arr_0"]
+# both \xi_+ & \xi_-
+xi = npz["arr_9"]
 cov_inv = npz["arr_11"]
 
+# arcmin to radian
+theta_radian = theta/60/180*numpy.pi
+
+data_num = theta_radian.shape[0]
+theta_radian = theta_radian.reshape((tomo_panel_num, int(data_num*1.0/tomo_panel_num)))
 
 print("Data vector len: ", xi.shape)
 
-# prob_coeff = numpy.log(1./(2*numpy.pi)**(data_num/2)/numpy.linalg.det(cov_p)**(0.5))
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
 nwalkers, ndim = thread, 3
 initial = numpy.zeros((nwalkers, ndim))
-para_lim = [[1,5],[0.1,0.5],[0.05,0.5]]
+para_lim = [[1, 5],[0.05, 0.5],[0.05, 0.5]]
 for i in range(ndim):
     a,b = para_lim[i]
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)
@@ -126,7 +128,7 @@ with Pool(thread) as pool:
 emcee.backends.HDFBackend("./chain_cache.hdf5")
 
 chain = sampler.get_chain()
-flat_chain = sampler.get_chain(discard=5000, thin=15, flat=True)
+flat_chain = sampler.get_chain(discard=4000, thin=15, flat=True)
 
 numpy.savez("./data/chain_%s.npz"%expo_type, chain, flat_chain)
 
