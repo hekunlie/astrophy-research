@@ -510,13 +510,13 @@ void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label)
 
 }
 
-void ggl_rotation_matrix(MY_FLOAT cent_ra, MY_FLOAT cent_dec, MY_FLOAT src_ra, MY_FLOAT src_dec, MY_FLOAT*rotation_matrix)
+void ggl_rotation_matrix(MY_FLOAT cent_ra, MY_FLOAT cent_dec, MY_FLOAT cent_cos_dec,MY_FLOAT src_ra, MY_FLOAT src_dec, MY_FLOAT*rotation_matrix)
 {
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
     MY_FLOAT dra, ddec, delta_radius;
     
     dra = src_ra - cent_ra;
-    ddec = src_dec - cent_dec;
+    ddec = (src_dec - cent_dec)*cent_cos_dec;
     delta_radius = sqrt(dra*dra + ddec*ddec);
 
     // theta is position angle
@@ -565,7 +565,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int i,j,k;
     double st, ed;
 
-    MY_FLOAT len_ra, len_dec, src_ra, src_dec;
+    MY_FLOAT len_ra, len_dec, len_cos_dec, src_ra, src_dec;
     MY_FLOAT len_z, len_dist, src_z, src_dist;
     MY_FLOAT len_z_err, len_z_dz;
     MY_FLOAT dra, ddec, delta_radius;
@@ -600,6 +600,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
             ifg_row = ifg*data_info->len_data_col;
             len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
             len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
+            len_cos_dec = data_info->len_expo_data[ifg_row + data_info->len_cos_dec_col];
             len_z = data_info->len_expo_data[ifg_row + data_info->len_z_col];
             len_dist = data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
 
@@ -639,13 +640,17 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     if(sep_dist >= data_info->separation_bin[ir] and sep_dist< data_info->separation_bin[ir+1])
                     { sep_bin_tag = ir; break; }
                 }
-                
+                // if(sep_bin_tag<2 and sep_bin_tag> -1)
+                // {sprintf(data_info->ggl_log_inform,"%f %f %f %f %f %f %f %f %d\n",
+                // len_ra, len_dec, src_ra, src_dec, sep_theta,data_info->len_expo_data[ifg_row + data_info->len_com_dist_col],len_z, sep_dist,sep_bin_tag);
+                // std::cout<<data_info->ggl_log_inform;}
+
                 if(sep_bin_tag > -1)
                 {   
                     pair_count ++;
-                    if(sep_bin_tag == 0)std::cout<<sep_bin_tag<<" "<<len_expo_label<<std::endl;
+                    // if(sep_bin_tag == 0)std::cout<<"Find 0 pairs "<<sep_bin_tag<<" "<<len_expo_label<<std::endl;
                     // rotation, sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta
-                    ggl_rotation_matrix(len_ra,len_dec, src_ra, src_dec, rotation_mat);
+                    ggl_rotation_matrix(len_ra,len_dec, len_cos_dec, src_ra, src_dec, rotation_mat);
                     src_mg1 = data_info->src_expo_data[ibkg_row + data_info->src_mg1_col];
                     src_mg2 = data_info->src_expo_data[ibkg_row + data_info->src_mg2_col];
                     src_mn = data_info->src_expo_data[ibkg_row + data_info->src_mn_col];

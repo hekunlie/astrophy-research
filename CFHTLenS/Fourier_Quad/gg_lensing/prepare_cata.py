@@ -23,7 +23,7 @@ cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
 sep_bin_num = 13
-bin_st, bin_ed = 0.04, 15
+bin_st, bin_ed = 0.07, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -135,7 +135,7 @@ if cmd == "prepare_pdf":
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_bin"] = mg_bin*1000
+        h5f["/mg_bin"] = mg_bin
         h5f["/g_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
         h5f["/separation_bin"] = separation_bin
