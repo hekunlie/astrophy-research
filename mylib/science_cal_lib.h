@@ -12,7 +12,9 @@
 #define MAX_EXPO_NUM 50000
 #define MY_FLOAT float
 #define MY_MPI_TYPE MPI_FLOAT
-#define GGL_PROP_DIST_STACK
+// #define GGL_PROP_DIST_STACK
+#define GGL_COM_DIST_STACK
+
 
 
 
@@ -34,13 +36,34 @@ const double One_Mpc = 3.085677581*1.e22;// meter
 const double M_sun_hat = 1.9885;
 const double M_sun = 1.9885*1.e30;//Kg
 
+const double DEG2RAD = 0.01745329251994329576923;// pi/180
+
+void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);
+void separation_angle_1(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
+
+void separation_angle_2(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
+void separation_angle_2(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
+/* calculate the separation angle between two points on the sphere */
+/* RA & DEC in unit of degree */
+/* https://en.wikipedia.org/wiki/Great-circle_distance */
+
+
 void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, double &result, const double precision_thresh, const bool integ_only);
 
 
 /////////////////////////  GGL part  /////////////////////////////////////////
 struct ggl_data_info
 {   
-    char log_infrom[500];
+    char ggl_total_path[400];
+    char set_name[50];
+    char ggl_pdf_inform_path[450];
+    char ggl_foreground_inform_path[450];
+    char ggl_background_inform_path[450];
+
+    char ggl_log_inform[500];
+    char ggl_log_path[500];
+
+    char ggl_result_path[500];
 
     int jack_id;
     int jack_num;
@@ -56,11 +79,7 @@ struct ggl_data_info
 
     int rank, numprocs;
 
-    char ggl_total_path[400];
-    char set_name[50];
-    char ggl_pdf_inform_path[450];
-    char ggl_foreground_inform_path[450];
-    char ggl_background_inform_path[450];
+
 
 
     ////////////////////  for the SYM_PDF method of Fourier_Quad  ///////////////////////

@@ -1,5 +1,85 @@
 #include<science_cal_lib.h>
 
+void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian)
+{
+    double diff_ra_rad = (RA1 - RA2)*DEG2RAD;
+    double dec1_rad, dec2_rad;
+    dec1_rad = DEC1*DEG2RAD;
+    dec2_rad = DEC2*DEG2RAD;
+
+    double m = sin(dec1_rad)*sin(dec2_rad) + cos(dec1_rad)*cos(dec2_rad)*cos(diff_ra_rad);
+    sep_radian = acos(m);
+}
+void separation_angle_1(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian)
+{
+    float diff_ra_rad = (RA1 - RA2)*DEG2RAD;
+    float dec1_rad, dec2_rad;
+    dec1_rad = DEC1*DEG2RAD;
+    dec2_rad = DEC2*DEG2RAD;
+
+    float m = sin(dec1_rad)*sin(dec2_rad) + cos(dec1_rad)*cos(dec2_rad)*cos(diff_ra_rad);
+    sep_radian = acos(m);
+}
+
+void separation_angle_2(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian)
+{
+	double dec1_rad, dec2_rad, ra1_rad, ra2_rad;
+	double diff_dec_rad, diff_ra_rad;
+	double cos_dec1, cos_dec2, sin_dec1, sin_dec2, cos_diff_ra, sin_diff_ra;
+	double m, m1,m2, n;
+
+	dec1_rad = DEC1 * DEG2RAD;
+	dec2_rad = DEC2 * DEG2RAD;
+
+	diff_ra_rad = (RA1 - RA2)* DEG2RAD;
+
+	cos_dec1 = cos(dec1_rad);
+	cos_dec2 = cos(dec2_rad);
+	sin_dec1 = sin(dec1_rad);
+	sin_dec2 = sin(dec2_rad);
+
+	sin_diff_ra = sin(diff_ra_rad);
+	cos_diff_ra = cos(diff_ra_rad);
+
+	m1 = cos_dec2 * sin_diff_ra;
+	m2 = cos_dec1 * sin_dec2 - sin_dec1 * cos_dec2*cos_diff_ra;
+	m = sqrt(m1*m1 + m2 * m2);
+
+	n = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2*cos_diff_ra;
+
+	sep_radian = fabs(atan2(m, n));
+}
+
+void separation_angle_2(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian)
+{
+	float dec1_rad, dec2_rad, ra1_rad, ra2_rad;
+	float diff_dec_rad, diff_ra_rad;
+	float cos_dec1, cos_dec2, sin_dec1, sin_dec2, cos_diff_ra, sin_diff_ra;
+	float m, m1,m2, n;
+
+	dec1_rad = DEC1 * DEG2RAD;
+	dec2_rad = DEC2 * DEG2RAD;
+
+	diff_ra_rad = (RA1 - RA2)* DEG2RAD;
+
+	cos_dec1 = cos(dec1_rad);
+	cos_dec2 = cos(dec2_rad);
+	sin_dec1 = sin(dec1_rad);
+	sin_dec2 = sin(dec2_rad);
+
+	sin_diff_ra = sin(diff_ra_rad);
+	cos_diff_ra = cos(diff_ra_rad);
+
+	m1 = cos_dec2 * sin_diff_ra;
+	m2 = cos_dec1 * sin_dec2 - sin_dec1 * cos_dec2*cos_diff_ra;
+	m = sqrt(m1*m1 + m2 * m2);
+
+	n = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2*cos_diff_ra;
+
+	sep_radian = fabs(atan2(m, n));
+}
+
+
 void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, 
 double &result, const double precision_thresh, const bool integ_only)
 {
@@ -146,6 +226,9 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->crit_coeff = 1662895.2081868195;
 
 
+    sprintf(data_info->ggl_log_path,"%s/log/log_%d.dat", data_info->ggl_total_path, data_info->rank);
+    sprintf(data_info->ggl_result_path,"%s/result/result_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
+
     // read fore/background exposure informs
     sprintf(data_info->ggl_foreground_inform_path, "%s/cata/foreground/foreground_source_list.dat", data_info->ggl_total_path);
     sprintf(data_info->ggl_background_inform_path, "%s/cata/background/background_source_list.dat", data_info->ggl_total_path);
@@ -155,8 +238,8 @@ void ggl_initialize(ggl_data_info *data_info)
     if(data_info->rank == 0)
     {   
         std::cout<<data_info->ggl_total_path<<std::endl;
-        sprintf(data_info->log_infrom, "Foreground %d expos.  Background %d expos\n", data_info->len_expo_num, data_info->src_expo_num);
-        std::cout<<data_info->log_infrom;
+        sprintf(data_info->ggl_log_inform, "Foreground %d expos.  Background %d expos\n", data_info->len_expo_num, data_info->src_expo_num);
+        std::cout<<data_info->ggl_log_inform;
     }
 
     // data_info->len_nearest_dist = new MY_FLOAT[data_info->len_expo_num];
@@ -229,28 +312,28 @@ void ggl_initialize(ggl_data_info *data_info)
 
     if(data_info->rank == 0)
     {  
-        sprintf(data_info->log_infrom,"G bins: %d.\n", data_info->mg_bin_num);
-        std::cout<<data_info->log_infrom;
+        sprintf(data_info->ggl_log_inform,"G bins: %d.\n", data_info->mg_bin_num);
+        std::cout<<data_info->ggl_log_inform;
         show_arr(data_info->mg_bin,1,data_info->mg_bin_num+1);
         std::cout<<std::endl;
 
-        sprintf(data_info->log_infrom,"PDF_guess_num: %d.\n", data_info->pdf_guess_num);
-        std::cout<<data_info->log_infrom;
+        sprintf(data_info->ggl_log_inform,"PDF_guess_num: %d.\n", data_info->pdf_guess_num);
+        std::cout<<data_info->ggl_log_inform;
         // show_arr(data_info->gt_guess,1,data_info->pdf_guess_num);
         // std::cout<<std::endl;
         // show_arr(data_info->delta_sigma_guess,1,data_info->pdf_guess_num);
         // std::cout<<std::endl;
 
-        sprintf(data_info->log_infrom,"Separation bins: %d\n", data_info->sep_bin_num);
-        std::cout<<data_info->log_infrom;
+        sprintf(data_info->ggl_log_inform,"Separation bins: %d\n", data_info->sep_bin_num);
+        std::cout<<data_info->ggl_log_inform;
         show_arr(data_info->separation_bin,1,data_info->sep_bin_num+1);
         std::cout<<std::endl;
 
-        sprintf(data_info->log_infrom,"Chi len\nof one pts: %d\nof %d pts: %d\nof one jack: %d\nof %d jackknife: %d\n", 
+        sprintf(data_info->ggl_log_inform,"Chi len\nof one pts: %d\nof %d pts: %d\nof one jack: %d\nof %d jackknife: %d\n", 
         data_info->chi_theta_block_len, data_info->signal_pts_num, 
         data_info->chi_signal_block_len,data_info->chi_jack_block_len,
         data_info->jack_num, data_info->total_chi_count_len);
-        std::cout<<data_info->log_infrom;
+        std::cout<<data_info->ggl_log_inform;
 
     }
 }
@@ -482,8 +565,6 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int i,j,k;
     double st, ed;
 
-    int jack_id;
-
     MY_FLOAT len_ra, len_dec, src_ra, src_dec;
     MY_FLOAT len_z, len_dist, src_z, src_dist;
     MY_FLOAT len_z_err, len_z_dz;
@@ -545,7 +626,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
-                separation(len_ra, len_dec, src_ra, src_dec, sep_theta);
+                separation_angle_1(len_ra, len_dec, src_ra, src_dec, sep_theta);
 
 #ifdef GGL_PROP_DIST_STACK
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_prop_dist_col];
@@ -562,11 +643,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                 if(sep_bin_tag > -1)
                 {   
                     pair_count ++;
-
-                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + sep_bin_tag] += sep_theta;
-                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + data_info->signal_pts_num + sep_bin_tag] += sep_dist;
-                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + data_info->signal_pts_num + sep_bin_tag] += 1;
-
+                    if(sep_bin_tag == 0)std::cout<<sep_bin_tag<<" "<<len_expo_label<<std::endl;
                     // rotation, sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta
                     ggl_rotation_matrix(len_ra,len_dec, src_ra, src_dec, rotation_mat);
                     src_mg1 = data_info->src_expo_data[ibkg_row + data_info->src_mg1_col];
@@ -623,6 +700,10 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                         pre_bin_tag_shear2 = bin_tag_shear2;
 
                     }
+
+                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + sep_bin_tag] += sep_theta;
+                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + data_info->signal_pts_num + sep_bin_tag] += sep_dist;
+                    data_info->worker_sub_chi_count[data_info->chi_signal_block_len*4 + data_info->signal_pts_num*2 + sep_bin_tag] += 1;
                 }
             }
         }
@@ -631,7 +712,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     // add the count to the total count array, according to the jack id
     for(i=0; i<data_info->jack_num+1; i++)
     {   
-        if(i == data_info->jack_id){continue;}
+        if(i == data_info->len_expo_jackid[len_expo_label]){continue;}
 
         for(j=0; j<data_info->chi_jack_block_len; j++)
         {
@@ -650,10 +731,16 @@ void ggl_collect_chi(ggl_data_info *data_info)
 {
     int i, j;
     MPI_Status status;
+    char set_name[50];
 
     if (data_info->rank > 0)
     {
         MPI_Send(data_info->worker_total_chi_count, data_info->total_chi_count_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);
+        sprintf(set_name,"/data");
+        sprintf(data_info->ggl_result_path,"%s/result/chi_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
+
+        write_h5(data_info->ggl_result_path, set_name, data_info->worker_total_chi_count,
+                 data_info->jack_num+1,data_info->chi_jack_block_len, true);
     }
     else
     {
@@ -664,90 +751,130 @@ void ggl_collect_chi(ggl_data_info *data_info)
             for(j=0;j<data_info->total_chi_count_len;j++)
             {data_info->total_chi_count[j] += data_info->worker_total_chi_count[j];}
         }
+        
+        sprintf(set_name,"/data");
+        sprintf(data_info->ggl_result_path,"%s/result/chi_cache.hdf5", data_info->ggl_total_path);
+
+        write_h5(data_info->ggl_result_path, set_name, data_info->total_chi_count,
+                 data_info->jack_num+1,data_info->chi_jack_block_len, true);
     }   
 }
 
 void ggl_cal_signals(ggl_data_info * data_info)
 {   
-    if(data_info->rank == 0)
-    {
-        int i, j, st_c, st_j;
+  
+    char set_name[50];
+    int i, j, st_c, st_j;
 
-        double *temp_count = new double[data_info->chi_signal_block_len];
-        double *signals = new double[data_info->signal_pts_num];
-        double *signals_err = new double[data_info->signal_pts_num];
-
-
-        double *delta_sigma_t = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-        double *delta_sigma_x = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-        double *gt = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-        double *gx = new double[(data_info->jack_num+1)*data_info->signal_pts_num];       
-
-        double *theta = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-        double *radius = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-        double *count = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-
-        for(i=0; i<data_info->jack_id+1; i++)
-        {   
-            st_j = i*data_info->signal_pts_num;
-
-            // delta_sigma_t
-            st_c = i*data_info->chi_jack_block_len;
-            for(j=0;j<data_info->chi_signal_block_len;j++)
-            { temp_count[j] = data_info->total_chi_count[st_c+j];}
-            ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
-            
-            for(j=0; j<data_info->signal_pts_num; j++)
-            {delta_sigma_t[st_j + j] = signals[j];}
+    double *temp_count = new double[data_info->chi_signal_block_len];
+    double *signals = new double[data_info->signal_pts_num];
+    double *signals_err = new double[data_info->signal_pts_num];
 
 
-            // delta_sigma_x
-            st_c = i*data_info->chi_jack_block_len + data_info->chi_signal_block_len;
-            for(j=0;j<data_info->chi_signal_block_len;j++)
-            { temp_count[j] = data_info->total_chi_count[st_c+j];}
-            ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
-            
-            for(j=0; j<data_info->signal_pts_num; j++)
-            {delta_sigma_x[st_j + j] = signals[j];}
+    double *delta_sigma_t = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *delta_sigma_x = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *gt = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *gx = new double[(data_info->jack_num+1)*data_info->signal_pts_num];       
+
+    double *theta = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *radius = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *count = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+
+    sprintf(data_info->ggl_log_inform,"start calculate\n");
+    std::cout<<data_info->ggl_log_inform;
+
+    for(i=0; i<data_info->jack_id+1; i++)
+    {   
+        st_j = i*data_info->signal_pts_num;
+
+        // delta_sigma_t
+
+        st_c = i*data_info->chi_jack_block_len;
+        for(j=0;j<data_info->chi_signal_block_len;j++)
+        { temp_count[j] = data_info->total_chi_count[st_c+j];}
+        // show_arr(temp_count, 1, data_info->chi_signal_block_len);
+        ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
+        
+        for(j=0; j<data_info->signal_pts_num; j++)
+        {delta_sigma_t[st_j + j] = signals[j];}
 
 
-            // g_t
-            st_c = i*data_info->chi_jack_block_len + 2*data_info->chi_signal_block_len;
-            for(j=0;j<data_info->chi_signal_block_len;j++)
-            { temp_count[j] = data_info->total_chi_count[st_c+j];}
-            ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
-            
-            for(j=0; j<data_info->signal_pts_num; j++)
-            {gt[st_j + j] = signals[j];}
+        // delta_sigma_x
+        st_c = i*data_info->chi_jack_block_len + data_info->chi_signal_block_len;
+        for(j=0;j<data_info->chi_signal_block_len;j++)
+        { temp_count[j] = data_info->total_chi_count[st_c+j];}
+        ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
+        
+        for(j=0; j<data_info->signal_pts_num; j++)
+        {delta_sigma_x[st_j + j] = signals[j];}
 
 
-            // g_x
-            st_c = i*data_info->chi_jack_block_len + 3*data_info->chi_signal_block_len;
-            for(j=0;j<data_info->chi_signal_block_len;j++)
-            { temp_count[j] = data_info->total_chi_count[st_c+j];}
-            ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
-            
-            for(j=0; j<data_info->signal_pts_num; j++)
-            {gx[st_j + j] = signals[j];}
+        // g_t
+        st_c = i*data_info->chi_jack_block_len + 2*data_info->chi_signal_block_len;
+        for(j=0;j<data_info->chi_signal_block_len;j++)
+        { temp_count[j] = data_info->total_chi_count[st_c+j];}
+        ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
+        
+        for(j=0; j<data_info->signal_pts_num; j++)
+        {gt[st_j + j] = signals[j];}
 
 
-            // theta
-            st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len;
-            for(j=0;j<data_info->signal_pts_num;j++)
-            { theta[st_j + j] = data_info->total_chi_count[st_c + j];}
+        // g_x
+        st_c = i*data_info->chi_jack_block_len + 3*data_info->chi_signal_block_len;
+        for(j=0;j<data_info->chi_signal_block_len;j++)
+        { temp_count[j] = data_info->total_chi_count[st_c+j];}
+        ggl_pdf_signals(temp_count, data_info->delta_sigma_guess, data_info->pdf_guess_num, data_info->mg_bin_num, data_info->signal_pts_num, signals, signals_err);
+        
+        for(j=0; j<data_info->signal_pts_num; j++)
+        {gx[st_j + j] = signals[j];}
 
-            // radius
-            st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len + data_info->signal_pts_num;
-            for(j=0;j<data_info->signal_pts_num;j++)
-            { radius[st_j + j] = data_info->total_chi_count[st_c + j];}
 
-            // count
-            st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len + 2*data_info->signal_pts_num;
-            for(j=0;j<data_info->signal_pts_num;j++)
-            { count[st_j + j] = data_info->total_chi_count[st_c + j];}           
-        }
+        // theta
+        st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len;
+        for(j=0;j<data_info->signal_pts_num;j++)
+        { theta[st_j + j] = data_info->total_chi_count[st_c + j];}
 
+        // radius
+        st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len + data_info->signal_pts_num;
+        for(j=0;j<data_info->signal_pts_num;j++)
+        { radius[st_j + j] = data_info->total_chi_count[st_c + j];}
+
+        // count
+        st_c = i*data_info->chi_jack_block_len + 4*data_info->chi_signal_block_len + 2*data_info->signal_pts_num;
+        for(j=0;j<data_info->signal_pts_num;j++)
+        { count[st_j + j] = data_info->total_chi_count[st_c + j];}           
     }
+
+   
+    sprintf(data_info->ggl_result_path,"%s/result/result.hdf5", data_info->ggl_total_path);
+
+    sprintf(set_name,"/delta_t");
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_t,
+            data_info->jack_num+1,data_info->signal_pts_num, true);
+    sprintf(set_name,"/delta_x");
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_x,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/g_t");
+    write_h5(data_info->ggl_result_path, set_name, gt,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/g_x");
+    write_h5(data_info->ggl_result_path, set_name, gx,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/theta");
+    write_h5(data_info->ggl_result_path, set_name, theta,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/radius");
+    write_h5(data_info->ggl_result_path, set_name, radius,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/count");
+    write_h5(data_info->ggl_result_path, set_name, count,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(data_info->ggl_log_inform,"finish calculate and save result.\n");
+    std::cout<<data_info->ggl_log_inform;      
 }
 
 void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err)

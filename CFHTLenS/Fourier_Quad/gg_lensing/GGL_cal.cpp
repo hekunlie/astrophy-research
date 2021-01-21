@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
             MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, rank, MPI_COMM_WORLD);
             MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
-            sprintf(data_info.log_infrom,"receive %d th foreground exposure\n", foreground_expo_label);
-            std::cout<<data_info.log_infrom;
+            sprintf(data_info.ggl_log_inform,"receive %d th foreground exposure\n", foreground_expo_label);
+            std::cout<<data_info.ggl_log_inform;
 
             if(foreground_expo_label > -1)
             {
@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
             }
             else
             {
-                sprintf(data_info.log_infrom,"%d Break. receive %d th foreground exposure\n", rank, foreground_expo_label);
-                std::cout<<data_info.log_infrom;
+                sprintf(data_info.ggl_log_inform,"%d Break. receive %d th foreground exposure\n", rank, foreground_expo_label);
+                std::cout<<data_info.ggl_log_inform;
                 break;
             }
        } 
@@ -77,17 +77,23 @@ int main(int argc, char *argv[])
                 thread_live --;
             }
             MPI_Send(&foreground_expo_label, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD); 
-            sprintf(data_info.log_infrom,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
-            std::cout<<data_info.log_infrom; 
+            sprintf(data_info.ggl_log_inform,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
+            std::cout<<data_info.ggl_log_inform; 
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-
-    std::cout<<rank<<std::endl;
+   
     ggl_collect_chi(&data_info);
+
     time_ed = clock();
-    sprintf(data_info.log_infrom,"worker %d. Finish in %.2f sec\n", data_info.rank, (time_ed-time_st)/CLOCKS_PER_SEC);
-    std::cout<<data_info.log_infrom; 
+
+    if(rank == 0)
+    {   
+        sprintf(data_info.ggl_log_inform,"worker %d. Finish in %.2f sec\n", data_info.rank, (time_ed-time_st)/CLOCKS_PER_SEC);
+        if(rank == 0) {std::cout<<data_info.ggl_log_inform;} 
+        ggl_cal_signals(&data_info);
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Finalize();

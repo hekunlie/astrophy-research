@@ -40,20 +40,24 @@ redshift_idx = 10
 
 # chi guess bin for PDF_SYM
 chi_guess_num = 200
-# num_p = int(6/8*chi_guess_num)
-# num_m = chi_guess_num - num_p
+num_p = int(chi_guess_num/2)
 
-# delta_sigma_guess_bin_p = numpy.linspace(0.1, 500, num_p).astype(numpy.float64)
-# delta_sigma_guess_bin_m = numpy.linspace(0.1, 100, num_m).astype(numpy.float64)
-#
-# delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
-# delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_m
-# delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
-# delta_sigma_guess = numpy.sort(delta_sigma_guess)
+delta_sigma_guess_bin_p = numpy.linspace(0.1, 300, num_p).astype(numpy.float64)
 
-delta_sigma_guess = numpy.linspace(-100, 500, chi_guess_num).astype(numpy.float64)
+delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
+delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
+delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
-tan_shear_guess = numpy.linspace(-0.1, 0.1, chi_guess_num, dtype=numpy.float64)
+
+tan_shear_guess_bin_p = numpy.linspace(0.001,0.1, num_p).astype(numpy.float64)
+
+tan_shear_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
+tan_shear_guess[num_p:] = tan_shear_guess_bin_p
+tan_shear_guess = numpy.sort(tan_shear_guess)
+
+
 
 mg_bin_num = 10
 

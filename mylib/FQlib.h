@@ -132,7 +132,7 @@ struct pts_info
 
 
 const double Pi = 3.1415926535897932384626433832795;
-const double DEG2RAD = 1./180*Pi;
+
 
 extern const gsl_rng_type *T0,*T1, *T2, *T3;
 extern gsl_rng *rng0, *rng1, *rng2, *rng3; 
@@ -574,11 +574,7 @@ void matrix_inv(const double *arr, const int size, double *arr_inv);//checked
 /********************************************************************************************************************************************/
 /* general methods */
 /********************************************************************************************************************************************/
-void separation(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
-void separation(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
-/* calculate the separation angle between two points on the sphere */
-/* RA & DEC in unit of degree */
-/* https://en.wikipedia.org/wiki/Great-circle_distance */
+
 
 void find_near(const double *arr, const double tar_val, const int arr_len, int & label);//checked
 /* find the label of the element in "arr" which is the nearest to "tar_val" */
