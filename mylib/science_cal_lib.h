@@ -90,33 +90,31 @@ struct ggl_data_info
     double *gt_guess;
     double *delta_sigma_guess;
 
-    int chi_sigma_theta_block_len;
-    int chi_gt_theta_block_len;
-    int chi_gt_signal_block_len;
-    int chi_sigma_signal_block_len;
-    int total_chi_sigma_len;
-    int total_chi_gt_len;
+    int chi_sigma_theta_block_len, chi_sigma_theta_block_len_sub;
+    int chi_sigma_jack_block_len;
+    int chi_g_theta_block_len, chi_g_theta_block_len_sub;
+    int chi_g_jack_block_len;
 
+    int sub_signal_count_len, total_signal_count_len;
 
-    // total source count in the PDF, 7 parts
-    // the first one, len = chi_signal_block_len, for the \Delta\Sigma, excess surface density
-    // the second one, len = chi_signal_block_len, for the cross \Delta\Sigma, should be consitent with 0, systematic check
-    // the third one, len = chi_signal_block_len, for the tangential \gamma,
-    // the forth one, len = chi_signal_block_len, for the cross \gamma, should be consitent with 0, systematic check
-
-    // the fifth one, len = signal_pts_num, for theta, separation angle, radian
-    // the sixth one, len = signal_pts_num, for comoving distance, separation comoving distance, Mpc
-    // the seventh one, len = signal_pts_num, for pair count,
-    double *total_chi_sigma_count;
-    double *total_chi_gt_count;        
+    double *total_chi_sigma_tan;
+    double *total_chi_sigma_cross;
+    double *total_chi_g_tan;        
+    double *total_chi_g_cross;        
     double *total_signal_count;
     
     // for each individual calculation, it will be added to the total one when finished
-    double *worker_sub_chi_sigma_count;
-    double *worker_total_chi_sigma_count;
-    double *worker_sub_chi_gt_count;
-    double *worker_total_chi_gt_count;
-    int sub_signal_count_len, total_signal_count_len;
+    double *worker_sub_chi_sigma_tan;
+    double *worker_total_chi_sigma_tan;
+
+    double *worker_sub_chi_sigma_cross;
+    double *worker_total_chi_sigma_cross;
+
+    double *worker_sub_chi_g_tan;
+    double *worker_total_chi_g_tan;
+    double *worker_sub_chi_g_cross;
+    double *worker_total_chi_g_cross;
+
     double *worker_sub_signal_count;
     double *worker_total_signal_count;
 
