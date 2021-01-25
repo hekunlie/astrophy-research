@@ -850,7 +850,7 @@ void ggl_collect_chi(ggl_data_info *data_info)
         sprintf(data_info->ggl_result_path,"%s/result/chi_theta_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
 
         write_h5(data_info->ggl_result_path, set_name, data_info->worker_total_signal_count,
-                 data_info->jack_num+1, data_info->total_signal_count_len, true);
+                 data_info->jack_num+1, data_info->sub_signal_count_len, true);
     }
     else
     {
@@ -866,7 +866,7 @@ void ggl_collect_chi(ggl_data_info *data_info)
         sprintf(data_info->ggl_result_path,"%s/result/chi_signal_cache.hdf5", data_info->ggl_total_path);
 
         write_h5(data_info->ggl_result_path, set_name, data_info->total_signal_count,
-                 data_info->jack_num+1,data_info->total_signal_count_len, true);
+                 data_info->jack_num+1,data_info->sub_signal_count_len, true);
     }
 
 #ifdef GGL_DELTA_SIGMA
