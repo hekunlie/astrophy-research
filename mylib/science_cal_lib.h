@@ -14,9 +14,8 @@
 #define MY_MPI_TYPE MPI_FLOAT
 // #define GGL_PROP_DIST_STACK
 #define GGL_COM_DIST_STACK
-
-
-
+#define GGL_GAMMA_T
+#define GGL_DELTA_SIGMA
 
 const double C_0_hat = 2.99792458; // 10^8
 const double C_0 = 2.99792458*1.e8;// speed of light m/s
@@ -80,20 +79,24 @@ struct ggl_data_info
     int rank, numprocs;
 
 
-
-
     ////////////////////  for the SYM_PDF method of Fourier_Quad  ///////////////////////
     // bin num for G1,G2
-    int mg_bin_num;
-    int pdf_guess_num;
+    int mg_sigma_bin_num;
+    int mg_gt_bin_num;
+    MY_FLOAT *mg_sigma_bin;
+    MY_FLOAT *mg_gt_bin;
 
+    int pdf_gt_num, pdf_sigma_num;
     double *gt_guess;
     double *delta_sigma_guess;
-    MY_FLOAT *mg_bin;
 
-    int chi_theta_block_len, chi_jack_block_len;
-    int chi_signal_block_len;
-    int total_chi_count_len;
+    int chi_sigma_theta_block_len;
+    int chi_gt_theta_block_len;
+    int chi_gt_signal_block_len;
+    int chi_sigma_signal_block_len;
+    int total_chi_sigma_len;
+    int total_chi_gt_len;
+
 
     // total source count in the PDF, 7 parts
     // the first one, len = chi_signal_block_len, for the \Delta\Sigma, excess surface density
@@ -104,11 +107,19 @@ struct ggl_data_info
     // the fifth one, len = signal_pts_num, for theta, separation angle, radian
     // the sixth one, len = signal_pts_num, for comoving distance, separation comoving distance, Mpc
     // the seventh one, len = signal_pts_num, for pair count,
-    double *total_chi_count;        
+    double *total_chi_sigma_count;
+    double *total_chi_gt_count;        
+    double *total_signal_count;
     
     // for each individual calculation, it will be added to the total one when finished
-    double *worker_sub_chi_count;
-    double *worker_total_chi_count;
+    double *worker_sub_chi_sigma_count;
+    double *worker_total_chi_sigma_count;
+    double *worker_sub_chi_gt_count;
+    double *worker_total_chi_gt_count;
+    int sub_signal_count_len, total_signal_count_len;
+    double *worker_sub_signal_count;
+    double *worker_total_signal_count;
+
 
     MY_FLOAT crit_coeff;
     
@@ -175,8 +186,11 @@ void ggl_initialize(ggl_data_info *data_info);
 
 // void ggl_task_prepare(ggl_data_info *data_info);
 
-void ggl_read_len_list(char *file_path, ggl_data_info* expo_info);
-void ggl_read_src_list(char *file_path, ggl_data_info* expo_info);
+void ggl_read_list(ggl_data_info *data_info);
+void ggl_read_len_list(char *file_path, ggl_data_info* data_info);
+void ggl_read_src_list(char *file_path, ggl_data_info* data_info);
+
+void ggl_read_pdf_inform(ggl_data_info *data_info);
 
 void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
 void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);

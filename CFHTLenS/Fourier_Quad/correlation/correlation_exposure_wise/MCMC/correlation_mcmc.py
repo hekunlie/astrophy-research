@@ -14,8 +14,8 @@ from multiprocessing import Pool
 
 
 def log_prior(paras):
-    As, omega_m0, omega_bm0_ratio = paras
-    if 1 < As < 5 and 0.05 < omega_m0 < 0.5 and 0.05 < omega_bm0_ratio < 0.5:
+    As, omega_m0 = paras
+    if 1 < As < 5 and 0.01 < omega_m0 < 0.7:
         return 0.0
     else:
         return -numpy.inf
@@ -31,9 +31,9 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
     else:
         # print(lp)
         # t1 = time.time()
-        As, omega_m0, omega_bm0_ratio = paras
-        omega_bm0 = omega_m0*omega_bm0_ratio
-        omega_cm0 = omega_m0 - omega_bm0
+        As, omega_m0 = paras
+        omega_bm0 = omega_m0*0.02233/0.14213
+        omega_cm0 = omega_m0*0.1198/0.14213
         h = 0.6737
         As = As*10**(-9)
         # print(paras)
@@ -111,9 +111,10 @@ print("Data vector len: ", xi.shape)
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
-nwalkers, ndim = thread, 3
+para_lim = [[1, 5],[0.05, 0.7]]
+nwalkers, ndim = thread, len(para_lim)
 initial = numpy.zeros((nwalkers, ndim))
-para_lim = [[1, 5],[0.05, 0.5],[0.05, 0.5]]
+
 for i in range(ndim):
     a,b = para_lim[i]
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)

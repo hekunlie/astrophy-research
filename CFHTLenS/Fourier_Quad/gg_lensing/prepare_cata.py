@@ -135,8 +135,9 @@ if cmd == "prepare_pdf":
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_bin"] = mg_bin
-        h5f["/g_guess"] = tan_shear_guess
+        h5f["/mg_sigma_bin"] = mg_bin
+        h5f["/mg_gt_bin"] = mg_bin
+        h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
         h5f["/separation_bin"] = separation_bin
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
