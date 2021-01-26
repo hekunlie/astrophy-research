@@ -82,9 +82,13 @@ int main(int argc, char *argv[])
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);
-   
+    
     ggl_collect_chi(&data_info);
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    ggl_cache(&data_info);
+    
     time_ed = clock();
 
     if(rank == 0)

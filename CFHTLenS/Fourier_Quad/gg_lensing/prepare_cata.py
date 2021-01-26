@@ -135,8 +135,8 @@ if cmd == "prepare_pdf":
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_sigma_bin"] = mg_bin
-        h5f["/mg_gt_bin"] = mg_bin
+        h5f["/mg_sigma_bin"] = mg_bin/100
+        h5f["/mg_gt_bin"] = mg_bin/100
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
         h5f["/separation_bin"] = separation_bin
@@ -177,7 +177,7 @@ if cmd == "prepare_foreground":
 
         total_num = src_num.sum()
 
-        total_data = numpy.zeros((total_num, 7), dtype=numpy.float32)
+        total_data = numpy.zeros((total_num, 6), dtype=numpy.float32)
         for i, fn in enumerate(files):
             st, ed = src_st[i], src_st[i] + src_num[i]
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
@@ -188,12 +188,12 @@ if cmd == "prepare_foreground":
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]/180*numpy.pi)
         total_data[:, 4] = cosmos.comoving_distance(total_data[:, 3]).value*H0/100
-        total_data[:, 5] = total_data[:, 4]/(1 + total_data[:, 3])
+
         print(" %d galaxies" % (total_num))
         # Kmeans method for classification for jackknife
         t1 = time.time()
 
-        total_data[:,6] = KMeans(n_clusters=cent_num, random_state=numpy.random.randint(1, 100000)).fit_predict(total_data[:,:2])
+        total_data[:,5] = KMeans(n_clusters=cent_num, random_state=numpy.random.randint(1, 100000)).fit_predict(total_data[:,:2])
 
         h5f = h5py.File(stack_file_path, "w")
         h5f["/data"] = total_data
@@ -217,7 +217,7 @@ if cmd == "prepare_foreground":
     group_list = [i for i in range(cent_num)]
 
     sub_group_list = tool_box.alloc(group_list, cpus)[rank]
-    group_label = total_data[:,6].astype(dtype=numpy.intc)
+    group_label = total_data[:,5].astype(dtype=numpy.intc)
 
     # divide the group into many exposures
     for group_tag in sub_group_list:
@@ -329,7 +329,7 @@ elif cmd == "prepare_background":
             expo_pos = numpy.array([ra_center, dec_center, cos_dec_center,
                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2)], dtype=numpy.float32)
 
-            # G1, G2, N, U, V, RA, DEC, COS(DEC), Z, Z_ERR, PHYSICAL DISTANCE
+            # G1, G2, N, U, V, RA, DEC, COS(DEC), Z, Z_ERR, COMOVING DISTANCE
             dst_data = numpy.zeros((src_num, 11), dtype=numpy.float32)
 
             dst_data[:, 0] = src_data[:, mg1_idx]
@@ -344,7 +344,7 @@ elif cmd == "prepare_background":
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
             dst_data[:, 8] = src_data[:, Z_B_idx]
             dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
-            dst_data[:, 10] = cosmos.angular_diameter_distance(dst_data[:,8]).value*H0/100 # in unit of Mpc/h
+            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")

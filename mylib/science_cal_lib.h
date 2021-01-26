@@ -144,7 +144,6 @@ struct ggl_data_info
     int len_cos_dec_col;
     int len_z_col;
     int len_com_dist_col;
-    int len_prop_dist_col;
     int len_jackid_col;
 
 
@@ -171,7 +170,6 @@ struct ggl_data_info
     int src_z_col;
     int src_zerr_col;
     int src_com_dist_col;
-    int src_prop_dist_col;
     
 
     //////////////////  task distribution  //////////////////////
@@ -204,6 +202,8 @@ void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, i
 void ggl_find_pair(ggl_data_info *data_info, int len_expo_label);
 
 void ggl_collect_chi(ggl_data_info *data_info);
+
+void ggl_cache(ggl_data_info *data_info);
 
 void ggl_cal_signals(ggl_data_info * data_info);
 
