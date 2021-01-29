@@ -374,7 +374,7 @@ if cmd == "prepare_pdf":
         mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
 
         # G_t bins for \Delta\Sigma(R) calculation
-        Gts_total_num = 50000
+        Gts_total_num = 1000000
         Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
