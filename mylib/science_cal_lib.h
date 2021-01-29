@@ -17,25 +17,25 @@
 #define GGL_GAMMA_T
 #define GGL_DELTA_SIGMA
 
-const double C_0_hat = 2.99792458; // 10^8
-const double C_0 = 2.99792458*1.e8;// speed of light m/s
+const double C_0_hat = 2.99792458; //
+const double C_0_scale = 1.e8;// speed of light m/s
 
-const double H_0_hat = 0.70;
-const double H_0 = 70; //  Km/s/Mpc
-
-const double G_0_hat= 6.6740831; //  10^{-11}
-const double G_0 = 6.6740831*1.e-11; //  m^3 s^{-2} Kg^{-1}
+const double G_0_hat= 6.6740831; // 
+const double G_0_scale = 1.e-11; //  m^3 s^{-2} Kg^{-1}
 
 const double One_Light_Year_hat = 9.4607304725808;// 10^15
-const double One_Light_Year = 9.4607304725808*1.e15;// meter
+const double One_Light_Year_scale = 1.e15;// meter
 
-const double One_Mpc_hat = 3.085677581; // 10^22
-const double One_Mpc = 3.085677581*1.e22;// meter
+const double One_pc_hat = 3.085677581;
+const double One_pc_scale = 1.e16;//meter
 
 const double M_sun_hat = 1.9885;
-const double M_sun = 1.9885*1.e30;//Kg
+const double M_sun_scale = 1.e30;//Kg
 
-const double DEG2RAD = 0.01745329251994329576923;// pi/180
+const double SCI_PI = 3.141592653589793;
+const double DEG2RAD = 0.017453292519943;// pi/180
+const double RAD2DEG = 57.295779513082323;
+
 
 void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);
 void separation_angle_1(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
@@ -190,6 +190,8 @@ void ggl_read_pdf_inform(ggl_data_info *data_info);
 
 void ggl_read_len_exp(ggl_data_info *data_info, int len_expo_label);
 void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label);
+
+void ggl_set_bins(ggl_data_info *data_info);
 
 void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label);
 

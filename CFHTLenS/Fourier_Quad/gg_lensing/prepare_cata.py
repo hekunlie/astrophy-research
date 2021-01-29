@@ -9,6 +9,8 @@ import tool_box
 import warnings
 from sklearn.cluster import KMeans
 from astropy.cosmology import FlatLambdaCDM
+from astropy.coordinates import SkyCoord
+from astropy import units
 import time
 
 
@@ -108,42 +110,6 @@ result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
 
 cmd = argv[1]
 
-if cmd == "prepare_pdf":
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    cpus = comm.Get_size()
-
-    # for correlation calculation
-    if rank == 0:
-
-        field_name = []
-        with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
-            f_lines = f.readlines()
-        for ff in f_lines:
-            field_name.append(ff.split("\n")[0])
-
-        # set up bins for G1(or G2) for PDF_SYM
-        for i in range(20):
-            h5f_src = h5py.File(field_name[i], "r")
-            temp = h5f_src["/data"][()][:, mg1_idx:mg2_idx + 1]
-            if i == 0:
-                src_data = temp
-            else:
-                src_data = numpy.row_stack((src_data, temp))
-
-        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
-
-        h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
-
-        h5f["/mg_sigma_bin"] = mg_bin/100
-        h5f["/mg_gt_bin"] = mg_bin/100
-        h5f["/gt_guess"] = tan_shear_guess
-        h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin
-        h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
-        h5f.close()
-
-    comm.Barrier()
 
 
 if cmd == "prepare_foreground":
@@ -377,4 +343,115 @@ elif cmd == "prepare_background":
         with open("log.dat", "w") as f:
             f.writelines(exception_all)
         print(log_inform)
+    comm.Barrier()
+
+
+if cmd == "prepare_pdf":
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    cpus = comm.Get_size()
+
+    # for correlation calculation
+    if rank == 0:
+
+        field_name = []
+        with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+            f_lines = f.readlines()
+        for ff in f_lines:
+            field_name.append(ff.split("\n")[0])
+
+        # set up bins for G1(or G2) for PDF_SYM
+        for i in range(20):
+            h5f_src = h5py.File(field_name[i], "r")
+            temp = h5f_src["/data"][()][:, mg1_idx:mg2_idx + 1]
+            if i == 0:
+                src_data = temp
+            else:
+                src_data = numpy.row_stack((src_data, temp))
+
+        # G bins for tangential shear calculation
+        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
+
+        # G_t bins for \Delta\Sigma(R) calculation
+        Gts_total_num = 50000
+        Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
+        Gt_num = 0
+
+        with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
+            back_contents = f.readlines()
+        back_expo_num = len(back_contents)
+        back_expo_cent = numpy.zeros((back_expo_num, 2),dtype=numpy.float32)
+        back_expo_path = []
+        back_expo_labels = numpy.arange(0,back_expo_num)
+        for back_c in range(back_expo_num):
+            cc = back_contents[back_c].split("\n")[0].split("\t")
+            back_expo_path.append(cc[0])
+            back_expo_cent[back_c] = float(cc[3]),float(cc[4])
+        back_expo_skypos = SkyCoord(ra=back_expo_cent[:,0]*units.deg, dec=back_expo_cent[:,1]*units.deg,frame="fk5")
+
+
+        with open(result_cata_path + "/foreground/foreground_source_list.dat", "r") as f:
+            fore_contents = f.readlines()
+
+        foreground_num = len(fore_contents)
+        for fore_c in fore_contents:
+            cc = fore_c.split("\n")[0].split("\t")
+            fore_expo_path = cc[0]
+            h5f = h5py.File(fore_expo_path, "r")
+            fore_data = h5f["/data"][()]
+            h5f.close()
+
+            fore_c_num = fore_data.shape[0]
+
+            for ic in range(fore_c_num):
+                if Gt_num >= Gts_total_num:
+                    break
+                ic_z = fore_data[ic,3]
+                ic_com_dist = fore_data[ic, 4]
+                ic_skypos = SkyCoord(ra=fore_data[ic,0]*units.deg, dec=fore_data[ic,1]*units.deg, frame="fk5")
+                separation_angle = ic_skypos.separation(back_expo_skypos).deg
+                idx = separation_angle < 2
+                if idx.sum() > 0:
+                    for ib in back_expo_labels[idx]:
+
+                        if Gt_num >= Gts_total_num:
+                            break
+
+                        h5f = h5py.File(back_expo_path[ib], "r")
+                        back_data = h5f["/data"][()]
+                        h5f.close()
+
+                        idxz = back_data[:,8] > ic_z
+                        sub_num = idxz.sum()
+                        if sub_num > 0:
+                            sub_data = back_data[idxz]
+                            ib_skypos = SkyCoord(ra=sub_data[:,5]*units.deg, dec=sub_data[:,6]*units.deg,frame="fk5")
+                            position_ang = 2*ic_skypos.position_angle(ib_skypos).radian
+                            mgt = sub_data[:,0]*numpy.cos(position_ang) - sub_data[:,1]*numpy.sin(position_ang)
+                            # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
+                            mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
+                            if Gt_num + sub_num > Gts_total_num:
+                                Gts[Gt_num: Gts_total_num] = mgt[Gts_total_num-Gt_num]
+                                Gt_num = Gts_total_num
+                                break
+                            else:
+                                Gts[Gt_num: Gt_num + sub_num] = mgt
+                                Gt_num += sub_num
+
+        mgt_bin = tool_box.set_bin(Gts, mg_bin_num, 1000000)
+
+        print(mg_bin)
+        print(mgt_bin)
+        h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
+
+        h5f["/mg_sigma_bin"] = mgt_bin
+        h5f["/mg_gt_bin"] = mg_bin
+        h5f["/gt_guess"] = tan_shear_guess
+        h5f["/delta_sigma_guess"] = delta_sigma_guess
+        h5f["/separation_bin"] = separation_bin
+        h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
+
+        h5f.close()
+
     comm.Barrier()

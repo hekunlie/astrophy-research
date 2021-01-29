@@ -223,7 +223,7 @@ void ggl_initialize(ggl_data_info *data_info)
 
     data_info->pos_inform_num = 4;
 
-    data_info->crit_coeff = 1.6628952081868195;
+    data_info->crit_coeff = 1.6628952007121066*1.e6;
 
     sprintf(data_info->ggl_log_path,"%s/log/log_%d.dat", data_info->ggl_total_path, data_info->rank);
     sprintf(data_info->ggl_result_path,"%s/result/result_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
@@ -752,16 +752,41 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     
                     ggl_rotate_estimator(src_mg1, src_mg2, src_mu, src_mv, rotation_mat, src_mg1_rot, src_mg2_rot, src_mu_rot);
 
-                    src_mg1_rot *= sigma_crit;
-                    src_mg2_rot *= sigma_crit;
+
                     temp_mnut = src_mn + src_mu_rot;
                     temp_mnux = src_mn - src_mu_rot;
                     // pdf
-                    
- 
+#ifdef GGL_GAMMA_T
+                    pre_pdf_bin_tag1 = 0;
+                    pre_pdf_bin_tag2 = 0;
+
+                    temp_mnut_g = temp_mnut;
+                    temp_mnux_g = temp_mnux;
+
+                    chi_gt_pos = sep_bin_tag*data_info->chi_g_theta_block_len_sub;
+                    for(i=0; i<data_info->pdf_gt_num; i++)
+                    { 
+                        // \gamma_t & \gamma_x
+                        chi_gt_pos_i = chi_gt_pos + i*data_info->mg_gt_bin_num;
+                        temp_mgt = src_mg1_rot - data_info->gt_guess[i]*temp_mnut_g;
+                        temp_mgx = src_mg2_rot - data_info->gt_guess[i]*temp_mnux_g;
+                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
+                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
+                        
+                        data_info->worker_sub_chi_g_tan[chi_gt_pos_i + pdf_bin_tag1] +=1;
+                        data_info->worker_sub_chi_g_cross[chi_gt_pos_i + pdf_bin_tag2] +=1;
+                        
+                        pre_pdf_bin_tag1 = pdf_bin_tag1;
+                        pre_pdf_bin_tag2 = pdf_bin_tag2;
+                    }
+#endif 
+
 #ifdef GGL_DELTA_SIGMA
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
+
+                    src_mg1_rot *= sigma_crit;
+                    src_mg2_rot *= sigma_crit;
 
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
                     for(i=0; i<data_info->pdf_sigma_num; i++)
@@ -784,30 +809,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     }
 #endif
 
-#ifdef GGL_GAMMA_T
-                    pre_pdf_bin_tag1 = 0;
-                    pre_pdf_bin_tag2 = 0;
-
-                    temp_mnut_g = temp_mnut*sigma_crit;
-                    temp_mnux_g = temp_mnux*sigma_crit;
-
-                    chi_gt_pos = sep_bin_tag*data_info->chi_g_theta_block_len_sub;
-                    for(i=0; i<data_info->pdf_gt_num; i++)
-                    { 
-                        // \gamma_t & \gamma_x
-                        chi_gt_pos_i = chi_gt_pos + i*data_info->mg_gt_bin_num;
-                        temp_mgt = src_mg1_rot - data_info->gt_guess[i]*temp_mnut_g;
-                        temp_mgx = src_mg2_rot - data_info->gt_guess[i]*temp_mnux_g;
-                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
-                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
-                        
-                        data_info->worker_sub_chi_g_tan[chi_gt_pos_i + pdf_bin_tag1] +=1;
-                        data_info->worker_sub_chi_g_cross[chi_gt_pos_i + pdf_bin_tag2] +=1;
-                        
-                        pre_pdf_bin_tag1 = pdf_bin_tag1;
-                        pre_pdf_bin_tag2 = pdf_bin_tag2;
-                    }
-#endif                  
+                 
                 }
             }
         }
