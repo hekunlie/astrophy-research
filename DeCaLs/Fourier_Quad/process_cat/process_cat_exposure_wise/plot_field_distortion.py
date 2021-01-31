@@ -79,7 +79,7 @@ def plot_gf(ra, dec, gf1, gf2, pic_path, gf1_bin_num = 15, gf2_bin_num = 18,gf_b
     # img.show_img()
     img.close_img()
 
-def plot_gf_celestial(ra, dec, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_size=1,pic_path=None):
+def plot_gf_celestial(ra, dec, gf1, gf2, gf, gf1_scale, gf2_scale, gf_scale,dot_size=1,pic_path=None):
 
     img = Image_Plot(xpad=0.2,ypad=0.1)
     img.subplots(1, 3)
@@ -123,8 +123,8 @@ def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_siz
 
     chip_row, chip_col = numpy.divmod(ichip, 9)
 
-    x = x + chip_col * 2112
-    y = y + chip_row * 4644
+    x_ccd = x + chip_col * 2112
+    y_ccd = y + chip_row * 4644
 
     img = Image_Plot(xpad=0.2,ypad=0.1)
     img.subplots(1, 3)
@@ -133,7 +133,7 @@ def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_siz
     norm = plt.Normalize(vmin=numpy.min(gf1_scale[0]), vmax=numpy.max(gf1_scale[1]))
     cmap = plt.get_cmap(color_cm)
     cl = cmap(norm(gf1))
-    fig = img.axs[0][0].scatter(x, y, color=cl, s=dot_size)
+    fig = img.axs[0][0].scatter(x_ccd, y_ccd, color=cl, s=dot_size)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
     img.figure.colorbar(sm, ax=img.axs[0][0])
@@ -141,7 +141,7 @@ def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_siz
     norm = plt.Normalize(vmin=numpy.min(gf2_scale[0]), vmax=numpy.max(gf2_scale[1]))
     cmap = plt.get_cmap(color_cm)
     cl = cmap(norm(gf2))
-    fig = img.axs[0][1].scatter(x, y, color=cl, s=dot_size)
+    fig = img.axs[0][1].scatter(x_ccd, y_ccd, color=cl, s=dot_size)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
     img.figure.colorbar(sm, ax=img.axs[0][1])
@@ -149,7 +149,7 @@ def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_siz
     norm = plt.Normalize(vmin=numpy.min(gf_scale[0]), vmax=numpy.max(gf_scale[1]))
     cmap = plt.get_cmap(color_cm)
     cl = cmap(norm(gf))
-    fig = img.axs[0][2].scatter(x, y, color=cl, s=dot_size)
+    fig = img.axs[0][2].scatter(x_ccd, y_ccd, color=cl, s=dot_size)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
     img.figure.colorbar(sm, ax=img.axs[0][2])
@@ -164,43 +164,50 @@ def plot_gf_pix(x, y, ichip, gf1, gf2, gf, gf1_scale, gf2_scale,gf_scale,dot_siz
     # img.show_img()
     img.close_img()
 
-source_list_nm = "nname_exposures_all_avail.dat"
+total_path = argv[1]
 
-exposures = []
-with open(source_list_nm, "r") as f:
-    conts = f.readlines()
+src_path = total_path + "/cat_hdf5"
+pic_path = total_path + "/cat_inform/field_distortion"
 
-for nm in conts:
-    expos_nm = nm.split("\n")[0]
-    exposures.append(expos_nm)
+source_list_nm = "exposure_avail.dat"
 
-if rank == 0:
-    print("Totally ",len(exposures)," fields")
+with open(total_path + "/cat_inform/"+source_list_nm, "r") as f:
+    content = f.readlines()
 
-sub_exposures = tool_box.alloc(exposures, cpus)[rank]
+all_exposures_path = []
+all_exposures = []
+for cc in content:
+    all_exposures.append(cc.split("/")[-1].split("\n")[0])
+    all_exposures_path.append(cc.split("\n")[0])
+
+my_exposures_path = tool_box.alloc(all_exposures_path, cpus)[rank]
+my_exposures = tool_box.alloc(all_exposures, cpus)[rank]
 
 
-for exposure_path in sub_exposures:
+for tag, fnm in enumerate(my_exposures):
+    # print(my_exposures_path[tag], fnm)
 
-    exposure_name = exposure_path.split("/")[-1].split(".")[0]
-    band_name = exposure_path.split("/")[-2]
-
-    h5f = h5py.File(exposure_path,"r")
+    h5f = h5py.File(my_exposures_path[tag], "r")
     data = h5f["/data"][()]
     h5f.close()
-    # data = numpy.loadtxt(exposure_path,dtype=numpy.float32)
 
-    ra = data[:,22]
-    dec = data[:,23]
+    col_shift = 16
+    ichip = data[:, col_shift] - 1
+    xc = data[:,col_shift+2]
+    yc = data[:,col_shift+3]
+    ra = data[:,col_shift+13]
+    dec = data[:,col_shift+14]
 
-    gf1 = data[:, 24]
-    gf2 = data[:, 25]
+    gf1 = data[:, col_shift + 15]
+    gf2 = data[:, col_shift + 16]
     gf = numpy.sqrt(gf1 ** 2 + gf2 ** 2)
 
     gf1_scale = [gf1.min(), gf1.max()]
     gf2_scale = [gf2.min(), gf2.max()]
     gf_scale = [gf.min(), gf.max()]
 
-    pic_nm = "field_distortion/%s/%s.png"%(band_name, exposure_name)
-    plot_gf_celestial(ra, dec, gf1, gf2, gf,
-                gf1_scale, gf2_scale, gf_scale, dot_size=1, pic_path=pic_nm)
+    pic_nm = pic_path + "/%s.png"%fnm.split(".")[0]
+    # plot_gf_celestial(ra, dec, gf1, gf2, gf, gf1_scale, gf2_scale, gf_scale, dot_size=1, pic_path=pic_nm)
+    plot_gf_pix(xc,yc,ichip, gf1, gf2, gf, gf1_scale, gf2_scale, gf_scale, dot_size=1, pic_path=pic_nm)
+
+

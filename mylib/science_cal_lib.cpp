@@ -624,20 +624,22 @@ void ggl_rotate_estimator(MY_FLOAT G1, MY_FLOAT G2, MY_FLOAT U, MY_FLOAT V, MY_F
 void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, int &bin_tag)
 {   
     int i;
+    int tag;
     if(val >= bins[pre_bin_tag])
     {
         for(i=pre_bin_tag; i<bin_num; i++)
         {
-            if(val>=bins[i] and val<bins[i+1]){bin_tag = i;}
+            if(val>=bins[i] and val<bins[i+1]){tag = i;break;}
         }
     }
     else
     {
         for(i=pre_bin_tag; i>0; i--)
         {
-            if(val>=bins[i-1] and val<bins[i]){bin_tag = i;}
+            if(val>=bins[i-1] and val<bins[i]){tag = i-1;break;}
         }
     }
+    bin_tag = tag;
 }
 
 void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
@@ -715,13 +717,22 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
-                separation_angle_1(len_ra, len_dec, src_ra, src_dec, sep_theta);
+                separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
 
 #ifdef GGL_PROP_DIST_STACK
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]/(1+len_dist);
 #else
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
 #endif
+                // if(ifg==2)
+                // {
+                //     if(ibkg==7915 or ibkg == 7935 or ibkg == 7940)
+                //     {
+                //         std::cout<<sep_dist<<" "<<data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]<<std::endl;
+                //         std::cout<<len_ra<<" "<<len_dec<<" "<<src_ra<<" "<<src_dec<<" "<<sep_theta<<std::endl;
+                //         std::cout<<std::endl;
+                //     }
+                // }
                 sep_bin_tag = -1;
                 for(ir=0; ir<data_info->sep_bin_num; ir++)
                 {
@@ -736,7 +747,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                 if(sep_bin_tag > -1)
                 {   
                     pair_count ++;
-
+                    // if(sep_bin_tag == 3){std::cout<<ifg<<" "<<ibkg<<std::endl;}
                     data_info->worker_sub_signal_count[sep_bin_tag] += sep_theta;
                     data_info->worker_sub_signal_count[data_info->signal_pts_num + sep_bin_tag] += sep_dist;
                     data_info->worker_sub_signal_count[data_info->signal_pts_num*2 + sep_bin_tag] += 1;
@@ -751,8 +762,14 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     src_mv = data_info->src_expo_data[ibkg_row + data_info->src_mv_col];
                     
                     ggl_rotate_estimator(src_mg1, src_mg2, src_mu, src_mv, rotation_mat, src_mg1_rot, src_mg2_rot, src_mu_rot);
-
-
+                    // std::cout<<"rot "<<len_ra<<" "<<len_dec<<" "<<len_cos_dec<<" "<<src_ra<<" "<<src_dec<<std::endl;
+                    // show_arr(rotation_mat,1,6);
+                    // std::cout<<"G "<<src_mg1<<" "<<src_mg2<<" "<<src_mn<<" "<<src_mu<<" "<<src_mv<<std::endl;
+                    // std::cout<<"Gr "<<src_mg1_rot<<" "<<src_mg2_rot<<" "<<src_mn<<" "<<src_mu_rot<<std::endl;
+                    // std::cout<<std::endl;
+                    src_mg1_rot *= sigma_crit;
+                    src_mg2_rot *= sigma_crit;
+                    
                     temp_mnut = src_mn + src_mu_rot;
                     temp_mnux = src_mn - src_mu_rot;
                     // pdf
@@ -760,10 +777,11 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
 
-                    temp_mnut_g = temp_mnut;
-                    temp_mnux_g = temp_mnux;
+                    temp_mnut_g = temp_mnut*sigma_crit;
+                    temp_mnux_g = temp_mnux*sigma_crit;
 
                     chi_gt_pos = sep_bin_tag*data_info->chi_g_theta_block_len_sub;
+                    // std::cout<<chi_gt_pos<<" "<<sep_bin_tag<<" "<<data_info->chi_g_theta_block_len_sub<<std::endl;
                     for(i=0; i<data_info->pdf_gt_num; i++)
                     { 
                         // \gamma_t & \gamma_x
@@ -776,6 +794,11 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                         data_info->worker_sub_chi_g_tan[chi_gt_pos_i + pdf_bin_tag1] +=1;
                         data_info->worker_sub_chi_g_cross[chi_gt_pos_i + pdf_bin_tag2] +=1;
                         
+                        // std::cout<<sep_bin_tag<<" "<<i<<" "<<chi_gt_pos<<" "<<chi_gt_pos_i<<std::endl;
+                        // std::cout<<temp_mgt<<" "<<src_mn<<" "<<src_mu_rot<<" "<<data_info->gt_guess[i]<<" "<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<std::endl;
+                        // show_arr(data_info->mg_gt_bin,1,data_info->mg_gt_bin_num+1);
+                        // std::cout<<std::endl;
+
                         pre_pdf_bin_tag1 = pdf_bin_tag1;
                         pre_pdf_bin_tag2 = pdf_bin_tag2;
                     }
@@ -785,8 +808,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
 
-                    src_mg1_rot *= sigma_crit;
-                    src_mg2_rot *= sigma_crit;
+ 
 
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
                     for(i=0; i<data_info->pdf_sigma_num; i++)
@@ -814,24 +836,27 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
             }
         }
     }
-
+    
     // add the count to the total count array, according to the jack id
     for(i=0; i<data_info->jack_num+1; i++)
     {   
-        if(i == data_info->len_expo_jackid[len_expo_label]){continue;}
 
+        if(i == data_info->len_expo_jackid[len_expo_label]){continue;}
+#ifdef GGL_DELTA_SIGMA
         for(j=0; j<data_info->chi_sigma_theta_block_len; j++)
         {
             data_info->worker_total_chi_sigma_tan[i*data_info->chi_sigma_theta_block_len + j] += data_info->worker_sub_chi_sigma_tan[j];
             data_info->worker_total_chi_sigma_cross[i*data_info->chi_sigma_theta_block_len + j] += data_info->worker_sub_chi_sigma_cross[j];
         }
+#endif
 
+#ifdef GGL_GAMMA_T
         for(j=0; j<data_info->chi_g_theta_block_len; j++)
         {
             data_info->worker_total_chi_g_tan[i*data_info->chi_g_theta_block_len + j] += data_info->worker_sub_chi_g_tan[j];
             data_info->worker_total_chi_g_cross[i*data_info->chi_g_theta_block_len + j] += data_info->worker_sub_chi_g_cross[j];
         }
-
+#endif
         for(j=0; j<data_info->sub_signal_count_len; j++)
         {
             data_info->worker_total_signal_count[i*data_info->sub_signal_count_len + j] += data_info->worker_sub_signal_count[j];
@@ -840,8 +865,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ed = clock();
     char times[100];
-    sprintf(times,"worker %d. %dth Lens file. Finished in %.2f sec. %d Lenses, %d pairs",
-            data_info->rank, len_expo_label, (ed-st)/CLOCKS_PER_SEC, data_info->len_data_row[len_expo_label], pair_count);
+    sprintf(times,"worker %d. %dth Lens file, %dth jack. Finished in %.2f sec. %d Lenses, %d pairs",
+            data_info->rank, len_expo_label, data_info->len_expo_jackid[len_expo_label], (ed-st)/CLOCKS_PER_SEC, data_info->len_data_row[len_expo_label], pair_count);
     std::cout<<times<<std::endl;
 }
 
@@ -1013,7 +1038,7 @@ if (data_info->rank > 0)
 
 void ggl_cal_signals(ggl_data_info * data_info)
 {   
-    sprintf(data_info->ggl_log_inform,"start calculate\n");
+    sprintf(data_info->ggl_log_inform,"\n================= start calculate =================\n");
     std::cout<<data_info->ggl_log_inform;
 
     char set_name[50];
@@ -1046,11 +1071,15 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
         if(i == data_info->jack_num)
         {   
-            std::cout<<"Theta\n";
+            std::cout<<"\n================= Count =================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<theta[j]/count[j]<<" ";}
+            {std::cout<<count[j]<<" ";}
             std::cout<<std::endl;
-            std::cout<<"Radius\n";
+            std::cout<<"\n================= Theta [armin] =================\n";
+            for(j=0;j<data_info->signal_pts_num;j++)
+            {std::cout<<theta[j]/count[j]*60<<" ";}
+            std::cout<<std::endl;
+            std::cout<<"\n================= Radius [Mpc/h] =================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<radius[j]/count[j]<<" ";}
             std::cout<<std::endl;
@@ -1068,14 +1097,20 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, count,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
-    sprintf(data_info->ggl_log_inform,"Finish calculating theta & radius\n");
+    sprintf(data_info->ggl_log_inform,"================= Finish calculating theta & radius =================\n");
     std::cout<<data_info->ggl_log_inform;
 
 #ifdef GGL_DELTA_SIGMA
 
+    sprintf(data_info->ggl_log_inform,"\n================= Start calculating GGL_DELTA_SIGMA =================\n");
+    std::cout<<data_info->ggl_log_inform;
+
     double *temp_sigma = new double[data_info->chi_sigma_theta_block_len];
-    double *delta_sigma_t = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
-    double *delta_sigma_x = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *delta_sigma_tan = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *delta_sigma_tan_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+
+    double *delta_sigma_cross = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *delta_sigma_cross_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
 
     for(i=0; i<data_info->jack_num+1; i++)
     {   
@@ -1091,8 +1126,10 @@ void ggl_cal_signals(ggl_data_info * data_info)
                         data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err);
         
         for(j=0; j<data_info->signal_pts_num; j++)
-        {delta_sigma_t[st_j + j] = signals[j];}
-
+        {
+            delta_sigma_tan[st_j + j] = signals[j];
+            delta_sigma_tan_err[st_j + j] = signals_err[j];
+        }
 
         // delta_sigma_x
         for(j=0;j<data_info->chi_sigma_theta_block_len;j++)
@@ -1102,59 +1139,112 @@ void ggl_cal_signals(ggl_data_info * data_info)
                         data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err);
         
         for(j=0; j<data_info->signal_pts_num; j++)
-        {delta_sigma_x[st_j + j] = signals[j];}
+        {
+            delta_sigma_cross[st_j + j] = signals[j];
+            delta_sigma_cross_err[st_j + j] = signals_err[j];
+        }
+
+        if(i == data_info->jack_num)
+        {   
+            std::cout<<"Delta Sigma_t\n";
+            for(j=0;j<data_info->signal_pts_num;j++)
+            {std::cout<<delta_sigma_tan[j]<<"("<<delta_sigma_tan_err[j]<<") ";}
+            std::cout<<std::endl;
+
+            std::cout<<"Delta Sigma_x\n";
+            for(j=0;j<data_info->signal_pts_num;j++)
+            {std::cout<<delta_sigma_cross[j]<<"("<<delta_sigma_cross_err[j]<<") ";}
+            std::cout<<std::endl;
+        } 
     }
 
     sprintf(set_name,"/delta_t");
-    write_h5(data_info->ggl_result_path, set_name, delta_sigma_t,
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/delta_t_err");
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
     sprintf(set_name,"/delta_x");
-    write_h5(data_info->ggl_result_path, set_name, delta_sigma_x,
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/delta_x_err");
+    write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
-    sprintf(data_info->ggl_log_inform,"Finish calculating GGL_DELTA_SIGMA\n");
+    sprintf(data_info->ggl_log_inform,"================= Finish calculating GGL_DELTA_SIGMA =================\n");
     std::cout<<data_info->ggl_log_inform;
 #endif
 
 #ifdef GGL_GAMMA_T
     double *temp_g = new double[data_info->chi_g_theta_block_len];
     double *gt = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *gt_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
     double *gx = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
+    double *gx_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
 
+
+    sprintf(data_info->ggl_log_inform,"\n================= Start calculating GGL_GAMMA_T =================\n");
+    std::cout<<data_info->ggl_log_inform;
     for(i=0; i<data_info->jack_num+1; i++)
-    {    
+    {   
         st_j = i*data_info->signal_pts_num;
+
         // g_t
         st_c = i*data_info->chi_g_theta_block_len;
+
         for(j=0; j<data_info->chi_g_theta_block_len; j++)
         { temp_g[j] = data_info->total_chi_g_tan[st_c+j];}
 
-        ggl_pdf_signals(temp_g, data_info->delta_sigma_guess, data_info->pdf_gt_num, 
+        ggl_pdf_signals(temp_g, data_info->gt_guess, data_info->pdf_gt_num, 
                         data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err);
-        
+
         for(j=0; j<data_info->signal_pts_num; j++)
-        {gt[st_j + j] = signals[j];}
-
-
+        {
+            gt[st_j + j] = signals[j]; 
+            gt_err[st_j + j] = signals_err[j];
+        }
+        
         // g_x
         st_c = i*data_info->chi_g_theta_block_len;
+
         for(j=0; j<data_info->chi_g_theta_block_len; j++)
-        { temp_g[j] = data_info->total_chi_g_tan[st_c+j];}
-        ggl_pdf_signals(temp_g, data_info->delta_sigma_guess, data_info->pdf_gt_num, 
+        { temp_g[j] = data_info->total_chi_g_cross[st_c+j];}
+
+        ggl_pdf_signals(temp_g, data_info->gt_guess, data_info->pdf_gt_num, 
                         data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err);
         
         for(j=0; j<data_info->signal_pts_num; j++)
-        {gx[st_j + j] = signals[j];}
+        {
+            gx[st_j + j] = signals[j]; 
+            gx_err[st_j + j] = signals_err[j]; 
+        }
+
+        if(i == data_info->jack_num)
+        {   
+            std::cout<<"gt\n";
+            for(j=0;j<data_info->signal_pts_num;j++)
+            {std::cout<<gt[j]<<"("<<gt_err[j]<<") ";}
+            std::cout<<std::endl;
+            std::cout<<"gx\n";
+            for(j=0;j<data_info->signal_pts_num;j++)
+            {std::cout<<gx[j]<<"("<<gx_err[j]<<") ";}
+            std::cout<<std::endl;
+        } 
     }
 
     sprintf(set_name,"/g_t");
     write_h5(data_info->ggl_result_path, set_name, gt,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/g_t_err");
+    write_h5(data_info->ggl_result_path, set_name, gt_err,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
     sprintf(set_name,"/g_x");
     write_h5(data_info->ggl_result_path, set_name, gx,
             data_info->jack_num+1,data_info->signal_pts_num, false);
-
-    sprintf(data_info->ggl_log_inform,"Finish calculating GGL_GAMMA_T\n");
+    sprintf(set_name,"/g_x_err");
+    write_h5(data_info->ggl_result_path, set_name, gx_err,
+            data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(data_info->ggl_log_inform,"================= Finish calculating GGL_GAMMA_T =================\n");
     std::cout<<data_info->ggl_log_inform;
 
 #endif
@@ -1183,7 +1273,7 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             cal_chisq_1d(temp, mg_bin_num, chisq_i);
             chisq[j] = chisq_i;
         }
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, 80);
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, 200);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
     }
