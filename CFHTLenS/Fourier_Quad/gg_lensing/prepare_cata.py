@@ -44,7 +44,7 @@ redshift_idx = 10
 chi_guess_num = 200
 num_p = int(chi_guess_num/2)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.1, 500, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
 
 delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
 delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
@@ -52,7 +52,7 @@ delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 
-tan_shear_guess_bin_p = tool_box.set_bin_log(0.001, 0.1, num_p).astype(numpy.float64)
+tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.1, num_p).astype(numpy.float64)
 
 tan_shear_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
