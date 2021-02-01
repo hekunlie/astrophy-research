@@ -214,6 +214,7 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->src_zerr_col = 9;
     data_info->src_com_dist_col = 10;
     
+    if(data_info->jack_num <= 2){data_info->jack_num=0;}
 
     // no len/src data array exists in memory
     data_info->len_expo_read_tag = 0;
@@ -767,8 +768,6 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     // std::cout<<"G "<<src_mg1<<" "<<src_mg2<<" "<<src_mn<<" "<<src_mu<<" "<<src_mv<<std::endl;
                     // std::cout<<"Gr "<<src_mg1_rot<<" "<<src_mg2_rot<<" "<<src_mn<<" "<<src_mu_rot<<std::endl;
                     // std::cout<<std::endl;
-                    src_mg1_rot *= sigma_crit;
-                    src_mg2_rot *= sigma_crit;
                     
                     temp_mnut = src_mn + src_mu_rot;
                     temp_mnux = src_mn - src_mu_rot;
@@ -777,8 +776,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
 
-                    temp_mnut_g = temp_mnut*sigma_crit;
-                    temp_mnux_g = temp_mnux*sigma_crit;
+                    temp_mnut_g = temp_mnut;
+                    temp_mnux_g = temp_mnux;
 
                     chi_gt_pos = sep_bin_tag*data_info->chi_g_theta_block_len_sub;
                     // std::cout<<chi_gt_pos<<" "<<sep_bin_tag<<" "<<data_info->chi_g_theta_block_len_sub<<std::endl;
@@ -808,7 +807,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
 
- 
+                    src_mg1_rot *= sigma_crit;
+                    src_mg2_rot *= sigma_crit;
 
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
                     for(i=0; i<data_info->pdf_sigma_num; i++)
@@ -840,8 +840,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     // add the count to the total count array, according to the jack id
     for(i=0; i<data_info->jack_num+1; i++)
     {   
-
-        if(i == data_info->len_expo_jackid[len_expo_label]){continue;}
+        if(data_info->jack_num > 2)
+        {if(i == data_info->len_expo_jackid[len_expo_label]){continue;}}
 #ifdef GGL_DELTA_SIGMA
         for(j=0; j<data_info->chi_sigma_theta_block_len; j++)
         {
@@ -1038,7 +1038,7 @@ if (data_info->rank > 0)
 
 void ggl_cal_signals(ggl_data_info * data_info)
 {   
-    sprintf(data_info->ggl_log_inform,"\n================= start calculate =================\n");
+    sprintf(data_info->ggl_log_inform,"\n========================== start calculate ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
     char set_name[50];
@@ -1071,15 +1071,15 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
         if(i == data_info->jack_num)
         {   
-            std::cout<<"\n================= Count =================\n";
+            std::cout<<"\n========================== Count ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<count[j]<<" ";}
             std::cout<<std::endl;
-            std::cout<<"\n================= Theta [armin] =================\n";
+            std::cout<<"\n========================== Theta [armin] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<theta[j]/count[j]*60<<" ";}
             std::cout<<std::endl;
-            std::cout<<"\n================= Radius [Mpc/h] =================\n";
+            std::cout<<"\n========================== Radius [Mpc/h] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<radius[j]/count[j]<<" ";}
             std::cout<<std::endl;
@@ -1097,12 +1097,12 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, count,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
-    sprintf(data_info->ggl_log_inform,"================= Finish calculating theta & radius =================\n");
+    sprintf(data_info->ggl_log_inform,"========================== Finish calculating theta & radius ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
 #ifdef GGL_DELTA_SIGMA
 
-    sprintf(data_info->ggl_log_inform,"\n================= Start calculating GGL_DELTA_SIGMA =================\n");
+    sprintf(data_info->ggl_log_inform,"\n========================== Start calculating GGL_DELTA_SIGMA ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
     double *temp_sigma = new double[data_info->chi_sigma_theta_block_len];
@@ -1171,7 +1171,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
-    sprintf(data_info->ggl_log_inform,"================= Finish calculating GGL_DELTA_SIGMA =================\n");
+    sprintf(data_info->ggl_log_inform,"========================== Finish calculating GGL_DELTA_SIGMA ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 #endif
 
@@ -1183,7 +1183,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
     double *gx_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
 
 
-    sprintf(data_info->ggl_log_inform,"\n================= Start calculating GGL_GAMMA_T =================\n");
+    sprintf(data_info->ggl_log_inform,"\n========================== Start calculating GGL_GAMMA_T ==========================\n");
     std::cout<<data_info->ggl_log_inform;
     for(i=0; i<data_info->jack_num+1; i++)
     {   
@@ -1244,7 +1244,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/g_x_err");
     write_h5(data_info->ggl_result_path, set_name, gx_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
-    sprintf(data_info->ggl_log_inform,"================= Finish calculating GGL_GAMMA_T =================\n");
+    sprintf(data_info->ggl_log_inform,"========================== Finish calculating GGL_GAMMA_T ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
 #endif
