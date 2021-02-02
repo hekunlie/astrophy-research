@@ -199,11 +199,11 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
 
     # L*Bessel_0(L*theta) in the final integral
     integ_Lpts_theta_p = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
-    integ_Lpts_theta_m = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
+    # integ_Lpts_theta_m = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
     for i in range(tomo_panel_num):
         for j in range(theta_num):
             integ_Lpts_theta_p[i,j,:] = Lpts*scipy.special.j0(theta_radian[i,j] * Lpts)
-            integ_Lpts_theta_m[i,j,:] = Lpts*scipy.special.jv(4,theta_radian[i,j] * Lpts)
+            # integ_Lpts_theta_m[i,j,:] = Lpts*scipy.special.jv(4,theta_radian[i,j] * Lpts)
     # t4 = time.time()
 
     # Pk interpolation
@@ -211,7 +211,7 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
     PLs = numpy.zeros((tomo_panel_num, Lpts_num))
     # the theoretical line
     xi_plus = numpy.zeros((tomo_panel_num, theta_num))
-    xi_minus = numpy.zeros((tomo_panel_num, theta_num))
+    # xi_minus = numpy.zeros((tomo_panel_num, theta_num))
     xi_all = numpy.zeros((int(2*tomo_panel_num), theta_num))
 
     # calculate Pk using Camb
@@ -235,10 +235,11 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
             integ_part_p = integ_Lpts_theta_p[i,j,:] * PLs[i]
             xi_plus[i, j] = numpy.sum(((integ_part_p[1:] + integ_part_p[:-1]) / 2 * dLpts))
 
-            integ_part_m = integ_Lpts_theta_m[i,j,:] * PLs[i]
-            xi_minus[i, j] = numpy.sum(((integ_part_m[1:] + integ_part_m[:-1]) / 2 * dLpts))
+            # integ_part_m = integ_Lpts_theta_m[i,j,:] * PLs[i]
+            # xi_minus[i, j] = numpy.sum(((integ_part_m[1:] + integ_part_m[:-1]) / 2 * dLpts))
     xi_all[:tomo_panel_num] = xi_plus
-    xi_all[tomo_panel_num:] = xi_minus
+    # xi_all[tomo_panel_num:] = xi_minus
     # t7 = time.time()
     # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
-    return xi_all/2/numpy.pi, sigma8[-1], xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts
+    # return xi_all/2/numpy.pi, sigma8[-1], xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts
+    return xi_plus/2/numpy.pi, sigma8[-1], PLs, Lpts

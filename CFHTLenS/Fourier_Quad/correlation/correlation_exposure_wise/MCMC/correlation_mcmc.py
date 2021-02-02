@@ -55,8 +55,6 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
 
 
 
-
-
 start = time.time()
 
 expo = int(argv[1])
@@ -96,9 +94,9 @@ resample_num = 200
 npz = numpy.load("./data/result_cache_%d_%s.npz"%(resample_num,expo_type))
 
 theta = npz["arr_0"]
-# both \xi_+ & \xi_-
-xi = npz["arr_9"]
-cov_inv = npz["arr_11"]
+# only \xi_+
+xi = npz["arr_1"]
+cov_inv = npz["arr_4"]
 
 # arcmin to radian
 theta_radian = theta/60/180*numpy.pi
@@ -119,7 +117,7 @@ for i in range(ndim):
     a,b = para_lim[i]
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)
 
-
+print(nsteps, " steps")
 with Pool(thread) as pool:
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob, pool=pool, args=(theta_radian, xi, cov_inv, zebin_cent,
                                                                     inv_scale_factor_sq, zehist, z4pk_interp))
@@ -129,9 +127,19 @@ with Pool(thread) as pool:
 emcee.backends.HDFBackend("./chain_cache.hdf5")
 
 chain = sampler.get_chain()
-flat_chain = sampler.get_chain(discard=4000, thin=15, flat=True)
+flat_chain = sampler.get_chain(discard=2000, flat=True)
+flat_chain_20thin = sampler.get_chain(discard=2000, thin=20, flat=True)
 
-numpy.savez("./data/chain_%s.npz"%expo_type, chain, flat_chain)
+numpy.savez("./data/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_20thin)
+
+tau = sampler.get_autocorr_time()
+discard_step = int(tau.mean()*1.5)
+thin_step = int(tau.mean()/2)
+print(tau, discard_step, thin_step)
+
+flat_chain_thin = sampler.get_chain(discard=discard_step, thin=thin_step, flat=True)
+
+numpy.savez("./data/chain_%s_autocorr_thin_%d_steps.npz"%(expo_type, nsteps), flat_chain_thin)
 
 end = time.time()
 multi_time = end - start
