@@ -1,0 +1,15 @@
+[1] Config.pm:304> INFO - This is Biber 2.12
+[1] Config.pm:307> INFO - Logfile is 'main.blg'
+[94] biber-MSWIN32:315> INFO - === 
+[176] Biber.pm:371> INFO - Reading 'main.bcf'
+[518] Biber.pm:889> INFO - Found 18 citekeys in bib section 0
+[550] Biber.pm:4093> INFO - Processing section 0
+[586] Biber.pm:4254> INFO - Looking for bibtex format file 'bibdata/thesis.bib' for section 0
+[597] bibtex.pm:1523> INFO - LaTeX decoding ...
+[685] bibtex.pm:1340> INFO - Found BibTeX data source 'bibdata/thesis.bib'
+[1157] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[1158] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[1158] Biber.pm:3921> INFO - Sorting list 'none/global//global/global' of type 'entry' with template 'none' and locale 'en-US'
+[1159] Biber.pm:3927> INFO - No sort tailoring available for locale 'en-US'
+[1214] bbl.pm:636> INFO - Writing 'main.bbl' with encoding 'UTF-8'
+[1247] bbl.pm:739> INFO - Output to main.bbl
