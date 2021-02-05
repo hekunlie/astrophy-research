@@ -4,7 +4,7 @@
 //#pragma once
 
 #include<iostream>
-#include<fitsio.h>
+// #include<fitsio.h>
 #include<fstream> // ifstream,ofstream
 #include<sstream> //std::stringstream
 #include<hdf5.h>

@@ -227,12 +227,12 @@ class Fourier_Quad:
         return arr
 
     def cre_psf(self, psf_scale, flux=1., model="GAUSS"):
-        if model is 'GAUSS':
+        if model == 'GAUSS':
             factor = flux*1./2/numpy.pi/psf_scale**2
             arr = factor*numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
             return arr
 
-        elif model is 'Moffat':
+        elif model == 'Moffat':
             r_scale_sq = 9
             m = 3.5
             factor = flux*1./(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))

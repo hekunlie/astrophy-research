@@ -1130,105 +1130,105 @@ void write_h5(const char *filename, const char *set_name, const long *data, cons
 }
 
 
-void read_fits(const char *filename, double *arr)
-{
-	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
-	int status = 0, nfound, anynull;
-	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
-	double datamin, datamax, nullval = 0;
+// void read_fits(const char *filename, double *arr)
+// {
+// 	fitsfile *fptr;															/* pointer to the FITS file, defined in fitsio.h */
+// 	int status = 0, nfound, anynull;
+// 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
+// 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, filename, READONLY, &status);
-	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
-	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
-	double *buffer = new double[npixels];										/* create a new array */
-	fits_read_img(fptr, TDOUBLE, fpixel, npixels, &nullval, buffer, &anynull, &status);
-	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
-	delete[] buffer;														/* (have to) delete the array */
-	fits_close_file(fptr, &status);
-}
+// 	fits_open_file(&fptr, filename, READONLY, &status);
+// 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
+// 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
+// 	double *buffer = new double[npixels];										/* create a new array */
+// 	fits_read_img(fptr, TDOUBLE, fpixel, npixels, &nullval, buffer, &anynull, &status);
+// 	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
+// 	delete[] buffer;														/* (have to) delete the array */
+// 	fits_close_file(fptr, &status);
+// }
 
-void read_fits(const char *filename, float *arr)
-{
-	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
-	int status = 0, nfound, anynull;
-	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
-	double datamin, datamax, nullval = 0;
+// void read_fits(const char *filename, float *arr)
+// {
+// 	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
+// 	int status = 0, nfound, anynull;
+// 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
+// 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, filename, READONLY, &status);
-	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
-	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
-	float *buffer = new float[npixels];	/* create a new array */
-	fits_read_img(fptr, TFLOAT, fpixel, npixels, &nullval, buffer, &anynull, &status);
-	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
-	delete[] buffer;		/* (have to) delete the array */
-	fits_close_file(fptr, &status);
-}
+// 	fits_open_file(&fptr, filename, READONLY, &status);
+// 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
+// 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
+// 	float *buffer = new float[npixels];	/* create a new array */
+// 	fits_read_img(fptr, TFLOAT, fpixel, npixels, &nullval, buffer, &anynull, &status);
+// 	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
+// 	delete[] buffer;		/* (have to) delete the array */
+// 	fits_close_file(fptr, &status);
+// }
 
-void read_fits(const char *filename, int *arr)
-{
-	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
-	int status = 0, nfound, anynull;
-	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
-	double datamin, datamax, nullval = 0;
+// void read_fits(const char *filename, int *arr)
+// {
+// 	fitsfile *fptr;			/* pointer to the FITS file, defined in fitsio.h */
+// 	int status = 0, nfound, anynull;
+// 	long naxes[2], fpixel = 1, nbuffer, npixels, ii;
+// 	double datamin, datamax, nullval = 0;
 
-	fits_open_file(&fptr, filename, READONLY, &status);
-	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
-	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
-	int *buffer = new int[npixels];	/* create a new array */
-	fits_read_img(fptr, TINT, fpixel, npixels, &nullval, buffer, &anynull, &status);
-	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
-	delete[] buffer;		/* (have to) delete the array */
-	fits_close_file(fptr, &status);
-}
+// 	fits_open_file(&fptr, filename, READONLY, &status);
+// 	fits_read_keys_lng(fptr, "NAXIS", 1, 2, naxes, &nfound, &status);		/* read the NAXIS1 and NAXIS2 keyword to get image size */
+// 	npixels = naxes[0] * naxes[1];	/* number of pixels in the image, python_arr[naxes[1], naxes[0]] */
+// 	int *buffer = new int[npixels];	/* create a new array */
+// 	fits_read_img(fptr, TINT, fpixel, npixels, &nullval, buffer, &anynull, &status);
+// 	for (ii = 0; ii < npixels; ii++) arr[ii] = buffer[ii];
+// 	delete[] buffer;		/* (have to) delete the array */
+// 	fits_close_file(fptr, &status);
+// }
 
-void write_fits(const char *filename, double *img, const int ysize, const int xsize)
-{
-	fitsfile *fptr;		/* pointer to the FITS file; defined in fitsio.h */
-	int status, ii, jj;
-	long fpixel = 1, naxis = 2, nelements, exposure;
-	long naxes[2] ;	    /* x, y */
-	naxes[0] = xsize;
-	naxes[1] = ysize;	 /* the same as numpy array */	
-	status = 0;			/* initialize status before calling fitsio routines */
-	fits_create_file(&fptr, filename, &status);		/* create new file */
-	fits_create_img(fptr, DOUBLE_IMG, naxis, naxes, &status);		 /* Create the primary array image (16-bit short integer pixels */
-	//fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */	
-	nelements = xsize*ysize;         /* number of pixels to write */
-	fits_write_img(fptr, TDOUBLE, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
-	fits_close_file(fptr, &status);              /* close the file */
-	fits_report_error(stderr, status);      /* print out any error messages */	
-}
+// void write_fits(const char *filename, double *img, const int ysize, const int xsize)
+// {
+// 	fitsfile *fptr;		/* pointer to the FITS file; defined in fitsio.h */
+// 	int status, ii, jj;
+// 	long fpixel = 1, naxis = 2, nelements, exposure;
+// 	long naxes[2] ;	    /* x, y */
+// 	naxes[0] = xsize;
+// 	naxes[1] = ysize;	 /* the same as numpy array */	
+// 	status = 0;			/* initialize status before calling fitsio routines */
+// 	fits_create_file(&fptr, filename, &status);		/* create new file */
+// 	fits_create_img(fptr, DOUBLE_IMG, naxis, naxes, &status);		 /* Create the primary array image (16-bit short integer pixels */
+// 	//fits_update_key(fptr, TDOUBLE, "EXPOSURE", &exposure, "Total Exposure Time", &status);  /* Write a keyword; must pass the ADDRESS of the value */	
+// 	nelements = xsize*ysize;         /* number of pixels to write */
+// 	fits_write_img(fptr, TDOUBLE, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+// 	fits_close_file(fptr, &status);              /* close the file */
+// 	fits_report_error(stderr, status);      /* print out any error messages */	
+// }
 
-void write_fits(const char *filename, float *img, const int ysize, const int xsize)
-{
-	fitsfile *fptr;				/* pointer to the FITS file; defined in fitsio.h */
-	int status, ii, jj;
-	long fpixel = 1, naxis = 2, nelements, exposure;
-	long naxes[2];			/* x, y */
-	naxes[0] = xsize;
-	naxes[1] = ysize;   	/* the same as numpy array */
-	status = 0;		/* initialize status before calling fitsio routines */
-	fits_create_file(&fptr, filename, &status);		/* create new file */
-	fits_create_img(fptr, FLOAT_IMG, naxis, naxes, &status);	 /* Create the primary array image (16-bit short integer pixels */
-	nelements = xsize * ysize;         /* number of pixels to write */
-	fits_write_img(fptr, TFLOAT, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
-	fits_close_file(fptr, &status);              /* close the file */
-	fits_report_error(stderr, status);      /* print out any error messages */
-}
+// void write_fits(const char *filename, float *img, const int ysize, const int xsize)
+// {
+// 	fitsfile *fptr;				/* pointer to the FITS file; defined in fitsio.h */
+// 	int status, ii, jj;
+// 	long fpixel = 1, naxis = 2, nelements, exposure;
+// 	long naxes[2];			/* x, y */
+// 	naxes[0] = xsize;
+// 	naxes[1] = ysize;   	/* the same as numpy array */
+// 	status = 0;		/* initialize status before calling fitsio routines */
+// 	fits_create_file(&fptr, filename, &status);		/* create new file */
+// 	fits_create_img(fptr, FLOAT_IMG, naxis, naxes, &status);	 /* Create the primary array image (16-bit short integer pixels */
+// 	nelements = xsize * ysize;         /* number of pixels to write */
+// 	fits_write_img(fptr, TFLOAT, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+// 	fits_close_file(fptr, &status);              /* close the file */
+// 	fits_report_error(stderr, status);      /* print out any error messages */
+// }
 
-void write_fits(const char *filename, int *img, const int ysize, const int xsize)
-{
-	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
-	int status, ii, jj;
-	long fpixel = 1, naxis = 2, nelements;
-	long naxes[2];		/* x, y */
-	naxes[0] = xsize;
-	naxes[1] = ysize; 	/* the same as numpy array */
-	status = 0;	/* initialize status before calling fitsio routines */
-	fits_create_file(&fptr, filename, &status);		/* create new file */
-	fits_create_img(fptr, LONG_IMG, naxis, naxes, &status);	 /* Create the primary array image (16-bit short integer pixels */
-	nelements = xsize * ysize;         /* number of pixels to write */
-	fits_write_img(fptr, TINT, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
-	fits_close_file(fptr, &status);              /* close the file */
-	fits_report_error(stderr, status);      /* print out any error messages */
-}
+// void write_fits(const char *filename, int *img, const int ysize, const int xsize)
+// {
+// 	fitsfile *fptr;			/* pointer to the FITS file; defined in fitsio.h */
+// 	int status, ii, jj;
+// 	long fpixel = 1, naxis = 2, nelements;
+// 	long naxes[2];		/* x, y */
+// 	naxes[0] = xsize;
+// 	naxes[1] = ysize; 	/* the same as numpy array */
+// 	status = 0;	/* initialize status before calling fitsio routines */
+// 	fits_create_file(&fptr, filename, &status);		/* create new file */
+// 	fits_create_img(fptr, LONG_IMG, naxis, naxes, &status);	 /* Create the primary array image (16-bit short integer pixels */
+// 	nelements = xsize * ysize;         /* number of pixels to write */
+// 	fits_write_img(fptr, TINT, fpixel, nelements, img, &status);     /* Write the array of integers to the image */
+// 	fits_close_file(fptr, &status);              /* close the file */
+// 	fits_report_error(stderr, status);      /* print out any error messages */
+// }

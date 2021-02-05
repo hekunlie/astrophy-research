@@ -15,7 +15,7 @@ from multiprocessing import Pool
 
 def log_prior(paras):
     As, omega_m0 = paras
-    if 1 < As < 5 and 0.01 < omega_m0 < 0.7:
+    if 0.01 < As < 5 and 0.01 < omega_m0 < 0.7:
         return 0.0
     else:
         return -numpy.inf

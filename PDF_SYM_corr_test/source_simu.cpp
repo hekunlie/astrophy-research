@@ -128,15 +128,13 @@ int main(int argc, char*argv[])
 	int i, j, k, ib, m,n;
 	int sss1, sss2, seed_pts, seed_n1, seed_n2, seed_step;
 
-	int num_p, size, shear_pairs, shear_tag, img_len;
+	int num_p, size, shear_tag, img_len;
     MY_FLOAT max_radius;
 	int total_chips, sub_chip_num, sub_data_row, total_data_row;
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id, psf_type;
 	int seed_ini;
-
-	int detect_label;
-	std::string detect_info;
+    
 	double temp_val;
 
 	MY_FLOAT psf_scale, psf_thresh_scale, sig_level, psf_noise_sig, gal_noise_sig, flux_i;
@@ -148,13 +146,18 @@ int main(int argc, char*argv[])
 
 	strcpy(parent_path, argv[1]);
     shear_tag = atoi(argv[2]);
-	seed_ini = atoi(argv[3]);
-	size = 64;//atoi(argv[4]);
+	seed_ini = atoi(argv[3])*shear_tag + 1;
+	size = 54;//atoi(argv[4]);
 
+    if(rank == 0)
+    {
+        std::cout<<parent_path<<std::endl;
+        std::cout<<size<<" "<<shear_tag<<" "<<seed_ini<<std::endl;
+    }
 	pts_step = 3;
 
 	num_p = 40;
-	max_radius= 7;
+	max_radius= 6;
 	stamp_num = 10000;
 	shear_data_cols = 5;
 
@@ -173,7 +176,7 @@ int main(int argc, char*argv[])
     stamp_nx = 100;
 
 
-	flux_i = 40000/num_p;
+	flux_i = 20000/num_p;
 	
 	all_paras.stamp_size = size;
 	all_paras.img_x = size;
@@ -195,7 +198,10 @@ int main(int argc, char*argv[])
     
     total_chips = total_data_row/stamp_num;
 
-
+    if(rank == 0)
+    {
+        std::cout<<total_chips<<" chips"<<std::endl;
+    }
 	///////////////////// task distribution /////////////////////////////////////
 	int *scatter_count,*gather_count;
 	// for scatterring the flux to each thread
@@ -273,14 +279,13 @@ int main(int argc, char*argv[])
 	{	
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		std::cout << parent_path << std::endl;
-		std::cout<<"Shear num: "<<shear_pairs<<std::endl;
 		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
 		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 
 		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
-		write_fits(buffer,psf_img[0], size, size);
+		// write_fits(buffer,psf_img[0], size, size);
 
 		std::cout<<"Gal Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
@@ -394,7 +399,7 @@ int main(int argc, char*argv[])
         if(rank == 0 and i < 3)
         {
             sprintf(chip_path, "!%s/data/gal_chip_%05d_noise_free.fits", parent_path, i);
-            write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+            // write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
         }
 
         gsl_free(0);
