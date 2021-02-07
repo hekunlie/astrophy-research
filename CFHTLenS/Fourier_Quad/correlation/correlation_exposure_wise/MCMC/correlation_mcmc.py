@@ -14,8 +14,8 @@ from multiprocessing import Pool
 
 
 def log_prior(paras):
-    As, omega_m0 = paras
-    if 0.01 < As < 5 and 0.01 < omega_m0 < 0.7:
+    As, omega_m0, omega_b_ration = paras
+    if 0.001 < As < 5 and 0.01 < omega_m0 < 0.7 and 0.01 < omega_b_ration < 0.5:
         return 0.0
     else:
         return -numpy.inf
@@ -31,9 +31,12 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
     else:
         # print(lp)
         # t1 = time.time()
-        As, omega_m0 = paras
-        omega_bm0 = omega_m0*0.02233/0.14213
-        omega_cm0 = omega_m0*0.1198/0.14213
+        As, omega_m0, omega_b_ration = paras
+        omega_bm0 = omega_m0*omega_b_ration
+        omega_cm0 = omega_m0*(1-omega_b_ration)
+
+        # omega_bm0 = omega_m0*0.02233/0.14213
+        # omega_cm0 = omega_m0*0.1198/0.14213
         h = 0.6737
         As = As*10**(-9)
         # print(paras)
@@ -109,7 +112,7 @@ print("Data vector len: ", xi.shape)
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
-para_lim = [[1, 5],[0.05, 0.7]]
+para_lim = [[0.01, 5],[0.01, 0.7],[0.01,0.5]]
 nwalkers, ndim = thread, len(para_lim)
 initial = numpy.zeros((nwalkers, ndim))
 
@@ -124,7 +127,7 @@ with Pool(thread) as pool:
 
     sampler.run_mcmc(initial, nsteps, progress=True)
 
-emcee.backends.HDFBackend("./chain_cache.hdf5")
+# emcee.backends.HDFBackend("./chain_cache.hdf5")
 
 chain = sampler.get_chain()
 flat_chain = sampler.get_chain(discard=2000, flat=True)
@@ -133,7 +136,7 @@ flat_chain_20thin = sampler.get_chain(discard=2000, thin=20, flat=True)
 numpy.savez("./data/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_20thin)
 
 tau = sampler.get_autocorr_time()
-discard_step = int(tau.mean()*1.5)
+discard_step = int(tau.mean()*2)
 thin_step = int(tau.mean()/2)
 print(tau, discard_step, thin_step)
 

@@ -5695,6 +5695,8 @@ void task_alloc(const int total_task_num, const int portion, const int my_part_i
 {	
 	int i,j;
 	int sub_num;
+	int st, ed;
+
 	sub_num = total_task_num / portion;
 	j = total_task_num%portion;
 	for(i=0;i<portion;i++)
@@ -5702,12 +5704,13 @@ void task_alloc(const int total_task_num, const int portion, const int my_part_i
 		task_count[i] = sub_num;
 		if(i<j){task_count[i] +=1;}
 	}
-	my_start = 0;
+	st = 0;
 	for(i=0;i<my_part_id;i++)
 	{
-		my_start += task_count[i];
+		st += task_count[i];
 	}
-	my_end = my_start + task_count[my_part_id];
+	my_start = st;
+	my_end = st + task_count[my_part_id];
 }
 
 void task_alloc(const int total_task_num, const int division_num, const int my_part_id, int &my_st_id, int &my_ed_id, int *task_count, int *entry_for_gather)

@@ -443,7 +443,7 @@ void read_h5_datasize(const char *filename, const char *set_name, int &elem_num)
 	hid_t file_id, dataset_id, space_id;
 
 	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	dataset_id = H5Dopen2(file_id, set_name, H5P_DEFAULT);
 	space_id = H5Dget_space(dataset_id);
 	num = H5Sget_simple_extent_npoints(space_id);
 	if (num > 0)
@@ -467,7 +467,7 @@ void read_h5_datasize(const char *filename, const char *set_name, long &elem_num
 	hid_t file_id, dataset_id, space_id;
 
 	file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT);
-	dataset_id = H5Dopen(file_id, set_name, H5P_DEFAULT);
+	dataset_id = H5Dopen2(file_id, set_name, H5P_DEFAULT);
 	space_id = H5Dget_space(dataset_id);
 	num = H5Sget_simple_extent_npoints(space_id);
 	if (num > 0)
