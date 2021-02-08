@@ -76,9 +76,22 @@ def get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, zpts, kmax=3):
     pars.NonLinearModel.set_params(halofit_version='takahashi')
     # get results, it must run before the power speactra calculation
     results = camb.get_results(pars)
+    sigma8 = results.get_sigma8()
+    return results, sigma8, pars
 
-    return results, pars
 
+def As2sigma8(As, Omega_cm0, Omega_bm0, zpts, H0, ns=0.965, interp_kmax=3):
+    h = H0/100
+    omg_cm0h2 = Omega_cm0*h*h
+    omg_bm0h2 = Omega_bm0*h*h
+
+    num = As.shape[0]
+    sigma8 = numpy.zeros((num,))
+    for i in range(num):
+        s8 = get_CambResult(H0, omg_cm0h2[i], omg_bm0h2[i], As[i], ns, zpts, kmax=interp_kmax)[1]
+        # print(s8,type(s8))
+        sigma8[i] = s8[0]
+    return sigma8
 
 def get_PK(camb_result, kpts_num=300, kmin=1e-4, kmax=3):
     # camb_result: camb result instance
@@ -132,7 +145,7 @@ def get_PL(integ_pk, Lpts_num, integ_factor, delta_com_dist):
 
 
 
-def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian):
+def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian):
     '''
     calculate the xi_+/- using camb for mcmc or ...
     :param As: Amplitude of initial power spectrum
@@ -243,3 +256,5 @@ def get_pk(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_i
     # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
     # return xi_all/2/numpy.pi, sigma8[-1], xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts
     return xi_plus/2/numpy.pi, sigma8[-1], PLs, Lpts
+
+

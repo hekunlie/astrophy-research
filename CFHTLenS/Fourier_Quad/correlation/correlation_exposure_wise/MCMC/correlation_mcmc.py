@@ -2,9 +2,7 @@ import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
-import tool_box
 import correlation_function_tool as cf_tool
-import time
 import numpy
 import emcee
 import time
@@ -41,7 +39,7 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
         As = As*10**(-9)
         # print(paras)
         try:
-            xi_theoretical, sigma8 = cf_tool.get_pk(As, omega_cm0, omega_bm0, h,
+            xi_theoretical, sigma8 = cf_tool.get_tomo_xi(As, omega_cm0, omega_bm0, h,
                                                       zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
 
             diff = xi - xi_theoretical.flatten()
