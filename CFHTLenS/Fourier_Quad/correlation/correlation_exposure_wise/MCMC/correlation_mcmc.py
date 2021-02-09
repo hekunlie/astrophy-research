@@ -13,7 +13,7 @@ from multiprocessing import Pool
 
 def log_prior(paras):
     As, omega_m0, omega_b_ration = paras
-    if 0.001 < As < 5 and 0.01 < omega_m0 < 0.7 and 0.01 < omega_b_ration < 0.5:
+    if 0.01 < As < 5 and 0.05 < omega_m0 < 0.7 and 0.01 < omega_b_ration < 0.5:
         return 0.0
     else:
         return -numpy.inf
@@ -31,7 +31,7 @@ def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist,
         # t1 = time.time()
         As, omega_m0, omega_b_ration = paras
         omega_bm0 = omega_m0*omega_b_ration
-        omega_cm0 = omega_m0*(1-omega_b_ration)
+        omega_cm0 = omega_m0 - omega_bm0
 
         # omega_bm0 = omega_m0*0.02233/0.14213
         # omega_cm0 = omega_m0*0.1198/0.14213
@@ -129,18 +129,18 @@ with Pool(thread) as pool:
 
 chain = sampler.get_chain()
 flat_chain = sampler.get_chain(discard=2000, flat=True)
-flat_chain_20thin = sampler.get_chain(discard=2000, thin=20, flat=True)
+flat_chain_thin_1 = sampler.get_chain(discard=2000, thin=150, flat=True)
 
-numpy.savez("./data/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_20thin)
+numpy.savez("./data/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_thin_1)
 
 tau = sampler.get_autocorr_time()
 discard_step = int(tau.mean()*2)
 thin_step = int(tau.mean()/2)
 print(tau, discard_step, thin_step)
 
-flat_chain_thin = sampler.get_chain(discard=discard_step, thin=thin_step, flat=True)
+flat_chain_thin_2 = sampler.get_chain(discard=discard_step, thin=thin_step, flat=True)
 
-numpy.savez("./data/chain_%s_autocorr_thin_%d_steps.npz"%(expo_type, nsteps), flat_chain_thin)
+numpy.savez("./data/chain_%s_autocorr_thin_%d_steps.npz"%(expo_type, nsteps), flat_chain_thin_2)
 
 end = time.time()
 multi_time = end - start

@@ -9,7 +9,7 @@ from mpi4py import MPI
 # from plot_tool import Image_Plot
 import tool_box
 from Fourier_Quad import Fourier_Quad
-
+import time
 
 
 def get_chisq(count, bin_num):
@@ -21,10 +21,12 @@ def get_chisq(count, bin_num):
     return 0.5 * numpy.sum(((arr_2 + arr_3 - arr_1 - arr_4) ** 2) / (arr_1 + arr_2 + arr_3 + arr_4))
 
 
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
+t1 = time.time()
 
 data_path = argv[1]
 tag_1 = int(argv[2])
@@ -32,7 +34,7 @@ tag_2 = tag_1 + 1
 data_type = argv[3]
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 300
+chi_guess_num = 350
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
 chi_guess_bin_p = tool_box.set_bin_log(3.*10**(-10), 6.*10**(-4), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
@@ -70,7 +72,7 @@ my_task_list = tool_box.alloc(task_list, cpus)[rank]
 if rank == 0:
     if not os.path.exists(data_path + "/mg_bin_%s.hdf5"%data_type):
         fq = Fourier_Quad(12, 12412)
-        h5f = h5py.File(data_path + "/data_0_%s.hdf5"%data_type,"r")
+        h5f = h5py.File(data_path + "/data_%d_%s.hdf5"%(tag_1,data_type),"r")
         shear_data = h5f["/data_0"][()]
         h5f.close()
         mg_bin = fq.set_bin(shear_data[:,0], mg_bin_num)
@@ -91,7 +93,9 @@ h5f_1 = h5py.File(data_path + "/data_%d_%s.hdf5"%(tag_1, data_type),"r")
 
 h5f_2 = h5py.File(data_path + "/data_%d_%s.hdf5"%(tag_2, data_type),"r")
 
-for tag in range(4):
+section_num = len(list(h5f_1.keys()))
+
+for tag in range(section_num):
 
     shear_data_1 = h5f_1["/data_%d" % tag][()]
     shear_data_2 = h5f_2["/data_%d" % tag][()]
@@ -126,8 +130,10 @@ h5f_2.close()
 
 comm.Barrier()
 
+t2 = time.time()
 if rank == 0:
     numpy.savez(data_path + "/chisq_%d_%d_%s.npz"%(tag_1, tag_2, data_type), chi_guess_bin, chisq_arr)
+    print("%d %d %.2f"%(tag_1, tag_2, t2-t1))
 comm.Barrier()
 
 

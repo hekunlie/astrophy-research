@@ -47,8 +47,8 @@ irow_st, irow_ed = row_st[rank], row_ed[rank]
 cols = 3
 data_tran = numpy.zeros((sub_src_num,cols))
 data_tran[:,As_col] = src_data[irow_st:irow_ed,0]/10**9
-data_tran[:,omega_cm0_col] = src_data[irow_st:irow_ed,1]*0.02233/0.14213
-data_tran[:,omega_bm0_col] = src_data[irow_st:irow_ed,1]*0.1198/0.14213
+data_tran[:,omega_bm0_col] = src_data[irow_st:irow_ed,1]*0.02233/0.14213
+data_tran[:,omega_cm0_col] = src_data[irow_st:irow_ed,1]*0.1198/0.14213
 
 As = data_tran[:, As_col]
 omega_cm0 = data_tran[:, omega_cm0_col]
@@ -57,7 +57,6 @@ z = [0]
 
 
 sig8 = cf_tool.As2sigma8(As, omega_cm0, omega_bm0,z, H0)
-
 data_tran[:, As_col] = sig8
 
 comm.Barrier()
@@ -66,7 +65,7 @@ if rank > 0:
     comm.Send([data_tran, MPI.DOUBLE], dest=0, tag=rank)
 else:
 
-    final_data = numpy.zeros_like((src_num,cols))
+    final_data = numpy.zeros((src_num,cols))
     final_data[irow_st:irow_ed] = data_tran
 
     for ir in range(1, numprocs):
