@@ -87,32 +87,63 @@ for ij in my_task_list:
     # measured shear
     mgs = numpy.zeros((2, shear_num))
 
-    for k in range(shear_num):
+    if psf_tag == "c":
+        for k in range(shear_num):
 
-        pts = fq.ran_pts(num=30,radius=max_radius[j],step=step_size[i])
+            pts = fq.ran_pts(num=30, radius=max_radius[j], step=step_size[i])
 
-        GN = numpy.zeros((3,))
+            GN = numpy.zeros((3,))
 
-        for ik in range(gal_num):
+            for ik in range(gal_num):
 
-            for ikk in range(4):
-                #                     print(i,j,k,ik,ikk)
-                pts_r = fq.rotate(pos=pts, theta=ikk*numpy.pi/4)
-                pts_s = fq.shear(pts_r, g1[ik], g2[ik])
-                # circle PSF
-                gal_img = fq.convolve_psf(pts_s, psf_scale,ellip_theta=(psf_e,0))
-                gal_pow = fq.pow_spec(gal_img)
+                for ikk in range(4):
+                    #                     print(i,j,k,ik,ikk)
+                    pts_r = fq.rotate(pos=pts, theta=ikk * numpy.pi / 4)
+                    pts_s = fq.shear(pts_r, g1[k], g2[k])
 
-                mg1, mg2, mn = fq.shear_est(gal_pow, psf_pow, F=True)[:3]
-                GN[0] += mg1
-                GN[1] += mg2
-                GN[2] += mn
+                    # circle PSF
+                    gal_img = fq.convolve_psf(pts_s, psf_scale)
 
-        mgs[0, k] = GN[0] / GN[2]
-        mgs[1, k] = GN[1] / GN[2]
-    # if rank == 0:
-    #     print(g1-mgs[0])
-    #     print(g2-mgs[1])
+                    gal_pow = fq.pow_spec(gal_img)
+
+                    mg1, mg2, mn = fq.shear_est(gal_pow, psf_pow, F=True)[:3]
+                    GN[0] += mg1
+                    GN[1] += mg2
+                    GN[2] += mn
+
+            mgs[0, k] = GN[0] / GN[2]
+            mgs[1, k] = GN[1] / GN[2]
+        if rank == 0:
+            print(g1 - mgs[0])
+            print(g2 - mgs[1])
+    else:
+        for k in range(shear_num):
+
+            pts = fq.ran_pts(num=30, radius=max_radius[j], step=step_size[i])
+
+            GN = numpy.zeros((3,))
+
+            for ik in range(gal_num):
+
+                for ikk in range(4):
+                    #                     print(i,j,k,ik,ikk)
+                    pts_r = fq.rotate(pos=pts, theta=ikk * numpy.pi / 4)
+                    pts_s = fq.shear(pts_r, g1[k], g2[k])
+
+                    gal_img = fq.convolve_psf(pts_s, psf_scale, ellip_theta=(psf_e, 0))
+
+                    gal_pow = fq.pow_spec(gal_img)
+
+                    mg1, mg2, mn = fq.shear_est(gal_pow, psf_pow, F=True)[:3]
+                    GN[0] += mg1
+                    GN[1] += mg2
+                    GN[2] += mn
+
+            mgs[0, k] = GN[0] / GN[2]
+            mgs[1, k] = GN[1] / GN[2]
+        if rank == 0:
+            print(g1 - mgs[0])
+            print(g2 - mgs[1])
 
     mc1 = tool_box.fit_1d(g1, mgs[0], 1, method="scipy")
     mc2 = tool_box.fit_1d(g2, mgs[1], 1, method="scipy")
