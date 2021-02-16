@@ -17,20 +17,27 @@ class Fourier_Quad:
         self.rng = numpy.random.RandomState(seed)
         self.size = size
         self.alpha = (2.*numpy.pi/size)**4
-        self.my = numpy.mgrid[0: size, 0: size][0] - size/2.
-        self.mx = numpy.mgrid[0: size, 0: size][1] - size/2.
-        self.kx2 = self.mx*self.mx
-        self.ky2 = self.my*self.my
-        self.kxy = self.mx*self.my
+
+        self.ky = numpy.mgrid[0: size, 0: size][0] - size/2.
+        self.kx = numpy.mgrid[0: size, 0: size][1] - size/2.
+
+        self.kx2 = self.kx*self.kx
+        self.ky2 = self.ky*self.ky
+        self.kxy = self.kx*self.ky
         self.k2 = self.kx2+self.ky2
         self.k4 = self.k2*self.k2
         self.mn1 = (-0.5)*(self.kx2 - self.ky2)
-        self.mn2 = -self.mx*self.my
+        self.mn2 = -self.kx*self.ky
         self.mn4 = self.k4 - 8*self.kx2*self.ky2
         self.mn5 = self.kxy*(self.kx2 - self.ky2)
+
+        self.my = self.ky - 0.5
+        self.mx = self.kx - 0.5
+
         self.rim = self.border(1)
         self.flux2 = -1.
         self.hlr = 0
+
 
     def draw_noise(self, mean, sigma):
         noise_img = self.rng.normal(loc=mean, scale=sigma, size=self.size * self.size).reshape(self.size, self.size)
@@ -82,7 +89,7 @@ class Fourier_Quad:
         psf_ps[idx] = 1.
         tk = wb/psf_ps * gal_ps
 
-        # ky, kx = self.my, self.mx
+        # ky, kx = self.ky, self.kx
         # #
         # kx2 = kx*kx
         # ky2 = ky*ky
@@ -110,7 +117,7 @@ class Fourier_Quad:
         return mg1, mg2, mn, mu, mv
 
     def wbeta(self, radius):
-        w_temp = numpy.exp(-(self.mx**2 + self.my**2)/radius**2)
+        w_temp = numpy.exp(-(self.kx**2 + self.ky**2)/radius**2)
         return w_temp, 1./radius
 
     def ran_pts(self, num, radius, step=1, ellip=0, alpha=0, g=None):
@@ -205,42 +212,66 @@ class Fourier_Quad:
         e2_r = e1 * numpy.sin(2 * theta) + e2 * numpy.cos(2 * theta)
         return e1_r, e2_r
 
-    def convolve_psf(self, pos, psf_scale, flux=1., psf="GAUSS"):
-        x = pos.shape[1]
+    def convolve_psf(self, pos, psf_scale, flux=1.,img_cent=(0,0), ellip_theta=None, psf="Moffat"):
+        pst_num = pos.shape[1]
         arr = numpy.zeros((self.size, self.size))
-
-        if psf == 'GAUSS':
+        dx, dy = img_cent
+        if psf == "GAUSS":
             factor = flux/2/numpy.pi/psf_scale**2
-            for i in range(x):
-                arr += factor*numpy.exp(-((self.mx-pos[0, i])**2+(self.my-pos[1, i])**2)/2./psf_scale**2)
+            for i in range(pst_num):
+                arr += factor*numpy.exp(-((self.mx-pos[0, i] - dx)**2+(self.my-pos[1, i] -dy)**2)/2./psf_scale**2)
 
         elif psf == "Moffat":
-            r_scale_sq = 9
-            m = 3.5
-            factor = flux/(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
-            for l in range(x):
-                rsq = ((self.mx-pos[0, l])**2+(self.my-pos[1, l])**2)/psf_scale**2
-                idx = rsq > r_scale_sq
-                pfunction = factor*(1. + rsq)**(-m)
-                pfunction[idx] = 0.
-                arr += pfunction
+
+            # factor = flux/pst_num
+            for i in range(pst_num):
+                x,y = pos[0,i],pos[1,i]
+                pts_psf = self.cre_psf(psf_scale, flux,img_cent=(x+dx,y+dy), ellip_theta=ellip_theta, model=psf)
+                arr += pts_psf
         return arr
 
-    def cre_psf(self, psf_scale, flux=1., model="GAUSS"):
+    def cre_psf(self, psf_scale, flux=1.,img_cent=(0,0), ellip_theta=None, model="Moffat"):
+        # dx,dy is shift from the original image cernt [image_size/2-0.5,image_size/2-0.5] (not [0,0] !)
+        dx,dy = img_cent
         if model == 'GAUSS':
             factor = flux*1./2/numpy.pi/psf_scale**2
-            arr = factor*numpy.exp(-(self.mx**2 + self.my**2)/2./psf_scale**2)
+            arr = factor*numpy.exp(-((self.mx-dx)**2 + (self.my-dy)**2)/2./psf_scale**2)
             return arr
 
         elif model == 'Moffat':
             r_scale_sq = 9
             m = 3.5
-            factor = flux*1./(numpy.pi*psf_scale**2*((1. + r_scale_sq)**(1.-m) - 1.)/(1.-m))
-            rsq = (self.mx**2 + self.my**2) / psf_scale**2
-            idx = rsq > r_scale_sq
-            rsq[idx] = 0.
-            arr = factor*(1. + rsq)**(-m)
-            arr[idx] = 0.
+            if ellip_theta:
+                ellip, theta = ellip_theta
+                cos_theta = numpy.cos(theta)
+                sin_theta = -numpy.sin(theta)
+                # [cos \theta, -sin \theta]
+                # [sin \theta, cos \theta]
+                q2 = (1 - ellip) / (1 + ellip)
+
+                # x ^ 2 / a ^ 2 + y ^ 2 / b ^ 2 = 1, (a > b)
+                # q = b / a, q ^ 2 = (1 - e) / (1 + e)
+                # = > q ^ 2
+                # x^ 2 / b ^ 2 + y ^ 2 / b ^ 2 = 1
+
+                b2_inv = 1. / psf_scale / psf_scale
+                a2_inv = b2_inv * q2
+                factor = flux*numpy.sqrt(q2)/(numpy.pi*psf_scale**2*(1 - (1. + r_scale_sq)**(1.-m))/(m-1.))
+
+                rsq = (cos_theta*(self.mx-dx) - sin_theta*(self.my-dy))**2*a2_inv + \
+                      (sin_theta*(self.mx-dx) + cos_theta*(self.my-dy))**2*b2_inv
+                idx = rsq > r_scale_sq
+                rsq[idx] = 0.
+                arr = factor*(1. + rsq)**(-m)
+                arr[idx] = 0.
+
+            else:
+                factor = flux*1./(numpy.pi*psf_scale**2*(1 - (1. + r_scale_sq)**(1.-m))/(m-1.))
+                rsq = ((self.mx-dx)**2 + (self.my-dy)**2) / psf_scale**2
+                idx = rsq > r_scale_sq
+                rsq[idx] = 0.
+                arr = factor*(1. + rsq)**(-m)
+                arr[idx] = 0.
             return arr
 
     def get_radius(self, image, scale):

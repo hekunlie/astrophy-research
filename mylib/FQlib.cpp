@@ -894,25 +894,26 @@ void create_psf_e(double*in_img, const double scale, const int size, const doubl
 	// yr = sin\theta * x + cos\theta *y
 	for (i = 0; i < size; i++) // y
 	{
-		// -sin\theta *y
+		// -sin\theta *y, the sign is correct!
 		ry1 =  -rot_2 * (i - img_cent);
 		// cos\theta *y
 		ry2 =  rot_1 * (i - img_cent);
 
 		for (j = 0; j < size; j++) // x
 		{
-			// xr = cos\theta * x - sin\theta *y
+			// xr = cos\theta * x - sin\theta *y, the sign is correct!
 			r1 = rot_1 * (j - img_cent) + ry1;
-			// yr = sin\theta * x + cos\theta *y
+			// yr = sin\theta * x + cos\theta *y, the sign is correct!
 			r2 = rot_2 * (j - img_cent) + ry2;
 			// xr^2/a^2 + yr^2/b^2
 			rs = r1 * r1*a2_inv + r2 * r2*b2_inv;
 
 			if (psf == 1)  // Gaussian PSF
 			{
+				// the flux normalization may be wrong for Gaussian PSF!!!
 				if (rs <= nscale) in_img[i*size + j] = flux_norm * exp(-rs * 0.5);
 			}
-			else              // Moffat PSF
+			else // Moffat PSF
 			{
 				if (rs <= nscale) in_img[i*size + j] = flux_norm * pow(1. + rs, -3.5);
 			}

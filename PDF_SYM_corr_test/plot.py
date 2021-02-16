@@ -17,13 +17,15 @@ chi_measures = [numpy.zeros((2, chi_guess_num)),numpy.zeros((2, chi_guess_num))]
 
 data_path = "D:/TEMP/chisq/1"
 data_type = ["noise_free", "noisy_cpp"]
-titles = ["noise_free,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals","noisy,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals"]
+titles = ["noise_free,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals",
+          "noisy,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals"]
 
 for j in range(2):
     img = Image_Plot(fig_x=14,fig_y=5,xpad=0.15,ypad=0.15)
     img.subplots(1,1)
 
 
+    # for i in range(10,3,-1):
     for i in range(chi_guess_num-1,-1,-1):
         tag_1 = int(2*i)
         tag_2 = tag_1 + 1
@@ -39,11 +41,11 @@ for j in range(2):
         xi = -coeff[1] / 2. / coeff[2]
         chi_measures[j][0,i] = xi
         chi_measures[j][1,i] = xi_err
-        print(i,chi_guess[i],)
+        print(tag_1,tag_2,i,chi_guess[i],)
 
         img.axs[0][0].plot(chi_guess_bin[idx], chisq_arr[idx], linewidth=2.2,label="$\\xi^t=%.2e, \\xi^m=%.3e(%.2e)$"%(chi_guess[i],xi,xi_err), ls=ls[0],c=ls[1])
 
-    img.axs[0][0].legend(ncol=3,fontsize=12,loc="lower center")
+    img.axs[0][0].legend(ncol=2,fontsize=12,loc="lower center")
     ys = img.axs[0][0].set_ylim()
     img.axs[0][0].set_xscale("symlog")
 
@@ -53,7 +55,7 @@ for j in range(2):
     img.axs[0][0].set_title(titles[j])
     img.set_label(0, 0, 0, "$\\chi^2$")
     img.set_label(0, 0, 1, "$\\xi_1$ guess")
-    img.set_ticklabel_str(0, 0, 1, [1.e-6, 1.e-5, 1.e-4],
+    img.set_ticklabel_str(0, 0, 1, [1.e-6, 1.e-5,1.e-4],
                           ["$10^{-%d}$" % i for i in range(6, 3, -1)])
 
     img.save_img(data_path + "/chisq_%s.png"%data_type[j])
@@ -73,5 +75,6 @@ img.axs[0][0].set_yscale("log")
 img.set_ticklabel_str(0,0,1,[1.e-9,1.e-8,1.e-7,1.e-6,1.e-5,1.e-4],["$10^{-%d}$"%i for i in range(9,3,-1)])
 img.set_label(0,0,0,"true $\\xi_1$")
 img.set_label(0,0,1,"measured $\\xi_1$")
+img.axs[0][0].grid()
 img.save_img(data_path + "/compare.png")
 img.show_img()

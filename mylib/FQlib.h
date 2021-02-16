@@ -131,7 +131,7 @@ struct pts_info
 };
 
 
-const double Pi = 3.1415926535897932384626433832795;
+const double Pi = 3.141592653589793;
 
 
 extern const gsl_rng_type *T0,*T1, *T2, *T3;

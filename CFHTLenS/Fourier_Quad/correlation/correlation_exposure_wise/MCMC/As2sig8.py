@@ -47,8 +47,8 @@ irow_st, irow_ed = row_st[rank], row_ed[rank]
 cols = 3
 data_tran = numpy.zeros((sub_src_num,cols))
 data_tran[:,As_col] = src_data[irow_st:irow_ed,0]/10**9
-data_tran[:,omega_bm0_col] = src_data[irow_st:irow_ed,1]*0.02233/0.14213
-data_tran[:,omega_cm0_col] = src_data[irow_st:irow_ed,1]*0.1198/0.14213
+data_tran[:,omega_cm0_col] = src_data[irow_st:irow_ed,1]*(1-src_data[irow_st:irow_ed,2])
+data_tran[:,omega_bm0_col] = src_data[irow_st:irow_ed,1]*src_data[irow_st:irow_ed,2]
 
 As = data_tran[:, As_col]
 omega_cm0 = data_tran[:, omega_cm0_col]
@@ -81,4 +81,4 @@ t2 = time.time()
 
 comm.Barrier()
 if rank == 0:
-    print("%.2f sec"%(t2-t1))
+    print("H0: %.2f. Time: %.2f sec"%(H0, t2-t1))

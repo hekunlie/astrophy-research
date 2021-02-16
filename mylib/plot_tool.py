@@ -74,12 +74,15 @@ class Image_Plot:
         self.line_styles = default_ls
 
 
-    def scatter_pts(self, iy,ix, x, y, fxy, pts_size=3, color_map='YlOrRd',sci_cb=True):
-        norm = plt.Normalize(vmin=numpy.min(fxy), vmax=numpy.max(fxy))
+    def scatter_pts(self, iy,ix, x, y, fxy, scale=None, pts_size=3, color_map='YlOrRd',marker="s",sci_cb=True):
+        if scale:
+            norm = plt.Normalize(vmin=scale[0], vmax=scale[1])
+        else:
+            norm = plt.Normalize(vmin=numpy.min(fxy), vmax=numpy.max(fxy))
         cmap = plt.get_cmap(color_map)
         cl = cmap(norm(fxy))
 
-        self.axs[iy][ix].scatter(x, y, color=cl, s=pts_size)
+        self.axs[iy][ix].scatter(x, y, color=cl, s=pts_size,marker=marker)
 
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm._A = []
@@ -257,7 +260,7 @@ class Image_Plot:
     def close_img(self):
         plt.close()
 
-    def pts_scatter(self,iy, ix, x, y, color_label, scale, dot_size=5, color_cm="bwr"):
+    def pts_scatter(self, iy, ix, x, y, color_label, scale, dot_size=5, color_cm="bwr"):
         norm = plt.Normalize(vmin=numpy.min(scale[0]), vmax=numpy.max(scale[1]))
         cmap = plt.get_cmap(color_cm)
         cl = cmap(norm(color_label))
