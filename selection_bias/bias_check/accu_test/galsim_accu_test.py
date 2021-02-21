@@ -24,7 +24,7 @@ theta = numpy.random.uniform(0,numpy.pi*2,shear_num)
 g1 = g*numpy.cos(2*theta)
 g2 = g*numpy.sin(2*theta)
 
-stamp_size = 96
+stamp_size = 128
 
 fq = Fourier_Quad(stamp_size,432)
 

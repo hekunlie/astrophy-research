@@ -27,12 +27,12 @@ def get_lrange(kmin, kmax, zmin, zmax, H0, Omeg_m0):
     return lmin, lmax
 
 
-def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=-1):
+def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=None, norm=True):
     # redshift_e is the expectation calculated from P(z)
     tomo_num = tomo_bin.shape[0] - 1
     # bin starts from 0
-    if zlim > 0:
-        ze_bin = numpy.linspace(0, zlim, redshift_e_bin_num + 1)
+    if zlim:
+        ze_bin = numpy.linspace(zlim[0], zlim[1], redshift_e_bin_num + 1)
     else:
         ze_bin = numpy.linspace(0, redshift_e.max() + 0.0001, redshift_e_bin_num + 1)
 
@@ -46,7 +46,10 @@ def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=-1):
         idx = idx1 & idx2
 
         zz_e_num = numpy.histogram(redshift_e[idx], ze_bin)[0]
-        zehist[i] = zz_e_num / zz_e_num.sum()
+        if norm:
+            zehist[i] = zz_e_num / zz_e_num.sum()
+        else:
+            zehist[i] = zz_e_num
 
     return zehist, ze_bin, ze_bin_cent
 

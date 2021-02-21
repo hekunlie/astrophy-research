@@ -55,7 +55,11 @@ omega_cm0 = data_tran[:, omega_cm0_col]
 omega_bm0 = data_tran[:, omega_bm0_col]
 z = [0]
 
-
+for i in range(numprocs):
+    if rank == i:
+        print("%d: %d-%d (%d) of %d"%(rank, irow_st, irow_ed, sub_src_num, src_num))
+    comm.Barrier()
+comm.Barrier()
 sig8 = cf_tool.As2sigma8(As, omega_cm0, omega_bm0,z, H0)
 data_tran[:, As_col] = sig8
 
@@ -77,6 +81,11 @@ else:
 
     numpy.savez(parent_path + "/" + file_name + "_s8.npz", final_data)
 
+
+    diff_cm = src_data[:,1]*(1-src_data[:,2]) - final_data[:,omega_cm0_col]
+    diff_bm = src_data[:,1]*src_data[:,2] - final_data[:,omega_bm0_col]
+    print("Test: ",diff_cm.min(), diff_cm.max())
+    print("Test: ",diff_bm.min(), diff_bm.max())
 t2 = time.time()
 
 comm.Barrier()
