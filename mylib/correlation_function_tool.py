@@ -4,7 +4,6 @@ from astropy.cosmology import FlatLambdaCDM
 import camb
 from camb import model, initialpower
 import scipy
-import time
 
 
 
@@ -233,7 +232,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     # calculate Pk using Camb
     camb_result = get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, z4pk_interp, kmax=interp_kmax)[0]
     pk_interp = camb_result.get_matter_power_interpolator(nonlinear=True, hubble_units=True, k_hunit=True)
-    sigma8 = camb_result.get_sigma8()
+    # sigma8 = camb_result.get_sigma8()
     # t5 = time.time()
 
     # get the Pk at given z points
@@ -258,6 +257,6 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     # t7 = time.time()
     # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
     # return xi_all/2/numpy.pi, sigma8[-1], xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts
-    return xi_plus/2/numpy.pi, sigma8[-1], PLs, Lpts
+    return xi_plus/2/numpy.pi,PLs, Lpts# sigma8[-1],
 
 
