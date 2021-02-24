@@ -1651,3 +1651,8 @@ def find_overlap(ra1, dec1, ra2, dec2, margin, bin_num):
     idx_n = label > 0
 
     return label, idx_n
+
+# def sort_bib(file_path):
+#     with open(file_path,"r") as f:
+#         conts = f.readlines()
+#

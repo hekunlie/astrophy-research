@@ -15,7 +15,7 @@ theta_bin_num = 5#int(argv[2])
 resample_num = 200#int(argv[3])
 
 # discard the first bin
-discard_bins = [0]
+discard_bins = []
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
@@ -60,7 +60,8 @@ for ii in range(2):
     datas.append([theta, xi_p, xi_p_sig, xi_m, xi_m_sig, use_cols])
 
     cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
-
+    print(theta[idx])
+    print(theta[idx].shape)
     numpy.savez(result_npz, theta[idx],
                 xi_p[idx], xi_p_sig[idx], cov_p, inv_cov_p,
                 xi_m[idx], xi_m_sig[idx], cov_m, inv_cov_m,
@@ -213,7 +214,7 @@ for ii in range(2):
                 img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_m[st:ed],yerr=xi_m_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
                                                    marker="o",fmt=" ",mfc="none",ms=12,
-                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5,alpha=alpha)
+                                                   label="$\\xi_{-}$ %s"%expo_type[ii],capsize=5,alpha=alpha)
                 if use_cols[st:ed].sum() > 1 and legend_tag == 0:
                     legend_tag = 1
                     img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
