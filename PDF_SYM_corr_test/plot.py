@@ -13,9 +13,10 @@ chi_guess_num = 15
 chi_guess = tool_box.set_bin_log(1./10**9,1./10**4,chi_guess_num)
 print(chi_guess)
 
-chi_measures = [numpy.zeros((2, chi_guess_num)),numpy.zeros((2, chi_guess_num))]
+chi_measures = [numpy.zeros((2, chi_guess_num)),
+                numpy.zeros((2, chi_guess_num))]
 
-data_path = "D:/TEMP/chisq/1"
+data_path = "D:/WORK_TEMP/chisq/2"
 data_type = ["noise_free", "noisy_cpp"]
 titles = ["noise_free,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals",
           "noisy,<$g_1g_1^{\prime}$>, $1\\times 10^8$ gals"]
@@ -25,8 +26,8 @@ for j in range(2):
     img.subplots(1,1)
 
 
-    # for i in range(10,3,-1):
-    for i in range(chi_guess_num-1,-1,-1):
+    for i in range(10,3,-1):
+    # for i in range(chi_guess_num-1,-1,-1):
         tag_1 = int(2*i)
         tag_2 = tag_1 + 1
 
@@ -61,6 +62,8 @@ for j in range(2):
     img.save_img(data_path + "/chisq_%s.png"%data_type[j])
     img.show_img()
     img.close_img()
+numpy.savez(data_path+"/xi_cache_%s.npz"%data_type[0],chi_measures[0])
+numpy.savez(data_path+"/xi_cache_%s.npz"%data_type[1],chi_measures[1])
 
 cs = ["C2","C1"]
 img = Image_Plot(fig_x=5,fig_y=5,xpad=0.15,ypad=0.15)

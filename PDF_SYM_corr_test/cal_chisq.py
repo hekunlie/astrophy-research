@@ -34,15 +34,23 @@ tag_2 = tag_1 + 1
 data_type = argv[3]
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 350
-inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-chi_guess_bin_p = tool_box.set_bin_log(3.*10**(-10), 6.*10**(-4), chi_guess_num).astype(numpy.float32)
-chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
-chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
-chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
-chi_guess_bin = numpy.sort(chi_guess_bin)
+# chi_guess_num = 350
+# inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
+# chi_guess_bin_p = tool_box.set_bin_log(3.*10**(-10), 6.*10**(-4), chi_guess_num).astype(numpy.float32)
+# chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
+# chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
+# chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
+# chi_guess_bin = numpy.sort(chi_guess_bin)
+#
+# chi_guess_num = int(chi_guess_num*2)
 
-chi_guess_num = int(chi_guess_num*2)
+chi_guess_num = 150
+inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
+xi_cache = numpy.load(data_path+"/xi_cache_%s.npz"%data_type)["arr_0"]
+signal_p = xi_cache[0,int(tag_1/2)]
+chi_guess_bin = tool_box.set_bin_log(signal_p/20, signal_p*20, chi_guess_num).astype(numpy.float32)
+
+
 mg_bin_num = 10
 
 
@@ -132,7 +140,7 @@ comm.Barrier()
 
 t2 = time.time()
 if rank == 0:
-    numpy.savez(data_path + "/chisq_%d_%d_%s.npz"%(tag_1, tag_2, data_type), chi_guess_bin, chisq_arr)
+    numpy.savez(data_path + "/chisq_%d_%d_%s_narrow.npz"%(tag_1, tag_2, data_type), chi_guess_bin, chisq_arr)
     print("%d %d %.2f"%(tag_1, tag_2, t2-t1))
 comm.Barrier()
 
