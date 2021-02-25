@@ -128,13 +128,14 @@ def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
         integ_k[:, i] = Lpts[i] / com_dist
 
     # print("k h/Mpc ~[%.4f, %.4f]" % (integ_k.min(), integ_k.max()))
+    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_k.npz", integ_k)
 
     # only in the interval, [kmin, kmax], will be calculated
     idx = integ_k < kmin
-    integ_k[idx] = 0
+    integ_k[idx] = -1
     idx = integ_k > kmax
-    integ_k[idx] = 0
-
+    integ_k[idx] = -1
+    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_k_cut.npz", integ_k)
     return Lpts, dLpts, integ_k
 
 
@@ -183,7 +184,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
 
     theta_num = theta_radian.shape[1]
 
-    Lpts_min, Lpts_max, Lpts_num = 10, 8000, 7000
+    Lpts_min, Lpts_max, Lpts_num = 1, 15000, 8000
 
     kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 3, 4, 300
 
@@ -205,12 +206,13 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     tag = 0
     for i in range(tomo_bin_num):
         for j in range(i, tomo_bin_num):
-            integ_factor[tag] = qx[i] * qx[j] * inv_scale_factor_sq
+            integ_factor[tag] = qx[i] * qx[j] * inv_scale_factor_sq*alpha
             tag += 1
     # t3 = time.time()
 
     # set up bins for L of P(L), and decide the ks needed
     Lpts, dLpts, integ_kh = ready4PL(Lpts_min, Lpts_max, Lpts_num, kmin, cal_kmax, com_dist, zpts_num)
+    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/com_dist.npz", com_dist,zpts)
 
     # L*Bessel_0(L*theta) in the final integral
     integ_Lpts_theta_p = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
@@ -240,10 +242,11 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     for i in range(zpts_num):
         idx = integ_kh[i] > 0
         integ_pk[i][idx] = pk_interp.P(zpts[i], integ_kh[i][idx])
+    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_pk.npz", integ_pk)
     # t6 = time.time()
     for i in range(tomo_panel_num):
         # get P(L)
-        PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], delta_com_dist) * alpha
+        PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], delta_com_dist)
 
         # calculate the \chi_plus(\theta) , the theoretical line
         for j in range(theta_num):
