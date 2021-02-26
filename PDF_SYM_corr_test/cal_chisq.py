@@ -44,11 +44,12 @@ data_type = argv[3]
 #
 # chi_guess_num = int(chi_guess_num*2)
 
-chi_guess_num = 150
+chi_guess_num = 100
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
 xi_cache = numpy.load(data_path+"/xi_cache_%s.npz"%data_type)["arr_0"]
 signal_p = xi_cache[0,int(tag_1/2)]
-chi_guess_bin = tool_box.set_bin_log(signal_p/20, signal_p*20, chi_guess_num).astype(numpy.float32)
+signal_p_err = xi_cache[1,int(tag_1/2)]*10
+chi_guess_bin = numpy.linspace(signal_p-signal_p_err, signal_p + signal_p_err, chi_guess_num).astype(numpy.float32)
 
 
 mg_bin_num = 10

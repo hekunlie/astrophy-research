@@ -1,10 +1,11 @@
 import tool_box
+from plot_tool import Image_Plot
 import numpy
 from astropy.cosmology import FlatLambdaCDM
 import camb
 from camb import model, initialpower
 import scipy
-
+import pyccl
 
 
 def tomo_panel_num(tomo_bin_num):
@@ -13,7 +14,7 @@ def tomo_panel_num(tomo_bin_num):
 
 def z2dist(zpts, H0, omega_m0):
     cosmos = FlatLambdaCDM(H0, omega_m0)
-    return cosmos.comoving_distance(zpts).value * H0 / 100
+    return cosmos.comoving_distance(zpts).value
 
 
 def get_lrange(kmin, kmax, zmin, zmax, H0, Omeg_m0):
@@ -53,17 +54,18 @@ def get_nz(redshift, tomo_bin, redshift_e, redshift_e_bin_num, zlim=None, norm=T
     return zehist, ze_bin, ze_bin_cent
 
 
-def get_lenq(nz, com_dist):
+def get_lenq(nz, com_dist, alpha, inv_scale_factor):
     # nz: PDF of each tomo_bin, [tomo_bin_num, zhist_num],
     #       one row for one tomo_bin
     tomo_num, zpts_num = nz.shape
-    qx = numpy.zeros((tomo_num, zpts_num))
+    gx = numpy.zeros((tomo_num, zpts_num))
 
     for i in range(tomo_num):
         nz_dist = nz[i] / com_dist
         for j in range(zpts_num):
-            qx[i, j] = nz[i, j:].sum() - numpy.sum(nz_dist[j:]) * com_dist[j]
-    return qx
+            gx[i, j] = nz[i, j:].sum() - numpy.sum(nz_dist[j:]) * com_dist[j]
+        gx[i] = gx[i]*alpha*com_dist*inv_scale_factor
+    return gx
 
 
 def get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, zpts, kmax=3):
@@ -118,6 +120,7 @@ def get_PK_interp(camb_result):
 def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
     # calculate the k corresponding to L (specified by user)
     Lpts = tool_box.set_bin_log(Lmin, Lmax, Lpts_num)
+    # Lpts = numpy.linspace(Lmin, Lmax, Lpts_num)
     integ_k = numpy.zeros((zpts_num, Lpts_num))
 
     dLpts = Lpts[1:] - Lpts[:-1]
@@ -125,7 +128,7 @@ def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
     for i in range(Lpts_num):
         # integrate PK for each fixed L
         # k = L/com_dist at Z
-        integ_k[:, i] = Lpts[i] / com_dist
+        integ_k[:, i] = (Lpts[i]+0.5) / com_dist
 
     # print("k h/Mpc ~[%.4f, %.4f]" % (integ_k.min(), integ_k.max()))
     numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_k.npz", integ_k)
@@ -139,16 +142,21 @@ def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
     return Lpts, dLpts, integ_k
 
 
-def get_PL(integ_pk, Lpts_num, integ_factor, delta_com_dist):
+def get_PL(integ_pk, Lpts_num, integ_factor, com_dist):
     PL = numpy.zeros((Lpts_num,))
     for i in range(Lpts_num):
         integ_part = integ_pk[:, i] * integ_factor
-        PL[i] = numpy.sum((integ_part[1:] + integ_part[:-1]) / 2 * delta_com_dist)
+        idx = integ_part > 0
+        part1 = integ_part[idx]
+        part2 = com_dist[idx]
+        delta_com_dist = part2[1:] - part2[:-1]
+        PL[i] = numpy.sum((part1[1:] + part1[:-1]) * delta_com_dist)/2
     return PL
 
 
 
-def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian):
+def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
+                z4pk_interp, theta_radian,Lpts_min, Lpts_max, Lpts_num):
     '''
     calculate the xi_+/- using camb for mcmc or ...
     :param As: Amplitude of initial power spectrum
@@ -179,25 +187,24 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     omg_bm0h2 = Omega_bm0 * h ** 2
 
     omg_m0 = Omega_cm0 + Omega_bm0
-
-    alpha = 9 / 4 * omg_m0 ** 2 * (100 / c) ** 4  # h^4 \cdot Mpc^{-4}
+    # 3/2*\omega_m * (H0/c)**2
+    alpha = 1.5 * omg_m0 * (100 / c) ** 2  # h^2 \cdot Mpc^{-2}
+    # alpha = 1.5 * omg_m0 * (H0 / c) ** 2  # h^2 \cdot Mpc^{-2}
 
     theta_num = theta_radian.shape[1]
 
-    Lpts_min, Lpts_max, Lpts_num = 1, 15000, 8000
-
-    kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 3, 4, 300
+    kmin, cal_kmax, interp_kmax, kpts_num = 1e-4, 50, 50, 300
 
     # tomo panel num
     tomo_bin_num, zpts_num = zhist.shape
     tomo_panel_num = int((tomo_bin_num * tomo_bin_num + tomo_bin_num) / 2)
 
     # comoving distance Mpc/h
-    com_dist = z2dist(zpts, H0, omg_m0)
-    delta_com_dist = com_dist[1:] - com_dist[:-1]
+    com_dist = z2dist(zpts, H0, omg_m0)*h
+    # delta_com_dist = com_dist[1:] - com_dist[:-1]
 
     # lense efficiency
-    qx = get_lenq(zhist, com_dist)
+    qx = get_lenq(zhist, com_dist, alpha, inv_scale_factor)
 
     # t2 = time.time()
 
@@ -206,7 +213,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     tag = 0
     for i in range(tomo_bin_num):
         for j in range(i, tomo_bin_num):
-            integ_factor[tag] = qx[i] * qx[j] * inv_scale_factor_sq*alpha
+            integ_factor[tag] = qx[i] * qx[j]/com_dist/com_dist
             tag += 1
     # t3 = time.time()
 
@@ -232,7 +239,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     xi_all = numpy.zeros((int(2*tomo_panel_num), theta_num))
 
     # calculate Pk using Camb
-    camb_result = get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, z4pk_interp, kmax=interp_kmax)[0]
+    camb_result,sigma8 = get_CambResult(H0, omg_cm0h2, omg_bm0h2, As, ns, z4pk_interp, kmax=interp_kmax)[:2]
     pk_interp = camb_result.get_matter_power_interpolator(nonlinear=True, hubble_units=True, k_hunit=True)
     # sigma8 = camb_result.get_sigma8()
     # t5 = time.time()
@@ -243,10 +250,11 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
         idx = integ_kh[i] > 0
         integ_pk[i][idx] = pk_interp.P(zpts[i], integ_kh[i][idx])
     numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_pk.npz", integ_pk)
+    # integ_pk_ccl = numpy.load("/mnt/perc/hklee/CFHT/correlation/test/integ_pk_ccl.npz")["arr_0"]
     # t6 = time.time()
     for i in range(tomo_panel_num):
         # get P(L)
-        PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], delta_com_dist)
+        PLs[i] = get_PL(integ_pk, Lpts_num, integ_factor[i], com_dist)
 
         # calculate the \chi_plus(\theta) , the theoretical line
         for j in range(theta_num):
@@ -259,7 +267,93 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor_sq, zhist, z
     # xi_all[tomo_panel_num:] = xi_minus
     # t7 = time.time()
     # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
-    return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts, xi_all/2/numpy.pi
-    # return xi_plus/2/numpy.pi,PLs, Lpts# sigma8[-1],
+    # return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8, PLs, Lpts, xi_all/2/numpy.pi
+    return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8[-1],PLs, Lpts# ,
 
 
+def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell):
+    ns = 0.965
+
+    ell_num = len(ell)
+
+    # tomo panel num
+    tomo_bin_num, zpts_num = zhist.shape
+    tomo_panel_num = int((tomo_bin_num * tomo_bin_num + tomo_bin_num) / 2)
+
+    cosmo = pyccl.Cosmology(Omega_c=Omega_cm0, Omega_b=Omega_bm0, h=h, n_s=ns, sigma8=sigma8,
+                          transfer_function="boltzmann_camb")
+
+    ccl_lens_trs = []
+    ccl_PL = numpy.zeros((tomo_panel_num, ell_num))
+    ccl_xip = numpy.zeros_like(theta_deg)
+    ccl_xim = numpy.zeros_like(theta_deg)
+
+    for i in range(tomo_bin_num):
+        lens_tr = pyccl.WeakLensingTracer(cosmo, dndz=(zpts, zhist[i]))
+        ccl_lens_trs.append(lens_tr)
+
+    tag = 0
+    for i in range(tomo_bin_num):
+        for j in range(i, tomo_bin_num):
+            ccl_PL[tag] = pyccl.angular_cl(cosmo, ccl_lens_trs[i], ccl_lens_trs[j], ell)
+            ccl_xip[tag] = pyccl.correlation(cosmo, ell, ccl_PL[tag], theta_deg[tag], type='GG+', method='FFTLog')
+            ccl_xim[tag] = pyccl.correlation(cosmo, ell, ccl_PL[tag], theta_deg[tag], type='GG-', method='FFTLog')
+            tag += 1
+    return ccl_xip, ccl_xim, ccl_PL
+
+
+def pre_img(zbin_num):
+    img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2.5, plt_line_width=3, legend_size=35,
+                     xy_tick_size=25)
+    img.subplots(zbin_num, zbin_num)
+    img.set_style()
+
+    for i in range(zbin_num):
+        for j in range(zbin_num - i, zbin_num):
+            img.figure.delaxes(img.axs[i][j])
+
+    img.axis_type(0, "major", 10)
+    img.axis_type(1, "major", 10)
+    img.axis_type(0, "minor", 5)
+    img.axis_type(1, "minor", 5)
+
+    return img
+
+
+def plot_panel(img, zbin_num, theta, xi_p, color="k", ls="-", label=None, ticks_label=None,
+               xlim=(0.6, 65), ylim=(4 * 10 ** (-7), 7 * 10 ** (-4)), xlog="log", ylog="log"):
+    theta_bin_num = theta.shape[1]
+    tag = 0
+    legend_tag = 0
+    for i in range(zbin_num):
+        for j in range(zbin_num):
+            img_row = zbin_num - j - 1
+            img_col = i
+
+            if j >= i:
+
+                img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size - 3,
+                             text_color="k")
+
+                img.axs[img_row][img_col].plot(theta[tag], xi_p[tag], c=color, label=label, ls=ls)
+
+                if tag == 0:
+                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1), fancybox=False,
+                                                     fontsize=img.legend_size)
+
+                if xlog:
+                    img.axs[img_row][img_col].set_xscale(xlog)
+                if ylog:
+                    img.axs[img_row][img_col].set_yscale(ylog)
+
+                if xlim:
+                    img.axs[img_row][img_col].set_xlim(xlim)
+                if ylim:
+                    img.axs[img_row][img_col].set_ylim(ylim)
+
+                if ticks_label:
+                    tick_loc, tick_label = ticks_label
+                    img.set_ticklabel_str(img_row, img_col, 1, tick_loc, tick_label)
+                if img_col != 0:
+                    img.axs[img_row][img_col].set_yticklabels([])
+                tag += 1
