@@ -13,15 +13,17 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 target_path = argv[1]
-name_need = argv[2]
-dst_path = argv[3]
+dst_path = argv[2]
+name_need = argv[3]
+name_exclude = argv[4]
+
 
 if rank == 0:
     expos = []
     fns = os.listdir(target_path)
     print(len(fns), " files")
     for fn in fns:
-        if name_need in fn:
+        if name_need in fn and name_exclude not in fn:
             expos.append(target_path + "/" + fn)
 else:
     expos = None
