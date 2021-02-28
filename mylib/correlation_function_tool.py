@@ -325,6 +325,9 @@ def plot_panel(img, zbin_num, theta, xi_p, color="k", ls="-", label=None, ticks_
     theta_bin_num = theta.shape[1]
     tag = 0
     legend_tag = 0
+    pre_xs = [1,0]
+    pre_ys = [1,0]
+
     for i in range(zbin_num):
         for j in range(zbin_num):
             img_row = zbin_num - j - 1
@@ -338,22 +341,46 @@ def plot_panel(img, zbin_num, theta, xi_p, color="k", ls="-", label=None, ticks_
                 img.axs[img_row][img_col].plot(theta[tag], xi_p[tag], c=color, label=label, ls=ls)
 
                 if tag == 0:
-                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1), fancybox=False,
-                                                     fontsize=img.legend_size)
+                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(3, 0.5), fancybox=False,
+                                                     fontsize=img.legend_size-10)
+
+                if xlim:
+                    img.axs[img_row][img_col].set_xlim(xlim)
+                else:
+                    xs_ij = img.axs[img_row][img_col].set_xlim()
+                    if xs_ij[0] <= pre_xs[0]:
+                        pre_xs[0] = xs_ij[0]
+                    if xs_ij[1] >= pre_xs[1]:
+                        pre_xs[1] = xs_ij[1]
+
+                if ylim:
+                    img.axs[img_row][img_col].set_ylim(ylim)
+                else:
+                    ys_ij = img.axs[img_row][img_col].set_ylim()
+                    if ys_ij[0] <= pre_ys[0]:
+                        pre_ys[0] = ys_ij[0]
+                    if ys_ij[1] >= pre_ys[1]:
+                        pre_ys[1] = ys_ij[1]
+                tag += 1
+
+    for i in range(zbin_num):
+        for j in range(zbin_num):
+            img_row = zbin_num - j - 1
+            img_col = i
+            if j >= i:
+                if not ylim:
+                    img.axs[img_row][img_col].set_ylim(pre_ys)
+                if not xlim:
+                    img.axs[img_row][img_col].set_xlim(pre_xs)
 
                 if xlog:
                     img.axs[img_row][img_col].set_xscale(xlog)
                 if ylog:
                     img.axs[img_row][img_col].set_yscale(ylog)
 
-                if xlim:
-                    img.axs[img_row][img_col].set_xlim(xlim)
-                if ylim:
-                    img.axs[img_row][img_col].set_ylim(ylim)
+                if img_col != 0:
+                    img.axs[img_row][img_col].set_yticklabels([])
 
                 if ticks_label:
                     tick_loc, tick_label = ticks_label
                     img.set_ticklabel_str(img_row, img_col, 1, tick_loc, tick_label)
-                if img_col != 0:
-                    img.axs[img_row][img_col].set_yticklabels([])
-                tag += 1
