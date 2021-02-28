@@ -271,7 +271,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
     return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8[-1],PLs, Lpts# ,
 
 
-def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell):
+def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell, uesd_zbins):
     ns = 0.965
 
     ell_num = len(ell)
@@ -302,6 +302,34 @@ def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell
     return ccl_xip, ccl_xim, ccl_PL
 
 
+def get_tomo_xi_ccl_2(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell, uesd_zbins):
+
+    # tomo panel num
+    tomo_bin_num, zbin_num = uesd_zbins.shape[0],uesd_zbins.sum()
+
+    cosmo = pyccl.Cosmology(Omega_c=Omega_cm0, Omega_b=Omega_bm0, h=h, n_s=0.965, sigma8=sigma8,
+                          transfer_function="boltzmann_camb")
+
+    ccl_lens_trs = []
+
+    ccl_xip = numpy.zeros_like(theta_deg)
+    ccl_xim = numpy.zeros_like(theta_deg)
+
+    for i in range(tomo_bin_num):
+        if uesd_zbins[i] > 0:
+            lens_tr = pyccl.WeakLensingTracer(cosmo, dndz=(zpts, zhist[i]))
+            ccl_lens_trs.append(lens_tr)
+
+    tag = 0
+    for i in range(zbin_num):
+        for j in range(i, zbin_num):
+            ccl_PL = pyccl.angular_cl(cosmo, ccl_lens_trs[i], ccl_lens_trs[j], ell)
+            ccl_xip[tag] = pyccl.correlation(cosmo, ell, ccl_PL, theta_deg[tag], type='GG+', method='FFTLog')
+            ccl_xim[tag] = pyccl.correlation(cosmo, ell, ccl_PL, theta_deg[tag], type='GG-', method='FFTLog')
+            tag += 1
+    return ccl_xip, ccl_xim
+
+
 def pre_img(zbin_num):
     img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2.5, plt_line_width=3, legend_size=35,
                      xy_tick_size=25)
@@ -321,46 +349,39 @@ def pre_img(zbin_num):
 
 
 def plot_panel(img, zbin_num, theta, xi_p, color="k", ls="-", label=None, ticks_label=None,
-               xlim=(0.6, 65), ylim=(4 * 10 ** (-7), 7 * 10 ** (-4)), xlog="log", ylog="log"):
-    theta_bin_num = theta.shape[1]
-    tag = 0
-    legend_tag = 0
-    pre_xs = [1,0]
-    pre_ys = [1,0]
+               xlim=None, ylim=None,discard_bin=None, xlog="log", ylog="log",legend_xy=(4,1)):
 
+    y_min, y_max = xi_p.min(), xi_p.max()
+    x_min, x_max = theta.min(), theta.max()
+
+    tag = 0
     for i in range(zbin_num):
         for j in range(zbin_num):
             img_row = zbin_num - j - 1
             img_col = i
 
             if j >= i:
+                alpha = 1
+                if discard_bin:
+                    if img_col in discard_bin or img_row in discard_bin:
+                        alpha = 0.4
+                img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1),
+                             text_fontsize=img.legend_size - 3, text_color="k")
 
-                img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1), text_fontsize=img.legend_size - 3,
-                             text_color="k")
-
-                img.axs[img_row][img_col].plot(theta[tag], xi_p[tag], c=color, label=label, ls=ls)
+                img.axs[img_row][img_col].plot(theta[tag], xi_p[tag], c=color,alpha=alpha, label=label, ls=ls)
 
                 if tag == 0:
-                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(3, 0.5), fancybox=False,
-                                                     fontsize=img.legend_size-10)
+                    img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(legend_xy[0],legend_xy[1]),
+                                                     fancybox=False, fontsize=img.legend_size)
 
                 if xlim:
                     img.axs[img_row][img_col].set_xlim(xlim)
                 else:
-                    xs_ij = img.axs[img_row][img_col].set_xlim()
-                    if xs_ij[0] <= pre_xs[0]:
-                        pre_xs[0] = xs_ij[0]
-                    if xs_ij[1] >= pre_xs[1]:
-                        pre_xs[1] = xs_ij[1]
-
+                    img.axs[img_row][img_col].set_xlim((x_min/20, x_max*20))
                 if ylim:
                     img.axs[img_row][img_col].set_ylim(ylim)
                 else:
-                    ys_ij = img.axs[img_row][img_col].set_ylim()
-                    if ys_ij[0] <= pre_ys[0]:
-                        pre_ys[0] = ys_ij[0]
-                    if ys_ij[1] >= pre_ys[1]:
-                        pre_ys[1] = ys_ij[1]
+                    img.axs[img_row][img_col].set_ylim(y_min/20, y_max*20)
                 tag += 1
 
     for i in range(zbin_num):
@@ -368,10 +389,6 @@ def plot_panel(img, zbin_num, theta, xi_p, color="k", ls="-", label=None, ticks_
             img_row = zbin_num - j - 1
             img_col = i
             if j >= i:
-                if not ylim:
-                    img.axs[img_row][img_col].set_ylim(pre_ys)
-                if not xlim:
-                    img.axs[img_row][img_col].set_xlim(pre_xs)
 
                 if xlog:
                     img.axs[img_row][img_col].set_xscale(xlog)

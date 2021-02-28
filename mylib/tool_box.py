@@ -1547,9 +1547,9 @@ def get_result_data(result_h5file_path, theta_num, zbin_num, resample_num):
 
     theta = h5f["/%d/theta"%resample_num][()].flatten()
 
-    xi_pm = numpy.zeros((int(2*total_pts_num,)))
-    xi_pm[:total_pts_num] = xi_p
-    xi_pm[total_pts_num:] = xi_m
+    # xi_pm = numpy.zeros((int(2*total_pts_num,)))
+    # xi_pm[:total_pts_num] = xi_p
+    # xi_pm[total_pts_num:] = xi_m
 
     xi_p_sig = numpy.zeros_like(xi_p)
     xi_m_sig = numpy.zeros_like(xi_p)
@@ -1572,16 +1572,28 @@ def get_result_data(result_h5file_path, theta_num, zbin_num, resample_num):
 
 
 def get_zbin_mask(zbin_num, theta_num, discard_bins):
+    """
+    label the data points and redshift bins used in the calculation
+    :param zbin_num:
+    :param theta_num:
+    :param discard_bins:
+    :return:
+    """
     total_pts_num = int(theta_num * (zbin_num ** 2 + zbin_num) / 2)
-    use_cols = numpy.zeros((total_pts_num,), dtype=numpy.intc)
+    used_data_pts = numpy.zeros((total_pts_num,), dtype=numpy.intc)
+    used_zbins = numpy.zeros((zbin_num,), dtype=numpy.intc)
+
     tag = 0
     for i in range(zbin_num):
+        if i not in discard_bins:
+            used_zbins[i] = 1
         for j in range(i, zbin_num):
             if i not in discard_bins and j not in discard_bins:
                 st, ed = tag * theta_num, (tag + 1) * theta_num
-                use_cols[st:ed] = 1
+                used_data_pts[st:ed] = 1
             tag += 1
-    return use_cols
+    return used_data_pts, used_zbins
+
 
 def get_cov(xi_p, xi_m, stack=True):
     theta_nun_1, resample_num = xi_p.shape
