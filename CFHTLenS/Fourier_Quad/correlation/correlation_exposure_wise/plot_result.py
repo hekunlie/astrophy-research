@@ -15,10 +15,10 @@ theta_bin_num = 5
 resample_num = 200
 
 # discard the first bin
-discard_bins = [0]
+discard_bins = []
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "J:/works/correlation/CFHT/cut_2.5/smooth"
+data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.2642$\n$\Omega_b=0.0493$"

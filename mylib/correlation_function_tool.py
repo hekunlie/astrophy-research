@@ -302,32 +302,68 @@ def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell
     return ccl_xip, ccl_xim, ccl_PL
 
 
-def get_tomo_xi_ccl_2(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell, uesd_zbins):
 
+def get_tomo_xi_ccl_2(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, theta_num_per_bin, ell, used_zbins, xi_pm="xi_p"):
+    """
+    for the MCMC
+    :param sigma8:
+    :param Omega_cm0:
+    :param Omega_bm0:
+    :param h:
+    :param zpts: the center of the Z bins
+    :param zhist: Z histogram, (n,m), n is the tomographic bin num,
+                  includes the histograms of all bins, the used_zbins will determine which bins are used
+    :param theta_deg: where the signals are measured, (n,)
+    :param ell: \ell of C(\ell), the angular power spectrum
+    :param uesd_zbins: numpy array,(n,), labels, 1 for used, 0 for not used
+    :return:
+    """
     # tomo panel num
-    tomo_bin_num, zbin_num = uesd_zbins.shape[0],uesd_zbins.sum()
+    tomo_bin_num, zbin_num = used_zbins.shape[0],used_zbins.sum()
 
     cosmo = pyccl.Cosmology(Omega_c=Omega_cm0, Omega_b=Omega_bm0, h=h, n_s=0.965, sigma8=sigma8,
-                          transfer_function="boltzmann_camb")
+                            transfer_function="boltzmann_camb")
 
     ccl_lens_trs = []
 
-    ccl_xip = numpy.zeros_like(theta_deg)
-    ccl_xim = numpy.zeros_like(theta_deg)
-
     for i in range(tomo_bin_num):
-        if uesd_zbins[i] > 0:
+        if used_zbins[i] == 1:
             lens_tr = pyccl.WeakLensingTracer(cosmo, dndz=(zpts, zhist[i]))
             ccl_lens_trs.append(lens_tr)
 
+    if xi_pm == "all":
+        pts_num = int(2*theta_deg.shape[0])
+        ccl_xipm = numpy.zeros((pts_num,))
+        tag = 0
+        for i in range(zbin_num):
+            for j in range(i, zbin_num):
+                st, ed = int(tag * theta_num_per_bin), int((tag + 1) * theta_num_per_bin)
+                ccl_cls = pyccl.angular_cl(cosmo, ccl_lens_trs[i], ccl_lens_trs[j], ell)
+                ccl_xipm[st:ed] = pyccl.correlation(cosmo, ell, ccl_cls, theta_deg[st:ed], type='GG+', method='FFTLog')
+                ccl_xipm[pts_num+st:pts_num+ed] = pyccl.correlation(cosmo, ell, ccl_cls, theta_deg[st:ed], type='GG-', method='FFTLog')
+                tag += 1
+        return ccl_xipm
+
+    if xi_pm == "xi_p":
+        corr_type = "GG+"
+    elif xi_pm == "xi_m":
+        corr_type = "GG-"
+    else:
+        print("xi_pm must be one of [\"xi_p\", \"xi_m\",\"all\"]")
+        return None
+
+    ccl_xi = numpy.zeros_like(theta_deg)
     tag = 0
     for i in range(zbin_num):
         for j in range(i, zbin_num):
-            ccl_PL = pyccl.angular_cl(cosmo, ccl_lens_trs[i], ccl_lens_trs[j], ell)
-            ccl_xip[tag] = pyccl.correlation(cosmo, ell, ccl_PL, theta_deg[tag], type='GG+', method='FFTLog')
-            ccl_xim[tag] = pyccl.correlation(cosmo, ell, ccl_PL, theta_deg[tag], type='GG-', method='FFTLog')
+            st, ed = int(tag*theta_num_per_bin), int((tag+1)*theta_num_per_bin)
+            ccl_cls = pyccl.angular_cl(cosmo, ccl_lens_trs[i], ccl_lens_trs[j], ell)
+            ccl_xi[st:ed] = pyccl.correlation(cosmo, ell, ccl_cls, theta_deg[st:ed], type=corr_type, method='FFTLog')
             tag += 1
-    return ccl_xip, ccl_xim
+    return ccl_xi
+
+
+
 
 
 def pre_img(zbin_num):

@@ -11,54 +11,9 @@ import h5py
 from multiprocessing import Pool
 
 
-
-def log_prior(paras):
-    As, omega_m0, omega_b_ration = paras
-    if 0.01 < As < 5 and 0.05 < omega_m0 < 0.7 and 0.01 < omega_b_ration < 0.5:
-        return 0.0
-    else:
-        return -numpy.inf
-
-
-def log_prob(paras, theta_radian, xi, cov_inv, zpts, inv_scale_factor_sq, zhist, z4pk_interp):
-
-    lp = log_prior(paras)
-
-    if not numpy.isfinite(lp):
-        # print(lp)
-        return -numpy.inf
-    else:
-        # print(lp)
-        # t1 = time.time()
-        As, omega_m0, omega_b_ration = paras
-        omega_bm0 = omega_m0*omega_b_ration
-        omega_cm0 = omega_m0 - omega_bm0
-
-        # omega_bm0 = omega_m0*0.02233/0.14213
-        # omega_cm0 = omega_m0*0.1198/0.14213
-        h = 0.6737
-        As = As*10**(-9)
-        # print(paras)
-        try:
-            xi_theoretical, sigma8 = cf_tool.get_tomo_xi(As, omega_cm0, omega_bm0, h,
-                                                      zpts, inv_scale_factor_sq, zhist, z4pk_interp, theta_radian)[:2]
-
-            diff = xi - xi_theoretical.flatten()
-            chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
-            return chi_sq
-        except:
-            print(As,omega_cm0,omega_bm0)
-            return -numpy.inf
-
-        # sigma8_buffer[step_count[0]] = sigma8
-        # step_count[0] += 1
-        # t2 = time.time()
-        # print("%.2f"%(t2-t1), paras,chi_sq)
-
-
 def log_prior_ccl(paras):
     sigma8, omega_cm0, omega_bm0 = paras
-    if 0.1 < sigma8 < 3 and 0.05 < omega_cm0 < 0.8 and 0.01 < omega_bm0 < 0.3:
+    if 0.1 < sigma8 < 3 and 0.01 < omega_cm0 < 0.8 and 0.01 < omega_bm0 < 0.2:
         return 0.0
     else:
         return -numpy.inf
@@ -85,6 +40,7 @@ def log_prob_ccl(paras, theta_deg, xi, cov_inv, theta_num_per_bin, zpts, zhist, 
 
             diff = xi - xi_predict
             chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
+
             return chi_sq
         except:
             print(sigma8, omega_cm0, omega_bm0)
@@ -102,22 +58,6 @@ thread = int(argv[4])
 ################### read the z data #############################
 
 redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
-
-# h5f = h5py.File("./data/stack_data.hdf5","r")
-# data = h5f["/data"][()]
-# h5f.close()
-
-# nz_bin_num = 340
-#
-# zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, 8], redshift_bin, data[:, 9], nz_bin_num, 3)
-#
-
-#
-# inv_scale_factor_sq = (1+zebin_cent)**2
-#
-# zmin, interp_zmax = 0, 3
-#
-# z4pk_interp = numpy.linspace(interp_zmax, zmin, 100)
 
 h5f = h5py.File("./data/zhist.hdf5","r")
 zehist = h5f["/zhist"][()]
@@ -140,7 +80,7 @@ theta = h5f["/theta"][()]
 # only \xi_+
 xi = h5f["/xi_p"][()]
 cov_inv = h5f["/inv_cov_xi_p"][()]
-used_zbins = h5f["/used_zbin"][()]
+used_zbin = h5f["/used_zbin"][()]
 h5f.close()
 
 # arcmin to radian & degree
@@ -155,10 +95,9 @@ ell = tool_box.set_bin_log(10, 20000, 10000)
 
 print("Data vector len: ", xi.shape)
 
-
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
-para_lim = [[0.1, 3],[0.05, 0.9],[0.01,0.5]]
+para_lim = [[0.1, 3],[0.01, 0.8],[0.01,0.2]]
 nwalkers, ndim = thread, len(para_lim)
 initial = numpy.zeros((nwalkers, ndim))
 
@@ -168,8 +107,8 @@ for i in range(ndim):
 
 print(nsteps, " steps")
 with Pool(thread) as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl, pool=pool, args=(0.674, zebin_cent, zehist,
-                                               theta_degree, theta_num_per_bin, ell, used_zbins))
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl, pool=pool,
+                                    args=(theta_degree, xi, cov_inv, theta_num_per_bin, zebin_cent, zehist, ell, used_zbin))
 
     sampler.run_mcmc(initial, nsteps, progress=True)
 
@@ -178,7 +117,7 @@ chain = sampler.get_chain()
 flat_chain = sampler.get_chain(discard=500, flat=True)
 flat_chain_thin_1 = sampler.get_chain(discard=500, thin=10, flat=True)
 
-numpy.savez("./data/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_thin_1)
+numpy.savez("./chain/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_thin_1)
 
 tau = sampler.get_autocorr_time()
 discard_step = int(tau.mean()*2)
@@ -187,7 +126,7 @@ print(tau, discard_step, thin_step)
 
 flat_chain_thin_2 = sampler.get_chain(discard=discard_step, thin=thin_step, flat=True)
 
-numpy.savez("./data/chain_%s_autocorr_thin_%d_steps.npz"%(expo_type, nsteps), flat_chain_thin_2)
+numpy.savez("./chain/chain_%s_autocorr_thin_%d_steps.npz"%(expo_type, nsteps), flat_chain_thin_2)
 
 end = time.time()
 multi_time = end - start
