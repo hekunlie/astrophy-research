@@ -63,7 +63,7 @@ int main(int argc, char*argv[])
 	int stamp_num, stamp_nx, shear_data_cols;		
 	int row, chip_st, chip_ed, shear_id;
 
-
+    MY_FLOAT *radius, *flux;
     MY_FLOAT psf_scale, psf_type, psf_thresh_scale, psf_noise_sig;
     MY_FLOAT sig_level,gal_noise_sig, flux_i;
     MY_FLOAT g1, g2, ts, te, t1, t2;
@@ -76,21 +76,21 @@ int main(int argc, char*argv[])
     strcpy(parent_path, argv[1]);
     shear_tag = atoi(argv[2]);
 
-	size = 54;//atoi(argv[4]);
+	size = 64;//atoi(argv[4]);
     total_chips = atoi(argv[3]);
-    seed_ini = total_chips*shear_tag*2 + 1;
+    seed_ini = total_chips*shear_tag*4 + 1;
 	// seed distribution, different thread gets different seed
-	seed_step = 1;
+	seed_step = 2;
 
     if(rank == 0)
     {
         std::cout<<parent_path<<std::endl;
         std::cout<<size<<" "<<shear_tag<<" "<<seed_ini<<std::endl;
     }
-	pts_step = 3;
+	pts_step = 2;
 
 	num_p = 30;
-	max_radius= 6;
+
 	stamp_num = 10000;
 	shear_data_cols = 4;
 
@@ -109,7 +109,6 @@ int main(int argc, char*argv[])
     stamp_nx = 100;
 
 
-	flux_i = 20000/num_p;
 	
 #ifdef SAVE_MEM
 	fq_paras_float all_paras;
@@ -184,16 +183,25 @@ int main(int argc, char*argv[])
 	sub_noise_free_data = new MY_FLOAT[gather_count[rank]]{};
 	sub_noisy_data = new MY_FLOAT[gather_count[rank]]{};
 	
-    // sprintf(para_path,"%s/data/shear_%d.hdf5", parent_path, shear_tag);
-    // sprintf(set_name,"/g1");
-    // read_h5_datasize(para_path, set_name, gg_len);
-    gg_len = 5;
-    g1t = new MY_FLOAT[gg_len]{0, 0.03, -0.03, -0.04, 0.01};
-	g2t = new MY_FLOAT[gg_len]{0,  0,  0, -0.02, -0.015};
+    sprintf(para_path,"%s/param/shear.hdf5", parent_path);
+    sprintf(set_name,"/g1");
+    read_h5_datasize(para_path, set_name, gg_len);
 
-    // read_h5(para_path, set_name, g1t);
-    // sprintf(set_name,"/g2");
-    // read_h5(para_path, set_name, g2t);
+    g1t = new MY_FLOAT[gg_len];
+	g2t = new MY_FLOAT[gg_len];
+
+    read_h5(para_path, set_name, g1t);
+    sprintf(set_name,"/g2");
+    read_h5(para_path, set_name, g2t);
+
+    radius = new MY_FLOAT[total_chips*stamp_num]{};
+    flux = new MY_FLOAT[total_chips*stamp_num]{};
+    sprintf(para_path,"%s/param/paras_%d.hdf5", parent_path, shear_tag);
+    sprintf(set_name,"/radius");
+    read_h5(para_path, set_name, radius);
+    sprintf(set_name,"/flux");
+    read_h5(para_path, set_name, flux);
+
 
 	create_psf(psf_img[0], psf_scale, size, img_cent, psf_type);
 
@@ -266,7 +274,11 @@ int main(int argc, char*argv[])
         
         // loop the stamps
         for (j = 0; j < stamp_num; j++)
-        {	            
+        {	
+
+            max_radius = radius[i*stamp_num + j];
+            flux_i = flux[i*stamp_num + j]/num_p;
+
             initialize_arr(point, num_p * 2, 0);				
             for(k=0;k<8;k++)
             {
@@ -341,44 +353,48 @@ int main(int argc, char*argv[])
     }
 
     // finish the chip loop
-    MPI_Barrier(MPI_COMM_WORLD);
-    for(i=0; i<numprocs;i++)
-    {
-        if(rank == i)
-        {
-            sprintf(result_path, "%s/data/data_%d_noise_free.hdf5", parent_path, shear_tag);
-            sprintf(set_name,"/data_%d", i);
-            if(i == 0)
-            {write_h5(result_path, set_name, sub_noise_free_data, sub_data_row, shear_data_cols,true);}
-            else
-            {write_h5(result_path, set_name, sub_noise_free_data, sub_data_row, shear_data_cols,false);}
-
-
-            sprintf(result_path, "%s/data/data_%d_noisy_cpp.hdf5", parent_path, shear_tag);
-            sprintf(set_name,"/data_%d", i);
-            if(i == 0)
-            {write_h5(result_path, set_name, sub_noisy_data, sub_data_row, shear_data_cols,true);}
-            else
-            {write_h5(result_path, set_name, sub_noisy_data, sub_data_row, shear_data_cols,false);}
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    // my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
-    // if (0 == rank)
-    // {
-    //     sprintf(result_path, "%s/data/data_%d_noise_free.hdf5", parent_path, shear_tag);
-    //     sprintf(set_name,"/data");
-    //     write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
-    // }
     // MPI_Barrier(MPI_COMM_WORLD);
-
-    // my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
-    // if (0 == rank)
+    // for(i=0; i<numprocs;i++)
     // {
-    //     sprintf(result_path, "%s/data/data_%d_noisy_cpp.hdf5", parent_path, shear_tag);
-    //     sprintf(set_name,"/data");
-    //     write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
+    //     if(rank == i)
+    //     {
+    //         sprintf(result_path, "%s/data/data_%d_noise_free.hdf5", parent_path, shear_tag);
+    //         sprintf(set_name,"/data_%d", i);
+    //         if(i == 0)
+    //         {write_h5(result_path, set_name, sub_noise_free_data, sub_data_row, shear_data_cols,true);}
+    //         else
+    //         {write_h5(result_path, set_name, sub_noise_free_data, sub_data_row, shear_data_cols,false);}
+
+
+    //         sprintf(result_path, "%s/data/data_%d_noisy_cpp.hdf5", parent_path, shear_tag);
+    //         sprintf(set_name,"/data_%d", i);
+    //         if(i == 0)
+    //         {write_h5(result_path, set_name, sub_noisy_data, sub_data_row, shear_data_cols,true);}
+    //         else
+    //         {write_h5(result_path, set_name, sub_noisy_data, sub_data_row, shear_data_cols,false);}
+    //     }
+    //     MPI_Barrier(MPI_COMM_WORLD);
     // }
+
+    if(rank == 0){total_data = new MY_FLOAT[total_chips*stamp_num*shear_data_cols];}
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
+    if (0 == rank)
+    {
+        sprintf(result_path, "%s/data/data_%d_noise_free.hdf5", parent_path, shear_tag);
+        sprintf(set_name,"/data");
+        write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
+    if (0 == rank)
+    {
+        sprintf(result_path, "%s/data/data_%d_noisy_cpp.hdf5", parent_path, shear_tag);
+        sprintf(set_name,"/data");
+        write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
+    }
     MPI_Barrier(MPI_COMM_WORLD);
 
 
