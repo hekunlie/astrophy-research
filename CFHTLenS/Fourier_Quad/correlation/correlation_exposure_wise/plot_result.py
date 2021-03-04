@@ -15,13 +15,16 @@ theta_bin_num = 5
 resample_num = 200
 
 # discard the first bin
-discard_bins = []
+discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
 data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
-pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.2642$\n$\Omega_b=0.0493$"
+pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
+pic_nm_m_pdf = data_path + "/xi_minus_result_%d_compare.pdf" % resample_num
+pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.049$"
+pk_line_label_mcmc = "MCMC:\n$\sigma_8$ = 0.514\n$\Omega_m$=0.394\n$\Omega_b$=0.161"
 
 pk_lines_tag = 0
 if os.path.exists(data_path + "/planck2018.hdf5"):
@@ -32,6 +35,12 @@ if os.path.exists(data_path + "/planck2018.hdf5"):
     h5f.close()
     pk_lines_tag = 1
     print("Find Pk lines")
+
+    h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
+    xi_p_theoretical_lines_mcmc = h5f["/xi_p"][()]
+    xi_m_theoretical_lines_mcmc = h5f["/xi_m"][()]
+    xi_theta_mcmc = h5f["/theta"][()]
+    h5f.close()
 
 expo_type = ["diff_expo","same_expo"]
 
@@ -173,6 +182,8 @@ for ii in range(2):
 
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
+                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_p_theoretical_lines_mcmc[tag],
+                                                   c="b",ls="-", label=pk_line_label_mcmc)
 
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
@@ -188,6 +199,7 @@ for ii in range(2):
                 tag += 1
 
 img.save_img(pic_nm_p)
+img.save_img(pic_nm_p_pdf)
 img.close_img()
 print(pic_nm_p)
 # img.show_img()
@@ -241,7 +253,8 @@ for ii in range(2):
                 if ii == 0 and pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
-
+                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_m_theoretical_lines_mcmc[tag],
+                                                   c="b",ls="-", label=pk_line_label_mcmc)
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
@@ -256,6 +269,7 @@ for ii in range(2):
                 tag += 1
 
 img.save_img(pic_nm_m)
+img.save_img(pic_nm_m_pdf)
 img.close_img()
 print(pic_nm_m)
 

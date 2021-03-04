@@ -108,10 +108,10 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg
     xi2 = numpy.array([get_chisq_grid(hist2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse) for gh in ghs])
     print(iters, ghs)
 
-    img = Image_Plot()
-    img.subplots(1, 1)
-    img.axs[0][0].plot(ghs, xi2)
-    img.show_img()
+    # img = Image_Plot()
+    # img.subplots(1, 1)
+    # img.axs[0][0].plot(ghs, xi2)
+    # img.show_img()
 
     coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
     gh = -coeff[1] / 2. / coeff[2]
@@ -146,7 +146,7 @@ for i in range(2):
     t2 = time.time()
     gh2, gh2_sig = fq.find_shear(G2, NU2, 10)[:2]
 
-    result.extend([gh1, gh1_sig,gh2, gh2_sig])
+    result.extend([gh1, gh1_sig, gh2, gh2_sig])
 
 
     t3 = time.time()
