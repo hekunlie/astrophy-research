@@ -27,7 +27,7 @@ shear_num = g1_input.shape[0]
 
 fq = Fourier_Quad(stamp_size, seed)
 
-psf_img = fq.cre_psf(psf_scale, psf_flux, psf_type)
+psf_img = fq.cre_psf(psf_scale)
 psf_pow = fq.pow_spec(psf_img)
 fq.get_radius_new(psf_pow, 2)
 
@@ -65,7 +65,7 @@ for i in range(1):
             # noise_2 = fq.draw_noise(0, 0.01)
             # pnoise = fq.pow_spec(noise_2)
 
-            gal_img = fq.convolve_psf(pst_s, psf_scale, gal_flux, psf_type)#+noise_1
+            gal_img = fq.convolve_psf(pst_s, psf_scale)#+noise_1
             # img = Image_Plot()
             # img.subplots(1,2)
             # idx = gal_img > 90
