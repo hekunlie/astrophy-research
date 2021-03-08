@@ -72,24 +72,26 @@ int main(int argc, char*argv[])
     MY_FLOAT psf_ellip, ellip_theta;
     MY_FLOAT img_cent;
     MY_FLOAT pts_step;
+    int *rand_seed;
+    MY_FLOAT *big_img[2];
 
     strcpy(parent_path, argv[1]);
     shear_tag = atoi(argv[2]);
 
 	size = 64;//atoi(argv[4]);
     total_chips = atoi(argv[3]);
-    seed_ini = total_chips*shear_tag*4 + 1;
+    // seed_ini = total_chips*shear_tag*4 + 1;
 	// seed distribution, different thread gets different seed
 	seed_step = 2;
 
     if(rank == 0)
     {
         std::cout<<parent_path<<std::endl;
-        std::cout<<size<<" "<<shear_tag<<" "<<seed_ini<<std::endl;
+        std::cout<<size<<" "<<shear_tag<<std::endl;
     }
 	pts_step = 2;
 
-	num_p = 30;
+	num_p = 50;
 
 	stamp_num = 10000;
 	shear_data_cols = 4;
@@ -125,10 +127,7 @@ int main(int argc, char*argv[])
 
     total_data_row = total_chips*stamp_num;
 
-    if(rank == 0)
-    {
-        std::cout<<rank<<" "<<numprocs<<" chips"<<std::endl;
-    }
+
     if(rank == 0)
     {
         std::cout<<total_chips<<" chips"<<std::endl;
@@ -153,6 +152,11 @@ int main(int argc, char*argv[])
 		gather_count[i] = scatter_count[i]*shear_data_cols;
 	}
 
+    if(rank == 0)
+    {
+        big_img[0] = new MY_FLOAT[stamp_nx*stamp_nx*size*size];
+        big_img[1] = new MY_FLOAT[stamp_nx*stamp_nx*size*size];
+    }
 
 	MY_FLOAT *point = new MY_FLOAT[2 * num_p]{};
 
@@ -194,19 +198,26 @@ int main(int argc, char*argv[])
     sprintf(set_name,"/g2");
     read_h5(para_path, set_name, g2t);
 
+
     radius = new MY_FLOAT[total_chips*stamp_num]{};
     flux = new MY_FLOAT[total_chips*stamp_num]{};
+    rand_seed = new int[total_chips]{};
+
     sprintf(para_path,"%s/param/paras_%d.hdf5", parent_path, shear_tag);
     sprintf(set_name,"/radius");
     read_h5(para_path, set_name, radius);
     sprintf(set_name,"/flux");
     read_h5(para_path, set_name, flux);
+    sprintf(set_name,"/seed");
+    read_h5(para_path, set_name, rand_seed);
 
 
 	create_psf(psf_img[0], psf_scale, size, img_cent, psf_type);
 
 	pow_spec(psf_img[0], psf_img[1], size, size);
 	get_psf_radius(psf_img[1], &all_paras, psf_thresh_scale);
+
+
 
 
 	if (0 == rank)
@@ -218,8 +229,9 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 
-		sprintf(buffer, "!%s/psf_%.2f.fits", parent_path,psf_scale);
-		// write_fits(buffer,psf_img[0], size, size);
+        sprintf(chip_path,"%s/imgs/psf.hdf5", parent_path);
+        sprintf(set_name,"/data");
+        write_h5(chip_path, set_name, psf_img[0], size, size, true);
 
 		std::cout<<"Gal Num of each thread: ";
 		show_arr(scatter_count,1,numprocs);
@@ -256,8 +268,8 @@ int main(int argc, char*argv[])
     for (i = chip_st; i < chip_ed; i++)
     {
         // initialize GSL
-        seed_pts = seed_ini + i;
-        seed_n1 = seed_ini + i;
+        seed_pts = rand_seed[i];
+        seed_n1 = rand_seed[i] + i;
         gsl_initialize(seed_pts,0);
         gsl_initialize(seed_n1,1);
 
@@ -298,10 +310,6 @@ int main(int argc, char*argv[])
             convolve(point, num_p, flux_i, g1, g2, stamp_img[0], size, img_cent, psf_scale, psf_type);
 
 
-            // if(rank == 0 and i < 3)
-            // {
-            //     stack(big_img_check[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
-            // }
             // noise free
             pow_spec(stamp_img[0], stamp_pow_img[0], size, size);
             // noisy image
@@ -309,6 +317,14 @@ int main(int argc, char*argv[])
             pow_spec(stamp_img[1], stamp_pow_img[1], size, size);
             arr_deduct(stamp_pow_img[2], stamp_pow_img[1], noise_pow_img[1], img_len);
             
+
+            if(rank == 0 and i < 3)
+            {
+                stack(big_img[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
+                stack(big_img[1], stamp_img[1], j, size, stamp_nx, stamp_nx);
+            }
+
+
             /////////////////////// Noise free /////////////////////////
             shear_est(stamp_pow_img[0], psf_img[1], &all_paras);
             sub_noise_free_data[row + j * shear_data_cols] = all_paras.n1;
@@ -333,11 +349,17 @@ int main(int argc, char*argv[])
         {
             std::cout << log_inform << std::endl;
         }
-        // if(rank == 0 and i < 3)
-        // {
-        //     sprintf(chip_path, "!%s/data/gal_chip_%05d_noise_free.fits", parent_path, i);
-        //     // write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
-        // }
+        if(rank == 0 and i < 3)
+        {
+            sprintf(chip_path, "%s/imgs/%d/gal_chip_%05d_noise_free.hdf5", parent_path, shear_tag, i);
+            sprintf(set_name,"/data");
+            write_h5(chip_path, set_name, big_img[0], stamp_nx*size, stamp_nx*size, true);
+
+            sprintf(chip_path, "%s/imgs/%d/gal_chip_%05d_noisy.hdf5", parent_path, shear_tag, i);
+            write_h5(chip_path, set_name, big_img[1], stamp_nx*size, stamp_nx*size, true);
+
+            // write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
+        }
 
         gsl_free(0);
         gsl_free(1);

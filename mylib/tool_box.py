@@ -1208,8 +1208,8 @@ def set_bin(data, bin_num, bound_scale):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
-def set_bin_log(start_point, end_point, num):
-    return 10**numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), num)
+def set_bin_log(start_point, end_point, bin_num):
+    return 10**numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), bin_num+1)
 
 def find_near(data, target_val):
     sl = 0

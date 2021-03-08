@@ -149,9 +149,17 @@ extern "C"
             grid_y[k] += y[i];
         }
         for(i=0;i<xbin_num*ybin_num;i++)
-        {
-            grid_x[i] = grid_x[i]/count[i];
-            grid_y[i] = grid_y[i]/count[i];
+        {   
+            if(count[i] > 0)
+            {   
+                grid_x[i] = grid_x[i]/count[i];
+                grid_y[i] = grid_y[i]/count[i];
+            }
+            else
+            {
+                grid_x[i] = 0;
+                grid_y[i] = 0;
+            }
         }
         // t2 = clock();
         // std::cout<<(t2-t1)/CLOCKS_PER_SEC<<std::endl;
