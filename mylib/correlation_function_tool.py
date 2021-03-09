@@ -271,7 +271,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
     return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8[-1],PLs, Lpts# ,
 
 
-def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell, uesd_zbins):
+def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell):
     ns = 0.965
 
     ell_num = len(ell)

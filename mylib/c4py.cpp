@@ -167,7 +167,7 @@ extern "C"
         // std::cout<<(t2-t1)/CLOCKS_PER_SEC<<std::endl;
     }
     
-    void deblending(float *ra1, float *dec1, float *z1, int len1, float *ra2, float *dec2,float *z2, int len2, float sep_deg, float sep_z, int *blended_label)
+    void deblending_self(float *ra1, float *dec1, float *z1, int len1, float sep_deg, float sep_z, int *blended_label)
     {
         // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
         // to each other but with a large redshift difference
@@ -186,7 +186,18 @@ extern "C"
                 if(ddeg <= sep_deg and sep_z >= dz)
                 {blended_label[i] = 1;}
             }
+        }
+    }
 
+    void deblending_mutual(float *ra1, float *dec1, float *z1, int len1, float *ra2, float *dec2,float *z2, int len2, float sep_deg, float sep_z, int *blended_label)
+    {
+        // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
+        // to each other but with a large redshift difference
+        int i,j,k;
+        float dra, ddec, dz, ddeg;
+
+        for(i=0; i<len1; i++)
+        {
             if(blended_label[i] < 1)
             {
                 for(j=0; j<len2; j++)

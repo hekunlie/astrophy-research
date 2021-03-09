@@ -13,7 +13,7 @@ warnings.filterwarnings('error')
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
-cpus = comm.Get_size()
+numprocs = comm.Get_size()
 
 total_path = argv[1]
 mode = argv[2]
@@ -48,7 +48,7 @@ elif mode == "hdf5_cata":
     CFHT_pz_path = argv[3]
     # read the photoz data
     # RA DEC Z_B Z_B_MIN Z_B_MAX ODDS Z_E Pz_full(70 cols)
-    for i in range(cpus):
+    for i in range(numprocs):
         if i == rank:
             h5f = h5py.File(CFHT_pz_path,"r")
             pz_data = h5f["/data"][()]
@@ -66,7 +66,7 @@ elif mode == "hdf5_cata":
     for expo_name in contents:
         exposures_candidates.append(expo_name.split("\n")[0])
 
-    exposures_candidates_sub = tool_box.alloc(exposures_candidates, cpus, "seq")[rank]
+    exposures_candidates_sub = tool_box.alloc(exposures_candidates, numprocs, "seq")[rank]
 
     exposures_candidates_avail_sub = []
     exception_sub = []
@@ -177,6 +177,87 @@ elif mode == "hdf5_cata":
             f.writelines(exception_all)
 
 
+elif mode == "field_expo":
+
+    if rank == 0:
+        field_expos = []
+        with open(total_path + "/cat_inform/field_expo.dat", "r") as f:
+            cc = f.readlines()
+        expo_num = 0
+        for c in cc:
+            nms = c.split("\n")[0].split("\t")
+            temp = [nms[0]]
+            for expo_name in nms[1:]:
+                expo_path = total_path + "/cat_hdf5/%s_all.hdf5"%expo_name
+                if os.path.exists(expo_path):
+                    temp.append(expo_name)
+                    expo_num += 1
+                else:
+                    print("Not found %s"%expo_path)
+            temp_str = "\t".join(temp) + "\n"
+            field_expos.append(temp_str)
+        print(expo_num)
+        with open(total_path + "/cat_inform/field_expo_avail.dat", "w") as f:
+            f.writelines(field_expos)
+    comm.Barrier()
+
+
+elif mode == "position":
+    expo_files = []
+    with open(total_path + "/cat_inform/field_expo_avail.dat", "r") as f:
+        cc = f.readlines()
+    field_num = len(cc)
+
+    max_expo_num = 0
+    for c in cc:
+        nms = c.split("\n")[0].split("\t")
+        expo_num = len(nms) - 1
+        if expo_num > max_expo_num:
+            max_expo_num = expo_num
+        expo_files.append(nms[1:])
+
+    expo_pos = numpy.zeros((field_num, max_expo_num, 8), dtype=numpy.float32)
+
+    field_label = [i for i in range(field_num)]
+    field_sub = tool_box.alloc(field_label, numprocs,"seq")[rank]
+
+    for i in field_sub:
+        for j, expo_name in enumerate(expo_files[i]):
+            file_path = total_path + "/cat_hdf5/%s_all.hdf5"%expo_name
+
+            h5f = h5py.File(file_path, "r")
+            data = h5f["/data"][()]
+            h5f.close()
+
+            ra, dec = data[:,0], data[:,1]
+            ra_min, ra_max = ra.min(), ra.max()
+            dec_min, dec_max = dec.min(), dec.max()
+
+            dra = (ra_max - ra_min)/2
+            ddec = (dec_max - dec_min)/2
+
+            ra_cent = (ra_max + ra_min)/2
+            dec_cent = (dec_max + dec_min)/2
+
+            expo_pos[i][j] = ra_cent, dec_cent, ra_min, ra_max, dra, dec_min, dec_max, ddec
+
+    comm.Barrier()
+
+    if rank > 0:
+        comm.Send([expo_pos, MPI.FLOAT], dest=0, tag=rank)
+    else:
+        for procs in range(1, numprocs):
+            recvs = numpy.empty((field_num, max_expo_num, 8), dtype=numpy.float32)
+            comm.Recv(recvs, source=procs, tag=procs)
+            expo_pos += recvs
+
+        h5f = h5py.File(total_path + "/cat_inform/expo_pos.hdf5", "w")
+        h5f["/data"] = expo_pos
+        h5f.close()
+
+    comm.Barrier()
+
+
 else:
     # collection
 
@@ -195,7 +276,7 @@ else:
     if rank == 0:
         print(len(expos)," exposures")
 
-    my_sub_area_list = tool_box.alloc(expos,cpus)[rank]
+    my_sub_area_list = tool_box.alloc(expos,numprocs)[rank]
     # print(rank, i, len(my_sub_area_list))
 
     if len(my_sub_area_list) > 0:
@@ -225,7 +306,7 @@ else:
     if rank > 0 and sp[0] > 0:
         comm.Send([data,MPI.FLOAT], dest=0, tag=rank)
     else:
-        for ir in range(1, cpus):
+        for ir in range(1, numprocs):
             if sp_total[ir][0] > 0:
                 recv_buf = numpy.empty(sp_total[ir],dtype=numpy.float32)
                 comm.Recv(recv_buf,source=ir, tag=ir)
