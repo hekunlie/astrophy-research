@@ -165,7 +165,7 @@ class Image_Plot:
         return share_ax
 
     def axs_text(self, iy, ix, y, x, text, text_fontsize=None, text_color="green", ha="left",
-                 va="upper",rotation="horizontal", ax_trans=True):
+                 va="top",rotation="horizontal", ax_trans=True):
         if not text_fontsize:
             text_fontsize = self.legend_size
         if ax_trans:

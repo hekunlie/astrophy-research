@@ -119,7 +119,7 @@ def get_PK_interp(camb_result):
 
 def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
     # calculate the k corresponding to L (specified by user)
-    Lpts = tool_box.set_bin_log(Lmin, Lmax, Lpts_num)
+    Lpts = tool_box.set_bin_log(Lmin, Lmax, Lpts_num,"logspace")
     # Lpts = numpy.linspace(Lmin, Lmax, Lpts_num)
     integ_k = numpy.zeros((zpts_num, Lpts_num))
 
@@ -131,14 +131,13 @@ def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
         integ_k[:, i] = (Lpts[i]+0.5) / com_dist
 
     # print("k h/Mpc ~[%.4f, %.4f]" % (integ_k.min(), integ_k.max()))
-    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_k.npz", integ_k)
 
     # only in the interval, [kmin, kmax], will be calculated
     idx = integ_k < kmin
     integ_k[idx] = -1
     idx = integ_k > kmax
     integ_k[idx] = -1
-    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_k_cut.npz", integ_k)
+
     return Lpts, dLpts, integ_k
 
 
@@ -219,7 +218,6 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
 
     # set up bins for L of P(L), and decide the ks needed
     Lpts, dLpts, integ_kh = ready4PL(Lpts_min, Lpts_max, Lpts_num, kmin, cal_kmax, com_dist, zpts_num)
-    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/com_dist.npz", com_dist,zpts)
 
     # L*Bessel_0(L*theta) in the final integral
     integ_Lpts_theta_p = numpy.zeros((tomo_panel_num, theta_num, Lpts_num))
@@ -249,7 +247,7 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
     for i in range(zpts_num):
         idx = integ_kh[i] > 0
         integ_pk[i][idx] = pk_interp.P(zpts[i], integ_kh[i][idx])
-    numpy.savez("/mnt/perc/hklee/CFHT/correlation/test/integ_pk.npz", integ_pk)
+
     # integ_pk_ccl = numpy.load("/mnt/perc/hklee/CFHT/correlation/test/integ_pk_ccl.npz")["arr_0"]
     # t6 = time.time()
     for i in range(tomo_panel_num):
