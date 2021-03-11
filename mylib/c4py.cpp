@@ -167,6 +167,200 @@ extern "C"
         // std::cout<<(t2-t1)/CLOCKS_PER_SEC<<std::endl;
     }
     
+    double get_chi2(double *xbin, int xbin_num, double *ybin, int ybin_num, int *count_xy, double ghat, double *Gbin, int Gbin_num)
+    {
+        // y = 1/ghat *(x - x_G) are the lines of the bins' boundaries
+        // x_Gs are the value of Gbin
+
+        int i,j,k, xy_tag;
+        int *count_1d = new int[Gbin_num];
+        double temp;
+        double *xs = new double[ybin_num+1];
+        double xs1, xs2;
+        double xs1_G_k1, xs2_G_k1,xs1_G_k2, xs2_G_k2;
+        // coordinates of the four coners of the grid in the 2d histogram
+        double cx1, cx2, dx, cy1, cy2, dy, ds;
+        double ix1, ix2, iy1, iy2;
+
+
+        for(i=0; i<ybin_num+1; i++)
+        {   
+            // without x_G
+            xs[i] = ghat*ybin[i];
+        }
+        if(ghat == 0)
+        {
+
+        }
+        else if(ghat > 0)
+        {
+            // ghat > 0 case
+            for(i=0; i<ybin_num; i++)
+            {   
+                // the x on the lines without x_G,
+                // which will be compared with the x of
+                // grid to determine which bin this grid
+                // belongs to.
+                xs1 = xs[i];
+                xs2 = xs[i+1];
+
+                cy1 = ybin[i];
+                cy2 = ybin[i+1];
+                dy = ybin[i+1] - ybin[i];
+                for(j=0; j<xbin_num; j++)
+                {   
+                    xy_tag = i*xbin_num + j;
+                    if(count_xy[xy_tag] < 1){continue;}
+
+                    cx1 = xbin[j];
+                    cx2 = xbin[j+1];
+                    dx = xbin[j+1]- xbin[j];
+
+                    ds = dx*dy;
+
+                    for(k= 0; k<Gbin_num; k++)
+                    {
+                        xs1_G_k1 = xs1 + Gbin[k];
+                        xs1_G_k2 = xs1 + Gbin[k+1];
+
+                        xs2_G_k1 = xs2 + Gbin[k];                    
+                        xs2_G_k2 = xs2 + Gbin[k+1];
+
+                        if(cx1 >= xs2_G_k1 and cx1 < xs2_G_k2)
+                        {   
+                            if(cx2 <= xs1_G_k2)
+                            {
+                                // the grid is in the k'th Gbin
+                                count_1d[k] += count_xy[xy_tag];
+                                break;
+                            }
+                            else
+                            {
+                                // part of the grid is in the k'th grid
+                                // and part of it is in the (k+1)'th grid
+                                if(cx2 <= xs2_G_k2)
+                                {
+                                    if(xs1_G_k2 >= cx1)
+                                    {
+                                        // only one corner in the (k+1)'th grid
+                                        temp = (cx2 - xs1_G_k2)*((cx2 - Gbin[k+1])/ghat*0.5 - cy1)/ds;
+                                    }
+                                    else
+                                    {  
+                                        // two corners in the (k+1)'th grid
+                                        temp = ((cx2 - Gbin[k+1])/ghat*0.5 - cy1 + (cx1 - Gbin[k+1])/ghat*0.5 - cy1)*dx*0.5/ds;
+                                    }
+                                }
+                                else
+                                {
+                                    if(xs1_G_k2 >= cx1)
+                                    {
+                                        // only one corner in the (k+1)'th grid
+                                        temp = (cx2 - xs1_G_k2 + cx2 - xs2_G_k2)*dy*0.5/ds;
+                                    }
+                                    else
+                                    {  
+                                        // two corners in the (k+1)'th grid
+                                        temp = 1 - (xs2_G_k2 - cx1)*(cy2 - cx1 + Gbin[k+1])*0.5/ds;
+                                    }
+                                }
+                                count_1d[k] += count_xy[xy_tag] * (1-temp);
+                                count_1d[k+1] += count_xy[xy_tag] * temp;
+                                break;
+                            }
+                        }                        
+                    }
+                }
+            }
+        }
+        else
+        {
+            // ghat < 0 case
+            for(i=0; i<ybin_num; i++)
+            {   
+                // the x on the lines without x_G,
+                // which will be compared with the x of
+                // grid to determine which bin this grid
+                // belongs to.
+                xs1 = xs[i];
+                xs2 = xs[i+1];
+
+                cy1 = ybin[i];
+                cy2 = ybin[i+1];
+                dy = ybin[i+1] - ybin[i];
+                for(j=0; j<xbin_num; j++)
+                {   
+                    xy_tag = i*xbin_num + j;
+                    if(count_xy[xy_tag] < 1){continue;}
+
+                    cx1 = xbin[j];
+                    cx2 = xbin[j+1];
+                    dx = xbin[j+1]- xbin[j];
+
+                    ds = dx*dy;
+
+                    for(k= 0; k<Gbin_num; k++)
+                    {
+                        xs1_G_k1 = xs1 + Gbin[k];
+                        xs1_G_k2 = xs1 + Gbin[k+1];
+
+                        xs2_G_k1 = xs2 + Gbin[k];                    
+                        xs2_G_k2 = xs2 + Gbin[k+1];
+
+                        if(cx1 >= xs2_G_k1 and cx1 < xs2_G_k2)
+                        {   
+                            if(cx2 <= xs1_G_k2)
+                            {
+                                // the grid is in the k'th Gbin
+                                count_1d[k] += count_xy[xy_tag];
+                                break;
+                            }
+                            else
+                            {
+                                // part of the grid is in the k'th grid
+                                // and part of it is in the (k+1)'th grid
+                                if(cx2 <= xs2_G_k2)
+                                {
+                                    if(xs1_G_k2 >= cx1)
+                                    {
+                                        // only one corner in the (k+1)'th grid
+                                        temp = (cx2 - xs1_G_k2)*((cx2 - Gbin[k+1])/ghat*0.5 - cy1)/ds;
+                                    }
+                                    else
+                                    {  
+                                        // two corners in the (k+1)'th grid
+                                        temp = ((cx2 - Gbin[k+1])/ghat*0.5 - cy1 + (cx1 - Gbin[k+1])/ghat*0.5 - cy1)*dx*0.5/ds;
+                                    }
+                                }
+                                else
+                                {
+                                    if(xs1_G_k2 >= cx1)
+                                    {
+                                        // only one corner in the (k+1)'th grid
+                                        temp = (cx2 - xs1_G_k2 + cx2 - xs2_G_k2)*dy*0.5/ds;
+                                    }
+                                    else
+                                    {  
+                                        // two corners in the (k+1)'th grid
+                                        temp = 1 - (xs2_G_k2 - cx1)*(cy2 - cx1 + Gbin[k+1])*0.5/ds;
+                                    }
+                                }
+                                count_1d[k] += count_xy[xy_tag] * (1-temp);
+                                count_1d[k+1] += count_xy[xy_tag] * temp;
+                                break;
+                            }
+                        }                        
+                    }
+                }
+            }
+        }
+ 
+
+
+        delete[] count_1d;
+        delete[] xs;
+    }
+
     void deblending_self(float *ra1, float *dec1, float *z1, int len1, float sep_deg, float sep_z, int *blended_label)
     {
         // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
