@@ -26,6 +26,8 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 cpus = comm.Get_size()
 
+time.sleep(rank*0.5)
+
 t1 = time.time()
 
 data_path = argv[1]
@@ -34,22 +36,22 @@ tag_2 = tag_1 + 1
 data_type = argv[3]
 
 # chi guess bin for PDF_SYM
-# chi_guess_num = 350
-# inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-# chi_guess_bin_p = tool_box.set_bin_log(3.*10**(-10), 6.*10**(-4), chi_guess_num).astype(numpy.float32)
-# chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
-# chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
-# chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
-# chi_guess_bin = numpy.sort(chi_guess_bin)
-#
-# chi_guess_num = int(chi_guess_num*2)
-
-chi_guess_num = 100
+chi_guess_num = 400
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-xi_cache = numpy.load(data_path+"/xi_cache_%s.npz"%data_type)["arr_0"]
-signal_p = xi_cache[0,int(tag_1/2)]
-signal_p_err = xi_cache[1,int(tag_1/2)]*10
-chi_guess_bin = numpy.linspace(signal_p-signal_p_err, signal_p + signal_p_err, chi_guess_num).astype(numpy.float32)
+chi_guess_bin_p = tool_box.set_bin_log(3.*10**(-10), 6.*10**(-4), chi_guess_num).astype(numpy.float32)
+chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
+chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
+chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
+chi_guess_bin = numpy.sort(chi_guess_bin)
+
+chi_guess_num = int(chi_guess_num*2)
+
+# chi_guess_num = 100
+# inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
+# xi_cache = numpy.load(data_path+"/xi_cache_%s.npz"%data_type)["arr_0"]
+# signal_p = xi_cache[0,int(tag_1/2)]
+# signal_p_err = xi_cache[1,int(tag_1/2)]*10
+# chi_guess_bin = numpy.linspace(signal_p-signal_p_err, signal_p + signal_p_err, chi_guess_num).astype(numpy.float32)
 
 
 mg_bin_num = 10
@@ -112,8 +114,15 @@ for tag in range(section_num):
 
     for i in my_task_list:
 
-        cov = [[numpy.abs(chi_guess_bin[i] * 2), -chi_guess_bin[i]],
-               [-chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
+        # cov = [[numpy.abs(chi_guess_bin[i] * 2), -chi_guess_bin[i]],
+        #        [-chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
+        if numpy.abs(chi_guess_bin[i]) > 10**(-4):
+            cov_ii = numpy.abs(chi_guess_bin[i] * 2)
+        else:
+            cov_ii = 2.*10**(-4)
+
+        cov = [[cov_ii, -chi_guess_bin[i]],
+               [-chi_guess_bin[i],cov_ii]]
 
         gg1 = tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
 
@@ -141,7 +150,7 @@ comm.Barrier()
 
 t2 = time.time()
 if rank == 0:
-    numpy.savez(data_path + "/chisq_%d_%d_%s_narrow.npz"%(tag_1, tag_2, data_type), chi_guess_bin, chisq_arr)
+    numpy.savez(data_path + "/chisq_%d_%d_%s.npz"%(tag_1, tag_2, data_type), chi_guess_bin, chisq_arr)
     print("%d %d %.2f"%(tag_1, tag_2, t2-t1))
 comm.Barrier()
 
