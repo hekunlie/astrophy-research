@@ -78,7 +78,7 @@ int main(int argc, char*argv[])
     strcpy(parent_path, argv[1]);
     source_tag = atoi(argv[2]);
 
-	size = 64;//atoi(argv[4]);
+	size = 56;//atoi(argv[4]);
     total_chips = atoi(argv[3]);
 
 	seed_step = 2;
@@ -93,7 +93,7 @@ int main(int argc, char*argv[])
 	num_p = 40;
 
 	stamp_num = 10000;
-	shear_data_cols = 4;
+	shear_data_cols = 5;
 
 	psf_type = 2;
 	psf_scale = 4;
@@ -282,7 +282,7 @@ int main(int argc, char*argv[])
             g1 = g1t[i*stamp_num + j];
             g2 = g2t[i*stamp_num + j];
 
-            max_radius = 8;//radius[i*stamp_num + j];
+            max_radius = 9;//radius[i*stamp_num + j];
             flux_i = 15000/num_p;//flux[i*stamp_num + j]/num_p;
 
             initialize_arr(point, num_p * 2, 0);				
@@ -325,7 +325,7 @@ int main(int argc, char*argv[])
             sub_noise_free_data[row + j * shear_data_cols + 1] = all_paras.n2;
             sub_noise_free_data[row + j * shear_data_cols + 2] = all_paras.dn;
             sub_noise_free_data[row + j * shear_data_cols + 3] = all_paras.du;
-            // sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
+            sub_noise_free_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
             /////////////////////////// noisy image /////////////////////////////////
             shear_est(stamp_pow_img[2], psf_img[1], &all_paras);
@@ -333,7 +333,7 @@ int main(int argc, char*argv[])
             sub_noisy_data[row + j * shear_data_cols + 1] = all_paras.n2;
             sub_noisy_data[row + j * shear_data_cols + 2] = all_paras.dn;
             sub_noisy_data[row + j * shear_data_cols + 3] = all_paras.du;
-            // sub_noisy_data[row + j * shear_data_cols + 4] = all_paras.dv;
+            sub_noisy_data[row + j * shear_data_cols + 4] = all_paras.dv;
 
         }
         t2 = clock();
