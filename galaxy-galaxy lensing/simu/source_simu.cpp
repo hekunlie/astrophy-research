@@ -74,12 +74,14 @@ int main(int argc, char*argv[])
     MY_FLOAT pts_step;
     int *rand_seed;
     MY_FLOAT *big_img[2];
+    char src_type[50];
 
     strcpy(parent_path, argv[1]);
     source_tag = atoi(argv[2]);
 
 	size = 56;//atoi(argv[4]);
     total_chips = atoi(argv[3]);
+    strcpy(src_type, argv[4]);
 
 	seed_step = 2;
 
@@ -193,14 +195,13 @@ int main(int argc, char*argv[])
     rand_seed = new int[total_chips]{};
 
 
-    sprintf(para_path,"%s/cata/background/shear_map_%d.hdf5", parent_path, source_tag);
+    sprintf(para_path,"%s/cata/background/continue_source_z/%s_para_%d.hdf5", parent_path, src_type, source_tag);
     sprintf(set_name,"/g1");
 
     read_h5(para_path, set_name, g1t);
     sprintf(set_name,"/g2");
     read_h5(para_path, set_name, g2t);
 
-    sprintf(para_path,"%s/cata/background/seed_%d.hdf5", parent_path, source_tag);
     sprintf(set_name,"/seed");
     read_h5(para_path, set_name, rand_seed);
 
@@ -221,7 +222,7 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 
-        sprintf(chip_path,"%s/cata/background/psf.hdf5", parent_path);
+        sprintf(chip_path,"%s/cata/background/continue_source_z/%s_psf.hdf5", parent_path, src_type);
         sprintf(set_name,"/data");
         write_h5(chip_path, set_name, psf_img[0], size, size, true);
 
@@ -312,7 +313,7 @@ int main(int argc, char*argv[])
             arr_deduct(stamp_pow_img[2], stamp_pow_img[1], noise_pow_img[1], img_len);
             
 
-            if(rank == 0 and i < 3)
+            if(rank == 0 and i < 2)
             {
                 stack(big_img[0], stamp_img[0], j, size, stamp_nx, stamp_nx);
                 stack(big_img[1], stamp_img[1], j, size, stamp_nx, stamp_nx);
@@ -343,13 +344,13 @@ int main(int argc, char*argv[])
         {
             std::cout << log_inform << std::endl;
         }
-        if(rank == 0 and i < 3)
+        if(rank == 0 and i < 2)
         {
-            sprintf(chip_path, "%s/cata/background/%d_gal_chip_%05d_noise_free.hdf5", parent_path, source_tag, i);
+            sprintf(chip_path, "%s/cata/background/continue_source_z/imgs/%s_%d_gal_chip_%05d_noise_free.hdf5", parent_path,src_type, source_tag, i);
             sprintf(set_name,"/data");
             write_h5(chip_path, set_name, big_img[0], stamp_nx*size, stamp_nx*size, true);
 
-            sprintf(chip_path, "%s/cata/background/%d_gal_chip_%05d_noisy.hdf5", parent_path, source_tag, i);
+            sprintf(chip_path, "%s/cata/background/continue_source_z/imgs/%s_%d_gal_chip_%05d_noisy.hdf5", parent_path,src_type, source_tag, i);
             write_h5(chip_path, set_name, big_img[1], stamp_nx*size, stamp_nx*size, true);
 
             // write_fits(chip_path, big_img_check[0], stamp_nx*size, stamp_nx*size);
@@ -398,7 +399,7 @@ int main(int argc, char*argv[])
     my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
     if (0 == rank)
     {
-        sprintf(result_path, "%s/cata/background/data_%d_noise_free.hdf5", parent_path, source_tag);
+        sprintf(result_path, "%s/cata/background/continue_source_z/%s_data_%d_noise_free.hdf5", parent_path,src_type, source_tag);
         sprintf(set_name,"/data");
         write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
     }
@@ -407,7 +408,7 @@ int main(int argc, char*argv[])
     my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
     if (0 == rank)
     {
-        sprintf(result_path, "%s/cata/background/data_%d_noisy_cpp.hdf5", parent_path, source_tag);
+        sprintf(result_path, "%s/cata/background/continue_source_z/%s_data_%d_noisy_cpp.hdf5", parent_path, src_type,source_tag);
         sprintf(set_name,"/data");
         write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
     }
