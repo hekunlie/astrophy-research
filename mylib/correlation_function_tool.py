@@ -262,12 +262,17 @@ def get_tomo_xi(As, Omega_cm0, Omega_bm0, h, zpts, inv_scale_factor, zhist,
             integ_part_m = integ_Lpts_theta_m[i,j,:] * PLs[i]
             xi_minus[i, j] = numpy.sum(((integ_part_m[1:] + integ_part_m[:-1]) / 2 * dLpts))
     xi_all[:tomo_panel_num] = xi_plus
-    # xi_all[tomo_panel_num:] = xi_minus
+    xi_all[tomo_panel_num:] = xi_minus
     # t7 = time.time()
     # print(t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, t7-t6)
+<<<<<<< Updated upstream
     # return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8, PLs, Lpts, xi_all/2/numpy.pi
     return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, sigma8[-1],PLs, Lpts# ,
 
+=======
+    return xi_plus/2/numpy.pi, xi_minus/2/numpy.pi, PLs, Lpts, xi_all/2/numpy.pi, sigma8[-1]
+    # return xi_plus/2/numpy.pi, sigma8[-1], PLs, Lpts
+>>>>>>> Stashed changes
 
 def get_tomo_xi_ccl(sigma8, Omega_cm0, Omega_bm0, h, zpts, zhist, theta_deg, ell):
     ns = 0.965
