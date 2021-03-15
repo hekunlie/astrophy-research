@@ -35,14 +35,14 @@ coeff_crit = C_0_hat ** 2 / 4 / numpy.pi / 6.674
 cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 
 # Halo parameters
-Mass = 10 ** 14  # M_sun/h
+Mass = 5*10 ** 12.5  # M_sun/h
 conc = 3.5  # concentration
 len_z = 0.3  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
 
-Rmin, Rmax = 0.04, 10 # Mpc/h
+Rmin, Rmax = 0.04, 1 # Mpc/h
 separation_min, separation_max = Rmin/com_dist_len/numpy.pi*180*3600, Rmax/com_dist_len/numpy.pi*180*3600
 separation_bin_num = numprocs
 separation_bin = numpy.linspace(separation_min, separation_max, numprocs+1)
@@ -74,9 +74,12 @@ if fore_or_back == 0:
     h5f["/z"] = src_z.astype(dtype=numpy.float32)
     h5f["/ra"] = ra.astype(dtype=numpy.float32)
     h5f["/dec"] = dec.astype(dtype=numpy.float32)
+
     h5f["/g1"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
     h5f["/g2"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
-    h5f["/kappa"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
+    h5f["/gamma1"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
+    h5f["/gamma2"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
+
     h5f["/seed"] = seed
     h5f.close()
 
@@ -84,18 +87,20 @@ else:
     # true background sources
     src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.35, total_src_num).astype(dtype=numpy.float32))
 
-    shear_data = gglensing_tool.cal_shear(ra, dec, nfw, src_z).astype(dtype=numpy.float32)
+    shear_data = gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
 
     h5f = h5py.File(data_path + "/sheared_para_%d.hdf5"%rank, "w")
     h5f["/z"] = src_z
     h5f["/ra"] = ra
     h5f["/dec"] = dec
 
-    h5f["/g1"] = shear_data[1]
-    h5f["/g2"] = shear_data[2]
     h5f["/kappa"] = shear_data[0]
-    h5f["/theta"] = shear_data[3]
+    h5f["/gamma1"] = shear_data[1]
+    h5f["/gamma2"] = shear_data[2]
+    h5f["/g1"] = shear_data[3]
+    h5f["/g2"] = shear_data[4]
 
     h5f["/seed"] = seed
+
     h5f.close()
 
