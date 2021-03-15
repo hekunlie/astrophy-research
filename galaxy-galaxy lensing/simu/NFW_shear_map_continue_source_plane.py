@@ -17,7 +17,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
+data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_2/"
 
 total_src_num = int(argv[1])#20000000
 fore_or_back = int(argv[2])
@@ -64,7 +64,20 @@ theta = rng.uniform(0, numpy.pi * 2, total_src_num)
 ra = separation * numpy.cos(theta)
 dec = separation * numpy.sin(theta)
 
+
+# magnitude & flux
+mag_s, mag_e = 22, 25.5
+mag = tool_box.mag_generator(total_src_num, mag_s, mag_e).astype(dtype=numpy.float32)
+flux = tool_box.mag_to_flux(mag).astype(dtype=numpy.float32)
+
+# galactic radius
+radius_s, radius_e = 0.75, 1.87
+
+radius = tool_box.radii_from_mags(mag, radius_s, radius_e)/0.187
+
+
 seed = rng.randint(1, 2000000000, int(total_src_num/10000))
+
 
 if fore_or_back == 0:
     # non-sheared source which have lower redshifts than the lens
@@ -74,6 +87,9 @@ if fore_or_back == 0:
     h5f["/z"] = src_z.astype(dtype=numpy.float32)
     h5f["/ra"] = ra.astype(dtype=numpy.float32)
     h5f["/dec"] = dec.astype(dtype=numpy.float32)
+
+    h5f["/flux"] = flux.astype(dtype=numpy.float32)
+    h5f["/radius"] = radius.astype(dtype=numpy.float32)
 
     h5f["/g1"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
     h5f["/g2"] = numpy.zeros((total_src_num,), dtype=numpy.float32)
@@ -93,6 +109,9 @@ else:
     h5f["/z"] = src_z
     h5f["/ra"] = ra
     h5f["/dec"] = dec
+
+    h5f["/flux"] = flux
+    h5f["/radius"] = radius
 
     h5f["/kappa"] = shear_data[0]
     h5f["/gamma1"] = shear_data[1]
