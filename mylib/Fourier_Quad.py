@@ -910,7 +910,7 @@ class Fourier_Quad:
         else:
             return signal_guess, chi_sq
 
-    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=60, chi_gap=40, fig_ax=False,loc_fit=False):
+    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=20, chi_gap=40,max_iters=40, fig_ax=False,loc_fit=False):
         """
         G1 (G2): the shear estimator for g1 (g2),
         N: shear estimator corresponding to the PSF correction
@@ -941,14 +941,22 @@ class Fourier_Quad:
             fmcr = self.get_chisq(g, nu, mcr, bins, bin_num2, inverse, ig_num)
             temp = fmc + chi_gap
 
+            # if fmcl > temp:
+            #     left = (mc + mcl) / 2.
+            #     change = 1
+            # if fmcr > temp:
+            #     right = (mc + mcr) / 2.
+            #     change = 1
+
             if fmcl > temp:
-                left = (mc + mcl) / 2.
+                left = mcl + (mc - mcl) / 3
                 change = 1
             if fmcr > temp:
-                right = (mc + mcr) / 2.
+                right = mcr - (mcr - mc) / 3
                 change = 1
+
             iters += 1
-            if iters > 12:
+            if iters > max_iters:
                 break
 
         fit_range = numpy.linspace(left, right, fit_num)
@@ -973,7 +981,7 @@ class Fourier_Quad:
             text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
             fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=15)
-        return g_h, g_sig, coeff
+        return g_h, g_sig, coeff, fit_range
 
 
     def find_shear_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):

@@ -105,7 +105,7 @@ int main(int argc, char*argv[])
 
 	sig_level = 1.5;
 	psf_noise_sig = 0;
-    gal_noise_sig = 60;
+    gal_noise_sig = 5;
 	
     img_len = size*size;
 	img_cent = size*0.5 - 0.5;
@@ -290,7 +290,7 @@ int main(int argc, char*argv[])
             g2 = g2t[i*stamp_num + j];
 
             max_radius = radius[i*stamp_num + j];
-            flux_i = flux[i*stamp_num + j]/num_p;
+            flux_i = 5000;//flux[i*stamp_num + j]/num_p;
 
             initialize_arr(point, num_p * 2, 0);				
             for(k=0;k<8;k++)
@@ -405,7 +405,7 @@ int main(int argc, char*argv[])
     my_Gatherv(sub_noise_free_data, gather_count, total_data, numprocs, rank);
     if (0 == rank)
     {
-        sprintf(result_path, "%s/cata/background/continue_source_z_2/data/%s_data_%d_noise_free.hdf5", parent_path,src_type, source_tag);
+        sprintf(result_path, "%s/cata/background/continue_source_z_2/data_1/%s_data_%d_noise_free.hdf5", parent_path,src_type, source_tag);
         sprintf(set_name,"/data");
         write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
     }
@@ -414,7 +414,7 @@ int main(int argc, char*argv[])
     my_Gatherv(sub_noisy_data, gather_count, total_data, numprocs, rank);
     if (0 == rank)
     {
-        sprintf(result_path, "%s/cata/background/continue_source_z_2/data/%s_data_%d_noisy_cpp.hdf5", parent_path, src_type,source_tag);
+        sprintf(result_path, "%s/cata/background/continue_source_z_2/data_1/%s_data_%d_noisy_cpp.hdf5", parent_path, src_type,source_tag);
         sprintf(set_name,"/data");
         write_h5(result_path, set_name, total_data, total_data_row, shear_data_cols,true);
     }
