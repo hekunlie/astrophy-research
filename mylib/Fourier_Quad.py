@@ -981,7 +981,7 @@ class Fourier_Quad:
             text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
             fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
                         fontsize=15)
-        return g_h, g_sig, coeff, fit_range
+        return g_h, g_sig, coeff, fit_range, bins
 
 
     def find_shear_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):
