@@ -261,7 +261,8 @@ def get_chisq_grid(hist2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inv
     return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5, n1, n2
 
 
-def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg=0.01, fit_num=10, ax=False):
+def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right=0.1,
+                    chisq_gap=100, dg=0.0005, max_iters=40, fit_num=10, ax=False):
     data_num = G.shape[0]
     G = numpy.ascontiguousarray(G, dtype=numpy.float64)
     NU = numpy.ascontiguousarray(NU, dtype=numpy.float64)
@@ -283,7 +284,7 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg
     grid_y = grid_y[idx]
     iters = 0
     change = 1
-    left, right = -1000, 1100
+
     while change == 1:
         change = 0
         mc = (left + right) / 2.
@@ -307,12 +308,11 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg
         iters += 1
         if right - left < dg:
             break
-        if iters > 40:
+        if iters > max_iters:
             break
 
     ghs = numpy.linspace(left, right, fit_num)
-    xi2 = numpy.array(
-        [get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse)[0] for gh in ghs])
+    xi2 = numpy.array([get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse)[0] for gh in ghs])
 
     coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
     gh = -coeff[1] / 2. / coeff[2]
@@ -326,8 +326,9 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg
     if ax:
         ax.scatter(ghs, xi2)
         ax.plot(ghs, coeff[0] + coeff[1] * ghs + coeff[2] * ghs ** 2, c="C1")
-        xs = ax.set_xlim()
-        ax.plot([xs[0], xs[1]], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        x1, x2 = left - (right - left)*0.2, right + (right - left)*0.2
+        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        ax.set_xlim((x1,x2))
         ax.legend(loc="lower left")
         ax.set_title("asym=%.3e" % asym)
     return gh, gh_sig, coeff, asym, ghs, xi2, grid_x, grid_y, hist_num2d
@@ -366,8 +367,8 @@ def get_chisq_grid_corr_new(hist2d, hist2d_corr, grid_x, grid_y, grid_x_corr, gr
     return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5, n1, n2
 
 
-def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_hist_bin, chisq_gap=100, dg=0.01,
-                             fit_num=10, ax=False):
+def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_hist_bin,
+                             left=-0.11, right=0.1,chisq_gap=100, dg=0.005, max_iters=40, fit_num=10, ax=False):
     data_num = G.shape[0]
     data_num_corr = G_corr.shape[0]
 
@@ -405,7 +406,6 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
 
     iters = 0
     change = 1
-    left, right = -1000, 1100
     while change == 1:
         change = 0
         mc = (left + right) / 2.
@@ -432,7 +432,7 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
         iters += 1
         if right - left < dg:
             break
-        if iters > 40:
+        if iters > max_iters:
             break
 
     ghs = numpy.linspace(left, right, fit_num)
@@ -453,8 +453,9 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
     if ax:
         ax.scatter(ghs, xi2)
         ax.plot(ghs, coeff[0] + coeff[1] * ghs + coeff[2] * ghs ** 2, c="C1")
-        xs = ax.set_xlim()
-        ax.plot([xs[0], xs[1]], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        x1, x2 = left - (right - left)*0.2, right + (right - left)*0.2
+        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        ax.set_xlim((x1,x2))
         ax.legend(loc="lower left")
         ax.set_title("asym=%.3e"%asym)
 
