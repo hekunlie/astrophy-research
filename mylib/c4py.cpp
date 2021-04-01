@@ -4,57 +4,6 @@
 
 extern "C"
 {
-    void test1(double x, double y)
-    {
-        double c = x+y;
-        // std::cout<<c<<std::endl;
-    }
-
-    // this one doesn't work, "segmentation fault"
-    void test2(double x, double y, double &z)
-    {
-        z = x+y;
-        // std::cout<<z<<std::endl;
-    }
-    
-    double test3(double x, double y)
-    {
-        return x+y;
-    }
-
-    // 1-D array
-    double test4(int a, double *data)
-    {
-        double b = 0;
-        int i;
-        for(i=0;i<a;i++) b+=data[i];
-        return b;
-    }
-
-    // double test5(int a, double *data, int b, double *data2)
-    // {
-    //     double c = 0;
-    //     int i;
-    //     for(i=0;i<a;i++) c+=data[i];
-    //     std::cout<<"Count "<<c<<std::endl;
-    //     for(i=0;i<b;i++)
-    //     {
-    //         data2[i] = c;
-    //         std::cout<<i<<" "<<c<<std::endl;
-    //     }
-    // }
-
-
-    double test(double *data1, int len1, double *data2, int len2)
-    {
-        double accum = 0;
-        int i;
-        for(i=0; i<len1; i++) accum+=data1[i];
-
-        for(i=0; i<len2; i++)data2[i] = accum;
-    }
-
-
     int locate(double x, double *bins, int bin_num)
     {
         int i,j,st,ed,mid;
@@ -72,6 +21,31 @@ extern "C"
         return st;
     }
     
+    void hist1d_fast(double *x, int num, double *xbin,  int xbin_num, int *count)
+    {   
+        int i;
+
+        int xst, xed, xmid;
+        for(i=0;i<xbin_num;i++){count[i] = 0;}
+
+
+        for(i=0; i<num; i++)
+        {
+
+            xst = 0;
+            xed = xbin_num;
+            while(xed - xst>1)
+            {   
+                xmid = (xst+xed)/2;
+                if(x[i] >= xbin[xmid]){xst = xmid;}
+                else{xed = xmid;}
+            }
+            count[xst] += 1;
+
+        }
+    }
+
+
     void hist2d(double *x, double *y, int num, double *xbin, double *ybin, int xbin_num, int ybin_num, int *count)//, double *grid_x, double *grid_y)
     {   
         int i, j, k;
@@ -407,6 +381,222 @@ extern "C"
             }
 
         }
+    }
+
+
+    double search_shear_range_chi2(double *mg, double *mnu, int data_num, double signal, 
+                                    double *mg_bin, int mg_bin_num)
+    {
+        int i, bin_num2;
+        int xst, xed, xmid;
+        double mgh;
+        double chisq, n1, n2;
+
+        double *count = new double[mg_bin_num];
+
+        for(i=0;i<mg_bin_num;i++){count[i] = 0;}
+
+        for(i=0; i<data_num; i++)
+        {
+            mgh = mg[i] - signal*mnu[i];
+
+            xst = 0;
+            xed = mg_bin_num;
+            while(xed - xst>1)
+            {   
+                xmid = (xst+xed)/2;
+                if(mgh >= mg_bin[xmid]){xst = xmid;}
+                else{xed = xmid;}
+            }
+            count[xst] += 1;
+        }
+
+        chisq = 0;
+        bin_num2 = mg_bin_num/2;
+        for(i=0;i<bin_num2; i++)
+        {   
+            n1 = count[i] - count[mg_bin_num-i-1];
+            n2 = count[i] + count[mg_bin_num-i-1];
+            chisq += n1*n1/n2;
+        }
+        chisq = chisq/2;
+
+        delete[] count;
+        return chisq;
+    }
+
+    void search_shear_range(double *mg, double *mnu, int data_num, double *mg_bin, int mg_bin_num, 
+                            double left_shear_guess, double right_shear_guess, int max_iters, double chi2_gap, 
+                            double *fit_shear_range, double *fit_chi2, int fit_shear_num)
+    {
+        int i, j, change, iters;
+        double mc, mcl, mcr, left, right;
+        double fmc, fmcl, fmcr, temp;
+
+        left = left_shear_guess;
+        right = right_shear_guess;
+        change = 1;
+        iters = 0;
+        while(true)
+        {
+            change = 0;
+            mc = (left + right) / 2;
+            mcl = left;
+            mcr = right;
+
+            fmc = search_shear_range_chi2(mg, mnu, data_num, mc, mg_bin, mg_bin_num);
+            fmcl = search_shear_range_chi2(mg, mnu, data_num, mcl, mg_bin, mg_bin_num);
+            fmcr = search_shear_range_chi2(mg, mnu, data_num, mcr, mg_bin, mg_bin_num);
+
+            temp = fmc + chi2_gap;
+
+            if (fmcl > temp)
+            { 
+                left = mcl + (mc - mcl) / 3;
+                change = 1;
+            }
+            if (fmcr > temp)
+            {
+                right = mcr - (mcr - mc) / 3;
+                change = 1;
+            }
+
+            if(change == 0){break;}
+
+            iters += 1;
+            if (iters > max_iters){break;}
+        }
+        
+        temp = (right - left)/(fit_shear_num-1);
+        for(i=0;i<fit_shear_num;i++)
+        {
+            fit_shear_range[i] = left + i*temp;
+            fit_chi2[i] = search_shear_range_chi2(mg, mnu, data_num, fit_shear_range[i], mg_bin, mg_bin_num);
+        }
+
+    }
+
+
+double search_shear_range_chi2_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double signal, 
+                                    double *mg_bin, int mg_bin_num)
+    {
+        int i, bin_num2;
+        int xst, xed, xmid;
+        double mgh;
+        double chisq, n1, n2, n1_corr, n2_corr;
+
+        double *count = new double[mg_bin_num];
+        double *count_corr = new double[mg_bin_num];
+
+        for(i=0;i<mg_bin_num;i++){count[i] = 0;count_corr[i] = 0;}
+
+        for(i=0; i<data_num; i++)
+        {
+            mgh = mg[i] - signal*mnu[i];
+
+            xst = 0;
+            xed = mg_bin_num;
+            while(xed - xst>1)
+            {   
+                xmid = (xst+xed)/2;
+                if(mgh >= mg_bin[xmid]){xst = xmid;}
+                else{xed = xmid;}
+            }
+            count[xst] += 1;
+        }
+
+        for(i=0; i<corr_num; i++)
+        {
+            mgh = mg_corr[i] - signal*mnu_corr[i];
+
+            xst = 0;
+            xed = mg_bin_num;
+            while(xed - xst>1)
+            {   
+                xmid = (xst+xed)/2;
+                if(mgh >= mg_bin[xmid]){xst = xmid;}
+                else{xed = xmid;}
+            }
+            count_corr[xst] += 1;
+        }
+
+        for(i=0;i<mg_bin_num;i++)
+        {   
+            if(count[i] >= count_corr[i])
+            {count[i] = count[i] - count_corr[i];}
+            else
+            {count[i] = 0;}
+        }
+
+        chisq = 0;
+        bin_num2 = mg_bin_num/2;
+        for(i=0;i<bin_num2; i++)
+        {   
+            n2 = count[i] + count[mg_bin_num-i-1];
+            if(n2 == 0){continue;}
+
+            n1 = count[i] - count[mg_bin_num-i-1];
+            chisq += n1*n1/n2;
+        }
+
+        chisq = chisq/2;
+
+        delete[] count;
+        delete[] count_corr;
+
+        return chisq;
+    }
+
+
+void search_shear_range_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double *mg_bin, int mg_bin_num, 
+                            double left_shear_guess, double right_shear_guess, int max_iters, double chi2_gap, 
+                            double *fit_shear_range, double *fit_chi2, int fit_shear_num)
+    {
+        int i, j, change, iters;
+        double mc, mcl, mcr, left, right;
+        double fmc, fmcl, fmcr, temp;
+
+        left = left_shear_guess;
+        right = right_shear_guess;
+        change = 1;
+        iters = 0;
+        while(true)
+        {
+            change = 0;
+            mc = (left + right) / 2;
+            mcl = left;
+            mcr = right;
+
+            fmc = search_shear_range_chi2_corr(mg, mnu, data_num, mg_corr, mnu_corr, corr_num, mc, mg_bin, mg_bin_num);
+            fmcl = search_shear_range_chi2_corr(mg, mnu, data_num, mg_corr, mnu_corr, corr_num, mcl, mg_bin, mg_bin_num);
+            fmcr = search_shear_range_chi2_corr(mg, mnu, data_num, mg_corr, mnu_corr, corr_num, mcr, mg_bin, mg_bin_num);
+
+            temp = fmc + chi2_gap;
+
+            if (fmcl > temp)
+            { 
+                left = mcl + (mc - mcl) / 3;
+                change = 1;
+            }
+            if (fmcr > temp)
+            {
+                right = mcr - (mcr - mc) / 3;
+                change = 1;
+            }
+
+            if(change == 0){break;}
+
+            iters += 1;
+            if (iters > max_iters){break;}
+        }
+        
+        temp = (right - left)/(fit_shear_num-1);
+        for(i=0;i<fit_shear_num;i++)
+        {
+            fit_shear_range[i] = left + i*temp;
+            fit_chi2[i] = search_shear_range_chi2_corr(mg, mnu, data_num, mg_corr, mnu_corr, corr_num, fit_shear_range[i], mg_bin, mg_bin_num);
+        }
+
     }
 
 }

@@ -9,6 +9,9 @@ from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
 import tool_box
+import time
+import ctypes
+import numpy.ctypeslib as ctl
 
 
 class Fourier_Quad:
@@ -564,93 +567,6 @@ class Fourier_Quad:
         noise_level = numpy.sum(self.rim*image_ps)/numpy.sum(self.rim)
         return numpy.sqrt(image_ps[int(self.size/2), int(self.size/2)]/noise_level)
 
-    def set_bin(self, data, bin_num, scale=100., sort_method="abs", sym=True):
-        """
-        set up bins for 1-D data
-        :param data:
-        :param bin_num: total number of bins
-        :param sort_method: "abs": set the scale of bins according to the absolute value of data
-                            "posi": set the scale of bins according to the positive value
-                            else: just set scale of bins from the small end to the large end
-        :param sym: True: set up bins symmetrically, False: the bins for the positive values
-        :return: bins, (N, ) numpy array
-        """
-        if sort_method == "abs":
-            temp_data = numpy.sort(numpy.abs(data))
-        elif sort_method == "posi":
-            temp_data = numpy.sort(data[data>0])
-        else:
-            temp_data = numpy.sort(data)
-
-        if sym:
-            bin_size = len(temp_data) / bin_num * 2
-            bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
-            bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
-            bound = numpy.max(numpy.abs(data)) * scale
-            bins = numpy.append(-bound, numpy.append(bins, bound))
-        else:
-            bin_size = len(temp_data) / bin_num
-            bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, bin_num)])
-            if sort_method == "abs" or sort_method == "posi":
-                bins = numpy.sort(numpy.append([0], bins))
-                bound = numpy.max(numpy.abs(data)) * scale
-                bins = numpy.append(bins, bound)
-            else:
-                # for the sort of negative data
-                bound = numpy.min(data)*scale
-                bins = numpy.append(bound, numpy.append(bins, -bound))
-        return bins
-
-    def get_chisq(self, g, nu, g_h, bins, bin_num2, inverse, ig_num):  # checked 2017-7-9!!!
-        r"""
-        to calculate the symmetry the shear estimators
-        :param g: estimators from Fourier quad, 1-D numpy array
-        :param nu: N + U for g1, N - U for g2, 1-D numpy array
-        :param g_h: pseudo shear (guess)
-        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
-        :param ig_num: the number of inner grid of bin to be neglected
-        :return: chi square
-        """
-        G_h = g - nu * g_h
-        num = numpy.histogram(G_h, bins)[0]
-        n1 = num[0:bin_num2][inverse]
-        n2 = num[bin_num2:]
-        xi = (n1 - n2) ** 2 / (n1 + n2)
-        return numpy.sum(xi[:len(xi)-ig_num]) * 0.5
-
-    def get_chisq_new(self, g, nu, g_h, bins, bin_num2, inverse, ig_num, num_exp):  # checked 2017-7-9!!!
-        r"""
-        to calculate the symmetry the shear estimators
-        :param g: estimators from Fourier quad, 1-D numpy array
-        :param nu: N + U for g1, N - U for g2, 1-D numpy array
-        :param g_h: pseudo shear (guess)
-        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
-        :param ig_num: the number of inner grid of bin to be neglected
-        :return: chi square
-        """
-        G_h = g - nu * g_h
-        num = numpy.histogram(G_h, bins)[0]
-        n1 = num[0:bin_num2][inverse]
-        n2 = num[bin_num2:]
-        xi = ((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (n1 + n2)
-        return numpy.sum(xi[:len(xi) - ig_num]) * 0.5
-
-    def get_chisq_new_e(self, g, nu, g_h, bins, bin_num2, inverse, ig_num, num_exp):  # checked 2017-7-9!!!
-        r"""
-        to calculate the symmetry the shear estimators
-        :param g: estimators from Fourier quad, 1-D numpy array
-        :param nu: N + U for g1, N - U for g2, 1-D numpy array
-        :param g_h: pseudo shear (guess)
-        :param bins: bin of g for calculation of the symmetry, 1-D numpy array
-        :param ig_num: the number of inner grid of bin to be neglected
-        :return: chi square
-        """
-        G_h = g - nu * g_h
-        num = numpy.histogram(G_h, bins)[0]
-        n1 = num[0:bin_num2][inverse]
-        n2 = num[bin_num2:]
-        xi = ((n1 - num_exp) ** 2 + (n2 - num_exp) ** 2) / (num_exp*2)
-        return numpy.sum(xi[:len(xi) - ig_num]) * 0.5
 
     def G_bin2d(self, mgs, mnus, g_corr, bins, resample=1, ig_nums=0):
         r"""
@@ -762,299 +678,399 @@ class Fourier_Quad:
             # plt.show()
         return -g_corr, corr_sig
 
-    def find_shear_bk(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2,fit_num=60,chi_gap=40,fig_ax=False):  # checked 2017-7-9!!!
-        """
-        G1 (G2): the shear estimator for g1 (g2),
-        N: shear estimator corresponding to the PSF correction
-        U: the term for PDF-SYM
-        V: the term for transformation
-        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
-        :param nu: N+U: for g1, N-U: for g2
-        :param bin_num:
-        :param ig_num:
-        :param pic_path:
-        :param left, right: the initial guess of shear
-        :return: estimated shear and sigma
-        """
-        bins = self.set_bin(g, bin_num,scale)
-        bin_num2 = int(bin_num * 0.5)
-        inverse = range(int(bin_num / 2 - 1), -1, -1)
-        same = 0
-        iters = 0
-        # m1 chi square & left & left chi square & right & right chi square
-        records = numpy.zeros((15, 5))
-        while True:
-            templ = left
-            tempr = right
-            m1 = (left + right) / 2.
-            m2 = (m1 + left) / 2.
-            m3 = (m1 + right) / 2.
-            fL = self.get_chisq(g, nu, left, bins, bin_num2, inverse, ig_num)
-            fR = self.get_chisq(g, nu, right, bins, bin_num2, inverse, ig_num)
-            fm1 = self.get_chisq(g, nu, m1, bins, bin_num2, inverse, ig_num)
-            fm2 = self.get_chisq(g, nu, m2, bins, bin_num2, inverse, ig_num)
-            fm3 = self.get_chisq(g, nu, m3, bins, bin_num2, inverse, ig_num)
-            values = [fL, fm2, fm1, fm3, fR]
-            points = [left, m2, m1, m3, right]
-            records[iters, ] = fm1, left, fL, right, fR
-            if max(values) < chi_gap:
-                temp_left = left
-                temp_right = right
-            if fL > max(fm1, fm2, fm3) and fR > max(fm1, fm2, fm3):
-                if fm1 == fm2:
-                    left = m2
-                    right = m1
-                elif fm1 == fm3:
-                    left = m1
-                    right = m3
-                elif fm2 == fm3:
-                    left = m2
-                    right = m3
-                elif fm1 < fm2 and fm1 < fm3:
-                    left = m2
-                    right = m3
-                elif fm2 < fm1 and fm2 < fm3:
-                    right = m1
-                elif fm3 < fm1 and fm3 < fm2:
-                    left = m1
-            elif fR > fm3 >= fL:
-                if fL == fm3:
-                    right = m3
-                elif fL == fm1:
-                    right = m1
-                elif fL == fm2:
-                    right = m2
-                elif fm1 == fm2:
-                    right = right
-                elif fm1 < fm2 and fm1 < fL:
-                    left = m2
-                    right = m3
-                elif fm2 < fL and fm2 < fm1:
-                    right = m1
-                elif fL < fm1 and fL < fm2:
-                    right = m2
-            elif fL > fm2 >= fR:
-                if fR == fm2:
-                    left = m2
-                elif fR == fm1:
-                    left = m1
-                elif fR == fm3:
-                    left = m3
-                elif fm1 < fR and fm1 < fm3:
-                    left = m2
-                    right = m3
-                elif fm3 < fm1 and fm3 < fR:
-                    left = m1
-                elif fR < fm1 and fR < fm3:
-                    left = m3
-                elif fm1 == fm3:
-                    left = m1
-                    right = m3
 
-            if abs(left-right) < 1.e-5:
-                g_h = (left+right)/2.
-                break
-            iters += 1
-            if left == templ and right == tempr:
-                same += 1
-            if iters > 12 and same > 2 or iters > 14:
-                g_h = (left+right)/2.
-                break
-                # print(left,right,abs(left-right))
-        # fitting
-        left_x2 = numpy.min(numpy.abs(records[:iters, 2] - fm1 - chi_gap))
-        label_l = numpy.where(left_x2 == numpy.abs(records[:iters, 2] - fm1 - chi_gap))[0]
-        if len(label_l > 1):
-            label_l = label_l[0]
+def set_bin(data, bin_num, scale=100., sort_method="abs", sym=True):
+    """
+    set up bins for 1-D data
+    :param data:
+    :param bin_num: total number of bins
+    :param sort_method: "abs": set the scale of bins according to the absolute value of data
+                        "posi": set the scale of bins according to the positive value
+                        else: just set scale of bins from the small end to the large end
+    :param sym: True: set up bins symmetrically, False: the bins for the positive values
+    :return: bins, (N, ) numpy array
+    """
+    if sort_method == "abs":
+        temp_data = numpy.sort(numpy.abs(data))
+    elif sort_method == "posi":
+        temp_data = numpy.sort(data[data>0])
+    else:
+        temp_data = numpy.sort(data)
 
-        right_x2 = numpy.min(numpy.abs(records[:iters, 4] - fm1 - chi_gap))
-        label_r = numpy.where(right_x2 == numpy.abs(records[:iters, 4] - fm1 - chi_gap))[0]
-        if len(label_r > 1):
-            label_r = label_r[0]
-
-        if left_x2 > right_x2:
-            right = records[label_l, 3]
-            left = 2*m1 - right
+    if sym:
+        bin_size = len(temp_data) / bin_num * 2
+        bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
+        bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+        bound = numpy.max(numpy.abs(data)) * scale
+        bins = numpy.append(-bound, numpy.append(bins, bound))
+    else:
+        bin_size = len(temp_data) / bin_num
+        bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, bin_num)])
+        if sort_method == "abs" or sort_method == "posi":
+            bins = numpy.sort(numpy.append([0], bins))
+            bound = numpy.max(numpy.abs(data)) * scale
+            bins = numpy.append(bins, bound)
         else:
-            left = records[label_r, 1]
-            right = 2*m1 - left
+            # for the sort of negative data
+            bound = numpy.min(data)*scale
+            bins = numpy.append(bound, numpy.append(bins, -bound))
+    return bins
 
-        fit_range = numpy.linspace(left, right, fit_num)
-        chi_sq = numpy.array([self.get_chisq(g, nu, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in fit_range])
 
-        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+def get_chisq_range(G, NU, bin_num, signal_guess, ig_num=0, scale=1.1, limited=None):
+    bins = set_bin(G, bin_num, scale)
 
-        # y = a1 + a2*x a3*x^2 = a3(x+a2/2/a3)^2 +...
-        # gh = - a2/2/a3, gh_sig = \sqrt(1/2/a3)
-        # g_h = -coeff[1] / 2. / coeff[2]
-        g_sig = 0.70710678118/numpy.sqrt(coeff[2])
+    bin_num2 = int(bin_num * 0.5)
+    inverse = range(int(bin_num / 2 - 1), -1, -1)
+    chi_sq = numpy.array([get_chisq(G, NU, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in signal_guess])
+    if limited:
+        idx = chi_sq <= limited
+        return signal_guess[idx], chi_sq[idx]
+    else:
+        return signal_guess, chi_sq
 
-        if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
-            fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
-            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
-            fig_ax.text(0.1, 0.7, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=15)
 
-        return g_h, g_sig, coeff
+def get_chisq(g, nu, g_h, bins, bin_num2, ig_num):  # checked 2017-7-9!!!
+    r"""
+    to calculate the symmetry the shear estimators
+    :param g: estimators from Fourier quad, 1-D numpy array
+    :param nu: N + U for g1, N - U for g2, 1-D numpy array
+    :param g_h: pseudo shear (guess)
+    :param bins: bin of g for calculation of the symmetry, 1-D numpy array
+    :param ig_num: the number of inner grid of bin to be neglected
+    :return: chi square
+    """
+    G_h = g - nu * g_h
+    num = numpy.histogram(G_h, bins)[0]
+    n1 = numpy.flip(num[0:bin_num2],axis=0)
+    n2 = num[bin_num2:]
+    xi = (n1 - n2) ** 2 / (n1 + n2)
+    return numpy.sum(xi[:len(xi)-ig_num]) * 0.5,n1,n2
 
-    def get_chisq_range(self, G, NU, bin_num, signal_guess, ig_num=0, scale=1.1, limited=None):
-        bins = self.set_bin(G, bin_num, scale)
 
-        bin_num2 = int(bin_num * 0.5)
-        inverse = range(int(bin_num / 2 - 1), -1, -1)
-        chi_sq = numpy.array([self.get_chisq(G, NU, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in signal_guess])
-        if limited:
-            idx = chi_sq <= limited
-            return signal_guess[idx], chi_sq[idx]
-        else:
-            return signal_guess, chi_sq
+def find_shear(g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=20,
+               chi_gap=40,max_iters=40, fig_ax=False,loc_fit=False):
+    """
+    G1 (G2): the shear estimator for g1 (g2),
+    N: shear estimator corresponding to the PSF correction
+    U: the term for PDF-SYM
+    V: the term for transformation
+    :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
+    :param nu: N+U: for g1, N-U: for g2
+    :param bin_num:
+    :param ig_num:
+    :param pic_path:
+    :param left, right: the initial guess of shear
+    :return: estimated shear and sigma
+    """
+    bins = set_bin(g, bin_num, scale)
 
-    def find_shear(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=20, chi_gap=40,max_iters=40, fig_ax=False,loc_fit=False):
-        """
-        G1 (G2): the shear estimator for g1 (g2),
-        N: shear estimator corresponding to the PSF correction
-        U: the term for PDF-SYM
-        V: the term for transformation
-        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
-        :param nu: N+U: for g1, N-U: for g2
-        :param bin_num:
-        :param ig_num:
-        :param pic_path:
-        :param left, right: the initial guess of shear
-        :return: estimated shear and sigma
-        """
-        bins = self.set_bin(g, bin_num, scale)
+    bin_num2 = int(bin_num * 0.5)
 
-        bin_num2 = int(bin_num * 0.5)
-        inverse = range(int(bin_num / 2 - 1), -1, -1)
+    # t1 = time.time()
+    iters = 0
+    change = 1
+    while change == 1:
+        change = 0
+        mc = (left + right) / 2.
+        mcl = left
+        mcr = right
+        fmc = get_chisq(g, nu, mc, bins, bin_num2, ig_num)[0]
+        fmcl = get_chisq(g, nu, mcl, bins, bin_num2, ig_num)[0]
+        fmcr = get_chisq(g, nu, mcr, bins, bin_num2, ig_num)[0]
+        temp = fmc + chi_gap
 
-        iters = 0
-        change = 1
-        while change == 1:
-            change = 0
-            mc = (left + right) / 2.
-            mcl = left
-            mcr = right
-            fmc = self.get_chisq(g, nu, mc, bins, bin_num2, inverse, ig_num)
-            fmcl = self.get_chisq(g, nu, mcl, bins, bin_num2, inverse, ig_num)
-            fmcr = self.get_chisq(g, nu, mcr, bins, bin_num2, inverse, ig_num)
-            temp = fmc + chi_gap
+        if fmcl > temp:
+            left = mcl + (mc - mcl) / 3
+            change = 1
+        if fmcr > temp:
+            right = mcr - (mcr - mc) / 3
+            change = 1
 
-            # if fmcl > temp:
-            #     left = (mc + mcl) / 2.
-            #     change = 1
-            # if fmcr > temp:
-            #     right = (mc + mcr) / 2.
-            #     change = 1
+        iters += 1
+        if iters > max_iters:
+            break
+    # t2 = time.time()
+    fit_range = numpy.linspace(left, right, fit_num)
+    chi_sq = numpy.array([get_chisq(g, nu, g_hat, bins, bin_num2, ig_num)[0] for g_hat in fit_range])
+    t3 = time.time()
+    if loc_fit:
+        min_tag = numpy.where(chi_sq == chi_sq.min())[0][0]
+        chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
+        fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-            if fmcl > temp:
-                left = mcl + (mc - mcl) / 3
-                change = 1
-            if fmcr > temp:
-                right = mcr - (mcr - mc) / 3
-                change = 1
+    coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
-            iters += 1
-            if iters > max_iters:
-                break
+    # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+    # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
+    g_h = -coeff[1] / 2. / coeff[2]
+    g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 
-        fit_range = numpy.linspace(left, right, fit_num)
-        chi_sq = numpy.array([self.get_chisq(g, nu, g_hat, bins, bin_num2, inverse, ig_num) for g_hat in fit_range])
-        if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=5,c="k")
-        if loc_fit:
-            min_tag = numpy.where(chi_sq == chi_sq.min())[0][0]
-            chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
-            fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
+    n1, n2 = get_chisq(g, nu, g_h, bins, bin_num2, ig_num)[1:3]
 
-        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    if fig_ax:
+        fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
+        fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
+        text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
+        fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                    fontsize=15)
+    # t4 = time.time()
+    # print(t2-t1, t3-t2, t4-t3)
+    return g_h, g_sig, coeff, n1,n2,fit_range, bins
+
+
+def get_chisq_corr(g, nu, g_corr, nu_corr, g_h, bins, bin_num2, ig_num):
+    r"""
+    to calculate the symmetry the shear estimators
+    :param g: estimators from Fourier quad, 1-D numpy array
+    :param nu: N + U for g1, N - U for g2, 1-D numpy array
+    :param g_h: pseudo shear (guess)
+    :param bins: bin of g for calculation of the symmetry, 1-D numpy array
+    :param ig_num: the number of inner grid of bin to be neglected
+    :return: chi square
+    """
+    G_h = g - nu * g_h
+    G_h_corr = g_corr - nu_corr * g_h
+
+    num = numpy.histogram(G_h, bins)[0]
+    corr = numpy.histogram(G_h_corr, bins)[0]
+    num_corr = num - corr
+    n1 = numpy.flip(num_corr[0:bin_num2],axis=0)
+    n2 = num_corr[bin_num2:]
+    xi = (n1 - n2) ** 2 / (n1 + n2)
+    return numpy.sum(xi[:len(xi)-ig_num]) * 0.5, n1, n2
+
+
+def find_shear_corr(g, nu, g_corr, nu_corr, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_num=20, chi_gap=40,
+                    max_iters=40, fig_ax=False,loc_fit=False):
+    """
+    G1 (G2): the shear estimator for g1 (g2),
+    N: shear estimator corresponding to the PSF correction
+    U: the term for PDF-SYM
+    V: the term for transformation
+    :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
+    :param nu: N+U: for g1, N-U: for g2
+    :param bin_num:
+    :param ig_num:
+    :param pic_path:
+    :param left, right: the initial guess of shear
+    :return: estimated shear and sigma
+    """
+    bins = set_bin(g, bin_num, scale)
+
+    bin_num2 = int(bin_num * 0.5)
+
+    iters = 0
+    change = 1
+    while change == 1:
+        change = 0
+        mc = (left + right) / 2.
+        mcl = left
+        mcr = right
+        fmc = get_chisq_corr(g, nu, g_corr, nu_corr, mc, bins, bin_num2, ig_num)[0]
+        fmcl = get_chisq_corr(g, nu, g_corr, nu_corr, mcl, bins, bin_num2, ig_num)[0]
+        fmcr = get_chisq_corr(g, nu, g_corr, nu_corr, mcr, bins, bin_num2,  ig_num)[0]
+        temp = fmc + chi_gap
+
+        if fmcl > temp:
+            left = mcl + (mc - mcl) / 3
+            change = 1
+        if fmcr > temp:
+            right = mcr - (mcr - mc) / 3
+            change = 1
+
+        iters += 1
+        if iters > max_iters:
+            break
+
+    fit_range = numpy.linspace(left, right, fit_num)
+    chi_sq = numpy.array([get_chisq_corr(g, nu, g_corr, nu_corr, g_hat, bins, bin_num2, ig_num)[0]
+                          for g_hat in fit_range])
+
+    if loc_fit:
+        min_tag = numpy.where(chi_sq == chi_sq.min())[0][0]
+        chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
+        fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
+
+    coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+
+    # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+    # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
+    g_h = -coeff[1] / 2. / coeff[2]
+    g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
+
+    n1,n2 = get_chisq_corr(g, nu, g_corr, nu_corr, g_h, bins, bin_num2, ig_num)[1:3]
+
+    if fig_ax:
+        fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
+        fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
+        text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
+        fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
+                    fontsize=15)
+    return g_h, g_sig, coeff, n1,n2, fit_range, bins
+
+
+def find_shear_mean(G, N, weight=1):
+    num = G.shape[0]
+    g = numpy.sum(G)/numpy.sum(N)
+    g_sig = numpy.sqrt(numpy.mean((G*weight)**2)/(numpy.mean(N*weight))**2)/numpy.sqrt(num)
+
+    return g, g_sig
+
+
+
+if platform.system() == 'Linux':
+
+    c4pylib = ctypes.cdll.LoadLibrary("/home/hklee/work/mylib/c4py.so")
+
+
+    search_shear_range = c4pylib.search_shear_range
+    search_shear_range.restype = None
+    search_shear_range.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctypes.c_int,
+                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctypes.c_int,
+                                   ctypes.c_double,
+                                   ctypes.c_double,
+                                   ctypes.c_int,
+                                   ctypes.c_double,
+                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctypes.c_int]
+
+
+    search_shear_range_corr = c4pylib.search_shear_range_corr
+    search_shear_range_corr.restype = None
+    search_shear_range_corr.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctypes.c_int,
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctypes.c_int,
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctypes.c_int,
+                                        ctypes.c_double,
+                                        ctypes.c_double,
+                                        ctypes.c_int,
+                                        ctypes.c_double,
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                        ctypes.c_int]
+
+
+    def find_shear_cpp(g, nu, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15, fit_scale=100, chi_gap=40.,
+                     max_iters=40, fig_ax=False):
+
+        g = numpy.ascontiguousarray(g, dtype=numpy.float64)
+        nu = numpy.ascontiguousarray(nu, dtype=numpy.float64)
+
+        data_num = g.shape[0]
+        bins = set_bin(g[:5000], bin_num, scale)
+
+        fit_shear_range = numpy.zeros((fit_num,))
+        fit_chisq = numpy.zeros((fit_num,))
+
+        search_shear_range(g, nu, data_num, bins, bin_num, left, right, max_iters, chi_gap,
+                           fit_shear_range, fit_chisq, fit_num)
+
+
+        fit_shear_range *= fit_scale
+        coeff = tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
 
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
-        g_h = -coeff[1] / 2. / coeff[2]
-        g_sig = 0.70710678118 / numpy.sqrt(coeff[2])
+        g_h = -coeff[1] / 2. / coeff[2] / fit_scale
+        g_sig = 0.70710678118 / numpy.sqrt(coeff[2]) / fit_scale
 
+        chisq_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
+
+        #     n1, n2 = self.get_chisq(g, nu, g_h, bins, bin_num2, inverse, ig_num)[1:3]
+        #     fit_shear_range = fit_shear_range
         if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq, alpha=0.7, s=10,c="C1")
-            fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2, alpha=0.7)
-            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
-            fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=15)
-        return g_h, g_sig, coeff, fit_range, bins
+            fig_ax.scatter(fit_shear_range, fit_chisq, alpha=0.7, s=10, c="C1")
+
+            fig_ax.plot(fit_shear_range, coeff[0] + coeff[1] * fit_shear_range + coeff[2] * fit_shear_range ** 2,
+                        alpha=0.7)
+
+            left, right = fit_shear_range[0], fit_shear_range[-1]
+            x1, x2 = left - (right - left) * 0.1, right + (right - left) * 0.1
+            fig_ax.plot([x1, x2], [chisq_min, chisq_min], ls="--", c="k", label="%.2f" % chisq_min)
+            fig_ax.set_xlim((x1, x2))
+            fig_ax.legend(loc="lower left")
+
+            xpos = numpy.linspace(fit_shear_range[0], fit_shear_range[-1], 5)
+
+            fig_ax.set_xticks(xpos.tolist())
+            xticks = ["%.2g" % (x / fit_scale) for x in xpos]
+
+            fig_ax.set_xticklabels(xticks)
+
+            text_str = "Num: %d\n%.5f\n%.5f(%dx)\n%.5f$(%dx)^2$\ng=%.5f (%.5f)" % (
+                len(g), coeff[0], coeff[1], fit_scale, coeff[2], fit_scale, g_h, g_sig)
+
+            fig_ax.text(0.1, 0.80, text_str, color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=15)
+
+        return g_h, g_sig, coeff, chisq_min
 
 
-    def find_shear_new(self, g, nu, bin_num, ig_num=0, scale=1.1, left=-0.2, right=0.2, fit_num=60,chi_gap=40,fig_ax=False):
-        """
-        G1 (G2): the shear estimator for g1 (g2),
-        N: shear estimator corresponding to the PSF correction
-        U: the term for PDF-SYM
-        V: the term for transformation
-        :param g: G1 or G2, 1-D numpy arrays, the shear estimators of Fourier quad
-        :param nu: N+U: for g1, N-U: for g2
-        :param bin_num:
-        :param ig_num:
-        :param pic_path:
-        :param left, right: the initial guess of shear
-        :return: estimated shear and sigma
-        """
-        bins = self.set_bin(g,bin_num,scale)
+    def find_shear_cpp_corr(g, nu, g_corr, nu_corr, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15,
+                            fit_scale=100, chi_gap=40., max_iters=40, fig_ax=False):
 
-        bin_num2 = int(bin_num * 0.5)
-        inverse = range(int(bin_num / 2 - 1), -1, -1)
-        num_ini = numpy.histogram(g, bins)[0]
-        n1 = num_ini[0:int(bin_num / 2)][inverse]
-        n2 = num_ini[int(bin_num / 2):]
-        num_exp = (n1 + n2) / 2
+        g = numpy.ascontiguousarray(g, dtype=numpy.float64)
+        nu = numpy.ascontiguousarray(nu, dtype=numpy.float64)
 
-        iters = 0
-        change = 1
-        while change == 1:
-            change = 0
-            mc = (left + right) / 2.
-            mcl = left
-            mcr = right
-            fmc = self.get_chisq_new(g, nu, mc, bins, bin_num2, inverse, ig_num, num_exp)
-            fmcl = self.get_chisq_new(g, nu, mcl, bins, bin_num2, inverse, ig_num, num_exp)
-            fmcr = self.get_chisq_new(g, nu, mcr, bins, bin_num2, inverse, ig_num, num_exp)
-            temp = fmc + chi_gap
+        g_corr = numpy.ascontiguousarray(g_corr, dtype=numpy.float64)
+        nu_corr = numpy.ascontiguousarray(nu_corr, dtype=numpy.float64)
 
-            if fmcl > temp:
-                left = (mc + mcl)/2.
-                change = 1
-            if fmcr > temp:
-                right = (mc + mcr)/2.
-                change = 1
-            iters += 1
-            if iters > 12:
-                break
+        data_num = g.shape[0]
+        corr_num = g_corr.shape[0]
 
-        fit_range = numpy.linspace(left, right, fit_num)
-        chi_sq = numpy.array([self.get_chisq_new(g, nu, g_hat, bins, bin_num2, inverse, ig_num, num_exp) for g_hat in fit_range])
+        bins = set_bin(g[:5000], bin_num, scale)
 
-        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        fit_shear_range = numpy.zeros((fit_num,))
+        fit_chisq = numpy.zeros((fit_num,))
 
-        # y = a1 + a2*x a3*x^2 = a2(x+a1/2/a2)^2 +...
-        # gh = - a1/2/a2, gh_sig = \sqrt(1/2/a2)
-        g_h = -coeff[1] / 2. / coeff[2]
-        g_sig = 0.70710678118/numpy.sqrt(coeff[2])
+        search_shear_range_corr(g, nu, data_num, g_corr, nu_corr, corr_num, bins, bin_num, left,
+                                right, max_iters, chi_gap, fit_shear_range, fit_chisq, fit_num)
 
+
+        fit_shear_range *= fit_scale
+        coeff = tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+
+        # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
+        g_h = -coeff[1] / 2. / coeff[2] / fit_scale
+        g_sig = 0.70710678118 / numpy.sqrt(coeff[2]) / fit_scale
+
+        chisq_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
+
+        #     n1, n2 = self.get_chisq(g, nu, g_h, bins, bin_num2, inverse, ig_num)[1:3]
+        #     fit_shear_range = fit_shear_range
         if fig_ax:
-            fig_ax.scatter(fit_range, chi_sq, alpha=0.7,s=5)
-            fig_ax.plot(fit_range, coeff[0]+coeff[1]*fit_range+coeff[2]*fit_range**2,alpha=0.7)
-            text_str = "Num: %d\n%.5f\n%.5fx\n%.5f$x^2$\ng=%.5f (%.5f)"%(len(g),coeff[0],coeff[1],coeff[2],g_h, g_sig)
-            fig_ax.text(0.1, 0.85, text_str, color='C3', ha='left', va='center', transform=fig_ax.transAxes,
-                        fontsize=15)
+            fig_ax.scatter(fit_shear_range, fit_chisq, alpha=0.7, s=10, c="C1")
 
-        return g_h, g_sig, coeff
+            fig_ax.plot(fit_shear_range, coeff[0] + coeff[1] * fit_shear_range + coeff[2] * fit_shear_range ** 2,
+                        alpha=0.7)
 
+            left, right = fit_shear_range[0], fit_shear_range[-1]
+            x1, x2 = left - (right - left) * 0.1, right + (right - left) * 0.1
+            fig_ax.plot([x1, x2], [chisq_min, chisq_min], ls="--", c="k", label="%.2f" % chisq_min)
+            fig_ax.set_xlim((x1, x2))
 
-    def find_shear_mean(self, G, N, weight=1):
-        num = G.shape[0]
-        g = numpy.sum(G)/numpy.sum(N)
-        g_sig = numpy.sqrt(numpy.mean((G*weight)**2)/(numpy.mean(N*weight))**2)/numpy.sqrt(num)
+            xpos = numpy.linspace(fit_shear_range[0], fit_shear_range[-1], 5)
 
-        return g, g_sig
+            fig_ax.set_xticks(xpos.tolist())
+            xticks = ["%.2g" % (x / fit_scale) for x in xpos]
 
+            fig_ax.set_xticklabels(xticks)
 
+            text_str = "Num: %d\n%.5f\n%.5f(%dx)\n%.5f$(%dx)^2$\ng=%.5f (%.5f)" % (
+                len(g), coeff[0], coeff[1], fit_scale, coeff[2], fit_scale, g_h, g_sig)
 
+            fig_ax.text(0.1, 0.80, text_str, color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=15)
+            fig_ax.legend(loc="lower left")
+
+        return g_h, g_sig, coeff, chisq_min
