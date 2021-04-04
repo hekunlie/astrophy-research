@@ -1045,7 +1045,7 @@ if platform.system() == 'Linux':
         g_sig = 0.70710678118 / numpy.sqrt(coeff[2]) / fit_scale
 
         chisq_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
-
+        # chisq_min_ = numpy.sum((n1-n2)**2)
         #     n1, n2 = self.get_chisq(g, nu, g_h, bins, bin_num2, inverse, ig_num)[1:3]
         #     fit_shear_range = fit_shear_range
         if fig_ax:

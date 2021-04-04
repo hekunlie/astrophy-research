@@ -323,15 +323,16 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right
     asym = numpy.sum(asym) - bin_num2
 
     chisqs_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
+    chisqs_min_ = numpy.sum((n1-n2)**2/(n1+n2))*0.5
     if ax:
         ax.scatter(ghs, xi2)
         ax.plot(ghs, coeff[0] + coeff[1] * ghs + coeff[2] * ghs ** 2, c="C1")
         x1, x2 = left - (right - left)*0.2, right + (right - left)*0.2
-        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f(%.2f)" % (chisqs_min,chisqs_min_))
         ax.set_xlim((x1,x2))
         ax.legend(loc="lower left")
         ax.set_title("asym=%.3e" % asym)
-    return gh, gh_sig, coeff, asym, ghs, xi2, grid_x, grid_y, hist_num2d
+    return gh, gh_sig, coeff, asym, chisqs_min_, chisqs_min, ghs, xi2, grid_x, grid_y, hist_num2d
 
 
 def get_chisq_grid_corr_new(hist2d, hist2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin, gh, bin_num,
@@ -446,6 +447,8 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
 
     n1, n2 = get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin,
                                      gh, bin_num, bin_num2, inverse)[1:3]
+
+    chisqs_min_ = numpy.sum((n1-n2)**2/(n1 + n2))*0.5
     asym = (n1 ** 2 + n2 ** 2) / 2 / n1 / n2
     asym = numpy.sum(asym) - bin_num2
 
@@ -454,9 +457,9 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
         ax.scatter(ghs, xi2)
         ax.plot(ghs, coeff[0] + coeff[1] * ghs + coeff[2] * ghs ** 2, c="C1")
         x1, x2 = left - (right - left)*0.2, right + (right - left)*0.2
-        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f" % chisqs_min)
+        ax.plot([x1, x2], [chisqs_min, chisqs_min], ls="--", c="k", label="%.2f(%.2f)" % (chisqs_min, chisqs_min_))
         ax.set_xlim((x1,x2))
         ax.legend(loc="lower left")
         ax.set_title("asym=%.3e"%asym)
 
-    return gh, gh_sig, coeff, asym, ghs, xi2, grid_x, grid_y, hist_num2d
+    return gh, gh_sig, coeff, asym, chisqs_min_, chisqs_min, ghs, xi2, grid_x, grid_y, hist_num2d
