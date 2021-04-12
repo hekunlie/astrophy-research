@@ -1,15 +1,11 @@
 from sys import path,argv
 path.append("/home/hklee/work/mylib")
-from plot_tool import Image_Plot
 import tool_box
 import gglensing_tool
 import numpy
 import h5py
 import galsim
-from Fourier_Quad import Fourier_Quad
 from astropy.cosmology import FlatLambdaCDM
-from astropy.coordinates import SkyCoord
-from astropy import units
 from mpi4py import MPI
 
 
@@ -17,7 +13,8 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_2/"
+# data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
 
 total_src_num = int(argv[1])#20000000
 fore_or_back = int(argv[2])
@@ -66,14 +63,14 @@ dec = separation * numpy.sin(theta)
 
 
 # magnitude & flux
-mag_s, mag_e = 22, 25.5
+mag_s, mag_e = 22, 25.8
 mag = tool_box.mag_generator(total_src_num, mag_s, mag_e).astype(dtype=numpy.float32)
 flux = tool_box.mag_to_flux(mag).astype(dtype=numpy.float32)
 
 # galactic radius
-radius_s, radius_e = 0.75, 1.87
+radius_s, radius_e = 0.25, 1.0
 
-radius = tool_box.radii_from_mags(mag, radius_s, radius_e)/0.187
+radius = (tool_box.radii_from_mags(mag, radius_s, radius_e) + 0.8)/0.187
 
 
 seed = rng.randint(1, 2000000000, int(total_src_num/10000))

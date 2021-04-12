@@ -679,6 +679,23 @@ class Fourier_Quad:
         return -g_corr, corr_sig
 
 
+
+def rotate(mg1, mg2, mn, mu, mv, theta_radian):
+
+    cos_2theta = numpy.cos(2 * theta_radian)
+    sin_2theta = numpy.sin(2 * theta_radian)
+    cos_4theta = numpy.cos(4 * theta_radian)
+    sin_4theta = numpy.sin(4 * theta_radian)
+
+    mg1r = (mg1 * cos_2theta - mg2 * sin_2theta)
+    mg2r = (mg1 * sin_2theta + mg2 * cos_2theta)
+    mur = mu * cos_4theta - mv * sin_4theta
+    mnur1 = mn + mur
+    mnur2 = mn - mur
+
+    return mg1r,mg2r,mnur1,mnur2
+
+
 def set_bin(data, bin_num, scale=100., sort_method="abs", sym=True):
     """
     set up bins for 1-D data
@@ -714,6 +731,27 @@ def set_bin(data, bin_num, scale=100., sort_method="abs", sym=True):
             # for the sort of negative data
             bound = numpy.min(data)*scale
             bins = numpy.append(bound, numpy.append(bins, -bound))
+    return bins
+
+
+def set_bin_(data, bin_num, scale=100.):
+    """
+    set up bins for 1-D data
+    :param data:
+    :param bin_num: total number of bins
+    :param sort_method: "abs": set the scale of bins according to the absolute value of data
+                        "posi": set the scale of bins according to the positive value
+                        else: just set scale of bins from the small end to the large end
+    :param sym: True: set up bins symmetrically, False: the bins for the positive values
+    :return: bins, (N, ) numpy array
+    """
+    temp_data = -numpy.sort(-numpy.abs(data))
+
+    bin_size = len(temp_data) / bin_num * 2
+    bins = numpy.array([temp_data[int(i * bin_size)] for i in range(1, int(bin_num / 2))])
+    bins = numpy.sort(numpy.append(numpy.append(-bins, [0.]), bins))
+    bound = numpy.max(numpy.abs(data)) * scale
+    bins = numpy.sort(numpy.append(-bound, numpy.append(bins, bound)))
     return bins
 
 
@@ -966,7 +1004,7 @@ if platform.system() == 'Linux':
         nu = numpy.ascontiguousarray(nu, dtype=numpy.float64)
 
         data_num = g.shape[0]
-        bins = set_bin(g[:5000], bin_num, scale)
+        bins = set_bin_(g, bin_num, scale)
 
         fit_shear_range = numpy.zeros((fit_num,))
         fit_chisq = numpy.zeros((fit_num,))
@@ -1012,7 +1050,7 @@ if platform.system() == 'Linux':
             fig_ax.text(0.1, 0.80, text_str, color='C3', ha='left', va='center',
                         transform=fig_ax.transAxes, fontsize=15)
 
-        return g_h, g_sig, coeff, chisq_min
+        return g_h, g_sig, coeff, chisq_min, bins
 
 
     def find_shear_cpp_corr(g, nu, g_corr, nu_corr, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15,
@@ -1027,7 +1065,7 @@ if platform.system() == 'Linux':
         data_num = g.shape[0]
         corr_num = g_corr.shape[0]
 
-        bins = set_bin(g[:5000], bin_num, scale)
+        bins = set_bin_(g, bin_num, scale)
 
         fit_shear_range = numpy.zeros((fit_num,))
         fit_chisq = numpy.zeros((fit_num,))
@@ -1073,4 +1111,4 @@ if platform.system() == 'Linux':
                         transform=fig_ax.transAxes, fontsize=15)
             fig_ax.legend(loc="lower left")
 
-        return g_h, g_sig, coeff, chisq_min
+        return g_h, g_sig, coeff, chisq_min, bins

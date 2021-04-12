@@ -4,11 +4,7 @@ from plot_tool import Image_Plot
 import tool_box
 import numpy
 import h5py
-import galsim
-from astropy.io import fits
-from astropy.cosmology import FlatLambdaCDM
-from astropy.coordinates import SkyCoord
-from astropy import units
+
 
 import ctypes
 import numpy.ctypeslib as ctl
@@ -28,8 +24,6 @@ hist2d_fast.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguou
                                  ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous')]
 
 
-def plot_shear(g1, g2, kappa, ra, dec):
-    pass
 
 
 def bin2grid(xbin, ybin):
@@ -212,8 +206,8 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
             temp_data = numpy.sort(numpy.abs(data))
             data_min, data_max = temp_data[0], temp_data[-1]
             #             print(data_min, data_max)
-            if data_min < 10:
-                data_min = 10
+            if data_min < 1:
+                data_min = 1
             else:
                 data_min = data_min * 0.95
             bin_num_ = bin_num2 - 1
