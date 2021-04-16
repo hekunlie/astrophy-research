@@ -102,6 +102,16 @@ mg1r_src, mnur1_src = prepare_data(data_path1, para_path1, cosmos, len_z, H_0, l
 mg1r_non, mnur1_non = prepare_data(data_path2, para_path2, cosmos, len_z, H_0, len_pos, foreground_z_err)
 
 
+mg1r_total = numpy.zeros((num_total, ))
+mnur1_total = numpy.zeros((num_total, ))
+
+mg1r_total[:num_s] = mg1r_src[:num_s]
+mg1r_total[num_s:] = mg1r_non[:num_non]
+
+mnur1_total[:num_s] = mnur1_src[:num_s]
+mnur1_total[num_s:] = mnur1_non[:num_non]
+
+
 # set bins for 2d histogram
 hist2d_bin_num = 1000
 hist2d_bin_num2 = int(hist2d_bin_num/2)
@@ -136,6 +146,7 @@ non_result = FQlib.find_shear_cpp(mg1r_non, mnur1_non, 20, left=-100, right=200,
 non_Ds, non_Ds_err,non_coeffs, non_chisqs_min, non_bins = non_result
 
 t3 = time.time()
-print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_s, non_Ds, non_Ds_err, non_chisqs_min, t3-t1))
+print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_s, non_Ds, non_Ds_err, non_chisqs_min, t3-t2))
 img.save_img("./pdf_sym.png")
 # img.show_img()
+
