@@ -12,6 +12,15 @@ from astropy import units
 import time
 
 
+def get_log(x):
+    idx1 = x < 0
+    idx2 = x > 0
+    logx = numpy.zeros_like(x)
+    logx[idx1] = -numpy.log(-x[idx1])
+    logx[idx2] = numpy.log(x[idx2])
+    return logx
+
+
 def get_diff_1d(hist1d):
     hist_num = hist1d.shape[0]
     hist_num2 = int(hist_num / 2)
@@ -46,7 +55,7 @@ def get_diff(hist2d):
     return chisq, hist2d_left, hist2d_right, hist2d_diff, hist2d_sum
 
 
-def prepare_data(data_path, para_path, cosmos, len_z, H_0, len_pos, z_err, scale=1.):
+def prepare_data(data_path, para_path, cosmos, len_z, H_0, len_pos, dz=False, zerr=0, scale=1.):
     h5f = h5py.File(data_path, "r")
     data = h5f["/data"][()]*scale
     h5f.close()
@@ -54,10 +63,16 @@ def prepare_data(data_path, para_path, cosmos, len_z, H_0, len_pos, z_err, scale
     h5f = h5py.File(para_path, "r")
     ra = h5f["/ra"][()]
     dec = h5f["/dec"][()]
-    z = h5f["/z"][()]
+
+    if dz:
+        z = zerr
+    else:
+        z = h5f["/z"][()]
+
     h5f.close()
 
-    com_dist = cosmos.comoving_distance(z+z_err).value * H_0 / 100
+    com_dist = cosmos.comoving_distance(z).value * H_0 / 100
+
     com_dist_len = cosmos.comoving_distance(len_z).value * H_0 / 100
 
     crit_coeff = 1662895.2081868195 * com_dist / com_dist_len / (com_dist - com_dist_len) / (1 + len_z)
@@ -67,8 +82,15 @@ def prepare_data(data_path, para_path, cosmos, len_z, H_0, len_pos, z_err, scale
 
     mg1r, mg2r, mnur1, mnur2 = FQlib.rotate(data[:, 0], data[:, 1], data[:, 2], data[:, 3], data[:, 4], position_theta)
     mg1r *= crit_coeff
+    print(mnur1.min(), mnur1.max())
 
-    return mg1r, mnur1, crit_coeff
+    # the true signal
+    separation_theta = len_pos.separation(src_pos).arcsec.mean()
+    zm = z.mean()
+    com_dist_m = cosmos.comoving_distance(zm).value * H_0 / 100
+    delta_sigma = gglensing_tool.get_delta_sigma(nfw, com_dist_len, len_z, com_dist_m, zm, numpy.array([separation_theta]))
+
+    return mg1r, mnur1, crit_coeff, delta_sigma[0]
 
 
 # cosmology
@@ -104,8 +126,8 @@ hist_bin_tag = 0
 shear_tag = 0
 
 rng = numpy.random.RandomState(12411)
-# foreground_z_err = numpy.abs(rng.normal(0, 0.2, 20000000)) + 0.31
-foreground_z_err = numpy.abs(rng.normal(0, 0.5, 20000000)) + 0.31
+foreground_z_err = numpy.abs(rng.normal(0, 0.2, 20000000)) + 0.31
+# foreground_z_err = numpy.abs(rng.normal(0, 0.5, 20000000)) + 0.31
 
 
 num_total = 20000000
@@ -125,17 +147,19 @@ para_path1 = data_path + "/paras/sheared_para_%d.hdf5"%shear_tag
 para_path2 = data_path + "/paras/non_sheared_para_%d.hdf5"%shear_tag
 para_path3 = data_path + "/paras/non_sheared_para_%d.hdf5"%(1+shear_tag)
 
-mg1r_src, mnur1_src, crit_coeff_src = prepare_data(data_path1, para_path1, cosmos, len_z, H_0, len_pos, 0)
+mg1r_src, mnur1_src, crit_coeff_src, delta_sigma_src = prepare_data(data_path1, para_path1, cosmos, len_z, H_0,
+                                                                    len_pos)
 
 mg1r_non, mnur1_non, crit_coeff_non = prepare_data(data_path2, para_path2, cosmos, len_z, H_0,
-                                                   len_pos, foreground_z_err, 1)
+                                                    len_pos, True, foreground_z_err, 1)[:3]
 
 mg1r_corr_1, mnur1_corr_1, crit_coeff_corr_1 = prepare_data(data_path3, para_path3, cosmos, len_z, H_0,
-                                                        len_pos, foreground_z_err, 0.5)
+                                                            len_pos, True,  foreground_z_err, 0.5)[:3]
 
 mg1r_corr_2, mnur1_corr_2, crit_coeff_corr_2 = prepare_data(data_path3, para_path3, cosmos, len_z, H_0,
-                                                        len_pos, foreground_z_err, 1)
+                                                            len_pos, True, foreground_z_err, 1)[:3]
 
+print("The true \Delta\Simga=%.4f"%delta_sigma_src)
 
 mg_pdf_bin_1d = FQlib.set_bin_(mg1r_src, mg_pdf_bin_num, 100)
 
@@ -151,19 +175,30 @@ mnur1_total[num_src:] = mnur1_non[:num_non]
 
 
 # set bins for 2d histogram
-hist2d_bin_num = 1000
-hist2d_bin_num2 = int(hist2d_bin_num/2)
-mg_bin = gglensing_tool.set_bin(mg1r_src, hist2d_bin_num, bound_scale=1.1, method="log")
-mnur_bin = gglensing_tool.set_bin(mnur1_src, hist2d_bin_num, bound_scale=1.1, method="log")
+hist2d_xbin_num = 200
+hist2d_xbin_num2 = int(hist2d_xbin_num/2)
 
-x = numpy.zeros((hist2d_bin_num,hist2d_bin_num))
-y = numpy.zeros((hist2d_bin_num,hist2d_bin_num))
+if mnur1_total.min() < 0:
+    hist2d_ybin_num = 200
+else:
+    hist2d_ybin_num = 100
 
-for i in range(hist2d_bin_num):
+mg_bin = gglensing_tool.set_bin(mg1r_src, hist2d_xbin_num, bound_scale=1.1, method="log")
+mnur_bin = gglensing_tool.set_bin(mnur1_src, hist2d_ybin_num, bound_scale=1.1, method="log")
+
+x = numpy.zeros((hist2d_ybin_num,hist2d_xbin_num))
+y = numpy.zeros((hist2d_ybin_num,hist2d_xbin_num))
+
+for i in range(hist2d_xbin_num):
     x[:,i] = (mg_bin[i] + mg_bin[i+1])/2
+for i in range(hist2d_ybin_num):
     y[i] = (mnur_bin[i] + mnur_bin[i+1])/2
 
-xh, yh = x[:,hist2d_bin_num2:], y[:,hist2d_bin_num2:]
+xh, yh = x[:,hist2d_xbin_num2:], y[:,hist2d_xbin_num2:]
+
+xhlog, yhlog = get_log(xh), get_log(yh)
+xlog, ylog = get_log(x), get_log(y)
+
 
 
 # # plot the distribution of \Sigma_{crit} and G_t
@@ -200,63 +235,63 @@ xh, yh = x[:,hist2d_bin_num2:], y[:,hist2d_bin_num2:]
 # img.save_img("./crit_hist.png")
 #
 #
-# img = Image_Plot(xpad=0.25, ypad=0.25)
-# img.subplots(1, 5)
-#
-# t1 = time.time()
-#
-# src_result = FQlib.find_shear_cpp(mg1r_src, mnur1_src, mg_pdf_bin_num, left=-100, right=200,
-#                                   fit_num=30, chi_gap=50,fig_ax=img.axs[0][0])
-# src_Ds, src_Ds_err, src_coeffs, src_chisqs_min, src_bins = src_result
-#
-# t2 = time.time()
-#
-# print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src,src_Ds, src_Ds_err, src_chisqs_min, t2-t1))
-#
-# non_result = FQlib.find_shear_cpp(mg1r_non, mnur1_non, mg_pdf_bin_num, left=-100, right=200,
-#                                   fit_num=30, chi_gap=50,fig_ax=img.axs[0][1])
-# non_Ds, non_Ds_err,non_coeffs, non_chisqs_min, non_bins = non_result
-#
-# t3 = time.time()
-# print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, non_Ds, non_Ds_err, non_chisqs_min, t3-t2))
-#
-# total_result = FQlib.find_shear_cpp(mg1r_total, mnur1_total, mg_pdf_bin_num, left=-100, right=200,
-#                                   fit_num=30, chi_gap=50,fig_ax=img.axs[0][2])
-# total_Ds, total_Ds_err,total_coeffs, total_chisqs_min, total_bins = total_result
-#
-# t4 = time.time()
-# print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds,
-#                                                                                  total_Ds_err, total_chisqs_min, t4-t3))
-#
-#
-# # correction using similar G and N
-#
-# total_result_corr_1 = FQlib.find_shear_cpp_corr(mg1r_total, mnur1_total, mg1r_corr_1[:num_non], mnur1_corr_1[:num_non],
-#                                                 mg_pdf_bin_num, left=-100, right=200, fit_num=30, chi_gap=50,fig_ax=img.axs[0][3])
-# total_Ds_corr_1, total_Ds_err_corr_1, total_coeffs_corr_1, total_chisqs_min_corr_1, total_bins_corr_1 = total_result_corr_1
-#
-# t5 = time.time()
-# print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds_corr_1,
-#                                                                                  total_Ds_err_corr_1, total_chisqs_min_corr_1, t5-t4))
-#
-#
-# # correction using different G and N
-#
-# total_result_corr_2 = FQlib.find_shear_cpp_corr(mg1r_total, mnur1_total, mg1r_corr_2[:num_non], mnur1_corr_2[:num_non],
-#                                                 mg_pdf_bin_num, left=-100, right=200, fit_num=30, chi_gap=50,fig_ax=img.axs[0][4])
-# total_Ds_corr_2, total_Ds_err_corr_2,total_coeffs_corr_2, total_chisqs_min_corr_2, total_bins_corr_2 = total_result_corr_2
-#
-# t6 = time.time()
-# print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds_corr_2,
-#                                                                                  total_Ds_err_corr_2, total_chisqs_min_corr_2, t6-t5))
-#
-#
-# for i in range(5):
-#     img.set_label(0,i,0,"$\chi^2$")
-#     img.set_label(0,i,1,"$\Delta\Sigma$")
-# img.save_img("./pdf_sym.png")
-# img.show_img()
-# img.close_img()
+img = Image_Plot(xpad=0.25, ypad=0.25)
+img.subplots(1, 5)
+
+t1 = time.time()
+
+src_result = FQlib.find_shear_cpp(mg1r_src, mnur1_src, mg_pdf_bin_num, left=-100, right=200,
+                                  fit_num=30, chi_gap=50,fig_ax=img.axs[0][0])
+src_Ds, src_Ds_err, src_coeffs, src_chisqs_min, src_bins = src_result
+
+t2 = time.time()
+
+print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src,src_Ds, src_Ds_err, src_chisqs_min, t2-t1))
+
+non_result = FQlib.find_shear_cpp(mg1r_non, mnur1_non, mg_pdf_bin_num, left=-100, right=200,
+                                  fit_num=30, chi_gap=50,fig_ax=img.axs[0][1])
+non_Ds, non_Ds_err,non_coeffs, non_chisqs_min, non_bins = non_result
+
+t3 = time.time()
+print("%d foreground. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, non_Ds, non_Ds_err, non_chisqs_min, t3-t2))
+
+total_result = FQlib.find_shear_cpp(mg1r_total, mnur1_total, mg_pdf_bin_num, left=-100, right=200,
+                                  fit_num=30, chi_gap=50,fig_ax=img.axs[0][2])
+total_Ds, total_Ds_err,total_coeffs, total_chisqs_min, total_bins = total_result
+
+t4 = time.time()
+print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds,
+                                                                                 total_Ds_err, total_chisqs_min, t4-t3))
+
+
+# correction using similar G and N
+
+total_result_corr_1 = FQlib.find_shear_cpp_corr(mg1r_total, mnur1_total, mg1r_corr_1[:num_non], mnur1_corr_1[:num_non],
+                                                mg_pdf_bin_num, left=-100, right=200, fit_num=30, chi_gap=50,fig_ax=img.axs[0][3])
+total_Ds_corr_1, total_Ds_err_corr_1, total_coeffs_corr_1, total_chisqs_min_corr_1, total_bins_corr_1 = total_result_corr_1
+
+t5 = time.time()
+print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds_corr_1,
+                                                                                 total_Ds_err_corr_1, total_chisqs_min_corr_1, t5-t4))
+
+
+# correction using different G and N
+
+total_result_corr_2 = FQlib.find_shear_cpp_corr(mg1r_total, mnur1_total, mg1r_corr_2[:num_non], mnur1_corr_2[:num_non],
+                                                mg_pdf_bin_num, left=-100, right=200, fit_num=30, chi_gap=50,fig_ax=img.axs[0][4])
+total_Ds_corr_2, total_Ds_err_corr_2,total_coeffs_corr_2, total_chisqs_min_corr_2, total_bins_corr_2 = total_result_corr_2
+
+t6 = time.time()
+print("%d foreground + %d contamination. %.2f(%.2f). chisq_min: %.2f. %.2f sec"%(num_src, num_non, total_Ds_corr_2,
+                                                                                 total_Ds_err_corr_2, total_chisqs_min_corr_2, t6-t5))
+
+
+for i in range(5):
+    img.set_label(0,i,0,"$\chi^2$")
+    img.set_label(0,i,1,"$\Delta\Sigma$")
+img.save_img("./pdf_sym.png")
+img.show_img()
+img.close_img()
 
 
 
@@ -315,7 +350,8 @@ cmd = argv[1]
 if cmd == "src":
     check_mg = mg1r_src
     check_mnu = mnur1_src
-    sigma = 72.816
+    # sigma = 72.816
+    sigma = delta_sigma_src
 
 elif cmd == "non":
     check_mg = mg1r_non
@@ -326,7 +362,7 @@ else:
     check_mnu = mnur1_total
     sigma = 56.48
 
-print(cmd, sigma)
+print(cmd, sigma, delta_sigma_src)
 
 # hist_bin_label = [-i for i in range(1,hist2d_bin_num2+1)]
 # for i in range(1,hist2d_bin_num2+1):
@@ -369,6 +405,7 @@ img.subplots(2, 3)
 titles = [["Hist before PDF_SYM", "$\Delta N$ before PDF_SYM", "$\chi^2$ before PDF_SYM"],
             ["Hist after PDF_SYM", "$\Delta N$ after PDF_SYM", "$\chi^2$ after PDF_SYM"]]
 
+
 for i in range(2):
 
     hist2d = numpy.histogram2d(check_mnu, check_mg - i*sigma*check_mnu, [mnur_bin, mg_bin])[0]
@@ -377,16 +414,16 @@ for i in range(2):
     numpy.savez("./cache_%d_%s.npz"%(i, cmd), x,y, xh, yh, hist2d, chisq, hist2d_left, hist2d_right, hist2d_diff, hist2d_sum)
 
     idx = hist2d > 0
-    img.scatter_pts(i, 0, x[idx], y[idx], hist2d[idx], color_map="jet")
+    img.scatter_pts(i, 0, xlog[idx], xlog[idx], hist2d[idx], color_map="jet")
 
     idx = hist2d_sum > 0
-    img.scatter_pts(i, 1, xh[idx], yh[idx], hist2d_diff[idx], color_map="jet")
+    img.scatter_pts(i, 1, xhlog[idx], yhlog[idx], hist2d_diff[idx], color_map="jet")
 
-    img.scatter_pts(i, 2, xh[idx], yh[idx], chisq[idx], color_map="jet")
+    img.scatter_pts(i, 2, xhlog[idx], yhlog[idx], chisq[idx], color_map="jet")
 
     for j in range(3):
-        img.set_label(i,j,0,"N+U bin")
-        img.set_label(i,j,1,"$G_t$ bin")
+        img.set_label(i,j,0,"N+U bin [log]")
+        img.set_label(i,j,1,"$G_t$ bin [log]")
         img.axs[i][j].set_title(titles[i][j])
 img.save_img("./pdf_sym_hist2d_%s.png"%cmd)
 
@@ -401,16 +438,16 @@ for i in range(2):
 
     idx = hist2d <= 0
     hist2d[idx] = numpy.nan
-    fig = img.axs[i][0].imshow(numpy.flip(hist2d, axis=0)[:450], cmap="jet")
+    fig = img.axs[i][0].imshow(numpy.flip(hist2d, axis=0), cmap="jet")
     img.figure.colorbar(fig,ax=img.axs[i][0])
 
     idx = hist2d_sum <= 0
     hist2d_diff[idx] = numpy.nan
-    fig = img.axs[i][1].imshow(numpy.flip(hist2d_diff, axis=0)[:450], cmap="jet")
+    fig = img.axs[i][1].imshow(numpy.flip(hist2d_diff, axis=0), cmap="jet")
     img.figure.colorbar(fig,ax=img.axs[i][1])
 
     chisq[idx] = numpy.nan
-    fig = img.axs[i][2].imshow(numpy.flip(chisq, axis=0)[:450], cmap="jet")
+    fig = img.axs[i][2].imshow(numpy.flip(chisq, axis=0), cmap="jet")
     img.figure.colorbar(fig,ax=img.axs[i][2])
 
     for j in range(3):

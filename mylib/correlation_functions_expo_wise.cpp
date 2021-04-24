@@ -16,7 +16,7 @@ void initialize(data_info *expo_info)
     expo_info->cos_dec_idx = 7;
     expo_info->redshift_idx = 8;
 
-    sprintf(data_path,"%s/cata/source_list.dat", expo_info->parent_path);
+    sprintf(data_path,"%s/cata/kmeans/source_list.dat", expo_info->parent_path);
 
     line_count(data_path, expo_info);
 
@@ -47,7 +47,7 @@ void initialize(data_info *expo_info)
 
 
     ///////////////// read the inform of the PDF_SYM  ////////////////
-    sprintf(data_path,"%s/cata/gg_cor.hdf5", expo_info->parent_path);
+    sprintf(data_path,"%s/cata/kmeans/gg_cor.hdf5", expo_info->parent_path);
     // read radius bin
     sprintf(set_name,"/theta_bin");
     read_h5_datasize(data_path, set_name,j);

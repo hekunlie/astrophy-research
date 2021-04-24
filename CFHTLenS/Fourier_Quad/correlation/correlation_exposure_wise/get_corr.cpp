@@ -1,5 +1,5 @@
 #include<hk_mpi.h>
-#include<functions_expo_wise.h>
+#include<correlation_functions_expo_wise.h>
 #include<ctime>
 #include<vector>
 

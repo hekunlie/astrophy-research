@@ -206,8 +206,8 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
             temp_data = numpy.sort(numpy.abs(data))
             data_min, data_max = temp_data[0], temp_data[-1]
             #             print(data_min, data_max)
-            if data_min < 1:
-                data_min = 1
+            if data_min < 0.1:
+                data_min = 0.1
             else:
                 data_min = data_min * 0.95
             bin_num_ = bin_num2 - 1
