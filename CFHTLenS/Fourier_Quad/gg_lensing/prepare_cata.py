@@ -69,7 +69,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 28
-flux2_alt_thresh = 3.5
+flux2_alt_thresh = 2.5
 
 # selection on the bad pixels
 imax_idx = 22
@@ -102,7 +102,7 @@ odd_thresh = 0.5
 # fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 # result_cata_path = "/coma/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_4_20_2021"
 result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
 
 # fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
@@ -446,8 +446,8 @@ if cmd == "prepare_pdf":
         print(mg_sigma_bin)
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_sigma_bin"] = mg_sigma_bin
-        h5f["/mg_gt_bin"] = mg_bin
+        h5f["/mg_sigma_bin"] = numpy.array(mg_sigma_bin, dtype=numpy.float32)
+        h5f["/mg_gt_bin"] = numpy.array(mg_bin, dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
         h5f["/separation_bin"] = separation_bin
