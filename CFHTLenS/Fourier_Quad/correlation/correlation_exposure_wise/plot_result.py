@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/smooth"
+data_path = "E:/works/correlation/CFHT/cut_2.5/test/ori"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -36,17 +36,17 @@ if os.path.exists(data_path + "/planck2018.hdf5"):
     pk_lines_tag = 1
     print("Find Pk lines")
 
-    h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
-    xi_p_theoretical_lines_mcmc = h5f["/xi_p"][()]
-    xi_m_theoretical_lines_mcmc = h5f["/xi_m"][()]
-    xi_theta_mcmc = h5f["/theta"][()]
-    h5f.close()
+    # h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
+    # xi_p_theoretical_lines_mcmc = h5f["/xi_p"][()]
+    # xi_m_theoretical_lines_mcmc = h5f["/xi_m"][()]
+    # xi_theta_mcmc = h5f["/theta"][()]
+    # h5f.close()
 
-expo_type = ["diff_expo","same_expo"]
+expo_type = ["diff_expo"]
 
 datas = []
 cov = []
-for ii in range(2):
+for ii in range(len(expo_type)):
 
     result_path = data_path + "/result_cache_%d_%s.hdf5"%(resample_num,expo_type[ii])
     file_path = data_path + "/result_%d_%s.hdf5"%(resample_num,expo_type[ii])
@@ -137,7 +137,7 @@ img.subplots(zbin_num, zbin_num)
 img.set_style()
 
 
-for ii in range(2):
+for ii in range(len(expo_type)):
 
     theta, xi_p, xi_p_sig = datas[ii][:3]
     used_data_pts = datas[ii][-1]
@@ -182,8 +182,8 @@ for ii in range(2):
 
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
-                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_p_theoretical_lines_mcmc[tag],
-                                                   c="b",ls="-", label=pk_line_label_mcmc)
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_p_theoretical_lines_mcmc[tag],
+                    #                                c="b",ls="-", label=pk_line_label_mcmc)
 
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
@@ -212,7 +212,7 @@ img.subplots(zbin_num, zbin_num)
 img.set_style()
 pic_nm = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 
-for ii in range(2):
+for ii in range(len(expo_type)):
 
     theta, xi_m, xi_m_sig = datas[ii][0],datas[ii][3],datas[ii][4]
     used_data_pts = datas[ii][-1]
@@ -253,8 +253,8 @@ for ii in range(2):
                 if ii == 0 and pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
-                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_m_theoretical_lines_mcmc[tag],
-                                                   c="b",ls="-", label=pk_line_label_mcmc)
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_m_theoretical_lines_mcmc[tag],
+                    #                                c="b",ls="-", label=pk_line_label_mcmc)
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 

@@ -49,7 +49,8 @@ chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
 
 chi_guess_num = int(chi_guess_num*2)
-cor_gg_len = 1000000
+cor_gg_len = int(chi_guess_num)
+cor_gg_len_mid = int(cor_gg_len/2)
 mg_bin_num = 10
 
 # star number on each chip
@@ -81,9 +82,9 @@ mv_idx = 37
 
 # about PhotoZ
 odd_idx = 38
-odd_thresh = 0.5
+odd_thresh = 0.0
 redshift_e_idx = 39
-pz_sum_idx = 40
+# pz_sum_idx = 40
 # pz_sum_thresh = 0.001
 
 #
@@ -93,7 +94,7 @@ pz_sum_idx = 40
 # fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
 # result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
 result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
 cmd = argv[1]
@@ -127,24 +128,45 @@ if cmd == "correlation":
 
         h5f_cor = h5py.File(result_cata_path + "/gg_cor.hdf5", "w")
 
+
+        gg_1 = numpy.zeros((cor_gg_len,chi_guess_num),dtype=numpy.float32)
+        gg_2 = numpy.zeros_like(gg_1,dtype=numpy.float32)
+
+        #
+        # for i in range(chi_guess_num):
+        #
+        #     mean = [0, 0]
+        #
+        #     cov = [[numpy.abs(chi_guess_bin[i] * 2), chi_guess_bin[i]],
+        #            [chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
+        #
+        #     gg = tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
+        #
+        #     gg_1[:,i] = gg[0]
+        #     gg_2[:,i] = gg[1]
+
+        # proposed by Zhenjie Liu
         for i in range(chi_guess_num):
+            chi_i = chi_guess_bin[i]
+            gg_val = numpy.sqrt(numpy.abs(chi_i))
 
-            mean = [0, 0]
+            gg_1[:cor_gg_len_mid, i] = gg_val
+            gg_1[cor_gg_len_mid:, i] = -gg_val
 
-            cov = [[numpy.abs(chi_guess_bin[i] * 2), chi_guess_bin[i]],
-                   [chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
-
-            gg = tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
-
-            if i == 0:
-                gg_1 = gg[0]
-                gg_2 = gg[1]
+            if chi_i > 0:
+                gg_2[:cor_gg_len_mid, i] = gg_val
+                gg_2[cor_gg_len_mid:, i] = -gg_val
             else:
-                gg_1 = numpy.column_stack((gg_1, gg[0]))
-                gg_2 = numpy.column_stack((gg_2, gg[1]))
+                gg_2[:cor_gg_len_mid, i] = -gg_val
+                gg_2[cor_gg_len_mid:, i] = gg_val
+
+        h5f_cor["/g11_ori"] = gg_1
+        h5f_cor["/g22_ori"] = gg_2
         print(gg_1.shape)
-        h5f_cor["/g11"] = gg_1.reshape((chi_guess_num * cor_gg_len,))
-        h5f_cor["/g22"] = gg_2.reshape((chi_guess_num * cor_gg_len,))
+
+        h5f_cor["/g11"] = gg_1.flatten()
+        h5f_cor["/g22"] = gg_2.flatten()
+
         h5f_cor["/chi_guess"] = chi_guess_bin
         h5f_cor["/theta_bin"] = theta_bin
         h5f_cor["/theta_bin_num"] = numpy.array([theta_bin_num], dtype=numpy.intc)

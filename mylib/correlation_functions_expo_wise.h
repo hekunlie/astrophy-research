@@ -12,6 +12,8 @@
 struct data_info
 {
     char parent_path[500];
+    char cata_path[550];
+    
     char *expo_name_path[MAX_EXPO];
     char *expo_name[MAX_EXPO];
     // data column index meaning (defined in the prepare_data.py)
@@ -171,9 +173,13 @@ void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &i
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
 // if label == 1, calculate, else, not
 
-// read all exposures
+// read all two exposures
 void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
-// read the exposure needed
+// use the \sqrt(\xi) instead of the random numbers in the calculation,
+// proposed by Zhenjie Liu.
+void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -185,6 +191,7 @@ struct corr_cal
     // for the last step of chi squared calculation, get_corr.cpp
     char parent_path[500];
     char result_path[550];
+    char cata_path[550];
     char set_name[50];
     char log_path[550];
     char inform[600];
