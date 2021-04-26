@@ -3135,8 +3135,9 @@ void find_shear_mean(const float *mg, const float *mn, const int data_row, float
 }
 
 
-void find_shear(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
-				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear(const double *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, 
+				int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+				const int chi_fit_num, const int choice, const double max_scale, const double ini_left, const double ini_right,const double chi_gap)
 {
 	int i, j;
 	int max_iters = 12;
@@ -3146,6 +3147,7 @@ void find_shear(const double *data_arr, const int data_row, const int data_col, 
 	double *bins = new double[bin_num + 1];
 	double *gh_fit = new double[chi_fit_num];
 	double *chisq_fit = new double[chi_fit_num];
+	double chisq_fit_coeff[3];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -3244,7 +3246,7 @@ void find_shear(const double *data_arr, const int data_row, const int data_col, 
 		chisq_fit[i] = chi_right;
 	}
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -3276,7 +3278,7 @@ void find_shear(const double *data_arr, const int data_row, const int data_col, 
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -3288,7 +3290,8 @@ void find_shear(const double *data_arr, const int data_row, const int data_col, 
 	delete[] num_in_bin;
 }
 
-void find_shear(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, const int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
+void find_shear(const float *data_arr, const int data_row, const int data_col, const int mg_col, const int mn_col, const int mu_col, const int bin_num, 
+				const int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,	const int chi_fit_num, 
 				const int choice, const float max_scale, const float ini_left, const float ini_right, const float chi_gap)
 {
 	int i, j;
@@ -3301,6 +3304,7 @@ void find_shear(const float *data_arr, const int data_row, const int data_col, c
 
 	float *gh_fit = new float[chi_fit_num];
 	float *chisq_fit = new float[chi_fit_num];
+	float chisq_fit_coeff[3];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -3407,7 +3411,7 @@ void find_shear(const float *data_arr, const int data_row, const int data_col, c
 	}
 	//st4 = clock();
 
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 	// std::cout<<gh<<" "<<gh_sig<<std::endl;
 
 	// to get a more symmetrical interval for fitting
@@ -3440,7 +3444,7 @@ void find_shear(const float *data_arr, const int data_row, const int data_col, c
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff,-1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -3454,7 +3458,8 @@ void find_shear(const float *data_arr, const int data_row, const int data_col, c
 
 
 
-void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int g_label, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+void find_shear(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int g_label, double &gh, 
+				double &gh_sig, double &chisq_min_fit, double *chi_check, 
 				const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
@@ -3464,6 +3469,7 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	int *num_in_bin = new int[bin_num];
 	double *gh_fit = new double[chi_fit_num];
 	double *chisq_fit = new double[chi_fit_num];
+	double chisq_fit_coeff[3];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -3542,7 +3548,7 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 		chisq_fit[i] = chi_right;
 	}
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff,-1);
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -3574,7 +3580,7 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -3584,7 +3590,8 @@ void find_shear(const double *mg, const double *mn, const double *mu, const int 
 	delete[] num_in_bin;
 }
 
-void find_shear(const float *mg, const float *mn,  const float *mu, const int data_num, const int bin_num, const float *bins, int g_label, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,
+void find_shear(const float *mg, const float *mn,  const float *mu, const int data_num, const int bin_num, const float *bins, int g_label, 
+				float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check,
 				const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap)
 {
 	int i, j, k;
@@ -3594,6 +3601,7 @@ void find_shear(const float *mg, const float *mn,  const float *mu, const int da
 	int *num_in_bin = new int[bin_num];
 	float *gh_fit = new float[chi_fit_num];
 	float *chisq_fit = new float[chi_fit_num];
+	float chisq_fit_coeff[3];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -3677,7 +3685,7 @@ void find_shear(const float *mg, const float *mn,  const float *mu, const int da
 	}
 	//st4 = clock();
 
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -3709,7 +3717,7 @@ void find_shear(const float *mg, const float *mn,  const float *mu, const int da
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -3721,8 +3729,9 @@ void find_shear(const float *mg, const float *mn,  const float *mu, const int da
 
 
 
-void find_shear_NU(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int NU_label, double fix_g, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
-				const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap)
+void find_shear_NU(const double *mg, const double *mn, const double *mu, const int data_num, const int bin_num, const double *bins, int NU_label, 
+					double fix_g, double &gh, double &gh_sig, double &chisq_min_fit, double *chi_check, 
+					const int chi_fit_num, const double ini_left, const double ini_right, const double chi_gap)
 {
 	int i, j, k;
 	int max_iters = 12;
@@ -3731,6 +3740,7 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 	int *num_in_bin = new int[bin_num];
 	double *gh_fit = new double[chi_fit_num];
 	double *chisq_fit = new double[chi_fit_num];
+	double chisq_fit_coeff[3];
 
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
@@ -3835,7 +3845,7 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 		chisq_fit[i] = chi_right;
 	}
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -3878,7 +3888,7 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -3888,8 +3898,9 @@ void find_shear_NU(const double *mg, const double *mn, const double *mu, const i
 	delete[] num_in_bin;
 }
 
-void find_shear_NU(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, const float *bins, int NU_label, float fix_g, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check, 
-				const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap)
+void find_shear_NU(const float *mg, const float *mn, const float *mu, const int data_num, const int bin_num, const float *bins, int NU_label, 
+					float fix_g, float &gh, float &gh_sig, float &chisq_min_fit, float *chi_check, 
+					const int chi_fit_num, const float ini_left, const float ini_right, const float chi_gap)
 {
 	int i, j, k;
 	int max_iters = 12;
@@ -3898,7 +3909,8 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 	int *num_in_bin = new int[bin_num];
 	float *gh_fit = new float[chi_fit_num];
 	float *chisq_fit = new float[chi_fit_num];
-
+	float chisq_fit_coeff[3];
+	
 	// record the each g_left, chisq_left, g_right, chisq_right
 	int record_col = 4;
 	int left_tag=-1, right_tag=-1;
@@ -3996,7 +4008,7 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 		chisq_fit[i] = chi_right;
 	}
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, temp_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	// to get a more symmetrical interval for fitting
 	new_end = std::max(gh-left, right-gh);
@@ -4039,7 +4051,7 @@ void find_shear_NU(const float *mg, const float *mn, const float *mu, const int 
 	}
 	
 	//st4 = clock();
-	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, -1);
+	fit_shear(gh_fit, chisq_fit, chi_fit_num, gh, gh_sig, chisq_min_fit, chisq_fit_coeff, -1);
 
 	//st5 = clock();
 	//std::cout << gh << " " << gh_sig << std::endl;
@@ -4115,10 +4127,10 @@ void find_shear_iter(const float *mg, const float *mn, const float *mu, const in
 }
 
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, const double d_chi)
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, double *chisq_fit_coeff, const double d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
-	// y = ax^2+bx + c
+	// y = ax^2 + bx + c
 
 	int i, count = 0;
 	double min_chi = 10000;
@@ -4186,10 +4198,13 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	gh_sig = sqrt(0.5 / coeff[2]);
 
 	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
+	chisq_fit_coeff[0] = coeff[0];
+	chisq_fit_coeff[1] = coeff[1];
+	chisq_fit_coeff[2] = coeff[2];
 
 }
 
-void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, const float d_chi)
+void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, float* chisq_fit_coeff, const float d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2+bx + c
@@ -4262,7 +4277,9 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 	gh_sig = sqrt(0.5 / coeff[2]);
 
 	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
-
+	chisq_fit_coeff[0] = coeff[0];
+	chisq_fit_coeff[1] = coeff[1];
+	chisq_fit_coeff[2] = coeff[2];
 }
 
 

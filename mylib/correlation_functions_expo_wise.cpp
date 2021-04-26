@@ -1653,6 +1653,8 @@ void corr_calculate(corr_cal *all_paras)
     double *chi_gxx_fit = new double[all_paras->chi_guess_num];
     double gh, gh_sig, chi_min_fit;
 
+    double *chisq_fit_coeff = new double[3];
+
     // calculate chi squared
     for(jacK_tag=all_paras->my_jack_st; jacK_tag<all_paras->my_jack_ed; jacK_tag++)
     {
@@ -1687,11 +1689,11 @@ void corr_calculate(corr_cal *all_paras)
             //     show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
             // }
 
-            fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, 150);
+            fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
             all_paras->corr_cal_gtt[jacK_tag][i] = gh;
             all_paras->corr_cal_gtt_sig[jacK_tag][i] = gh_sig;
 
-            fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, 150);
+            fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
             all_paras->corr_cal_gxx[jacK_tag][i] = gh;
             all_paras->corr_cal_gxx_sig[jacK_tag][i] = gh_sig;
         }

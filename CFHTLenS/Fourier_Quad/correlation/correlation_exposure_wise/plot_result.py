@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/test/ori"
+data_path = "E:/works/correlation/CFHT/cut_2.5/test/smooth_new"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -66,8 +66,8 @@ for ii in range(len(expo_type)):
 
     cov.append([[cov_p, inv_cov_p], [cov_m, inv_cov_m], [cov_pm, inv_cov_pm]])
 
-    print(theta[idx].shape)
-
+    # print(theta[idx].shape)
+    print(cov_p.shape)
     h5f = h5py.File(result_path,"w")
     h5f["/theta"] = theta[idx]
 

@@ -171,12 +171,12 @@ int main(int argc, char *argv[])
 
         st4 = clock();
         tt =  (st4 - st1)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"CPU %d finishes in %.2f sec.", rank, tt);
+        sprintf(log_inform,"CPU %d. Finish in %.2f sec.", rank, tt);
         write_log(log_path, log_inform);
-        if(rank == 1)
-        {   
+        // if(rank == 1)
+        // {   
             std::cout<<log_inform<<std::endl;
-        }
+        // }
     }
     else
     {   
@@ -212,12 +212,12 @@ int main(int argc, char *argv[])
 
         st5 = clock(); 
         tt =  (st5 - st1)/CLOCKS_PER_SEC;
-        sprintf(log_inform,"Finish in %.2f sec.", tt);
+        sprintf(log_inform,"CPU %d: Finish in %.2f sec.", rank, tt);
         write_log(log_path, log_inform);
-        if(rank == 0)
-        {   
+        // if(rank == 0)
+        // {   
             std::cout<<log_inform<<std::endl;
-        }      
+        // }      
     }
         
     ////////////////////////////////  End  ////////////////////////////////////////////

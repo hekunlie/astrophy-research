@@ -1051,6 +1051,9 @@ void ggl_cal_signals(ggl_data_info * data_info)
     double *signals = new double[data_info->signal_pts_num];
     double *signals_err = new double[data_info->signal_pts_num];
 
+    double *chisq_all = new double[data_info->signal_pts_num*data_info->pdf_sigma_num];
+    double *chisq_fit_coeff = new double[data_info->signal_pts_num*3];
+
     for(i=0; i<data_info->jack_num+1; i++)
     { 
         // theta
@@ -1097,8 +1100,18 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, count,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
+    sprintf(set_name,"/delta_t_guess");
+    write_h5(data_info->ggl_result_path, set_name, data_info->delta_sigma_guess,
+            data_info->pdf_sigma_num, 1, false);
+
+    sprintf(set_name,"/g_t_guess");
+    write_h5(data_info->ggl_result_path, set_name, data_info->gt_guess,
+            data_info->pdf_gt_num, 1, false);
+
     sprintf(data_info->ggl_log_inform,"========================== Finish calculating theta & radius ==========================\n");
     std::cout<<data_info->ggl_log_inform;
+
+
 
 #ifdef GGL_DELTA_SIGMA
 
@@ -1112,6 +1125,8 @@ void ggl_cal_signals(ggl_data_info * data_info)
     double *delta_sigma_cross = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
     double *delta_sigma_cross_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
 
+
+
     for(i=0; i<data_info->jack_num+1; i++)
     {   
         st_j = i*data_info->signal_pts_num;
@@ -1123,7 +1138,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
         // show_arr(temp_count, 1, data_info->chi_signal_block_len);
         ggl_pdf_signals(temp_sigma, data_info->delta_sigma_guess, data_info->pdf_sigma_num, 
-                        data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err);
+                        data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err, chisq_all, chisq_fit_coeff);
         
         for(j=0; j<data_info->signal_pts_num; j++)
         {
@@ -1131,12 +1146,26 @@ void ggl_cal_signals(ggl_data_info * data_info)
             delta_sigma_tan_err[st_j + j] = signals_err[j];
         }
 
+        // just for the total sample, 
+        // save the chi^2 of the PDF_SYM process and the coefficients
+        if(i == data_info->jack_num)
+        {
+            sprintf(set_name,"/delta_t_chisq");
+            write_h5(data_info->ggl_result_path, set_name, chisq_all,
+                    data_info->signal_pts_num,data_info->pdf_sigma_num, false);
+
+            sprintf(set_name,"/delta_t_chisq_coeff");
+            write_h5(data_info->ggl_result_path, set_name, chisq_fit_coeff,
+                    data_info->signal_pts_num, 3, false);
+        }
+
+
         // delta_sigma_x
         for(j=0;j<data_info->chi_sigma_theta_block_len;j++)
         { temp_sigma[j] = data_info->total_chi_sigma_cross[st_c+j];}
 
         ggl_pdf_signals(temp_sigma, data_info->delta_sigma_guess, data_info->pdf_sigma_num, 
-                        data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err);
+                        data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err,chisq_all, chisq_fit_coeff);
         
         for(j=0; j<data_info->signal_pts_num; j++)
         {
@@ -1171,6 +1200,12 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
 
+    delete[] temp_sigma;
+    delete[] delta_sigma_tan;
+    delete[] delta_sigma_tan_err;
+    delete[] delta_sigma_cross;
+    delete[] delta_sigma_cross_err;
+
     sprintf(data_info->ggl_log_inform,"========================== Finish calculating GGL_DELTA_SIGMA ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 #endif
@@ -1196,7 +1231,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
         { temp_g[j] = data_info->total_chi_g_tan[st_c+j];}
 
         ggl_pdf_signals(temp_g, data_info->gt_guess, data_info->pdf_gt_num, 
-                        data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err);
+                        data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err, chisq_all, chisq_fit_coeff);
 
         for(j=0; j<data_info->signal_pts_num; j++)
         {
@@ -1204,6 +1239,20 @@ void ggl_cal_signals(ggl_data_info * data_info)
             gt_err[st_j + j] = signals_err[j];
         }
         
+        // just for the total sample, 
+        // save the chi^2 of the PDF_SYM process and the coefficients
+        if(i == data_info->jack_num)
+        {
+            sprintf(set_name,"/g_t_chisq");
+            write_h5(data_info->ggl_result_path, set_name, chisq_all,
+                    data_info->signal_pts_num,data_info->pdf_gt_num, false);
+
+            sprintf(set_name,"/g_t_chisq_coeff");
+            write_h5(data_info->ggl_result_path, set_name, chisq_fit_coeff,
+                    data_info->signal_pts_num, 3, false);
+        }
+
+
         // g_x
         st_c = i*data_info->chi_g_theta_block_len;
 
@@ -1211,7 +1260,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
         { temp_g[j] = data_info->total_chi_g_cross[st_c+j];}
 
         ggl_pdf_signals(temp_g, data_info->gt_guess, data_info->pdf_gt_num, 
-                        data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err);
+                        data_info->mg_gt_bin_num, data_info->signal_pts_num, signals, signals_err, chisq_all, chisq_fit_coeff);
         
         for(j=0; j<data_info->signal_pts_num; j++)
         {
@@ -1247,19 +1296,34 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(data_info->ggl_log_inform,"========================== Finish calculating GGL_GAMMA_T ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
+    delete[] temp_g;
+    delete[] gt;
+    delete[] gt_err;
+    delete[] gx;
+    delete[] gx_err;
+
 #endif
 
     sprintf(data_info->ggl_log_inform,"finish calculate and save result.\n");
-    std::cout<<data_info->ggl_log_inform;      
+    std::cout<<data_info->ggl_log_inform;  
+
+    delete[] theta;
+    delete[] radius;
+    delete[] count;
+    delete[] signals;
+    delete[] signals_err;
+    delete[] chisq_fit_coeff;
+    delete[] chisq_all;
 }
 
-void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err)
+void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err, double *chisq_all, double *chisq_fit_coeff)
 {
     int i, j, k, st;
     double chisq_i;
     double signal_i, signal_err_i;
     double *temp = new double[mg_bin_num];
     double *chisq = new double[pdf_guess_num];
+    double fit_coeff[3];
 
     for(i=0; i<signal_pts_num; i++)
     {
@@ -1272,9 +1336,19 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             }
             cal_chisq_1d(temp, mg_bin_num, chisq_i);
             chisq[j] = chisq_i;
+            
+            chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, 200);
+        
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 200);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
+
+        chisq_fit_coeff[3*i] = fit_coeff[0];
+        chisq_fit_coeff[3*i + 1] = fit_coeff[1];
+        chisq_fit_coeff[3*i + 2] = fit_coeff[2];
+
     }
+    delete[] temp;
+    delete[] chisq;
 }

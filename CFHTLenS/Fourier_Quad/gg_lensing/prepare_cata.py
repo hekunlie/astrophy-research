@@ -65,7 +65,7 @@ mg_bin_num = 10
 
 # star number on each chip
 nstar_idx = 21
-nstar_thresh = 20
+nstar_thresh = 12
 
 # selection function
 flux2_alt_idx = 28

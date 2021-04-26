@@ -9,9 +9,13 @@ import tool_box
 import warnings
 from sklearn.cluster import KMeans
 import time
-import prepare_tools
+
 
 warnings.filterwarnings('error')
+
+# start
+time_start = tool_box.get_time_now()
+print(time_start)
 
 
 # parameters
@@ -94,7 +98,7 @@ redshift_e_idx = 39
 # fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
 # result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_21_2021_smoothed"
 result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
 cmd = argv[1]
@@ -416,7 +420,7 @@ elif cmd == "kmeans":
             idx = idx1 & idx2
             src_num_each_area[i] = idx.sum()
 
-        ncents, ratio = prepare_tools.even_area(src_num_each_area, area_num, total_cent)
+        ncents, ratio = tool_box.even_area(src_num_each_area, area_num, total_cent)
         if rank == 0:
             print(ncents)
             print(ratio)
@@ -499,8 +503,8 @@ elif cmd == "segment":
             group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
             group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
 
-            group_ra_bin, group_ra_bin_num = prepare_tools.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
-            group_dec_bin, group_dec_bin_num = prepare_tools.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+            group_ra_bin, group_ra_bin_num = tool_box.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
+            group_dec_bin, group_dec_bin_num = tool_box.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
 
             count = 0
             for i in range(group_ra_bin_num):
@@ -518,7 +522,7 @@ elif cmd == "segment":
                     if src_num > 0:
                         expos_data = sub_data[idx_sub]
                         sub_redshift = expos_data[:, 8]
-                        redshift_label = prepare_tools.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
+                        redshift_label = tool_box.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
 
                         expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2
                         expos_dec_center = (group_dec_bin[j] + group_dec_bin[j+1]) / 2

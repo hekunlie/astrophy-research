@@ -1,11 +1,11 @@
 FQLIB_PATH=/home/hklee/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
 HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
-HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio -lcurl
+HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcurl
 SCI_LIB_PATH=/home/hklee/work/mylib/science_cal_lib.cpp
 
 # FQLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/FQlib.cpp -lgsl -lgslcblas -lfftw3l -lfftw3f -lm
 # HK_MPILIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_mpi.cpp
-# HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio
+# HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5
 # SCI_LIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/GG_lensing_functions_expo_wise.cpp
 
 CODE_NAME=GGL_cal.cpp
