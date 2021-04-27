@@ -59,7 +59,7 @@ mg_bin_num = 10
 
 # star number on each chip
 nstar_idx = 21
-nstar_thresh = 20
+nstar_thresh = 12
 
 # selection function
 flux2_alt_idx = 28
@@ -130,7 +130,7 @@ if cmd == "correlation":
 
         mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
 
-        h5f_cor = h5py.File(result_cata_path + "/gg_cor.hdf5", "w")
+        h5f_cor = h5py.File(result_cata_path + "/kmeans/gg_cor.hdf5", "w")
 
 
         gg_1 = numpy.zeros((cor_gg_len,chi_guess_num),dtype=numpy.float32)

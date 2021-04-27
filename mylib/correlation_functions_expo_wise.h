@@ -13,6 +13,7 @@ struct data_info
 {
     char parent_path[500];
     char cata_path[550];
+    char result_path[550];
     
     char *expo_name_path[MAX_EXPO];
     char *expo_name[MAX_EXPO];
@@ -174,10 +175,11 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
 // if label == 1, calculate, else, not
 
 // read all two exposures
-void find_pairs(data_info *field_info, int expo_label_0, int expo_label_1);
 // use the \sqrt(\xi) instead of the random numbers in the calculation,
 // proposed by Zhenjie Liu.
-void find_pairs_new(data_info *field_info, int expo_label_0, int expo_label_1);
+void find_pairs_diff_expo(data_info *field_info, int expo_label_0, int expo_label_1);
+void find_pairs_same_expo(data_info *expo_info, int expo_label_0, int expo_label_1);
+void find_pairs_stack_expo(data_info *expo_info, int expo_label_0, int expo_label_1);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

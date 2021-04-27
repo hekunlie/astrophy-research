@@ -9,13 +9,25 @@ COR_FUNCTIONS_PATH=/home/hklee/work/mylib/correlation_functions_expo_wise.cpp
 # COR_FUNCTIONS_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/correlation_functions_expo_wise.cpp
 
 
-CODE_NAME_E=calculate_correlation_expo_wise.cpp
-FINAL_NAME_E=cal_cor
+CODE_NAME_D=calculate_correlation_expo_wise_diff_expo.cpp
+FINAL_NAME_D=cal_cor_diff_expo
+
+CODE_NAME_S=calculate_correlation_expo_wise_same_expo.cpp
+FINAL_NAME_S=cal_cor_same_expo
+
+CODE_NAME_ST=calculate_correlation_expo_wise_stack_expo.cpp
+FINAL_NAME_ST=cal_cor_stack_expo
 
 compile_e:
-	mpicxx -I.  $(CODE_NAME_E) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_E) -std=c++11
+	mpicxx -I.  $(CODE_NAME_D) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_D) -std=c++11
+	mpicxx -I.  $(CODE_NAME_S) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_S) -std=c++11
+	mpicxx -I.  $(CODE_NAME_ST) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_ST) -std=c++11
+
 clean_e:
-	rm $(FINAL_NAME_E)
+	rm $(FINAL_NAME_D)
+	rm $(FINAL_NAME_S)
+	rm $(FINAL_NAME_ST)
+
 
 
 

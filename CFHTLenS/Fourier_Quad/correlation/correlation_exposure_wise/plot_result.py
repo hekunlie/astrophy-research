@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/test/smooth_new"
+data_path = "E:/works/correlation/CFHT/cut_2.5/test/smooth_new_flux2"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -27,8 +27,8 @@ pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.0
 pk_line_label_mcmc = "MCMC:\n$\sigma_8$ = 0.514\n$\Omega_m$=0.394\n$\Omega_b$=0.161"
 
 pk_lines_tag = 0
-if os.path.exists(data_path + "/planck2018.hdf5"):
-    h5f = h5py.File(data_path + "/planck2018.hdf5","r")
+if os.path.exists("E:/works/correlation/planck2018.hdf5"):
+    h5f = h5py.File( "E:/works/correlation/planck2018.hdf5","r")
     xi_p_theoretical_lines = h5f["/xi_p"][()]
     xi_m_theoretical_lines = h5f["/xi_m"][()]
     xi_theta = h5f["/theta"][()]

@@ -16,7 +16,6 @@ void initialize(data_info *expo_info)
     expo_info->cos_dec_idx = 7;
     expo_info->redshift_idx = 8;
 
-    sprintf(expo_info->cata_path,"%s/cata/kmeans", expo_info->parent_path);
     sprintf(data_path,"%s/source_list.dat", expo_info->cata_path);
 
     line_count(data_path, expo_info);
@@ -376,7 +375,246 @@ void thread_pool_resize(data_info *expo_info)
 
 
 
-void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
+void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label_1)
+{
+    int i, j, m, n, k;
+    int ig1, ig2, ig_st;
+
+    int ir, theta_tag, theta_accum_tag, ic;
+    int iz1, iz2, iz1_;
+
+    int gal_num_1, gal_num_2;
+    MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
+    MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
+    MY_FLOAT diff;
+    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
+    MY_FLOAT mg1_z1_, mg2_z1_, mn_z1_, mu_z1_, mv_z1_;;
+
+    MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
+    MY_FLOAT mg1_z2_, mg2_z2_, mn_z2_, mu_z2_,mv_z2_;
+
+    int ix_tt, iy_tt, ix_xx, iy_xx;
+    MY_FLOAT temp_tt[4], temp_xx[4];
+    int bin_para_tt[2], bin_para_xx[2];
+
+    int theta_bin_num;
+    int chi_guess_num;
+    int expo_chi_block_len, ir_chi_block_len,chi_block_len;
+    int ir_len, ic_len;
+    MY_FLOAT gg_1, gg_2, gg_len;
+
+    MY_FLOAT delta_ra, delta_dec, delta_radius, delta_radius_check;
+    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    double st1, st2;
+    double pairs = 0;
+
+    int loop_label;
+    loop_label = expo_info->loop_label;
+
+    int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
+    mg_bin_num = expo_info->mg_bin_num;
+    mg_bin_num1 = expo_info->mg_bin_num1;
+    mg_bin_num2 = expo_info->mg_bin_num2;
+    mg_bin_num3 = expo_info->mg_bin_num3;
+
+    chi_guess_num = expo_info->chi_guess_num;
+    expo_chi_block_len = expo_info->expo_chi_block_len;
+    ir_chi_block_len = expo_info->ir_chi_block_len;
+    chi_block_len = expo_info->chi_block_len;
+    gg_len = expo_info->gg_len;
+    theta_bin_num = expo_info->theta_bin_num;
+
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
+    
+    // int *mask = new int[gal_num_1]{};
+
+    st1 = clock();
+    for(ig1=0; ig1<gal_num_1; ig1++)
+    {   
+        
+        // loop the grid in the first zbin, zbin_label_0
+        m = ig1*expo_info->expo_data_col;
+
+        ra_z1 = expo_info->expo_data_1[m+expo_info->ra_idx];
+        dec_z1 = expo_info->expo_data_1[m+expo_info->dec_idx];
+        cos_dec_z1 = expo_info->expo_data_1[m+expo_info->cos_dec_idx];
+
+        mg1_z1_ = expo_info->expo_data_1[m+expo_info->mg1_idx];
+        mg2_z1_ = expo_info->expo_data_1[m+expo_info->mg2_idx];
+
+        mn_z1_ = expo_info->expo_data_1[m+expo_info->mn_idx];
+        mu_z1_ = expo_info->expo_data_1[m+expo_info->mu_idx];
+        mv_z1_ = expo_info->expo_data_1[m+expo_info->mv_idx];
+
+        iz1 = expo_info->expo_zbin_label_1[ig1];
+        iz1_ = iz1*expo_info->zbin_num;
+
+        if(expo_label_0 == expo_label_1){ig_st = ig1+1;}
+        else{ig_st = 0;}
+
+        for(ig2=ig_st; ig2<gal_num_2; ig2++)
+        {   
+            // use the pairs from different exposures
+            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){continue;}
+
+            n = ig2*expo_info->expo_data_col;
+
+            ra_z2 = expo_info->expo_data_2[n+expo_info->ra_idx];
+            dec_z2 = expo_info->expo_data_2[n+expo_info->dec_idx];
+            cos_dec_z2 = expo_info->expo_data_2[n+expo_info->cos_dec_idx];
+
+            // the seperation angle (arc minute)
+            delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+            delta_dec = dec_z2 - dec_z1;
+            delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+
+            // separation(ra_z1/60, dec_z1/60, ra_z2/60, dec_z2/60, delta_radius_check);
+            // diff = fabs(delta_radius - delta_radius_check/Pi*180*60)/delta_radius;
+            // if( diff > 0.05)
+            // {   
+            //     std::cout<<ra_z1<<" "<<ra_z2<<" "<<dec_z1<<" "<<dec_z2<<std::endl;
+            //     std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<" "<<diff<<std::endl;
+            // }
+
+            theta_tag = -1;
+            for(ir=0; ir<theta_bin_num; ir++)
+            {
+                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                {theta_tag=ir;break;}
+            }
+            // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
+            if(theta_tag > -1)
+            {   
+                pairs+= 1;
+
+                mg1_z2_ = expo_info->expo_data_2[n+expo_info->mg1_idx];
+                mg2_z2_ = expo_info->expo_data_2[n+expo_info->mg2_idx];
+
+                mn_z2_ = expo_info->expo_data_2[n+expo_info->mn_idx];
+                mu_z2_ = expo_info->expo_data_2[n+expo_info->mu_idx];
+                mv_z2_ = expo_info->expo_data_2[n+expo_info->mv_idx];
+
+                // shear estimators rotation (position angle defined as East of North)
+                sin_theta = delta_ra/delta_radius;
+                cos_theta = delta_dec/delta_radius;
+
+                sin_2theta = 2*sin_theta*cos_theta;
+                cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
+
+                sin_4theta = 2*sin_2theta*cos_2theta;
+                cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
+
+                // rotate gal z1
+                mg1_z1 = mg1_z1_*cos_2theta - mg2_z1_*sin_2theta;
+                mg2_z1 = mg1_z1_*sin_2theta + mg2_z1_*cos_2theta;
+
+                mnu1_z1 = mu_z1_*cos_4theta - mv_z1_*sin_4theta;
+                mnu2_z1 = mn_z1_ - mnu1_z1;
+                mnu1_z1 = mn_z1_ + mnu1_z1;
+                // rotate gal z2
+                mg1_z2 = mg1_z2_*cos_2theta - mg2_z2_*sin_2theta;
+                mg2_z2 = mg1_z2_*sin_2theta + mg2_z2_*cos_2theta;
+
+                mnu1_z2 = mu_z2_*cos_4theta - mv_z2_*sin_4theta;
+                mnu2_z2 = mn_z2_ - mnu1_z2;
+                mnu1_z2 = mn_z2_ + mnu1_z2;
+                
+                // there're zbin_num *zbin_num blocks, iz1 is row, iz2 is the col, each block
+                // has a length of mg_bin_num*mg_bin_num*chi_guess_num*theta_bin_num.
+                iz2 = expo_info->expo_zbin_label_2[ig2];
+
+                // record the pair separation for the mean separation in that bin
+                // which will be the x postion in the last figure
+                theta_accum_tag = (iz1_ + iz2)*theta_bin_num + theta_tag;
+        
+                expo_info->theta_accum[theta_accum_tag] += delta_radius;
+                expo_info->theta_num_accum[theta_accum_tag] += 1;
+
+
+                ////////////////////// the key part of PDF_SYM //////////////////////////////
+                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+
+                gg_1 = expo_info->gg_1[loop_label];
+                gg_2 = expo_info->gg_2[loop_label];
+
+                temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                
+                
+                expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                
+                temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+
+                hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                loop_label += 1;
+
+                // if(ic_len == 0)
+                // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                for(ic=1; ic<chi_guess_num; ic++)
+                {   
+                    ic_len += chi_block_len;
+
+                    gg_1 = expo_info->gg_1[loop_label];
+                    gg_2 = expo_info->gg_2[loop_label];
+                                    
+                    bin_para_tt[0] = ix_tt;
+                    bin_para_tt[1] = iy_tt;
+
+                    temp_tt[0] = temp_tt[2];
+                    temp_tt[1] = temp_tt[3];
+
+                    temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                    temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                    // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
+
+                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                    
+                    bin_para_xx[0] = ix_xx;
+                    bin_para_xx[1] = iy_xx;
+                    
+                    temp_xx[0] = temp_xx[2];
+                    temp_xx[1] = temp_xx[3];
+
+                    temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                    temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+
+                    // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
+                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                    loop_label += 1;
+
+
+                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                    // if(ic_len == 0)
+                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    
+                }
+                if(loop_label >= gg_len){loop_label = 0;}
+                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
+                
+            }
+
+        }
+    }
+    // st2 = clock();
+    // std::cout<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+    expo_info->gg_pairs = pairs;
+    expo_info->loop_label = loop_label;
+}
+
+
+void find_pairs_same_expo(data_info *expo_info, int expo_label_0, int expo_label_1)
 {
     int i, j, m, n, k;
     int ig1, ig2, ig_st;
@@ -458,10 +696,8 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
         for(ig2=ig_st; ig2<gal_num_2; ig2++)
         {   
             
-            // use the pairs from different exposures
-            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){continue;}
-            // // if want to use the pairs from the same exposure
-            // if(expo_info->obs_expo_label_1[ig1] != expo_info->obs_expo_label_2[ig2]){continue;}
+            // use the pairs from the same exposure
+            if(expo_info->obs_expo_label_1[ig1] != expo_info->obs_expo_label_2[ig2]){continue;}
 
             n = ig2*expo_info->expo_data_col;
 
@@ -617,8 +853,7 @@ void find_pairs(data_info *expo_info, int expo_label_0, int expo_label_1)
     expo_info->loop_label = loop_label;
 }
 
-
-void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
+void find_pairs_stack_expo(data_info *expo_info, int expo_label_0, int expo_label_1)
 {
     int i, j, m, n, k;
     int ig1, ig2, ig_st;
@@ -699,8 +934,7 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
 
         for(ig2=ig_st; ig2<gal_num_2; ig2++)
         {   
-
-            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){continue;}
+            // use the pairs from different exposures
 
             n = ig2*expo_info->expo_data_col;
 
@@ -855,9 +1089,6 @@ void find_pairs_new(data_info *expo_info, int expo_label_0, int expo_label_1)
     expo_info->gg_pairs = pairs;
     expo_info->loop_label = loop_label;
 }
-
-
-
 
 void initialize_expo_chi_block(data_info *expo_info)
 {   
@@ -883,9 +1114,9 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
 {
     int row, col;
     int st, i,j;
-    char result_path[400], set_name[50];
+    char result_file_path[600], set_name[50];
 
-    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
+    sprintf(result_file_path, "%s/core_%d_num_count.hdf5", expo_info->result_path, rank);
     
     if(task_end_tag == 1)
     {   
@@ -899,20 +1130,20 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
             sprintf(set_name, "/%d/data", expo_info->total_buffer_num);
             if(expo_info->total_buffer_num == 0)
             {
-                write_h5(result_path, set_name, expo_info->men_buffer, row, col, true);
+                write_h5(result_file_path, set_name, expo_info->men_buffer, row, col, true);
             }
             else
             {
-                write_h5(result_path, set_name, expo_info->men_buffer, row, col, false);
+                write_h5(result_file_path, set_name, expo_info->men_buffer, row, col, false);
             }
             
             col = 2*expo_info->block_count;
             sprintf(set_name, "/%d/jack_label", expo_info->total_buffer_num);
-            write_h5(result_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
+            write_h5(result_file_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
             
             expo_info->total_buffer_num += 1;
             sprintf(set_name, "/buffer_num");
-            write_h5(result_path, set_name, &expo_info->total_buffer_num, 1, 1, false);
+            write_h5(result_file_path, set_name, &expo_info->total_buffer_num, 1, 1, false);
 
         }
     }
@@ -928,16 +1159,16 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
             sprintf(set_name, "/%d/data", expo_info->total_buffer_num);
             if(expo_info->total_buffer_num == 0)
             {
-                write_h5(result_path, set_name, expo_info->men_buffer, row, col, true);
+                write_h5(result_file_path, set_name, expo_info->men_buffer, row, col, true);
             }
             else
             {
-                write_h5(result_path, set_name, expo_info->men_buffer, row, col, false);
+                write_h5(result_file_path, set_name, expo_info->men_buffer, row, col, false);
             }
             // save the jack id of each block
             col = 2*expo_info->max_block_in_buffer;
             sprintf(set_name, "/%d/jack_label", expo_info->total_buffer_num);
-            write_h5(result_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
+            write_h5(result_file_path, set_name, expo_info->task_expo_pair_jack_label, 1, col, false);
 
             expo_info->total_buffer_num ++;
             expo_info->block_count = 0;
@@ -975,7 +1206,7 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
 void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, int rank)
 {   
     int row, col, i;
-    char result_path[600], set_name[50];
+    char result_file_path[600], set_name[50];
 
     expo_info->expo_pair_label_1.push_back(expo_label_1);
     expo_info->expo_pair_label_2.push_back(expo_label_2);
@@ -983,37 +1214,37 @@ void save_expo_data(data_info *expo_info, int expo_label_1, int expo_label_2, in
     col = expo_info->mg_bin_num;
     row = expo_info->expo_chi_block_len_true/col;
 
-    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
+    sprintf(result_file_path, "%s/core_%d_num_count.hdf5", expo_info->result_path, rank);
     sprintf(set_name, "/%d-%d/tt",expo_label_1, expo_label_2);
     
     merge_data(expo_info);
 
     if(expo_info->result_file_tag == 0)
     {
-        write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, true);
+        write_h5(result_file_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, true);
         expo_info->result_file_tag=1;
     }
-    else{write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, false);}
+    else{write_h5(result_file_path, set_name, expo_info->corr_cal_stack_num_count_chit, row, col, false);}
 
     sprintf(set_name, "/%d-%d/xx",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->corr_cal_stack_num_count_chix, row, col, false);
+    write_h5(result_file_path, set_name, expo_info->corr_cal_stack_num_count_chix, row, col, false);
 
 
     col = expo_info->theta_bin_num;
     row = expo_info->theta_accum_len_true/col;
 
     sprintf(set_name, "/%d-%d/theta",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->corr_cal_stack_expo_theta_accum, row, col, false);
+    write_h5(result_file_path, set_name, expo_info->corr_cal_stack_expo_theta_accum, row, col, false);
     sprintf(set_name, "/%d-%d/theta_num",expo_label_1, expo_label_2);
-    write_h5(result_path, set_name, expo_info->corr_cal_stack_expo_theta_num_accum, row, col, false);
+    write_h5(result_file_path, set_name, expo_info->corr_cal_stack_expo_theta_num_accum, row, col, false);
 }
 
 void save_expo_pair_label(data_info *expo_info, int rank)
 {
     int i, col, row;
-    char result_path[600], set_name[50];
+    char result_file_path[600], set_name[50];
 
-    sprintf(result_path, "%s/result/core_%d_num_count.hdf5", expo_info->parent_path, rank);
+    sprintf(result_file_path, "%s/core_%d_num_count.hdf5", expo_info->result_path, rank);
 
     col = expo_info->expo_pair_label_1.size();
     
@@ -1021,11 +1252,11 @@ void save_expo_pair_label(data_info *expo_info, int rank)
 
     for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_1[i];}
     sprintf(set_name, "/pair_1");
-    write_h5(result_path, set_name, labels, 1, col, false);
+    write_h5(result_file_path, set_name, labels, 1, col, false);
     
     for(i=0; i<col; i++){labels[i] = expo_info->expo_pair_label_2[i];}
     sprintf(set_name, "/pair_2");
-    write_h5(result_path, set_name, labels, 1, col, false);
+    write_h5(result_file_path, set_name, labels, 1, col, false);
     
     delete[] labels;
     
@@ -1034,7 +1265,7 @@ void save_expo_pair_label(data_info *expo_info, int rank)
 void save_expo_data(data_info *expo_info, int expo_label, char *file_name)
 {   
     int row, col;
-    char result_path[600], set_name[50];
+    char set_name[50];
 
     col = expo_info->mg_bin_num;
     row = expo_info->expo_chi_block_len/col;
@@ -1264,8 +1495,6 @@ void read_para(corr_cal *all_paras)
 
     sprintf(all_paras->log_path, "%s/log/cal_j%d_%d.dat", all_paras->parent_path, all_paras->resample_num, all_paras->corr_cal_rank);
 
-    sprintf(all_paras->cata_path,"%s/cata/kmeans", all_paras->parent_path);
-
     sprintf(data_path,"%s/source_list.dat", all_paras->cata_path);
 
     line_count(data_path, all_paras->corr_cal_expo_num);
@@ -1384,7 +1613,7 @@ void prepare_data(corr_cal *all_paras, int tag)
         // no 0'th file, because the CPU 0 is the master for the task distribution
         for(i=1; i<all_paras->corr_cal_result_file_num; i++)
         {
-            sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path,i);
+            sprintf(data_path, "%s/core_%d_num_count.hdf5", all_paras->result_path,i);
             sprintf(set_name, "/buffer_num");
             read_h5(data_path, set_name, &buffer_num);
             all_paras->buffer_num_in_file[i] = buffer_num;
@@ -1398,7 +1627,7 @@ void prepare_data(corr_cal *all_paras, int tag)
         
         std::cout<<all_paras->corr_cal_total_pair_num<<" Pairs\n";
 
-        sprintf(data_path, "%s/result/pair_index.hdf5", all_paras->parent_path);
+        sprintf(data_path, "%s/pair_index.hdf5", all_paras->result_path);
         sprintf(set_name, "/buffer_num");
         write_h5(data_path, set_name,  all_paras->buffer_num_in_file, 1, all_paras->corr_cal_result_file_num,true);
 
@@ -1408,7 +1637,7 @@ void prepare_data(corr_cal *all_paras, int tag)
     }
     else
     {
-        sprintf(data_path, "%s/result/pair_index.hdf5", all_paras->parent_path);
+        sprintf(data_path, "%s/pair_index.hdf5", all_paras->result_path);
 
         sprintf(set_name, "/buffer_num");
         read_h5(data_path, set_name, all_paras->buffer_num_in_file);
@@ -1506,7 +1735,7 @@ void resample_jackknife(corr_cal *all_paras)
     for(file_tag=1; file_tag<all_paras->corr_cal_result_file_num; file_tag++)
     {      
         buffer_num = all_paras->buffer_num_in_file[file_tag];
-        sprintf(data_path, "%s/result/core_%d_num_count.hdf5", all_paras->parent_path, file_tag);
+        sprintf(data_path, "%s/core_%d_num_count.hdf5", all_paras->result_path, file_tag);
         // std::cout<<buffer_tag<<std::endl;
         
         get_time(time_now, 40);
@@ -1755,7 +1984,7 @@ void save_result(corr_cal *all_paras)
     int row, col;
     bool overwrite;
 
-    sprintf(data_path, "%s/result/result_%d.hdf5", all_paras->parent_path, all_paras->resample_num);
+    sprintf(data_path, "%s/result_%d.hdf5", all_paras->result_path, all_paras->resample_num);
 
     for(i=all_paras->my_jack_st; i<all_paras->my_jack_ed; i++)
     {   

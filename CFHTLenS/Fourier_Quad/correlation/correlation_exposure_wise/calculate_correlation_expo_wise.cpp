@@ -13,9 +13,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
-    char source_list[300];
-    char data_path[300], result_path[300];
-    char set_name[50], temp_char[50];
+    char cata_sub_path[80],result_sub_path[80];
     char log_inform[500], log_path[600];
 
     data_info expo_info;
@@ -32,7 +30,12 @@ int main(int argc, char *argv[])
 
     
     strcpy(expo_info.parent_path, argv[1]);
-   
+    strcpy(cata_sub_path, argv[2]);
+    strcpy(result_sub_path, argv[3]);
+
+    sprintf(expo_info.cata_path,"%s/%s", expo_info.parent_path, cata_sub_path);
+    sprintf(expo_info.result_path,"%s/%s", expo_info.parent_path, result_sub_path);
+
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
     
     // read the information of each exposure file
@@ -93,7 +96,11 @@ int main(int argc, char *argv[])
         std::cout<<"Max block num in buffer: "<<expo_info.max_block_in_buffer <<std::endl;
         std::cout<<"Block size: "<<expo_info.block_size_in_buffer<<" elements"<<std::endl;
         std::cout<<"Now "<<expo_info.total_buffer_num<<" buffers & "<<expo_info.block_count<<" blocks"<<std::endl;
+
         std::cout<<std::endl<<expo_info.parent_path<<std::endl;
+        std::cout<<std::endl<<expo_info.cata_path<<std::endl;
+        std::cout<<std::endl<<expo_info.result_path<<std::endl;
+
         std::cout<<std::endl<<expo_info.gg_len<<std::endl<<std::endl;     
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -129,7 +136,10 @@ int main(int argc, char *argv[])
                 read_expo_data_2(&expo_info, task_labels[1]);
                 
                 //////////////  search pairs ////////////////////
-                find_pairs(&expo_info, task_labels[0], task_labels[1]);
+                // find_pairs_diff_expo(&expo_info, task_labels[0], task_labels[1]);
+                // find_pairs_same_expo(&expo_info, task_labels[0], task_labels[1]);
+                find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
+
 
                 // if more 1 pair has been found, write into the result file
                 // if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, task_labels[0], task_labels[1], rank);}

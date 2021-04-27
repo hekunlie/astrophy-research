@@ -1,5 +1,6 @@
 import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+import sys
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
 import correlation_function_tool as cf_tool
@@ -8,7 +9,7 @@ import numpy
 import emcee
 import time
 import h5py
-from multiprocessing import Pool
+from schwimmbad import MPIPool
 
 
 def log_prior_ccl(paras):
@@ -92,7 +93,7 @@ data_num = theta_radian.shape[0]
 
 theta_num_per_bin = 5
 
-ell = tool_box.set_bin_log(10, 20000, 500)
+ell = tool_box.set_bin_log(10, 20000, 10000)
 
 print("Data vector len: ", xi.shape)
 
@@ -107,7 +108,12 @@ for i in range(ndim):
     initial[:,i] = numpy.random.uniform(a,b,nwalkers)
 
 print(nsteps, " steps")
-with Pool(thread) as pool:
+
+with MPIPool() as pool:
+    if not pool.is_master():
+        pool.wait()
+        sys.exit(0)
+
     sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl, pool=pool)
 
     sampler.run_mcmc(initial, nsteps, progress=True)
