@@ -85,10 +85,10 @@ mu_idx = 36
 mv_idx = 37
 
 # about PhotoZ
-odd_idx = 38
+odd_idx = 40
 odd_thresh = 0.0
-redshift_e_idx = 39
-# pz_sum_idx = 40
+redshift_e_idx = 41
+# pz_sum_idx = 42
 # pz_sum_thresh = 0.001
 
 #

@@ -23,7 +23,7 @@ redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.
 bin_num = len(redshift_bin) - 1
 
 
-nz_bin_num = 340
+nz_bin_num = 200
 zehist, zebin, zebin_cent = cf_tool.get_nz(data[:, z_col], redshift_bin, data[:, ze_col], nz_bin_num, (0,3), False)
 
 

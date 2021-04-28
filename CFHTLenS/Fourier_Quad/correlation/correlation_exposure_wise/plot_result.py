@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/test/smooth_new_flux2"
+data_path = "E:/works/correlation/CFHT/cut_2.5/smooth/new_cata"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -42,7 +42,7 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     # xi_theta_mcmc = h5f["/theta"][()]
     # h5f.close()
 
-expo_type = ["diff_expo"]
+expo_type = ["diff_expo", "same_expo"]
 
 datas = []
 cov = []

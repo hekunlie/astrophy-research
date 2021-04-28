@@ -92,7 +92,7 @@ data_num = theta_radian.shape[0]
 
 theta_num_per_bin = 5
 
-ell = tool_box.set_bin_log(10, 20000, 500)
+ell = tool_box.set_bin_log(5, 15000, 400)
 
 print("Data vector len: ", xi.shape)
 
@@ -114,8 +114,8 @@ with Pool(thread) as pool:
 
 
 chain = sampler.get_chain()
-flat_chain = sampler.get_chain(discard=500, flat=True)
-flat_chain_thin_1 = sampler.get_chain(discard=500, thin=10, flat=True)
+flat_chain = sampler.get_chain(discard=1000, flat=True)
+flat_chain_thin_1 = sampler.get_chain(discard=1000, thin=10, flat=True)
 
 numpy.savez("./chain/chain_%s_%d_steps.npz"%(expo_type, nsteps), chain, flat_chain, flat_chain_thin_1)
 
