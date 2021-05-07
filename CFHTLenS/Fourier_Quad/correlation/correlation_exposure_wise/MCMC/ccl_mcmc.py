@@ -47,6 +47,42 @@ def log_prob_ccl(paras):
             print(sigma8, omega_cm0, omega_bm0)
             return -numpy.inf
 
+def log_prior_ccl_fixb(paras):
+    sigma8, omega_cm0 = paras
+    if 0.1 < sigma8 < 3 and 0.01 < omega_cm0 < 1:
+        return 0.0
+    else:
+        return -numpy.inf
+
+
+def log_prob_ccl_fixb(paras):
+    # theta_deg, xi, cov_inv, theta_num_per_bin, zpts, zhist, ell, used_zbin):
+
+    lp = log_prior_ccl_fixb(paras)
+
+    if not numpy.isfinite(lp):
+        # print(lp)
+        return -numpy.inf
+    else:
+        # print(lp)
+        # t1 = time.time()
+        sigma8, omega_cm0 = paras
+        omega_bm0 = 0.049
+        h = 0.674
+
+        # print(paras)
+        try:
+            xi_predict = cf_tool.get_tomo_xi_ccl_2(sigma8, omega_cm0, omega_bm0, h, zpts, zehist,
+                                                   theta_degree, theta_num_per_bin, ell, used_zbin)
+
+            diff = xi - xi_predict
+            chi_sq = lp - 0.5 * numpy.dot(diff, numpy.dot(cov_inv, diff))
+
+            return chi_sq
+        except:
+            print(sigma8, omega_cm0, omega_bm0)
+            return -numpy.inf
+
 
 start = time.time()
 
@@ -98,7 +134,7 @@ print("Data vector len: ", xi.shape)
 
 ################### initialize emcee #############################
 numpy.random.seed(seed_ini)#+ rank*10)
-para_lim = [[0.1, 3],[0.01, 0.8],[0.01,0.2]]
+para_lim = [[0.1, 3],[0.01, 1]]#,[0.01,0.2]]
 nwalkers, ndim = thread, len(para_lim)
 initial = numpy.zeros((nwalkers, ndim))
 
@@ -108,7 +144,8 @@ for i in range(ndim):
 
 print(nsteps, " steps")
 with Pool(thread) as pool:
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl, pool=pool)
+    # sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl, pool=pool)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, log_prob_ccl_fixb, pool=pool)
 
     sampler.run_mcmc(initial, nsteps, progress=True)
 

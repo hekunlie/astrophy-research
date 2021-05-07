@@ -1150,6 +1150,10 @@ void ggl_cal_signals(ggl_data_info * data_info)
         // save the chi^2 of the PDF_SYM process and the coefficients
         if(i == data_info->jack_num)
         {
+            sprintf(set_name,"/Gt_pdf");
+            write_h5(data_info->ggl_result_path, set_name, temp_sigma,
+                    data_info->signal_pts_num,data_info->chi_sigma_theta_block_len_sub, false);
+
             sprintf(set_name,"/delta_t_chisq");
             write_h5(data_info->ggl_result_path, set_name, chisq_all,
                     data_info->signal_pts_num,data_info->pdf_sigma_num, false);
@@ -1340,7 +1344,7 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
         
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 200);
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 100);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
 

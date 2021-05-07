@@ -9,22 +9,25 @@ import tool_box
 import warnings
 from sklearn.cluster import KMeans
 import time
+import c4py
+
 
 
 warnings.filterwarnings('error')
 
 # start
 time_start = tool_box.get_time_now()
-print(time_start)
+
+
 
 
 # parameters
 
 area_num = 4
 # theta bin
-theta_bin_num = 5
+theta_bin_num = 6
 # theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -41,8 +44,8 @@ redshift_idx = 10
 
 redshift_sep_thresh = 0.01
 redshift_bin_num = 6
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
-# redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
 chi_guess_num = 40
@@ -53,9 +56,10 @@ chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
 
 chi_guess_num = int(chi_guess_num*2)
-cor_gg_len = int(chi_guess_num)
+cor_gg_len = 4#int(chi_guess_num)
 cor_gg_len_mid = int(cor_gg_len/2)
 mg_bin_num = 10
+
 
 # star number on each chip
 nstar_idx = 21
@@ -70,6 +74,13 @@ imax_idx = 22
 jmax_idx = 23
 imax_thresh = 48
 jmax_thresh = 48
+
+# the chip labels
+ichip_idx = 16
+
+# flux weighted centroid
+xc_idx = 18
+yc_idx = 19
 
 # field distortion
 gf1_idx = 31
@@ -91,6 +102,11 @@ redshift_e_idx = 41
 # pz_sum_idx = 42
 # pz_sum_thresh = 0.001
 
+# 48/2*0.187/60 arcmin
+sep_ang = 0.0748
+sep_pix = 12 # pixels
+sep_z = 0.2
+
 #
 # fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 # result_cata_path = "/coma/hklee/CFHT/correlation/cata"
@@ -98,7 +114,7 @@ redshift_e_idx = 41
 # fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
 # result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_21_2021_smoothed"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
 result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
 cmd = argv[1]
@@ -107,6 +123,8 @@ if cmd == "correlation":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     cpus = comm.Get_size()
+    if rank == 0:
+        print(time_start, "correlation")
     # rank = 0
     # cpus = 1
 
@@ -189,6 +207,9 @@ if cmd == "prepare":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+    if rank == 0:
+        print(time_start, "prepare")
+
     total_expos = []
     with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
         f_lines = f.readlines()
@@ -206,6 +227,8 @@ if cmd == "prepare":
         data = h5f_src["/data"][()]
         h5f_src.close()
 
+        labels = c4py.deblend_i(data[:,xc_idx], data[:,yc_idx], data[:,redshift_idx], data[:,ichip_idx], sep_pix, sep_z)
+
         # selection
         idx1 = data[:, nstar_idx] >= nstar_thresh
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
@@ -216,7 +239,8 @@ if cmd == "prepare":
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
         idx_8 = data[:, redshift_idx] < redshift_bin[redshift_bin_num]
         idx_9 = data[:,odd_idx] >= odd_thresh
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8 & idx_9
+        idx_10 = labels > 0
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8 & idx_9 & idx_10
 
         src_num = idx.sum()
 
@@ -306,6 +330,7 @@ if cmd == "prepare":
         print(log_inform)
     comm.Barrier()
 
+
 elif cmd == "stack":
     # collection
 
@@ -313,13 +338,18 @@ elif cmd == "stack":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+    if rank == 0:
+        print(time_start, "stack")
+
     expos = []
+    expo_name = []
     gal_num = []
     with open(result_cata_path + "/source_list.dat", "r") as f:
         conts = f.readlines()
     for nm in conts:
         informs = nm.split()
         expos.append(informs[0])
+        expo_name.append(informs[1])
         gal_num.append(int(informs[2]))
     expos_num = len(expos)
     if rank == 0:
@@ -336,20 +366,21 @@ elif cmd == "stack":
 
             h5f = h5py.File(expo_path, "r")
             temp = h5f["/data"][()]
+            h5f.close()
 
-            temp_label = numpy.zeros((my_sub_gal_num[tag],1),dtype=numpy.intc) \
-                         + my_sub_expos_labels[tag]
+            temp_label = numpy.zeros((my_sub_gal_num[tag],1),dtype=numpy.intc)
+            temp_label[:,0] = my_sub_expos_labels[tag]
+
             # Nan check
             idx = numpy.isnan(temp)
             if idx.sum() > 0:
                 print("Find Nan ", expo_path)
             if tag == 0:
                 stack_data = temp
-                stack_expos_labels = temp_label
+                stack_labels = temp_label
             else:
                 stack_data = numpy.row_stack((stack_data, temp))
-                stack_expos_labels = numpy.row_stack((stack_expos_labels, temp_label))
-            h5f.close()
+                stack_labels = numpy.row_stack((stack_labels, temp_label))
 
         sp = stack_data.shape
     else:
@@ -368,25 +399,42 @@ elif cmd == "stack":
                 comm.Recv(recv_buf, source=ir, tag=ir)
                 stack_data = numpy.row_stack((stack_data, recv_buf))
 
-        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "w")
-        h5f["/data"] = stack_data
-        h5f.close()
+        # h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "w")
+        # h5f["/data"] = stack_data
+        # h5f.close()
     comm.Barrier()
 
     if rank > 0 and sp[0] > 0:
-        comm.Send([stack_expos_labels, MPI.INT], dest=0, tag=rank)
+        comm.Send([stack_labels, MPI.INT], dest=0, tag=rank)
     else:
         for ir in range(1, cpus):
             if sp_total[ir][0] > 0:
                 recv_buf = numpy.empty((sp_total[ir][0],1), dtype=numpy.intc)
                 comm.Recv(recv_buf, source=ir, tag=ir)
-                stack_expos_labels = numpy.row_stack((stack_expos_labels, recv_buf))
+                stack_labels = numpy.row_stack((stack_labels, recv_buf))
 
-        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r+")
-        h5f["/expos_label"] = stack_expos_labels[:,0]
-        h5f.close()
-        print("Totally %d (%d) galaxies" % (stack_expos_labels.shape[0], sum(gal_num)))
+        # separate it into 4 sub-files
+        ra_bin = [1000, 5000, 10000, 15000, 30000]
+        for ir in range(area_num):
+            idx1 = stack_data[:,5] >= ra_bin[ir]
+            idx2 = stack_data[:,5] < ra_bin[ir+1]
+            idx = idx1 & idx2
+
+            h5f = h5py.File(result_cata_path + "/stack_data_%d.hdf5"%ir, "w")
+            h5f["/data"] = stack_data[idx]
+            h5f["/data_len"] = numpy.array([idx.sum()])
+            h5f["/expos_label"] = stack_labels[:,0][idx]
+            h5f.close()
+
+        # h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r+")
+        # h5f["/expos_label"] = stack_labels[:,0]
+        # h5f["/deblend_label"] = stack_labels[:,1]
+        # h5f.close()
+
+        print("Totally %d (%d) galaxies" % (stack_labels.shape[0], sum(gal_num)))
+
     comm.Barrier()
+
 
 elif cmd == "kmeans":
     # Kmeans method for classification for jackknife
@@ -394,52 +442,51 @@ elif cmd == "kmeans":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+
+    if rank == 0:
+        print(time_start, "kmeans")
+
     t1 = time.time()
 
-    # ncent = int(argv[2])
-    # njobs = int(argv[3])
     # 200 sub-samples
     # ncent = [75, 34, 56, 35][rank]
-    ra_bin = [1000, 5000, 10000, 15000, 30000]
     total_cent = 200
+    src_num_each_area = numpy.zeros((area_num,), dtype=numpy.intc)
 
-    if rank < len(ra_bin) - 1:
+    if rank < area_num:
 
-        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
+        h5f = h5py.File(result_cata_path + "/stack_data_%d.hdf5"%rank, "r")
         data = h5f["/data"][()]
         expos_labels = h5f["/expos_label"][()]
         h5f.close()
 
-        total_src_num = data.shape[0]
+        for i in range(area_num):
+            h5f = h5py.File(result_cata_path + "/stack_data_%d.hdf5" %i, "r")
+            sub_data_len = h5f["/data_len"][()]
+            h5f.close()
+            src_num_each_area[i] = sub_data_len[0]
 
         ra_dec = data[:,5:7]
-        src_num_each_area = numpy.zeros((area_num,),dtype=numpy.intc)
-        for i in range(area_num):
-            idx1 = ra_dec[:,0] >= ra_bin[i]
-            idx2 = ra_dec[:,0] < ra_bin[i+1]
-            idx = idx1 & idx2
-            src_num_each_area[i] = idx.sum()
 
         ncents, ratio = tool_box.even_area(src_num_each_area, area_num, total_cent)
+
         if rank == 0:
             print(ncents)
             print(ratio)
-        ncent = ncents[rank]
-        idx1 = ra_dec[:, 0] >= ra_bin[rank]
-        idx2 = ra_dec[:, 0] < ra_bin[rank + 1]
-        idx = idx1 & idx2
 
-        group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec[idx])
+        ncent = ncents[rank]
+
+        group_pred = KMeans(n_clusters=ncent, random_state=numpy.random.randint(1, 100000)).fit_predict(ra_dec)
 
         h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%rank, "w")
         h5f["/data"] = group_pred
-        h5f["/ra_dec"] = ra_dec[idx]
-        h5f["/expos_labels"] = expos_labels[idx]
+        h5f["/ra_dec"] = ra_dec
         h5f.close()
 
         t2 = time.time()
         print("%d Total sub-sample: %d (%d ~ %d). Time: %.2f sec."%(rank, ncent, group_pred.min(), group_pred.max(), t2-t1))
     comm.Barrier()
+
 
 elif cmd == "segment":
     # assign the source into the artificial exposures
@@ -448,19 +495,20 @@ elif cmd == "segment":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+    if rank == 0:
+        print(time_start, "segment")
+
     group_cata_path = result_cata_path + "/kmeans"
     if rank == 0:
         if not os.path.exists(group_cata_path):
             os.makedirs(group_cata_path)
     comm.Barrier()
 
-    # area num
-    are_num = 4
     # the width of each exposure, arcmin
     expos_field_width = 40
     dra = expos_field_width/2
     ddec = expos_field_width/2
-    ra_bin = [1000, 5000, 10000, 15000, 30000]
+
     ncent = []
 
     expos_avail_sub = []
@@ -469,19 +517,13 @@ elif cmd == "segment":
         # read the group labels from Kmeans
         h5f = h5py.File(result_cata_path + "/group_predict_%d.hdf5"%sub_area,"r")
         group_label = h5f["/data"][()]
-        expos_labels = h5f["/expos_labels"][()]
         h5f.close()
 
         # the catalog
-        h5f = h5py.File(result_cata_path + "/stack_data.hdf5", "r")
-        data = h5f["/data"][()]
+        h5f = h5py.File(result_cata_path + "/stack_data_%d.hdf5"%sub_area, "r")
+        area_data = h5f["/data"][()]
+        expos_labels = h5f["/expos_label"][()]
         h5f.close()
-
-        ra_dec = data[:, 5:7]
-        idx1 = ra_dec[:, 0] >= ra_bin[sub_area]
-        idx2 = ra_dec[:, 0] < ra_bin[sub_area + 1]
-        idx_area = idx1 & idx2
-        area_data = data[idx_area]
 
         group_num = group_label.max() + 1
         ncent_before = sum(ncent)
@@ -498,6 +540,7 @@ elif cmd == "segment":
             sub_data = area_data[idx_group]
             group_ra = sub_data[:,5]
             group_dec = sub_data[:,6]
+
             sub_expos_labels = expos_labels[idx_group]
 
             group_ra_min, group_ra_max = group_ra.min(), group_ra.max()

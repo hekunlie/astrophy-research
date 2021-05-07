@@ -11,20 +11,21 @@ import tool_box
 
 
 zbin_num = 6
-theta_bin_num = 5
+theta_bin_num = 6
 resample_num = 200
 
 # discard the first bin
-discard_bins = [0]
+discard_bins = []
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/smooth/new_cata"
+data_path = "E:/works/correlation/CFHT/cut_2.5/test/jun_setup"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
 pic_nm_m_pdf = data_path + "/xi_minus_result_%d_compare.pdf" % resample_num
 pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.049$"
-pk_line_label_mcmc = "MCMC:\n$\sigma_8$ = 0.514\n$\Omega_m$=0.394\n$\Omega_b$=0.161"
+pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.38\n$\Omega_m$=0.68\n$\Omega_b$=0.13"
+pk_line_label_mcmc_same = "MCMC:\n$\sigma_8$ = 0.56\n$\Omega_m$=0.66\n$\Omega_b$=0.10"
 
 pk_lines_tag = 0
 if os.path.exists("E:/works/correlation/planck2018.hdf5"):
@@ -37,12 +38,18 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     print("Find Pk lines")
 
     # h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
-    # xi_p_theoretical_lines_mcmc = h5f["/xi_p"][()]
-    # xi_m_theoretical_lines_mcmc = h5f["/xi_m"][()]
-    # xi_theta_mcmc = h5f["/theta"][()]
+    # xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
+    # xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
+    # xi_theta_mcmc_diff = h5f["/theta"][()]
+    # h5f.close()
+    #
+    # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
+    # xi_p_theoretical_lines_mcmc_same = h5f["/xi_p"][()]
+    # xi_m_theoretical_lines_mcmc_same = h5f["/xi_m"][()]
+    # xi_theta_mcmc_same = h5f["/theta"][()]
     # h5f.close()
 
-expo_type = ["diff_expo", "same_expo"]
+expo_type = ["diff_expo"]#, "same_expo"]
 
 datas = []
 cov = []
@@ -93,7 +100,7 @@ for ii in range(len(expo_type)):
 
 for i in range(len(cov)):
 
-    img = Image_Plot(fig_x=4, fig_y=3, xpad=0.15, ypad=0.15, axis_linewidth=2.5,
+    img = Image_Plot(fig_x=4, fig_y=3, xpad=0.15, ypad=0.15, axis_linewidth=2,
                      plt_line_width=3, legend_size=25, xy_tick_size=25)
     img.subplots(3, 3)
     img.set_style()
@@ -131,8 +138,8 @@ for i in range(len(cov)):
 
 
 # plot xi_plus
-img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2.5,
-                 plt_line_width=3, legend_size=35, xy_tick_size=25)
+img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2,
+                 plt_line_width=2.5, legend_size=35, xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
 img.set_style()
 
@@ -168,8 +175,18 @@ for ii in range(len(expo_type)):
 
                 img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_p[st:ed],yerr=xi_p_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
-                                                   marker="o",fmt=" ",mfc="none",ms=12,
-                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=5, alpha=alpha)
+                                                   marker="o",fmt=" ",mfc="none",ms=8,
+                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=4, alpha=alpha)
+                if ii == 0 and pk_lines_tag == 1:
+
+                    img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
+                                                   c="k",ls="dashdot", label=pk_line_label)
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_p_theoretical_lines_mcmc_diff[tag],
+                    #                                c="C0",ls="-", label=pk_line_label_mcmc_diff)
+                    #
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_same[tag], xi_p_theoretical_lines_mcmc_same[tag],
+                    #                                c="C1",ls="-", label=pk_line_label_mcmc_same)
+
                 if used_data_pts[st:ed].sum() > 1 and legend_tag == 0:
                     legend_tag = 1
                     img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
@@ -178,18 +195,16 @@ for ii in range(len(expo_type)):
                 img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1),
                              text_fontsize=img.legend_size-3, text_color="k")
 
-                if ii == 0 and pk_lines_tag == 1:
 
-                    img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
-                                                   c="k",ls="dashdot", label=pk_line_label)
-                    # img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_p_theoretical_lines_mcmc[tag],
-                    #                                c="b",ls="-", label=pk_line_label_mcmc)
 
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                img.axs[img_row][img_col].set_xlim(0.8, 60)
-                img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+                # img.axs[img_row][img_col].set_xlim(0.8, 60)
+                # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+
+                img.axs[img_row][img_col].set_xlim(0.8, 130)
+                img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
 
                 img.axs[img_row][img_col].set_ylim(4 * 10 ** (-7), 7 * 10 ** (-4))
 
@@ -206,8 +221,8 @@ print(pic_nm_p)
 
 
 # plot xi_minus
-img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2.5,
-                 plt_line_width=3, legend_size=35, xy_tick_size=25)
+img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2,
+                 plt_line_width=2.5, legend_size=35, xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
 img.set_style()
 pic_nm = data_path + "/xi_minus_result_%d_compare.png" % resample_num
@@ -240,8 +255,16 @@ for ii in range(len(expo_type)):
                     alpha = 1
                 img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_m[st:ed],yerr=xi_m_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
-                                                   marker="o",fmt=" ",mfc="none",ms=12,
-                                                   label="$\\xi_{-}$ %s"%expo_type[ii],capsize=5,alpha=alpha)
+                                                   marker="o",fmt=" ",mfc="none",ms=8,
+                                                   label="$\\xi_{-}$ %s"%expo_type[ii],capsize=4,alpha=alpha)
+
+                if ii == 0 and pk_lines_tag == 1:
+                    img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
+                                                   c="k",ls="dashdot", label=pk_line_label)
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_m_theoretical_lines_mcmc_diff[tag],
+                    #                                c="C0",ls="-", label=pk_line_label_mcmc_diff)
+                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_same[tag], xi_m_theoretical_lines_mcmc_same[tag],
+                    #                                c="C1",ls="-", label=pk_line_label_mcmc_same)
                 if used_data_pts[st:ed].sum() > 1 and legend_tag == 0:
                     legend_tag = 1
                     img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
@@ -250,16 +273,15 @@ for ii in range(len(expo_type)):
                 img.axs_text(img_row, img_col, 0.83, 0.7, "%d-%d" % (i + 1, j + 1),
                              text_fontsize=img.legend_size-3, text_color="k")
 
-                if ii == 0 and pk_lines_tag == 1:
-                    img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
-                                                   c="k",ls="dashdot", label=pk_line_label)
-                    # img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_m_theoretical_lines_mcmc[tag],
-                    #                                c="b",ls="-", label=pk_line_label_mcmc)
+
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                img.axs[img_row][img_col].set_xlim(0.8, 60)
-                img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+                # img.axs[img_row][img_col].set_xlim(0.8, 60)
+                # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+                img.axs[img_row][img_col].set_xlim(0.8, 130)
+                img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
+
 
                 img.axs[img_row][img_col].set_ylim(5 * 10 ** (-7), 7 * 10 ** (-4))
 

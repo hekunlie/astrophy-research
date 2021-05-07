@@ -24,8 +24,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 13
-bin_st, bin_ed = 0.04, 15
+sep_bin_num = 10
+bin_st, bin_ed = 0.1, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -41,10 +41,12 @@ redshift_idx = 10
 
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 200
+chi_guess_num = 1000
 num_p = int(chi_guess_num/2)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 130, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_p = numpy.linspace(0.01, 150, num_p).astype(numpy.float64)
 
 delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
 delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
@@ -61,7 +63,7 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
 
-mg_bin_num = 10
+mg_bin_num = 20
 
 # star number on each chip
 nstar_idx = 21

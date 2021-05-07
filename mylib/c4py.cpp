@@ -334,55 +334,153 @@ extern "C"
         delete[] count_1d;
         delete[] xs;
     }
-
-    void deblending_self(float *ra1, float *dec1, float *z1, int len1, float sep_deg, float sep_z, int *blended_label)
+    
+    void deblend(float *xc, float *yc, float *z, float *radius, int *chip_label, int data_len, float sep_radius_scale, float sep_z, int *blended_label)
     {
         // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
         // to each other but with a large redshift difference
         int i,j,k;
-        float dra, ddec, dz, ddeg;
+        float xc_i, yc_i, z_i, rad_i;
+        float dr, r2, dx, dy, dz;
 
-        for(i=0; i<len1; i++)
-        {
-            for(j=i; j<len1; j++)
+        for(i=0; i<data_len; i++)
+        {   
+            xc_i = xc[i];
+            yc_i = yc[i];
+            z_i = z[i];
+            rad_i = radius[i];           
+
+            for(j=i+1; j<data_len; j++)
             {   
-                dra = ra1[j] - ra1[i];
-                ddec = dec1[j] - dec1[i];
-                dz = abs(z1[j] - z1[i]);
-                ddeg = sqrt(dra*dra + ddec*ddec);
-                
-                if(ddeg <= sep_deg and sep_z >= dz)
-                {blended_label[i] = 1;}
+                if(chip_label[i] == chip_label[j])
+                {
+                    r2 = (rad_i + radius[j])*sep_radius_scale;
+                    dx = fabs(xc_i - xc[j]) - r2;
+
+                    if(dx <= 0)
+                    {
+                        dy = fabs(yc_i - yc[j]) - r2;
+                        // dr = sqrt(dx*dx + dy*dy) - r2;
+                        dz = fabs(z_i - z[j]);
+                        if(dy <= 0 and dz >= sep_z)
+                        {
+                            blended_label[i] = -1;
+                            blended_label[j] = -1;
+                        }
+                    }
+                }
             }
         }
     }
 
-    void deblending_mutual(float *ra1, float *dec1, float *z1, int len1, float *ra2, float *dec2,float *z2, int len2, float sep_deg, float sep_z, int *blended_label)
+    void deblend_i(float *xc, float *yc, float *z, int *chip_label, int data_len, float sep_pix, float sep_z, int *blended_label)
     {
         // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
         // to each other but with a large redshift difference
         int i,j,k;
-        float dra, ddec, dz, ddeg;
+        float xc_i, yc_i, z_i, rad_i;
+        float dr, r2, dx, dy, dz;
+
+        for(i=0; i<data_len; i++)
+        {   
+            xc_i = xc[i];
+            yc_i = yc[i];
+            z_i = z[i];
+        
+            for(j=i+1; j<data_len; j++)
+            {   
+                if(chip_label[i] == chip_label[j])
+                {
+                    dx = fabs(xc_i - xc[j]);
+
+                    if(dx <= sep_pix)
+                    {
+                        dy = fabs(yc_i - yc[j]);
+                        // dr = sqrt(dx*dx + dy*dy);
+                        dz = fabs(z_i - z[j]);
+
+                        if(dy <= sep_pix and dz >= sep_z)
+                        {
+                            blended_label[i] = -1;
+                            blended_label[j] = -1;
+                            //std::cout<<xc_i<<" "<<xc[j]<<" "<<dx<<std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void deblend_mutual(float *ra1, float *dec1, float *z1, int len1, 
+                        float *ra2, float *dec2,float *z2, int len2, float sep_ang, float sep_z, int *blended_label)
+    {
+        // compare the sources in data_1 and data_2(close to data_1), and label the sources that are very close
+        // to each other but with a large redshift difference
+        int i,j,k;
+        float dra, ddec, dz, dr;
 
         for(i=0; i<len1; i++)
         {
-            if(blended_label[i] < 1)
+            if(blended_label[i] > 0)
             {
                 for(j=0; j<len2; j++)
                 {   
                     dra = ra2[j] - ra1[i];
                     ddec = dec2[j] - dec1[i];
                     dz = abs(z2[j] - z1[i]);
-                    ddeg = sqrt(dra*dra + ddec*ddec);
+                    dr = sqrt(dra*dra + ddec*ddec);
                     
-                    if(ddeg <= sep_deg and sep_z >= dz)
-                    {blended_label[i] = 1;}
+                    if(dr <= sep_ang and sep_z >= dz)
+                    {blended_label[i] = -1;}
                 }
             }
-
         }
     }
 
+    void  cata_match(float *cata_ra1, float*cata_dec1, int cata_len1, 
+                    float *cata_ra2, float*cata_dec2, int cata_len2, 
+                    int *seq_labels, int *check_labels, float diff_ang_thresh)
+    {  
+        // match the source between these two catalogue
+        // find the corresponding pairs in cata2, 
+        // seq_labels label the row index in cata2 
+        int i,j,k;
+        float diff_rad, diff_z, diff_rad_min, diff_z_min;
+        float diff_ra, diff_dec;
+        int min_tag_1, min_tag_2;
+        float ra1, dec1;
+
+        for(i=0; i<cata_len1; i++)
+        {   
+            min_tag_1 = -1;
+            // min_tag_2 = -2;
+            diff_rad_min = 1;
+            // diff_z_min = 1;
+            ra1 = cata_ra1[i];
+            dec1 = cata_dec1[i];
+
+            for(j=0; j<cata_len2; j++)
+            {   
+                diff_ra = ra1 - cata_ra2[j];
+                diff_dec = dec1 - cata_dec2[j];
+                
+                // diff_rad = abs(cata_ra1[i] - cata_ra2[j]) + abs(cata_dec1[i] - cata_dec2[j]);
+                diff_rad = sqrt(diff_ra*diff_ra + diff_dec*diff_dec);
+
+                if(diff_rad < diff_rad_min) 
+                {
+                    diff_rad_min = diff_rad;
+                    min_tag_1 = j;
+                }
+            }
+
+            if(diff_rad_min < diff_ang_thresh )
+            {
+                seq_labels[i] = min_tag_1;
+                check_labels[i] += 1;
+            }
+        }
+    }
 
     double search_shear_range_chi2(double *mg, double *mnu, int data_num, double signal, 
                                     double *mg_bin, int mg_bin_num)

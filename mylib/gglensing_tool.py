@@ -8,7 +8,7 @@ import h5py
 
 import ctypes
 import numpy.ctypeslib as ctl
-histlib = ctypes.cdll.LoadLibrary("/home/hklee/work/mylib/c4py.so")
+histlib = ctypes.cdll.LoadLibrary("/home/hklee/work/mylib/libc4py.so")
 
 hist2d_fast = histlib.hist2d_fast
 hist2d_fast.restype = None
