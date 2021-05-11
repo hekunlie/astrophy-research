@@ -14,12 +14,17 @@ dst_path = argv[2]
 
 
 z_col, ze_col = 8,9
+for i in range(4):
+    h5f = h5py.File(src_data + "/stack_data_%d.hdf5"%i,"r")
+    temp = h5f["/data"][()]
+    h5f.close()
+    if i == 0:
+        data = temp
+    else:
+        data = numpy.row_stack((data, temp))
 
-h5f = h5py.File(src_data,"r")
-data = h5f["/data"][()]
-h5f.close()
-
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3], dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 bin_num = len(redshift_bin) - 1
 
 
