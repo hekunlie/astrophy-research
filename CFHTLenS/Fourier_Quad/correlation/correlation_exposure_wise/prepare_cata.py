@@ -114,8 +114,12 @@ sep_z = 0.2
 # fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
 # result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
-result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
+# fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
+# result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
+
+fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/CFHT_cat_4_20_2021"
+result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/correlation/cata"
+
 
 cmd = argv[1]
 

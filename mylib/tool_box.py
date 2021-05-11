@@ -1735,3 +1735,13 @@ def even_area(num_in_area, area_num, total_ncent):
         print(ncent_bk,ncent_bk.sum())
         print(ncent - ncent_bk)
     return ncent,num_in_area/ncent
+
+
+def get_men_need(arr_len, data_type):
+    np_dtypes_nm = ["float32", "float64", "intc","int32","int64"]
+    type_size_byte = [4, 8, 4, 4, 8] # bytes
+    if data_type not in np_dtypes_nm:
+        print("data_type should be one of ", np_dtypes_nm)
+    total_size = int(type_size_byte[np_dtypes_nm.index(data_type)]*arr_len/1024/1024)
+    print("%d %s need %d MB"%(arr_len, data_type, total_size))
+    return total_size

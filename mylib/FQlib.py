@@ -958,8 +958,9 @@ def find_shear_mean(G, N, weight=1):
 
 
 if platform.system() == 'Linux':
-
-    c4pylib = ctypes.cdll.LoadLibrary("/home/hklee/work/mylib/libc4py.so")
+    import os
+    my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+    c4pylib = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
 
 
     search_shear_range = c4pylib.search_shear_range

@@ -1,7 +1,9 @@
+import os
+my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 import numpy
 import ctypes
 import numpy.ctypeslib as ctl
-libc4py = ctypes.cdll.LoadLibrary("/home/hklee/work/mylib/libc4py.so")
+libc4py = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
 
 
 deblend_c = libc4py.deblend

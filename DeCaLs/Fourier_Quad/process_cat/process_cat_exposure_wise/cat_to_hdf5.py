@@ -17,8 +17,11 @@ cpus = comm.Get_size()
 
 total_path = argv[1]
 mode = argv[2]
+ori_cat_path = argv[3]
 
-data_band = ["g", "r", "z"]
+ori_cat_chara = "_all_alt.cat"
+
+data_band = ["r", "z"]
 
 if mode == "cata_name":
     if rank == 0:
@@ -34,18 +37,18 @@ if mode == "cata_name":
         #     # print(anomaly_expo[-1],anomaly_val[-1])
         all_files = []
         for band in data_band:
-            files_nm = os.listdir(total_path + "/cat_ori/%s"%band)
+            files_nm = os.listdir(ori_cat_path + "/%s"%(band))
             band_files = []
 
             for fnm in files_nm:
-                if "_all.cat" in fnm:
+                if ori_cat_chara in fnm:
                     band_files.append("%s\n"%fnm.split(".")[0])
                     all_files.append("%s %s\n"%(fnm.split(".")[0],band))
 
             with open(total_path + "/cat_inform/exposure_name_%s_band.dat"%band, "w") as f:
                 f.writelines(band_files)
 
-            print(len(band_files), " exposures in %s band"%band)
+            print(len(band_files), " exposures in %s band\n%s/%s"%(band,ori_cat_path,band))
 
         with open(total_path + "/cat_inform/exposure_name_all_band.dat", "w") as f:
             f.writelines(all_files)
@@ -71,8 +74,9 @@ if mode == "hdf5_cata":
 
     for tag, fns in enumerate(exposures_candidates_sub):
         # read the the field data
-        expo_src_path = total_path + "/cat_ori/%s/%s.cat" % (exposures_candidates_band_sub[tag],fns)
-        expo_h5_path = total_path + "/cat_hdf5/%s/%s.hdf5" % (exposures_candidates_band_sub[tag],fns)
+        iband = exposures_candidates_band_sub[tag]
+        expo_src_path = ori_cat_path + "/%s/%s.cat" % (iband,fns)
+        expo_h5_path = total_path + "/cat_hdf5/%s/%s.hdf5" % (iband,fns)
         try:
             src_data = numpy.loadtxt(expo_src_path, dtype=numpy.float32)
             row, col = src_data.shape
@@ -101,6 +105,7 @@ if mode == "hdf5_cata":
     exception_collection = comm.gather(exception_sub, root=0)
 
     comm.Barrier()
+
     if rank == 0:
         exception_all = []
         for ec in exception_collection:
@@ -109,21 +114,27 @@ if mode == "hdf5_cata":
         exposures_collect = []
         for fsb in exposures_candidates_avail:
             exposures_collect.extend(fsb)
+
         exposures_avail_all = []
         exposures_avail_band = [[] for i in range(len(data_band))]
+
         for fsb in exposures_collect:
             expo_path, band = fsb.split()
-            exposures_avail_all.extend(expo_path + "\n")
+            exposures_avail_all.append(expo_path + "\n")
+
             for i in range(len(data_band)):
                 if band == data_band[i]:
                     exposures_avail_band[i].append(expo_path + "\n")
 
         with open(total_path + "/cat_inform/exposure_avail_all.dat","w") as f:
             f.writelines(exposures_avail_all)
+
         for tag, band in enumerate(data_band):
             with open(total_path + "/cat_inform/exposure_avail_%s_band.dat"%band, "w") as f:
                 f.writelines(exposures_avail_band[tag])
 
+            exception_all.append("%d available exposures in %s band"%(len(exposures_avail_band[tag]), band))
+
         exception_all.append("Totally: %d available exposures\n"%len(exposures_avail_all))
-        with open("log.dat","w") as f:
+        with open("log.dat", "w") as f:
             f.writelines(exception_all)

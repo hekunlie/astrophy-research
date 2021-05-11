@@ -1,6 +1,7 @@
 #include<ctime>
 #include<iostream>
 #include<cmath>
+// g++  c4py.cpp -shared -fPIC -o libc4py.so -std=c++11
 
 extern "C"
 {
@@ -141,7 +142,7 @@ extern "C"
         // std::cout<<(t2-t1)/CLOCKS_PER_SEC<<std::endl;
     }
     
-    double get_chi2(double *xbin, int xbin_num, double *ybin, int ybin_num, int *count_xy, double ghat, double *Gbin, int Gbin_num)
+    void get_chi2(double *xbin, int xbin_num, double *ybin, int ybin_num, int *count_xy, double ghat, double *Gbin, int Gbin_num)
     {
         // y = 1/ghat *(x - x_G) are the lines of the bins' boundaries
         // x_Gs are the value of Gbin
@@ -164,7 +165,8 @@ extern "C"
         }
         if(ghat == 0)
         {
-
+            // caution
+            ;
         }
         else if(ghat > 0)
         {
@@ -329,8 +331,6 @@ extern "C"
             }
         }
  
-
-
         delete[] count_1d;
         delete[] xs;
     }
@@ -575,7 +575,7 @@ extern "C"
     }
 
 
-double search_shear_range_chi2_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double signal, 
+    double search_shear_range_chi2_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double signal, 
                                     double *mg_bin, int mg_bin_num)
     {
         int i, bin_num2;
@@ -646,7 +646,7 @@ double search_shear_range_chi2_corr(double *mg, double *mnu, int data_num, doubl
     }
 
 
-void search_shear_range_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double *mg_bin, int mg_bin_num, 
+    void search_shear_range_corr(double *mg, double *mnu, int data_num, double *mg_corr, double *mnu_corr, int corr_num, double *mg_bin, int mg_bin_num, 
                             double left_shear_guess, double right_shear_guess, int max_iters, double chi2_gap, 
                             double *fit_shear_range, double *fit_chi2, int fit_shear_num)
     {

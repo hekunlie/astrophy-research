@@ -1,13 +1,11 @@
-FQLIB_PATH=/home/hklee/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
-HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
-HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5  -l curl
-COR_FUNCTIONS_PATH=/home/hklee/work/mylib/correlation_functions_expo_wise.cpp
+FQLIB_PATH=$(MYWORK_DIR)/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
+HK_MPILIB_PATH=$(MYWORK_DIR)/work/mylib/hk_mpi.cpp
+HK_IOLIB_PATH=$(MYWORK_DIR)/work/mylib/hk_iolib.cpp -lhdf5  -l curl
+COR_FUNCTIONS_PATH=$(MYWORK_DIR)/work/mylib/correlation_functions_expo_wise.cpp
 
-# FQLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/FQlib.cpp -lgsl -lgslcblas -lfftw3l -lfftw3f -lm
-# HK_MPILIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_mpi.cpp
-# HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5 
-# COR_FUNCTIONS_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/correlation_functions_expo_wise.cpp
 
+check:
+	@echo $(MYWORK_DIR)
 
 CODE_NAME_D=calculate_correlation_expo_wise_diff_expo.cpp
 FINAL_NAME_D=cal_cor_diff_expo
@@ -27,7 +25,6 @@ clean_e:
 	rm $(FINAL_NAME_D)
 	rm $(FINAL_NAME_S)
 	rm $(FINAL_NAME_ST)
-
 
 
 
