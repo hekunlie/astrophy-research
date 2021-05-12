@@ -11,14 +11,14 @@ import tool_box
 
 
 zbin_num = 6
-theta_bin_num = 6
+theta_bin_num = 5
 resample_num = 200
 
 # discard the first bin
-discard_bins = []
+discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/test/jun_setup"
+data_path = "E:/works/correlation/CFHT/cut_2.5/deblend"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -200,11 +200,11 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                # img.axs[img_row][img_col].set_xlim(0.8, 60)
-                # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+                img.axs[img_row][img_col].set_xlim(0.8, 60)
+                img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
 
-                img.axs[img_row][img_col].set_xlim(0.8, 130)
-                img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
+                # img.axs[img_row][img_col].set_xlim(0.8, 60)
+                # img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
 
                 img.axs[img_row][img_col].set_ylim(4 * 10 ** (-7), 7 * 10 ** (-4))
 
@@ -277,10 +277,10 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                # img.axs[img_row][img_col].set_xlim(0.8, 60)
-                # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
-                img.axs[img_row][img_col].set_xlim(0.8, 130)
-                img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
+                img.axs[img_row][img_col].set_xlim(0.8, 60)
+                img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40], ["$1$","$5$","$10$","$20$","$40$"])
+                # img.axs[img_row][img_col].set_xlim(0.8, 130)
+                # img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
 
 
                 img.axs[img_row][img_col].set_ylim(5 * 10 ** (-7), 7 * 10 ** (-4))
