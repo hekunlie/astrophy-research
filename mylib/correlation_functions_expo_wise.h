@@ -171,6 +171,8 @@ void hist_2d_new(MY_FLOAT x, MY_FLOAT y, MY_FLOAT*bins, int *bin_num_para,int &i
 
 void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &ix, int &iy);
 
+void hist2d_fast_dev(MY_FLOAT x,  MY_FLOAT y, MY_FLOAT *bins, int bin_num, int pre_xbin_tag, int &xbin_tag, int pre_ybin_tag, int &ybin_tag);
+
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label);
 // if label == 1, calculate, else, not
 
@@ -180,6 +182,7 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
 void find_pairs_diff_expo(data_info *field_info, int expo_label_0, int expo_label_1);
 void find_pairs_same_expo(data_info *expo_info, int expo_label_0, int expo_label_1);
 void find_pairs_stack_expo(data_info *expo_info, int expo_label_0, int expo_label_1);
+void find_pairs_diff_expo_dev(data_info *field_info, int expo_label_0, int expo_label_1);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

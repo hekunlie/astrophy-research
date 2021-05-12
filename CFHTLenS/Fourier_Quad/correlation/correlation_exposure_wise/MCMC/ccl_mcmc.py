@@ -94,7 +94,7 @@ thread = int(argv[4])
 
 ################### read the z data #############################
 
-redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 h5f = h5py.File("./data/zhist.hdf5","r")
 zehist = h5f["/zhist"][()]
@@ -128,7 +128,7 @@ data_num = theta_radian.shape[0]
 
 theta_num_per_bin = 5
 
-ell = tool_box.set_bin_log(5, 15000, 400)
+ell = tool_box.set_bin_log(5, 15000, 200)
 
 print("Data vector len: ", xi.shape)
 
