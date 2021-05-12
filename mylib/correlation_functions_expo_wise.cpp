@@ -374,6 +374,224 @@ void thread_pool_resize(data_info *expo_info)
 }
 
 
+void find_pairs_diff_expo_dev(data_info *expo_info, int expo_label_0, int expo_label_1)
+{
+    int i, j, m, n, k;
+    int ig1, ig2, ig_st;
+
+    int ir, theta_tag, theta_accum_tag, ic;
+    int iz1, iz2, iz1_;
+
+    int gal_num_1, gal_num_2;
+    MY_FLOAT ra_z1, dec_z1, cos_dec_z1, delta_len_z1;
+    MY_FLOAT ra_z2, dec_z2, cos_dec_z2, delta_len_z2;
+    MY_FLOAT diff;
+    MY_FLOAT mg1_z1, mg2_z1, mnu1_z1, mnu2_z1;
+    MY_FLOAT mg1_z1_, mg2_z1_, mn_z1_, mu_z1_, mv_z1_;;
+
+    MY_FLOAT mg1_z2, mg2_z2, mnu1_z2, mnu2_z2;
+    MY_FLOAT mg1_z2_, mg2_z2_, mn_z2_, mu_z2_,mv_z2_;
+    MY_FLOAT mgt_corr_1, mgt_corr_2, mgx_corr_1, mgx_corr_2;
+
+    int ix_tt, iy_tt, ix_xx, iy_xx;
+    int pre_ix_tt, pre_iy_tt, pre_ix_xx, pre_iy_xx;
+
+    MY_FLOAT temp_tt[4], temp_xx[4];
+    int bin_para_tt[2], bin_para_xx[2];
+
+    int theta_bin_num;
+    int chi_guess_num;
+    int expo_chi_block_len, ir_chi_block_len,chi_block_len;
+    int ir_len, ic_len;
+    MY_FLOAT gg_1, gg_2, gg_len;
+
+    MY_FLOAT delta_ra, delta_dec, delta_radius, delta_radius_check;
+    MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
+
+    double st1, st2;
+    double pairs = 0;
+
+    int loop_label;
+    loop_label = expo_info->loop_label;
+
+    int mg_bin_num, mg_bin_num2;
+    mg_bin_num = expo_info->mg_bin_num;
+    mg_bin_num2 = expo_info->mg_bin_num2;
+
+    chi_guess_num = expo_info->chi_guess_num;
+    expo_chi_block_len = expo_info->expo_chi_block_len;
+    ir_chi_block_len = expo_info->ir_chi_block_len;
+    chi_block_len = expo_info->chi_block_len;
+    gg_len = expo_info->gg_len;
+    theta_bin_num = expo_info->theta_bin_num;
+
+    gal_num_1 = expo_info->expo_gal_num[expo_label_0];
+    gal_num_2 = expo_info->expo_gal_num[expo_label_1];
+    
+    // int *mask = new int[gal_num_1]{};
+
+    st1 = clock();
+    for(ig1=0; ig1<gal_num_1; ig1++)
+    {   
+        
+        // loop the grid in the first zbin, zbin_label_0
+        m = ig1*expo_info->expo_data_col;
+
+        ra_z1 = expo_info->expo_data_1[m+expo_info->ra_idx];
+        dec_z1 = expo_info->expo_data_1[m+expo_info->dec_idx];
+        cos_dec_z1 = expo_info->expo_data_1[m+expo_info->cos_dec_idx];
+
+        mg1_z1_ = expo_info->expo_data_1[m+expo_info->mg1_idx];
+        mg2_z1_ = expo_info->expo_data_1[m+expo_info->mg2_idx];
+
+        mn_z1_ = expo_info->expo_data_1[m+expo_info->mn_idx];
+        mu_z1_ = expo_info->expo_data_1[m+expo_info->mu_idx];
+        mv_z1_ = expo_info->expo_data_1[m+expo_info->mv_idx];
+
+        iz1 = expo_info->expo_zbin_label_1[ig1];
+        iz1_ = iz1*expo_info->zbin_num;
+
+        if(expo_label_0 == expo_label_1){ig_st = ig1+1;}
+        else{ig_st = 0;}
+
+        for(ig2=ig_st; ig2<gal_num_2; ig2++)
+        {   
+            // use the pairs from different exposures
+            if(expo_info->obs_expo_label_1[ig1] == expo_info->obs_expo_label_2[ig2]){continue;}
+
+            n = ig2*expo_info->expo_data_col;
+
+            ra_z2 = expo_info->expo_data_2[n+expo_info->ra_idx];
+            dec_z2 = expo_info->expo_data_2[n+expo_info->dec_idx];
+            cos_dec_z2 = expo_info->expo_data_2[n+expo_info->cos_dec_idx];
+
+            // the seperation angle (arc minute)
+            delta_ra = (ra_z2 - ra_z1)*cos_dec_z1;
+            delta_dec = dec_z2 - dec_z1;
+            delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec);
+
+            // separation(ra_z1/60, dec_z1/60, ra_z2/60, dec_z2/60, delta_radius_check);
+            // diff = fabs(delta_radius - delta_radius_check/Pi*180*60)/delta_radius;
+            // if( diff > 0.05)
+            // {   
+            //     std::cout<<ra_z1<<" "<<ra_z2<<" "<<dec_z1<<" "<<dec_z2<<std::endl;
+            //     std::cout<<delta_radius<<" "<<delta_radius_check/Pi*180*60<<" "<<diff<<std::endl;
+            // }
+
+            theta_tag = -1;
+            for(ir=0; ir<theta_bin_num; ir++)
+            {
+                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                {theta_tag=ir;break;}
+            }
+            // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
+            if(theta_tag > -1)
+            {   
+                pairs+= 1;
+
+                mg1_z2_ = expo_info->expo_data_2[n+expo_info->mg1_idx];
+                mg2_z2_ = expo_info->expo_data_2[n+expo_info->mg2_idx];
+
+                mn_z2_ = expo_info->expo_data_2[n+expo_info->mn_idx];
+                mu_z2_ = expo_info->expo_data_2[n+expo_info->mu_idx];
+                mv_z2_ = expo_info->expo_data_2[n+expo_info->mv_idx];
+
+                // shear estimators rotation (position angle defined as East of North)
+                sin_theta = delta_ra/delta_radius;
+                cos_theta = delta_dec/delta_radius;
+
+                sin_2theta = 2*sin_theta*cos_theta;
+                cos_2theta = cos_theta*cos_theta - sin_theta*sin_theta;
+
+                sin_4theta = 2*sin_2theta*cos_2theta;
+                cos_4theta = cos_2theta*cos_2theta - sin_2theta*sin_2theta;
+
+                // rotate gal z1
+                mg1_z1 = mg1_z1_*cos_2theta - mg2_z1_*sin_2theta;
+                mg2_z1 = mg1_z1_*sin_2theta + mg2_z1_*cos_2theta;
+
+                mnu1_z1 = mu_z1_*cos_4theta - mv_z1_*sin_4theta;
+                mnu2_z1 = mn_z1_ - mnu1_z1;
+                mnu1_z1 = mn_z1_ + mnu1_z1;
+                // rotate gal z2
+                mg1_z2 = mg1_z2_*cos_2theta - mg2_z2_*sin_2theta;
+                mg2_z2 = mg1_z2_*sin_2theta + mg2_z2_*cos_2theta;
+
+                mnu1_z2 = mu_z2_*cos_4theta - mv_z2_*sin_4theta;
+                mnu2_z2 = mn_z2_ - mnu1_z2;
+                mnu1_z2 = mn_z2_ + mnu1_z2;
+                
+                // there're zbin_num *zbin_num blocks, iz1 is row, iz2 is the col, each block
+                // has a length of mg_bin_num*mg_bin_num*chi_guess_num*theta_bin_num.
+                iz2 = expo_info->expo_zbin_label_2[ig2];
+
+                // record the pair separation for the mean separation in that bin
+                // which will be the x postion in the last figure
+                theta_accum_tag = (iz1_ + iz2)*theta_bin_num + theta_tag;
+        
+                expo_info->theta_accum[theta_accum_tag] += delta_radius;
+                expo_info->theta_num_accum[theta_accum_tag] += 1;
+
+
+                ////////////////////// the key part of PDF_SYM //////////////////////////////
+                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+
+                pre_ix_tt = mg_bin_num2;
+                pre_ix_xx = mg_bin_num2;
+                pre_iy_tt = mg_bin_num2;
+                pre_iy_xx = mg_bin_num2;
+
+                for(ic=0; ic<chi_guess_num; ic++)
+                {   
+                    ic_len += chi_block_len;
+
+                    gg_1 = expo_info->gg_1[loop_label];
+                    gg_2 = expo_info->gg_2[loop_label];
+
+                    mgt_corr_1 = mg1_z1 - gg_1*mnu1_z1; 
+                    mgt_corr_2 = mg1_z2 - gg_2*mnu1_z2;   
+  
+                    hist2d_fast_dev(mgt_corr_1, mgt_corr_2,expo_info->mg_bin, mg_bin_num, pre_ix_tt,ix_tt,pre_iy_tt, iy_tt);
+
+                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                    
+                    pre_ix_tt = ix_tt;
+                    pre_iy_tt = iy_tt;
+
+                    mgx_corr_1 = mg2_z1 - gg_1*mnu2_z1; 
+                    mgx_corr_2 = mg2_z2 - gg_2*mnu2_z2;   
+
+                    hist2d_fast_dev(mgx_corr_1, mgx_corr_2, expo_info->mg_bin, mg_bin_num,pre_ix_xx,ix_xx,pre_iy_xx, iy_xx);
+
+                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+
+                    pre_ix_xx = ix_xx;
+                    pre_iy_xx = iy_xx;
+
+
+                    loop_label += 1;
+
+
+                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                    // if(ic_len == 0)
+                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    
+                }
+                if(loop_label >= gg_len){loop_label = 0;}
+                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
+                
+            }
+
+        }
+    }
+    // st2 = clock();
+    // std::cout<<pairs<<" pairs "<<(st2-st1)/CLOCKS_PER_SEC<<std::endl;
+    expo_info->gg_pairs = pairs;
+    expo_info->loop_label = loop_label;
+}
+
 
 void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label_1)
 {
@@ -1485,6 +1703,42 @@ void hist_2d_new(MY_FLOAT*bins, int bin_num, MY_FLOAT *xy, int *bin_para, int &i
     // std::cout<<"found "<<ix<<" "<<iy<<std::endl;
 }
 
+void hist2d_fast_dev(MY_FLOAT x,  MY_FLOAT y, MY_FLOAT *bins, int bin_num, int pre_xbin_tag, int &xbin_tag, int pre_ybin_tag, int &ybin_tag)
+{   
+    int i;
+    int tag;
+    if(x >= bins[pre_xbin_tag])
+    {
+        for(i=pre_xbin_tag; i<bin_num; i++)
+        {
+            if(x >= bins[i] and x < bins[i+1]){tag = i;break;}
+        }
+    }
+    else
+    {
+        for(i=pre_xbin_tag; i>0; i--)
+        {
+            if(x >= bins[i-1] and x < bins[i]){tag = i-1;break;}
+        }
+    }
+    xbin_tag = tag;
+
+    if(y >= bins[pre_ybin_tag])
+    {
+        for(i=pre_ybin_tag; i<bin_num; i++)
+        {
+            if(y >= bins[i] and y < bins[i+1]){tag = i;break;}
+        }
+    }
+    else
+    {
+        for(i=pre_ybin_tag; i>0; i--)
+        {
+            if(y >= bins[i-1] and y < bins[i]){tag = i-1;break;}
+        }
+    }
+    ybin_tag = tag;
+}
 
 
 ///////////////////////////////////// for the last step, \Xi^2 calculation and estimation of correlation function //////////////////////////////// 
