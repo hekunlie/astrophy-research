@@ -136,8 +136,8 @@ int main(int argc, char *argv[])
                 read_expo_data_2(&expo_info, task_labels[1]);
                 
                 //////////////  search pairs ////////////////////
-                // find_pairs_diff_expo(&expo_info, task_labels[0], task_labels[1]);
-                // find_pairs_same_expo(&expo_info, task_labels[0], task_labels[1]);
+                // find_pairs_diff_expo_dev(&expo_info, task_labels[0], task_labels[1]);
+                // find_pairs_same_expo_dev(&expo_info, task_labels[0], task_labels[1]);
                 find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
 
 

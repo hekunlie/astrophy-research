@@ -25,9 +25,9 @@ time_start = tool_box.get_time_now()
 
 area_num = 4
 # theta bin
-theta_bin_num = 6
+theta_bin_num = 5
 # theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num).astype(numpy.float32)
+theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -44,8 +44,8 @@ redshift_idx = 10
 
 redshift_sep_thresh = 0.01
 redshift_bin_num = 6
-# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
-redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+# redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
 chi_guess_num = 40

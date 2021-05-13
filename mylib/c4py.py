@@ -4,6 +4,8 @@ import numpy
 import ctypes
 import numpy.ctypeslib as ctl
 libc4py = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
+import tool_box
+
 
 
 deblend_c = libc4py.deblend
@@ -130,3 +132,61 @@ def cata_match(cata_ra1, cata_dec1, cata_ra2, cata_dec2,  diff_ang_thresh):
         print("%d sources have more than one pair!" % multi_pair)
 
     return seq_labels, check_labels
+
+
+find_overlap_c = libc4py.find_overlap
+find_overlap_c.restype = None
+find_overlap_c.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                            ctypes.c_int,
+                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                            ctypes.c_int,
+                            ctypes.c_int,
+                            ctl.ndpointer(numpy.intc, flags='aligned, c_contiguous'),
+                            ctl.ndpointer(numpy.intc, flags='aligned, c_contiguous')]
+
+
+def find_overlap_mask(ra, dec, mask, ra_bin, dec_bin, extend_step=0):
+    """
+    :param ra: the source ra to be selected
+    :param dec: the source dec to be selected
+    :param mask: the mask of the target survey, pixels must have values >0 or 0
+    :param ra_bin: the bins to make the mask
+    :param dec_bin: the bins to make the mask
+    :param extend_step: how many pixels beyond the edge of the mask to be added
+    :return:
+    """
+
+    mask_c = numpy.zeros_like(mask) + mask
+
+    data_len = ra.shape[0]
+    ra_bin_num = ra_bin.shape[0] - 1
+    dec_bin_num = dec_bin.shape[0] - 1
+
+    labels = numpy.zeros_like(ra, dtype=numpy.intc)
+
+    ra = numpy.ascontiguousarray(ra, dtype=numpy.float32)
+    dec = numpy.ascontiguousarray(dec, dtype=numpy.float32)
+
+    ra_bin = numpy.ascontiguousarray(ra_bin, dtype=numpy.float32)
+    dec_bin = numpy.ascontiguousarray(dec_bin, dtype=numpy.float32)
+
+    source_area = []
+    for iy in range(dec_bin_num):
+        for ix in range(ra_bin_num):
+            if mask_c[iy, ix] > 0:
+                source_area.append([iy, ix])
+
+    if extend_step > 0:
+        tool_box.edge_extend(mask_c, dec_bin_num, ra_bin_num, source_area, extend_step)
+
+    mask_c = mask_c.astype(dtype=numpy.intc).flatten()
+    mask_c = numpy.ascontiguousarray(mask_c, dtype=numpy.intc)
+
+    find_overlap_c(ra, dec, data_len, ra_bin, dec_bin, ra_bin_num, dec_bin_num, mask_c, labels)
+    idx_n = labels > 0
+
+    return labels, idx_n
+
+

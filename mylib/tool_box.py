@@ -1669,10 +1669,47 @@ def find_overlap(ra1, dec1, ra2, dec2, margin, bin_num):
 
     return label, idx_n
 
-# def sort_bib(file_path):
-#     with open(file_path,"r") as f:
-#         conts = f.readlines()
-#
+
+def find_overlap_mask(ra, dec, mask, ra_bin, dec_bin, extend_step=0):
+    """
+    :param ra: the source ra to be selected
+    :param dec: the source dec to be selected
+    :param mask: the mask of the target survey, pixels must have values >0 or 0
+    :param ra_bin: the bins to make the mask
+    :param dec_bin: the bins to make the mask
+    :param extend_step: how many pixels beyond the edge of the mask to be added
+    :return:
+    """
+    ybin_num, xbin_num = dec_bin.shape[0] - 1, ra_bin.shape[0] - 1
+
+    label = numpy.zeros_like(ra)
+
+    source_area = []
+    for iy in range(ybin_num):
+        for ix in range(xbin_num):
+            if mask[iy, ix] > 0:
+                source_area.append([iy, ix])
+
+    if extend_step > 0:
+        edge_extend(mask, ybin_num, xbin_num, source_area, extend_step)
+
+    for iy in range(ybin_num):
+        for ix in range(xbin_num):
+            if mask[iy, ix] > 0:
+                idx_i1 = dec >= dec_bin[iy]
+                idx_i2 = dec < dec_bin[iy + 1]
+                idx_j1 = ra >= ra_bin[ix]
+                idx_j2 = ra < ra_bin[ix + 1]
+
+                idx_ij = idx_i1 & idx_i2 & idx_j1 & idx_j2
+
+                if idx_ij.sum() > 0:
+                    label[idx_ij] = 1
+    idx_n = label > 0
+
+    return label, idx_n
+
+
 
 def set_min_bin(x_min, x_max, bin_width, dx=1):
     # set up bins

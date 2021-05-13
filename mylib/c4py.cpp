@@ -22,6 +22,23 @@ extern "C"
         return st;
     }
     
+    int locate_f(float x, float *bins, int bin_num)
+    {
+        int i,j,st,ed,mid;
+        st = 0;
+        ed = bin_num;
+ 
+        while(true)
+        {   
+            if(ed - st <= 1){break;}
+
+            mid = (st+ed)/2;
+            if(x >= bins[mid]){st = mid;}
+            else{ed = mid;}
+        }
+        return st;
+    }
+
     void hist1d_fast(double *x, int num, double *xbin,  int xbin_num, int *count)
     {   
         int i;
@@ -142,6 +159,24 @@ extern "C"
         // std::cout<<(t2-t1)/CLOCKS_PER_SEC<<std::endl;
     }
     
+
+    void find_overlap(float *ra, float *dec, int data_len, float*ra_bin, float *dec_bin, int ra_bin_num, int dec_bin_num, int *ra_dec_mask, int *labels)
+    {
+        int i, j, k;
+        int ix, iy;
+        float x, y;
+        for(i=0; i< data_len; i++)
+        {
+            ix = locate_f(ra[i], ra_bin, ra_bin_num);
+            iy = locate_f(dec[i], dec_bin, dec_bin_num);
+            
+            k = iy*ra_bin_num + ix;
+            if(ra_dec_mask[k] > 0)
+            {labels[i] = 1;}
+        }
+    }
+
+
     void get_chi2(double *xbin, int xbin_num, double *ybin, int ybin_num, int *count_xy, double ghat, double *Gbin, int Gbin_num)
     {
         // y = 1/ghat *(x - x_G) are the lines of the bins' boundaries

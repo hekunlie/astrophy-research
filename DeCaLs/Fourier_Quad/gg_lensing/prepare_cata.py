@@ -98,15 +98,23 @@ odd_idx = 40
 odd_thresh = 0.5
 
 
-#
-# fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
-# result_cata_path = "/coma/hklee/CFHT/correlation/cata"
+# foreground select
+fore_ra_idx = 1
+fore_dec_idx = 2
+fore_z_idx = 3
+fore_mass_idx = 4 # log M
 
-fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
+fore_z_min = 0
+fore_z_max = 10
+fore_mass_min = 14
+fore_mass_max = 14.5
 
-# fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-# result_cata_path = "/home/hklee/work/CFHT/gg_lensing/cata"
+
+
+
+fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
+result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
+
 
 cmd = argv[1]
 
@@ -117,13 +125,15 @@ if cmd == "prepare_foreground":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+    # for kmeans to build jackknife labels
     cent_num = 200
 
-    foreground_path_ori = "/mnt/perc/hklee/CFHT/catalog/foreground/cmass"
+
+    foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
 
-    files = ["cmass_w1.hdf5"]#, "cmass_w2.hdf5","cmass_w3.hdf5","cmass_w4.hdf5"]
+    files = ["DESI_NGC_group_DECALS_overlap.hdf5"]#,"DESI_SGC_group_DECALS_overlap.hdf5"]
 
     if rank == 0:
         if not os.path.exists(result_cata_path + "/foreground"):
@@ -131,25 +141,33 @@ if cmd == "prepare_foreground":
         if not os.path.exists(result_cata_path + "/background"):
             os.makedirs(result_cata_path + "/background")
 
-        src_num = numpy.zeros((len(files), ), dtype=numpy.intc)
-        src_st = numpy.zeros((len(files), ), dtype=numpy.intc)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            data = h5f["/Z"][()]
+            temp = h5f["/data"][()]
             h5f.close()
-            src_num[i] = data.shape[0]
-            src_st[i] = src_num[:i].sum()
 
-        total_num = src_num.sum()
+            if i == 0:
+                data_src = temp
+            else:
+                data_src = numpy.row_stack((data_src, temp))
+
+        # foreground selection
+        idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
+        idx_z2 = data_src[:,fore_z_idx] <= fore_z_min
+        idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
+        idx_m2 = data_src[:,fore_mass_idx] <= fore_mass_max
+        idx = idx_z1 & idx_z2 & idx_m1 & idx_m2
+
+        total_num = idx.sum()
 
         total_data = numpy.zeros((total_num, 6), dtype=numpy.float32)
+
         for i, fn in enumerate(files):
-            st, ed = src_st[i], src_st[i] + src_num[i]
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[st:ed,0] = h5f["/RA"][()]
-            total_data[st:ed,1] = h5f["/DEC"][()]
-            total_data[st:ed,3] = h5f["/Z"][()]
+            total_data[:,0] = data_src[:,fore_ra_idx][idx]
+            total_data[:,1] = data_src[:,fore_dec_idx][idx]
+            total_data[:,3] = data_src[:,fore_z_idx][idx]
             h5f.close()
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]/180*numpy.pi)
@@ -160,10 +178,6 @@ if cmd == "prepare_foreground":
         t1 = time.time()
 
         total_data[:,5] = KMeans(n_clusters=cent_num, random_state=numpy.random.randint(1, 100000)).fit_predict(total_data[:,:2])
-
-        h5f = h5py.File(stack_file_path, "w")
-        h5f["/data"] = total_data
-        h5f.close()
 
         t2 = time.time()
         print("Time: %.2f sec. %d galaxies"%(t2-t1, total_num))
