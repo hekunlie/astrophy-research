@@ -478,7 +478,7 @@ void find_pairs_diff_expo_dev(data_info *expo_info, int expo_label_0, int expo_l
             theta_tag = -1;
             for(ir=0; ir<theta_bin_num; ir++)
             {
-                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                if(delta_radius >= expo_info->theta_bin[ir] and delta_radius < expo_info->theta_bin[ir+1])
                 {theta_tag=ir;break;}
             }
             // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
@@ -530,51 +530,51 @@ void find_pairs_diff_expo_dev(data_info *expo_info, int expo_label_0, int expo_l
                 expo_info->theta_num_accum[theta_accum_tag] += 1;
 
 
-                ////////////////////// the key part of PDF_SYM //////////////////////////////
-                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+                // ////////////////////// the key part of PDF_SYM //////////////////////////////
+                // ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
 
-                pre_ix_tt = mg_bin_num2;
-                pre_ix_xx = mg_bin_num2;
-                pre_iy_tt = mg_bin_num2;
-                pre_iy_xx = mg_bin_num2;
+                // pre_ix_tt = mg_bin_num2;
+                // pre_ix_xx = mg_bin_num2;
+                // pre_iy_tt = mg_bin_num2;
+                // pre_iy_xx = mg_bin_num2;
 
-                for(ic=0; ic<chi_guess_num; ic++)
-                {   
-                    gg_1 = expo_info->gg_1[loop_label];
-                    gg_2 = expo_info->gg_2[loop_label];
+                // for(ic=0; ic<chi_guess_num; ic++)
+                // {   
+                //     gg_1 = expo_info->gg_1[loop_label];
+                //     gg_2 = expo_info->gg_2[loop_label];
 
-                    mgt_corr_1 = mg1_z1 - gg_1*mnu1_z1; 
-                    mgt_corr_2 = mg1_z2 - gg_2*mnu1_z2;   
+                //     mgt_corr_1 = mg1_z1 - gg_1*mnu1_z1; 
+                //     mgt_corr_2 = mg1_z2 - gg_2*mnu1_z2;   
   
-                    mgx_corr_1 = mg2_z1 - gg_1*mnu2_z1; 
-                    mgx_corr_2 = mg2_z2 - gg_2*mnu2_z2;  
+                //     mgx_corr_1 = mg2_z1 - gg_1*mnu2_z1; 
+                //     mgx_corr_2 = mg2_z2 - gg_2*mnu2_z2;  
 
-                    hist2d_fast_dev(mgt_corr_1, mgt_corr_2, expo_info->mg_bin, mg_bin_num, pre_ix_tt, ix_tt, pre_iy_tt, iy_tt);
+                //     hist2d_fast_dev(mgt_corr_1, mgt_corr_2, expo_info->mg_bin, mg_bin_num, pre_ix_tt, ix_tt, pre_iy_tt, iy_tt);
 
-                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                //     expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                     
-                    pre_ix_tt = ix_tt;
-                    pre_iy_tt = iy_tt;
+                //     pre_ix_tt = ix_tt;
+                //     pre_iy_tt = iy_tt;
 
-                    hist2d_fast_dev(mgx_corr_1, mgx_corr_2, expo_info->mg_bin, mg_bin_num,pre_ix_xx, ix_xx, pre_iy_xx, iy_xx);
+                //     hist2d_fast_dev(mgx_corr_1, mgx_corr_2, expo_info->mg_bin, mg_bin_num,pre_ix_xx, ix_xx, pre_iy_xx, iy_xx);
 
-                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                //     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
 
-                    pre_ix_xx = ix_xx;
-                    pre_iy_xx = iy_xx;
+                //     pre_ix_xx = ix_xx;
+                //     pre_iy_xx = iy_xx;
 
-                    loop_label += 1;
+                //     loop_label += 1;
 
-                    ic_len += chi_block_len;
-                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                    // if(ic_len == 0)
-                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                //     ic_len += chi_block_len;
+                //     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                //     // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                //     // if(ic_len == 0)
+                //     // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                //     // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
                     
-                }
-                if(loop_label >= gg_len){loop_label = 0;}
-                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
+                // }
+                // if(loop_label >= gg_len){loop_label = 0;}
+                // ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
                 
             }
 
@@ -691,7 +691,7 @@ void find_pairs_same_expo_dev(data_info *expo_info, int expo_label_0, int expo_l
             theta_tag = -1;
             for(ir=0; ir<theta_bin_num; ir++)
             {
-                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                if(delta_radius >= expo_info->theta_bin[ir] and delta_radius < expo_info->theta_bin[ir+1])
                 {theta_tag=ir;break;}
             }
             // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
@@ -907,7 +907,7 @@ void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label
             theta_tag = -1;
             for(ir=0; ir<theta_bin_num; ir++)
             {
-                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                if(delta_radius >= expo_info->theta_bin[ir] and delta_radius < expo_info->theta_bin[ir+1])
                 {theta_tag=ir;break;}
             }
             // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
@@ -959,74 +959,74 @@ void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label
                 expo_info->theta_num_accum[theta_accum_tag] += 1;
 
 
-                ////////////////////// the key part of PDF_SYM //////////////////////////////
-                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+                // ////////////////////// the key part of PDF_SYM //////////////////////////////
+                // ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
 
-                gg_1 = expo_info->gg_1[loop_label];
-                gg_2 = expo_info->gg_2[loop_label];
+                // gg_1 = expo_info->gg_1[loop_label];
+                // gg_2 = expo_info->gg_2[loop_label];
 
-                temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                // temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                // temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                // hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
                 
                 
-                expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                // expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                 
-                temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+                // temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                // temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
 
-                hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                loop_label += 1;
+                // hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                // expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                // loop_label += 1;
 
-                // if(ic_len == 0)
-                // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
-                // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                for(ic=1; ic<chi_guess_num; ic++)
-                {   
-                    ic_len += chi_block_len;
+                // // if(ic_len == 0)
+                // // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                // // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                // // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                // // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                // for(ic=1; ic<chi_guess_num; ic++)
+                // {   
+                //     ic_len += chi_block_len;
 
-                    gg_1 = expo_info->gg_1[loop_label];
-                    gg_2 = expo_info->gg_2[loop_label];
+                //     gg_1 = expo_info->gg_1[loop_label];
+                //     gg_2 = expo_info->gg_2[loop_label];
                                     
-                    bin_para_tt[0] = ix_tt;
-                    bin_para_tt[1] = iy_tt;
+                //     bin_para_tt[0] = ix_tt;
+                //     bin_para_tt[1] = iy_tt;
 
-                    temp_tt[0] = temp_tt[2];
-                    temp_tt[1] = temp_tt[3];
+                //     temp_tt[0] = temp_tt[2];
+                //     temp_tt[1] = temp_tt[3];
 
-                    temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                    temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                    // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
-                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
+                //     temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                //     temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                //     // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                //     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
 
-                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                //     expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                     
-                    bin_para_xx[0] = ix_xx;
-                    bin_para_xx[1] = iy_xx;
+                //     bin_para_xx[0] = ix_xx;
+                //     bin_para_xx[1] = iy_xx;
                     
-                    temp_xx[0] = temp_xx[2];
-                    temp_xx[1] = temp_xx[3];
+                //     temp_xx[0] = temp_xx[2];
+                //     temp_xx[1] = temp_xx[3];
 
-                    temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                    temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+                //     temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                //     temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
 
-                    // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
-                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                    loop_label += 1;
+                //     // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                //     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
+                //     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                //     loop_label += 1;
 
 
-                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                    // if(ic_len == 0)
-                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                //     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                //     // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                //     // if(ic_len == 0)
+                //     // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                //     // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
                     
-                }
-                if(loop_label >= gg_len){loop_label = 0;}
+                // }
+                // if(loop_label >= gg_len){loop_label = 0;}
                 ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
                 
             }
@@ -1147,7 +1147,7 @@ void find_pairs_same_expo(data_info *expo_info, int expo_label_0, int expo_label
             theta_tag = -1;
             for(ir=0; ir<theta_bin_num; ir++)
             {
-                if(delta_radius > expo_info->theta_bin[ir] and delta_radius <= expo_info->theta_bin[ir+1])
+                if(delta_radius >= expo_info->theta_bin[ir] and delta_radius < expo_info->theta_bin[ir+1])
                 {theta_tag=ir;break;}
             }
             // std::cout<<delta_radius<<" "<<expo_info->theta_bin[theta_tag]<<" "<<expo_info->theta_bin[theta_tag+1]<<" "<<theta_tag<<std::endl;
@@ -2354,45 +2354,45 @@ void corr_calculate(corr_cal *all_paras)
     // calculate chi squared
     for(jacK_tag=all_paras->my_jack_st; jacK_tag<all_paras->my_jack_ed; jacK_tag++)
     {
-        for(i=0;i<all_paras->corr_cal_chi_num;i++)
-        {
-            for(j=0;j<mg_bin_num*mg_bin_num;j++)
-            {
-                tag = i*mg_bin_num*mg_bin_num + j;
-                temp_tt[j] = all_paras->corr_cal_stack_num_count_chit[jacK_tag][tag];
-                temp_xx[j] = all_paras->corr_cal_stack_num_count_chix[jacK_tag][tag];
-            }
+        // for(i=0;i<all_paras->corr_cal_chi_num;i++)
+        // {
+        //     for(j=0;j<mg_bin_num*mg_bin_num;j++)
+        //     {
+        //         tag = i*mg_bin_num*mg_bin_num + j;
+        //         temp_tt[j] = all_paras->corr_cal_stack_num_count_chit[jacK_tag][tag];
+        //         temp_xx[j] = all_paras->corr_cal_stack_num_count_chix[jacK_tag][tag];
+        //     }
             
-            chisq_2d(temp_tt,mg_bin_num, chisq_tt);
-            chisq_2d(temp_xx,mg_bin_num, chisq_xx);
+        //     chisq_2d(temp_tt,mg_bin_num, chisq_tt);
+        //     chisq_2d(temp_xx,mg_bin_num, chisq_xx);
 
-            all_paras->corr_cal_chi_tt[jacK_tag][i] = chisq_tt;
-            all_paras->corr_cal_chi_xx[jacK_tag][i] = chisq_xx;
-        }
+        //     all_paras->corr_cal_chi_tt[jacK_tag][i] = chisq_tt;
+        //     all_paras->corr_cal_chi_xx[jacK_tag][i] = chisq_xx;
+        // }
 
-        // fitting
-        for(i=0; i<all_paras->corr_cal_final_data_num;i++)
-        {   
-            for(j=0;j<all_paras->chi_guess_num;j++)
-            {   
-                tag = i*all_paras->chi_guess_num + j;
-                chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[jacK_tag][tag];
-                chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[jacK_tag][tag];
-            }
-            // if(resample_label == 1)
-            // {
-            //     show_arr(chi_gtt_fit,1,all_paras->chi_guess_num);
-            //     show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
-            // }
+        // // fitting
+        // for(i=0; i<all_paras->corr_cal_final_data_num;i++)
+        // {   
+        //     for(j=0;j<all_paras->chi_guess_num;j++)
+        //     {   
+        //         tag = i*all_paras->chi_guess_num + j;
+        //         chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[jacK_tag][tag];
+        //         chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[jacK_tag][tag];
+        //     }
+        //     // if(resample_label == 1)
+        //     // {
+        //     //     show_arr(chi_gtt_fit,1,all_paras->chi_guess_num);
+        //     //     show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
+        //     // }
 
-            fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
-            all_paras->corr_cal_gtt[jacK_tag][i] = gh;
-            all_paras->corr_cal_gtt_sig[jacK_tag][i] = gh_sig;
+        //     fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
+        //     all_paras->corr_cal_gtt[jacK_tag][i] = gh;
+        //     all_paras->corr_cal_gtt_sig[jacK_tag][i] = gh_sig;
 
-            fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
-            all_paras->corr_cal_gxx[jacK_tag][i] = gh;
-            all_paras->corr_cal_gxx_sig[jacK_tag][i] = gh_sig;
-        }
+        //     fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
+        //     all_paras->corr_cal_gxx[jacK_tag][i] = gh;
+        //     all_paras->corr_cal_gxx_sig[jacK_tag][i] = gh_sig;
+        // }
 
 
         // calculate the mean theta
@@ -2459,33 +2459,44 @@ void save_result(corr_cal *all_paras)
         if(all_paras->corr_cal_rank == 0 and i == 0){overwrite = true;}
         else{overwrite=false;}
 
-        // the \chi squared  
-        col = all_paras->chi_guess_num;
-        row = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
+        // // the \chi squared  
+        // col = all_paras->chi_guess_num;
+        // row = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
 
-        sprintf(set_name, "/%d/chi_tt",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_chi_tt[i], row, col, overwrite);
+        // sprintf(set_name, "/%d/chi_tt",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_chi_tt[i], row, col, overwrite);
 
-        sprintf(set_name, "/%d/chi_xx",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_chi_xx[i], row, col, false);
+        // sprintf(set_name, "/%d/chi_xx",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_chi_xx[i], row, col, false);
 
         // the signal
         col = all_paras->theta_bin_num;
         row = all_paras->corr_cal_final_data_num/all_paras->theta_bin_num;
 
-        sprintf(set_name, "/%d/tt",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_gtt[i], row, col, false);
-        sprintf(set_name, "/%d/tt_sig",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_gtt_sig[i], row, col, false);
+        // sprintf(set_name, "/%d/tt",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_gtt[i], row, col, false);
+        // sprintf(set_name, "/%d/tt_sig",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_gtt_sig[i], row, col, false);
 
-        sprintf(set_name, "/%d/xx",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_gxx[i], row, col, false);
-        sprintf(set_name, "/%d/xx_sig",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_gxx_sig[i], row, col, false);
+        // sprintf(set_name, "/%d/xx",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_gxx[i], row, col, false);
+        // sprintf(set_name, "/%d/xx_sig",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_gxx_sig[i], row, col, false);
 
         sprintf(set_name, "/%d/theta",i);
         write_h5(data_path, set_name, all_paras->corr_cal_mean_theta[i], row, col, false);
 
+        sprintf(set_name, "/%d/total_gal_count",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_stack_expo_theta_num_accum[i], row, col, false);
+
+        // row = 1;
+        // col = all_paras->expo_chi_block_len_true;
+
+        // sprintf(set_name, "/%d/chi_tt_count",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chit[i], row, col, false);
+
+        // sprintf(set_name, "/%d/chi_xx_count",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chix[i], row, col, false);
     }
     
 }

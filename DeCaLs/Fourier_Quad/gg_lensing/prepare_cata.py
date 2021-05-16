@@ -32,21 +32,14 @@ separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(nump
 deg2arcmin = 60
 deg2rad = numpy.pi/180
 
-# position in CFHTLens catalog
-ra_idx = 0
-dec_idx = 1
-
-
-redshift_idx = 10
-
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 200
-num_p = int(chi_guess_num/2)
+delta_sigma_guess_num = 200
+num_p = int(delta_sigma_guess_num/2)
 
 delta_sigma_guess_bin_p = tool_box.set_bin_log(0.1, 500, num_p).astype(numpy.float64)
 
-delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
@@ -54,7 +47,7 @@ delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 tan_shear_guess_bin_p = tool_box.set_bin_log(0.001, 0.1, num_p).astype(numpy.float64)
 
-tan_shear_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+tan_shear_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
 tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
@@ -63,42 +56,39 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 mg_bin_num = 10
 
+
+# position in DECALS catalog
+ra_idx = 0
+dec_idx = 1
+
 # star number on each chip
-nstar_idx = 21
+nstar_idx = 4
 nstar_thresh = 20
 
 # selection function
-flux2_alt_idx = 28
+flux2_alt_idx = 5
 flux2_alt_thresh = 3.5
 
-# selection on the bad pixels
-imax_idx = 22
-jmax_idx = 23
-imax_thresh = 48
-jmax_thresh = 48
 
 # field distortion
-gf1_idx = 31
-gf2_idx = 32
+gf1_idx = 6
+gf2_idx = 7
 gf1_thresh = 0.005
 gf2_thresh = 0.005
 
 # shear estimators
-mg1_idx = 33
-mg2_idx = 34
-mn_idx = 35
-mu_idx = 36
-mv_idx = 37
+mg1_idx = 8
+mg2_idx = 9
+mn_idx = 10
+mu_idx = 11
+mv_idx = 12
 
-# about PhotoZ
-Z_B_idx = 10
-Z_B_MIN_idx = 38
-Z_B_MAX_idx = 39
-odd_idx = 40
-odd_thresh = 0.5
+# PhotoZ
+Zp_idx = 16 # photo Z
+Zs_idx = 17 # spectral Z
 
 
-# foreground select
+####### foreground selection #######
 fore_ra_idx = 1
 fore_dec_idx = 2
 fore_z_idx = 3
@@ -110,15 +100,11 @@ fore_mass_min = 14
 fore_mass_max = 14.5
 
 
-
-
 fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
 result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
 
 
 cmd = argv[1]
-
-
 
 if cmd == "prepare_foreground":
     comm = MPI.COMM_WORLD
@@ -128,10 +114,8 @@ if cmd == "prepare_foreground":
     # for kmeans to build jackknife labels
     cent_num = 200
 
-
     foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
-
 
     files = ["DESI_NGC_group_DECALS_overlap.hdf5"]#,"DESI_SGC_group_DECALS_overlap.hdf5"]
 
@@ -170,16 +154,23 @@ if cmd == "prepare_foreground":
             total_data[:,3] = data_src[:,fore_z_idx][idx]
             h5f.close()
 
-        total_data[:, 2] = numpy.cos(total_data[:, 1]/180*numpy.pi)
+        total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)
         total_data[:, 4] = cosmos.comoving_distance(total_data[:, 3]).value*H0/100
 
         print(" %d galaxies" % (total_num))
         # Kmeans method for classification for jackknife
         t1 = time.time()
 
-        total_data[:,5] = KMeans(n_clusters=cent_num, random_state=numpy.random.randint(1, 100000)).fit_predict(total_data[:,:2])
+        rs = numpy.random.randint(1, 100000)
+        total_data[:,5] = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,:2])
 
         t2 = time.time()
+
+        h5f = h5py.File(stack_file_path, "w")
+        h5f["/data"] = total_data
+        h5f.close()
+
+
         print("Time: %.2f sec. %d galaxies"%(t2-t1, total_num))
     comm.Barrier()
 
@@ -282,12 +273,10 @@ elif cmd == "prepare_background":
         # selection
         idx1 = data[:, nstar_idx] >= nstar_thresh
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
-        idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
-        idx4 = numpy.abs(data[:, gf2_idx]) <= gf2_thresh
-        idx5 = data[:, imax_idx] < imax_thresh
-        idx6 = data[:, jmax_idx] < jmax_thresh
-        idx7 = data[:,odd_idx] >= odd_thresh
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx7
+        idx3 = data[:, gf1_idx] <= gf1_thresh
+        idx4 = data[:, gf2_idx] <= gf2_thresh
+
+        idx = idx1 & idx2 & idx3 & idx4
 
         src_num = idx.sum()
 
@@ -296,6 +285,10 @@ elif cmd == "prepare_background":
 
             ra = src_data[:, ra_idx]
             dec = src_data[:, dec_idx]
+
+            # one of the two survey areas spans ra=0
+            idx = ra < 100
+            ra[idx] += 360
 
             # find the center and the 4 corners
             ra_min, ra_max = ra.min(), ra.max()
@@ -322,8 +315,13 @@ elif cmd == "prepare_background":
             dst_data[:, 5] = src_data[:, ra_idx]
             dst_data[:, 6] = src_data[:, dec_idx]
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
-            dst_data[:, 8] = src_data[:, Z_B_idx]
-            dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
+            dst_data[:, 8] = src_data[:, Zp_idx]
+
+            # replace the photoZ by spectral Z
+            # idxz = src_data[:, Zs_idx] > 0
+            # dst_data[:, 8][idxz] = src_data[:, Zs_idx][idxz]
+
+            # dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
             dst_data[:, 10] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
