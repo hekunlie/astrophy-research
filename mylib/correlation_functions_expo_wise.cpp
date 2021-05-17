@@ -530,51 +530,51 @@ void find_pairs_diff_expo_dev(data_info *expo_info, int expo_label_0, int expo_l
                 expo_info->theta_num_accum[theta_accum_tag] += 1;
 
 
-                // ////////////////////// the key part of PDF_SYM //////////////////////////////
-                // ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+                ////////////////////// the key part of PDF_SYM //////////////////////////////
+                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
 
-                // pre_ix_tt = mg_bin_num2;
-                // pre_ix_xx = mg_bin_num2;
-                // pre_iy_tt = mg_bin_num2;
-                // pre_iy_xx = mg_bin_num2;
+                pre_ix_tt = mg_bin_num2;
+                pre_ix_xx = mg_bin_num2;
+                pre_iy_tt = mg_bin_num2;
+                pre_iy_xx = mg_bin_num2;
 
-                // for(ic=0; ic<chi_guess_num; ic++)
-                // {   
-                //     gg_1 = expo_info->gg_1[loop_label];
-                //     gg_2 = expo_info->gg_2[loop_label];
+                for(ic=0; ic<chi_guess_num; ic++)
+                {   
+                    gg_1 = expo_info->gg_1[loop_label];
+                    gg_2 = expo_info->gg_2[loop_label];
 
-                //     mgt_corr_1 = mg1_z1 - gg_1*mnu1_z1; 
-                //     mgt_corr_2 = mg1_z2 - gg_2*mnu1_z2;   
+                    mgt_corr_1 = mg1_z1 - gg_1*mnu1_z1; 
+                    mgt_corr_2 = mg1_z2 - gg_2*mnu1_z2;   
   
-                //     mgx_corr_1 = mg2_z1 - gg_1*mnu2_z1; 
-                //     mgx_corr_2 = mg2_z2 - gg_2*mnu2_z2;  
+                    mgx_corr_1 = mg2_z1 - gg_1*mnu2_z1; 
+                    mgx_corr_2 = mg2_z2 - gg_2*mnu2_z2;  
 
-                //     hist2d_fast_dev(mgt_corr_1, mgt_corr_2, expo_info->mg_bin, mg_bin_num, pre_ix_tt, ix_tt, pre_iy_tt, iy_tt);
+                    hist2d_fast_dev(mgt_corr_1, mgt_corr_2, expo_info->mg_bin, mg_bin_num, pre_ix_tt, ix_tt, pre_iy_tt, iy_tt);
 
-                //     expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                     
-                //     pre_ix_tt = ix_tt;
-                //     pre_iy_tt = iy_tt;
+                    pre_ix_tt = ix_tt;
+                    pre_iy_tt = iy_tt;
 
-                //     hist2d_fast_dev(mgx_corr_1, mgx_corr_2, expo_info->mg_bin, mg_bin_num,pre_ix_xx, ix_xx, pre_iy_xx, iy_xx);
+                    hist2d_fast_dev(mgx_corr_1, mgx_corr_2, expo_info->mg_bin, mg_bin_num,pre_ix_xx, ix_xx, pre_iy_xx, iy_xx);
 
-                //     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
 
-                //     pre_ix_xx = ix_xx;
-                //     pre_iy_xx = iy_xx;
+                    pre_ix_xx = ix_xx;
+                    pre_iy_xx = iy_xx;
 
-                //     loop_label += 1;
+                    loop_label += 1;
 
-                //     ic_len += chi_block_len;
-                //     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                //     // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                //     // if(ic_len == 0)
-                //     // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                //     // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    ic_len += chi_block_len;
+                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                    // if(ic_len == 0)
+                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
                     
-                // }
-                // if(loop_label >= gg_len){loop_label = 0;}
-                // ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
+                }
+                if(loop_label >= gg_len){loop_label = 0;}
+                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
                 
             }
 
@@ -959,75 +959,75 @@ void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label
                 expo_info->theta_num_accum[theta_accum_tag] += 1;
 
 
-                // ////////////////////// the key part of PDF_SYM //////////////////////////////
-                // ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
+                ////////////////////// the key part of PDF_SYM //////////////////////////////
+                ic_len = theta_tag*ir_chi_block_len + (iz1_ + iz2)*expo_info->iz_chi_block_len;
 
-                // gg_1 = expo_info->gg_1[loop_label];
-                // gg_2 = expo_info->gg_2[loop_label];
+                gg_1 = expo_info->gg_1[loop_label];
+                gg_2 = expo_info->gg_2[loop_label];
 
-                // temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                // temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                // hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
+                temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
+                hist_2d_new(temp_tt[2], temp_tt[3], expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
                 
                 
-                // expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                 
-                // temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                // temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+                temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
 
-                // hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                // expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                // loop_label += 1;
+                hist_2d_new(temp_xx[2], temp_xx[3],  expo_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
+                expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                loop_label += 1;
 
-                // // if(ic_len == 0)
-                // // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                // // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
-                // // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                // // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                // for(ic=1; ic<chi_guess_num; ic++)
-                // {   
-                //     ic_len += chi_block_len;
+                // if(ic_len == 0)
+                // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                // std::cout<<0<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                // std::cout<<0<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                for(ic=1; ic<chi_guess_num; ic++)
+                {   
+                    ic_len += chi_block_len;
 
-                //     gg_1 = expo_info->gg_1[loop_label];
-                //     gg_2 = expo_info->gg_2[loop_label];
+                    gg_1 = expo_info->gg_1[loop_label];
+                    gg_2 = expo_info->gg_2[loop_label];
                                     
-                //     bin_para_tt[0] = ix_tt;
-                //     bin_para_tt[1] = iy_tt;
+                    bin_para_tt[0] = ix_tt;
+                    bin_para_tt[1] = iy_tt;
 
-                //     temp_tt[0] = temp_tt[2];
-                //     temp_tt[1] = temp_tt[3];
+                    temp_tt[0] = temp_tt[2];
+                    temp_tt[1] = temp_tt[3];
 
-                //     temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
-                //     temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
-                //     // hist_2d_new(temp_tt[2], temp_tt[3], field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_tt, iy_tt);
-                //     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
-
-                //     expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
+                    temp_tt[2] = mg1_z1 - gg_1*mnu1_z1;
+                    temp_tt[3] = mg1_z2 - gg_2*mnu1_z2;
                     
-                //     bin_para_xx[0] = ix_xx;
-                //     bin_para_xx[1] = iy_xx;
+                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_tt, bin_para_tt, ix_tt, iy_tt);
+
+                    expo_info->expo_num_count_chit[ic_len + iy_tt*mg_bin_num+ix_tt] += 1;
                     
-                //     temp_xx[0] = temp_xx[2];
-                //     temp_xx[1] = temp_xx[3];
-
-                //     temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
-                //     temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
-
-                //     // hist_2d_new(temp_xx[2], temp_xx[3],  field_info->mg_bin, mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3, ix_xx, iy_xx);
-                //     hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
-                //     expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
-                //     loop_label += 1;
-
-
-                //     // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
-                //     // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
-                //     // if(ic_len == 0)
-                //     // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
-                //     // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    bin_para_xx[0] = ix_xx;
+                    bin_para_xx[1] = iy_xx;
                     
-                // }
-                // if(loop_label >= gg_len){loop_label = 0;}
-                ////////////////////// the key part of PDF_SYM -end  //////////////////////////////
+                    temp_xx[0] = temp_xx[2];
+                    temp_xx[1] = temp_xx[3];
+
+                    temp_xx[2] = mg2_z1 - gg_1*mnu2_z1;
+                    temp_xx[3] = mg2_z2 - gg_2*mnu2_z2;
+
+                
+                    hist_2d_new(expo_info->mg_bin, mg_bin_num, temp_xx, bin_para_xx, ix_xx, iy_xx);
+                    expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx] += 1;
+                    loop_label += 1;
+
+
+                    // std::cout<<ic<<" "<<temp_tt[2]<<" "<<temp_tt[3]<<" "<<ix_tt<<" "<<iy_tt<<" "<<gg_1<<std::endl;
+                    // std::cout<<ic<<" "<<temp_xx[2]<<" "<<temp_xx[3]<<" "<<ix_xx<<" "<<iy_xx<<" "<<gg_2<<std::endl;
+                    // if(ic_len == 0)
+                    // {std::cout<<theta_tag<<" "<<iz1<<" "<<iz2<<" "<<iy_xx<<" "<<ix_xx<<" "<<iy_xx*mg_bin_num+ix_xx<<" "<<
+                    // mg_bin_num<<" "<<expo_info->expo_num_count_chix[ic_len + iy_xx*mg_bin_num+ix_xx]<<std::endl;}
+                    
+                }
+                if(loop_label >= gg_len){loop_label = 0;}
+                //////////////////// the key part of PDF_SYM -end  //////////////////////////////
                 
             }
 

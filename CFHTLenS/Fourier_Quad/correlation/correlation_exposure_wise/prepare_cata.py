@@ -23,7 +23,7 @@ time_start = tool_box.get_time_now()
 
 # parameters
 
-area_num = 4
+area_num = 1
 # theta bin
 theta_bin_num = 5
 # theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
@@ -418,7 +418,8 @@ elif cmd == "stack":
                 stack_labels = numpy.row_stack((stack_labels, recv_buf))
 
         # separate it into 4 sub-files
-        ra_bin = [1000, 5000, 10000, 15000, 30000]
+        # ra_bin = [1000, 5000, 10000, 15000, 30000]
+        ra_bin = [5000, 10000, 15000, 30000]
         for ir in range(area_num):
             idx1 = stack_data[:,5] >= ra_bin[ir]
             idx2 = stack_data[:,5] < ra_bin[ir+1]
@@ -454,7 +455,7 @@ elif cmd == "kmeans":
 
     # 200 sub-samples
     # ncent = [75, 34, 56, 35][rank]
-    total_cent = 200
+    total_cent = 34
     src_num_each_area = numpy.zeros((area_num,), dtype=numpy.intc)
 
     if rank < area_num:
