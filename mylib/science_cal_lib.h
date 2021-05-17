@@ -103,6 +103,11 @@ struct ggl_data_info
     double *total_chi_g_cross;        
     double *total_signal_count;
     
+    // for the 2d hist, we can calculate the signal later
+    int hist2d_mg_sigma_bin_num, hist2d_mn_sigma_bin_num, hist2d_len;
+    double *hist2d_count, *hist2d_count_total;
+    MY_FLOAT *hist2d_mg_sigma_bin, *hist2d_mn_sigma_bin;
+
     // for each individual calculation, it will be added to the total one when finished
     double *worker_sub_chi_sigma_tan;
     double *worker_total_chi_sigma_tan;
