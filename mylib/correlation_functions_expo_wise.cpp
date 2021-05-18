@@ -410,7 +410,8 @@ void find_pairs_diff_expo_dev(data_info *expo_info, int expo_label_0, int expo_l
 
     int loop_label;
     loop_label = expo_info->loop_label;
-
+    loop_label = 0;
+    
     int mg_bin_num, mg_bin_num2;
     mg_bin_num = expo_info->mg_bin_num;
     mg_bin_num2 = expo_info->mg_bin_num2;
@@ -837,6 +838,7 @@ void find_pairs_diff_expo(data_info *expo_info, int expo_label_0, int expo_label
 
     int loop_label;
     loop_label = expo_info->loop_label;
+    loop_label = 0; 
 
     int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
     mg_bin_num = expo_info->mg_bin_num;
@@ -1315,6 +1317,7 @@ void find_pairs_stack_expo(data_info *expo_info, int expo_label_0, int expo_labe
 
     int loop_label;
     loop_label = expo_info->loop_label;
+    // loop_label = 0;
 
     int mg_bin_num,mg_bin_num1, mg_bin_num2, mg_bin_num3;
     mg_bin_num = expo_info->mg_bin_num;
@@ -1600,8 +1603,9 @@ void save_expo_data_new(data_info *expo_info, int rank, int task_end_tag)
             expo_info->block_count = 0;
         }
 
-        // assign to the buffer in memory
-        
+        // assign the buffer of each expo pair to the buffer for the stacked data in the emory
+        // the buffer contains data from z_{ij}, however, z_{ij} and z_{ji} should contribute to z_{ij}
+        // that is the meaning of merge_data().
         merge_data(expo_info);
 
         // theta, theta_num
@@ -1742,7 +1746,7 @@ void merge_data(data_info *expo_info)
         //////////////////////////////////////////////////////////////////////////////////
 
 
-        ///////////////////////////////////  number count  ////////////////////////////////////////
+        ///////////////////////////////////  PDF number count  ////////////////////////////////////////
         // z[i,i] part
         st = (j*expo_info->zbin_num + j)*expo_info->iz_chi_block_len;
         tag = (j*expo_info->zbin_num - j*(j-1)/2)*expo_info->iz_chi_block_len;
@@ -2354,45 +2358,45 @@ void corr_calculate(corr_cal *all_paras)
     // calculate chi squared
     for(jacK_tag=all_paras->my_jack_st; jacK_tag<all_paras->my_jack_ed; jacK_tag++)
     {
-        // for(i=0;i<all_paras->corr_cal_chi_num;i++)
-        // {
-        //     for(j=0;j<mg_bin_num*mg_bin_num;j++)
-        //     {
-        //         tag = i*mg_bin_num*mg_bin_num + j;
-        //         temp_tt[j] = all_paras->corr_cal_stack_num_count_chit[jacK_tag][tag];
-        //         temp_xx[j] = all_paras->corr_cal_stack_num_count_chix[jacK_tag][tag];
-        //     }
+        for(i=0;i<all_paras->corr_cal_chi_num;i++)
+        {
+            for(j=0;j<mg_bin_num*mg_bin_num;j++)
+            {
+                tag = i*mg_bin_num*mg_bin_num + j;
+                temp_tt[j] = all_paras->corr_cal_stack_num_count_chit[jacK_tag][tag];
+                temp_xx[j] = all_paras->corr_cal_stack_num_count_chix[jacK_tag][tag];
+            }
             
-        //     chisq_2d(temp_tt,mg_bin_num, chisq_tt);
-        //     chisq_2d(temp_xx,mg_bin_num, chisq_xx);
+            chisq_2d(temp_tt,mg_bin_num, chisq_tt);
+            chisq_2d(temp_xx,mg_bin_num, chisq_xx);
 
-        //     all_paras->corr_cal_chi_tt[jacK_tag][i] = chisq_tt;
-        //     all_paras->corr_cal_chi_xx[jacK_tag][i] = chisq_xx;
-        // }
+            all_paras->corr_cal_chi_tt[jacK_tag][i] = chisq_tt;
+            all_paras->corr_cal_chi_xx[jacK_tag][i] = chisq_xx;
+        }
 
-        // // fitting
-        // for(i=0; i<all_paras->corr_cal_final_data_num;i++)
-        // {   
-        //     for(j=0;j<all_paras->chi_guess_num;j++)
-        //     {   
-        //         tag = i*all_paras->chi_guess_num + j;
-        //         chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[jacK_tag][tag];
-        //         chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[jacK_tag][tag];
-        //     }
-        //     // if(resample_label == 1)
-        //     // {
-        //     //     show_arr(chi_gtt_fit,1,all_paras->chi_guess_num);
-        //     //     show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
-        //     // }
+        // fitting
+        for(i=0; i<all_paras->corr_cal_final_data_num;i++)
+        {   
+            for(j=0;j<all_paras->chi_guess_num;j++)
+            {   
+                tag = i*all_paras->chi_guess_num + j;
+                chi_gtt_fit[j] = all_paras->corr_cal_chi_tt[jacK_tag][tag];
+                chi_gxx_fit[j] = all_paras->corr_cal_chi_xx[jacK_tag][tag];
+            }
+            // if(resample_label == 1)
+            // {
+            //     show_arr(chi_gtt_fit,1,all_paras->chi_guess_num);
+            //     show_arr(chi_gxx_fit,1,all_paras->chi_guess_num);
+            // }
 
-        //     fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
-        //     all_paras->corr_cal_gtt[jacK_tag][i] = gh;
-        //     all_paras->corr_cal_gtt_sig[jacK_tag][i] = gh_sig;
+            fit_shear(all_paras->corr_cal_chi_guess, chi_gtt_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
+            all_paras->corr_cal_gtt[jacK_tag][i] = gh;
+            all_paras->corr_cal_gtt_sig[jacK_tag][i] = gh_sig;
 
-        //     fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
-        //     all_paras->corr_cal_gxx[jacK_tag][i] = gh;
-        //     all_paras->corr_cal_gxx_sig[jacK_tag][i] = gh_sig;
-        // }
+            fit_shear(all_paras->corr_cal_chi_guess, chi_gxx_fit, all_paras->chi_guess_num, gh, gh_sig, chi_min_fit, chisq_fit_coeff, 150);
+            all_paras->corr_cal_gxx[jacK_tag][i] = gh;
+            all_paras->corr_cal_gxx_sig[jacK_tag][i] = gh_sig;
+        }
 
 
         // calculate the mean theta
@@ -2459,29 +2463,29 @@ void save_result(corr_cal *all_paras)
         if(all_paras->corr_cal_rank == 0 and i == 0){overwrite = true;}
         else{overwrite=false;}
 
-        // // the \chi squared  
-        // col = all_paras->chi_guess_num;
-        // row = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
+        // the \chi squared  
+        col = all_paras->chi_guess_num;
+        row = all_paras->corr_cal_chi_num/all_paras->chi_guess_num;
 
-        // sprintf(set_name, "/%d/chi_tt",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_chi_tt[i], row, col, overwrite);
+        sprintf(set_name, "/%d/chi_tt",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_chi_tt[i], row, col, overwrite);
 
-        // sprintf(set_name, "/%d/chi_xx",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_chi_xx[i], row, col, false);
+        sprintf(set_name, "/%d/chi_xx",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_chi_xx[i], row, col, false);
 
         // the signal
         col = all_paras->theta_bin_num;
         row = all_paras->corr_cal_final_data_num/all_paras->theta_bin_num;
 
-        // sprintf(set_name, "/%d/tt",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_gtt[i], row, col, false);
-        // sprintf(set_name, "/%d/tt_sig",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_gtt_sig[i], row, col, false);
+        sprintf(set_name, "/%d/tt",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_gtt[i], row, col, false);
+        sprintf(set_name, "/%d/tt_sig",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_gtt_sig[i], row, col, false);
 
-        // sprintf(set_name, "/%d/xx",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_gxx[i], row, col, false);
-        // sprintf(set_name, "/%d/xx_sig",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_gxx_sig[i], row, col, false);
+        sprintf(set_name, "/%d/xx",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_gxx[i], row, col, false);
+        sprintf(set_name, "/%d/xx_sig",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_gxx_sig[i], row, col, false);
 
         sprintf(set_name, "/%d/theta",i);
         write_h5(data_path, set_name, all_paras->corr_cal_mean_theta[i], row, col, false);
@@ -2489,14 +2493,14 @@ void save_result(corr_cal *all_paras)
         sprintf(set_name, "/%d/total_gal_count",i);
         write_h5(data_path, set_name, all_paras->corr_cal_stack_expo_theta_num_accum[i], row, col, false);
 
-        // row = 1;
-        // col = all_paras->expo_chi_block_len_true;
+        row = 1;
+        col = all_paras->expo_chi_block_len_true;
 
-        // sprintf(set_name, "/%d/chi_tt_count",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chit[i], row, col, false);
+        sprintf(set_name, "/%d/chi_tt_count",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chit[i], row, col, false);
 
-        // sprintf(set_name, "/%d/chi_xx_count",i);
-        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chix[i], row, col, false);
+        sprintf(set_name, "/%d/chi_xx_count",i);
+        write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chix[i], row, col, false);
     }
     
 }

@@ -37,7 +37,7 @@ deg2rad = numpy.pi/180
 delta_sigma_guess_num = 200
 num_p = int(delta_sigma_guess_num/2)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.1, 500, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p

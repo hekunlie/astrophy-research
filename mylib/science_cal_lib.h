@@ -7,7 +7,7 @@
 #include<FQlib.h>
 #include<vector>
 
-
+#define MAX_THETA_NUM 200
 #define MAX_JACK 2000
 #define MAX_EXPO_NUM 50000
 #define MY_FLOAT float
@@ -104,7 +104,7 @@ struct ggl_data_info
     double *total_signal_count;
     
     // for the 2d hist, we can calculate the signal later
-    int hist2d_mg_sigma_bin_num, hist2d_mn_sigma_bin_num, hist2d_len;
+    int hist2d_mg_sigma_bin_num, hist2d_mn_sigma_bin_num, hist2d_len, hist2d_total_len;
     double *hist2d_count, *hist2d_count_total;
     MY_FLOAT *hist2d_mg_sigma_bin, *hist2d_mn_sigma_bin;
 

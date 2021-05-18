@@ -124,21 +124,22 @@ int main(int argc, char *argv[])
             {   
                 st2 = clock();
 
-                sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
-                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]]);
-
-                if(rank == 1){std::cout<<log_inform<<std::endl;}
-                write_log(log_path, log_inform);
-
                 initialize_expo_chi_block(&expo_info);
 
                 read_expo_data_1(&expo_info, task_labels[0]);
                 read_expo_data_2(&expo_info, task_labels[1]);
-                
+
+                sprintf(log_inform,"file-%d: %s(%d gal), jackid: %d <==> file-%d: %s(%d gal), jackid: %d", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
+                expo_info.jack_label_1, task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]], expo_info.jack_label_2);
+
+                if(rank == 1){std::cout<<log_inform<<std::endl;}
+                write_log(log_path, log_inform);
+
+
                 //////////////  search pairs ////////////////////
-                // find_pairs_diff_expo_dev(&expo_info, task_labels[0], task_labels[1]);
+                find_pairs_diff_expo_dev(&expo_info, task_labels[0], task_labels[1]);
                 // find_pairs_same_expo_dev(&expo_info, task_labels[0], task_labels[1]);
-                find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
+                // find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
 
 
                 // if more 1 pair has been found, write into the result file

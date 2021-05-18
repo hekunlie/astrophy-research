@@ -459,7 +459,9 @@ void ggl_read_src_exp(ggl_data_info *data_info, int src_expo_label)
 
 
 void ggl_read_pdf_inform(ggl_data_info *data_info)
-{
+{   
+    int i, j;
+
     sprintf(data_info->ggl_pdf_inform_path,"%s/cata/pdf_inform.hdf5", data_info->ggl_total_path);
 
     sprintf(data_info->set_name,"/separation_bin");
@@ -504,9 +506,11 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     data_info->hist2d_mn_sigma_bin_num = data_info->hist2d_mn_sigma_bin_num - 1;
 
     data_info->hist2d_len = data_info->hist2d_mn_sigma_bin_num*data_info->hist2d_mg_sigma_bin_num;
+    data_info->hist2d_total_len = data_info->hist2d_len*data_info->signal_pts_num;
+    // there are "signal_pts_num" blocks, each one is a 2d array (1d actually in the memory)
+    data_info->hist2d_count = new double[data_info->hist2d_total_len];
+    initialize_arr(data_info->hist2d_count, data_info->hist2d_total_len, 0);
 
-    data_info->hist2d_count = new double[data_info->hist2d_len];
-    initialize_arr(data_info->hist2d_count, data_info->hist2d_len, 0);
 
 
     // read delta sigma guesses
@@ -565,15 +569,15 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
         data_info->total_chi_g_tan = new double[data_info->chi_g_jack_block_len];
         data_info->total_chi_g_cross = new double[data_info->chi_g_jack_block_len];
         data_info->total_signal_count = new double[data_info->total_signal_count_len];
+        data_info->hist2d_count_total = new double[data_info->hist2d_total_len];
 
-        data_info->hist2d_count_total = new double[data_info->hist2d_len];        
-
+        initialize_arr(data_info->hist2d_count_total, data_info->hist2d_total_len, 0);
         initialize_arr(data_info->total_chi_sigma_tan, data_info->chi_sigma_jack_block_len, 0);
         initialize_arr(data_info->total_chi_sigma_cross, data_info->chi_sigma_jack_block_len, 0);
         initialize_arr(data_info->total_chi_g_tan, data_info->chi_g_jack_block_len, 0);
         initialize_arr(data_info->total_chi_g_cross, data_info->chi_g_jack_block_len, 0);
         initialize_arr(data_info->total_signal_count, data_info->total_signal_count_len, 0);
-        initialize_arr(data_info->hist2d_count_total, data_info->hist2d_len, 0);
+
     }
 
 }
@@ -845,7 +849,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
                     ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
                     // x: mgt*sigma_crit, y: N+U
-                    data_info->hist2d_count[pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1] += 1;
+                    data_info->hist2d_count[sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1] += 1;
                   
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
                     for(i=0; i<data_info->pdf_sigma_num; i++)
@@ -1024,6 +1028,7 @@ void ggl_collect_chi(ggl_data_info *data_info)
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+
     if (data_info->rank > 0)
     {MPI_Send(data_info->worker_total_chi_sigma_cross, data_info->chi_sigma_jack_block_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
     else
@@ -1037,14 +1042,16 @@ void ggl_collect_chi(ggl_data_info *data_info)
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+
     if (data_info->rank > 0)
-    {MPI_Send(data_info->hist2d_count, data_info->hist2d_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    {MPI_Send(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
     else
     {
         for(i=1;i<data_info->numprocs;i++)
         {
-            MPI_Recv(data_info->hist2d_count, data_info->hist2d_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-            for(j=0;j<data_info->hist2d_len;j++)
+            MPI_Recv(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+
+            for(j=0;j<data_info->hist2d_total_len;j++)
             {data_info->hist2d_count_total[j] += data_info->hist2d_count[j];}
         }
     }
@@ -1241,22 +1248,25 @@ void ggl_cal_signals(ggl_data_info * data_info)
         } 
     }
 
-    sprintf(set_name,"/delta_t");
+    sprintf(set_name,"/delta_sigma_t");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan,
             data_info->jack_num+1,data_info->signal_pts_num, false);
-    sprintf(set_name,"/delta_t_err");
+    sprintf(set_name,"/delta_sigma_t_err");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
-    sprintf(set_name,"/delta_x");
+    sprintf(set_name,"/delta_sigma_x");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross,
             data_info->jack_num+1,data_info->signal_pts_num, false);
-    sprintf(set_name,"/delta_x_err");
+    sprintf(set_name,"/delta_sigma_x_err");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
     // save the 2d hist for more calculations later
-    sprintf(set_name,"/delta_t_grid2d");
-    write_h5(data_info->ggl_result_path, set_name, data_info->hist2d_count_total,
-            data_info->hist2d_mg_sigma_bin_num, data_info->hist2d_mn_sigma_bin_num, false);
+    for(i=0; i<data_info->signal_pts_num; i++)
+    {   
+        sprintf(set_name,"/delta_sigma_t_grid2d_%d", i);
+        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_count_total[i*data_info->hist2d_len], 
+        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+    }
 
     delete[] temp_sigma;
     delete[] delta_sigma_tan;
