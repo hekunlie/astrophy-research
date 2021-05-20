@@ -25,10 +25,10 @@ expo_type = ["diff_expo","same_expo"][expo]
 h = 0.674
 omega_bm_num = 10
 omega_bm_bin = numpy.linspace(0.01,0.1,omega_bm_num)
-omega_cm_num = 26
-omega_cm_bin = numpy.linspace(0.1,0.35,omega_cm_num)
-sigma8_num = 31
-sigma8_bin = numpy.linspace(0.6,0.9,sigma8_num)
+omega_cm_num = 91
+omega_cm_bin = numpy.linspace(0.1,1,omega_cm_num)
+sigma8_num = 71
+sigma8_bin = numpy.linspace(0.3, 1,sigma8_num)
 
 chisqs = numpy.zeros((omega_bm_num, omega_cm_num, sigma8_num))
 
@@ -79,7 +79,7 @@ print("Data vec: ", theta_radian.shape)
 
 logger = tool_box.get_logger("./logs/log_%d.dat"%rank)
 
-ell = tool_box.set_bin_log(10, 20000, 10000)
+ell = tool_box.set_bin_log(5, 15000, 200)
 
 # xi_cache = numpy.zeros((len(ijk_sub), data_num)) - 1
 count = 0

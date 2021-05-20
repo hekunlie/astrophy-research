@@ -1,6 +1,6 @@
 FQLIB_PATH=$(MYWORK_DIR)/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
 HK_MPILIB_PATH=$(MYWORK_DIR)/work/mylib/hk_mpi.cpp
-HK_IOLIB_PATH=$(MYWORK_DIR)/work/mylib/hk_iolib.cpp -lhdf5  -l curl
+HK_IOLIB_PATH=$(MYWORK_DIR)/work/mylib/hk_iolib.cpp -lhdf5  -lcurl
 COR_FUNCTIONS_PATH=$(MYWORK_DIR)/work/mylib/correlation_functions_expo_wise.cpp
 
 
