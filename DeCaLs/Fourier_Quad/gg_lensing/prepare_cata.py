@@ -47,7 +47,8 @@ delta_sigma_guess = numpy.sort(delta_sigma_guess)
 gt_guess_num = 80
 num_p = int(gt_guess_num/2)
 
-tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.2, num_p).astype(numpy.float64)
+# tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.1, num_p).astype(numpy.float64)
+tan_shear_guess_bin_p = numpy.linspace(0.0005, 0.1, num_p).astype(numpy.float64)
 
 tan_shear_guess = numpy.zeros((gt_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
@@ -98,7 +99,7 @@ fore_z_idx = 3
 fore_mass_idx = 4 # log M
 
 fore_z_min = 0.2
-fore_z_max = 100
+fore_z_max = 0.6
 fore_mass_min = 13.5
 fore_mass_max = 14
 

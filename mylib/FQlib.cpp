@@ -4127,7 +4127,7 @@ void find_shear_iter(const float *mg, const float *mn, const float *mu, const in
 }
 
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, double *chisq_fit_coeff, const double d_chi)
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, double *chisq_fit_coeff, const int extend_chi, const double d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2 + bx + c
@@ -4159,14 +4159,40 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		//show_arr(chisq, 1, num);
 		// for fitting
 		if (count < 5)
-		{
-			char err_log[100];
-			sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
-			std::cout<<err_log<<std::endl;
-			show_arr(chisq, 1, num);
-			show_arr(mask, 1, num);
-			throw err_log;
+		{	
+			if(extend_chi > 0)
+			{
+				while(count < 6)
+				{
+					for(i=0; i<num-1; i++)
+					{
+						if(mask[i] < 1 and mask[i+1] == 1)
+						{
+							mask[i] = 1;
+							count ++;
+						}
+					}
+					for(i=num-1; i>0; i--)
+					{
+						if(mask[i] == 0 and mask[i-1] == 1)
+						{
+							mask[i] = 1;
+							count ++;
+						}
+					}
+				}
+			}
+			else
+			{
+				char err_log[100];
+				sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
+				std::cout<<err_log<<std::endl;
+				show_arr(chisq, 1, num);
+				show_arr(mask, 1, num);
+				throw err_log;
+			}
 		}
+
 		double *new_chisq = new double[count] {};
 		double *new_shear = new double[count] {};
 		count = 0;
@@ -4221,7 +4247,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 
 }
 
-void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, float* chisq_fit_coeff, const float d_chi)
+void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, float* chisq_fit_coeff,const int extend_chi, const float d_chi)
 {
 	// fit a 2nd order 1-D curve for estimate the shear.
 	// y = ax^2+bx + c
@@ -4254,9 +4280,37 @@ void fit_shear(const float *shear, const float *chisq, const int num, float &gh,
 		// for fitting
 		if (count < 5)
 		{
-			char err_log[100];
-			sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
-			throw err_log;
+			if(extend_chi > 0)
+			{
+				while(count < 6)
+				{
+					for(i=0; i<num; i++)
+					{
+						if(mask[i] < 1 and mask[i+1] == 1)
+						{
+							mask[i] = 1;
+							count ++;
+						}
+					}
+					for(i=num-1; i>0; i--)
+					{
+						if(mask[i] == 0 and mask[i-1] == 1)
+						{
+							mask[i] = 1;
+							count ++;
+						}
+					}
+				}
+			}
+			else
+			{
+				char err_log[100];
+				sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
+				std::cout<<err_log<<std::endl;
+				show_arr(chisq, 1, num);
+				show_arr(mask, 1, num);
+				throw err_log;
+			}
 		}
 		float *new_chisq = new float[count] {};
 		float *new_shear = new float[count] {};

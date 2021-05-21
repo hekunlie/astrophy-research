@@ -398,8 +398,8 @@ void find_shear(const float *mg, const float *mn, const float *mu, const int dat
 	chi_gap: the difference between left- (right-) chi square and  middle chi square,  >= 40 recommended
 */
 
-void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, double *chisq_fit_coeff, const double chi_gap = 40);// checked
-void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, float *chisq_fit_coeff, const float chi_gap = 40);
+void fit_shear(const double *shear, const double *chisq, const int num, double &gh, double &gh_sig, double &chisq_min_fit, double *chisq_fit_coeff,const int extend_chi=0, const double chi_gap = 40);// checked
+void fit_shear(const float *shear, const float *chisq, const int num, float &gh, float &gh_sig, float &chisq_min_fit, float *chisq_fit_coeff,const int extend_chi=0, const float chi_gap = 40);
 /* fitting a quadratic function to estimate shear 
 	
 	shear: array, the shears [start, end] for fitting, the X
