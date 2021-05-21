@@ -224,7 +224,7 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
             bins[-1] = bins[-1] * bound_scale
         else:
             data_max = data.max()
-            bins = tool_box.set_bin_log(data_min, data_max, bin_num)
+            bins = tool_box.set_bin_log(data_min, data_max, bin_num+1)
             bins[0] = bins[0] * 0.95
             bins[-1] = bins[-1] * bound_scale
     else:

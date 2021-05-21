@@ -1208,11 +1208,8 @@ def set_bin(data, bin_num, bound_scale):
     bins = numpy.append(-bound, numpy.append(bins, bound))
     return bins
 
-def set_bin_log(start_point, end_point, bin_num, type="logspace"):
-    if type == "bin":
-        return 10 ** numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), bin_num + 1)
-    else:
-        return 10 ** numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), bin_num)
+def set_bin_log(start_point, end_point, bin_num):
+    return 10 ** numpy.linspace(numpy.log10(start_point), numpy.log10(end_point), bin_num)
 
 
 

@@ -24,8 +24,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 13
-bin_st, bin_ed = 0.04, 15
+sep_bin_num = 15
+bin_st, bin_ed = 0.2, 25
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -44,18 +44,21 @@ delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
+gt_guess_num = 80
+num_p = int(gt_guess_num/2)
 
-tan_shear_guess_bin_p = tool_box.set_bin_log(0.001, 0.1, num_p).astype(numpy.float64)
+tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.2, num_p).astype(numpy.float64)
 
-tan_shear_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
+tan_shear_guess = numpy.zeros((gt_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
 tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
-
 mg_bin_num = 10
 
+hist2d_mg_num = 3000
+hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # position in DECALS catalog
 ra_idx = 0
@@ -73,8 +76,8 @@ flux2_alt_thresh = 3.5
 # field distortion
 gf1_idx = 6
 gf2_idx = 7
-gf1_thresh = 0.005
-gf2_thresh = 0.005
+gf1_thresh = 0.003
+gf2_thresh = 0.003
 
 # shear estimators
 mg1_idx = 8
@@ -94,15 +97,20 @@ fore_dec_idx = 2
 fore_z_idx = 3
 fore_mass_idx = 4 # log M
 
-fore_z_min = 0
-fore_z_max = 10
-fore_mass_min = 14
-fore_mass_max = 14.5
+fore_z_min = 0.2
+fore_z_max = 100
+fore_mass_min = 13.5
+fore_mass_max = 14
 
 
-fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
-result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
+# fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
+# result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
+# foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
 
+fourier_cata_path = "/home/hklee/work/DECALS"
+result_cata_path = "/home/hklee/work/DECALS/gg_lensing/cata"
+foreground_path_ori = "/home/hklee/work/Yang_group"
+fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band.dat"
 
 cmd = argv[1]
 
@@ -114,7 +122,7 @@ if cmd == "prepare_foreground":
     # for kmeans to build jackknife labels
     cent_num = 200
 
-    foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
+
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
     files = ["DESI_NGC_group_DECALS_overlap.hdf5"]#,"DESI_SGC_group_DECALS_overlap.hdf5"]
@@ -138,9 +146,9 @@ if cmd == "prepare_foreground":
 
         # foreground selection
         idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
-        idx_z2 = data_src[:,fore_z_idx] <= fore_z_min
+        idx_z2 = data_src[:,fore_z_idx] < fore_z_max
         idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
-        idx_m2 = data_src[:,fore_mass_idx] <= fore_mass_max
+        idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
         idx = idx_z1 & idx_z2 & idx_m1 & idx_m2
 
         total_num = idx.sum()
@@ -254,7 +262,7 @@ elif cmd == "prepare_background":
     cpus = comm.Get_size()
 
     total_expos = []
-    with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+    with open(fourier_avail_expo_path, "r") as f:
         f_lines = f.readlines()
     for ff in f_lines:
         total_expos.append(ff.split("\n")[0])
@@ -275,8 +283,9 @@ elif cmd == "prepare_background":
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
         idx3 = data[:, gf1_idx] <= gf1_thresh
         idx4 = data[:, gf2_idx] <= gf2_thresh
+        idx5 = data[:, Zp_idx] > 0
 
-        idx = idx1 & idx2 & idx3 & idx4
+        idx = idx1 & idx2 & idx3 & idx4 & idx5
 
         src_num = idx.sum()
 
@@ -322,7 +331,7 @@ elif cmd == "prepare_background":
             # dst_data[:, 8][idxz] = src_data[:, Zs_idx][idxz]
 
             # dst_data[:, 9] = (src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
-            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:,8]).value*H0/100 # in unit of Mpc/h
+            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:, 8]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")
@@ -368,7 +377,7 @@ if cmd == "prepare_pdf":
     if rank == 0:
 
         field_name = []
-        with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+        with open(fourier_avail_expo_path, "r") as f:
             f_lines = f.readlines()
         for ff in f_lines:
             field_name.append(ff.split("\n")[0])
@@ -388,6 +397,7 @@ if cmd == "prepare_pdf":
         # G_t bins for \Delta\Sigma(R) calculation
         Gts_total_num = 1000000
         Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
+        NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
         with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
@@ -441,14 +451,19 @@ if cmd == "prepare_pdf":
                             ib_skypos = SkyCoord(ra=sub_data[:,5]*units.deg, dec=sub_data[:,6]*units.deg,frame="fk5")
                             position_ang = 2*ic_skypos.position_angle(ib_skypos).radian
                             mgt = sub_data[:,0]*numpy.cos(position_ang) - sub_data[:,1]*numpy.sin(position_ang)
+                            mnu = sub_data[:,2] + sub_data[:,3]*numpy.cos(2*position_ang) - sub_data[:,4]*numpy.sin(2*position_ang)
+
                             # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
                             mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
+
                             if Gt_num + sub_num > Gts_total_num:
                                 Gts[Gt_num: Gts_total_num] = mgt[Gts_total_num-Gt_num]
+                                NU[Gt_num: Gts_total_num] = mnu[Gts_total_num-Gt_num]
                                 Gt_num = Gts_total_num
                                 break
                             else:
                                 Gts[Gt_num: Gt_num + sub_num] = mgt
+                                NU[Gt_num: Gt_num + sub_num] = mnu
                                 Gt_num += sub_num
 
         mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, 1000000)
@@ -456,13 +471,30 @@ if cmd == "prepare_pdf":
         print(delta_sigma_guess)
         print(mg_bin)
         print(mg_sigma_bin)
+
+        hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
+        hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
+
+        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, Gts.max()*100, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.01, Gts.max()*100, hist2d_mg_num2)
+
+        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, NU.max()*100, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.01, NU.max()*100, hist2d_mg_num2)
+
+        hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
+        hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
+
+
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/mg_sigma_bin"] = mg_sigma_bin
-        h5f["/mg_gt_bin"] = mg_bin
+        h5f["/hist2d_mg_sigma_bin"] = hist2d_mg_bin.astype(dtype=numpy.float32)
+        h5f["/hist2d_mn_sigma_bin"] = hist2d_mnu_bin.astype(dtype=numpy.float32)
+
+        h5f["/mg_sigma_bin"] = mg_sigma_bin.astype(dtype=numpy.float32)
+        h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin
+        h5f["/separation_bin"] = separation_bin.astype(dtype=numpy.float32)
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
 
         h5f.close()

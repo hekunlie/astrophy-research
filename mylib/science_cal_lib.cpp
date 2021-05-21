@@ -328,7 +328,7 @@ void ggl_read_list(ggl_data_info *data_info)
     for(i=0; i<data_info->len_expo_num; i++)
     {
          data_info->len_expo_path[i] = new char[450];
-         data_info->len_expo_name[i] = new char[50];
+         data_info->len_expo_name[i] = new char[100];
     }
     data_info->len_data_row = new int[data_info->len_expo_num];
     data_info->len_expo_jackid = new int[data_info->len_expo_num];
@@ -339,7 +339,7 @@ void ggl_read_list(ggl_data_info *data_info)
     for(i=0; i<data_info->src_expo_num; i++)
     { 
         data_info->src_expo_path[i] = new char[450];
-        data_info->src_expo_name[i] = new char[50];
+        data_info->src_expo_name[i] = new char[100];
         data_info->src_pos_informs[i] = new MY_FLOAT[data_info->pos_inform_num];
     }
     data_info->src_data_row = new int[data_info->src_expo_num];
@@ -752,6 +752,9 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
+                dra = (len_ra - src_ra)*len_cos_dec;
+                ddec = len_dec - src_dec;
+                // sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
                 separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
 
 #ifdef GGL_PROP_DIST_STACK
@@ -1305,8 +1308,9 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {
             gt[st_j + j] = signals[j]; 
             gt_err[st_j + j] = signals_err[j];
+            std::cout<<signals[j]<<" ";
         }
-        
+        std::cout<<std::endl;
         // just for the total sample, 
         // save the chi^2 of the PDF_SYM process and the coefficients
         if(i == data_info->jack_num)
@@ -1402,13 +1406,14 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             {
                 temp[k] = chi_count[st+k];
             }
+            // show_arr(temp, 1, mg_bin_num);
             cal_chisq_1d(temp, mg_bin_num, chisq_i);
             chisq[j] = chisq_i;
             
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
-        
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 100);
+        // show_arr(chisq, 1, pdf_guess_num);
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 150);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
 

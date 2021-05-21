@@ -4162,6 +4162,9 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		{
 			char err_log[100];
 			sprintf(err_log, "Too less points ( %d (%d) ) for fitting!!!", count, num);
+			std::cout<<err_log<<std::endl;
+			show_arr(chisq, 1, num);
+			show_arr(mask, 1, num);
 			throw err_log;
 		}
 		double *new_chisq = new double[count] {};
@@ -4180,6 +4183,16 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 		// g`= a1 + a2*g + a3*g^2
 		poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
 
+		if (coeff[2] < 0)
+		{
+			char err_log[35];
+			sprintf(err_log, "Bad shear fitting !!!");
+			show_arr(new_chisq, 1, count);
+			std::cout<<err_log<<std::endl;
+			throw err_log;
+		}
+
+
 		delete[] mask;
 		delete[] new_chisq;
 		delete[] new_shear;
@@ -4187,13 +4200,17 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	else
 	{
 		poly_fit_1d(shear, chisq, num, 2, coeff);
+
+		if (coeff[2] < 0)
+		{
+			char err_log[35];
+			sprintf(err_log, "Bad shear fitting !!!");
+			show_arr(chisq, 1, num);
+			std::cout<<err_log<<std::endl;
+			throw err_log;
+		}
 	}
-	if (coeff[2] < 0)
-	{
-		char err_log[35];
-		sprintf(err_log, "Bad shear fitting !!!");
-		throw err_log;
-	}
+
 	gh = -coeff[1] / coeff[2]*0.5;
 	gh_sig = sqrt(0.5 / coeff[2]);
 
