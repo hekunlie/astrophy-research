@@ -44,10 +44,11 @@ delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
-gt_guess_num = 80
+gt_guess_num = 100
 num_p = int(gt_guess_num/2)
 
-tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.2, num_p).astype(numpy.float64)
+# tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.2, num_p).astype(numpy.float64)
+tan_shear_guess_bin_p = numpy.linspace(0.0001, 0.1, num_p).astype(numpy.float64)
 
 tan_shear_guess = numpy.zeros((gt_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
@@ -70,7 +71,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 5
-flux2_alt_thresh = 3.5
+flux2_alt_thresh = 2.5
 
 
 # field distortion
