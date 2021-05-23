@@ -24,8 +24,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 15
-bin_st, bin_ed = 0.2, 25
+sep_bin_num = 11
+bin_st, bin_ed = 0.05, 20
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -156,7 +156,7 @@ if cmd == "prepare_foreground":
 
         total_num = idx.sum()
 
-        total_data = numpy.zeros((total_num, 6), dtype=numpy.float32)
+        total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
@@ -173,14 +173,14 @@ if cmd == "prepare_foreground":
         t1 = time.time()
 
         rs = numpy.random.randint(1, 100000)
-        total_data[:,5] = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,:2])
+        group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,:2])
 
         t2 = time.time()
 
         h5f = h5py.File(stack_file_path, "w")
         h5f["/data"] = total_data
+        h5f["/group_label"] = group_label
         h5f.close()
-
 
         print("Time: %.2f sec. %d galaxies"%(t2-t1, total_num))
     comm.Barrier()
@@ -188,6 +188,7 @@ if cmd == "prepare_foreground":
     if rank > 0:
         h5f = h5py.File(stack_file_path, "r")
         total_data = h5f["/data"][()]
+        group_label = h5f["/group_label"][()]
         h5f.close()
 
     # assign the source into the artificial exposures
@@ -199,7 +200,6 @@ if cmd == "prepare_foreground":
     group_list = [i for i in range(cent_num)]
 
     sub_group_list = tool_box.alloc(group_list, cpus)[rank]
-    group_label = total_data[:,5].astype(dtype=numpy.intc)
 
     # divide the group into many exposures
     for group_tag in sub_group_list:

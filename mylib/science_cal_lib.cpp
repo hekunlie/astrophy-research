@@ -685,7 +685,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     MY_FLOAT len_z, len_dist, src_z, src_dist;
     MY_FLOAT src_z_err, len_z_dz;
     MY_FLOAT dra, ddec, delta_radius;
-    MY_FLOAT sep_dist, sep_theta;
+    MY_FLOAT sep_dist, sep_theta, sep_theta_;
     MY_FLOAT sigma_crit, coeff;
     MY_FLOAT src_mg1, src_mg2, src_mn, src_mv, src_mu;
     MY_FLOAT src_mg1_rot, src_mg2_rot, src_mu_rot, src_mv_rot;
@@ -713,12 +713,16 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     ggl_read_len_exp(data_info, len_expo_label);
 
     ggl_find_src_needed(data_info, len_expo_label);
+    
+    std::cout<<"start... "<<std::endl;
 
     for(bkg=0; bkg<data_info->src_expo_num; bkg++)
     {   
         if(data_info->src_expo_needed_tag[bkg]< 1){continue;}
 
         ggl_read_src_exp(data_info, bkg);
+        
+        // std::cout<<bkg<<" start... "<<std::endl;
 
         for(ifg=0; ifg<data_info->len_data_row[len_expo_label]; ifg++)
         {    
@@ -754,23 +758,16 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 dra = (len_ra - src_ra)*len_cos_dec;
                 ddec = len_dec - src_dec;
-                // sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
+                // sep_theta_ = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
                 separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
-
+                // sprintf
+                // std::cout<<sep_theta_<<" "<<sep_theta<<std::endl;
 #ifdef GGL_PROP_DIST_STACK
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]/(1+len_dist);
 #else
                 sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
 #endif
-                // if(ifg==2)
-                // {
-                //     if(ibkg==7915 or ibkg == 7935 or ibkg == 7940)
-                //     {
-                //         std::cout<<sep_dist<<" "<<data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]<<std::endl;
-                //         std::cout<<len_ra<<" "<<len_dec<<" "<<src_ra<<" "<<src_dec<<" "<<sep_theta<<std::endl;
-                //         std::cout<<std::endl;
-                //     }
-                // }
+
                 sep_bin_tag = -1;
                 for(ir=0; ir<data_info->sep_bin_num; ir++)
                 {
@@ -784,6 +781,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 if(sep_bin_tag > -1)
                 {   
+                    std::cout<<bkg<<" "<<sep_bin_tag<<std::endl;
                     pair_count ++;
                     // if(sep_bin_tag == 3){std::cout<<ifg<<" "<<ibkg<<std::endl;}
                     data_info->worker_sub_signal_count[sep_bin_tag] += sep_theta;
