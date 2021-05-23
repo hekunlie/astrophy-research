@@ -1308,9 +1308,9 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {
             gt[st_j + j] = signals[j]; 
             gt_err[st_j + j] = signals_err[j];
-            std::cout<<signals[j]<<" ";
+            // std::cout<<signals[j]<<" ";
         }
-        std::cout<<std::endl;
+        // std::cout<<std::endl;
         // just for the total sample, 
         // save the chi^2 of the PDF_SYM process and the coefficients
         if(i == data_info->jack_num)
@@ -1413,7 +1413,7 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
         // show_arr(chisq, 1, pdf_guess_num);
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff, 150);
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, 100);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
 
