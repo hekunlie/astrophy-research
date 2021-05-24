@@ -89,6 +89,12 @@ mn_idx = 10
 mu_idx = 11
 mv_idx = 12
 
+# delta ra dec
+# the pixel scale is 0.262 arcsec/pix
+# 1 pix corresponds to 7.28 * 10^{-5}
+dist_idx = 13
+dist_thresh = 10**(-4)
+
 # PhotoZ
 Zp_idx = 16 # photo Z
 Zs_idx = 17 # spectral Z
@@ -287,8 +293,9 @@ elif cmd == "prepare_background":
         idx3 = data[:, gf1_idx] <= gf1_thresh
         idx4 = data[:, gf2_idx] <= gf2_thresh
         idx5 = data[:, Zp_idx] > 0
+        idx6 = numpy.abs(data[:,dist_idx]) <= dist_thresh
 
-        idx = idx1 & idx2 & idx3 & idx4 & idx5
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
 
         src_num = idx.sum()
 
