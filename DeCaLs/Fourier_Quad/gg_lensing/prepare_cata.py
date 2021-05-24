@@ -185,7 +185,7 @@ if cmd == "prepare_foreground":
 
         h5f = h5py.File(stack_file_path, "w")
         h5f["/data"] = total_data
-        h5f["/group_label"] = group_label
+        h5f["/group_label"] = group_label.astype(dtype=numpy.intc)
         h5f.close()
 
         print("Time: %.2f sec. %d galaxies"%(t2-t1, total_num))
