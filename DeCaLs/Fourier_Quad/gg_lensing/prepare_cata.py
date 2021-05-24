@@ -25,7 +25,7 @@ cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
 sep_bin_num = 11
-bin_st, bin_ed = 0.05, 20
+bin_st, bin_ed = 0.1, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -106,10 +106,10 @@ fore_dec_idx = 2
 fore_z_idx = 3
 fore_mass_idx = 4 # log M
 
-fore_z_min = 0.2
-fore_z_max = 0.6
+fore_z_min = 0.3
+fore_z_max = 0.4
 fore_mass_min = 13.5
-fore_mass_max = 14
+fore_mass_max = 13
 
 
 # fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
@@ -118,7 +118,7 @@ fore_mass_max = 14
 
 fourier_cata_path = "/home/hklee/work/DECALS"
 result_cata_path = "/home/hklee/work/DECALS/gg_lensing/cata"
-foreground_path_ori = "/home/hklee/work/Yang_group"
+foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
 fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band.dat"
 
 cmd = argv[1]
@@ -129,7 +129,7 @@ if cmd == "prepare_foreground":
     cpus = comm.Get_size()
 
     # for kmeans to build jackknife labels
-    cent_num = 200
+    cent_num = 100
 
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
@@ -161,14 +161,15 @@ if cmd == "prepare_foreground":
         idx = idx_z1 & idx_z2 & idx_m1 & idx_m2
 
         total_num = idx.sum()
-
+        num_select = 50000
+        total_num = num_select
         total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:,0] = data_src[:,fore_ra_idx][idx]
-            total_data[:,1] = data_src[:,fore_dec_idx][idx]
-            total_data[:,3] = data_src[:,fore_z_idx][idx]
+            total_data[:,0] = data_src[:,fore_ra_idx][idx][:num_select]
+            total_data[:,1] = data_src[:,fore_dec_idx][idx][:num_select]
+            total_data[:,3] = data_src[:,fore_z_idx][idx][:num_select]
             h5f.close()
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)

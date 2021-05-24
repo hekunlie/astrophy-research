@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
             MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
             sprintf(data_info.ggl_log_inform,"receive %d th foreground exposure\n", foreground_expo_label);
-            std::cout<<data_info.ggl_log_inform;
+            // std::cout<<data_info.ggl_log_inform;
 
             if(foreground_expo_label > -1)
             {

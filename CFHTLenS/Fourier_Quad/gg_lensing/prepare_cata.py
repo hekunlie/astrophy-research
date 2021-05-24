@@ -24,8 +24,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 10
-bin_st, bin_ed = 0.1, 15
+sep_bin_num = 13
+bin_st, bin_ed = 0.04, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -41,11 +41,11 @@ redshift_idx = 10
 
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 1000
+chi_guess_num = 200
 num_p = int(chi_guess_num/2)
 
-# delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 130, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 130, num_p).astype(numpy.float64)
 # delta_sigma_guess_bin_p = numpy.linspace(0.01, 150, num_p).astype(numpy.float64)
 
 delta_sigma_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
@@ -53,10 +53,12 @@ delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
+gt_guess_num = 100
+num_p = int(gt_guess_num/2)
+# tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.1, num_p).astype(numpy.float64)
+tan_shear_guess_bin_p = numpy.linspace(0.0001, 0.1, num_p).astype(numpy.float64)
 
-tan_shear_guess_bin_p = tool_box.set_bin_log(0.0005, 0.1, num_p).astype(numpy.float64)
-
-tan_shear_guess = numpy.zeros((chi_guess_num, ), dtype=numpy.float64)
+tan_shear_guess = numpy.zeros((gt_guess_num, ), dtype=numpy.float64)
 tan_shear_guess[:num_p] = -tan_shear_guess_bin_p
 tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
@@ -64,6 +66,9 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
 mg_bin_num = 20
+
+hist2d_mg_num = 3000
+hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # star number on each chip
 nstar_idx = 21
@@ -104,8 +109,9 @@ odd_thresh = 0.5
 # fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
 # result_cata_path = "/coma/hklee/CFHT/correlation/cata"
 
-fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_4_20_2021"
-result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
+result_cata_path = "/home/hklee/work/CFHT/gg_lensing/cata"
+foreground_path_ori = "/home/hklee/work/catalog/cmass"
 
 # fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_Dec_17_2020_smoothed"
 # result_cata_path = "/home/hklee/work/CFHT/gg_lensing/cata"
@@ -121,9 +127,7 @@ if cmd == "prepare_foreground":
 
     cent_num = 200
 
-    foreground_path_ori = "/mnt/perc/hklee/CFHT/catalog/foreground/cmass"
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
-
 
     files = ["cmass_w1.hdf5"]#, "cmass_w2.hdf5","cmass_w3.hdf5","cmass_w4.hdf5"]
 
@@ -378,6 +382,7 @@ if cmd == "prepare_pdf":
         # G_t bins for \Delta\Sigma(R) calculation
         Gts_total_num = 1000000
         Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
+        NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
         with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
@@ -430,15 +435,20 @@ if cmd == "prepare_pdf":
                             sub_data = back_data[idxz]
                             ib_skypos = SkyCoord(ra=sub_data[:,5]*units.deg, dec=sub_data[:,6]*units.deg,frame="fk5")
                             position_ang = 2*ic_skypos.position_angle(ib_skypos).radian
+
                             mgt = sub_data[:,0]*numpy.cos(position_ang) - sub_data[:,1]*numpy.sin(position_ang)
+                            mnu = sub_data[:, 2] + sub_data[:, 3]*numpy.cos(2*position_ang) - sub_data[:,4]*numpy.sin(2 * position_ang)
+
                             # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
                             mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
                             if Gt_num + sub_num > Gts_total_num:
                                 Gts[Gt_num: Gts_total_num] = mgt[Gts_total_num-Gt_num]
+                                NU[Gt_num: Gts_total_num] = mnu[Gts_total_num - Gt_num]
                                 Gt_num = Gts_total_num
                                 break
                             else:
                                 Gts[Gt_num: Gt_num + sub_num] = mgt
+                                NU[Gt_num: Gt_num + sub_num] = mnu
                                 Gt_num += sub_num
 
         mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, 1000000)
@@ -446,7 +456,24 @@ if cmd == "prepare_pdf":
         print(delta_sigma_guess)
         print(mg_bin)
         print(mg_sigma_bin)
+
+        hist2d_mg_bin = numpy.zeros((hist2d_mg_num + 1,))
+        hist2d_mnu_bin = numpy.zeros((hist2d_mg_num + 1,))
+
+        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, Gts.max() * 100, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, Gts.max() * 100, hist2d_mg_num2)
+
+        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, NU.max() * 100, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, NU.max() * 100, hist2d_mg_num2)
+
+        hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
+        hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
+
+
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
+
+        h5f["/hist2d_mg_sigma_bin"] = hist2d_mg_bin.astype(dtype=numpy.float32)
+        h5f["/hist2d_mn_sigma_bin"] = hist2d_mnu_bin.astype(dtype=numpy.float32)
 
         h5f["/mg_sigma_bin"] = numpy.array(mg_sigma_bin, dtype=numpy.float32)
         h5f["/mg_gt_bin"] = numpy.array(mg_bin, dtype=numpy.float32)

@@ -610,14 +610,19 @@ void ggl_find_src_needed(ggl_data_info *data_info, int len_expo_label)
 #else
         len_dist = data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
 #endif     
-        max_sep_theta = 1.5*data_info->separation_bin[data_info->sep_bin_num+1]/len_dist*180/Pi;  
+        max_sep_theta = 1.2*data_info->separation_bin[data_info->sep_bin_num]/len_dist*180/Pi;  
         for(bkg=0; bkg<data_info->src_expo_num; bkg++)
         {
             dra = (data_info->src_pos_informs[bkg][0] - len_ra)*len_cos_dec;
             ddec = data_info->src_pos_informs[bkg][1] - len_dec;
             sep_theta = sqrt(dra*dra + ddec*ddec) - data_info->src_pos_informs[bkg][2];
             // std::cout<<data_info->src_pos_informs[bkg][0]<<" "<<data_info->src_pos_informs[bkg][1]<<" "<<len_ra<<" "<<len_dec<<std::endl;
-            if(sep_theta <= max_sep_theta){data_info->src_expo_needed_tag[bkg] = 1;}
+            if(sep_theta <= max_sep_theta)
+            {
+                data_info->src_expo_needed_tag[bkg] = 1;
+                // std::cout<<data_info->src_pos_informs[bkg][0]<<" "<<data_info->src_pos_informs[bkg][1]<<" "<<len_ra<<" "<<len_dec<<" "
+                // <<max_sep_theta<<" "<<data_info->sep_bin_num<<" "<<data_info->separation_bin[data_info->sep_bin_num + 1]<<" "<<data_info->separation_bin[data_info->sep_bin_num]<<" "<<len_dist<<std::endl;
+            }
         }
     }
 
@@ -714,7 +719,13 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ggl_find_src_needed(data_info, len_expo_label);
     
-    std::cout<<"start... "<<std::endl;
+    // std::cout<<"start... "<<std::endl;
+    // i=0;
+    // for(bkg=0; bkg<data_info->src_expo_num;bkg++)
+    // {
+    //     if(data_info->src_expo_needed_tag[bkg] == 1){i++;}
+    // }
+    // std::cout<<i<<" expos"<<std::endl;
 
     for(bkg=0; bkg<data_info->src_expo_num; bkg++)
     {   
@@ -781,7 +792,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 if(sep_bin_tag > -1)
                 {   
-                    std::cout<<bkg<<" "<<sep_bin_tag<<std::endl;
+                    // std::cout<<bkg<<" "<<sep_bin_tag<<std::endl;
                     pair_count ++;
                     // if(sep_bin_tag == 3){std::cout<<ifg<<" "<<ibkg<<std::endl;}
                     data_info->worker_sub_signal_count[sep_bin_tag] += sep_theta;

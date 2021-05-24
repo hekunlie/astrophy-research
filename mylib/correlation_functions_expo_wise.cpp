@@ -336,7 +336,7 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
     delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_1 - delta_len_2;   
 
     label = 0;
-    if(delta_radius <= expo_info->theta_bin[expo_info->theta_bin_num])
+    if(delta_radius <= 1.2*expo_info->theta_bin[expo_info->theta_bin_num])
     {   
         // std::cout<<ra_1<<" "<<dec_1<<std::endl;
         // std::cout<<ra_2<<" "<<dec_2<<" "<<delta_radius<<" "<< expo_info->theta_bin[expo_info->theta_bin_num]<<std::endl;
