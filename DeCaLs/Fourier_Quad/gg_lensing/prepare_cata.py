@@ -24,8 +24,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 11
-bin_st, bin_ed = 0.1, 15
+sep_bin_num = 13
+bin_st, bin_ed = 0.1, 30
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -37,7 +37,7 @@ deg2rad = numpy.pi/180
 delta_sigma_guess_num = 200
 num_p = int(delta_sigma_guess_num/2)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 500, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.001, 300, num_p).astype(numpy.float64)
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
@@ -73,7 +73,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 5
-flux2_alt_thresh = 2.5
+flux2_alt_thresh = 3
 
 
 # field distortion
@@ -100,18 +100,6 @@ Zp_idx = 16 # photo Z
 Zs_idx = 17 # spectral Z
 
 
-####### foreground selection #######
-fore_ra_idx = 1
-fore_dec_idx = 2
-fore_z_idx = 3
-fore_mass_idx = 4 # log M
-
-fore_z_min = 0.3
-fore_z_max = 0.4
-fore_mass_min = 13.5
-fore_mass_max = 13
-
-
 # fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
 # result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
 # foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
@@ -124,13 +112,24 @@ fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band
 cmd = argv[1]
 
 if cmd == "prepare_foreground":
+
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
-    # for kmeans to build jackknife labels
-    cent_num = 100
+    ####### foreground selection #######
+    fore_ra_idx = 1
+    fore_dec_idx = 2
+    fore_z_idx = 3
+    fore_mass_idx = 4  # log M
 
+    fore_z_min = float(argv[2])#0.3
+    fore_z_max = float(argv[3])#0.4
+    fore_mass_min = float(argv[4])#13.5
+    fore_mass_max = float(argv[5])#13
+
+    # for kmeans to build jackknife labels
+    cent_num = 200
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
@@ -161,15 +160,14 @@ if cmd == "prepare_foreground":
         idx = idx_z1 & idx_z2 & idx_m1 & idx_m2
 
         total_num = idx.sum()
-        num_select = 50000
-        total_num = num_select
+
         total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:,0] = data_src[:,fore_ra_idx][idx][:num_select]
-            total_data[:,1] = data_src[:,fore_dec_idx][idx][:num_select]
-            total_data[:,3] = data_src[:,fore_z_idx][idx][:num_select]
+            total_data[:,0] = data_src[:,fore_ra_idx][idx]
+            total_data[:,1] = data_src[:,fore_dec_idx][idx]
+            total_data[:,3] = data_src[:,fore_z_idx][idx]
             h5f.close()
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)
