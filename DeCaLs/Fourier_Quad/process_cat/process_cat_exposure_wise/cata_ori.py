@@ -20,24 +20,26 @@ numprocs = comm.Get_size()
 ori_cat_chara = "_all.cat"
 
 data_band = ["r", "z"]
+#
+# total_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/cat_hdf5_ori"
+# ori_cat_path = "/lustre/home/acct-phyzj/share/DECALS_all_with_flat"
+total_path = "/home/hklee/work/DECALS/cat_hdf5_ori"
+ori_cat_path = "/home/hklee/work/DECALS/cat_ori"
 
-total_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/cat_hdf5_ori"
-ori_cat_path = "/lustre/home/acct-phyzj/share/DECALS_all_with_flat"
+if rank == 0:
+    for ib in data_band:
+        files = os.listdir(ori_cat_path + "/" + ib)
 
-# if rank == 0:
-#     for ib in data_band:
-#         files = os.listdir(ori_cat_path + "/" + ib)
-#
-#         band_files = []
-#
-#         for fnm in files:
-#             if ori_cat_chara in fnm:
-#                 band_files.append("%s\n"%fnm.split(".")[0])
-#
-#         with open(total_path + "/code/exposures_%s_band.dat"%ib,"w") as f:
-#             f.writelines(band_files)
-#
-# comm.Barrier()
+        band_files = []
+
+        for fnm in files:
+            if ori_cat_chara in fnm:
+                band_files.append("%s\n"%fnm.split(".")[0])
+
+        with open(total_path + "/code/exposures_%s_band.dat"%ib,"w") as f:
+            f.writelines(band_files)
+
+comm.Barrier()
 
 need_idx = [0,1, 5,6, 14,21, 24,25, 26,27,28,29,30]
 for ib in data_band:
@@ -61,10 +63,14 @@ for ib in data_band:
                 log_inform = "%d Failed in reading %s %d Bytes !\n" % (
                     rank, src_path, os.path.getsize(src_path))
                 print(log_inform)
+            else:
+                log_inform = "%d Failed in found %s !\n" % (
+                    rank, src_path)
+                print(log_inform)
             row, col = 0, 0
-        log_inform = "%d Failed in reading %s %d Bytes !\n" % (
-            rank, src_path, os.path.getsize(src_path))
-        print(log_inform)
+        # log_inform = "%d Failed in reading %s %d Bytes !\n" % (
+        #     rank, src_path, os.path.getsize(src_path))
+        # print(log_inform)
 
         if row > 0:
 

@@ -282,6 +282,7 @@ void ggl_initialize(ggl_data_info *data_info)
         std::cout<<data_info->ggl_log_inform;
         show_arr(data_info->separation_bin,1,data_info->sep_bin_num+1);
         std::cout<<std::endl;
+        std::cout<<data_info->ggl_total_path<<std::endl;
     }
 }
 

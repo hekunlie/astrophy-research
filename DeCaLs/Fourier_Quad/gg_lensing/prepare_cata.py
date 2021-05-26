@@ -24,7 +24,7 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 13
+sep_bin_num = 15
 bin_st, bin_ed = 0.1, 30
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
@@ -60,7 +60,7 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 mg_bin_num = 10
 
-hist2d_mg_num = 3000
+hist2d_mg_num = 2000
 hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # position in DECALS catalog
@@ -118,11 +118,13 @@ if cmd == "prepare_foreground":
     cpus = comm.Get_size()
 
     ####### foreground selection #######
+    fore_richness_idx = 0
     fore_ra_idx = 1
     fore_dec_idx = 2
     fore_z_idx = 3
     fore_mass_idx = 4  # log M
 
+    fore_richness_thresh = 10
     fore_z_min = float(argv[2])#0.3
     fore_z_max = float(argv[3])#0.4
     fore_mass_min = float(argv[4])#13.5
@@ -484,11 +486,11 @@ if cmd == "prepare_pdf":
         hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
         hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
 
-        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, Gts.max()*100, hist2d_mg_num2)
-        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.01, Gts.max()*100, hist2d_mg_num2)
+        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, Gts.max()*100, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, Gts.max()*100, hist2d_mg_num2)
 
-        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, NU.max()*100, hist2d_mg_num2)
-        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.01, NU.max()*100, hist2d_mg_num2)
+        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, NU.max()*100, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, NU.max()*100, hist2d_mg_num2)
 
         hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
         hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
