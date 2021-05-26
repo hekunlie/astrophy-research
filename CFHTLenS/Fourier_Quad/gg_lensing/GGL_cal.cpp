@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
             MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, rank, MPI_COMM_WORLD);
             MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
-            sprintf(data_info.ggl_log_inform,"receive %d th foreground exposure\n", foreground_expo_label);
-            // std::cout<<data_info.ggl_log_inform;
+            sprintf(data_info.ggl_log_inform,"%d. receive %d th foreground exposure\n", rank, foreground_expo_label);
+            std::cout<<data_info.ggl_log_inform;
 
             if(foreground_expo_label > -1)
             {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
             }
             MPI_Send(&foreground_expo_label, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD); 
             sprintf(data_info.ggl_log_inform,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
-            // std::cout<<data_info.ggl_log_inform; 
+            std::cout<<data_info.ggl_log_inform; 
         }
     }
     MPI_Barrier(MPI_COMM_WORLD);

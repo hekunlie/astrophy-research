@@ -429,7 +429,7 @@ if cmd == "prepare_pdf":
                         back_data = h5f["/data"][()]
                         h5f.close()
 
-                        idxz = back_data[:,8] > ic_z
+                        idxz = back_data[:,8] > ic_z + 0.1
                         sub_num = idxz.sum()
                         if sub_num > 0:
                             sub_data = back_data[idxz]
@@ -460,11 +460,11 @@ if cmd == "prepare_pdf":
         hist2d_mg_bin = numpy.zeros((hist2d_mg_num + 1,))
         hist2d_mnu_bin = numpy.zeros((hist2d_mg_num + 1,))
 
-        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, Gts.max() * 100, hist2d_mg_num2)
-        hist2d_mg_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, Gts.max() * 100, hist2d_mg_num2)
+        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, Gts.max() * 2000, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, Gts.max() * 2000, hist2d_mg_num2)
 
-        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, NU.max() * 100, hist2d_mg_num2)
-        hist2d_mnu_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, NU.max() * 100, hist2d_mg_num2)
+        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.01, NU.max() * 2000, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2 + 1:] = tool_box.set_bin_log(0.01, NU.max() * 2000, hist2d_mg_num2)
 
         hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
         hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)

@@ -106,6 +106,7 @@ struct ggl_data_info
     // for the 2d hist, we can calculate the signal later
     int hist2d_mg_sigma_bin_num, hist2d_mn_sigma_bin_num, hist2d_len, hist2d_total_len;
     double *hist2d_count, *hist2d_count_total;
+    double *hist2d_x, *hist2d_y,*hist2d_x_total, *hist2d_y_total;
     MY_FLOAT *hist2d_mg_sigma_bin, *hist2d_mn_sigma_bin;
 
     // for each individual calculation, it will be added to the total one when finished

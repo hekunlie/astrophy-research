@@ -220,7 +220,7 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->len_expo_read_tag = 0;
     data_info->src_expo_read_tag = 0;
 
-    data_info->back_dz = 0.1;
+    data_info->back_dz = 0.2;
 
     data_info->pos_inform_num = 4;
 
@@ -262,6 +262,7 @@ void ggl_initialize(ggl_data_info *data_info)
         data_info->chi_sigma_theta_block_len,
         data_info->jack_num, data_info->chi_sigma_jack_block_len);
         std::cout<<data_info->ggl_log_inform;
+        std::cout<<"2D hist: "<<data_info->hist2d_len<<" bins. "<<data_info->hist2d_total_len<<std::endl;
 #endif 
 #ifdef GGL_GAMMA_T
         sprintf(data_info->ggl_log_inform,"\nCalculate Tangential shear. G bins %d. Guess: %d\n", data_info->mg_gt_bin_num, data_info->pdf_gt_num);
@@ -512,6 +513,12 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     data_info->hist2d_count = new double[data_info->hist2d_total_len];
     initialize_arr(data_info->hist2d_count, data_info->hist2d_total_len, 0);
 
+    data_info->hist2d_x = new double[data_info->hist2d_total_len];
+    initialize_arr(data_info->hist2d_x, data_info->hist2d_total_len, 0);
+
+    data_info->hist2d_y = new double[data_info->hist2d_total_len];
+    initialize_arr(data_info->hist2d_y, data_info->hist2d_total_len, 0);
+
 
 
     // read delta sigma guesses
@@ -570,14 +577,20 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
         data_info->total_chi_g_tan = new double[data_info->chi_g_jack_block_len];
         data_info->total_chi_g_cross = new double[data_info->chi_g_jack_block_len];
         data_info->total_signal_count = new double[data_info->total_signal_count_len];
-        data_info->hist2d_count_total = new double[data_info->hist2d_total_len];
 
-        initialize_arr(data_info->hist2d_count_total, data_info->hist2d_total_len, 0);
         initialize_arr(data_info->total_chi_sigma_tan, data_info->chi_sigma_jack_block_len, 0);
         initialize_arr(data_info->total_chi_sigma_cross, data_info->chi_sigma_jack_block_len, 0);
         initialize_arr(data_info->total_chi_g_tan, data_info->chi_g_jack_block_len, 0);
         initialize_arr(data_info->total_chi_g_cross, data_info->chi_g_jack_block_len, 0);
         initialize_arr(data_info->total_signal_count, data_info->total_signal_count_len, 0);
+
+        data_info->hist2d_count_total = new double[data_info->hist2d_total_len];
+        data_info->hist2d_x_total = new double[data_info->hist2d_total_len];
+        data_info->hist2d_y_total = new double[data_info->hist2d_total_len];
+
+        initialize_arr(data_info->hist2d_count_total, data_info->hist2d_total_len, 0);
+        initialize_arr(data_info->hist2d_x_total, data_info->hist2d_total_len, 0);
+        initialize_arr(data_info->hist2d_y_total, data_info->hist2d_total_len, 0);
 
     }
 
@@ -660,23 +673,29 @@ void ggl_rotate_estimator(MY_FLOAT G1, MY_FLOAT G2, MY_FLOAT U, MY_FLOAT V, MY_F
 
 void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, int &bin_tag)
 {   
-    int i;
+    int i, j;
     int tag;
     if(val >= bins[pre_bin_tag])
-    {
-        for(i=pre_bin_tag; i<bin_num; i++)
+    {   
+        j=0;
+        for(i=pre_bin_tag; i<bin_num; i++) 
         {
             if(val>=bins[i] and val<bins[i+1]){tag = i;break;}
         }
     }
     else
     {
+        j=1;
         for(i=pre_bin_tag; i>0; i--)
         {
             if(val>=bins[i-1] and val<bins[i]){tag = i-1;break;}
         }
     }
     bin_tag = tag;
+    if(bin_tag < 0)
+    {
+        std::cout<<"Outlier: val="<<val<<" bin_tag="<<tag<<" pre_bin="<<bins[pre_bin_tag]<<" bin[0]="<<bins[0]<<" bin[-1]="<<bins[bin_num]<<" "<<j<<std::endl;
+    }
 }
 
 void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
@@ -699,7 +718,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     int pre_pdf_bin_tag1, pdf_bin_tag1;
     int pre_pdf_bin_tag2, pdf_bin_tag2;
-    int hist2d_mg_sigma_bin_mid, hist2d_mn_sigma_bin_mid;
+    int hist2d_mg_sigma_bin_mid, hist2d_mn_sigma_bin_mid, hist2d_total_tag;
     
     hist2d_mg_sigma_bin_mid = data_info->hist2d_mg_sigma_bin_num/2;
     hist2d_mn_sigma_bin_mid = data_info->hist2d_mn_sigma_bin_num/2;
@@ -734,7 +753,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
         ggl_read_src_exp(data_info, bkg);
         
-        // std::cout<<bkg<<" start... "<<std::endl;
+        // std::cout<<data_info->rank<<" "<<bkg<<" start... "<<std::endl;
 
         for(ifg=0; ifg<data_info->len_data_row[len_expo_label]; ifg++)
         {    
@@ -768,9 +787,9 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
-                dra = (len_ra - src_ra)*len_cos_dec;
-                ddec = len_dec - src_dec;
-                // sep_theta_ = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
+                // dra = (len_ra - src_ra)*len_cos_dec;
+                // ddec = len_dec - src_dec;
+                // sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
                 separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
                 // sprintf
                 // std::cout<<sep_theta_<<" "<<sep_theta<<std::endl;
@@ -853,32 +872,59 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
 #ifdef GGL_DELTA_SIGMA
 
-                    pre_pdf_bin_tag1 = 0;
-                    pre_pdf_bin_tag2 = 0;
-
                     src_mg1_rot *= sigma_crit;
                     src_mg2_rot *= sigma_crit;
 
                     ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
                     ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
-                    // x: mgt*sigma_crit, y: N+U
-                    data_info->hist2d_count[sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1] += 1;
-                  
+                    // // x: mgt*sigma_crit, y: N+U
+                    hist2d_total_tag = sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1;
+                    
+                    // std::cout<<data_info->rank<<" "<<hist2d_total_tag<<"("<<data_info->hist2d_total_len<<") "<<len_expo_label<<" "<<bkg<<std::endl;
+                    // if(hist2d_total_tag > data_info->hist2d_total_len - 1 or hist2d_total_tag < 0)
+                    // {
+                    //     std::cout<<data_info->rank<<" "<<len_expo_label<<" "<<bkg<<" "<<pdf_bin_tag1<<" "<<pdf_bin_tag2<<" "<<hist2d_total_tag<<std::endl;
+                    // }
+
+                    data_info->hist2d_count[hist2d_total_tag] += 1;
+                    data_info->hist2d_x[hist2d_total_tag] += src_mg1_rot;
+                    data_info->hist2d_y[hist2d_total_tag] += temp_mnut;
+
+
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
+
+                    pre_pdf_bin_tag1 = 0;
+                    pre_pdf_bin_tag2 = 0;
+
                     for(i=0; i<data_info->pdf_sigma_num; i++)
                     { 
                         // \Delta\Sigma(R) & \Delta\Sigma(R)_x
                         chi_sigma_pos_i = chi_sigma_pos + i*data_info->mg_sigma_bin_num;
                         temp_mgt = src_mg1_rot - data_info->delta_sigma_guess[i]*temp_mnut;
                         temp_mgx = src_mg2_rot - data_info->delta_sigma_guess[i]*temp_mnux;
+
+                        // if(temp_mgt < data_info->mg_sigma_bin[0] or temp_mgt > data_info->mg_sigma_bin[data_info->mg_sigma_bin_num])
+                        // {
+                        //     std::cout<<"gt "<<temp_mgt<<" "<<src_mg1_rot<<" "<<data_info->delta_sigma_guess[i]<<" "<<temp_mnut<<std::endl;
+                        // }
+
+                        // if(temp_mgx < data_info->mg_sigma_bin[0] or temp_mgx > data_info->mg_sigma_bin[data_info->mg_sigma_bin_num])
+                        // {
+                        //     std::cout<<"gx "<<temp_mgx<<" "<<src_mg2_rot<<" "<<data_info->delta_sigma_guess[i]<<" "<<temp_mnux<<std::endl;
+                        // }
+
                         ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
                         ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
-                        
+
+
+                        // std::cout<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1+1]<<std::endl;
+                        // std::cout<<pre_pdf_bin_tag2<<" "<<pdf_bin_tag2<<" "<<data_info->mg_sigma_bin[pdf_bin_tag2]<<" "<<temp_mgx<<" "<<data_info->mg_sigma_bin[pdf_bin_tag2+1]<<std::endl;
+
                         data_info->worker_sub_chi_sigma_tan[chi_sigma_pos_i + pdf_bin_tag1] +=1;
                         data_info->worker_sub_chi_sigma_cross[chi_sigma_pos_i + pdf_bin_tag2] +=1;
 
                         //show_arr(data_info->mg_sigma_bin, 1, data_info->mg_sigma_bin_num+1);
-                        //std::cout<<sigma_crit<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1+1]<<" "<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<std::endl;
+                        // std::cout<<sigma_crit<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<std::endl;
 
                         pre_pdf_bin_tag1 = pdf_bin_tag1;
                         pre_pdf_bin_tag2 = pdf_bin_tag2;
@@ -1070,6 +1116,33 @@ void ggl_collect_chi(ggl_data_info *data_info)
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
+    if (data_info->rank > 0)
+    {MPI_Send(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    else
+    {
+        for(i=1;i<data_info->numprocs;i++)
+        {
+            MPI_Recv(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+
+            for(j=0;j<data_info->hist2d_total_len;j++)
+            {data_info->hist2d_x_total[j] += data_info->hist2d_x[j];}
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+        if (data_info->rank > 0)
+    {MPI_Send(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    else
+    {
+        for(i=1;i<data_info->numprocs;i++)
+        {
+            MPI_Recv(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+
+            for(j=0;j<data_info->hist2d_total_len;j++)
+            {data_info->hist2d_y_total[j] += data_info->hist2d_y[j];}
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 #ifdef GGL_GAMMA_T

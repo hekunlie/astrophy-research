@@ -124,14 +124,17 @@ if cmd == "prepare_foreground":
     fore_z_idx = 3
     fore_mass_idx = 4  # log M
 
-    fore_richness_thresh = 10
+    fore_richness_thresh = 8
     fore_z_min = float(argv[2])#0.3
     fore_z_max = float(argv[3])#0.4
     fore_mass_min = float(argv[4])#13.5
     fore_mass_max = float(argv[5])#13
-
+    if rank == 0:
+        log_inform = "Foreground selection: richness>=%d, " \
+                     "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
+        print(log_inform)
     # for kmeans to build jackknife labels
-    cent_num = 200
+    cent_num = 100
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
@@ -155,11 +158,12 @@ if cmd == "prepare_foreground":
                 data_src = numpy.row_stack((data_src, temp))
 
         # foreground selection
+        idx_r = data_src[:,fore_richness_idx] >= fore_richness_thresh
         idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
         idx_z2 = data_src[:,fore_z_idx] < fore_z_max
         idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
         idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
-        idx = idx_z1 & idx_z2 & idx_m1 & idx_m2
+        idx = idx_r & idx_z1 & idx_z2 & idx_m1 & idx_m2
 
         total_num = idx.sum()
 
@@ -383,6 +387,7 @@ if cmd == "prepare_pdf":
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     cpus = comm.Get_size()
+    bin_scale = 100000000
 
     # for correlation calculation
     if rank == 0:
@@ -403,7 +408,7 @@ if cmd == "prepare_pdf":
                 src_data = numpy.row_stack((src_data, temp))
 
         # G bins for tangential shear calculation
-        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
+        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, bin_scale)
 
         # G_t bins for \Delta\Sigma(R) calculation
         Gts_total_num = 1000000
@@ -455,7 +460,7 @@ if cmd == "prepare_pdf":
                         back_data = h5f["/data"][()]
                         h5f.close()
 
-                        idxz = back_data[:,8] > ic_z
+                        idxz = back_data[:,8] > ic_z + 0.1
                         sub_num = idxz.sum()
                         if sub_num > 0:
                             sub_data = back_data[idxz]
@@ -464,7 +469,10 @@ if cmd == "prepare_pdf":
                             mgt = sub_data[:,0]*numpy.cos(position_ang) - sub_data[:,1]*numpy.sin(position_ang)
                             mnu = sub_data[:,2] + sub_data[:,3]*numpy.cos(2*position_ang) - sub_data[:,4]*numpy.sin(2*position_ang)
 
+                            # print(ic_com_dist, sub_data[:, 10] - ic_com_dist)
                             # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
+                            # idx_zero = sub_data[:,10]-ic_com_dist == 0
+                            # print(idx_zero.sum(),ic_z, sub_data[:,10][idx_zero],sub_data[:,8][idx_zero])
                             mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
 
                             if Gt_num + sub_num > Gts_total_num:
@@ -477,23 +485,28 @@ if cmd == "prepare_pdf":
                                 NU[Gt_num: Gt_num + sub_num] = mnu
                                 Gt_num += sub_num
 
-        mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, 1000000)
-        print(tan_shear_guess)
-        print(delta_sigma_guess)
+        mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, bin_scale)
+        # print(tan_shear_guess)
+        # print(delta_sigma_guess)
         print(mg_bin)
         print(mg_sigma_bin)
 
         hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
         hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
 
-        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, Gts.max()*100, hist2d_mg_num2)
-        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, Gts.max()*100, hist2d_mg_num2)
+        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
 
-        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, NU.max()*100, hist2d_mg_num2)
-        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, NU.max()*100, hist2d_mg_num2)
+        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
 
         hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
         hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
+
+        hist2d_mg_bin[0] = hist2d_mg_bin[0]*bin_scale
+        hist2d_mg_bin[-1] = hist2d_mg_bin[-1]*bin_scale
+        hist2d_mnu_bin[0] = hist2d_mnu_bin[0]*bin_scale
+        hist2d_mnu_bin[-1] = hist2d_mnu_bin[-1]*bin_scale
 
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
