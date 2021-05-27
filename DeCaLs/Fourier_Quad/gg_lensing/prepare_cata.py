@@ -19,13 +19,13 @@ warnings.filterwarnings('error')
 
 # parameters
 # cosmological parameters
-omega_m0 = 0.31
+omega_m0 = 0.236
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 15
-bin_st, bin_ed = 0.1, 30
+sep_bin_num = 8
+bin_st, bin_ed = 0.02, 2
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -106,7 +106,7 @@ Zs_idx = 17 # spectral Z
 
 fourier_cata_path = "/home/hklee/work/DECALS"
 result_cata_path = "/home/hklee/work/DECALS/gg_lensing/cata"
-foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
+foreground_path_ori = "/home/hklee/work/catalog/zhang_ziwen"
 fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band.dat"
 
 cmd = argv[1]
@@ -118,34 +118,40 @@ if cmd == "prepare_foreground":
     cpus = comm.Get_size()
 
     ####### foreground selection #######
-    fore_richness_idx = 0
-    fore_ra_idx = 1
-    fore_dec_idx = 2
-    fore_z_idx = 3
-    fore_mass_idx = 4  # log M
 
-    fore_richness_thresh = 12
-    fore_z_min = float(argv[2])#0.3
-    fore_z_max = float(argv[3])#0.4
-    fore_mass_min = float(argv[4])#13.5
-    fore_mass_max = float(argv[5])#13
-    if rank == 0:
-        log_inform = "Foreground selection: richness>=%d, " \
-                     "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
-        print(log_inform)
+    fore_ra_idx = 0
+    fore_dec_idx = 1
+    fore_z_idx = 2
+
+
+    # fore_richness_idx = 0
+    # fore_ra_idx = 1
+    # fore_dec_idx = 2
+    # fore_z_idx = 3
+    # fore_mass_idx = 4  # log M
+
+    # fore_richness_thresh = 12
+    # fore_z_min = float(argv[2])#0.3
+    # fore_z_max = float(argv[3])#0.4
+    # fore_mass_min = float(argv[4])#13.5
+    # fore_mass_max = float(argv[5])#13
+    # if rank == 0:
+    #     log_inform = "Foreground selection: richness>=%d, " \
+    #                  "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
+    #     print(log_inform)
+
     # for kmeans to build jackknife labels
     cent_num = 100
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
-    files = ["DESI_NGC_group_DECALS_overlap.hdf5"]#,"DESI_SGC_group_DECALS_overlap.hdf5"]
+    files = ["sample_0.hdf5"]#,"DESI_SGC_group_DECALS_overlap.hdf5"]
 
     if rank == 0:
         if not os.path.exists(result_cata_path + "/foreground"):
             os.makedirs(result_cata_path + "/foreground")
         if not os.path.exists(result_cata_path + "/background"):
             os.makedirs(result_cata_path + "/background")
-
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
@@ -156,24 +162,25 @@ if cmd == "prepare_foreground":
                 data_src = temp
             else:
                 data_src = numpy.row_stack((data_src, temp))
+            print("Read %s"%(foreground_path_ori + "/" + fn))
+        # # foreground selection
+        # idx_r = data_src[:,fore_richness_idx] >= fore_richness_thresh
+        # idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
+        # idx_z2 = data_src[:,fore_z_idx] < fore_z_max
+        # idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
+        # idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
+        # idx = idx_r & idx_z1 & idx_z2 & idx_m1 & idx_m2
+        # data_src = data_src[idx]
+        # total_num = idx.sum()
 
-        # foreground selection
-        idx_r = data_src[:,fore_richness_idx] >= fore_richness_thresh
-        idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
-        idx_z2 = data_src[:,fore_z_idx] < fore_z_max
-        idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
-        idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
-        idx = idx_r & idx_z1 & idx_z2 & idx_m1 & idx_m2
-
-        total_num = idx.sum()
-
+        total_num = data_src.shape[0]
         total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:,0] = data_src[:,fore_ra_idx][idx]
-            total_data[:,1] = data_src[:,fore_dec_idx][idx]
-            total_data[:,3] = data_src[:,fore_z_idx][idx]
+            total_data[:,0] = data_src[:,fore_ra_idx]
+            total_data[:,1] = data_src[:,fore_dec_idx]
+            total_data[:,3] = data_src[:,fore_z_idx]
             h5f.close()
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)
@@ -244,7 +251,7 @@ if cmd == "prepare_foreground":
                 h5f_expos.close()
 
                 expos_avail_sub.append("%s\t%s\t%d\t%d\n"
-                                       % (expos_path, expos_name, nums[count], group_tag))
+                                       %(expos_path, expos_name, nums[count], group_tag))
                 expos_count += 1
 
     comm.Barrier()
