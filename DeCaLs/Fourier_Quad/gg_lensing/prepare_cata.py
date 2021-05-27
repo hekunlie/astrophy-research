@@ -124,7 +124,7 @@ if cmd == "prepare_foreground":
     fore_z_idx = 3
     fore_mass_idx = 4  # log M
 
-    fore_richness_thresh = 8
+    fore_richness_thresh = 12
     fore_z_min = float(argv[2])#0.3
     fore_z_max = float(argv[3])#0.4
     fore_mass_min = float(argv[4])#13.5
@@ -203,7 +203,7 @@ if cmd == "prepare_foreground":
         h5f.close()
 
     # assign the source into the artificial exposures
-    min_src_num = 100
+    min_src_num = 40
 
     expos_avail_sub = []
     expos_count = 0

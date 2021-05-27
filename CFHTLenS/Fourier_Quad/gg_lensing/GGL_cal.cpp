@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
     // initialization
     strcpy(data_info.ggl_total_path, argv[1]);
     data_info.jack_num = atoi(argv[2]);
+    data_info.back_dz = atof(argv[3]);
     data_info.rank = rank;
     data_info.numprocs = numprocs;
     // read exposure informs from back/foreground list file

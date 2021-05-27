@@ -220,8 +220,6 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->len_expo_read_tag = 0;
     data_info->src_expo_read_tag = 0;
 
-    data_info->back_dz = 0.2;
-
     data_info->pos_inform_num = 4;
 
     data_info->crit_coeff = 1.6628952007121066*1.e6;
@@ -284,6 +282,8 @@ void ggl_initialize(ggl_data_info *data_info)
         show_arr(data_info->separation_bin,1,data_info->sep_bin_num+1);
         std::cout<<std::endl;
         std::cout<<data_info->ggl_total_path<<std::endl;
+        sprintf(data_info->ggl_log_inform,"\nThe background have z >= fore Z + %.3f\n", data_info->back_dz);
+        std::cout<<data_info->ggl_log_inform;
     }
 }
 
@@ -1346,11 +1346,20 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/delta_sigma_x_err");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+            
     // save the 2d hist for more calculations later
     for(i=0; i<data_info->signal_pts_num; i++)
     {   
-        sprintf(set_name,"/delta_sigma_t_grid2d_%d", i);
+        sprintf(set_name,"/delta_sigma_t_grid2d_count_%d", i);
         write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_count_total[i*data_info->hist2d_len], 
+        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+
+        sprintf(set_name,"/delta_sigma_t_grid2d_x_%d", i);
+        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_x_total[i*data_info->hist2d_len], 
+        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+
+        sprintf(set_name,"/delta_sigma_t_grid2d_y_%d", i);
+        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_y_total[i*data_info->hist2d_len], 
         data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
     }
 
