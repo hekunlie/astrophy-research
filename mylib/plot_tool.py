@@ -232,9 +232,9 @@ class Image_Plot:
 
     def save_img(self, pic_path, tight=True):
         if tight:
-            plt.savefig(pic_path, bbox_inches='tight')
+            plt.savefig(pic_path, bbox_inches='tight',transparent = False)
         else:
-            plt.savefig(pic_path)
+            plt.savefig(pic_path,transparent = False)
 
     def show_img(self):
         plt.show()

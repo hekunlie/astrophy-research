@@ -235,7 +235,7 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
     return bins
 
 
-def get_chisq_grid(hist2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse):
+def get_chisq_grid(hist2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2):
     nums = numpy.zeros((bin_num,))
 
     for i in range(bin_num):
@@ -249,7 +249,7 @@ def get_chisq_grid(hist2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inv
             idx2 = x2 > grid_y
         idx = idx1 & idx2
         nums[i] = numpy.sum(hist2d[idx])
-    n1 = nums[0:bin_num2][inverse]
+    n1 = numpy.flip(nums[0:bin_num2],axis=0)
     n2 = nums[bin_num2:]
 
     return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5, n1, n2
@@ -284,9 +284,9 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right
         mc = (left + right) / 2.
         mcl = left
         mcr = right
-        fmc = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mc, bin_num, bin_num2, inverse)[0]
-        fmcl = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mcl, bin_num, bin_num2, inverse)[0]
-        fmcr = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mcr, bin_num, bin_num2, inverse)[0]
+        fmc = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mc, bin_num, bin_num2)[0]
+        fmcl = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mcl, bin_num, bin_num2)[0]
+        fmcr = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, mcr, bin_num, bin_num2)[0]
         #         print("%d. %.4f %.2f  %.4f %.2f  %.4f %.2f"%(iters, left, fmcl, mc,fmc,right,fmcr))
         temp = fmc + chisq_gap
 
@@ -306,13 +306,13 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right
             break
 
     ghs = numpy.linspace(left, right, fit_num)
-    xi2 = numpy.array([get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse)[0] for gh in ghs])
+    xi2 = numpy.array([get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2)[0] for gh in ghs])
 
     coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
     gh = -coeff[1] / 2. / coeff[2]
     gh_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 
-    n1, n2 = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2, inverse)[1:3]
+    n1, n2 = get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2)[1:3]
     asym = (n1 ** 2 + n2 ** 2) / 2 / n1 / n2
     asym = numpy.sum(asym) - bin_num2
 
@@ -330,7 +330,7 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right
 
 
 def get_chisq_grid_corr_new(hist2d, hist2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin, gh, bin_num,
-                            bin_num2, inverse):
+                            bin_num2):
     nums = numpy.zeros((bin_num,))
     for i in range(bin_num):
         x1 = 1. / gh * (grid_x - G_PDF_bin[i])
@@ -356,7 +356,7 @@ def get_chisq_grid_corr_new(hist2d, hist2d_corr, grid_x, grid_y, grid_x_corr, gr
 
         nums[i] = numpy.sum(hist2d[idx]) - numpy.sum(hist2d_corr[idx_corr])
 
-    n1 = nums[0:bin_num2][inverse]
+    n1 = numpy.flip(nums[0:bin_num2],axis=0)
     n2 = nums[bin_num2:]
 
     return numpy.sum((n1 - n2) ** 2 / (n1 + n2)) * 0.5, n1, n2
@@ -407,11 +407,11 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
         mcl = left
         mcr = right
         fmc = get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin,
-                                      mc, bin_num, bin_num2, inverse)[0]
+                                      mc, bin_num, bin_num2)[0]
         fmcl = get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin,
-                                       mcl, bin_num, bin_num2, inverse)[0]
+                                       mcl, bin_num, bin_num2)[0]
         fmcr = get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin,
-                                       mcr, bin_num, bin_num2, inverse)[0]
+                                       mcr, bin_num, bin_num2)[0]
         #         print("%d. %.4f %.2f  %.4f %.2f  %.4f %.2f"%(iters, left, fmcl, mc,fmc,right,fmcr))
         temp = fmc + chisq_gap
 
@@ -432,7 +432,7 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
 
     ghs = numpy.linspace(left, right, fit_num)
     xi2 = numpy.array([get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr,
-                                               G_PDF_bin, gh, bin_num, bin_num2, inverse)[:1] for gh in ghs])
+                                               G_PDF_bin, gh, bin_num, bin_num2)[:1] for gh in ghs])
 
     coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
     chisqs_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
@@ -440,7 +440,7 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
     gh_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 
     n1, n2 = get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr, G_PDF_bin,
-                                     gh, bin_num, bin_num2, inverse)[1:3]
+                                     gh, bin_num, bin_num2)[1:3]
 
     chisqs_min_ = numpy.sum((n1-n2)**2/(n1 + n2))*0.5
     asym = (n1 ** 2 + n2 ** 2) / 2 / n1 / n2

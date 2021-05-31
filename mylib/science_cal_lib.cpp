@@ -1251,7 +1251,8 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/g_t_guess");
     write_h5(data_info->ggl_result_path, set_name, data_info->gt_guess,
             data_info->pdf_gt_num, 1, false);
-
+          
+            
     sprintf(data_info->ggl_log_inform,"========================== Finish calculating theta & radius ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
@@ -1346,6 +1347,10 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/delta_sigma_x_err");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_cross_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/mg_sigma_bin");
+    write_h5(data_info->ggl_result_path, set_name, data_info->mg_sigma_bin,
+            data_info->mg_sigma_bin_num+1, 1, false);
             
     // save the 2d hist for more calculations later
     for(i=0; i<data_info->signal_pts_num; i++)
@@ -1457,6 +1462,11 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/g_x_err");
     write_h5(data_info->ggl_result_path, set_name, gx_err,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/mg_gt_bin");
+    write_h5(data_info->ggl_result_path, set_name, data_info->mg_gt_bin,
+            data_info->mg_gt_bin_num+1, 1, false);
+
     sprintf(data_info->ggl_log_inform,"========================== Finish calculating GGL_GAMMA_T ==========================\n");
     std::cout<<data_info->ggl_log_inform;
 
