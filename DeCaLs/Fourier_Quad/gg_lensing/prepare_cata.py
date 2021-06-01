@@ -2,6 +2,7 @@ import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
+import shutil
 import h5py
 import numpy
 from mpi4py import MPI
@@ -24,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 10
-bin_st, bin_ed = 0.05, 12
+sep_bin_num = 13
+bin_st, bin_ed = 0.2, 25
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -60,7 +61,7 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 mg_bin_num = 20
 
-hist2d_mg_num = 4000
+hist2d_mg_num = 100
 hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # position in DECALS catalog
@@ -107,8 +108,9 @@ Zs_idx = 17 # spectral Z
 fourier_cata_path = "/home/hklee/work/DECALS"
 result_cata_path = "/home/hklee/work/DECALS/gg_lensing/cata"
 # foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
-foreground_path_ori = "/home/hklee/work/catalog/SDSS"
-fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band.dat"
+# foreground_path_ori = "/home/hklee/work/catalog/SDSS"
+foreground_path_ori = "/home/hklee/work/catalog/Jesse_cata/hdf5"
+fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_z_band.dat"
 
 cmd = argv[1]
 
@@ -126,10 +128,10 @@ if cmd == "prepare_foreground":
     fore_mass_idx = 4  # log M
 
     fore_richness_thresh = 4
-    fore_z_min = float(argv[2])#0.3
-    fore_z_max = float(argv[3])#0.4
-    fore_mass_min = float(argv[4])#13.5
-    fore_mass_max = float(argv[5])#13
+    fore_z_min = 0# float(argv[2])#0.3
+    fore_z_max = 10#float(argv[3])#0.4
+    fore_mass_min = 1#float(argv[4])#13.5
+    fore_mass_max = 20#float(argv[5])#13
     if rank == 0:
         log_inform = "Foreground selection: richness>=%d, " \
                      "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
@@ -140,14 +142,12 @@ if cmd == "prepare_foreground":
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
     # files = ["DESI_NGC_group_DECALS_overlap.hdf5","DESI_SGC_group_DECALS_overlap.hdf5"]
-    files = ["lowz_DECALS_overlap.hdf5","cmass_DECALS_overlap.hdf5"]
-
+    # files = ["lowz_DECALS_overlap.hdf5","cmass_DECALS_overlap.hdf5"]
+    files = [argv[2]]
     if rank == 0:
-        if not os.path.exists(result_cata_path + "/foreground"):
-            os.makedirs(result_cata_path + "/foreground")
-        if not os.path.exists(result_cata_path + "/background"):
-            os.makedirs(result_cata_path + "/background")
-
+        if os.path.exists(result_cata_path + "/foreground"):
+            shutil.rmtree(result_cata_path + "/foreground")
+        os.makedirs(result_cata_path + "/foreground")
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
@@ -277,6 +277,12 @@ elif cmd == "prepare_background":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
+    if rank == 0:
+        if os.path.exists(result_cata_path + "/background"):
+            shutil.rmtree(result_cata_path + "/background")
+        os.makedirs(result_cata_path + "/background")
+    comm.Barrier()
+
     total_expos = []
     with open(fourier_avail_expo_path, "r") as f:
         f_lines = f.readlines()
@@ -342,9 +348,9 @@ elif cmd == "prepare_background":
             dst_data[:, 6] = src_data[:, dec_idx]
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
             dst_data[:, 8] = src_data[:, Zp_idx]
-            idx_z_select = dst_data[:,8] < 0.25
+            # idx_z_select = dst_data[:,8] < 0.25
            # print(idx_z_select.sum(), src_num)
-            dst_data[:,8][idx_z_select] = dst_data[:,8][idx_z_select] + 0.3
+           #  dst_data[:,8][idx_z_select] = dst_data[:,8][idx_z_select] + 0.3
             # replace the photoZ by spectral Z
             # idxz = src_data[:, Zs_idx] > 0
             # dst_data[:, 8][idxz] = src_data[:, Zs_idx][idxz]
