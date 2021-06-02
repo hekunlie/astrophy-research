@@ -59,7 +59,7 @@ tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
-mg_bin_num = 20
+mg_bin_num = 50
 
 hist2d_mg_num = 100
 hist2d_mg_num2 = int(hist2d_mg_num/2)
@@ -137,7 +137,7 @@ if cmd == "prepare_foreground":
                      "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
         print(log_inform)
     # for kmeans to build jackknife labels
-    cent_num = 100
+    cent_num = 50
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
@@ -150,7 +150,10 @@ if cmd == "prepare_foreground":
         os.makedirs(result_cata_path + "/foreground")
 
         for i, fn in enumerate(files):
-            h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
+            fore_path = foreground_path_ori + "/" + fn
+            print("\nRead %s\n"%fore_path)
+
+            h5f = h5py.File(fore_path, "r")
             temp = h5f["/data"][()]
             h5f.close()
 
@@ -187,6 +190,11 @@ if cmd == "prepare_foreground":
 
         rs = numpy.random.randint(1, 100000)
         group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,:2])
+        idx_1 = group_label >= 0
+        idx_2 = group_label < cent_num
+        idx_label = idx_1 & idx_2
+        if idx_label.sum() != total_num:
+            print("KMeans wrong!!! ",idx_label.sum(),total_num)
 
         t2 = time.time()
 
@@ -409,19 +417,25 @@ if cmd == "prepare_pdf":
             field_name.append(ff.split("\n")[0])
 
         # set up bins for G1(or G2) for PDF_SYM
-        for i in range(20):
+        file_list = numpy.arange(0, len(field_name),dtype=numpy.intc)
+        numpy.random.shuffle(file_list)
+
+        for tag, i in enumerate(file_list[:20]):#range(20):
+
+            # print(field_name[i])
             h5f_src = h5py.File(field_name[i], "r")
             temp = h5f_src["/data"][()][:, mg1_idx:mg2_idx + 1]
-            if i == 0:
+            if tag == 0:
                 src_data = temp
             else:
                 src_data = numpy.row_stack((src_data, temp))
+            h5f_src.close()
 
         # G bins for tangential shear calculation
         mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, bin_scale)
 
         # G_t bins for \Delta\Sigma(R) calculation
-        Gts_total_num = 1000000
+        Gts_total_num = 5000000
         Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
@@ -443,14 +457,19 @@ if cmd == "prepare_pdf":
             fore_contents = f.readlines()
 
         foreground_num = len(fore_contents)
-        for fore_c in fore_contents:
+        fore_file_label = numpy.arange(0, foreground_num, dtype=numpy.intc)
+        numpy.random.shuffle(fore_file_label)
+
+        for fore_tag, fore_label in enumerate(fore_file_label):
+
+            fore_c = fore_contents[fore_label]
             cc = fore_c.split("\n")[0].split("\t")
             fore_expo_path = cc[0]
             h5f = h5py.File(fore_expo_path, "r")
             fore_data = h5f["/data"][()]
             h5f.close()
 
-            fore_c_num = fore_data.shape[0]
+            fore_c_num = min(5, fore_data.shape[0])
 
             for ic in range(fore_c_num):
                 if Gt_num >= Gts_total_num:
@@ -459,7 +478,7 @@ if cmd == "prepare_pdf":
                 ic_com_dist = fore_data[ic, 4]
                 ic_skypos = SkyCoord(ra=fore_data[ic,0]*units.deg, dec=fore_data[ic,1]*units.deg, frame="fk5")
                 separation_angle = ic_skypos.separation(back_expo_skypos).deg
-                idx = separation_angle < 2
+                idx = separation_angle < 1
                 if idx.sum() > 0:
                     for ib in back_expo_labels[idx]:
 
