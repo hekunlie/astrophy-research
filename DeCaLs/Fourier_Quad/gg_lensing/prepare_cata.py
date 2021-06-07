@@ -25,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 13
-bin_st, bin_ed = 0.2, 25
+sep_bin_num = 10
+bin_st, bin_ed = 0.05, 20
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -35,17 +35,26 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 200
+delta_sigma_guess_num = 2200
 num_p = int(delta_sigma_guess_num/2)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.001, 300, num_p).astype(numpy.float64)
-
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
-delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
-delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
+#
+# delta_sigma_guess_bin_p = tool_box.set_bin_log(0.001, 150, num_p).astype(numpy.float64)
+#
+# delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
+# delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
+# delta_sigma_guess = numpy.sort(delta_sigma_guess)
+
+delta_sigma_guess[:100] = -tool_box.set_bin_log(0.001, 50, 101)[:-1]
+delta_sigma_guess[100:200] = numpy.linspace(0.001, 0.01, 101)[:-1]
+delta_sigma_guess[200:300] = numpy.linspace(0.01, 0.1, 101)[:-1]
+delta_sigma_guess[300:400] = numpy.linspace(0.1, 1, 101)[:-1]
+delta_sigma_guess[400:delta_sigma_guess_num] = numpy.linspace(1,120, delta_sigma_guess_num-400+1)[:-1]
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
-gt_guess_num = 100
+
+gt_guess_num = 20
 num_p = int(gt_guess_num/2)
 
 
@@ -59,7 +68,7 @@ tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
-mg_bin_num = 50
+mg_bin_num = 10
 
 hist2d_mg_num = 100
 hist2d_mg_num2 = int(hist2d_mg_num/2)
@@ -108,8 +117,8 @@ Zs_idx = 17 # spectral Z
 fourier_cata_path = "/home/hklee/work/DECALS"
 result_cata_path = "/home/hklee/work/DECALS/gg_lensing/cata"
 # foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
-# foreground_path_ori = "/home/hklee/work/catalog/SDSS"
-foreground_path_ori = "/home/hklee/work/catalog/Jesse_cata/hdf5"
+foreground_path_ori = "/home/hklee/work/catalog/SDSS"
+# foreground_path_ori = "/home/hklee/work/catalog/Jesse_cata/hdf5"
 fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_z_band.dat"
 
 cmd = argv[1]
@@ -128,8 +137,8 @@ if cmd == "prepare_foreground":
     fore_mass_idx = 4  # log M
 
     fore_richness_thresh = 4
-    fore_z_min = 0# float(argv[2])#0.3
-    fore_z_max = 10#float(argv[3])#0.4
+    fore_z_min = float(argv[2])#0.3
+    fore_z_max = float(argv[3])#0.4
     fore_mass_min = 1#float(argv[4])#13.5
     fore_mass_max = 20#float(argv[5])#13
     if rank == 0:
@@ -137,13 +146,13 @@ if cmd == "prepare_foreground":
                      "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
         print(log_inform)
     # for kmeans to build jackknife labels
-    cent_num = 50
+    cent_num = 100
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
     # files = ["DESI_NGC_group_DECALS_overlap.hdf5","DESI_SGC_group_DECALS_overlap.hdf5"]
     # files = ["lowz_DECALS_overlap.hdf5","cmass_DECALS_overlap.hdf5"]
-    files = [argv[2]]
+    files = [argv[4]]
     if rank == 0:
         if os.path.exists(result_cata_path + "/foreground"):
             shutil.rmtree(result_cata_path + "/foreground")
@@ -213,7 +222,7 @@ if cmd == "prepare_foreground":
         h5f.close()
 
     # assign the source into the artificial exposures
-    min_src_num = 100
+    min_src_num = 50
 
     expos_avail_sub = []
     expos_count = 0

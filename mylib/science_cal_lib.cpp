@@ -1130,7 +1130,7 @@ void ggl_collect_chi(ggl_data_info *data_info)
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-        if (data_info->rank > 0)
+    if (data_info->rank > 0)
     {MPI_Send(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
     else
     {
