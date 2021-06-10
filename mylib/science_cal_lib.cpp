@@ -1220,15 +1220,15 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {   
             std::cout<<"\n========================== Count ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<count[j]<<" ";}
+            {std::cout<<count[st_c+j]<<" ";}
             std::cout<<std::endl;
             std::cout<<"\n========================== Theta [armin] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<theta[j]/count[j]*60<<" ";}
+            {std::cout<<theta[st_c+j]/count[st_c+j]*60<<" ";}
             std::cout<<std::endl;
             std::cout<<"\n========================== Radius [Mpc/h] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<radius[j]/count[j]<<" ";}
+            {std::cout<<radius[st_c+j]/count[st_c+j]<<" ";}
             std::cout<<std::endl;
         }           
     }
