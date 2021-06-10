@@ -25,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 10
-bin_st, bin_ed = 0.05, 20
+sep_bin_num = 7
+bin_st, bin_ed = 3, 20
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -180,14 +180,14 @@ if cmd == "prepare_foreground":
         idx = idx_z1 & idx_z2 #& idx_r & idx_m1 & idx_m2
 
         total_num = idx.sum()
-
+        total_num = 100
         total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:,0] = data_src[:,fore_ra_idx][idx]
-            total_data[:,1] = data_src[:,fore_dec_idx][idx]
-            total_data[:,3] = data_src[:,fore_z_idx][idx]
+            total_data[:,0] = data_src[:,fore_ra_idx][idx][:100]
+            total_data[:,1] = data_src[:,fore_dec_idx][idx][:100]
+            total_data[:,3] = data_src[:,fore_z_idx][idx][:100]
             h5f.close()
 
         total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)

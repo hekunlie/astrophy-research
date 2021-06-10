@@ -155,12 +155,15 @@ if mode == "hist":
     zbin_num = 100
     ra_bin_num, dec_bin_num = 2000, 1000
 
-    z_hist_bin = numpy.linspace(0, 2, zbin_num+1)
+    z_hist_bin = numpy.linspace(0, 4, zbin_num+1)
     ra_hist_bin = numpy.linspace(0, 360, ra_bin_num+1)
     dec_hist_bin = numpy.linspace(-90, 90, dec_bin_num+1)
 
+    # source position hist
     sub_pos_hist = numpy.zeros((int(band_num*dec_bin_num), ra_bin_num))
-
+    # for the source who has spectral z position hist
+    sub_z_pos_hist = numpy.zeros((int(band_num*dec_bin_num), ra_bin_num))
+    # the z hist
     sub_zhist = numpy.zeros((int(band_num*2), zbin_num))
 
 
@@ -177,18 +180,22 @@ if mode == "hist":
         z_nbytes = 0
 
     win1 = MPI.Win.Allocate_shared(pos_nbytes, itemsize, comm=comm)
-    win2 = MPI.Win.Allocate_shared(z_nbytes, itemsize, comm=comm)
+    win2 = MPI.Win.Allocate_shared(pos_nbytes, itemsize, comm=comm)
+    win3 = MPI.Win.Allocate_shared(z_nbytes, itemsize, comm=comm)
 
     buf1, itemsize = win1.Shared_query(0)
     buf2, itemsize = win2.Shared_query(0)
+    buf3, itemsize = win3.Shared_query(0)
 
     total_pos_hist = numpy.ndarray(buffer=buf1, dtype='d', shape=(int(band_num*dec_bin_num), ra_bin_num))
-    total_zhist = numpy.ndarray(buffer=buf2, dtype='d', shape=(int(band_num*2), zbin_num))
+    total_z_pos_hist = numpy.ndarray(buffer=buf2, dtype='d', shape=(int(band_num*dec_bin_num), ra_bin_num))
+    total_zhist = numpy.ndarray(buffer=buf3, dtype='d', shape=(int(band_num*2), zbin_num))
 
     comm.Barrier()
 
     if rank == 0:
         total_pos_hist[:,:] = 0
+        total_z_pos_hist[:,:] = 0
         total_zhist[:,:] = 0
     comm.Barrier()
 
@@ -210,11 +217,14 @@ if mode == "hist":
             pos_num = numpy.histogram2d(dec, ra, [dec_hist_bin, ra_hist_bin])[0]
             zp_num = numpy.histogram(zp[zp >0], z_hist_bin)[0]
             zs_num = numpy.histogram(zs[zs>0], z_hist_bin)[0]
+            idx = zs > 0
+            z_pos_num = numpy.histogram2d(dec[idx], ra[idx], [dec_hist_bin, ra_hist_bin])[0]
 
             st1, st2 = int(tag*dec_bin_num), int(tag*2)
             ed = int((tag+1)*dec_bin_num)
 
             sub_pos_hist[st1:ed] += pos_num
+            sub_z_pos_hist[st1:ed] += z_pos_num
             sub_zhist[st2] += zp_num
             sub_zhist[st2+1] += zs_num
 
@@ -222,50 +232,60 @@ if mode == "hist":
 
     for i in range(numprocs):
         total_pos_hist += sub_pos_hist
+        total_z_pos_hist += sub_z_pos_hist
         total_zhist += sub_zhist
         comm.Barrier()
 
     comm.Barrier()
     if rank == 0:
 
-        numpy.savez("./data_hist/hist.npz",total_pos_hist, ra_hist_bin, dec_hist_bin, total_zhist)
+        h5f = h5py.File("./data_hist/hist.hdf5","w")
+        h5f["/pos_hist"] = total_pos_hist
+        h5f["/z_pos_hist"] = total_z_pos_hist
+        h5f["/z_hist"] = total_zhist
+
+        h5f["/ra_bin"] = ra_hist_bin
+        h5f["/dec_bin"] = dec_hist_bin
+        h5f["/z_bin"] = z_hist_bin
+        h5f.close()
 
         idx = total_pos_hist < 1
         total_pos_hist[idx] = numpy.nan
+        idx = total_z_pos_hist < 1
+        total_z_pos_hist[idx] = numpy.nan
 
         for i in range(band_num):
             st, ed = int(i * dec_bin_num), int((i + 1) * dec_bin_num)
 
             img = Image_Plot(xpad=0.25, ypad=0.25)
-            img.subplots(1,1)
+            img.subplots(1,3)
 
             img.axs[0][0].imshow(numpy.flip(total_pos_hist[st:ed],axis=0))
+            img.axs[0][1].imshow(numpy.flip(total_z_pos_hist[st:ed],axis=0))
 
-            pos_dec = [0, int(dec_bin_num/4), int(dec_bin_num/2), int(dec_bin_num*3/4), int(dec_bin_num-1)]
-            img.set_ticklabel_str(0, 0, 0, pos_dec, ["90","45", "0", "-45", "-90"])
+            for j in range(2):
+                pos_dec = [0, int(dec_bin_num/4), int(dec_bin_num/2), int(dec_bin_num*3/4), int(dec_bin_num-1)]
+                img.set_ticklabel_str(0, j, 0, pos_dec, ["90","45", "0", "-45", "-90"])
 
-            pos_ra = [0,int(ra_bin_num/4), int(ra_bin_num/2), int(ra_bin_num*3/4), int(ra_bin_num-1)]
-            img.set_ticklabel_str(0, 0, 1, pos_ra, ["0", "90", "180", "270", "360"])
+                pos_ra = [0,int(ra_bin_num/4), int(ra_bin_num/2), int(ra_bin_num*3/4), int(ra_bin_num-1)]
+                img.set_ticklabel_str(0, j, 1, pos_ra, ["0", "90", "180", "270", "360"])
 
-            img.set_label(0,0,0,"Dec [Deg]")
-            img.set_label(0,0,1,"RA [Deg]")
-            img.save_img("./data_hist/%s_band_area.pdf"%data_band[i])
-            img.close_img()
+                img.set_label(0,j,0,"Dec [Deg]")
+                img.set_label(0,j,1,"RA [Deg]")
+            img.axs[0][0].set_title("source hist")
+            img.axs[0][1].set_title("source with spectral z hist")
 
-
-            img = Image_Plot(xpad=0.25, ypad=0.25)
-            img.subplots(1, 1)
 
             zpts = (z_hist_bin[1:] + z_hist_bin[:-1])/2
 
             st = int(i*2)
 
-            img.axs[0][0].plot(zpts, total_zhist[st]/total_zhist[st].sum(), label="Photo Z")
-            img.axs[0][0].plot(zpts, total_zhist[st+1]/total_zhist[st+1].sum(), label="Spec Z")
-            img.axs[0][0].legend()
+            img.axs[0][2].plot(zpts, total_zhist[st]/total_zhist[st].sum(), label="Photo Z")
+            img.axs[0][2].plot(zpts, total_zhist[st+1]/total_zhist[st+1].sum(), label="Spec Z")
+            img.axs[0][2].legend()
 
-            img.set_label(0,0,0,"P(z)dz")
-            img.set_label(0,0,1,"Z")
-            img.save_img("./data_hist/%s_band_Z.pdf" % data_band[i])
+            img.set_label(0,2,0,"P(z)dz")
+            img.set_label(0,2,1,"Z")
+            img.save_img("./data_hist/%s_band.pdf" % data_band[i])
             img.close_img()
     comm.Barrier()

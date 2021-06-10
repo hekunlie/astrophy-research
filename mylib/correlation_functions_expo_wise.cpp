@@ -2493,14 +2493,14 @@ void save_result(corr_cal *all_paras)
         sprintf(set_name, "/%d/total_gal_count",i);
         write_h5(data_path, set_name, all_paras->corr_cal_stack_expo_theta_num_accum[i], row, col, false);
 
-        row = 1;
-        col = all_paras->expo_chi_block_len_true;
+        // row = 1;
+        // col = all_paras->expo_chi_block_len_true;
 
-        sprintf(set_name, "/%d/chi_tt_count",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chit[i], row, col, false);
+        // sprintf(set_name, "/%d/chi_tt_count",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chit[i], row, col, false);
 
-        sprintf(set_name, "/%d/chi_xx_count",i);
-        write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chix[i], row, col, false);
+        // sprintf(set_name, "/%d/chi_xx_count",i);
+        // write_h5(data_path, set_name, all_paras->corr_cal_stack_num_count_chix[i], row, col, false);
     }
     
 }

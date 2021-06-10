@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/cut_2.5/deblend_1"
+data_path = "E:/works/correlation/CFHT/2021_6_7/cut_2.5"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -28,6 +28,9 @@ pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.43\n$\Omega_m$=0.64\n$\Omega_b$
 pk_line_label_mcmc_same = "MCMC:\n$\sigma_8$ = 0.56\n$\Omega_m$=0.66\n$\Omega_b$=0.10"
 
 pk_lines_tag = 0
+mcmc_pk_lines_tag = 0
+xi_p_theoretical_lines_mcmc_diff = None
+xi_m_theoretical_lines_mcmc_diff = None
 if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     h5f = h5py.File( "E:/works/correlation/planck2018.hdf5","r")
     xi_p_theoretical_lines = h5f["/xi_p"][()]
@@ -37,11 +40,12 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     pk_lines_tag = 1
     print("Find Pk lines")
 
-    h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
-    xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
-    xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
-    xi_theta_mcmc_diff = h5f["/theta"][()]
-    h5f.close()
+    # h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
+    # xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
+    # xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
+    # xi_theta_mcmc_diff = h5f["/theta"][()]
+    # h5f.close()
+    # mcmc_pk_lines_tag = 1
     #
     # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
     # xi_p_theoretical_lines_mcmc_same = h5f["/xi_p"][()]
@@ -181,6 +185,7 @@ for ii in range(len(expo_type)):
 
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
+                if ii == 0 and mcmc_pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_p_theoretical_lines_mcmc_diff[tag],
                                                    c="C0",ls="-", label=pk_line_label_mcmc_diff)
                     #
@@ -261,6 +266,7 @@ for ii in range(len(expo_type)):
                 if ii == 0 and pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
                                                    c="k",ls="dashdot", label=pk_line_label)
+                if ii == 0 and mcmc_pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_m_theoretical_lines_mcmc_diff[tag],
                                                    c="C0",ls="-", label=pk_line_label_mcmc_diff)
                     # img.axs[img_row][img_col].plot(xi_theta_mcmc_same[tag], xi_m_theoretical_lines_mcmc_same[tag],
