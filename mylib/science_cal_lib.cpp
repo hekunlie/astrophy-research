@@ -1220,15 +1220,15 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {   
             std::cout<<"\n========================== Count ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<count[j]<<" ";}
+            {std::cout<<count[st_c+j]<<" ";}
             std::cout<<std::endl;
             std::cout<<"\n========================== Theta [armin] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<theta[j]/count[j]*60<<" ";}
+            {std::cout<<theta[st_c+j]/count[st_c+j]*60<<" ";}
             std::cout<<std::endl;
             std::cout<<"\n========================== Radius [Mpc/h] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<radius[j]/count[j]<<" ";}
+            {std::cout<<radius[st_c+j]/count[st_c+j]<<" ";}
             std::cout<<std::endl;
         }           
     }
@@ -1325,12 +1325,12 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {   
             std::cout<<"Delta Sigma_t\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<delta_sigma_tan[j]<<"("<<delta_sigma_tan_err[j]<<") ";}
+            {std::cout<<delta_sigma_tan[st_j + j]<<"("<<delta_sigma_tan_err[st_j + j]<<") ";}
             std::cout<<std::endl;
 
             std::cout<<"Delta Sigma_x\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<delta_sigma_cross[j]<<"("<<delta_sigma_cross_err[j]<<") ";}
+            {std::cout<<delta_sigma_cross[st_j + j]<<"("<<delta_sigma_cross_err[st_j + j]<<") ";}
             std::cout<<std::endl;
         } 
     }
@@ -1441,11 +1441,11 @@ void ggl_cal_signals(ggl_data_info * data_info)
         {   
             std::cout<<"gt\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<gt[j]<<"("<<gt_err[j]<<") ";}
+            {std::cout<<gt[st_j + j]<<"("<<gt_err[st_j + j]<<") ";}
             std::cout<<std::endl;
             std::cout<<"gx\n";
             for(j=0;j<data_info->signal_pts_num;j++)
-            {std::cout<<gx[j]<<"("<<gx_err[j]<<") ";}
+            {std::cout<<gx[st_j + j]<<"("<<gx_err[st_j + j]<<") ";}
             std::cout<<std::endl;
         } 
     }
