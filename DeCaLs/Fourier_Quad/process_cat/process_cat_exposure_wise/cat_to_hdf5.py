@@ -231,9 +231,10 @@ if mode == "hist":
     comm.Barrier()
 
     for i in range(numprocs):
-        total_pos_hist += sub_pos_hist
-        total_z_pos_hist += sub_z_pos_hist
-        total_zhist += sub_zhist
+        if i == rank:
+            total_pos_hist += sub_pos_hist
+            total_z_pos_hist += sub_z_pos_hist
+            total_zhist += sub_zhist
         comm.Barrier()
 
     comm.Barrier()
