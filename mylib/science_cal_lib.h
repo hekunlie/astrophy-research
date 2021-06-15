@@ -14,7 +14,7 @@
 #define MY_MPI_TYPE MPI_FLOAT
 // #define GGL_PROP_DIST_STACK
 #define GGL_COM_DIST_STACK
-// #define GGL_GAMMA_T
+#define GGL_GAMMA_T
 #define GGL_DELTA_SIGMA
 
 const double C_0_hat = 2.99792458; //

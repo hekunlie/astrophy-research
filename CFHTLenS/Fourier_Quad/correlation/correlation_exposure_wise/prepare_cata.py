@@ -20,9 +20,9 @@ time_start = tool_box.get_time_now()
 
 area_num = 4
 # theta bin
-theta_bin_num = 5
-# theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin_num = 6
+theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+# theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -34,7 +34,7 @@ grid_size = 15 #arcmin
 ra_idx = 0
 dec_idx = 1
 
-redshift_idx = 2
+redshift_idx = 10
 
 redshift_sep_thresh = 0.01
 redshift_bin_num = 6
@@ -42,9 +42,9 @@ redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.
 # redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 40
+chi_guess_num = 60
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-chi_guess_bin_p = tool_box.set_bin_log(10**(-7), 10**(-3), chi_guess_num).astype(numpy.float32)
+chi_guess_bin_p = tool_box.set_bin_log(10**(-8), 10**(-3), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
 chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
@@ -56,16 +56,16 @@ mg_bin_num = 10
 
 
 # star number on each chip
-nstar_idx = 26
-nstar_thresh = 12
+nstar_idx = 21
+nstar_thresh = 0
 
 # selection function
-flux2_alt_idx = 33
+flux2_alt_idx = 28
 flux2_alt_thresh = 2.5
 
 # selection on the bad pixels
-imax_idx = 27
-jmax_idx = 28
+imax_idx = 22
+jmax_idx = 23
 imax_thresh = 48
 jmax_thresh = 48
 
@@ -77,17 +77,17 @@ xc_idx = 23
 yc_idx = 24
 
 # field distortion
-gf1_idx = 36
-gf2_idx = 37
+gf1_idx = 31
+gf2_idx = 32
 gf1_thresh = 0.005
 gf2_thresh = 0.005
 
 # shear estimators
-mg1_idx = 38
-mg2_idx = 39
-mn_idx = 40
-mu_idx = 41
-mv_idx = 42
+mg1_idx = 33
+mg2_idx = 34
+mn_idx = 35
+mu_idx = 36
+mv_idx = 37
 
 # about PhotoZ
 odd_idx = 14
@@ -114,7 +114,7 @@ sep_z = 0.2
 # fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/CFHT_cat_4_20_2021"
 # result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_6_7_2021"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021_smoothed"
 result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
 cmd = argv[1]
@@ -240,9 +240,9 @@ if cmd == "prepare":
         idx6 = data[:, jmax_idx] < jmax_thresh
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
         idx_8 = data[:, redshift_idx] < redshift_bin[redshift_bin_num]
-        idx_9 = data[:,odd_idx] >= odd_thresh
+        #idx_9 = data[:,odd_idx] >= odd_thresh
         # idx_10 = labels > 0
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8 & idx_9# & idx_10
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8# & idx_9# & idx_10
 
         src_num = idx.sum()
 
@@ -280,7 +280,7 @@ if cmd == "prepare":
             dst_data[:, 6] = src_data[:, dec_idx]
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
             dst_data[:, 8] = src_data[:, redshift_idx]
-            dst_data[:, 9] = src_data[:, redshift_e_idx]
+            # dst_data[:, 9] = src_data[:, redshift_e_idx]
 
             redshift_label = numpy.zeros((src_num,), dtype=numpy.intc)
 

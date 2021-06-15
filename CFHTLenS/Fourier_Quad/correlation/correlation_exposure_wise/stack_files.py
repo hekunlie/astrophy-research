@@ -42,25 +42,29 @@ if expos_num < 1:
 my_sub_area_list = tool_box.alloc(expos, cpus)[rank]
 
 # print(rank, i, len(my_sub_area_list))
-
+stack_tag = 0
 if len(my_sub_area_list) > 0:
     for tag, expo_path in enumerate(my_sub_area_list):
 
         h5f = h5py.File(expo_path, "r")
         temp = h5f["/data"][()]
         h5f.close()
+        idx = temp[:,5] >= 2.5
+
         # Nan check
-        idx = numpy.isnan(temp)
+        # idx = numpy.isnan(temp)
+        # if idx.sum() > 0:
+        #     num = temp.shape[0]
+        #     label = numpy.arange(0,num)
+        #     idx = numpy.isnan(temp[:,-2])
+        #     print(label[idx][:5])
+        #     print("Find Nan ", expo_path)
         if idx.sum() > 0:
-            num = temp.shape[0]
-            label = numpy.arange(0,num)
-            idx = numpy.isnan(temp[:,-2])
-            print(label[idx][:5])
-            print("Find Nan ", expo_path)
-        if tag == 0:
-            stack_data = temp
-        else:
-            stack_data = numpy.row_stack((stack_data, temp))
+            if stack_tag == 0:
+                stack_data = temp[idx][:,:2]
+                stack_tag = 1
+            else:
+                stack_data = numpy.row_stack((stack_data, temp[idx][:,:2]))
 
     sp = stack_data.shape
 else:
@@ -81,7 +85,7 @@ else:
     h5f = h5py.File(dst_path + "/stack_data.hdf5", "w")
     h5f["/data"] = stack_data
     h5f.close()
-    h5f = h5py.File(dst_path + "/stack_data_ra_dec.hdf5", "w")
-    h5f["/data"] = stack_data[:,:2]
-    h5f.close()
+    # h5f = h5py.File(dst_path + "/stack_data_ra_dec.hdf5", "w")
+    # h5f["/data"] = stack_data[:,:2]
+    # h5f.close()
 comm.Barrier()
