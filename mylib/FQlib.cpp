@@ -4214,6 +4214,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			char err_log[35];
 			sprintf(err_log, "Bad shear fitting !!!");
 			show_arr(new_chisq, 1, count);
+			show_arr(coeff, 1, 3);
 			std::cout<<err_log<<std::endl;
 			throw err_log;
 		}
