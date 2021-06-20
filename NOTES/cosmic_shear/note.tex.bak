@@ -1,0 +1,89 @@
+\documentclass[twocolumn]{aastex62}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\newcommand{\vdag}{(v)^\dagger}
+\newcommand\aastex{AAS\TeX}
+\newcommand\latex{La\TeX}
+\textheight 230mm
+\textwidth 170mm
+\oddsidemargin 0mm
+\evensidemargin 0mm
+\topmargin -10mm
+\def\ie{{\it i.e. }}
+\def\eg{{\it e.g. }}
+\def\etc{{\it etc}}
+
+
+\begin{document}
+lensing potential
+\begin{equation}
+\Psi(\boldsymbol{\theta},\chi) =\frac{2}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)f_K(\chi^{\prime})}\Phi(f_K(\chi^{\prime})\boldsymbol{\theta}, \chi^{\prime}) 
+\end{equation}
+Lensing matrix:
+\begin{eqnarray}
+A&=&\delta_{ij} - \partial_i \partial_j \Psi =
+\left(
+\begin{array}{cc}1-\kappa - \gamma_1 &  - \gamma_2\\ 
+- \gamma_2 & 1-\kappa + \gamma_1
+\end{array}
+\right)
+\end{eqnarray}
+where
+\begin{eqnarray}
+\gamma_1 &=& \frac{1}{2}(\partial_1\partial_1 - \partial_2\partial_2)\Psi;\quad 
+\gamma_2 = \partial_1\partial_2 \Psi,\\ \nonumber
+\kappa &=& \frac{1}{2}(\partial_1\partial_1 + \partial_2\partial_2)\Psi.
+\end{eqnarray}
+\begin{eqnarray}
+\kappa &=& \frac{1}{2}(\partial_1\partial_1 + \partial_2\partial_2)\int \tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}d^2l  \\ \nonumber
+&=& -\frac{1}{2}\int (l_1^2+l_2^2)\tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}d^2l \\ \nonumber
+\gamma &=& \gamma_1 + i\gamma_2\\ \nonumber
+&=&\frac{1}{2}(\partial_1\partial_1 - \partial_2\partial_2 + 2i \partial_1\partial_2)\int \tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}d^2l  \\ \nonumber
+&=&  -\frac{1}{2}\int (l_1^2 -l_2^2 + 2il_1l_2)\tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}d^2l  \\ \nonumber
+\tilde{\kappa}(\boldsymbol{l^{\prime}}) &=&-\frac{1}{2}\int (l_1^2+l_2^2)\tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}e^{-i\boldsymbol{l^{\prime}}\cdot\boldsymbol{\theta}}d^2ld^2\theta \\ \nonumber
+&=&-\frac{1}{2}\int (l_1^2+l_2^2)\tilde{\Psi}(\boldsymbol{l})e^{i(\boldsymbol{l} - \boldsymbol{l^{\prime}})\cdot\boldsymbol{\theta}}d^2ld^2\theta \\ \nonumber
+&=&-\frac{(2\pi)^2}{2}\int (l_1^2+l_2^2)\tilde{\Psi}(\boldsymbol{l})\delta^2(\boldsymbol{l} - \boldsymbol{l^{\prime}})d^2l \\ \nonumber
+&=&-\frac{(2\pi)^2}{2}({l_1^{\prime}}^2+{l_2^{\prime}}^2)\tilde{\Psi}(\boldsymbol{l^{\prime}}) \\ \nonumber
+\tilde{\gamma}(\boldsymbol{l^{\prime}}) &=&  -\frac{1}{2}\int (l_1^2 -l_2^2 + 2il_1l_2)\tilde{\Psi}(\boldsymbol{l})e^{i\boldsymbol{l}\cdot\boldsymbol{\theta}}e^{-i\boldsymbol{l^{\prime}}\cdot\boldsymbol{\theta}}d^2ld^2\theta \\ \nonumber
+&=& -\frac{(2\pi)^2}{2}({l_1^{\prime}}^2-{l_2^{\prime}}^2 + 2il_1^{\prime}l_2^{\prime} )\tilde{\Psi}(\boldsymbol{l^{\prime}}) \\ \nonumber
+&=& -\frac{(2\pi)^2}{2}(l_1^{\prime} +il_2^{\prime} )^2\tilde{\Psi}(\boldsymbol{l^{\prime}})
+\end{eqnarray}
+Therefore, we have
+\begin{eqnarray}
+\tilde{\gamma}(\boldsymbol{l}) = \frac{(l_1 +il_2 )^2}{l_1^2 + l_2^2}\tilde{\kappa}(\boldsymbol{l}) = [\cos^2(\beta) - \sin^2(\beta) + 2i \cos(\beta) \sin(\beta)]\tilde{\kappa}(\boldsymbol{l}) = e^{2i\beta}\tilde{\kappa}(\boldsymbol{l}).
+\end{eqnarray}
+The power spectrum of $\gamma$ equals that of $\kappa$, \ie $P_{\gamma}(\boldsymbol{l}) = P_{\kappa}(\boldsymbol{l})$.
+
+Relate $\kappa(\boldsymbol{\theta},\chi)$ to the overdensity $\delta(f_K(\chi)\boldsymbol{\theta},\chi)$.
+\begin{eqnarray}
+\kappa(\boldsymbol{\theta},\chi) &=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)f_K(\chi^{\prime})}(\frac{\partial^2}{\partial \theta_1^2} + \frac{\partial^2}{\partial \theta_2^2})\Phi(f_K(\chi^{\prime})\boldsymbol{\theta}, \chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)f_K(\chi^{\prime})}
+f_K(\chi^{\prime})^2 (\frac{\partial^2}{\partial (f_K(\chi^{\prime})\theta_1)^2} + 
+\frac{\partial^2}{\partial (f_K(\chi^{\prime})\theta_2)^2})\Phi(f_K(\chi^{\prime})\boldsymbol{\theta}, \chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)}f_K(\chi^{\prime})
+(\frac{\partial^2}{\partial (f_K(\chi^{\prime})\theta_1)^2} + 
+\frac{\partial^2}{\partial (f_K(\chi^{\prime})\theta_2)^2} + \frac{\partial^2}{\partial {\chi^{\prime}}^2})\Phi(f_K(\chi^{\prime})\boldsymbol{\theta}, \chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)}f_K(\chi^{\prime})
+\nabla^2\Phi(f_K(\chi^{\prime})\boldsymbol{\theta}, \chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)}f_K(\chi^{\prime})
+4\pi G a(\chi^{\prime})^2 \bar{\rho} \delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)}f_K(\chi^{\prime})
+4\pi G a(\chi^{\prime})^2 \bar{\rho}_0a(\chi^{\prime})^{-3} \delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} d\chi^{\prime} \frac{f_K(\chi - \chi^{\prime})}{f_K(\chi)}f_K(\chi^{\prime})
+4\pi G a(\chi^{\prime})^2 \rho_{crit}\Omega_{m0}a(\chi^{\prime})^{-3} \delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{1}{c^2}\int_0^{\chi} \frac{d\chi^{\prime}}{a(\chi^{\prime})} \frac{f_K(\chi - \chi^{\prime})f_K(\chi^{\prime})}{f_K(\chi)}
+4\pi G \frac{3H_0^2}{8\pi G}\Omega_{m0} \delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi} \frac{d\chi^{\prime}}{a(\chi^{\prime})} \frac{f_K(\chi - \chi^{\prime})f_K(\chi^{\prime})}{f_K(\chi)}\delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+\end{eqnarray}
+The mean convergence
+\begin{eqnarray}
+\kappa(\boldsymbol{\theta})&=&\int_0^{\chi_{lim}} d\chi n(\chi)\kappa(\boldsymbol{\theta},\chi) \\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi_{lim}} d\chi n(\chi)\int_0^{\chi} \frac{d\chi^{\prime}}{a(\chi^{\prime})} \frac{f_K(\chi - \chi^{\prime})f_K(\chi^{\prime})}{f_K(\chi)}\delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi_{lim}} d\chi^{\prime} \int_{\chi^{\prime}}^{\chi_{lim}} d\chi\frac{n(\chi)}{a(\chi^{\prime})} \frac{f_K(\chi - \chi^{\prime})f_K(\chi^{\prime})}{f_K(\chi)}\delta(f_K(\chi^{\prime})\boldsymbol{\theta},\chi^{\prime})\\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi_{lim}} d\chi \int_{\chi}^{\chi_{lim}} d\chi^{\prime}\frac{n(\chi^{\prime})}{a(\chi)} \frac{f_K(\chi^{\prime} - \chi)f_K(\chi)}{f_K(\chi^{\prime})}\delta(f_K(\chi)\boldsymbol{\theta},\chi)\\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi_{lim}} \frac{d\chi}{a(\chi)} f_K(\chi)\delta(f_K(\chi)\boldsymbol{\theta},\chi)\int_{\chi}^{\chi_{lim}} d\chi^{\prime}n(\chi^{\prime}) \frac{f_K(\chi^{\prime} - \chi)}{f_K(\chi^{\prime})}\\ \nonumber
+&=& \frac{3H_0^2\Omega_{m0}}{2c^2}\int_0^{\chi_{lim}}  \frac{d\chi}{a(\chi)}q(\chi)f_K(\chi)\delta(f_K(\chi)\boldsymbol{\theta},\chi)
+;\quad q(\chi)=\int_{\chi}^{\chi_{lim}} d\chi^{\prime}n(\chi^{\prime}) \frac{f_K(\chi^{\prime} - \chi)}{f_K(\chi^{\prime})}\\ \nonumber
+\end{eqnarray}
+\end{document} 

@@ -45,18 +45,18 @@ if mode == "cata_name":
 
 elif mode == "hdf5_cata":
     # convert the .dat to .hdf5
-    # CFHT_pz_path = argv[3]
-    # # read the photoz data
-    # # RA DEC Z_B Z_B_MIN Z_B_MAX ODDS Z_E Pz_full(70 cols)
-    # for i in range(numprocs):
-    #     if i == rank:
-    #         h5f = h5py.File(CFHT_pz_path,"r")
-    #         pz_data = h5f["/data"][()]
-    #         h5f.close()
-    #         # print("%d Read Pz cata"%rank)
-    #
-    #     comm.Barrier()
-    # comm.Barrier()
+    CFHT_pz_path = argv[3]
+    # read the photoz data
+    # RA DEC Z_B Z_B_MIN Z_B_MAX ODDS Z_E Pz_full(70 cols)
+    for i in range(numprocs):
+        if i == rank:
+            h5f = h5py.File(CFHT_pz_path,"r")
+            pz_data = h5f["/data"][()]
+            h5f.close()
+            # print("%d Read Pz cata"%rank)
+
+        comm.Barrier()
+    comm.Barrier()
 
     # zbin = numpy.array([0.025 + i * 0.05 for i in range(70)])
 
@@ -88,61 +88,61 @@ elif mode == "hdf5_cata":
             row, col = 0, 0
 
         if row > 0:
-            # # for Z_B_MIN, Z_B_MAX, ODDS, Z_E, sum(Pz)
-            # dst_data = numpy.zeros((row, col+5), dtype=numpy.float32)
-            # dst_data[:,:col] = src_data
-            #
-            # ra_min, ra_max = src_data[:,0].min(), src_data[:,0].max()
-            # dra = (ra_max - ra_min)*0.06
-            # dec_min, dec_max = src_data[:,1].min(), src_data[:,1].max()
-            # ddec = (dec_max - dec_min) * 0.06
-            #
-            # idx1 = pz_data[:,0] >= ra_min - dra
-            # idx2 = pz_data[:,0] <= ra_max + dra
-            # idx3 = pz_data[:,1] >= dec_min - ddec
-            # idx4 = pz_data[:,1] <= dec_max + ddec
-            # idx = idx1 & idx2 & idx3 & idx4
-            # pz_data_sub = pz_data[idx]
-            # pz_data_sub_num = idx.sum()
-            # labels = numpy.arange(0, pz_data_sub_num)
-            #
-            # src_num = src_data.shape[0]
-            # for i in range(src_num):
-            #     diff_rad = numpy.abs(pz_data_sub[:,0] - src_data[i,0]) + numpy.abs(pz_data_sub[:,1] - src_data[i,1])
-            #     diff_z = numpy.abs(pz_data_sub[:,2] - src_data[i,10])
-            #
-            #     diff_rad_min = diff_rad.min()
-            #     diff_z_min = diff_z.min()
-            #
-            #     idx_1 = diff_rad == diff_rad.min()
-            #     idx_2 = diff_z == diff_z.min()
-            #     idx_ = idx_1 & idx_2
-            #     match_num = idx_.sum()
-            #
-            #     if diff_rad_min >= 0.0001:
-            #         print("Can't find match points!!! diff_radius_min: %.5f"%diff_rad_min)
-            #         print(labels[idx_1])
-            #         exit()
-            #
-            #     if match_num == 1:
-            #         target_idx = labels[idx_]
-            #     else:
-            #         print("Find %d pts!!!"%match_num)
-            #         print(idx_1.sum(), idx_2.sum(), idx_.sum())
-            #         print(diff_rad.min(),diff_z.min())
-            #         print("%.4f %.4f  %.3f"%(src_data[i,0],src_data[i,1], src_data[i,10]))
-            #         exit()
-            #
-            #     # Z_B_MIN
-            #     dst_data[i,col] = pz_data_sub[target_idx, 3]
-            #     # Z_B_MAX
-            #     dst_data[i,col+1] = pz_data_sub[target_idx, 4]
-            #     # ODDS
-            #     dst_data[i,col+2] = pz_data_sub[target_idx, 5]
-            #     # expectation of Z
-            #     dst_data[i,col+3] = pz_data_sub[target_idx, 6]
-            #     # sum(Pz)
-            #     dst_data[i,col+4] = pz_data_sub[target_idx, 7]
+            # for Z_B_MIN, Z_B_MAX, ODDS, Z_E, sum(Pz)
+            dst_data = numpy.zeros((row, col+5), dtype=numpy.float32)
+            dst_data[:,:col] = src_data
+
+            ra_min, ra_max = src_data[:,0].min(), src_data[:,0].max()
+            dra = (ra_max - ra_min)*0.06
+            dec_min, dec_max = src_data[:,1].min(), src_data[:,1].max()
+            ddec = (dec_max - dec_min) * 0.06
+
+            idx1 = pz_data[:,0] >= ra_min - dra
+            idx2 = pz_data[:,0] <= ra_max + dra
+            idx3 = pz_data[:,1] >= dec_min - ddec
+            idx4 = pz_data[:,1] <= dec_max + ddec
+            idx = idx1 & idx2 & idx3 & idx4
+            pz_data_sub = pz_data[idx]
+            pz_data_sub_num = idx.sum()
+            labels = numpy.arange(0, pz_data_sub_num)
+
+            src_num = src_data.shape[0]
+            for i in range(src_num):
+                diff_rad = numpy.abs(pz_data_sub[:,0] - src_data[i,0]) + numpy.abs(pz_data_sub[:,1] - src_data[i,1])
+                diff_z = numpy.abs(pz_data_sub[:,2] - src_data[i,10])
+
+                diff_rad_min = diff_rad.min()
+                diff_z_min = diff_z.min()
+
+                idx_1 = diff_rad == diff_rad.min()
+                idx_2 = diff_z == diff_z.min()
+                idx_ = idx_1 & idx_2
+                match_num = idx_.sum()
+
+                if diff_rad_min >= 0.0001:
+                    print("Can't find match points!!! diff_radius_min: %.5f"%diff_rad_min)
+                    print(labels[idx_1])
+                    exit()
+
+                if match_num == 1:
+                    target_idx = labels[idx_]
+                else:
+                    print("Find %d pts!!!"%match_num)
+                    print(idx_1.sum(), idx_2.sum(), idx_.sum())
+                    print(diff_rad.min(),diff_z.min())
+                    print("%.4f %.4f  %.3f"%(src_data[i,0],src_data[i,1], src_data[i,10]))
+                    exit()
+
+                # Z_B_MIN
+                dst_data[i,col] = pz_data_sub[target_idx, 3]
+                # Z_B_MAX
+                dst_data[i,col+1] = pz_data_sub[target_idx, 4]
+                # ODDS
+                dst_data[i,col+2] = pz_data_sub[target_idx, 5]
+                # expectation of Z
+                dst_data[i,col+3] = pz_data_sub[target_idx, 6]
+                # sum(Pz)
+                dst_data[i,col+4] = pz_data_sub[target_idx, 7]
 
             # Nan check
             idx = numpy.isnan(src_data)
@@ -150,7 +150,7 @@ elif mode == "hdf5_cata":
                 print("Find Nan in ", expo_src_path)
 
             h5f_expo = h5py.File(expo_h5_path, "w")
-            h5f_expo["/data"] = src_data
+            h5f_expo["/data"] = dst_data
             h5f_expo.close()
 
             exposures_candidates_avail_sub.append(expo_h5_path + "\n")

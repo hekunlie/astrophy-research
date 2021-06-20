@@ -20,9 +20,9 @@ time_start = tool_box.get_time_now()
 
 area_num = 4
 # theta bin
-theta_bin_num = 6
-theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-# theta_bin = tool_box.set_bin_log(0.8, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin_num = 5
+# theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+theta_bin = tool_box.set_bin_log(5, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -42,7 +42,7 @@ redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.
 # redshift_bin = numpy.array([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4],dtype=numpy.float32)
 
 # chi guess bin for PDF_SYM
-chi_guess_num = 60
+chi_guess_num = 40
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
 chi_guess_bin_p = tool_box.set_bin_log(10**(-8), 10**(-3), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
@@ -90,9 +90,9 @@ mu_idx = 36
 mv_idx = 37
 
 # about PhotoZ
-odd_idx = 14
-odd_thresh = 0.0
-redshift_e_idx = 20
+odd_idx = 40
+odd_thresh = 0.4
+redshift_e_idx = 41
 # pz_sum_idx = 42
 # pz_sum_thresh = 0.001
 
@@ -146,7 +146,7 @@ if cmd == "correlation":
             else:
                 src_data = numpy.row_stack((src_data, temp))
 
-        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 100000)
+        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 1000000)
 
         if not os.path.exists(result_cata_path + "/kmeans"):
             os.mkdir(result_cata_path + "/kmeans")
@@ -240,9 +240,9 @@ if cmd == "prepare":
         idx6 = data[:, jmax_idx] < jmax_thresh
         idx_7 = data[:, redshift_idx] >= redshift_bin[0]
         idx_8 = data[:, redshift_idx] < redshift_bin[redshift_bin_num]
-        #idx_9 = data[:,odd_idx] >= odd_thresh
+        idx_9 = data[:,odd_idx] >= odd_thresh
         # idx_10 = labels > 0
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8# & idx_9# & idx_10
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6 & idx_7 & idx_8 & idx_9# & idx_10
 
         src_num = idx.sum()
 
@@ -280,7 +280,7 @@ if cmd == "prepare":
             dst_data[:, 6] = src_data[:, dec_idx]
             dst_data[:, 7] = numpy.cos(dst_data[:, 6] / deg2arcmin * deg2rad)
             dst_data[:, 8] = src_data[:, redshift_idx]
-            # dst_data[:, 9] = src_data[:, redshift_e_idx]
+            dst_data[:, 9] = src_data[:, redshift_e_idx]
 
             redshift_label = numpy.zeros((src_num,), dtype=numpy.intc)
 
