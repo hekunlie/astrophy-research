@@ -94,7 +94,7 @@ thread = int(argv[4])
 
 ################### read the z data #############################
 
-# redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
+redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.float32)
 
 h5f = h5py.File("./data/zhist.hdf5","r")
 zehist = h5f["/zhist"][()]

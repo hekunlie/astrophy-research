@@ -11,14 +11,14 @@ import tool_box
 
 
 zbin_num = 6
-theta_bin_num = 6
+theta_bin_num = 5
 resample_num = 200
 
 # discard the first bin
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_1"
+data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_new/smooth/all"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -53,7 +53,9 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     # xi_theta_mcmc_same = h5f["/theta"][()]
     # h5f.close()
 
-expo_type = ["diff_expo"]#, "same_expo"]
+# expo_type = ["diff_expo"]#, "same_expo"]
+# expo_type = ["same_expo"]#, "same_expo"]
+expo_type = ["diff_expo", "same_expo"]
 
 datas = []
 cov = []
@@ -206,9 +208,10 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                img.axs[img_row][img_col].set_xlim(0.8, 130)
+                img.axs[img_row][img_col].set_xlim(4, 65)
                 if i == j:
-                    img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40,100], ["$1$","$5$","$10$","$20$","$40$","$100$"])
+                    # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40,100], ["$1$","$5$","$10$","$20$","$40$","$100$"])
+                    img.set_ticklabel_str(img_row, img_col, 1,[5,10,20,40,60], ["$5$","$10$","$20$","$40$","$60$"])
                 else:
                     img.axs[img_row][img_col].set_xticklabels([])
                 # img.axs[img_row][img_col].set_xlim(0.8, 60)
@@ -286,9 +289,10 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].set_yscale("log")
                 img.axs[img_row][img_col].set_xscale("log")
 
-                img.axs[img_row][img_col].set_xlim(0.8, 130)
+                img.axs[img_row][img_col].set_xlim(4, 65)
                 if i == j:
-                    img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40,100], ["$1$","$5$","$10$","$20$","$40$","$100$"])
+                    # img.set_ticklabel_str(img_row, img_col, 1,[1,5,10,20,40,100], ["$1$","$5$","$10$","$20$","$40$","$100$"])
+                    img.set_ticklabel_str(img_row, img_col, 1,[5,10,20,40,60], ["$5$","$10$","$20$","$40$","$60$"])
                 else:
                     img.axs[img_row][img_col].set_xticklabels([])
                 # img.axs[img_row][img_col].set_xlim(0.8, 130)
