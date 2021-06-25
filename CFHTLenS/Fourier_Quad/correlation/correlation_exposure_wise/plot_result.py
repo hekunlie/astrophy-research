@@ -18,14 +18,15 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_new/smooth/all"
+data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_new/smooth/ODDS_0.0/same_expo"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
 pic_nm_m_pdf = data_path + "/xi_minus_result_%d_compare.pdf" % resample_num
 pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.049$"
-pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.43\n$\Omega_m$=0.64\n$\Omega_b$=0.049"
-pk_line_label_mcmc_same = "MCMC:\n$\sigma_8$ = 0.56\n$\Omega_m$=0.66\n$\Omega_b$=0.10"
+# pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.683\n$\Omega_m$=0.359\n$\Omega_b$=0.049"
+pk_line_label_mcmc_same = "MCMC:\n$\sigma_8$ = 0.428\n$\Omega_m$=0.742\n$\Omega_b$=0.049"
+pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.428\n$\Omega_m$=0.742\n$\Omega_b$=0.049"
 
 pk_lines_tag = 0
 mcmc_pk_lines_tag = 0
@@ -40,12 +41,12 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     pk_lines_tag = 1
     print("Find Pk lines")
 
-    # h5f = h5py.File(data_path + "/mcmc_diff_expo.hdf5","r")
-    # xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
-    # xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
-    # xi_theta_mcmc_diff = h5f["/theta"][()]
-    # h5f.close()
-    # mcmc_pk_lines_tag = 1
+    h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
+    xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
+    xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
+    xi_theta_mcmc_diff = h5f["/theta"][()]
+    h5f.close()
+    mcmc_pk_lines_tag = 1
     #
     # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
     # xi_p_theoretical_lines_mcmc_same = h5f["/xi_p"][()]
@@ -54,8 +55,8 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     # h5f.close()
 
 # expo_type = ["diff_expo"]#, "same_expo"]
-# expo_type = ["same_expo"]#, "same_expo"]
-expo_type = ["diff_expo", "same_expo"]
+expo_type = ["same_expo"]#, "same_expo"]
+# expo_type = ["diff_expo", "same_expo"]
 
 datas = []
 cov = []

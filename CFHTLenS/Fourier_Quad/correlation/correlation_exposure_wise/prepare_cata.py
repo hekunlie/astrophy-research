@@ -91,7 +91,7 @@ mv_idx = 37
 
 # about PhotoZ
 odd_idx = 40
-odd_thresh = 0.4
+odd_thresh = 0.0
 redshift_e_idx = 41
 # pz_sum_idx = 42
 # pz_sum_thresh = 0.001
@@ -114,9 +114,10 @@ sep_z = 0.2
 # fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/CFHT_cat_4_20_2021"
 # result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/correlation/cata"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021_smoothed"
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021"
 result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
 
+print("cmd: correlation, prepare, stack, kmeans, segment\n")
 cmd = argv[1]
 
 if cmd == "correlation":

@@ -109,6 +109,8 @@ tomo_panel_num = int((redshift_bin_num * redshift_bin_num + redshift_bin_num) / 
 
 expo_type = ["diff_expo","same_expo"][expo]
 
+print(expo_type)
+
 resample_num = 200
 
 h5f = h5py.File("./data/result_cache_%d_%s.hdf5"%(resample_num,expo_type),"r")
