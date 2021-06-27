@@ -9,6 +9,7 @@ import tool_box
 import warnings
 from sklearn.cluster import KMeans
 import time
+import FQlib
 # import c4py
 
 warnings.filterwarnings('error')
@@ -101,21 +102,10 @@ sep_ang = 0.0748
 sep_pix = 12 # pixels
 sep_z = 0.2
 
-#
-# fourier_cata_path = "/coma/hklee/CFHT/CFHT_cat_Oct_11_2020"
-# result_cata_path = "/coma/hklee/CFHT/correlation/cata"
 
-# fourier_cata_path = "/mnt/perc/hklee/CFHT/CFHT_cat_Dec_17_2020_smoothed"
-# result_cata_path = "/mnt/perc/hklee/CFHT/correlation/cata"
-
-# fourier_cata_path = "/home/hklee/work/CFHT/CFHT_cat_4_20_2021"
-# result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
-
-# fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/CFHT_cat_4_20_2021"
-# result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/CFHT/correlation/cata"
 
 fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021"
-result_cata_path = "/home/hklee/work/CFHT/correlation/cata"
+result_cata_path = "/home/hklee/work/CFHT/correlation/smooth_cata/cata_odds_0.0"
 
 print("cmd: correlation, prepare, stack, kmeans, segment\n")
 cmd = argv[1]
@@ -506,6 +496,8 @@ elif cmd == "segment":
     if rank == 0:
         if not os.path.exists(group_cata_path):
             os.makedirs(group_cata_path)
+        h5f = h5py.File(result_cata_path + "/bias_test.hdf5", "w")
+        h5f.close()
     comm.Barrier()
 
     # the width of each exposure, arcmin
@@ -537,8 +529,11 @@ elif cmd == "segment":
 
         sub_group_list = tool_box.alloc(group_list, cpus)[rank]
 
+        add_bias = numpy.zeros((len(sub_group_list), 5))
+        add_bias_sp = (len(sub_group_list), 5)
+
         # divide the group into many exposures
-        for group_tag in sub_group_list:
+        for seq_tag, group_tag in enumerate(sub_group_list):
             # select individual group
             idx_group = group_label == group_tag
             sub_data = area_data[idx_group]
@@ -552,6 +547,17 @@ elif cmd == "segment":
 
             group_ra_bin, group_ra_bin_num = tool_box.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
             group_dec_bin, group_dec_bin_num = tool_box.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+
+            # additive bias test
+            # it should be very small
+            gh1, gh1_sig = FQlib.find_shear_cpp(sub_data[:, 0], sub_data[:, 2] + sub_data[:, 3], 20)[:2]
+            gh2, gh2_sig = FQlib.find_shear_cpp(sub_data[:, 1], sub_data[:, 2] - sub_data[:, 3], 20)[:2]
+            # if the signal is significant than 1.5\sigma, it should be corrected
+            if numpy.abs(gh1/gh1_sig) > 1.5:
+                sub_data[:, 0] = sub_data[:, 0] - gh1*(sub_data[:, 2] + sub_data[:, 3])
+            if numpy.abs(gh2 / gh2_sig) > 1.5:
+                sub_data[:, 1] = sub_data[:, 1] - gh2*(sub_data[:, 2] - sub_data[:, 3])
+            add_bias[seq_tag] = group_tag, gh1, gh1_sig,gh2, gh2_sig
 
             count = 0
             for i in range(group_ra_bin_num):
@@ -594,6 +600,30 @@ elif cmd == "segment":
                                                  expos_pos[2], expos_pos[3], expos_pos[4], expos_pos[5]))
                         count += 1
                         expos_count += 1
+        comm.Barrier()
+
+        total_add_bias_sp = comm.gather(add_bias_sp, root=0)
+        comm.Barrier()
+        if rank > 0:
+            # !!!! remember the data type, MPI.DOUBLE, MPI.FLOAT, ...
+            # or it will raise an error, Keyerror
+            comm.Send([add_bias, MPI.DOUBLE], dest=0, tag=rank)
+        else:
+            # receive the data from other CPUs
+            # !!!! the start points is 1 in range() not 0
+            for procs in range(1, cpus):
+                # prepare a buffer for the data, the shape must be the same
+                # with that of what the other CPUs send, you have collected them in 'data_sps'
+                recvs = numpy.empty(total_add_bias_sp[procs], dtype=numpy.double)
+                # receive it using the buffer,
+                comm.Recv(recvs, source=procs, tag=procs)
+                add_bias = numpy.row_stack((add_bias, recvs))
+
+            h5f = h5py.File(result_cata_path + "/bias_test.hdf5", "r+")
+            # print(results)
+            h5f["/%d" % sub_area] = add_bias
+            h5f.close()
+        comm.Barrier()
 
     comm.Barrier()
     expos_count_list = comm.gather(expos_count, root=0)

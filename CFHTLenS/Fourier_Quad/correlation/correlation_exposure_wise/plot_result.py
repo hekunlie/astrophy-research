@@ -18,7 +18,7 @@ resample_num = 200
 discard_bins = [0]
 
 pts_num = int(theta_bin_num * (zbin_num ** 2 + zbin_num) / 2)
-data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_new/smooth/ODDS_0.0/same_expo"
+data_path = "E:/works/correlation/CFHT/2021_6_15/cut_2.5_new/unsmooth/ODDS_0.0/diff_expo"
 pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
@@ -41,12 +41,12 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     pk_lines_tag = 1
     print("Find Pk lines")
 
-    h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
-    xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
-    xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
-    xi_theta_mcmc_diff = h5f["/theta"][()]
-    h5f.close()
-    mcmc_pk_lines_tag = 1
+    # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
+    # xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
+    # xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
+    # xi_theta_mcmc_diff = h5f["/theta"][()]
+    # h5f.close()
+    # mcmc_pk_lines_tag = 1
     #
     # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
     # xi_p_theoretical_lines_mcmc_same = h5f["/xi_p"][()]
@@ -54,8 +54,8 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     # xi_theta_mcmc_same = h5f["/theta"][()]
     # h5f.close()
 
-# expo_type = ["diff_expo"]#, "same_expo"]
-expo_type = ["same_expo"]#, "same_expo"]
+expo_type = ["diff_expo"]#, "same_expo"]
+# expo_type = ["same_expo"]#, "same_expo"]
 # expo_type = ["diff_expo", "same_expo"]
 
 datas = []
