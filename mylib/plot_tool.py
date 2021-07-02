@@ -74,7 +74,8 @@ class Image_Plot:
         self.line_styles = default_ls
 
 
-    def scatter_pts(self, iy,ix, x, y, fxy, scale=None, pts_size=3, color_map='YlOrRd',marker="s",sci_cb=True):
+    def scatter_pts(self, iy,ix, x, y, fxy, scale=None, tick_labelsize=None, label=None, label_size=None,
+                    pts_size=3, color_map='YlOrRd',marker="s",sci_cb=True):
         if scale:
             norm = plt.Normalize(vmin=scale[0], vmax=scale[1])
         else:
@@ -88,8 +89,19 @@ class Image_Plot:
         sm._A = []
         cb = self.figure.colorbar(sm, ax=self.axs[iy][ix])
         if sci_cb:
-            cb.formatter.set_powerlimits((0, 0))
+            # cb.formatter.set_powerlimits((0, 0))
+            cb.ax.ticklabel_format(axis="both",style=sci_cb,scilimits=(0,0), )
             cb.update_ticks()
+        if tick_labelsize:
+            cb.ax.tick_params(labelsize=tick_labelsize)
+        else:
+            cb.ax.tick_params(labelsize=self.xy_tick_size)
+        if label:
+            if label_size:
+                cb.set_label(label,size=label_size)
+            else:
+                cb.set_label(label,size=self.xy_tick_size)
+
 
     def axis_type(self, axis_nm, spine, tick_len=None, tick_width=None, direction="in"):
 

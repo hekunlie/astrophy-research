@@ -186,6 +186,8 @@ void find_pairs_stack_expo(data_info *expo_info, int expo_label_0, int expo_labe
 
 void find_pairs_diff_expo_dev(data_info *field_info, int expo_label_0, int expo_label_1);
 void find_pairs_same_expo_dev(data_info *field_info, int expo_label_0, int expo_label_1);
+void find_pairs_stack_expo_dev(data_info *field_info, int expo_label_0, int expo_label_1);
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

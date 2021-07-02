@@ -49,7 +49,14 @@ if len(my_sub_area_list) > 0:
         h5f = h5py.File(expo_path, "r")
         temp = h5f["/data"][()]
         h5f.close()
-        idx = temp[:,5] >= 2.5
+
+        if stack_tag == 0:
+            stack_data = temp
+            stack_tag = 1
+        else:
+            stack_data = numpy.row_stack((stack_data, temp))
+
+        # idx = temp[:,5] >= 2.5
 
         # Nan check
         # idx = numpy.isnan(temp)
@@ -59,18 +66,18 @@ if len(my_sub_area_list) > 0:
         #     idx = numpy.isnan(temp[:,-2])
         #     print(label[idx][:5])
         #     print("Find Nan ", expo_path)
-        if idx.sum() > 0:
-
-            temp_src = numpy.zeros((idx.sum(), 3),dtype=numpy.float32)
-            temp_src[:,0] = temp[:,16][idx]
-            temp_src[:,1] = temp[:,8][idx]
-            temp_src[:,2] = temp[:,9][idx]
-
-            if stack_tag == 0:
-                stack_data = temp_src
-                stack_tag = 1
-            else:
-                stack_data = numpy.row_stack((stack_data, temp_src))
+        # if idx.sum() > 0:
+        #
+        #     temp_src = numpy.zeros((idx.sum(), 3),dtype=numpy.float32)
+        #     temp_src[:,0] = temp[:,16][idx]
+        #     temp_src[:,1] = temp[:,8][idx]
+        #     temp_src[:,2] = temp[:,9][idx]
+        #
+        #     if stack_tag == 0:
+        #         stack_data = temp_src
+        #         stack_tag = 1
+        #     else:
+        #         stack_data = numpy.row_stack((stack_data, temp_src))
 
     sp = stack_data.shape
 else:

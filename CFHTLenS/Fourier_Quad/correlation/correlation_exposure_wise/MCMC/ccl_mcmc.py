@@ -107,9 +107,7 @@ tomo_panel_num = int((redshift_bin_num * redshift_bin_num + redshift_bin_num) / 
 
 ################# read the result data ############################
 
-expo_type = ["diff_expo","same_expo"][expo]
-
-print(expo_type)
+expo_type = ["diff_expo","same_expo","stack_expo"][expo]
 
 resample_num = 200
 

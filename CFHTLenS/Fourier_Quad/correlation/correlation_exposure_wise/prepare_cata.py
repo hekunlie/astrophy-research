@@ -103,11 +103,13 @@ sep_pix = 12 # pixels
 sep_z = 0.2
 
 
+fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021_smoothed"
+source_list_path = fourier_cata_path + "/cat_inform/field_avail.dat"
 
-fourier_cata_path = "/home/hklee/work/CFHT/CFHT_shear_cat_6_14_2021"
-result_cata_path = "/home/hklee/work/CFHT/correlation/smooth_cata/cata_odds_0.0"
+result_cata_path = "/home/hklee/work/CFHT/correlation/smooth_cata/cata_odds_0.0/stack_expo"
 
-print("cmd: correlation, prepare, stack, kmeans, segment\n")
+cmd_avail = "cmd: correlation, prepare, stack, kmeans, segment\n"
+
 cmd = argv[1]
 
 if cmd == "correlation":
@@ -115,7 +117,10 @@ if cmd == "correlation":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
     if rank == 0:
+        print(cmd_avail)
+
         print(time_start, "correlation")
+        print(source_list_path)
     # rank = 0
     # cpus = 1
 
@@ -123,7 +128,7 @@ if cmd == "correlation":
     if rank == 0:
 
         field_name = []
-        with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+        with open(source_list_path, "r") as f:
             f_lines = f.readlines()
         for ff in f_lines:
             field_name.append(ff.split("\n")[0])
@@ -201,10 +206,13 @@ if cmd == "prepare":
     cpus = comm.Get_size()
 
     if rank == 0:
+        print(cmd_avail)
+
         print(time_start, "prepare")
+        print(source_list_path)
 
     total_expos = []
-    with open(fourier_cata_path + "/cat_inform/exposure_avail.dat", "r") as f:
+    with open(source_list_path, "r") as f:
         f_lines = f.readlines()
     for ff in f_lines:
         total_expos.append(ff.split("\n")[0])
@@ -321,6 +329,19 @@ if cmd == "prepare":
         with open("log.dat", "w") as f:
             f.writelines(exception_all)
         print(log_inform)
+
+        test_nm1 = []
+        test_nm2 = []
+        for ff in total_expos:
+            test_nm1.append(ff.split("/")[-1])
+        for ff in buffer_expo:
+            test_nm2.append(ff.split()[1]+".hdf5")
+        for t1 in test_nm1:
+            if t1 not in test_nm2:
+                print(t1)
+                # pass
+        # print(test_nm1)
+        # print(test_nm2)
     comm.Barrier()
 
 
@@ -332,6 +353,8 @@ elif cmd == "stack":
     cpus = comm.Get_size()
 
     if rank == 0:
+        print(cmd_avail)
+
         print(time_start, "stack")
 
     expos = []
@@ -438,6 +461,8 @@ elif cmd == "kmeans":
 
 
     if rank == 0:
+        print(cmd_avail)
+
         print(time_start, "kmeans")
 
     t1 = time.time()
@@ -490,6 +515,8 @@ elif cmd == "segment":
     cpus = comm.Get_size()
 
     if rank == 0:
+        print(cmd_avail)
+
         print(time_start, "segment")
 
     group_cata_path = result_cata_path + "/kmeans"
@@ -554,9 +581,11 @@ elif cmd == "segment":
             gh2, gh2_sig = FQlib.find_shear_cpp(sub_data[:, 1], sub_data[:, 2] - sub_data[:, 3], 20)[:2]
             # if the signal is significant than 1.5\sigma, it should be corrected
             if numpy.abs(gh1/gh1_sig) > 1.5:
-                sub_data[:, 0] = sub_data[:, 0] - gh1*(sub_data[:, 2] + sub_data[:, 3])
+                pass
+                # sub_data[:, 0] = sub_data[:, 0] - gh1*(sub_data[:, 2] + sub_data[:, 3])
             if numpy.abs(gh2 / gh2_sig) > 1.5:
-                sub_data[:, 1] = sub_data[:, 1] - gh2*(sub_data[:, 2] - sub_data[:, 3])
+                pass
+                # sub_data[:, 1] = sub_data[:, 1] - gh2*(sub_data[:, 2] - sub_data[:, 3])
             add_bias[seq_tag] = group_tag, gh1, gh1_sig,gh2, gh2_sig
 
             count = 0
