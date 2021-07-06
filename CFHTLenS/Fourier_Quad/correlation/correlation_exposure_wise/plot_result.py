@@ -23,7 +23,7 @@ pic_nm_p = data_path + "/xi_plus_result_%d_compare.png" % resample_num
 pic_nm_m = data_path + "/xi_minus_result_%d_compare.png" % resample_num
 pic_nm_p_pdf = data_path + "/xi_plus_result_%d_compare.pdf" % resample_num
 pic_nm_m_pdf = data_path + "/xi_minus_result_%d_compare.pdf" % resample_num
-pk_line_label = "Plank2018:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.049$"
+pk_line_label = "Plank2018"#:\n$\sigma_8$ = 0.811\n$\Omega_m=0.264$\n$\Omega_b=0.049$"
 # pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.683\n$\Omega_m$=0.359\n$\Omega_b$=0.049"
 pk_line_label_mcmc_same = "MCMC:\n$\sigma_8$ = 0.428\n$\Omega_m$=0.742\n$\Omega_b$=0.049"
 pk_line_label_mcmc_diff = "MCMC:\n$\sigma_8$ = 0.428\n$\Omega_m$=0.742\n$\Omega_b$=0.049"
@@ -41,24 +41,12 @@ if os.path.exists("E:/works/correlation/planck2018.hdf5"):
     pk_lines_tag = 1
     print("Find Pk lines")
 
-    # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
-    # xi_p_theoretical_lines_mcmc_diff = h5f["/xi_p"][()]
-    # xi_m_theoretical_lines_mcmc_diff = h5f["/xi_m"][()]
-    # xi_theta_mcmc_diff = h5f["/theta"][()]
-    # h5f.close()
-    # mcmc_pk_lines_tag = 1
-    #
-    # h5f = h5py.File(data_path + "/mcmc_same_expo.hdf5","r")
-    # xi_p_theoretical_lines_mcmc_same = h5f["/xi_p"][()]
-    # xi_m_theoretical_lines_mcmc_same = h5f["/xi_m"][()]
-    # xi_theta_mcmc_same = h5f["/theta"][()]
-    # h5f.close()
 
 # expo_type = ["diff_expo"]
 # expo_type = ["same_expo"]
 # expo_type = ["stack_expo"]
 expo_type = ["diff_expo", "stack_expo","same_expo"]
-
+legend_name = ["DIF","STA","SAM"]
 datas = []
 cov = []
 for ii in range(len(expo_type)):
@@ -147,7 +135,7 @@ for i in range(len(cov)):
 
 # plot xi_plus
 img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2,
-                 plt_line_width=2.5, legend_size=35, xy_tick_size=25)
+                 plt_line_width=3, legend_size=35, xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
 img.set_style()
 
@@ -155,7 +143,7 @@ img.set_style()
 for ii in range(len(expo_type)):
 
     theta, xi_p, xi_p_sig = datas[ii][:3]
-    print(theta)
+    # print(theta)
     used_data_pts = datas[ii][-1]
 
     if ii == 0:
@@ -167,6 +155,16 @@ for ii in range(len(expo_type)):
     img.axis_type(1,"major",10)
     img.axis_type(0,"minor",5)
     img.axis_type(1,"minor",5)
+
+    mcmc_pk_lines_tag = 1
+    h5f = h5py.File(data_path + "/mcmc_%s.hdf5"%expo_type[ii],"r")
+    xi_p_lines_mcmc = h5f["/xi_p"][()]
+    xi_m_lines_mcmc = h5f["/xi_m"][()]
+    xi_theta_mcmc = h5f["/theta"][()]
+    h5f.close()
+    pk_line_label_mcmc = legend_name[ii]
+
+    print(expo_type[ii])
 
     tag = 0
     legend_tag = 0
@@ -185,17 +183,15 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_p[st:ed],yerr=xi_p_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
                                                    marker="o",fmt=" ",mfc="none",ms=8,
-                                                   label="$\\xi_{+}$ %s"%expo_type[ii],capsize=4, alpha=alpha)
+                                                   label="$\\xi_{+}$ %s"%legend_name[ii],capsize=4, alpha=alpha)
                 if ii == 0 and pk_lines_tag == 1:
 
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_p_theoretical_lines[tag],
-                                                   c="k",ls="dashdot", label=pk_line_label)
-                if ii == 0 and mcmc_pk_lines_tag == 1:
-                    img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_p_theoretical_lines_mcmc_diff[tag],
-                                                   c="C0",ls="-", label=pk_line_label_mcmc_diff)
-                    #
-                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_same[tag], xi_p_theoretical_lines_mcmc_same[tag],
-                    #                                c="C1",ls="-", label=pk_line_label_mcmc_same)
+                                                   c="k",ls="dashdot", label=pk_line_label, lw=img.plt_line_width)
+                if mcmc_pk_lines_tag == 1:
+
+                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_p_lines_mcmc[tag],
+                                                   c="C%d"%ii,ls="-", lw=img.plt_line_width)
 
                 if used_data_pts[st:ed].sum() > 1 and legend_tag == 0:
                     legend_tag = 1
@@ -218,8 +214,7 @@ for ii in range(len(expo_type)):
                     img.set_label(img_row, img_col, 1, "$\\theta$ [arcmin]", fontsize=img.legend_size-3)
                 else:
                     img.axs[img_row][img_col].set_xticklabels([])
-                # img.axs[img_row][img_col].set_xlim(0.8, 60)
-                # img.set_ticklabel_str(img_row, img_col, 1,[1,10,40,100], ["$1$","$10$","$40$","$10^2$"])
+
 
                 img.axs[img_row][img_col].set_ylim(4 * 10 ** (-7), 7 * 10 ** (-4))
 
@@ -237,7 +232,7 @@ print(pic_nm_p)
 
 # plot xi_minus
 img = Image_Plot(fig_x=4, fig_y=3, xpad=0, ypad=0, axis_linewidth=2,
-                 plt_line_width=2.5, legend_size=35, xy_tick_size=25)
+                 plt_line_width=3, legend_size=35, xy_tick_size=25)
 img.subplots(zbin_num, zbin_num)
 img.set_style()
 pic_nm = data_path + "/xi_minus_result_%d_compare.png" % resample_num
@@ -256,6 +251,15 @@ for ii in range(len(expo_type)):
     img.axis_type(0,"minor",5)
     img.axis_type(1,"minor",5)
 
+
+    mcmc_pk_lines_tag = 1
+    h5f = h5py.File(data_path + "/mcmc_%s.hdf5"%expo_type[ii],"r")
+    xi_p_lines_mcmc = h5f["/xi_p"][()]
+    xi_m_lines_mcmc = h5f["/xi_m"][()]
+    xi_theta_mcmc = h5f["/theta"][()]
+    h5f.close()
+    pk_line_label_mcmc = legend_name[ii]
+
     tag = 0
     legend_tag = 0
     for i in range(zbin_num):
@@ -271,16 +275,16 @@ for ii in range(len(expo_type)):
                 img.axs[img_row][img_col].errorbar(theta[st:ed]+theta[st:ed]*0.1*ii, xi_m[st:ed],yerr=xi_m_sig[st:ed],
                                                    lw=img.plt_line_width, elinewidth=img.plt_line_width, c="C%d"%ii,
                                                    marker="o",fmt=" ",mfc="none",ms=8,
-                                                   label="$\\xi_{-}$ %s"%expo_type[ii],capsize=4,alpha=alpha)
+                                                   label="$\\xi_{-}$ %s"%legend_name[ii],capsize=4,alpha=alpha)
 
                 if ii == 0 and pk_lines_tag == 1:
                     img.axs[img_row][img_col].plot(xi_theta[tag], xi_m_theoretical_lines[tag],
-                                                   c="k",ls="dashdot", label=pk_line_label)
-                if ii == 0 and mcmc_pk_lines_tag == 1:
-                    img.axs[img_row][img_col].plot(xi_theta_mcmc_diff[tag], xi_m_theoretical_lines_mcmc_diff[tag],
-                                                   c="C0",ls="-", label=pk_line_label_mcmc_diff)
-                    # img.axs[img_row][img_col].plot(xi_theta_mcmc_same[tag], xi_m_theoretical_lines_mcmc_same[tag],
-                    #                                c="C1",ls="-", label=pk_line_label_mcmc_same)
+                                                   c="k",ls="dashdot", label=pk_line_label, lw=img.plt_line_width)
+                if mcmc_pk_lines_tag == 1:
+                    img.axs[img_row][img_col].plot(xi_theta_mcmc[tag], xi_m_lines_mcmc[tag],
+                                                   c="C%d"%ii,ls="-", lw=img.plt_line_width)
+
+
                 if used_data_pts[st:ed].sum() > 1 and legend_tag == 0:
                     legend_tag = 1
                     img.axs[img_row][img_col].legend(loc="lower left", bbox_to_anchor=(4, 1),
