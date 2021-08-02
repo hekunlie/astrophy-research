@@ -4,7 +4,7 @@ import numpy
 import ctypes
 import numpy.ctypeslib as ctl
 libc4py = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
-import tool_box
+import hk_tool_box
 
 
 
@@ -179,7 +179,7 @@ def find_overlap_mask(ra, dec, mask, ra_bin, dec_bin, extend_step=0):
                 source_area.append([iy, ix])
 
     if extend_step > 0:
-        tool_box.edge_extend(mask_c, dec_bin_num, ra_bin_num, source_area, extend_step)
+        hk_tool_box.edge_extend(mask_c, dec_bin_num, ra_bin_num, source_area, extend_step)
 
     mask_c = mask_c.astype(dtype=numpy.intc).flatten()
     mask_c = numpy.ascontiguousarray(mask_c, dtype=numpy.intc)

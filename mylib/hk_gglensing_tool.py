@@ -1,7 +1,7 @@
 from sys import path
 path.append("/home/hklee/work/mylib")
-from plot_tool import Image_Plot
-import tool_box
+from hk_plot_tool import Image_Plot
+import hk_tool_box
 import numpy
 import h5py
 
@@ -212,7 +212,7 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
                 data_min = data_min * 0.95
             bin_num_ = bin_num2 - 1
             inverse = range(bin_num_, -1, -1)
-            hbins = tool_box.set_bin_log(data_min, data_max, bin_num2)
+            hbins = hk_tool_box.set_bin_log(data_min, data_max, bin_num2)
 
             #             hbins = numpy.exp(numpy.linspace(numpy.log(data_min), numpy.log(data_max), bin_num2))
             #             hbins = 10**numpy.linspace(numpy.log10(data_min), numpy.log10(data_max), bin_num2)
@@ -224,7 +224,7 @@ def set_bin(data, bin_num, bound_scale, method="log", log_end=5):
             bins[-1] = bins[-1] * bound_scale
         else:
             data_max = data.max()
-            bins = tool_box.set_bin_log(data_min, data_max, bin_num+1)
+            bins = hk_tool_box.set_bin_log(data_min, data_max, bin_num+1)
             bins[0] = bins[0] * 0.95
             bins[-1] = bins[-1] * bound_scale
     else:
@@ -308,7 +308,7 @@ def find_shear_grid(G, NU, G_PDF_bin, G_hist_bin, NU_hist_bin, left=-0.11, right
     ghs = numpy.linspace(left, right, fit_num)
     xi2 = numpy.array([get_chisq_grid(hist_num2d, grid_x, grid_y, G_PDF_bin, gh, bin_num, bin_num2)[0] for gh in ghs])
 
-    coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
+    coeff = hk_tool_box.fit_1d(ghs, xi2, 2, "scipy")
     gh = -coeff[1] / 2. / coeff[2]
     gh_sig = 0.70710678118 / numpy.sqrt(coeff[2])
 
@@ -434,7 +434,7 @@ def find_shear_grid_corr_new(G, NU, G_corr, NU_corr, G_PDF_bin, G_hist_bin, NU_h
     xi2 = numpy.array([get_chisq_grid_corr_new(hist_num2d, hist_num2d_corr, grid_x, grid_y, grid_x_corr, grid_y_corr,
                                                G_PDF_bin, gh, bin_num, bin_num2)[:1] for gh in ghs])
 
-    coeff = tool_box.fit_1d(ghs, xi2, 2, "scipy")
+    coeff = hk_tool_box.fit_1d(ghs, xi2, 2, "scipy")
     chisqs_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
     gh = -coeff[1] / 2. / coeff[2]
     gh_sig = 0.70710678118 / numpy.sqrt(coeff[2])

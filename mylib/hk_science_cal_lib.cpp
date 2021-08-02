@@ -875,20 +875,20 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     src_mg1_rot *= sigma_crit;
                     src_mg2_rot *= sigma_crit;
 
-                    ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
-                    ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
-                    // // x: mgt*sigma_crit, y: N+U
-                    hist2d_total_tag = sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1;
+                    // ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
+                    // ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
+                    // // // x: mgt*sigma_crit, y: N+U
+                    // hist2d_total_tag = sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1;
                     
-                    // std::cout<<data_info->rank<<" "<<hist2d_total_tag<<"("<<data_info->hist2d_total_len<<") "<<len_expo_label<<" "<<bkg<<std::endl;
-                    // if(hist2d_total_tag > data_info->hist2d_total_len - 1 or hist2d_total_tag < 0)
-                    // {
-                    //     std::cout<<data_info->rank<<" "<<len_expo_label<<" "<<bkg<<" "<<pdf_bin_tag1<<" "<<pdf_bin_tag2<<" "<<hist2d_total_tag<<std::endl;
-                    // }
+                    // // std::cout<<data_info->rank<<" "<<hist2d_total_tag<<"("<<data_info->hist2d_total_len<<") "<<len_expo_label<<" "<<bkg<<std::endl;
+                    // // if(hist2d_total_tag > data_info->hist2d_total_len - 1 or hist2d_total_tag < 0)
+                    // // {
+                    // //     std::cout<<data_info->rank<<" "<<len_expo_label<<" "<<bkg<<" "<<pdf_bin_tag1<<" "<<pdf_bin_tag2<<" "<<hist2d_total_tag<<std::endl;
+                    // // }
 
-                    data_info->hist2d_count[hist2d_total_tag] += 1;
-                    data_info->hist2d_x[hist2d_total_tag] += src_mg1_rot;
-                    data_info->hist2d_y[hist2d_total_tag] += temp_mnut;
+                    // data_info->hist2d_count[hist2d_total_tag] += 1;
+                    // data_info->hist2d_x[hist2d_total_tag] += src_mg1_rot;
+                    // data_info->hist2d_y[hist2d_total_tag] += temp_mnut;
 
 
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;

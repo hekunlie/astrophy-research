@@ -3,7 +3,7 @@ my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
 import correlation_function_tool as cf_tool
-from plot_tool import Image_Plot
+from hk_plot_tool import Image_Plot
 import h5py
 import numpy
 

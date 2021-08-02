@@ -5,7 +5,7 @@ path.append('%s/work/mylib/' % my_home)
 import h5py
 import numpy
 from mpi4py import MPI
-import tool_box
+import hk_tool_box
 import warnings
 from sklearn.cluster import KMeans
 from astropy.cosmology import FlatLambdaCDM

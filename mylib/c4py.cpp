@@ -731,5 +731,20 @@ extern "C"
         }
 
     }
+    
+    void cal_chisq(float *data, int data_num, float *guess, int guess_num, float *pdf_bin, int bin_num, float*chisq)
+    {
+        int i, j, k;
+        float temp;
 
+        for(i=0; i<data_num; i++)
+        {
+            for(j=0; j<guess_num; j++)
+            {
+                temp = data[i] - guess[j];
+                
+            }
+        }
+
+    }
 }

@@ -3,12 +3,12 @@ path.append("/home/hkli/work/mylib")
 path.append("/home/hklee/work/mylib")
 import numpy
 import h5py
-from plot_tool import Image_Plot
+from hk_plot_tool import Image_Plot
 import numpy
-import tool_box
+import hk_tool_box
 from astropy.coordinates import SkyCoord
 from astropy import units
-from Fourier_Quad import Fourier_Quad
+from hk_FQlib import Fourier_Quad
 
 result_cata_path = "/mnt/perc/hklee/CFHT/gg_lensing/cata"
 h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "r")

@@ -3,11 +3,11 @@ import os
 from sys import path, argv
 # path.append('%s/work/mylib/' % my_home)
 path.append("D:/GitHub/astrophy-research/mylib")
-from plot_tool import Image_Plot
+from hk_plot_tool import Image_Plot
 import h5py
 import numpy
 import matplotlib.pyplot as plt
-import tool_box
+import hk_tool_box
 
 
 zbin_num = 6

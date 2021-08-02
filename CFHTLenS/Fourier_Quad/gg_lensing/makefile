@@ -1,7 +1,7 @@
-FQLIB_PATH=$(MYWORK_DIR)/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
+FQLIB_PATH=$(MYWORK_DIR)/work/mylib/hk_FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
 HK_MPILIB_PATH=$(MYWORK_DIR)/work/mylib/hk_mpi.cpp
 HK_IOLIB_PATH=$(MYWORK_DIR)/work/mylib/hk_iolib.cpp -lhdf5  -lcurl
-GGL_FUNCTIONS_PATH=$(MYWORK_DIR)/work/mylib/science_cal_lib.cpp
+GGL_FUNCTIONS_PATH=$(MYWORK_DIR)/work/mylib/hk_science_cal_lib.cpp
 
 
 check:

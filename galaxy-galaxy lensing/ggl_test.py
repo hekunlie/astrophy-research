@@ -1,193 +1,238 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path
-path.append('%s/work/mylib/'%my_home)
-import tool_box
-import matplotlib
-import matplotlib.pyplot as plt
-import plot_tool
-import h5py
+path.append("/home/hklee/work/mylib")
+from hk_plot_tool import Image_Plot
+import hk_tool_box
+import hk_gglensing_tool
 import numpy
+import h5py
+import galsim
+import hk_FQlib
+from astropy.cosmology import FlatLambdaCDM
+from astropy.coordinates import SkyCoord
+from astropy import units
+import time
 from mpi4py import MPI
 
 #
-# comm = MPI.COMM_WORLD
-# rank = comm.Get_rank()
-# cpus = comm.Get_size()
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+numprocs = comm.Get_size()
 
-rank = 0
-
-area_id = 1
-
-# data_path = "/mnt/perc/hklee/CFHT/gg_lensing/data/"
-data_path = "/mnt/ddnfs/data_users/hkli/CFHT/gg_lensing/data/"
-
-h5f_pre = h5py.File(data_path+"cata_result_ext_cut.hdf5","r")
-h5f_grid = h5py.File(data_path+ "cata_result_ext_grid.hdf5","r")
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
 
 
-data_name = ["Z", "DISTANCE", "RA", "DEC", "COS_DEC", "G1", "G2", "N", "U", "V",
-             "num_in_block", "block_start", "block_end", "block_boundy", "block_boundx"]
+h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
+src_ra = h5f["/ra"][()]
+src_dec = h5f["/dec"][()]
+src_z = h5f["/z"][()]
+h5f.close()
 
-z_pre = h5f_pre["/w_%d/Z"%area_id].value
-dist_pre = h5f_pre["/w_%d/DISTANCE"%area_id].value
-
-ra_pre = h5f_pre["/w_%d/RA"%area_id].value
-dec_pre = h5f_pre["/w_%d/DEC"%area_id].value
-cos_dec_pre = h5f_pre["/w_%d/COS_DEC"%area_id].value
-
-g1_pre = h5f_pre["/w_%d/G1"%area_id].value
-g2_pre = h5f_pre["/w_%d/G2"%area_id].value
-n_pre = h5f_pre["/w_%d/N"%area_id].value
-u_pre = h5f_pre["/w_%d/U"%area_id].value
-v_pre = h5f_pre["/w_%d/V"%area_id].value
+h5f = h5py.File(data_path + "/data/stack_sheared_data_noise_free.hdf5","r")
+shear_est_nf = h5f["/data"][()]
+h5f.close()
+h5f = h5py.File(data_path + "/data/stack_sheared_data_noisy_cpp.hdf5","r")
+shear_est_ny = h5f["/data"][()]
+h5f.close()
 
 
-z_back = h5f_grid["/background/w_%d/Z"%area_id].value
-dist_back = h5f_grid["/background/w_%d/DISTANCE"%area_id].value
+# cosmology
+omega_m0 = 0.31
+omega_lam0 = 1 - omega_m0
+h = 0.6735
+C_0_hat = 2.99792458
+H_0 = 100 * h
+coeff = 1000 * C_0_hat / h
 
-ra_back = h5f_grid["/background/w_%d/RA"%area_id].value
-dec_back = h5f_grid["/background/w_%d/DEC"%area_id].value
-cos_dec_back = h5f_grid["/background/w_%d/COS_DEC"%area_id].value
+coeff_crit = C_0_hat ** 2 / 4 / numpy.pi / 6.674
 
-g1_back = h5f_grid["/background/w_%d/G1"%area_id].value
-g2_back = h5f_grid["/background/w_%d/G2"%area_id].value
-n_back = h5f_grid["/background/w_%d/N"%area_id].value
-u_back = h5f_grid["/background/w_%d/U"%area_id].value
-v_back = h5f_grid["/background/w_%d/V"%area_id].value
+cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 
-num_in_block = h5f_grid["/background/w_%d/num_in_block"%area_id].value
-block_start = h5f_grid["/background/w_%d/block_start"%area_id].value
-block_end = h5f_grid["/background/w_%d/block_end"%area_id].value
-block_boundy = h5f_grid["/background/w_%d/block_boundy"%area_id].value
-block_boundx = h5f_grid["/background/w_%d/block_boundx"%area_id].value
+# Halo parameters
+Mass = 3*10 ** 13.5  # M_sun/h
+conc = 6  # concentration
+len_z = 0.3  # redshift
+halo_position = galsim.PositionD(0, 0)  # arcsec
+com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 
-z_fore = h5f_grid["/foreground/w_%d/Z"%area_id].value
-dist_fore = h5f_grid["/foreground/w_%d/DISTANCE"%area_id].value
+com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
-ra_fore = h5f_grid["/foreground/w_%d/RA"%area_id].value
-dec_fore = h5f_grid["/foreground/w_%d/DEC"%area_id].value
-cos_dec_fore = h5f_grid["/foreground/w_%d/COS_DEC"%area_id].value
+nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
 
-h5f_pre.close()
-h5f_grid.close()
+crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
-ra_min, ra_max = ra_back.min(), ra_back.max()
-dec_min, dec_max = dec_back.min(), dec_back.max()
-print("Background:")
-print("RA: %6.5f ~ %6.5f"%(ra_min, ra_max))
-print("DEC: %6.5f ~ %6.5f\n"%(dec_min, dec_max))
+# position and separation angle
+pos_len = SkyCoord(ra=0*units.deg, dec=0*units.deg,frame="fk5")
+pos_src = SkyCoord(ra=src_ra*units.deg, dec=src_dec*units.deg,frame="fk5")
 
-speed_c = 2.99792458 * 1e5
-H_0 = 100
-coeff = numpy.pi / 180 * speed_c / H_0
-count = 0
+separation_radian = pos_len.separation(pos_src).radian
+separation_radius = separation_radian*com_dist_len
+print(separation_radius.min(),separation_radius.max())
 
-G_t_crits = []
-G_x_crits = []
-crits = []
-foregal_num = 300#z_fore.shape[0]
+position_angle = pos_len.position_angle(pos_src).radian
 
-# m, n = divmod(foregal_num, cpus)
+sin_2theta = numpy.sin(2*position_angle)
+cos_2theta = numpy.cos(2*position_angle)
 
-my_gal_s = 0#rank*m
-my_gal_e = foregal_num#(rank+1)*m
-# if rank < cpus - 1:
-#     my_gal_e = my_gal_e + n
+sin_4theta = numpy.sin(4*position_angle)
+cos_4theta = numpy.cos(4*position_angle)
 
-radius = [0.04, 0.06]
+mgt_nf = shear_est_nf[:,0]*cos_2theta - shear_est_nf[:,1]*sin_2theta
+mgx_nf = shear_est_nf[:,0]*sin_2theta + shear_est_nf[:,1]*cos_2theta
+mu_nf = shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta
+mn_nf = shear_est_nf[:,2]
 
-for i in range(my_gal_s, my_gal_e):
-    npt = i
-    ra_p, dec_p, cos_dec_p, z_p, dist_p = ra_fore[npt], dec_fore[npt], cos_dec_fore[npt], z_fore[npt], dist_fore[npt]
-    dist_len = dist_p * speed_c / H_0
-    #     print("The foreground galaxy.")
-    #     print("RA: %7.5f, DEC: %7.5f, Cos_DEC: %7.5f"%(ra_p, dec_p, cos_dec_p))
-    #     print("Redshift: %8.7f."%z_p)
-    #     print("Distance: %8.7f*c/H_0. = %8.7f Mpc/h"%(dist_p, dist_len))
-    #     print(coeff)
+mgt_ny = shear_est_ny[:,0]*cos_2theta - shear_est_ny[:,1]*sin_2theta
+mgx_ny = shear_est_ny[:,0]*sin_2theta + shear_est_ny[:,1]*cos_2theta
+mu_ny = shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta
+mn_ny = shear_est_ny[:,2]
 
-    idx1 = ra_back >= ra_p - 1
-    idx2 = ra_back <= ra_p + 1
 
-    idx3 = dec_back >= dec_p - 1
-    idx4 = dec_back <= dec_p + 1
 
-    idx_s = idx1 & idx2 & idx3 & idx4
-    #     img = plot_tool.Image_Plot(fig_x=8, fig_y=8)
-    #     img.plot_img(1,1)
-    #     img.axs[0][0].scatter(ra_back[idx_s], dec_back[idx_s])
 
-    delta_ra = (ra_back[idx_s] - ra_p) * cos_dec_back[idx_s]
-    delta_dec = dec_back[idx_s] - dec_p
-    delta_theta = numpy.sqrt(delta_ra ** 2 + delta_dec ** 2)
+radius_bin_num = numprocs
+radius_bin = hk_tool_box.set_bin_log(0.2, 20, radius_bin_num + 1)
+radius_bin_tag = [i for i in range(radius_bin_num)]
+my_radius_bin_tag = hk_tool_box.alloc(radius_bin_tag, numprocs)[rank]
 
-    # idx_theta = delta_theta < 0.5
-    # img.axs[0][0].scatter(ra_back[idx_s][idx_theta], dec_back[idx_s][idx_theta])
 
-    diff_r = delta_theta * dist_back[idx_s] * coeff
+itemsize = MPI.DOUBLE.Get_size()
 
-    diff_z = z_back[idx_s] - z_p
+if rank == 0:
+    # bytes for 10 double elements
+    nbytes1 = 12*radius_bin_num*itemsize
+    nbytes2 = 12*radius_bin_num*itemsize
+    nbytes3 = 3*radius_bin_num*itemsize
+else:
+    nbytes1 = 0
+    nbytes2 = 0
+    nbytes3 = 0
 
-    idx_z = diff_z > 0.1
+# on rank 0 of comm, create the contiguous shared block
+win1 = MPI.Win.Allocate_shared(nbytes1, itemsize, comm=comm)
+win2 = MPI.Win.Allocate_shared(nbytes2, itemsize, comm=comm)
+win3 = MPI.Win.Allocate_shared(nbytes3, itemsize, comm=comm)
+# create a numpy array whose data points to the shared block
+# buf is the block's address in the memory
+buf1, itemsize = win1.Shared_query(0)
+buf2, itemsize = win2.Shared_query(0)
+buf3, itemsize = win3.Shared_query(0)
 
-    idx_r1 = diff_r >= radius[0]
-    idx_r2 = diff_r < radius[1]
+Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(12,radius_bin_num)) # array filled with zero
+Ds_ny = numpy.ndarray(buffer=buf2, dtype='d', shape=(12, radius_bin_num))
+inform = numpy.ndarray(buffer=buf3, dtype='d', shape=(3, radius_bin_num))
 
-    idx_r = idx_r1 & idx_r2 & idx_z
+if rank == 0:
+    for i in range(radius_bin_num):
+        idx1 = separation_radius >= radius_bin[i]
+        idx2 = separation_radius < radius_bin[i + 1]
+        idx = idx1 & idx2
 
-    if idx_r.sum() > 0:
-        #          rotation
+        inform[0, i] = separation_radius[idx].mean()
+        inform[1, i] = separation_radian[idx].mean() / numpy.pi * 180 * 3600
+        inform[2, i] = idx.sum()
+comm.Barrier()
 
-        cos_2theta = (delta_ra[idx_r] / delta_theta[idx_r]) ** 2 - (delta_dec[idx_r] / delta_theta[idx_r]) ** 2
-        sin_2theta = (delta_ra[idx_r] / delta_theta[idx_r]) * (delta_dec[idx_r] / delta_theta[idx_r]) * 2
+#  Model
+Ds_true = hk_gglensing_tool.get_delta_sigma(nfw_model, com_dist_len, len_z, com_dist_src[0], src_z[0], inform[1])
+if rank == 0:
+    print(inform[2])
 
-        G_t = g1_back * cos_2theta - g2_back * sin_2theta
+t1 = time.time()
 
-        G_x = g1_back * sin_2theta + g2_back * cos_2theta
+pdf_bin_num = [2, 10, 20]
 
-        #     the comoving distance of source, the integrate without c/H_0
-        dist_s = dist_back[idx_s][idx_r]
+for i in my_radius_bin_tag:
+    idx1 = separation_radius >= radius_bin[i]
+    idx2 = separation_radius < radius_bin[i + 1]
+    idx = idx1 & idx2
 
-        crit_ = dist_s / (dist_s - dist_p) / dist_p / (1 + z_p)
+    temp_mgt_nf = mgt_nf[idx] * crit_sd[idx]
+    temp_mgx_nf = mgx_nf[idx] * crit_sd[idx]
+    temp_mgnu1_nf = mn_nf[idx] + mu_nf[idx]
+    temp_mgnu2_nf = mn_nf[idx] - mu_nf[idx]
 
-        G_t_crit = (G_t * crit_).tolist()
-        G_x_crit = (G_x * crit_).tolist()
+    for j in range(3):
+        result_t = hk_FQlib.find_shear_cpp(temp_mgt_nf, temp_mgnu1_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
+                                           chi_gap=20,max_iters=60)[:2]
+        result_x = hk_FQlib.find_shear_cpp(temp_mgx_nf, temp_mgnu2_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
+                                           chi_gap=20,max_iters=60)[:2]
+        st, ed = int(j * 4), int((j + 1) * 4)
+        Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
 
-        G_t_crits.extend(G_t_crit)
-        G_x_crits.extend(G_x_crit)
-        crits.extend(crit_.tolist())
-        count += idx_r.sum()
-        # print("Crit: ",crit_, "G_t",G_t_crit,"G_x", G_x_crit)
-        print("%d galaxies found in [%.4f, %.4f] Mpc \n" % (idx_r.sum(), radius[0], radius[1]))
-print(G_t_crits)
-print(G_x_crits)
-print(crits)
-print(count,len(G_t_crits), len(G_x_crits), len(crits))
-numpy.savez("data.npz",G_t_crits,G_x_crits,crits)
-# G_t_crits = comm.gather(G_t_crits, root=0)
-# G_x_crits = comm.gather(G_x_crits, root=0)
-# crits = comm.gather(crits, root=0)
-#
-# if rank == 0:
-#     G_t_total = []
-#     G_x_total = []
-#     crits_total = []
-#
-#     for i in range(cpus):
-#         G_t_total.extend(G_t_crits[i])
-#         G_x_total.extend(G_x_crits[i])
-#         crits_total.extend(crits[i])
-#
-#     print(G_t_total)
-#     print(G_x_total)
-#     print(crits_total)
+    temp_mgt_ny = mgt_ny[idx] * crit_sd[idx]
+    temp_mgx_ny = mgx_ny[idx] * crit_sd[idx]
+    temp_mgnu1_ny = mn_ny[idx] + mu_ny[idx]
+    temp_mgnu2_ny = mn_ny[idx] - mu_ny[idx]
 
-# # print(diff_r)
-# # print(diff_r[idx_r])
-# img.axs[0][0].scatter(ra_back[idx_s][idx_r], dec_back[idx_s][idx_r])
-# img.axs[0][0].scatter(ra_p, dec_p, s=15)
+    for j in range(3):
+        result_t = hk_FQlib.find_shear_cpp(temp_mgt_ny, temp_mgnu1_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
+                                           chi_gap=20,max_iters=60)[:2]
+        result_x = hk_FQlib.find_shear_cpp(temp_mgx_ny, temp_mgnu2_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
+                                           chi_gap=20,max_iters=60)[:2]
+        st, ed = int(j * 4), int((j + 1) * 4)
+        Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
+t2 = time.time()
+comm.Barrier()
+print(rank, t2-t1)
 
-# dx = 0.2
-# img.axs[0][0].set_ylim(dec_p- dx, dec_p+dx)
-# img.axs[0][0].set_xlim(ra_p- dx, ra_p+dx)
+if rank == 0:
+
+
+    result_path = data_path + "/results"
+    numpy.savez(result_path+"/result.npz", inform,Ds_nf,Ds_ny)
+
+    img = Image_Plot(xpad=0.25, ypad=0.24)
+    img.subplots(len(pdf_bin_num), 4)
+
+    for j in range(len(pdf_bin_num)):
+        tag = int(4 * j)
+        img.axs[j][0].errorbar(inform[0], Ds_nf[tag], Ds_nf[tag + 1], capsize=3, marker="s", fmt=" ",
+                               label="Noise free")
+        img.axs[j][0].errorbar(inform[0], Ds_ny[tag], Ds_ny[tag + 1], capsize=3, marker="o", fmt=" ",
+                               label="Noisy")
+
+        img.axs[j][1].errorbar(inform[0], Ds_nf[tag + 2], Ds_nf[tag + 3], capsize=3, marker="s", fmt=" ",
+                               label="Noise free")
+        img.axs[j][1].errorbar(inform[0], Ds_ny[tag + 2], Ds_ny[tag + 3], capsize=3, marker="o", fmt=" ",
+                               label="Noisy")
+
+        img.axs[j][0].plot(inform[0], Ds_true, label="Model")
+
+        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), label="Noise free")
+        img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), label="Noisy")
+        # img.axs[0][2].set_yscale("log")
+
+        img.axs[j][3].plot(inform[0], (Ds_nf[ tag] - Ds_true) / Ds_nf[tag], label="Noise free")
+        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag], label="Noisy")
+
+        for i in range(4):
+            img.set_label(j, i, 1, "Radius Mpc/h")
+            img.axs[j][i].set_xscale("log")
+            img.axs[j][i].legend()
+        img.set_label(j, 0, 0, "$\Delta\Sigma$")
+        img.set_label(j, 1, 0, "$\Delta\Sigma_x$")
+
+        img.set_label(j, 2, 0, "$\Delta\Sigma - \Delta\Sigma_{model}$")
+        img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
+
+        img.axs[j][0].set_yscale("log")
+    img.save_img(result_path + "/signal_comparison.pdf")
+    # img.show_img()
+
+    img = Image_Plot(xpad=0.25)
+    img.subplots(1, 2)
+    for i in range(1, 3):
+        tag = int(i * 4)
+        img.axs[0][0].plot(inform[0], Ds_nf[tag + 1] / Ds_nf[1],
+                           label="Noise free: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+        img.axs[0][1].plot(inform[0], Ds_ny[tag + 1] / Ds_ny[1],
+                           label="Noisy: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+    for i in range(2):
+        img.axs[0][i].legend()
+        img.axs[0][i].set_xscale("log")
+        img.set_label(0, i, 0, "Error bar ratio")
+        img.set_label(0, i, 1, "Radius Mpc/h")
+    img.save_img(result_path + "/err_comparison.pdf")
+    # img.show_img()
+comm.Barrier()

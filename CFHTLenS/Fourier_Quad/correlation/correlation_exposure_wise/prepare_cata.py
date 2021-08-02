@@ -5,12 +5,12 @@ path.append('%s/work/mylib/' % my_home)
 import h5py
 import numpy
 from mpi4py import MPI
-import tool_box
+import hk_tool_box
 import warnings
 from sklearn.cluster import KMeans
 import time
-import FQlib
-# import c4py
+import hk_FQlib
+# import hk_c4py
 
 warnings.filterwarnings('error')
 

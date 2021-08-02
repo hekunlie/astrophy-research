@@ -1,5 +1,5 @@
-import tool_box
-from plot_tool import Image_Plot
+import hk_tool_box
+from hk_plot_tool import Image_Plot
 import numpy
 from astropy.cosmology import FlatLambdaCDM
 import camb
@@ -119,7 +119,7 @@ def get_PK_interp(camb_result):
 
 def ready4PL(Lmin, Lmax, Lpts_num, kmin, kmax, com_dist, zpts_num):
     # calculate the k corresponding to L (specified by user)
-    Lpts = tool_box.set_bin_log(Lmin, Lmax, Lpts_num,"logspace")
+    Lpts = hk_tool_box.set_bin_log(Lmin, Lmax, Lpts_num,"logspace")
     # Lpts = numpy.linspace(Lmin, Lmax, Lpts_num)
     integ_k = numpy.zeros((zpts_num, Lpts_num))
 

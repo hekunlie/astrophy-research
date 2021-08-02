@@ -2,8 +2,8 @@ import os
 my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
-import correlation_function_tool as cf_tool
-import tool_box
+import hk_correlation_function_tool as cf_tool
+import hk_tool_box
 import numpy
 import emcee
 import time
@@ -128,7 +128,7 @@ data_num = theta_radian.shape[0]
 
 theta_num_per_bin = 5
 
-ell = tool_box.set_bin_log(5, 15000, 200)
+ell = hk_tool_box.set_bin_log(5, 15000, 200)
 
 print("Data vector len: ", xi.shape)
 

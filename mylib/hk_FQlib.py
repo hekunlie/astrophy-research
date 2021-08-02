@@ -8,7 +8,7 @@ from scipy.optimize import fmin_cg
 from scipy import ndimage, signal
 import copy
 import matplotlib.pyplot as plt
-import tool_box
+import hk_tool_box
 import time
 import ctypes
 import numpy.ctypeslib as ctl
@@ -69,11 +69,11 @@ class Fourier_Quad:
         """
         # gal_ps = self.pow_spec(gal_image)
         gal_ps = gal_image
-        # gal_ps = tool_box.smooth(gal_ps,self.size)
+        # gal_ps = hk_tool_box.smooth(gal_ps,self.size)
         if noise is not None:
             nbg = self.pow_spec(noise)
             self.flux2 = numpy.sqrt(gal_ps[int(self.size/2), int(self.size/2)]/numpy.sum(self.rim*gal_ps)*numpy.sum(self.rim))
-            # nbg = tool_box.smooth(nbg,self.size)
+            # nbg = hk_tool_box.smooth(nbg,self.size)
             # rim = self.border(2, size)
             # n = numpy.sum(rim)
             # gal_pn = numpy.sum(gal_ps*rim)/n                # the Possion noise of galaxy image
@@ -665,7 +665,7 @@ class Fourier_Quad:
                     break
             fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
-        coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        coeff = hk__box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
         if pic_path:
@@ -837,7 +837,7 @@ def find_shear(g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_nu
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    coeff = hk__box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -930,7 +930,7 @@ def find_shear_corr(g, nu, g_corr, nu_corr, bin_num, ig_num=0, scale=1.1, left=-
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    coeff = tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1015,7 +1015,7 @@ if platform.system() == 'Linux':
 
 
         fit_shear_range *= fit_scale
-        coeff = tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+        coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
 
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1076,7 +1076,7 @@ if platform.system() == 'Linux':
 
 
         fit_shear_range *= fit_scale
-        coeff = tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+        coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
 
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)

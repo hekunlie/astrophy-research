@@ -25,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 21
-bin_st, bin_ed = 0.2, 100
+sep_bin_num = 9
+bin_st, bin_ed = 0.1, 15
 separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -36,14 +36,15 @@ deg2rad = numpy.pi/180
 
 # chi guess bin for PDF_SYM
 delta_sigma_guess_num = 300
-num_p = int(delta_sigma_guess_num/2)
+num_m = 150
+num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.001, 300, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
 
-delta_sigma_guess[:num_p] = -delta_sigma_guess_bin_p
-delta_sigma_guess[num_p:] = delta_sigma_guess_bin_p
+delta_sigma_guess[:num_m] = -tool_box.set_bin_log(0.01, 200, num_m).astype(numpy.float64)
+delta_sigma_guess[num_m:] = tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 # delta_sigma_guess[:100] = -tool_box.set_bin_log(0.001, 50, 101)[:-1]
@@ -426,7 +427,7 @@ if cmd == "prepare_pdf":
 
     # for correlation calculation
     if rank == 0:
-
+        # set up G bins for gamma_t calculation
         field_name = []
         with open(fourier_avail_expo_path, "r") as f:
             f_lines = f.readlines()
@@ -437,7 +438,7 @@ if cmd == "prepare_pdf":
         file_list = numpy.arange(0, len(field_name),dtype=numpy.intc)
         numpy.random.shuffle(file_list)
 
-        for tag, i in enumerate(file_list[:20]):#range(20):
+        for tag, i in enumerate(file_list[:20]):
 
             # print(field_name[i])
             h5f_src = h5py.File(field_name[i], "r")
@@ -451,8 +452,10 @@ if cmd == "prepare_pdf":
         # G bins for tangential shear calculation
         mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, bin_scale)
 
+
+
         # G_t bins for \Delta\Sigma(R) calculation
-        Gts_total_num = 5000000
+        Gts_total_num = 1000000
         Gts = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
@@ -518,6 +521,7 @@ if cmd == "prepare_pdf":
                             # print(ic_com_dist, sub_data[:, 10] - ic_com_dist)
                             # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
                             # idx_zero = sub_data[:,10]-ic_com_dist == 0
+                            
                             # print(idx_zero.sum(),ic_z, sub_data[:,10][idx_zero],sub_data[:,8][idx_zero])
                             mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
 
@@ -525,18 +529,23 @@ if cmd == "prepare_pdf":
                                 Gts[Gt_num: Gts_total_num] = mgt[Gts_total_num-Gt_num]
                                 NU[Gt_num: Gts_total_num] = mnu[Gts_total_num-Gt_num]
                                 Gt_num = Gts_total_num
+                                # print("Finish: ",Gt_num)
+                                # print(mgt[Gts_total_num-Gt_num][:100],mgt[Gts_total_num-Gt_num][-100:])
                                 break
                             else:
                                 Gts[Gt_num: Gt_num + sub_num] = mgt
                                 NU[Gt_num: Gt_num + sub_num] = mnu
                                 Gt_num += sub_num
+                                # print("Finding: ",Gt_num)
 
+            # print(fore_tag, Gt_num)
         mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, bin_scale)
         # print(tan_shear_guess)
         # print(delta_sigma_guess)
         print(mg_bin)
         print(mg_sigma_bin)
-
+        # print(Gts[:100],Gts[-100:])
+        # print(numpy.abs(Gts).min())
         h5f = h5py.File(result_cata_path + "/data4bin.hdf5", "w")
         h5f["/Gt_sigma"] = Gts
         h5f["/NU"] = NU
