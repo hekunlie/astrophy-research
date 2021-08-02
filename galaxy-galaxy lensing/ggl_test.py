@@ -91,7 +91,7 @@ mn_ny = shear_est_ny[:,2]
 
 
 radius_bin_num = numprocs
-radius_bin = hk_tool_box.set_bin_log(0.2, 20, radius_bin_num + 1)
+radius_bin = hk_tool_box.set_bin_log(0.2, 19.5, radius_bin_num + 1)
 radius_bin_tag = [i for i in range(radius_bin_num)]
 my_radius_bin_tag = hk_tool_box.alloc(radius_bin_tag, numprocs)[rank]
 
@@ -118,7 +118,7 @@ buf1, itemsize = win1.Shared_query(0)
 buf2, itemsize = win2.Shared_query(0)
 buf3, itemsize = win3.Shared_query(0)
 
-Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(12,radius_bin_num)) # array filled with zero
+Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(12, radius_bin_num)) # array filled with zero
 Ds_ny = numpy.ndarray(buffer=buf2, dtype='d', shape=(12, radius_bin_num))
 inform = numpy.ndarray(buffer=buf3, dtype='d', shape=(3, radius_bin_num))
 
@@ -149,8 +149,8 @@ for i in my_radius_bin_tag:
 
     temp_mgt_nf = mgt_nf[idx] * crit_sd[idx]
     temp_mgx_nf = mgx_nf[idx] * crit_sd[idx]
-    temp_mgnu1_nf = mn_nf[idx] + mu_nf[idx]
-    temp_mgnu2_nf = mn_nf[idx] - mu_nf[idx]
+    temp_mgnu1_nf = (mn_nf[idx] + mu_nf[idx])#/crit_sd[idx]
+    temp_mgnu2_nf = (mn_nf[idx] - mu_nf[idx])#/crit_sd[idx]
 
     for j in range(3):
         result_t = hk_FQlib.find_shear_cpp(temp_mgt_nf, temp_mgnu1_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
@@ -162,8 +162,8 @@ for i in my_radius_bin_tag:
 
     temp_mgt_ny = mgt_ny[idx] * crit_sd[idx]
     temp_mgx_ny = mgx_ny[idx] * crit_sd[idx]
-    temp_mgnu1_ny = mn_ny[idx] + mu_ny[idx]
-    temp_mgnu2_ny = mn_ny[idx] - mu_ny[idx]
+    temp_mgnu1_ny = (mn_ny[idx] + mu_ny[idx])#/crit_sd[idx]
+    temp_mgnu2_ny = (mn_ny[idx] - mu_ny[idx])#/crit_sd[idx]
 
     for j in range(3):
         result_t = hk_FQlib.find_shear_cpp(temp_mgt_ny, temp_mgnu1_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
@@ -179,8 +179,8 @@ print(rank, t2-t1)
 if rank == 0:
 
 
-    result_path = data_path + "/results"
-    numpy.savez(result_path+"/result.npz", inform,Ds_nf,Ds_ny)
+    result_path = "."
+    numpy.savez(result_path+"/result_%d.npz"%numprocs, inform,Ds_nf,Ds_ny)
 
     img = Image_Plot(xpad=0.25, ypad=0.24)
     img.subplots(len(pdf_bin_num), 4)
@@ -199,12 +199,12 @@ if rank == 0:
 
         img.axs[j][0].plot(inform[0], Ds_true, label="Model")
 
-        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), label="Noise free")
-        img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), label="Noisy")
+        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true),marker="s", label="Noise free")
+        img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
         # img.axs[0][2].set_yscale("log")
 
-        img.axs[j][3].plot(inform[0], (Ds_nf[ tag] - Ds_true) / Ds_nf[tag], label="Noise free")
-        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag], label="Noisy")
+        img.axs[j][3].plot(inform[0], (Ds_nf[ tag] - Ds_true) / Ds_nf[tag],marker="s", label="Noise free")
+        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag], marker="o",label="Noisy")
 
         for i in range(4):
             img.set_label(j, i, 1, "Radius Mpc/h")
@@ -217,7 +217,7 @@ if rank == 0:
         img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
 
         img.axs[j][0].set_yscale("log")
-    img.save_img(result_path + "/signal_comparison.pdf")
+    img.save_img(result_path + "/signal_comparison_%d.pdf"%numprocs)
     # img.show_img()
 
     img = Image_Plot(xpad=0.25)
@@ -233,6 +233,6 @@ if rank == 0:
         img.axs[0][i].set_xscale("log")
         img.set_label(0, i, 0, "Error bar ratio")
         img.set_label(0, i, 1, "Radius Mpc/h")
-    img.save_img(result_path + "/err_comparison.pdf")
+    img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
     # img.show_img()
 comm.Barrier()
