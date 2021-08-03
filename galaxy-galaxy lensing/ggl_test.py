@@ -59,7 +59,10 @@ com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
 nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
 
-crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
+crit_sd_num = 1662895.2081868195*com_dist_src
+crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
+crit_sd = crit_sd_num/crit_sd_denorm
+# crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
 # position and separation angle
 pos_len = SkyCoord(ra=0*units.deg, dec=0*units.deg,frame="fk5")
@@ -147,10 +150,10 @@ for i in my_radius_bin_tag:
     idx2 = separation_radius < radius_bin[i + 1]
     idx = idx1 & idx2
 
-    temp_mgt_nf = mgt_nf[idx] * crit_sd[idx]
-    temp_mgx_nf = mgx_nf[idx] * crit_sd[idx]
-    temp_mgnu1_nf = (mn_nf[idx] + mu_nf[idx])#/crit_sd[idx]
-    temp_mgnu2_nf = (mn_nf[idx] - mu_nf[idx])#/crit_sd[idx]
+    temp_mgt_nf = mgt_nf[idx]
+    temp_mgx_nf = mgx_nf[idx]
+    temp_mgnu1_nf = (mn_nf[idx] + mu_nf[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
+    temp_mgnu2_nf = (mn_nf[idx] - mu_nf[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
 
     for j in range(3):
         result_t = hk_FQlib.find_shear_cpp(temp_mgt_nf, temp_mgnu1_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
@@ -160,10 +163,10 @@ for i in my_radius_bin_tag:
         st, ed = int(j * 4), int((j + 1) * 4)
         Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
 
-    temp_mgt_ny = mgt_ny[idx] * crit_sd[idx]
-    temp_mgx_ny = mgx_ny[idx] * crit_sd[idx]
-    temp_mgnu1_ny = (mn_ny[idx] + mu_ny[idx])#/crit_sd[idx]
-    temp_mgnu2_ny = (mn_ny[idx] - mu_ny[idx])#/crit_sd[idx]
+    temp_mgt_ny = mgt_ny[idx]
+    temp_mgx_ny = mgx_ny[idx]
+    temp_mgnu1_ny = (mn_ny[idx] + mu_ny[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
+    temp_mgnu2_ny = (mn_ny[idx] - mu_ny[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
 
     for j in range(3):
         result_t = hk_FQlib.find_shear_cpp(temp_mgt_ny, temp_mgnu1_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
@@ -177,7 +180,6 @@ comm.Barrier()
 print(rank, t2-t1)
 
 if rank == 0:
-
 
     result_path = "."
     numpy.savez(result_path+"/result_%d.npz"%numprocs, inform,Ds_nf,Ds_ny)
@@ -203,8 +205,8 @@ if rank == 0:
         img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
         # img.axs[0][2].set_yscale("log")
 
-        img.axs[j][3].plot(inform[0], (Ds_nf[ tag] - Ds_true) / Ds_nf[tag],marker="s", label="Noise free")
-        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag], marker="o",label="Noisy")
+        img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
+        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
 
         for i in range(4):
             img.set_label(j, i, 1, "Radius Mpc/h")
