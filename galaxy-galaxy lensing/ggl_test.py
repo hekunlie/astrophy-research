@@ -1,5 +1,5 @@
 import os
-from sys import path
+from sys import path,argv
 path.append("/home/hklee/work/mylib")
 from hk_plot_tool import Image_Plot
 import hk_tool_box
@@ -14,26 +14,13 @@ from astropy import units
 import time
 from mpi4py import MPI
 
+
 #
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
 data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
-
-
-h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
-src_ra = h5f["/ra"][()]
-src_dec = h5f["/dec"][()]
-src_z = h5f["/z"][()]
-h5f.close()
-
-h5f = h5py.File(data_path + "/data/stack_sheared_data_noise_free.hdf5","r")
-shear_est_nf = h5f["/data"][()]
-h5f.close()
-h5f = h5py.File(data_path + "/data/stack_sheared_data_noisy_cpp.hdf5","r")
-shear_est_ny = h5f["/data"][()]
-h5f.close()
 
 
 # cosmology
@@ -55,6 +42,27 @@ len_z = 0.3  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 
+
+h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
+src_z = h5f["/z"][()]
+
+# src_z_err = numpy.random.normal(src_z, src_z*0.05)
+# src_z = src_z + src_z_err
+
+idx = src_z >= len_z + 0.05
+src_z = src_z[idx]
+src_ra = h5f["/ra"][()][idx]
+src_dec = h5f["/dec"][()][idx]
+h5f.close()
+
+h5f = h5py.File(data_path + "/data/stack_sheared_data_noise_free.hdf5","r")
+shear_est_nf = h5f["/data"][()][idx]
+h5f.close()
+h5f = h5py.File(data_path + "/data/stack_sheared_data_noisy_cpp.hdf5","r")
+shear_est_ny = h5f["/data"][()][idx]
+h5f.close()
+
+
 com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
 nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
@@ -63,6 +71,17 @@ crit_sd_num = 1662895.2081868195*com_dist_src
 crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
 crit_sd = crit_sd_num/crit_sd_denorm
 # crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
+
+cmd = int(argv[1])
+if cmd == 0:
+    coeff_1 = crit_sd
+    coeff_2 = 1
+elif cmd == 1:
+    coeff_1 = 1
+    coeff_2 = 1./crit_sd
+else:
+    coeff_1 = crit_sd_num
+    coeff_2 = crit_sd_denorm
 
 # position and separation angle
 pos_len = SkyCoord(ra=0*units.deg, dec=0*units.deg,frame="fk5")
@@ -80,17 +99,24 @@ cos_2theta = numpy.cos(2*position_angle)
 sin_4theta = numpy.sin(4*position_angle)
 cos_4theta = numpy.cos(4*position_angle)
 
-mgt_nf = shear_est_nf[:,0]*cos_2theta - shear_est_nf[:,1]*sin_2theta
-mgx_nf = shear_est_nf[:,0]*sin_2theta + shear_est_nf[:,1]*cos_2theta
-mu_nf = shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta
-mn_nf = shear_est_nf[:,2]
+# noise free
+mgt_nf = (shear_est_nf[:,0]*cos_2theta - shear_est_nf[:,1]*sin_2theta)*coeff_1
+mgx_nf = (shear_est_nf[:,0]*sin_2theta + shear_est_nf[:,1]*cos_2theta)*coeff_1
+# mu_nf = shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta
+# mn_nf = shear_est_nf[:,2]
 
-mgt_ny = shear_est_ny[:,0]*cos_2theta - shear_est_ny[:,1]*sin_2theta
-mgx_ny = shear_est_ny[:,0]*sin_2theta + shear_est_ny[:,1]*cos_2theta
-mu_ny = shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta
-mn_ny = shear_est_ny[:,2]
+mnu1_nf = (shear_est_nf[:,2] + shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta)*coeff_2
+mnu2_nf = (shear_est_nf[:,2] - shear_est_nf[:,3]*cos_4theta + shear_est_nf[:,4]*sin_4theta)*coeff_2
 
 
+# noisy
+mgt_ny = (shear_est_ny[:,0]*cos_2theta - shear_est_ny[:,1]*sin_2theta)*coeff_1
+mgx_ny = (shear_est_ny[:,0]*sin_2theta + shear_est_ny[:,1]*cos_2theta)*coeff_1
+# mu_ny = shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta
+# mn_ny = shear_est_ny[:,2]
+
+mnu1_ny = (shear_est_ny[:,2] + shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta)*coeff_2
+mnu2_ny = (shear_est_ny[:,2] - shear_est_ny[:,3]*cos_4theta + shear_est_ny[:,4]*sin_4theta)*coeff_2
 
 
 radius_bin_num = numprocs
@@ -145,43 +171,60 @@ t1 = time.time()
 
 pdf_bin_num = [2, 10, 20]
 
+guess_num_p = 100
+signal_guess = numpy.zeros((guess_num_p+guess_num_p,))
+signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
+signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
+signal_guess = numpy.sort(signal_guess)
+
+
 for i in my_radius_bin_tag:
     idx1 = separation_radius >= radius_bin[i]
     idx2 = separation_radius < radius_bin[i + 1]
     idx = idx1 & idx2
 
-    temp_mgt_nf = mgt_nf[idx]
-    temp_mgx_nf = mgx_nf[idx]
-    temp_mgnu1_nf = (mn_nf[idx] + mu_nf[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
-    temp_mgnu2_nf = (mn_nf[idx] - mu_nf[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
+
+
+    chisq_img = Image_Plot()
+    chisq_img.subplots(4,3)
 
     for j in range(3):
-        result_t = hk_FQlib.find_shear_cpp(temp_mgt_nf, temp_mgnu1_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
-                                           chi_gap=20,max_iters=60)[:2]
-        result_x = hk_FQlib.find_shear_cpp(temp_mgx_nf, temp_mgnu2_nf, bin_num=pdf_bin_num[j], left=-200, right=200,
-                                           chi_gap=20,max_iters=60)[:2]
+        # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
+        # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
+
+        pdf_bin = hk_FQlib.set_bin_(mgt_nf, pdf_bin_num[j], scale=100000)
+
+        result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=15000, fig_ax=chisq_img.axs[0][j])
+        result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=15000, fig_ax=chisq_img.axs[1][j])
+
         st, ed = int(j * 4), int((j + 1) * 4)
         Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
 
-    temp_mgt_ny = mgt_ny[idx]
-    temp_mgx_ny = mgx_ny[idx]
-    temp_mgnu1_ny = (mn_ny[idx] + mu_ny[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
-    temp_mgnu2_ny = (mn_ny[idx] - mu_ny[idx])/crit_sd_num[idx]*crit_sd_denorm[idx]#*crit_sd_denorm[idx]
 
     for j in range(3):
-        result_t = hk_FQlib.find_shear_cpp(temp_mgt_ny, temp_mgnu1_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
-                                           chi_gap=20,max_iters=60)[:2]
-        result_x = hk_FQlib.find_shear_cpp(temp_mgx_ny, temp_mgnu2_ny, bin_num=pdf_bin_num[j], left=-200, right=200,
-                                           chi_gap=20,max_iters=60)[:2]
+        # result_t = hk_FQlib.find_shear_cpp(mgt_ny[idx], mnu1_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
+        # result_x = hk_FQlib.find_shear_cpp(mgx_ny[idx], mnu2_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
+
+        pdf_bin = hk_FQlib.set_bin_(mgt_ny, pdf_bin_num[j], scale=100000)
+        result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=15000, fig_ax=chisq_img.axs[2][j])
+        result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=15000, fig_ax=chisq_img.axs[3][j])
+
         st, ed = int(j * 4), int((j + 1) * 4)
         Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
+    chisq_img.save_img("./%d/imgs/chisq_%d.pdf"%(cmd,i))
+    chisq_img.close_img()
+
 t2 = time.time()
 comm.Barrier()
 print(rank, t2-t1)
 
 if rank == 0:
 
-    result_path = "."
+    result_path = "./%d"%cmd
     numpy.savez(result_path+"/result_%d.npz"%numprocs, inform,Ds_nf,Ds_ny)
 
     img = Image_Plot(xpad=0.25, ypad=0.24)

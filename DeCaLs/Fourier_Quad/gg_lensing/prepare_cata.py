@@ -6,7 +6,7 @@ import shutil
 import h5py
 import numpy
 from mpi4py import MPI
-import tool_box
+import hk_tool_box
 import warnings
 from sklearn.cluster import KMeans
 from astropy.cosmology import FlatLambdaCDM
@@ -27,7 +27,7 @@ cosmos = FlatLambdaCDM(H0, omega_m0)
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
 sep_bin_num = 9
 bin_st, bin_ed = 0.1, 15
-separation_bin = tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
+separation_bin = hk_tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -41,10 +41,10 @@ num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
 
-delta_sigma_guess[:num_m] = -tool_box.set_bin_log(0.01, 200, num_m).astype(numpy.float64)
-delta_sigma_guess[num_m:] = tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
+delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.01, 200, num_m).astype(numpy.float64)
+delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 # delta_sigma_guess[:100] = -tool_box.set_bin_log(0.001, 50, 101)[:-1]
@@ -232,7 +232,7 @@ if cmd == "prepare_foreground":
 
     group_list = [i for i in range(cent_num)]
 
-    sub_group_list = tool_box.alloc(group_list, cpus)[rank]
+    sub_group_list = hk_tool_box.alloc(group_list, cpus)[rank]
 
     # divide the group into many exposures
     for group_tag in sub_group_list:
@@ -255,7 +255,7 @@ if cmd == "prepare_foreground":
             expos_count += 1
         else:
             m, n = divmod(ground_src_num, min_src_num)
-            nums_distrib = tool_box.alloc([1 for i in range(ground_src_num)], m)
+            nums_distrib = hk_tool_box.alloc([1 for i in range(ground_src_num)], m)
             nums = [sum(nums_distrib[i]) for i in range(m)]
             nums_st = [sum(nums[:i]) for i in range(m)]
             for count in range(m):
@@ -312,7 +312,7 @@ elif cmd == "prepare_background":
     for ff in f_lines:
         total_expos.append(ff.split("\n")[0])
 
-    my_expos = tool_box.alloc(total_expos,cpus, method="order")[rank]
+    my_expos = hk_tool_box.alloc(total_expos,cpus, method="order")[rank]
     expo_avail_sub = []
     exception_sub = []
 
@@ -450,7 +450,7 @@ if cmd == "prepare_pdf":
             h5f_src.close()
 
         # G bins for tangential shear calculation
-        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, bin_scale)
+        mg_bin = hk_tool_box.set_bin(src_data[:, 0], mg_bin_num, bin_scale)
 
 
 
@@ -539,7 +539,7 @@ if cmd == "prepare_pdf":
                                 # print("Finding: ",Gt_num)
 
             # print(fore_tag, Gt_num)
-        mg_sigma_bin = tool_box.set_bin(Gts, mg_bin_num, bin_scale)
+        mg_sigma_bin = hk_tool_box.set_bin(Gts, mg_bin_num, bin_scale)
         # print(tan_shear_guess)
         # print(delta_sigma_guess)
         print(mg_bin)
@@ -555,11 +555,11 @@ if cmd == "prepare_pdf":
         hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
         hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
 
-        hist2d_mg_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
-        hist2d_mg_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
+        hist2d_mg_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
+        hist2d_mg_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
 
-        hist2d_mnu_bin[:hist2d_mg_num2] = -tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
-        hist2d_mnu_bin[hist2d_mg_num2+1:] = tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
+        hist2d_mnu_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
+        hist2d_mnu_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
 
         hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
         hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)

@@ -665,7 +665,7 @@ class Fourier_Quad:
                     break
             fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
-        coeff = hk__box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
         if pic_path:
@@ -837,7 +837,7 @@ def find_shear(g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_nu
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    coeff = hk__box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -979,6 +979,17 @@ if platform.system() == 'Linux':
                                    ctypes.c_int]
 
 
+    # cal_chisq_cpp = c4pylib.cal_chisq
+    # cal_chisq_cpp.restype = None
+    # cal_chisq_cpp.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+    #                            ctypes.c_int,
+    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+    #                            ctypes.c_int,
+    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+    #                            ctypes.c_int,
+    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous')]
+
     search_shear_range_corr = c4pylib.search_shear_range_corr
     search_shear_range_corr.restype = None
     search_shear_range_corr.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
@@ -1052,6 +1063,76 @@ if platform.system() == 'Linux':
                         transform=fig_ax.transAxes, fontsize=15)
 
         return g_h, g_sig, coeff, chisq_min, bins
+
+
+    def find_shear_cpp_guess(g, nu, pdf_bin, signal_guess, chi_gap=40, fig_ax=False,fit_scale=1):
+        bin_num = pdf_bin.shape[0] - 1
+        bin_num2 = int(bin_num/2)
+
+        data_len = g.shape[0]
+        guess_num = signal_guess.shape[0]
+        chisq = numpy.zeros((guess_num, ))
+
+        # g = numpy.ascontiguousarray(g, dtype=numpy.float32)
+        # nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
+        # pdf_bin = numpy.ascontiguousarray(pdf_bin, dtype=numpy.float32)
+        # signal_guess = numpy.ascontiguousarray(signal_guess, dtype=numpy.float32)
+        #
+        # chisq = numpy.zeros((bin_num, ), dtype=numpy.float32)
+        #
+        # cal_chisq_cpp(g, nu, data_len, pdf_bin, bin_num, signal_guess, guess_num, chisq)
+
+        for i in range(guess_num):
+            temp = g - signal_guess[i]*nu
+            num = numpy.histogram(temp, pdf_bin)[0]
+            n1, n2 = numpy.flip(num[:bin_num2], axis=0), num[bin_num2:]
+            chisq[i] = numpy.sum((n2-n1)**2/(n1+n2))*0.5
+        while True:
+            idx = chisq < chisq.min() + chi_gap
+            if idx.sum() < 6:
+                chi_gap = chi_gap*1.1
+            else:
+                break
+        fit_range, fit_chisq = signal_guess[idx], chisq[idx]
+
+        fit_range *= fit_scale
+        coeff = hk_tool_box.fit_1d(fit_range, fit_chisq, 2, "scipy")
+
+        # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
+        # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
+        g_h = -coeff[1] / 2. / coeff[2] / fit_scale
+        g_sig = 0.70710678118 / numpy.sqrt(coeff[2]) / fit_scale
+
+        chisq_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
+
+        #     n1, n2 = self.get_chisq(g, nu, g_h, bins, bin_num2, inverse, ig_num)[1:3]
+        #     fit_shear_range = fit_shear_range
+        if fig_ax:
+            fig_ax.scatter(fit_range, fit_chisq, alpha=0.7, s=10, c="C1")
+
+            fig_ax.plot(fit_range, coeff[0] + coeff[1] * fit_range + coeff[2] * fit_range ** 2,
+                        alpha=0.7)
+
+            left, right = fit_range[0], fit_range[-1]
+            x1, x2 = left - (right - left) * 0.1, right + (right - left) * 0.1
+            fig_ax.plot([x1, x2], [chisq_min, chisq_min], ls="--", c="k", label="%.2f" % chisq_min)
+            fig_ax.set_xlim((x1, x2))
+            fig_ax.legend(loc="lower left")
+
+            xpos = numpy.linspace(fit_range[0], fit_range[-1], 5)
+
+            fig_ax.set_xticks(xpos.tolist())
+            xticks = ["%.2g" % (x / fit_scale) for x in xpos]
+
+            fig_ax.set_xticklabels(xticks)
+
+            text_str = "Num: %d\n%.5f\n%.5f(%dx)\n%.5f$(%dx)^2$\ng=%.5f (%.5f)" % (
+                len(g), coeff[0], coeff[1], fit_scale, coeff[2], fit_scale, g_h, g_sig)
+
+            fig_ax.text(0.1, 0.80, text_str, color='C3', ha='left', va='center',
+                        transform=fig_ax.transAxes, fontsize=15)
+
+        return g_h, g_sig
 
 
     def find_shear_cpp_corr(g, nu, g_corr, nu_corr, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15,
