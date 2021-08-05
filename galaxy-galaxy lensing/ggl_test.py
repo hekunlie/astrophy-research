@@ -44,10 +44,10 @@ com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 
 
 h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
-src_z = h5f["/z"][()]
+src_z_true = h5f["/z"][()]
 
-# src_z_err = numpy.random.normal(src_z, src_z*0.05)
-# src_z = src_z + src_z_err
+src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
+src_z = src_z_true + src_z_err
 
 idx = src_z >= len_z + 0.05
 src_z = src_z[idx]
@@ -69,16 +69,17 @@ nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam
 
 crit_sd_num = 1662895.2081868195*com_dist_src
 crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
-crit_sd = crit_sd_num/crit_sd_denorm
+# crit_sd = crit_sd_num/crit_sd_denorm
 # crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
 cmd = int(argv[1])
+chi_gap = float(argv[2])
 if cmd == 0:
-    coeff_1 = crit_sd
+    coeff_1 = crit_sd_num/crit_sd_denorm
     coeff_2 = 1
 elif cmd == 1:
     coeff_1 = 1
-    coeff_2 = 1./crit_sd
+    coeff_2 = crit_sd_denorm/crit_sd_num
 else:
     coeff_1 = crit_sd_num
     coeff_2 = crit_sd_denorm
@@ -190,14 +191,14 @@ for i in my_radius_bin_tag:
 
     for j in range(3):
         # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
+        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
         # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
+        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
 
         pdf_bin = hk_FQlib.set_bin_(mgt_nf, pdf_bin_num[j], scale=100000)
 
-        result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=15000, fig_ax=chisq_img.axs[0][j])
-        result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=15000, fig_ax=chisq_img.axs[1][j])
+        result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[0][j])
+        result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
 
         st, ed = int(j * 4), int((j + 1) * 4)
         Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
@@ -205,13 +206,13 @@ for i in my_radius_bin_tag:
 
     for j in range(3):
         # result_t = hk_FQlib.find_shear_cpp(mgt_ny[idx], mnu1_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
+        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
         # result_x = hk_FQlib.find_shear_cpp(mgx_ny[idx], mnu2_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=20,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
+        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
 
         pdf_bin = hk_FQlib.set_bin_(mgt_ny, pdf_bin_num[j], scale=100000)
-        result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=15000, fig_ax=chisq_img.axs[2][j])
-        result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=15000, fig_ax=chisq_img.axs[3][j])
+        result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[2][j])
+        result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
 
         st, ed = int(j * 4), int((j + 1) * 4)
         Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
@@ -225,7 +226,7 @@ print(rank, t2-t1)
 if rank == 0:
 
     result_path = "./%d"%cmd
-    numpy.savez(result_path+"/result_%d.npz"%numprocs, inform,Ds_nf,Ds_ny)
+    numpy.savez(result_path+"/result_%d.npz"%numprocs, inform, Ds_nf, Ds_ny, Ds_true)
 
     img = Image_Plot(xpad=0.25, ypad=0.24)
     img.subplots(len(pdf_bin_num), 4)
@@ -244,9 +245,9 @@ if rank == 0:
 
         img.axs[j][0].plot(inform[0], Ds_true, label="Model")
 
-        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true),marker="s", label="Noise free")
+        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), marker="s", label="Noise free")
         img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
-        # img.axs[0][2].set_yscale("log")
+        # img.axs[0][2].set_yscale("symlog")
 
         img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
         img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
@@ -280,4 +281,15 @@ if rank == 0:
         img.set_label(0, i, 1, "Radius Mpc/h")
     img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
     # img.show_img()
+
+    img = Image_Plot()
+    img.subplots(1,1)
+    img.axs[0][0].scatter(src_z_true[:1000],src_z[:1000])
+    x1,x2 = min(src_z_true[:1000].min(), src_z[:1000].min()),max(src_z_true[:1000].max(), src_z[:1000].max())
+
+    img.axs[0][0].plot([x1,x2],[x1,x2],ls="dashed",c="k")
+    img.set_label(0,0,0,"Z")
+    img.set_label(0,0,1,"Z_true")
+    img.save_img(result_path + "/z.pdf")
+
 comm.Barrier()

@@ -38,6 +38,28 @@ extern "C"
         }
         return st;
     }
+    
+    void hist1d_fq(float x, float *pdf_bin, int bin_num, int pre_bin_tag, int& bin_tag)
+    {   
+        int i, j;
+        if(x >= pdf_bin[pre_bin_tag])
+        {
+            for(i=pre_bin_tag; i<bin_num; i++)
+            {
+                if(x >= pdf_bin[i] and x < pdf_bin[i+1]){bin_tag = i;break;}
+                // std::cout<<x<<" "<<pdf_bin[i]<<" "<<pdf_bin[i+1]<<" "<<bin_tag<<" "<<i<<std::endl;
+            }
+        }
+        else
+        {
+            for(i=pre_bin_tag; i>0; i--)
+            {   
+                j = i-1;
+                if(x >= pdf_bin[j] and x < pdf_bin[i]){bin_tag = j;break;}
+            }
+        }
+    }
+
 
     void hist1d_fast(double *x, int num, double *xbin,  int xbin_num, int *count)
     {   
@@ -732,17 +754,27 @@ extern "C"
 
     }
     
-    void cal_chisq(float *data, int data_num, float *guess, int guess_num, float *pdf_bin, int bin_num, float*chisq)
+
+    void cal_chisq(float *mg, float*mu, int data_num, float *pdf_bin, int bin_num, float *guess, int guess_num,  double*count)
     {
         int i, j, k;
         float temp;
+        int pre_bin_tag, bin_tag, tag;
+
 
         for(i=0; i<data_num; i++)
         {
+            pre_bin_tag = 0;
             for(j=0; j<guess_num; j++)
             {
-                temp = data[i] - guess[j];
-                
+                temp = mg[i] - guess[j]*mu[i];
+
+                hist1d_fq(temp, pdf_bin, bin_num, pre_bin_tag, bin_tag);
+
+                tag = j*bin_num + bin_tag;
+                count[tag] += 1;
+
+                pre_bin_tag = bin_tag;                
             }
         }
 

@@ -2,7 +2,7 @@
 #define CORRELATION_FUNCTIONS_H
 
 #include<hk_iolib.h>
-#include<FQlib.h>
+#include<hk_FQlib.h>
 #include<vector>
 
 #define MAX_EXPO 2000

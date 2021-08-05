@@ -979,16 +979,16 @@ if platform.system() == 'Linux':
                                    ctypes.c_int]
 
 
-    # cal_chisq_cpp = c4pylib.cal_chisq
-    # cal_chisq_cpp.restype = None
-    # cal_chisq_cpp.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
-    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
-    #                            ctypes.c_int,
-    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
-    #                            ctypes.c_int,
-    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
-    #                            ctypes.c_int,
-    #                            ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous')]
+    cal_chisq_cpp = c4pylib.cal_chisq
+    cal_chisq_cpp.restype = None
+    cal_chisq_cpp.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                               ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                               ctypes.c_int,
+                               ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                               ctypes.c_int,
+                               ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                               ctypes.c_int,
+                               ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous')]
 
     search_shear_range_corr = c4pylib.search_shear_range_corr
     search_shear_range_corr.restype = None
@@ -1073,20 +1073,25 @@ if platform.system() == 'Linux':
         guess_num = signal_guess.shape[0]
         chisq = numpy.zeros((guess_num, ))
 
-        # g = numpy.ascontiguousarray(g, dtype=numpy.float32)
-        # nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
-        # pdf_bin = numpy.ascontiguousarray(pdf_bin, dtype=numpy.float32)
-        # signal_guess = numpy.ascontiguousarray(signal_guess, dtype=numpy.float32)
-        #
-        # chisq = numpy.zeros((bin_num, ), dtype=numpy.float32)
-        #
-        # cal_chisq_cpp(g, nu, data_len, pdf_bin, bin_num, signal_guess, guess_num, chisq)
+        g = numpy.ascontiguousarray(g, dtype=numpy.float32)
+        nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
+        pdf_bin = numpy.ascontiguousarray(pdf_bin, dtype=numpy.float32)
+        signal_guess = numpy.ascontiguousarray(signal_guess, dtype=numpy.float32)
+        count = numpy.zeros((guess_num, bin_num), dtype=numpy.float64)
 
-        for i in range(guess_num):
-            temp = g - signal_guess[i]*nu
-            num = numpy.histogram(temp, pdf_bin)[0]
-            n1, n2 = numpy.flip(num[:bin_num2], axis=0), num[bin_num2:]
-            chisq[i] = numpy.sum((n2-n1)**2/(n1+n2))*0.5
+
+        cal_chisq_cpp(g, nu, data_len, pdf_bin, bin_num, signal_guess, guess_num, count)
+
+
+        # for i in range(guess_num):
+        #     temp = g - signal_guess[i]*nu
+        #     num = numpy.histogram(temp, pdf_bin)[0]
+        #     n1, n2 = numpy.flip(num[:bin_num2], axis=0), num[bin_num2:]
+        #     chisq[i] = numpy.sum((n2-n1)**2/(n1+n2))*0.5
+
+        n1, n2 = numpy.flip(count[:,:bin_num2],axis=1), count[:,bin_num2:]
+        chisq = numpy.sum((n2 - n1) ** 2 / (n1 + n2), axis=1) * 0.5
+
         while True:
             idx = chisq < chisq.min() + chi_gap
             if idx.sum() < 6:

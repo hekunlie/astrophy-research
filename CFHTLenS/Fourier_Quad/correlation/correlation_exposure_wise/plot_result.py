@@ -54,12 +54,12 @@ for ii in range(len(expo_type)):
     result_path = data_path + "/result_cache_%d_%s.hdf5"%(resample_num,expo_type[ii])
     file_path = data_path + "/result_%d_%s.hdf5"%(resample_num,expo_type[ii])
 
-    results = tool_box.get_result_data(file_path, theta_bin_num,zbin_num, resample_num)
+    results = hk_tool_box.get_result_data(file_path, theta_bin_num,zbin_num, resample_num)
     theta, xi_p, xi_p_sig, xi_p_sub, xi_m, xi_m_sig, xi_m_sub = results
 
-    used_data_pts, used_zbins = tool_box.get_zbin_mask(zbin_num, theta_bin_num, discard_bins)
+    used_data_pts, used_zbins = hk_tool_box.get_zbin_mask(zbin_num, theta_bin_num, discard_bins)
     idx = used_data_pts > 0
-    cov_p, inv_cov_p, cov_m, inv_cov_m, cov_pm, inv_cov_pm = tool_box.get_cov(xi_p_sub[idx], xi_m_sub[idx])
+    cov_p, inv_cov_p, cov_m, inv_cov_m, cov_pm, inv_cov_pm = hk_tool_box.get_cov(xi_p_sub[idx], xi_m_sub[idx])
     n1, n2 = xi_p[idx].shape[0], xi_m[idx].shape[0]
     xi_pm = numpy.zeros((n1+n2, ))
     xi_pm[:n1] = xi_p[idx]
