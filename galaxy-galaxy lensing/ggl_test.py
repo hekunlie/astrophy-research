@@ -55,10 +55,10 @@ src_ra = h5f["/ra"][()][idx]
 src_dec = h5f["/dec"][()][idx]
 h5f.close()
 
-h5f = h5py.File(data_path + "/data/stack_sheared_data_noise_free.hdf5","r")
+h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noise_free.hdf5","r")
 shear_est_nf = h5f["/data"][()][idx]
 h5f.close()
-h5f = h5py.File(data_path + "/data/stack_sheared_data_noisy_cpp.hdf5","r")
+h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noisy_cpp.hdf5","r")
 shear_est_ny = h5f["/data"][()][idx]
 h5f.close()
 
@@ -172,124 +172,125 @@ t1 = time.time()
 
 pdf_bin_num = [2, 10, 20]
 
-guess_num_p = 100
+guess_num_p = 50
 signal_guess = numpy.zeros((guess_num_p+guess_num_p,))
 signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
 signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
 signal_guess = numpy.sort(signal_guess)
 
+for tt in range(100):
+    for i in my_radius_bin_tag:
+        idx1 = separation_radius >= radius_bin[i]
+        idx2 = separation_radius < radius_bin[i + 1]
+        idx = idx1 & idx2
 
-for i in my_radius_bin_tag:
-    idx1 = separation_radius >= radius_bin[i]
-    idx2 = separation_radius < radius_bin[i + 1]
-    idx = idx1 & idx2
+        chisq_img = Image_Plot()
+        chisq_img.subplots(4,3)
+
+        for j in range(3):
+            # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
+            # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
+
+            temp = numpy.random.choice(mgt_nf, 100000, False)
+            pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
+
+            result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[0][j])
+            # result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
+
+            st, ed = int(j * 4), int((j + 1) * 4)
+            Ds_nf[st:ed, i] = result_t[0], result_t[1], 0, 0#result_x[0], result_x[1]
 
 
+        # for j in range(3):
+            # result_t = hk_FQlib.find_shear_cpp(mgt_ny[idx], mnu1_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
+            # result_x = hk_FQlib.find_shear_cpp(mgx_ny[idx], mnu2_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
 
-    chisq_img = Image_Plot()
-    chisq_img.subplots(4,3)
+            temp = numpy.random.choice(mgt_ny, 100000, False)
+            pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
+            result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[2][j])
+            # result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
 
-    for j in range(3):
-        # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
-        # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
+            st, ed = int(j * 4), int((j + 1) * 4)
+            Ds_ny[st:ed, i] = result_t[0], result_t[1], 0, 0#result_x[0], result_x[1]
+        chisq_img.save_img("./%d/imgs/chisq_%d_%d.pdf"%(cmd,i, tt))
+        chisq_img.close_img()
 
-        pdf_bin = hk_FQlib.set_bin_(mgt_nf, pdf_bin_num[j], scale=100000)
+    t2 = time.time()
+    comm.Barrier()
+    print(rank, t2-t1)
 
-        result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[0][j])
-        result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
+    if rank == 0:
 
-        st, ed = int(j * 4), int((j + 1) * 4)
-        Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
+        result_path = "./%d"%cmd
+        numpy.savez(result_path+"/result_%d_%d.npz"%(numprocs,tt), inform, Ds_nf, Ds_ny, Ds_true)
 
+        img = Image_Plot(xpad=0.25, ypad=0.24)
+        img.subplots(len(pdf_bin_num), 4)
 
-    for j in range(3):
-        # result_t = hk_FQlib.find_shear_cpp(mgt_ny[idx], mnu1_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
-        # result_x = hk_FQlib.find_shear_cpp(mgx_ny[idx], mnu2_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
+        for j in range(len(pdf_bin_num)):
+            tag = int(4 * j)
+            img.axs[j][0].errorbar(inform[0], Ds_nf[tag], Ds_nf[tag + 1], capsize=3, marker="s", fmt=" ",
+                                   label="Noise free")
+            img.axs[j][0].errorbar(inform[0], Ds_ny[tag], Ds_ny[tag + 1], capsize=3, marker="o", fmt=" ",
+                                   label="Noisy")
 
-        pdf_bin = hk_FQlib.set_bin_(mgt_ny, pdf_bin_num[j], scale=100000)
-        result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[2][j])
-        result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
+            img.axs[j][1].errorbar(inform[0], Ds_nf[tag + 2], Ds_nf[tag + 3], capsize=3, marker="s", fmt=" ",
+                                   label="Noise free")
+            img.axs[j][1].errorbar(inform[0], Ds_ny[tag + 2], Ds_ny[tag + 3], capsize=3, marker="o", fmt=" ",
+                                   label="Noisy")
 
-        st, ed = int(j * 4), int((j + 1) * 4)
-        Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
-    chisq_img.save_img("./%d/imgs/chisq_%d.pdf"%(cmd,i))
-    chisq_img.close_img()
+            img.axs[j][0].plot(inform[0], Ds_true, label="Model")
 
-t2 = time.time()
-comm.Barrier()
-print(rank, t2-t1)
+            img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), marker="s", label="Noise free")
+            img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
+            # img.axs[0][2].set_yscale("symlog")
 
-if rank == 0:
+            img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
+            img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
 
-    result_path = "./%d"%cmd
-    numpy.savez(result_path+"/result_%d.npz"%numprocs, inform, Ds_nf, Ds_ny, Ds_true)
+            for i in range(4):
+                img.set_label(j, i, 1, "Radius Mpc/h")
+                img.axs[j][i].set_xscale("log")
+                img.axs[j][i].legend()
+            img.set_label(j, 0, 0, "$\Delta\Sigma$")
+            img.set_label(j, 1, 0, "$\Delta\Sigma_x$")
 
-    img = Image_Plot(xpad=0.25, ypad=0.24)
-    img.subplots(len(pdf_bin_num), 4)
+            img.set_label(j, 2, 0, "$\Delta\Sigma - \Delta\Sigma_{model}$")
+            img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
 
-    for j in range(len(pdf_bin_num)):
-        tag = int(4 * j)
-        img.axs[j][0].errorbar(inform[0], Ds_nf[tag], Ds_nf[tag + 1], capsize=3, marker="s", fmt=" ",
-                               label="Noise free")
-        img.axs[j][0].errorbar(inform[0], Ds_ny[tag], Ds_ny[tag + 1], capsize=3, marker="o", fmt=" ",
-                               label="Noisy")
+            img.axs[j][0].set_yscale("log")
+        img.save_img(result_path + "/signal_comparison_%d_%d.pdf"%(numprocs,tt))
+        # img.show_img()
 
-        img.axs[j][1].errorbar(inform[0], Ds_nf[tag + 2], Ds_nf[tag + 3], capsize=3, marker="s", fmt=" ",
-                               label="Noise free")
-        img.axs[j][1].errorbar(inform[0], Ds_ny[tag + 2], Ds_ny[tag + 3], capsize=3, marker="o", fmt=" ",
-                               label="Noisy")
+        # img = Image_Plot(xpad=0.25)
+        # img.subplots(1, 2)
+        # for i in range(1, 3):
+        #     tag = int(i * 4)
+        #     img.axs[0][0].plot(inform[0], Ds_nf[tag + 1] / Ds_nf[1],
+        #                        label="Noise free: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+        #     img.axs[0][1].plot(inform[0], Ds_ny[tag + 1] / Ds_ny[1],
+        #                        label="Noisy: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+        # for i in range(2):
+        #     img.axs[0][i].legend()
+        #     img.axs[0][i].set_xscale("log")
+        #     img.set_label(0, i, 0, "Error bar ratio")
+        #     img.set_label(0, i, 1, "Radius Mpc/h")
+        # img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
+        # img.show_img()
 
-        img.axs[j][0].plot(inform[0], Ds_true, label="Model")
+        # img = Image_Plot()
+        # img.subplots(1,1)
+        # img.axs[0][0].scatter(src_z_true[:1000],src_z[:1000])
+        # x1,x2 = min(src_z_true[:1000].min(), src_z[:1000].min()),max(src_z_true[:1000].max(), src_z[:1000].max())
+        #
+        # img.axs[0][0].plot([x1,x2],[x1,x2],ls="dashed",c="k")
+        # img.set_label(0,0,0,"Z")
+        # img.set_label(0,0,1,"Z_true")
+        # img.save_img(result_path + "/z.pdf")
 
-        img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), marker="s", label="Noise free")
-        img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
-        # img.axs[0][2].set_yscale("symlog")
-
-        img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
-        img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
-
-        for i in range(4):
-            img.set_label(j, i, 1, "Radius Mpc/h")
-            img.axs[j][i].set_xscale("log")
-            img.axs[j][i].legend()
-        img.set_label(j, 0, 0, "$\Delta\Sigma$")
-        img.set_label(j, 1, 0, "$\Delta\Sigma_x$")
-
-        img.set_label(j, 2, 0, "$\Delta\Sigma - \Delta\Sigma_{model}$")
-        img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
-
-        img.axs[j][0].set_yscale("log")
-    img.save_img(result_path + "/signal_comparison_%d.pdf"%numprocs)
-    # img.show_img()
-
-    img = Image_Plot(xpad=0.25)
-    img.subplots(1, 2)
-    for i in range(1, 3):
-        tag = int(i * 4)
-        img.axs[0][0].plot(inform[0], Ds_nf[tag + 1] / Ds_nf[1],
-                           label="Noise free: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
-        img.axs[0][1].plot(inform[0], Ds_ny[tag + 1] / Ds_ny[1],
-                           label="Noisy: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
-    for i in range(2):
-        img.axs[0][i].legend()
-        img.axs[0][i].set_xscale("log")
-        img.set_label(0, i, 0, "Error bar ratio")
-        img.set_label(0, i, 1, "Radius Mpc/h")
-    img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
-    # img.show_img()
-
-    img = Image_Plot()
-    img.subplots(1,1)
-    img.axs[0][0].scatter(src_z_true[:1000],src_z[:1000])
-    x1,x2 = min(src_z_true[:1000].min(), src_z[:1000].min()),max(src_z_true[:1000].max(), src_z[:1000].max())
-
-    img.axs[0][0].plot([x1,x2],[x1,x2],ls="dashed",c="k")
-    img.set_label(0,0,0,"Z")
-    img.set_label(0,0,1,"Z_true")
-    img.save_img(result_path + "/z.pdf")
-
+    comm.Barrier()
 comm.Barrier()
