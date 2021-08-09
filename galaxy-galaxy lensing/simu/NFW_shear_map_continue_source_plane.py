@@ -74,13 +74,13 @@ dec = separation * numpy.sin(theta)
 
 # magnitude & flux
 mag_s, mag_e = 22, 25.8
-mag = tool_box.mag_generator(total_src_num, mag_s, mag_e).astype(dtype=numpy.float32)
-flux = tool_box.mag_to_flux(mag).astype(dtype=numpy.float32)
+mag = hk_tool_box.mag_generator(total_src_num, mag_s, mag_e).astype(dtype=numpy.float32)
+flux = hk_tool_box.mag_to_flux(mag).astype(dtype=numpy.float32)
 
 # galactic radius
 radius_s, radius_e = 0.35, 1.0
 
-radius = (tool_box.radii_from_mags(mag, radius_s, radius_e) + 0.8)/0.187
+radius = (hk_tool_box.radii_from_mags(mag, radius_s, radius_e) + 0.8)/0.187
 
 
 seed = rng.randint(1, 2000000000, int(total_src_num/10000))
@@ -110,7 +110,7 @@ else:
     # true background sources
     src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.35, total_src_num).astype(dtype=numpy.float32))
 
-    shear_data = gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
+    shear_data = hk_gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
 
     h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5"%rank, "w")
     h5f["/z"] = src_z

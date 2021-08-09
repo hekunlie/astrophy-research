@@ -22,6 +22,12 @@ numprocs = comm.Get_size()
 
 data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
 
+# dilution ratio
+dilution_ratio = 0.3
+
+# bin number for PDF_SYM
+pdf_bin_num = [2,10,20]
+
 
 # cosmology
 omega_m0 = 0.31
@@ -42,25 +48,71 @@ len_z = 0.3  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 
+# redshift threshold
+src_z_threshold = len_z + 0.05
 
+
+# read the source data
 h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
 src_z_true = h5f["/z"][()]
 
 src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
-src_z = src_z_true + src_z_err
+src_z_ny = src_z_true + src_z_err
 
-idx = src_z >= len_z + 0.05
-src_z = src_z[idx]
-src_ra = h5f["/ra"][()][idx]
-src_dec = h5f["/dec"][()][idx]
+idx = src_z_ny >= src_z_threshold
+
+src_num = idx.sum()
+dilution_num = int(src_num/(1-dilution_ratio)*dilution_ratio)
+total_num = src_num + dilution_num
+if rank == 0:
+    print("src num: %d. Dilution: %d. Ratio: %.2f"%(src_num, dilution_num,dilution_ratio))
+
+
+src_z = numpy.zeros((total_num,),dtype=numpy.float32)
+src_ra = numpy.zeros((total_num,),dtype=numpy.float32)
+src_dec = numpy.zeros((total_num,),dtype=numpy.float32)
+shear_est_nf = numpy.zeros((total_num, 5),dtype=numpy.float32)
+shear_est_ny = numpy.zeros((total_num,5),dtype=numpy.float32)
+
+src_z[:src_num] = src_z_ny[idx]
+src_ra[:src_num] = h5f["/ra"][()][idx]
+src_dec[:src_num] = h5f["/dec"][()][idx]
+
 h5f.close()
 
-h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noise_free.hdf5","r")
-shear_est_nf = h5f["/data"][()][idx]
+
+h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noise_free.hdf5", "r")
+shear_est_nf[:src_num] = h5f["/data"][()][idx]
 h5f.close()
-h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noisy_cpp.hdf5","r")
-shear_est_ny = h5f["/data"][()][idx]
+h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noisy_cpp.hdf5", "r")
+shear_est_ny[:src_num] = h5f["/data"][()][idx]
 h5f.close()
+
+
+# read the dilution data
+if dilution_num > 0:
+    h5f = h5py.File(data_path + "/params/stack_non_sheared_para.hdf5","r")
+
+    src_z_non = numpy.abs(numpy.random.normal(0, 0.15, 3*dilution_num)) + len_z
+
+    idx = src_z_non >= src_z_threshold
+
+    if idx.sum() < dilution_num:
+        print("Too less dilution")
+        exit()
+    src_z[src_num:] = src_z_non[idx][:dilution_num]
+    src_ra[src_num:] = h5f["/ra"][()][:dilution_num]
+    src_dec[src_num:] = h5f["/dec"][()][:dilution_num]
+    h5f.close()
+
+    h5f = h5py.File(data_path + "/data/non_sheared_data/stack_non_sheared_data_noise_free.hdf5","r")
+    shear_est_nf[src_num:] = h5f["/data"][()][:dilution_num]
+    h5f.close()
+    h5f = h5py.File(data_path + "/data/non_sheared_data/stack_non_sheared_data_noisy_cpp.hdf5","r")
+    shear_est_ny[src_num:] = h5f["/data"][()][:dilution_num]
+    h5f.close()
+
+
 
 
 com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
@@ -121,7 +173,7 @@ mnu2_ny = (shear_est_ny[:,2] - shear_est_ny[:,3]*cos_4theta + shear_est_ny[:,4]*
 
 
 radius_bin_num = numprocs
-radius_bin = hk_tool_box.set_bin_log(0.2, 19.5, radius_bin_num + 1)
+radius_bin = hk_tool_box.set_bin_log(0.2, 18, radius_bin_num + 1)
 radius_bin_tag = [i for i in range(radius_bin_num)]
 my_radius_bin_tag = hk_tool_box.alloc(radius_bin_tag, numprocs)[rank]
 
@@ -130,8 +182,8 @@ itemsize = MPI.DOUBLE.Get_size()
 
 if rank == 0:
     # bytes for 10 double elements
-    nbytes1 = 12*radius_bin_num*itemsize
-    nbytes2 = 12*radius_bin_num*itemsize
+    nbytes1 = len(pdf_bin_num)*4*radius_bin_num*itemsize
+    nbytes2 = len(pdf_bin_num)*4*radius_bin_num*itemsize
     nbytes3 = 3*radius_bin_num*itemsize
 else:
     nbytes1 = 0
@@ -148,8 +200,8 @@ buf1, itemsize = win1.Shared_query(0)
 buf2, itemsize = win2.Shared_query(0)
 buf3, itemsize = win3.Shared_query(0)
 
-Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(12, radius_bin_num)) # array filled with zero
-Ds_ny = numpy.ndarray(buffer=buf2, dtype='d', shape=(12, radius_bin_num))
+Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(len(pdf_bin_num)*4, radius_bin_num)) # array filled with zero
+Ds_ny = numpy.ndarray(buffer=buf2, dtype='d', shape=(len(pdf_bin_num)*4, radius_bin_num))
 inform = numpy.ndarray(buffer=buf3, dtype='d', shape=(3, radius_bin_num))
 
 if rank == 0:
@@ -170,24 +222,23 @@ if rank == 0:
 
 t1 = time.time()
 
-pdf_bin_num = [2, 10, 20]
 
 guess_num_p = 50
 signal_guess = numpy.zeros((guess_num_p+guess_num_p,))
-signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
-signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
+signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
+signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
 signal_guess = numpy.sort(signal_guess)
 
-for tt in range(100):
+for tt in range(1):
     for i in my_radius_bin_tag:
         idx1 = separation_radius >= radius_bin[i]
         idx2 = separation_radius < radius_bin[i + 1]
         idx = idx1 & idx2
 
         chisq_img = Image_Plot()
-        chisq_img.subplots(4,3)
+        chisq_img.subplots(4,len(pdf_bin_num))
 
-        for j in range(3):
+        for j in range(len(pdf_bin_num)):
             # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
             #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
             # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
@@ -197,10 +248,10 @@ for tt in range(100):
             pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
 
             result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[0][j])
-            # result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
+            result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
 
             st, ed = int(j * 4), int((j + 1) * 4)
-            Ds_nf[st:ed, i] = result_t[0], result_t[1], 0, 0#result_x[0], result_x[1]
+            Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
 
 
         # for j in range(3):
@@ -212,10 +263,10 @@ for tt in range(100):
             temp = numpy.random.choice(mgt_ny, 100000, False)
             pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
             result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[2][j])
-            # result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
+            result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
 
             st, ed = int(j * 4), int((j + 1) * 4)
-            Ds_ny[st:ed, i] = result_t[0], result_t[1], 0, 0#result_x[0], result_x[1]
+            Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
         chisq_img.save_img("./%d/imgs/chisq_%d_%d.pdf"%(cmd,i, tt))
         chisq_img.close_img()
 
@@ -252,7 +303,17 @@ for tt in range(100):
             img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
             img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
 
+
+            # img.axs[j][2].plot(inform[0], Ds_nf[tag], marker="s", label="Noise free")
+            # img.axs[j][2].plot(inform[0], Ds_ny[tag], marker="o",label="Noisy")
+            # # img.axs[0][2].set_yscale("symlog")
+            #
+            # img.axs[j][3].plot(inform[0], Ds_nf[tag] / Ds_nf[tag+1],marker="s", label="Noise free")
+            # img.axs[j][3].plot(inform[0], Ds_ny[tag] / Ds_ny[tag+1], marker="o",label="Noisy")
+
+
             for i in range(4):
+                img.axs[j][i].set_title("PDF bin_num %d"%pdf_bin_num[j])
                 img.set_label(j, i, 1, "Radius Mpc/h")
                 img.axs[j][i].set_xscale("log")
                 img.axs[j][i].legend()
