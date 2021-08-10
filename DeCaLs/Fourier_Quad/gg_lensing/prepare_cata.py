@@ -25,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 9
-bin_st, bin_ed = 0.1, 15
+sep_bin_num = 21
+bin_st, bin_ed = 0.2, 100
 separation_bin = hk_tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -35,16 +35,16 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 300
-num_m = 150
+delta_sigma_guess_num = 100
+num_m = 50
 num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.001, 400, num_p).astype(numpy.float64)
 
-delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.01, 200, num_m).astype(numpy.float64)
-delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.01, 200, num_p).astype(numpy.float64)
+delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.001, 400, num_m).astype(numpy.float64)
+delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.001, 400, num_p).astype(numpy.float64)
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 # delta_sigma_guess[:100] = -tool_box.set_bin_log(0.001, 50, 101)[:-1]
@@ -90,8 +90,8 @@ flux2_alt_thresh = 3
 # field distortion
 gf1_idx = 6
 gf2_idx = 7
-gf1_thresh = 0.003
-gf2_thresh = 0.003
+gf1_thresh = 0.0025
+gf2_thresh = 0.0025
 
 # shear estimators
 mg1_idx = 8
@@ -146,8 +146,7 @@ if cmd == "prepare_foreground":
         log_inform = "Foreground selection: richness>=%d, " \
                      "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
         print(log_inform)
-    # for kmeans to build jackknife labels
-    cent_num = 100
+
 
     stack_file_path = foreground_path_ori + "/foreground.hdf5"
 
@@ -155,6 +154,10 @@ if cmd == "prepare_foreground":
     # files = ["lowz_DECALS_overlap.hdf5","cmass_DECALS_overlap.hdf5"]
     # files = ["lowz_DECALS_overlap.hdf5"]
     files = [argv[2]]
+
+    # for kmeans to build jackknife labels
+    cent_num = int(argv[3])
+
     if rank == 0:
         if os.path.exists(result_cata_path + "/foreground"):
             shutil.rmtree(result_cata_path + "/foreground")
