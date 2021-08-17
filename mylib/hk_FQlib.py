@@ -12,6 +12,8 @@ import hk_tool_box
 import time
 import ctypes
 import numpy.ctypeslib as ctl
+import os
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 
 
 class Fourier_Quad:
@@ -958,8 +960,8 @@ def find_shear_mean(G, N, weight=1):
 
 
 if platform.system() == 'Linux':
-    import os
-    my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
+
+    print("Found ", my_home)
     c4pylib = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
 
 

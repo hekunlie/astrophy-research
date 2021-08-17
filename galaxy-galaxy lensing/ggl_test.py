@@ -1,4 +1,3 @@
-import os
 from sys import path,argv
 path.append("/home/hklee/work/mylib")
 from hk_plot_tool import Image_Plot
@@ -22,11 +21,18 @@ numprocs = comm.Get_size()
 
 data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
 
+
+cmd = int(argv[1])
+chi_gap = 50#float(argv[2])
+
 # dilution ratio
-dilution_ratio = 0.3
+dilution_ratio = float(argv[2])
+
+# zerr tag
+zerr_tag = int(argv[3])
 
 # bin number for PDF_SYM
-pdf_bin_num = [2,10,20]
+pdf_bin_num = [2,10]
 
 
 # cosmology
@@ -56,7 +62,11 @@ src_z_threshold = len_z + 0.05
 h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
 src_z_true = h5f["/z"][()]
 
-src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
+if zerr_tag == 1:
+    src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
+else:
+    src_z_err = 0
+
 src_z_ny = src_z_true + src_z_err
 
 idx = src_z_ny >= src_z_threshold
@@ -90,10 +100,10 @@ h5f.close()
 
 
 # read the dilution data
-if dilution_num > 0:
+if dilution_num > 0.0001:
     h5f = h5py.File(data_path + "/params/stack_non_sheared_para.hdf5","r")
 
-    src_z_non = numpy.abs(numpy.random.normal(0, 0.15, 3*dilution_num)) + len_z
+    src_z_non = numpy.abs(numpy.random.normal(0, 0.1, 3*dilution_num)) + len_z
 
     idx = src_z_non >= src_z_threshold
 
@@ -113,8 +123,6 @@ if dilution_num > 0:
     h5f.close()
 
 
-
-
 com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
 nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
@@ -124,8 +132,7 @@ crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
 # crit_sd = crit_sd_num/crit_sd_denorm
 # crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
-cmd = int(argv[1])
-chi_gap = float(argv[2])
+
 if cmd == 0:
     coeff_1 = crit_sd_num/crit_sd_denorm
     coeff_2 = 1
