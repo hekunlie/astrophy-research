@@ -1,5 +1,7 @@
+import os
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 from sys import path
-path.append("/home/hklee/work/mylib")
+path.append('%s/work/mylib/' % my_home)
 from hk_plot_tool import Image_Plot
 import hk_tool_box
 import numpy

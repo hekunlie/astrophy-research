@@ -1,12 +1,12 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append("%s/work/mylib/"% my_home)
 import h5py
 import numpy
-from plot_tool import Image_Plot
+from hk_plot_tool import Image_Plot
 from mpi4py import MPI
-import tool_box
+import hk_tool_box
 import warnings
 
 warnings.filterwarnings('error')
@@ -72,8 +72,8 @@ if mode == "hdf5_cata":
         exposures_candidates.append(expo_nm)
         exposures_candidates_band.append(band)
 
-    exposures_candidates_sub = tool_box.alloc(exposures_candidates, numprocs, "seq")[rank]
-    exposures_candidates_band_sub = tool_box.alloc(exposures_candidates_band, numprocs, "seq")[rank]
+    exposures_candidates_sub = hk_tool_box.alloc(exposures_candidates, numprocs, "seq")[rank]
+    exposures_candidates_band_sub = hk_tool_box.alloc(exposures_candidates_band, numprocs, "seq")[rank]
 
     exposures_candidates_avail_sub = []
     exception_sub = []
@@ -152,10 +152,10 @@ if mode == "hist":
 
     band_num = len(data_band)
 
-    zbin_num = 100
+    zbin_num = 300
     ra_bin_num, dec_bin_num = 2000, 1000
 
-    z_hist_bin = numpy.linspace(0, 4, zbin_num+1)
+    z_hist_bin = numpy.linspace(0, 3, zbin_num+1)
     ra_hist_bin = numpy.linspace(0, 360, ra_bin_num+1)
     dec_hist_bin = numpy.linspace(-90, 90, dec_bin_num+1)
 
@@ -203,7 +203,7 @@ if mode == "hist":
     for tag, band in enumerate(data_band):
         with open(total_path + "/cat_inform/exposure_avail_%s_band.dat"%band, "r") as f:
             file_path = f.readlines()
-        file_path_sub = tool_box.alloc(file_path, numprocs)[rank]
+        file_path_sub = hk_tool_box.alloc(file_path, numprocs)[rank]
 
         for fps in file_path_sub:
             src = fps.split("\n")[0]
@@ -231,10 +231,9 @@ if mode == "hist":
     comm.Barrier()
 
     for i in range(numprocs):
-        if i == rank:
-            total_pos_hist += sub_pos_hist
-            total_z_pos_hist += sub_z_pos_hist
-            total_zhist += sub_zhist
+        total_pos_hist += sub_pos_hist
+        total_z_pos_hist += sub_z_pos_hist
+        total_zhist += sub_zhist
         comm.Barrier()
 
     comm.Barrier()

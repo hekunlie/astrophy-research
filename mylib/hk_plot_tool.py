@@ -75,7 +75,7 @@ class Image_Plot:
 
 
     def scatter_pts(self, iy,ix, x, y, fxy, scale=None, tick_labelsize=None, label=None, label_size=None,
-                    pts_size=3, color_map='YlOrRd',marker="s",sci_cb=True):
+                    pts_size=3, color_map='YlOrRd',marker="s",sci_cb=False):
         if scale:
             norm = plt.Normalize(vmin=scale[0], vmax=scale[1])
         else:

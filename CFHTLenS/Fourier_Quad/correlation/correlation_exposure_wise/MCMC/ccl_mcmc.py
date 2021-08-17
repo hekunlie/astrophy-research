@@ -1,5 +1,5 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
 import hk_correlation_function_tool as cf_tool

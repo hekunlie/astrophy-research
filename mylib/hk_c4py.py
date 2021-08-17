@@ -1,5 +1,5 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 import numpy
 import ctypes
 import numpy.ctypeslib as ctl

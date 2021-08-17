@@ -1,5 +1,5 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
 import h5py
@@ -15,15 +15,15 @@ import hk_FQlib
 warnings.filterwarnings('error')
 
 # start
-time_start = tool_box.get_time_now()
+time_start = hk_tool_box.get_time_now()
 
 # parameters
 
 area_num = 4
 # theta bin
 theta_bin_num = 5
-# theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-theta_bin = tool_box.set_bin_log(5, 60, theta_bin_num+1).astype(numpy.float32)
+# theta_bin = hk_tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+theta_bin = hk_tool_box.set_bin_log(5, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -45,7 +45,7 @@ redshift_bin = numpy.array([0.2, 0.39, 0.58, 0.72, 0.86, 1.02, 1.3],dtype=numpy.
 # chi guess bin for PDF_SYM
 chi_guess_num = 40
 inv = [chi_guess_num-1-i for i in range(chi_guess_num)]
-chi_guess_bin_p = tool_box.set_bin_log(10**(-8), 10**(-3), chi_guess_num).astype(numpy.float32)
+chi_guess_bin_p = hk_tool_box.set_bin_log(10**(-8), 10**(-3), chi_guess_num).astype(numpy.float32)
 chi_guess_bin = numpy.zeros((2*chi_guess_num, ), dtype=numpy.float32)
 chi_guess_bin[:chi_guess_num] = -chi_guess_bin_p[inv]
 chi_guess_bin[chi_guess_num:] = chi_guess_bin_p
@@ -142,7 +142,7 @@ if cmd == "correlation":
             else:
                 src_data = numpy.row_stack((src_data, temp))
 
-        mg_bin = tool_box.set_bin(src_data[:, 0], mg_bin_num, 1000000)
+        mg_bin = hk_tool_box.set_bin(src_data[:, 0], mg_bin_num, 1000000)
 
         if not os.path.exists(result_cata_path + "/kmeans"):
             os.mkdir(result_cata_path + "/kmeans")
@@ -160,7 +160,7 @@ if cmd == "correlation":
         #     cov = [[numpy.abs(chi_guess_bin[i] * 2), chi_guess_bin[i]],
         #            [chi_guess_bin[i], numpy.abs(chi_guess_bin[i] * 2)]]
         #
-        #     gg = tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
+        #     gg = hk_tool_box.rand_gauss2n(cor_gg_len, mean, cov).astype(dtype=numpy.float32)
         #
         #     gg_1[:,i] = gg[0]
         #     gg_2[:,i] = gg[1]
@@ -217,7 +217,7 @@ if cmd == "prepare":
     for ff in f_lines:
         total_expos.append(ff.split("\n")[0])
 
-    my_expos = tool_box.alloc(total_expos,cpus, method="order")[rank]
+    my_expos = hk_tool_box.alloc(total_expos,cpus, method="order")[rank]
     expo_avail_sub = []
     exception_sub = []
 
@@ -372,9 +372,9 @@ elif cmd == "stack":
         print(expos_num, " exposures")
 
     expos_labels = [i for i in range(expos_num)]
-    my_sub_area_list = tool_box.alloc(expos, cpus)[rank]
-    my_sub_expos_labels = tool_box.alloc(expos_labels, cpus)[rank]
-    my_sub_gal_num = tool_box.alloc(gal_num, cpus)[rank]
+    my_sub_area_list = hk_tool_box.alloc(expos, cpus)[rank]
+    my_sub_expos_labels = hk_tool_box.alloc(expos_labels, cpus)[rank]
+    my_sub_gal_num = hk_tool_box.alloc(gal_num, cpus)[rank]
     # print(rank, i, len(my_sub_area_list))
 
     if len(my_sub_area_list) > 0:
@@ -487,7 +487,7 @@ elif cmd == "kmeans":
 
         ra_dec = data[:,5:7]
 
-        ncents, ratio = tool_box.even_area(src_num_each_area, area_num, total_cent)
+        ncents, ratio = hk_tool_box.even_area(src_num_each_area, area_num, total_cent)
 
         if rank == 0:
             print(ncents)
@@ -554,7 +554,7 @@ elif cmd == "segment":
 
         group_list = [i for i in range(group_num)]
 
-        sub_group_list = tool_box.alloc(group_list, cpus)[rank]
+        sub_group_list = hk_tool_box.alloc(group_list, cpus)[rank]
 
         add_bias = numpy.zeros((len(sub_group_list), 5))
         add_bias_sp = (len(sub_group_list), 5)
@@ -572,13 +572,13 @@ elif cmd == "segment":
             group_ra_min, group_ra_max = group_ra.min(), group_ra.max()
             group_dec_min, group_dec_max = group_dec.min(), group_dec.max()
 
-            group_ra_bin, group_ra_bin_num = tool_box.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
-            group_dec_bin, group_dec_bin_num = tool_box.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
+            group_ra_bin, group_ra_bin_num = hk_tool_box.set_min_bin(group_ra_min, group_ra_max, expos_field_width)
+            group_dec_bin, group_dec_bin_num = hk_tool_box.set_min_bin(group_dec_min, group_dec_max, expos_field_width)
 
             # additive bias test
             # it should be very small
-            gh1, gh1_sig = FQlib.find_shear_cpp(sub_data[:, 0], sub_data[:, 2] + sub_data[:, 3], 20)[:2]
-            gh2, gh2_sig = FQlib.find_shear_cpp(sub_data[:, 1], sub_data[:, 2] - sub_data[:, 3], 20)[:2]
+            gh1, gh1_sig = hk_FQlib.find_shear_cpp(sub_data[:, 0], sub_data[:, 2] + sub_data[:, 3], 20)[:2]
+            gh2, gh2_sig = hk_FQlib.find_shear_cpp(sub_data[:, 1], sub_data[:, 2] - sub_data[:, 3], 20)[:2]
             # if the signal is significant than 1.5\sigma, it should be corrected
             if numpy.abs(gh1/gh1_sig) > 1.5:
                 pass
@@ -604,7 +604,7 @@ elif cmd == "segment":
                     if src_num > 0:
                         expos_data = sub_data[idx_sub]
                         sub_redshift = expos_data[:, 8]
-                        redshift_label = tool_box.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
+                        redshift_label = hk_tool_box.get_bin_label(sub_redshift, redshift_bin,redshift_bin_num)
 
                         expos_ra_center = (group_ra_bin[i] + group_ra_bin[i+1]) / 2
                         expos_dec_center = (group_dec_bin[j] + group_dec_bin[j+1]) / 2
