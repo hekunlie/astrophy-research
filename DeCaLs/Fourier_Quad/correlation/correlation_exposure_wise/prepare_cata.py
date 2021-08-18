@@ -555,8 +555,8 @@ elif cmd == "segment":
 
             expos_ra_center = (ra_max + ra_min) / 2
             expos_dec_center = (dec_max + dec_min) / 2
-            dra = ra_max - ra_min
-            ddec = dec_max - dec_min
+            dra = (ra_max - ra_min)/2
+            ddec = (dec_max - dec_min)/2
             cos_expos_dec_center = numpy.cos(expos_dec_center / deg2arcmin * deg2rad)
 
             expos_pos = numpy.array([expos_ra_center, expos_dec_center, dra, ddec,

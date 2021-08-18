@@ -56,6 +56,7 @@ class Image_Plot:
         # fig, sub_fig = plt.subplots(ny, nx, figsize=(int(nx*self.fig_x), int(ny*self.fig_y)))
 
         fig = plt.figure(figsize=(self.fig_x/dx, self.fig_y/dy))
+        fig.set_facecolor('white')
         sub_fig = [[] for i in range(ny)]
         for i in range(ny):
             for j in range(nx):

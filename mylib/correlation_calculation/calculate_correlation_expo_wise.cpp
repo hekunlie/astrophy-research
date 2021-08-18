@@ -33,12 +33,13 @@ int main(int argc, char *argv[])
     strcpy(cata_sub_path, argv[2]);
     strcpy(result_sub_path, argv[3]);
 
+    expo_info.my_rank = rank;
+
     sprintf(expo_info.cata_path,"%s/%s", expo_info.parent_path, cata_sub_path);
     sprintf(expo_info.result_path,"%s/%s", expo_info.parent_path, result_sub_path);
 
     sprintf(log_path, "%s/log/%d_log.dat",expo_info.parent_path, rank);
-
-
+    
     // read the information of each exposure file
     initialize(&expo_info);
 
@@ -125,28 +126,27 @@ int main(int argc, char *argv[])
             {   
                 st2 = clock();
 
-                initialize_expo_chi_block(&expo_info);
-
-                read_expo_data_1(&expo_info, task_labels[0]);
-                read_expo_data_2(&expo_info, task_labels[1]);
-
-                sprintf(log_inform,"file-%d: %s(%d gal), jackid: %d <==> file-%d: %s(%d gal), jackid: %d", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
-                expo_info.jack_label_1, task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]], expo_info.jack_label_2);
+                sprintf(log_inform,"expo pair: %d-%s(%d) <-> %d-%s(%d)", task_labels[0], expo_info.expo_name[task_labels[0]], expo_info.expo_gal_num[task_labels[0]], 
+                        task_labels[1], expo_info.expo_name[task_labels[1]],expo_info.expo_gal_num[task_labels[1]]);
 
                 if(rank == 1){std::cout<<log_inform<<std::endl;}
                 write_log(log_path, log_inform);
 
+                initialize_expo_chi_block(&expo_info);
 
+                read_expo_data_1(&expo_info, task_labels[0]);
+                read_expo_data_2(&expo_info, task_labels[1]);
+                
                 //////////////  search pairs ////////////////////
                 find_pairs_diff_expo_dev(&expo_info, task_labels[0], task_labels[1]);
-                // find_pairs_same_expo_dev(&expo_info, task_labels[0], task_labels[1]);
-                // find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
+                //find_pairs_same_expo(&expo_info, task_labels[0], task_labels[1]);
+                //find_pairs_stack_expo(&expo_info, task_labels[0], task_labels[1]);
 
 
                 // if more 1 pair has been found, write into the result file
                 // if(expo_info.gg_pairs > 1){save_expo_data(&expo_info, task_labels[0], task_labels[1], rank);}
 
-                if(expo_info.gg_pairs > 1)
+                if(expo_info.gg_pairs > 1000)
                 {
                     expo_info.expo_pair_label_1.push_back(task_labels[0]);
                     expo_info.expo_pair_label_2.push_back(task_labels[1]);

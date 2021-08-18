@@ -5,6 +5,7 @@ void initialize(data_info *expo_info)
     int i, j, k;
     char set_name[100];
     char data_path[600];
+    char log_informs[200];
 
     expo_info->mg1_idx = 0;
     expo_info->mg2_idx = 1;
@@ -19,14 +20,19 @@ void initialize(data_info *expo_info)
     sprintf(data_path,"%s/source_list.dat", expo_info->cata_path);
 
     line_count(data_path, expo_info);
+    if(expo_info->my_rank == 0)
+    {
+        sprintf(log_informs,"Find %d exposures", expo_info->total_expo_num);
+        std::cout<<log_informs<<std::endl;
+    }
 
-    for(i=0;i<expo_info->total_expo_num;i++)
+    for(i=0; i<expo_info->total_expo_num; i++)
     {   
         // the expo file directories
         expo_info->expo_name_path[i] = new char[400];
         expo_info->expo_name[i] = new char[100];
     }
-    
+
     expo_info->expo_cen_ra = new MY_FLOAT[expo_info->total_expo_num]{};  
     expo_info->expo_cen_dec = new MY_FLOAT[expo_info->total_expo_num]{}; 
     expo_info->expo_delta_ra = new MY_FLOAT[expo_info->total_expo_num]{};  
@@ -35,8 +41,19 @@ void initialize(data_info *expo_info)
     expo_info->expo_cen_cos_dec = new MY_FLOAT[expo_info->total_expo_num]{};
     expo_info->expo_gal_num = new int[expo_info->total_expo_num]{};
 
+    if(expo_info->my_rank == 0)
+    {
+        sprintf(log_informs,"Allocate memory for %d exposures", expo_info->total_expo_num);
+        std::cout<<log_informs<<std::endl;
+    }
 
     // read the infomation of each expo
+    if(expo_info->my_rank == 0)
+    {
+        sprintf(log_informs,"Read informs of %d exposures", expo_info->total_expo_num);
+        std::cout<<log_informs<<std::endl;
+    }
+
     read_list(data_path, expo_info, i);
 
     // array length, all elements
@@ -47,6 +64,12 @@ void initialize(data_info *expo_info)
 
 
     ///////////////// read the inform of the PDF_SYM  ////////////////
+    if(expo_info->my_rank == 0)
+    {
+        sprintf(log_informs,"Read the parameters for PDF_SYM");
+        std::cout<<log_informs<<std::endl;
+    }
+
     sprintf(data_path,"%s/gg_cor.hdf5", expo_info->cata_path);
     // read radius bin
     sprintf(set_name,"/theta_bin");
@@ -77,6 +100,12 @@ void initialize(data_info *expo_info)
 
     read_h5(data_path, set_name, expo_info->mg_bin);
     
+
+    if(expo_info->my_rank == 0)
+    {
+        sprintf(log_informs,"Allocate memory for PDF_SYM");
+        std::cout<<log_informs<<std::endl;
+    }
     // the fundmental block size for number counting in the PDF_SYM
     // the smallest block, mg_bin_num x mg_bin_num, for each chi guess point
     expo_info->chi_block_len = expo_info->mg_bin_num*expo_info->mg_bin_num;
@@ -160,6 +189,7 @@ void line_count(char *file_path, data_info *expo_info)
         str.clear();
         getline(infile, str);
         line_count += 1;
+        // std::cout<<str<<std::endl;
     }
     infile.close();
     expo_info->total_expo_num = line_count-1;
@@ -312,6 +342,7 @@ void task_prepare(int numprocs, int rank, data_info *expo_info)
         }
     }
     expo_info->task_expo_num = expo_info->task_expo_pair_labels_1.size();
+    // std::cout<<expo_info->task_expo_num<<std::endl;
 }
 
 void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int &label)
@@ -334,7 +365,7 @@ void expo_distance(data_info *expo_info, int expo_label_0, int expo_label_1, int
     delta_ra = (ra_2 - ra_1)*cos_dec_1;
     delta_dec = dec_2 - dec_1;
     delta_radius = sqrt(delta_ra*delta_ra + delta_dec*delta_dec) - delta_len_1 - delta_len_2;   
-
+    // std::cout<<ra_1<<" "<<dec_1<<std::endl;
     label = 0;
     if(delta_radius <= 1.2*expo_info->theta_bin[expo_info->theta_bin_num])
     {   

@@ -5,12 +5,14 @@
 #include<hk_FQlib.h>
 #include<vector>
 
-#define MAX_EXPO 2000
+#define MAX_EXPO 100000
 #define MAX_RESAMPLE 2000
 #define MY_FLOAT float
 
 struct data_info
 {
+    int my_rank;
+
     char parent_path[500];
     char cata_path[550];
     char result_path[550];

@@ -61,9 +61,9 @@ src_z_threshold = len_z + 0.05
 # read the source data
 h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
 src_z_true = h5f["/z"][()]
-
+rng = numpy.random.RandomState(123124)
 if zerr_tag == 1:
-    src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
+    src_z_err = rng.normal(0, (1+src_z_true)*0.05)
 else:
     src_z_err = 0
 
@@ -75,7 +75,8 @@ src_num = idx.sum()
 dilution_num = int(src_num/(1-dilution_ratio)*dilution_ratio)
 total_num = src_num + dilution_num
 if rank == 0:
-    print("src num: %d. Dilution: %d. Ratio: %.2f"%(src_num, dilution_num,dilution_ratio))
+    print("Totla num: %d. src num: %d(%.2f). Dilution: %d(%.2f)."
+          " Ratio: %.2f"%(total_num, src_num, src_num/total_num, dilution_num, dilution_num/total_num,dilution_ratio))
 
 
 src_z = numpy.zeros((total_num,),dtype=numpy.float32)
