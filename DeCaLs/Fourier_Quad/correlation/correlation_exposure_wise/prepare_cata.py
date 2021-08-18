@@ -550,8 +550,8 @@ elif cmd == "segment":
 
             src_num = src_data.shape[0]
 
-            ra_max, ra_min = src_data[:,5].max(), src_data[:,5].max()
-            dec_max, dec_min = src_data[:,6].max(), src_data[:,6].max()
+            ra_max, ra_min = src_data[:,5].max(), src_data[:,5].min()
+            dec_max, dec_min = src_data[:,6].max(), src_data[:,6].min()
 
             expos_ra_center = (ra_max + ra_min) / 2
             expos_dec_center = (dec_max + dec_min) / 2

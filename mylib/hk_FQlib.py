@@ -961,7 +961,6 @@ def find_shear_mean(G, N, weight=1):
 
 if platform.system() == 'Linux':
 
-    print("Found ", my_home)
     c4pylib = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
 
 

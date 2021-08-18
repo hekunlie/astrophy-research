@@ -1,46 +1,38 @@
-FQLIB_PATH=/home/hklee/work/mylib/FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
-HK_MPILIB_PATH=/home/hklee/work/mylib/hk_mpi.cpp
-HK_IOLIB_PATH=/home/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio -lcurl
-COR_FUNCTIONS_APTH=/home/hklee/work/mylib/functions.cpp
-
-# FQLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/FQlib.cpp -lgsl -lgslcblas -lfftw3l -lfftw3f -lm
-# HK_MPILIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_mpi.cpp
-# HK_IOLIB_PATH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/mylib/hk_iolib.cpp -lhdf5 -lcfitsio
-# COR_FUNCTIONS_APTH=/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/functions.cpp
+HK_FQLIB_PATH=$(HK_MYWORK_DIR)/work/mylib/hk_FQlib.cpp  -lfftw3l -lfftw3f -lgsl -lgslcblas -lm
+HK_MPILIB_PATH=$(HK_MYWORK_DIR)/work/mylib/hk_mpi.cpp
+HK_IOLIB_PATH=$(HK_MYWORK_DIR)/work/mylib/hk_iolib.cpp -lhdf5  -lcurl
+HK_COR_FUNCTIONS_PATH=$(HK_MYWORK_DIR)/work/mylib/hk_correlation_functions_expo_wise.cpp
 
 
-CODE_NAME_F=calculate_correlation.cpp
-FINAL_NAME_F=cal_cor
+check:
+	@echo $(HK_MYWORK_DIR)
 
-compile_f:
-	mpicxx -I.  $(CODE_NAME_F) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions.cpp -o $(FINAL_NAME_F) -std=c++11
-clean_f:
-	rm $(FINAL_NAME_F)
+CODE_NAME_D=calculate_correlation_expo_wise_diff_expo.cpp
+FINAL_NAME_D=cal_cor_diff_expo
 
+CODE_NAME_S=calculate_correlation_expo_wise_same_expo.cpp
+FINAL_NAME_S=cal_cor_same_expo
 
-CODE_NAME_E=calculate_correlation_expo_wise.cpp
-FINAL_NAME_E=cal_cor
+CODE_NAME_ST=calculate_correlation_expo_wise_stack_expo.cpp
+FINAL_NAME_ST=cal_cor_stack_expo
 
 compile_e:
-	mpicxx -I.  $(CODE_NAME_E) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -O1 -o $(FINAL_NAME_E) -std=c++11
+	mpicxx -I.  $(CODE_NAME_D) $(HK_FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(HK_COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_D) -std=c++11
+	mpicxx -I.  $(CODE_NAME_S) $(HK_FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(HK_COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_S) -std=c++11
+	mpicxx -I.  $(CODE_NAME_ST) $(HK_FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH)  $(HK_COR_FUNCTIONS_PATH) -O1 -o $(FINAL_NAME_ST) -std=c++11
+
 clean_e:
-	rm $(FINAL_NAME_E)
+	rm $(FINAL_NAME_D)
+	rm $(FINAL_NAME_S)
+	rm $(FINAL_NAME_ST)
+
 
 
 CODE_NAME_GC=get_corr.cpp
 FINAL_NAME_GC=get_corr
 
 compile_gc:
-	mpicxx -I.  $(CODE_NAME_GC) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -o $(FINAL_NAME_GC) -std=c++11
+	mpicxx -I.  $(CODE_NAME_GC) $(HK_FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) $(HK_COR_FUNCTIONS_PATH) -o $(FINAL_NAME_GC) -std=c++11
 clean_gc:
 	rm $(FINAL_NAME_GC)
-
-
-CODE_NAME_st=test.cpp
-FINAL_NAME_st=test
-
-compile_st:
-	mpicxx -I.  $(CODE_NAME_st) $(FQLIB_PATH) $(HK_MPILIB_PATH) $(HK_IOLIB_PATH) functions_expo_wise.cpp -o $(FINAL_NAME_st) -std=c++11
-clean_st:
-	rm $(FINAL_NAME_st)
 

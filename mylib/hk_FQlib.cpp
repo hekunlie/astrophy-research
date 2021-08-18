@@ -1,4 +1,4 @@
-﻿#include "FQlib.h"
+﻿#include "hk_FQlib.h"
 
 const gsl_rng_type *T0, *T1, *T2, *T3;
 gsl_rng *rng0, *rng1, *rng2, *rng3;
