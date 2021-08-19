@@ -14,7 +14,7 @@ rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
 # data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
 
 total_src_num = int(argv[1])#20000000
 fore_or_back = int(argv[2])
@@ -39,7 +39,7 @@ halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
 
-Rmin, Rmax = 0.2, 20 # Mpc/h
+Rmin, Rmax = 0.3, 20 # Mpc/h
 separation_min, separation_max = Rmin/com_dist_len/numpy.pi*180*3600, Rmax/com_dist_len/numpy.pi*180*3600
 separation_bin_num = numprocs
 separation_bin = numpy.linspace(separation_min, separation_max, numprocs+1)
@@ -58,7 +58,7 @@ nfw = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
 # separation
 # separation = rng.uniform(separation_bin[rank], separation_bin[rank + 1], total_src_num)
 # separation = rng.uniform(separation_min, separation_max, total_src_num)
-separation_ = numpy.abs(rng.normal(0, separation_max*3, total_src_num))
+separation_ = numpy.abs(rng.normal(0, separation_max*1.5, total_src_num))
 separation_len = separation_max - separation_min
 idx = separation_ >= separation_len
 scale = numpy.divmod(separation_[idx], separation_len)[0]
@@ -67,13 +67,13 @@ separation = separation_ + separation_min
 
 print(separation.max(), separation.min())
 
-theta = rng.uniform(0, numpy.pi * 2, total_src_num)
-ra = separation * numpy.cos(theta)
-dec = separation * numpy.sin(theta)
+# theta = rng.uniform(0, numpy.pi * 2, total_src_num)
+ra = separation# * numpy.cos(theta)
+dec = numpy.zeros_like(ra)#separation * numpy.sin(theta)
 
 
 # magnitude & flux
-mag_s, mag_e = 22, 25.8
+mag_s, mag_e = 21, 25.5
 mag = hk_tool_box.mag_generator(total_src_num, mag_s, mag_e).astype(dtype=numpy.float32)
 flux = hk_tool_box.mag_to_flux(mag).astype(dtype=numpy.float32)
 
@@ -108,8 +108,9 @@ if fore_or_back == 0:
 
 else:
     # true background sources
-    src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.35, total_src_num).astype(dtype=numpy.float32))
-
+    src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.3, total_src_num).astype(dtype=numpy.float32))
+    idx = src_z > 1
+    src_z[idx] = src_z[idx] - 0.7
     shear_data = hk_gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
 
     h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5"%rank, "w")
@@ -129,4 +130,6 @@ else:
     h5f["/seed"] = seed
 
     h5f.close()
+
+
 

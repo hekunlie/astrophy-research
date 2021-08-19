@@ -1,3 +1,4 @@
+import os
 from sys import path,argv
 path.append("/home/hklee/work/mylib")
 from hk_plot_tool import Image_Plot
@@ -19,21 +20,13 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-
-data_path = argv[1]
-
-
-cmd = int(argv[2])
-chi_gap = 50#float(argv[2])
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
 
 # dilution ratio
-dilution_ratio = float(argv[3])
-
-# zerr tag
-zerr_tag = int(argv[4])
+dilution_ratio = 0.0
 
 # bin number for PDF_SYM
-pdf_bin_num = [2, 10]
+pdf_bin_num = [2,10,20]
 
 
 # cosmology
@@ -62,13 +55,9 @@ src_z_threshold = len_z + 0.05
 # read the source data
 h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
 src_z_true = h5f["/z"][()]
-rng = numpy.random.RandomState(123124)
-if zerr_tag == 1:
-    src_z_err = rng.normal(0, (1+src_z_true)*0.05)
-else:
-    src_z_err = 0
 
-src_z_ny = src_z_true + src_z_err
+src_z_err = numpy.random.normal(0, (1+src_z_true)*0.05)
+src_z_ny = src_z_true +  src_z_err
 
 idx = src_z_ny >= src_z_threshold
 
@@ -76,8 +65,7 @@ src_num = idx.sum()
 dilution_num = int(src_num/(1-dilution_ratio)*dilution_ratio)
 total_num = src_num + dilution_num
 if rank == 0:
-    print("Totla num: %d. src num: %d(%.2f). Dilution: %d(%.2f)."
-          " Ratio: %.2f"%(total_num, src_num, src_num/total_num, dilution_num, dilution_num/total_num,dilution_ratio))
+    print("src num: %d. Dilution: %d. Ratio: %.2f"%(src_num, dilution_num,dilution_ratio))
 
 
 src_z = numpy.zeros((total_num,),dtype=numpy.float32)
@@ -102,10 +90,10 @@ h5f.close()
 
 
 # read the dilution data
-if dilution_num > 0.0001:
+if dilution_num > 0:
     h5f = h5py.File(data_path + "/params/stack_non_sheared_para.hdf5","r")
 
-    src_z_non = numpy.abs(rng.normal(0, 0.1, 2*dilution_num)) + len_z
+    src_z_non = numpy.abs(numpy.random.normal(0, (1+len_z)*0.05, 3*dilution_num)) + len_z
 
     idx = src_z_non >= src_z_threshold
 
@@ -125,6 +113,8 @@ if dilution_num > 0.0001:
     h5f.close()
 
 
+
+
 com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
 nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
@@ -134,7 +124,8 @@ crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
 # crit_sd = crit_sd_num/crit_sd_denorm
 # crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
-
+cmd = int(argv[1])
+chi_gap = float(argv[2])
 if cmd == 0:
     coeff_1 = crit_sd_num/crit_sd_denorm
     coeff_2 = 1
@@ -182,7 +173,7 @@ mnu2_ny = (shear_est_ny[:,2] - shear_est_ny[:,3]*cos_4theta + shear_est_ny[:,4]*
 
 
 radius_bin_num = numprocs
-radius_bin = hk_tool_box.set_bin_log(0.2, 15, radius_bin_num + 1)
+radius_bin = hk_tool_box.set_bin_log(0.2, 18, radius_bin_num + 1)
 radius_bin_tag = [i for i in range(radius_bin_num)]
 my_radius_bin_tag = hk_tool_box.alloc(radius_bin_tag, numprocs)[rank]
 
@@ -232,10 +223,11 @@ if rank == 0:
 t1 = time.time()
 
 
-guess_num_p = 50
+
+guess_num_p = 200
 signal_guess = numpy.zeros((guess_num_p+guess_num_p,))
-signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
-signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
+signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
+signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 200, guess_num_p)
 signal_guess = numpy.sort(signal_guess)
 
 for tt in range(1):
@@ -245,7 +237,7 @@ for tt in range(1):
         idx = idx1 & idx2
 
         chisq_img = Image_Plot()
-        chisq_img.subplots(4,len(pdf_bin_num))
+        chisq_img.subplots(4,3)
 
         for j in range(len(pdf_bin_num)):
             # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
