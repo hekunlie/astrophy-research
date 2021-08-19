@@ -19,7 +19,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
 
 
 cmd = int(argv[1])
@@ -104,7 +104,7 @@ h5f.close()
 if dilution_num > 0.0001:
     h5f = h5py.File(data_path + "/params/stack_non_sheared_para.hdf5","r")
 
-    src_z_non = numpy.abs(numpy.random.normal(0, 0.1, 3*dilution_num)) + len_z
+    src_z_non = numpy.abs(rng.normal(0, 0.1, 3*dilution_num)) + len_z
 
     idx = src_z_non >= src_z_threshold
 
