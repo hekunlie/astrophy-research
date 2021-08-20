@@ -195,7 +195,7 @@ int main(int argc, char*argv[])
     rand_seed = new int[total_chips]{};
 
 
-    sprintf(data_path,"%s/cata/background/continue_source_z", parent_path);
+    sprintf(data_path,"%s/cata/background/continue_source_z_1", parent_path);
 
     sprintf(para_path,"%s/params/%s_para_%d.hdf5", data_path, src_type, source_tag);
 
@@ -230,7 +230,7 @@ int main(int argc, char*argv[])
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 
-        sprintf(chip_path,"%s/imgs/%s_psf.hdf5", data_path, src_type);
+        sprintf(chip_path,"%s/cata/background/continue_source_z_1/imgs/%s_psf.hdf5", parent_path, src_type);
         sprintf(set_name,"/data");
         write_h5(chip_path, set_name, psf_img[0], size, size, true);
 

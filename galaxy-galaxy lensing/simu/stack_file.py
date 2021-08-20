@@ -6,19 +6,21 @@ import os
 
 
 parent_path = argv[1]
-file_num = int(argv[2])
-data_len_i = int(argv[3])
-total_data_len = int(file_num*data_len_i)
-
-
-stack_data = numpy.zeros((total_data_len, 5), dtype=numpy.float32)
+# file_num = int(argv[2])
+data_len_i = int(argv[2])
 
 names = ["sheared","non_sheared"]
+file_num = [50, 10]
 data_type = ["noise_free.hdf5", "noisy_cpp.hdf5"]
-for nm in names:
+
+for nm_tag, nm in enumerate(names):
+
+    total_data_len = int(file_num[nm_tag] * data_len_i)
+    stack_data = numpy.zeros((total_data_len, 5), dtype=numpy.float32)
+
     for dt in data_type:
         stack_tag = 0
-        for i in range(file_num):
+        for i in range(file_num[nm_tag]):
             file_path_nf = parent_path + "/data/" + "%s_data_%d_%s"%(nm, i, dt)
             file_path_ny = parent_path + "/data/" + "%s_data_%d_%s"%(nm, i, dt)
 
@@ -41,13 +43,17 @@ for nm in names:
             print("Stack data ",stack_path)
 
 
-src_ra = numpy.zeros((total_data_len,),dtype=numpy.float32)
-src_dec = numpy.zeros((total_data_len,),dtype=numpy.float32)
-src_z = numpy.zeros((total_data_len,),dtype=numpy.float32)
 
-for nm in names:
+
+for nm_tag, nm in enumerate(names):
+
+    total_data_len = int(file_num[nm_tag] * data_len_i)
+
+    src_ra = numpy.zeros((total_data_len,), dtype=numpy.float32)
+    src_dec = numpy.zeros((total_data_len,), dtype=numpy.float32)
+    src_z = numpy.zeros((total_data_len,), dtype=numpy.float32)
     stack_tag = 0
-    for i in range(file_num):
+    for i in range(file_num[nm_tag]):
         param_path = parent_path + "/params/%s_para_%d.hdf5"% (nm, i)
         if not os.path.exists(param_path):
             print("No ", "%s_para_%d.hdf5"% (nm, i))
