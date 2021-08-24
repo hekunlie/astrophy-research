@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
     char inform[400];
     char time_now[40];
-    
+    char cata_sub_path[80],result_sub_path[80];
     int i;
     double st1, st2, st3, st4, st5;
     double tt1, tt2;
@@ -23,15 +23,27 @@ int main(int argc, char **argv)
 
 
     strcpy(all_paras.parent_path, argv[1]);
-    all_paras.resample_num = atoi(argv[2]);
-    all_paras.corr_cal_result_file_num = atoi(argv[3]);
+    strcpy(cata_sub_path, argv[2]);
+    strcpy(result_sub_path, argv[3]);
+
+    all_paras.resample_num = atoi(argv[4]);
+    all_paras.corr_cal_result_file_num = atoi(argv[5]);
     all_paras.corr_cal_thread_num = numprocs;
     all_paras.corr_cal_rank = rank;
+
+    sprintf(all_paras.cata_path,"%s/%s", all_paras.parent_path, cata_sub_path);
+    sprintf(all_paras.result_path,"%s/%s", all_paras.parent_path, result_sub_path);
+
 
     st1 = clock();
 
     sprintf(inform,"Prepare data");
-    if(rank == 0){std::cout<<inform<<std::endl;}
+    if(rank == 0)
+    {
+        std::cout<<inform<<std::endl;
+        std::cout<<all_paras.cata_path<<std::endl;
+        std::cout<<all_paras.result_path<<std::endl;
+    }
     
     read_para(&all_paras);
 

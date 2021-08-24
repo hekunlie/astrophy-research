@@ -4,7 +4,7 @@
 
 #include<hk_iolib.h>
 #include<hk_mpi.h>
-#include<FQlib.h>
+#include<hk_FQlib.h>
 #include<vector>
 
 #define MAX_THETA_NUM 200

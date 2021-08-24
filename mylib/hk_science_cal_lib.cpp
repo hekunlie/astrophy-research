@@ -1,4 +1,4 @@
-#include<science_cal_lib.h>
+#include<hk_science_cal_lib.h>
 
 void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian)
 {
@@ -226,6 +226,8 @@ void ggl_initialize(ggl_data_info *data_info)
 
     sprintf(data_info->ggl_log_path,"%s/log/log_%d.dat", data_info->ggl_total_path, data_info->rank);
     sprintf(data_info->ggl_result_path,"%s/result/result_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
+    // sprintf(data_info->ggl_foreground_inform_path, "%s/cata/foreground/foreground_source_list.dat", data_info->ggl_total_path);
+    // sprintf(data_info->ggl_background_inform_path, "%s/cata/background/background_source_list.dat", data_info->ggl_total_path);
 
     ggl_read_list(data_info);
 
@@ -313,8 +315,6 @@ void ggl_read_list(ggl_data_info *data_info)
 {   
     int i;
     // read fore/background exposure informs
-    sprintf(data_info->ggl_foreground_inform_path, "%s/cata/foreground/foreground_source_list.dat", data_info->ggl_total_path);
-    sprintf(data_info->ggl_background_inform_path, "%s/cata/background/background_source_list.dat", data_info->ggl_total_path);
     line_count(data_info->ggl_foreground_inform_path, data_info->len_expo_num);
     line_count(data_info->ggl_background_inform_path, data_info->src_expo_num);
     

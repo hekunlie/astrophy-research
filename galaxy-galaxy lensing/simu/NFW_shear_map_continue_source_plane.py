@@ -202,7 +202,11 @@ else:
                 h5f['/%d/z'%ir] = src_z[idx]
                 h5f['/%d/ra'%ir] = src_ra[idx]
                 h5f['/%d/dec'%ir] = src_dec[idx]
+                h5f['/%d/sep_radius'%ir] = separation_radius[idx]
+                h5f['/%d/sep_radian'%ir] = separation_radian[idx]
+
                 src_nums[ir] = idx.sum()
+
             h5f["/src_num"] = src_nums.astype(numpy.intc)
             h5f.close()
 

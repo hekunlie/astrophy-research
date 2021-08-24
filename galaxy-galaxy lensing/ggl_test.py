@@ -14,27 +14,84 @@ import time
 from mpi4py import MPI
 
 
+def mix_data(rank, sheared_path, non_sheared_path, src_z_threshold, zerr_sig, rng, max_dilution=0.2):
+    h5f_s = h5py.File(sheared_path, "r")
+    src_z_s = h5f_s["/%d/z" % rank][()]
+
+    if zerr_sig > 0.0001:
+        src_z_err = rng.normal(0, (1 + src_z_s) * zerr_sig)
+    else:
+        src_z_err = 0
+
+    src_z_ny = src_z_s + src_z_err
+
+    idx = src_z_ny >= src_z_threshold
+
+    src_num = idx.sum()
+    dilution_num_max = int(src_num / (1 - max_dilution) * max_dilution)
+    total_num = src_num + dilution_num_max
+
+    src_z = numpy.zeros((total_num,), dtype=numpy.float32)
+    src_ra = numpy.zeros((total_num,), dtype=numpy.float32)
+    src_dec = numpy.zeros((total_num,), dtype=numpy.float32)
+    src_radius = numpy.zeros((total_num, ), dtype=numpy.float32)
+    src_radian = numpy.zeros((total_num, ), dtype=numpy.float32)
+    mgt = numpy.zeros((total_num,), dtype=numpy.float32)
+    mnu1 = numpy.zeros((total_num,), dtype=numpy.float32)
+
+
+    src_z[:src_num] = src_z_ny[idx]
+    src_ra[:src_num] = h5f_s["/%d/ra" % rank][()][idx]
+    src_dec[:src_num] = h5f_s["/%d/dec" % rank][()][idx]
+    src_radius[:src_num] = h5f_s["/%d/sep_radius" % rank][()][idx]
+    src_radian[:src_num] = h5f_s["/%d/sep_radian" % rank][()][idx]
+    mgt[:src_num] = h5f_s["/%d/mgt" % rank][()][idx]
+    mnu1[:src_num] = h5f_s["/%d/mnu1" % rank][()][idx]
+    h5f_s.close()
+
+    # non-sheared data
+    h5f_n = h5py.File(non_sheared_path, "r")
+
+    src_ra[src_num:] = h5f_n["/%d/ra" % rank][()][:dilution_num_max]
+    src_dec[src_num:] = h5f_n["/%d/dec" % rank][()][:dilution_num_max]
+    src_radius[src_num:] = h5f_n["/%d/sep_radius" % rank][()][:dilution_num_max]
+    src_radian[src_num:] = h5f_n["/%d/sep_radian" % rank][()][:dilution_num_max]
+
+    z_n = numpy.abs(rng.normal(0, 0.1, 2*dilution_num_max)) + src_z_threshold
+    src_z[src_num:] = z_n[:dilution_num_max]
+
+    mgt[src_num:] = h5f_n["/%d/mgt" % rank][()][:dilution_num_max]
+    mnu1[src_num:] = h5f_n["/%d/mnu1" % rank][()][:dilution_num_max]
+    h5f_n.close()
+
+    return src_z, src_ra, src_dec, src_radius,src_radian, mgt, mnu1, src_num
+
+
+
+
 #
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
 
-data_path = argv[1]
-
-
-cmd = int(argv[2])
-chi_gap = 50#float(argv[2])
-
-# dilution ratio
-dilution_ratio = float(argv[3])
+# data_path =  argv[1]
+cmd = int(argv[1])
+chi_gap = 50
 
 # zerr tag
-zerr_tag = int(argv[4])
+zerr_sig = float(argv[2])
+
+# "noise_free" or "noisy_cpp"
+data_type = argv[3]
+
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
+result_path = data_path + "/result/dilution_test/dilution_zerr_%s/%d"%(argv[2],cmd)
 
 # bin number for PDF_SYM
 pdf_bin_num = [2, 10]
 
+dilution_ratio = numpy.array([0, 0.05, 0.1, 0.15, 0.2])
 
 # cosmology
 omega_m0 = 0.31
@@ -55,181 +112,11 @@ len_z = 0.3  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 
-# redshift threshold
-src_z_threshold = len_z + 0.05
-
-
-# read the source data
-h5f = h5py.File(data_path + "/params/stack_sheared_para.hdf5","r")
-src_z_true = h5f["/z"][()]
-rng = numpy.random.RandomState(123124)
-if zerr_tag == 1:
-    src_z_err = rng.normal(0, (1+src_z_true)*0.05)
-else:
-    src_z_err = 0
-
-src_z_ny = src_z_true + src_z_err
-
-idx = src_z_ny >= src_z_threshold
-
-src_num = idx.sum()
-dilution_num = int(src_num/(1-dilution_ratio)*dilution_ratio)
-total_num = src_num + dilution_num
-if rank == 0:
-    print("Totla num: %d. src num: %d(%.2f). Dilution: %d(%.2f)."
-          " Ratio: %.2f"%(total_num, src_num, src_num/total_num, dilution_num, dilution_num/total_num,dilution_ratio))
-
-
-src_z = numpy.zeros((total_num,),dtype=numpy.float32)
-src_ra = numpy.zeros((total_num,),dtype=numpy.float32)
-src_dec = numpy.zeros((total_num,),dtype=numpy.float32)
-shear_est_nf = numpy.zeros((total_num, 5),dtype=numpy.float32)
-shear_est_ny = numpy.zeros((total_num,5),dtype=numpy.float32)
-
-src_z[:src_num] = src_z_ny[idx]
-src_ra[:src_num] = h5f["/ra"][()][idx]
-src_dec[:src_num] = h5f["/dec"][()][idx]
-
-h5f.close()
-
-
-h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noise_free.hdf5", "r")
-shear_est_nf[:src_num] = h5f["/data"][()][idx]
-h5f.close()
-h5f = h5py.File(data_path + "/data/sheared_data/stack_sheared_data_noisy_cpp.hdf5", "r")
-shear_est_ny[:src_num] = h5f["/data"][()][idx]
-h5f.close()
-
-
-# read the dilution data
-if dilution_num > 0.0001:
-    h5f = h5py.File(data_path + "/params/stack_non_sheared_para.hdf5","r")
-
-    src_z_non = numpy.abs(rng.normal(0, 0.1, 2*dilution_num)) + len_z
-
-    idx = src_z_non >= src_z_threshold
-
-    if idx.sum() < dilution_num:
-        print("Too less dilution")
-        exit()
-    src_z[src_num:] = src_z_non[idx][:dilution_num]
-    src_ra[src_num:] = h5f["/ra"][()][:dilution_num]
-    src_dec[src_num:] = h5f["/dec"][()][:dilution_num]
-    h5f.close()
-
-    h5f = h5py.File(data_path + "/data/non_sheared_data/stack_non_sheared_data_noise_free.hdf5","r")
-    shear_est_nf[src_num:] = h5f["/data"][()][:dilution_num]
-    h5f.close()
-    h5f = h5py.File(data_path + "/data/non_sheared_data/stack_non_sheared_data_noisy_cpp.hdf5","r")
-    shear_est_ny[src_num:] = h5f["/data"][()][:dilution_num]
-    h5f.close()
-
-
-com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
-
 nfw_model = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
 
-crit_sd_num = 1662895.2081868195*com_dist_src
-crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
-# crit_sd = crit_sd_num/crit_sd_denorm
-# crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
+# redshift threshold
+src_z_threshold = len_z + 0.1
 
-
-if cmd == 0:
-    coeff_1 = crit_sd_num/crit_sd_denorm
-    coeff_2 = 1
-elif cmd == 1:
-    coeff_1 = 1
-    coeff_2 = crit_sd_denorm/crit_sd_num
-else:
-    coeff_1 = crit_sd_num
-    coeff_2 = crit_sd_denorm
-
-# position and separation angle
-pos_len = SkyCoord(ra=0*units.deg, dec=0*units.deg,frame="fk5")
-pos_src = SkyCoord(ra=src_ra*units.deg, dec=src_dec*units.deg,frame="fk5")
-
-separation_radian = pos_len.separation(pos_src).radian
-separation_radius = separation_radian*com_dist_len
-print(separation_radius.min(),separation_radius.max())
-
-position_angle = pos_len.position_angle(pos_src).radian
-
-sin_2theta = numpy.sin(2*position_angle)
-cos_2theta = numpy.cos(2*position_angle)
-
-sin_4theta = numpy.sin(4*position_angle)
-cos_4theta = numpy.cos(4*position_angle)
-
-# noise free
-mgt_nf = (shear_est_nf[:,0]*cos_2theta - shear_est_nf[:,1]*sin_2theta)*coeff_1
-mgx_nf = (shear_est_nf[:,0]*sin_2theta + shear_est_nf[:,1]*cos_2theta)*coeff_1
-# mu_nf = shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta
-# mn_nf = shear_est_nf[:,2]
-
-mnu1_nf = (shear_est_nf[:,2] + shear_est_nf[:,3]*cos_4theta - shear_est_nf[:,4]*sin_4theta)*coeff_2
-mnu2_nf = (shear_est_nf[:,2] - shear_est_nf[:,3]*cos_4theta + shear_est_nf[:,4]*sin_4theta)*coeff_2
-
-
-# noisy
-mgt_ny = (shear_est_ny[:,0]*cos_2theta - shear_est_ny[:,1]*sin_2theta)*coeff_1
-mgx_ny = (shear_est_ny[:,0]*sin_2theta + shear_est_ny[:,1]*cos_2theta)*coeff_1
-# mu_ny = shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta
-# mn_ny = shear_est_ny[:,2]
-
-mnu1_ny = (shear_est_ny[:,2] + shear_est_ny[:,3]*cos_4theta - shear_est_ny[:,4]*sin_4theta)*coeff_2
-mnu2_ny = (shear_est_ny[:,2] - shear_est_ny[:,3]*cos_4theta + shear_est_ny[:,4]*sin_4theta)*coeff_2
-
-
-radius_bin_num = numprocs
-radius_bin = hk_tool_box.set_bin_log(0.2, 15, radius_bin_num + 1)
-radius_bin_tag = [i for i in range(radius_bin_num)]
-my_radius_bin_tag = hk_tool_box.alloc(radius_bin_tag, numprocs)[rank]
-
-
-itemsize = MPI.DOUBLE.Get_size()
-
-if rank == 0:
-    # bytes for 10 double elements
-    nbytes1 = len(pdf_bin_num)*4*radius_bin_num*itemsize
-    nbytes2 = len(pdf_bin_num)*4*radius_bin_num*itemsize
-    nbytes3 = 3*radius_bin_num*itemsize
-else:
-    nbytes1 = 0
-    nbytes2 = 0
-    nbytes3 = 0
-
-# on rank 0 of comm, create the contiguous shared block
-win1 = MPI.Win.Allocate_shared(nbytes1, itemsize, comm=comm)
-win2 = MPI.Win.Allocate_shared(nbytes2, itemsize, comm=comm)
-win3 = MPI.Win.Allocate_shared(nbytes3, itemsize, comm=comm)
-# create a numpy array whose data points to the shared block
-# buf is the block's address in the memory
-buf1, itemsize = win1.Shared_query(0)
-buf2, itemsize = win2.Shared_query(0)
-buf3, itemsize = win3.Shared_query(0)
-
-Ds_nf = numpy.ndarray(buffer=buf1, dtype='d', shape=(len(pdf_bin_num)*4, radius_bin_num)) # array filled with zero
-Ds_ny = numpy.ndarray(buffer=buf2, dtype='d', shape=(len(pdf_bin_num)*4, radius_bin_num))
-inform = numpy.ndarray(buffer=buf3, dtype='d', shape=(3, radius_bin_num))
-
-if rank == 0:
-    for i in range(radius_bin_num):
-        idx1 = separation_radius >= radius_bin[i]
-        idx2 = separation_radius < radius_bin[i + 1]
-        idx = idx1 & idx2
-
-        inform[0, i] = separation_radius[idx].mean()
-        inform[1, i] = separation_radian[idx].mean() / numpy.pi * 180 * 3600
-        inform[2, i] = idx.sum()
-comm.Barrier()
-
-#  Model
-Ds_true = hk_gglensing_tool.get_delta_sigma(nfw_model, com_dist_len, len_z, com_dist_src[0], src_z[0], inform[1])
-if rank == 0:
-    print(inform[2])
-
-t1 = time.time()
 
 
 guess_num_p = 50
@@ -238,129 +125,181 @@ signal_guess[:guess_num_p] = -hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
 signal_guess[guess_num_p:] = hk_tool_box.set_bin_log(0.001, 500, guess_num_p)
 signal_guess = numpy.sort(signal_guess)
 
-for tt in range(1):
-    for i in my_radius_bin_tag:
-        idx1 = separation_radius >= radius_bin[i]
-        idx2 = separation_radius < radius_bin[i + 1]
-        idx = idx1 & idx2
 
-        chisq_img = Image_Plot()
-        chisq_img.subplots(4,len(pdf_bin_num))
+rng = numpy.random.RandomState(213 + rank*124212)
+# read the source data
+sheared_path = data_path + "/data/segment_sheared_%s.hdf5"%data_type
+non_sheared_path = data_path + "/data/segment_non_sheared_%s.hdf5"%data_type
+# ra, dec Degree
+src_z, src_ra, src_dec, src_radius, src_radian, mgt, mnu1, src_num = mix_data(rank,sheared_path, non_sheared_path, src_z_threshold, zerr_sig, rng)
 
-        for j in range(len(pdf_bin_num)):
-            # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
-            # result_x = hk_FQlib.find_shear_cpp(mgx_nf[idx], mnu2_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[1][j])[:2]
+total_num = (src_num/(1 - dilution_ratio)).astype(dtype=numpy.intc)
 
-            temp = numpy.random.choice(mgt_nf, 100000, False)
-            pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
+com_dist_src = cosmos.comoving_distance(src_z).value * h  # Mpc/h
 
-            result_t = hk_FQlib.find_shear_cpp_guess(mgt_nf[idx], mnu1_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[0][j])
-            result_x = hk_FQlib.find_shear_cpp_guess(mgx_nf[idx], mnu2_nf[idx], pdf_bin, signal_guess,chi_gap=chi_gap, fig_ax=chisq_img.axs[1][j])
+mean_radius = src_radius.mean()
+mean_radian = src_radian.mean()/numpy.pi*180*3600
 
-            st, ed = int(j * 4), int((j + 1) * 4)
-            Ds_nf[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
+# crit_sd_num = 1662895.2081868195*com_dist_src
+# crit_sd_denorm = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
+# crit_sd = crit_sd_num/crit_sd_denorm
+# crit_sd = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
 
-
-        # for j in range(3):
-            # result_t = hk_FQlib.find_shear_cpp(mgt_ny[idx], mnu1_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[2][j])[:2]
-            # result_x = hk_FQlib.find_shear_cpp(mgx_ny[idx], mnu2_ny[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
-            #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[3][j])[:2]
-
-            temp = numpy.random.choice(mgt_ny, 100000, False)
-            pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=100000)
-            result_t = hk_FQlib.find_shear_cpp_guess(mgt_ny[idx], mnu1_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[2][j])
-            result_x = hk_FQlib.find_shear_cpp_guess(mgx_ny[idx], mnu2_ny[idx], pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[3][j])
-
-            st, ed = int(j * 4), int((j + 1) * 4)
-            Ds_ny[st:ed, i] = result_t[0], result_t[1], result_x[0], result_x[1]
-        chisq_img.save_img("./%d/imgs/chisq_%d_%d.pdf"%(cmd,i, tt))
-        chisq_img.close_img()
-
-    t2 = time.time()
-    comm.Barrier()
-    print(rank, t2-t1)
-
-    if rank == 0:
-
-        result_path = "./%d"%cmd
-        numpy.savez(result_path+"/result_%d_%d.npz"%(numprocs,tt), inform, Ds_nf, Ds_ny, Ds_true)
-
-        img = Image_Plot(xpad=0.25, ypad=0.24)
-        img.subplots(len(pdf_bin_num), 4)
-
-        for j in range(len(pdf_bin_num)):
-            tag = int(4 * j)
-            img.axs[j][0].errorbar(inform[0], Ds_nf[tag], Ds_nf[tag + 1], capsize=3, marker="s", fmt=" ",
-                                   label="Noise free")
-            img.axs[j][0].errorbar(inform[0], Ds_ny[tag], Ds_ny[tag + 1], capsize=3, marker="o", fmt=" ",
-                                   label="Noisy")
-
-            img.axs[j][1].errorbar(inform[0], Ds_nf[tag + 2], Ds_nf[tag + 3], capsize=3, marker="s", fmt=" ",
-                                   label="Noise free")
-            img.axs[j][1].errorbar(inform[0], Ds_ny[tag + 2], Ds_ny[tag + 3], capsize=3, marker="o", fmt=" ",
-                                   label="Noisy")
-
-            img.axs[j][0].plot(inform[0], Ds_true, label="Model")
-
-            img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), marker="s", label="Noise free")
-            img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
-            # img.axs[0][2].set_yscale("symlog")
-
-            img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
-            img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
+sd_coeff = 1662895.2081868195
+if cmd == 0:
+    # coeff_1 = crit_sd_num/crit_sd_denorm
+    coeff_1 = sd_coeff*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
+    coeff_2 = 1
+elif cmd == 1:
+    coeff_1 = 1
+    # coeff_2 = crit_sd_denorm/crit_sd_num
+    coeff_2 = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)/sd_coeff/com_dist_src
+else:
+    # coeff_1 = crit_sd_num
+    # coeff_2 = crit_sd_denorm
+    coeff_1 = sd_coeff*com_dist_src
+    coeff_2 = com_dist_len*(com_dist_src-com_dist_len)*(1+len_z)
 
 
-            # img.axs[j][2].plot(inform[0], Ds_nf[tag], marker="s", label="Noise free")
-            # img.axs[j][2].plot(inform[0], Ds_ny[tag], marker="o",label="Noisy")
-            # # img.axs[0][2].set_yscale("symlog")
-            #
-            # img.axs[j][3].plot(inform[0], Ds_nf[tag] / Ds_nf[tag+1],marker="s", label="Noise free")
-            # img.axs[j][3].plot(inform[0], Ds_ny[tag] / Ds_ny[tag+1], marker="o",label="Noisy")
+mgt = mgt*coeff_1
+mnu1 = mnu1*coeff_2
 
 
-            for i in range(4):
-                img.axs[j][i].set_title("PDF bin_num %d"%pdf_bin_num[j])
-                img.set_label(j, i, 1, "Radius Mpc/h")
-                img.axs[j][i].set_xscale("log")
-                img.axs[j][i].legend()
-            img.set_label(j, 0, 0, "$\Delta\Sigma$")
-            img.set_label(j, 1, 0, "$\Delta\Sigma_x$")
+#  Model
+Ds_true = hk_gglensing_tool.get_delta_sigma(nfw_model, com_dist_len, len_z, com_dist_src[0], src_z[0], numpy.array([mean_radian]))
 
-            img.set_label(j, 2, 0, "$\Delta\Sigma - \Delta\Sigma_{model}$")
-            img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
 
-            img.axs[j][0].set_yscale("log")
-        img.save_img(result_path + "/signal_comparison_%d_%d.pdf"%(numprocs,tt))
-        # img.show_img()
+t1 = time.time()
 
-        # img = Image_Plot(xpad=0.25)
-        # img.subplots(1, 2)
-        # for i in range(1, 3):
-        #     tag = int(i * 4)
-        #     img.axs[0][0].plot(inform[0], Ds_nf[tag + 1] / Ds_nf[1],
-        #                        label="Noise free: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
-        #     img.axs[0][1].plot(inform[0], Ds_ny[tag + 1] / Ds_ny[1],
-        #                        label="Noisy: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
-        # for i in range(2):
-        #     img.axs[0][i].legend()
-        #     img.axs[0][i].set_xscale("log")
-        #     img.set_label(0, i, 0, "Error bar ratio")
-        #     img.set_label(0, i, 1, "Radius Mpc/h")
-        # img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
-        # img.show_img()
 
-        # img = Image_Plot()
-        # img.subplots(1,1)
-        # img.axs[0][0].scatter(src_z_true[:1000],src_z[:1000])
-        # x1,x2 = min(src_z_true[:1000].min(), src_z[:1000].min()),max(src_z_true[:1000].max(), src_z[:1000].max())
-        #
-        # img.axs[0][0].plot([x1,x2],[x1,x2],ls="dashed",c="k")
-        # img.set_label(0,0,0,"Z")
-        # img.set_label(0,0,1,"Z_true")
-        # img.save_img(result_path + "/z.pdf")
+result_sp = [len(pdf_bin_num), 5*len(dilution_ratio)]
+result_sub = numpy.zeros((result_sp[0], result_sp[1]))
 
-    comm.Barrier()
+
+chisq_img = Image_Plot(ypad=0.25,xpad=0.2)
+chisq_img.subplots(len(pdf_bin_num), len(dilution_ratio))
+
+for i in range(len(dilution_ratio)):
+
+    st, ed = int(i * 5), int((i + 1) * 5)
+    temp = numpy.random.choice(mgt[:total_num[i]], 100000, False)
+
+    print("Totla num: %d. src num: %d(%.2f). "
+          "Dilution: %d(%.2f)."% (total_num[i], src_num, src_num/total_num[i], total_num[i]-src_num, (total_num[i]-src_num)/total_num[i]))
+    for j in range(len(pdf_bin_num)):
+        # result_t = hk_FQlib.find_shear_cpp(mgt_nf[idx], mnu1_nf[idx], bin_num=pdf_bin_num[j], left=-200, right=200,
+        #                                    chi_gap=chi_gap,max_iters=60,fig_ax=chisq_img.axs[0][j])[:2]
+
+        pdf_bin = hk_FQlib.set_bin_(temp, pdf_bin_num[j], scale=1000000)
+
+        result_t = hk_FQlib.find_shear_cpp_guess(mgt[:total_num[i]], mnu1[:total_num[i]],
+                                                 pdf_bin, signal_guess, chi_gap=chi_gap, fig_ax=chisq_img.axs[j][i])
+
+        result_sub[j, st:ed] = total_num[i],mean_radius, Ds_true[0], result_t[0], result_t[1]
+        chisq_img.axs[j][i].set_title("dilution_ratio:%.2f. %d PDF_bin. True signal: %.4f"%(dilution_ratio[i], pdf_bin_num[j], Ds_true[0]))
+
+chisq_img.save_img(result_path + "/imgs/%d_chisq_%s.pdf"%(rank, data_type))
+chisq_img.close_img()
+
+t2 = time.time()
 comm.Barrier()
+print(rank, t2-t1)
+
+if rank > 0:
+    # !!!! remember the data type, MPI.DOUBLE, MPI.FLOAT, ...
+    # or it will raise an error, Keyerror
+    comm.Send([result_sub, MPI.DOUBLE], dest=0, tag=rank)
+else:
+
+    result_collect = numpy.zeros((numprocs, result_sp[0], result_sp[1]))
+    result_collect[0, :, :] = result_sub
+
+    # receive the data from other CPUs
+    # !!!! the start points is 1 in range() not 0
+    for procs in range(1, numprocs):
+        # prepare a buffer for the data, the shape must be the same
+        # with that of what the other CPUs send, you have collected them in 'data_sps'
+        recvs = numpy.empty((result_sp[0], result_sp[1]), dtype=numpy.double)
+        # receive it using the buffer,
+        comm.Recv(recvs, source=procs, tag=procs)
+
+        result_collect[procs,:,:] = recvs
+
+    numpy.savez(result_path + "/result_%s.npz"%data_type, result_collect)
+
+    # img = Image_Plot(xpad=0.25, ypad=0.24)
+    # img.subplots(len(pdf_bin_num), len(dilution_ratio))
+    #
+    # for j in range(len(pdf_bin_num)):
+    #     tag = int(4 * j)
+    #     img.axs[j][0].errorbar(inform[0], Ds_nf[tag], Ds_nf[tag + 1], capsize=3, marker="s", fmt=" ",
+    #                            label="Noise free")
+    #     img.axs[j][0].errorbar(inform[0], Ds_ny[tag], Ds_ny[tag + 1], capsize=3, marker="o", fmt=" ",
+    #                            label="Noisy")
+    #
+    #     img.axs[j][1].errorbar(inform[0], Ds_nf[tag + 2], Ds_nf[tag + 3], capsize=3, marker="s", fmt=" ",
+    #                            label="Noise free")
+    #     img.axs[j][1].errorbar(inform[0], Ds_ny[tag + 2], Ds_ny[tag + 3], capsize=3, marker="o", fmt=" ",
+    #                            label="Noisy")
+    #
+    #     img.axs[j][0].plot(inform[0], Ds_true, label="Model")
+    #
+    #     img.axs[j][2].plot(inform[0], (Ds_nf[tag] - Ds_true), marker="s", label="Noise free")
+    #     img.axs[j][2].plot(inform[0], (Ds_ny[tag] - Ds_true), marker="o",label="Noisy")
+    #     # img.axs[0][2].set_yscale("symlog")
+    #
+    #     img.axs[j][3].plot(inform[0], (Ds_nf[tag] - Ds_true) / Ds_nf[tag+1],marker="s", label="Noise free")
+    #     img.axs[j][3].plot(inform[0], (Ds_ny[tag] - Ds_true) / Ds_ny[tag+1], marker="o",label="Noisy")
+    #
+    #
+    #     # img.axs[j][2].plot(inform[0], Ds_nf[tag], marker="s", label="Noise free")
+    #     # img.axs[j][2].plot(inform[0], Ds_ny[tag], marker="o",label="Noisy")
+    #     # # img.axs[0][2].set_yscale("symlog")
+    #     #
+    #     # img.axs[j][3].plot(inform[0], Ds_nf[tag] / Ds_nf[tag+1],marker="s", label="Noise free")
+    #     # img.axs[j][3].plot(inform[0], Ds_ny[tag] / Ds_ny[tag+1], marker="o",label="Noisy")
+    #
+    #
+    #     for i in range(4):
+    #         img.axs[j][i].set_title("PDF bin_num %d"%pdf_bin_num[j])
+    #         img.set_label(j, i, 1, "Radius Mpc/h")
+    #         img.axs[j][i].set_xscale("log")
+    #         img.axs[j][i].legend()
+    #     img.set_label(j, 0, 0, "$\Delta\Sigma$")
+    #     img.set_label(j, 1, 0, "$\Delta\Sigma_x$")
+    #
+    #     img.set_label(j, 2, 0, "$\Delta\Sigma - \Delta\Sigma_{model}$")
+    #     img.set_label(j, 3, 0, "$(\Delta\Sigma - \Delta\Sigma_{model})/Error bar$")
+    #
+    #     img.axs[j][0].set_yscale("log")
+    # img.save_img(result_path + "/signal_comparison_%d_%d.pdf"%(numprocs,tt))
+    # img.show_img()
+
+    # img = Image_Plot(xpad=0.25)
+    # img.subplots(1, 2)
+    # for i in range(1, 3):
+    #     tag = int(i * 4)
+    #     img.axs[0][0].plot(inform[0], Ds_nf[tag + 1] / Ds_nf[1],
+    #                        label="Noise free: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+    #     img.axs[0][1].plot(inform[0], Ds_ny[tag + 1] / Ds_ny[1],
+    #                        label="Noisy: Error bar %d bins/ %d bins" % (pdf_bin_num[i], pdf_bin_num[0]))
+    # for i in range(2):
+    #     img.axs[0][i].legend()
+    #     img.axs[0][i].set_xscale("log")
+    #     img.set_label(0, i, 0, "Error bar ratio")
+    #     img.set_label(0, i, 1, "Radius Mpc/h")
+    # img.save_img(result_path + "/err_comparison_%d.pdf"%numprocs)
+    # img.show_img()
+
+    # img = Image_Plot()
+    # img.subplots(1,1)
+    # img.axs[0][0].scatter(src_z_true[:1000],src_z[:1000])
+    # x1,x2 = min(src_z_true[:1000].min(), src_z[:1000].min()),max(src_z_true[:1000].max(), src_z[:1000].max())
+    #
+    # img.axs[0][0].plot([x1,x2],[x1,x2],ls="dashed",c="k")
+    # img.set_label(0,0,0,"Z")
+    # img.set_label(0,0,1,"Z_true")
+    # img.save_img(result_path + "/z.pdf")
+
+comm.Barrier()
+
