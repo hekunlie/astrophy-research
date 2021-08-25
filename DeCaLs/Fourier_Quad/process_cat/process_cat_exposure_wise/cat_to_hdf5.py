@@ -18,7 +18,7 @@ numprocs = comm.Get_size()
 
 mode = argv[1]
 
-ori_cat_chara = "_all_alt.cat"
+ori_cat_chara = "_s.cat"
 
 data_band = ["g", "r", "z"]
 

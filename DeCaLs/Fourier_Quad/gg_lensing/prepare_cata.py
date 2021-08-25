@@ -47,13 +47,6 @@ delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.001, 400, num_m).astype(n
 delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.001, 400, num_p).astype(numpy.float64)
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
-# delta_sigma_guess[:100] = -tool_box.set_bin_log(0.001, 50, 101)[:-1]
-# delta_sigma_guess[100:200] = numpy.linspace(0.001, 0.01, 101)[:-1]
-# delta_sigma_guess[200:300] = numpy.linspace(0.01, 0.1, 101)[:-1]
-# delta_sigma_guess[300:400] = numpy.linspace(0.1, 1, 101)[:-1]
-# delta_sigma_guess[400:delta_sigma_guess_num] = numpy.linspace(1,120, delta_sigma_guess_num-400+1)[:-1]
-# delta_sigma_guess = numpy.sort(delta_sigma_guess)
-
 
 gt_guess_num = 400
 num_p = int(gt_guess_num/2)
@@ -71,7 +64,7 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 mg_bin_num = 10
 
-hist2d_mg_num = 100
+hist2d_mg_num = 10
 hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # position in DECALS catalog
@@ -79,44 +72,44 @@ ra_idx = 0
 dec_idx = 1
 
 # star number on each chip
-nstar_idx = 4
+nstar_idx = 6
 nstar_thresh = 20
 
 # selection function
-flux2_alt_idx = 5
+flux2_alt_idx = 7
 flux2_alt_thresh = 3
 
 
 # field distortion
-gf1_idx = 6
-gf2_idx = 7
-gf1_thresh = 0.0025
-gf2_thresh = 0.0025
+gf1_idx = 8
+gf2_idx = 9
+gf1_thresh = 0.0015
+gf2_thresh = 0.0015
 
 # shear estimators
-mg1_idx = 8
-mg2_idx = 9
-mn_idx = 10
-mu_idx = 11
-mv_idx = 12
+mg1_idx = 10
+mg2_idx = 11
+mn_idx = 12
+mu_idx = 13
+mv_idx = 14
 
-# delta ra dec
-# the pixel scale is 0.262 arcsec/pix
-# 1 pix corresponds to 7.28 * 10^{-5}
-dist_idx = 13
-dist_thresh = 10**(-4)
-
-# PhotoZ
-Zp_idx = 16 # photo Z
-Zs_idx = 17 # spectral Z
+# # delta ra dec
+# # the pixel scale is 0.262 arcsec/pix
+# # 1 pix corresponds to 7.28 * 10^{-5}
+# dist_idx = 13
+# dist_thresh = 10**(-4)
+#
+# # PhotoZ
+Zp_idx = 4 # photo Z
+# Zs_idx = 17 # spectral Z
 
 
 # fourier_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS"
 # result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
 # foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
 
-fourier_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_old"
-result_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_old/gg_lensing/cata"
+fourier_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729"
+result_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729/gg_lensing/cata"
 # foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
 foreground_path_ori = "/home/hklee/work/catalog/SDSS"
 # foreground_path_ori = "/home/hklee/work/catalog/Jesse_cata/hdf5"
@@ -331,13 +324,13 @@ elif cmd == "prepare_background":
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
         idx3 = data[:, gf1_idx] <= gf1_thresh
         idx4 = data[:, gf2_idx] <= gf2_thresh
-        # idx5 = data[:, Zp_idx] > 0
+        idx5_0 = data[:, Zp_idx] > 0
         idx5_1 = data[:, Zp_idx] >= backz_min
         idx5_2 = data[:, Zp_idx] <= backz_max
-        idx5 = idx5_1 & idx5_2
-        idx6 = numpy.abs(data[:,dist_idx]) <= dist_thresh
+        idx5 = idx5_0 & idx5_1 & idx5_2
+        # idx6 = numpy.abs(data[:,dist_idx]) <= dist_thresh
 
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
+        idx = idx1 & idx2 & idx3 & idx4 & idx5# & idx6
 
         src_num = idx.sum()
 
@@ -463,7 +456,7 @@ if cmd == "prepare_pdf":
         NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
-        with open(result_cata_path + "/background_z_0.7_0.8/background_source_list.dat", "r") as f:
+        with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
             back_contents = f.readlines()
         back_expo_num = len(back_contents)
         back_expo_cent = numpy.zeros((back_expo_num, 2),dtype=numpy.float32)
