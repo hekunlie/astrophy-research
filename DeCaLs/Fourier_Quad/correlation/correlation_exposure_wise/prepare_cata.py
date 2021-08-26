@@ -22,9 +22,9 @@ time_start = hk_tool_box.get_time_now()
 area_num = 2
 
 # theta bin
-theta_bin_num = 5
-# theta_bin = tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
-theta_bin = hk_tool_box.set_bin_log(1, 60, theta_bin_num+1).astype(numpy.float32)
+theta_bin_num = 6
+theta_bin = hk_tool_box.set_bin_log(1, 128, theta_bin_num+1).astype(numpy.float32)
+# theta_bin = hk_tool_box.set_bin_log(1, 60, theta_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
 deg2arcmin = 60
@@ -36,7 +36,7 @@ grid_size = 40 #arcmin
 ra_idx = 0
 dec_idx = 1
 
-redshift_idx = 16
+redshift_idx = 2
 
 redshift_sep_thresh = 0.01
 
@@ -60,11 +60,11 @@ mg_bin_num = 10
 
 
 # star number on each chip
-nstar_idx = 4
+nstar_idx = 6
 nstar_thresh = 20
 
 # selection function
-flux2_alt_idx = 5
+flux2_alt_idx = 7
 flux2_alt_thresh = 2.5
 
 
@@ -76,20 +76,20 @@ flux2_alt_thresh = 2.5
 # yc_idx = 24
 
 # field distortion
-gf1_idx = 6
-gf2_idx = 7
-gf1_thresh = 0.0025
-gf2_thresh = 0.0025
+gf1_idx = 8
+gf2_idx = 9
+gf1_thresh = 0.0015
+gf2_thresh = 0.0015
 
 # shear estimators
-mg1_idx = 8
-mg2_idx = 9
-mn_idx = 10
-mu_idx = 11
-mv_idx = 12
+mg1_idx = 10
+mg2_idx = 11
+mn_idx = 12
+mu_idx = 13
+mv_idx = 14
 
 # about PhotoZ
-redshift_e_idx = 16
+redshift_e_idx = 4
 
 
 # 48/2*0.187/60 arcmin
@@ -98,7 +98,7 @@ sep_pix = 12 # pixels
 sep_z = 0.2
 
 # the parent path where contains the all catalog
-fourier_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_old"
+fourier_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729"
 # the source list contains the directories to each available exposures
 source_list_path = fourier_cata_path + "/cat_inform/exposure_avail_r_band.dat"
 # where to put the filtered catalog

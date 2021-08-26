@@ -40,7 +40,7 @@ halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
 
-Rmin, Rmax = 0.3, 18 # Mpc/h
+Rmin, Rmax = 0.3, 12 # Mpc/h
 separation_min, separation_max = Rmin/com_dist_len/numpy.pi*180*3600, Rmax/com_dist_len/numpy.pi*180*3600
 
 
@@ -75,9 +75,9 @@ if cmd == 0:
 
     print(separation.max(), separation.min())
 
-    # theta = rng.uniform(0, numpy.pi * 2, total_src_num)
-    ra = separation# * numpy.cos(theta)
-    dec = numpy.zeros_like(ra)#separation * numpy.sin(theta)
+    theta = rng.uniform(0, numpy.pi * 2, total_src_num)
+    ra = separation * numpy.cos(theta)
+    dec = separation * numpy.sin(theta)
 
 
     # magnitude & flux
@@ -116,10 +116,14 @@ if cmd == 0:
 
     else:
         # true background sources
-        src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.25, total_src_num).astype(dtype=numpy.float32))
-        idx = src_z > 0.9
-        src_z[idx] = src_z[idx] - 0.6
+        # src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.25, total_src_num).astype(dtype=numpy.float32))
+        # idx = src_z > 0.9
+        # src_z[idx] = src_z[idx] - 0.6
+
+        src_z = rng.uniform(len_z + 0.1, 0.9, total_src_num).astype(dtype=numpy.float32)
+
         shear_data = hk_gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
+
         print("Z: ", src_z.max(), src_z.min())
         print("g: ", shear_data[1].min(), shear_data[1].max(), shear_data[2].min(), shear_data[2].max())
         h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5"%rank, "w")
