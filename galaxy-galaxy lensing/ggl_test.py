@@ -75,18 +75,19 @@ rank = comm.Get_rank()
 numprocs = comm.Get_size()
 
 
-# data_path =  argv[1]
-cmd = int(argv[1])
+data_path = argv[1]
+
+cmd = int(argv[2])
 chi_gap = 50
 
 # zerr tag
-zerr_sig = float(argv[2])
+zerr_sig = float(argv[3])
 
 # "noise_free" or "noisy_cpp"
-data_type = argv[3]
+data_type = argv[4]
 
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
-result_path = data_path + "/result/dilution_test/dilution_zerr_%s/%d"%(argv[2],cmd)
+#"/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
+result_path = data_path + "/result/dilution_test/dilution_zerr_%.2f/%d"%(zerr_sig, cmd)
 
 # bin number for PDF_SYM
 pdf_bin_num = [2, 10]

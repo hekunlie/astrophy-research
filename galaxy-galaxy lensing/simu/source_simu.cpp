@@ -75,6 +75,7 @@ int main(int argc, char*argv[])
     int *rand_seed;
     MY_FLOAT *big_img[2];
     char src_type[50];
+    char dst_path[100];
 
     strcpy(parent_path, argv[1]);
     source_tag = atoi(argv[2]);
@@ -82,6 +83,8 @@ int main(int argc, char*argv[])
 	size = 56;//atoi(argv[4]);
     total_chips = atoi(argv[3]);
     strcpy(src_type, argv[4]);
+    strcpy(dst_path, argv[5]);
+
 
 	seed_step = 2;
 
@@ -195,7 +198,7 @@ int main(int argc, char*argv[])
     rand_seed = new int[total_chips]{};
 
 
-    sprintf(data_path,"%s/cata/background/continue_source_z_1", parent_path);
+    sprintf(data_path,"%s/cata/background/%s", parent_path,dst_path);
 
     sprintf(para_path,"%s/params/%s_para_%d.hdf5", data_path, src_type, source_tag);
 
@@ -225,12 +228,13 @@ int main(int argc, char*argv[])
 	{	
 		std::cout<<"---------------------------------------------------------------------------"<<std::endl;
 		std::cout << parent_path << std::endl;
+		std::cout << data_path << std::endl;
 		std::cout << "Total chip: " << total_chips<< ", Stamp size: " << size  << std::endl;
 		std::cout << "Total cpus: " << numprocs << std::endl;
 		std::cout <<"PSF Scale: "<<psf_scale<< " PSF THRESH: " << all_paras.psf_pow_thresh <<" PSF HLR: " << all_paras.psf_hlr << std::endl;
 		std::cout <<"MAX RADIUS: "<< max_radius <<" , Step: "<<pts_step<< ", SIG_LEVEL: " << sig_level <<"sigma"<< std::endl;
 
-        sprintf(chip_path,"%s/cata/background/continue_source_z_1/imgs/%s_psf.hdf5", parent_path, src_type);
+        sprintf(chip_path,"%s/cata/background/%s/imgs/%s_psf.hdf5", parent_path, dst_path, src_type);
         sprintf(set_name,"/data");
         write_h5(chip_path, set_name, psf_img[0], size, size, true);
 
