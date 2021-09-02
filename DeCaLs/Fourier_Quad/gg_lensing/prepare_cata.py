@@ -64,7 +64,7 @@ tan_shear_guess = numpy.sort(tan_shear_guess)
 
 mg_bin_num = 10
 
-hist2d_mg_num = 10
+hist2d_mg_num = 4
 hist2d_mg_num2 = int(hist2d_mg_num/2)
 
 # position in DECALS catalog
@@ -131,8 +131,8 @@ if cmd == "prepare_foreground":
     fore_mass_idx = 4  # log M
 
     fore_richness_thresh = 4
-    fore_z_min = 0.15#float(argv[2])#0.3
-    fore_z_max = 0.25#float(argv[3])#0.4
+    fore_z_min = float(argv[2])#0.3
+    fore_z_max = float(argv[3])#0.4
     fore_mass_min = 1#float(argv[4])#13.5
     fore_mass_max = 20#float(argv[5])#13
     if rank == 0:
