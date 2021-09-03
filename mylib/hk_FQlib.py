@@ -966,23 +966,26 @@ if platform.system() == 'Linux':
 
     search_shear_range = c4pylib.search_shear_range
     search_shear_range.restype = None
-    search_shear_range.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
-                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+    search_shear_range.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                    ctypes.c_int,
-                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                    ctypes.c_int,
-                                   ctypes.c_double,
-                                   ctypes.c_double,
+                                   ctypes.c_float,
+                                   ctypes.c_float,
                                    ctypes.c_int,
-                                   ctypes.c_double,
-                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
-                                   ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
+                                   ctypes.c_float,
+                                   ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                                   ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                    ctypes.c_int]
+
 
 
     cal_chisq_cpp = c4pylib.cal_chisq
     cal_chisq_cpp.restype = None
     cal_chisq_cpp.argtypes = [ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
+                               ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                ctypes.c_int,
                                ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
@@ -990,6 +993,8 @@ if platform.system() == 'Linux':
                                ctl.ndpointer(numpy.float32, flags='aligned, c_contiguous'),
                                ctypes.c_int,
                                ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous')]
+
+
 
     search_shear_range_corr = c4pylib.search_shear_range_corr
     search_shear_range_corr.restype = None
@@ -1010,21 +1015,21 @@ if platform.system() == 'Linux':
                                         ctypes.c_int]
 
 
-    def find_shear_cpp(g, nu, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15, fit_scale=100, chi_gap=40.,
-                     max_iters=40, fig_ax=False):
+    def find_shear_cpp(g, nu, count_weight, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15, fit_scale=100, chi_gap=40.,
+                       max_iters=40, fig_ax=False):
 
-        g = numpy.ascontiguousarray(g, dtype=numpy.float64)
-        nu = numpy.ascontiguousarray(nu, dtype=numpy.float64)
+        g = numpy.ascontiguousarray(g, dtype=numpy.float32)
+        nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
+        count_weight = numpy.ascontiguousarray(count_weight, dtype=numpy.float32)
 
         data_num = g.shape[0]
-        bins = set_bin_(g, bin_num, scale)
+        bins = numpy.ascontiguousarray(set_bin_(g, bin_num, scale), dtype=numpy.float32)
 
-        fit_shear_range = numpy.zeros((fit_num,))
-        fit_chisq = numpy.zeros((fit_num,))
+        fit_shear_range = numpy.zeros((fit_num,), dtype=numpy.float32)
+        fit_chisq = numpy.zeros((fit_num,), dtype=numpy.float32)
 
-        search_shear_range(g, nu, data_num, bins, bin_num, left, right, max_iters, chi_gap,
+        search_shear_range(g, nu, count_weight, data_num, bins, bin_num, left, right, max_iters, chi_gap,
                            fit_shear_range, fit_chisq, fit_num)
-
 
         fit_shear_range *= fit_scale
         coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
@@ -1066,7 +1071,7 @@ if platform.system() == 'Linux':
         return g_h, g_sig, coeff, chisq_min, bins
 
 
-    def find_shear_cpp_guess(g, nu, pdf_bin, signal_guess, chi_gap=40, fig_ax=False,fit_scale=1):
+    def find_shear_cpp_guess(g, nu, count_weight, pdf_bin, signal_guess, chi_gap=40, fig_ax=False,fit_scale=1):
         bin_num = pdf_bin.shape[0] - 1
         bin_num2 = int(bin_num/2)
 
@@ -1076,12 +1081,13 @@ if platform.system() == 'Linux':
 
         g = numpy.ascontiguousarray(g, dtype=numpy.float32)
         nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
+        count_weight = numpy.ascontiguousarray(count_weight, dtype=numpy.float32)
+
         pdf_bin = numpy.ascontiguousarray(pdf_bin, dtype=numpy.float32)
         signal_guess = numpy.ascontiguousarray(signal_guess, dtype=numpy.float32)
         count = numpy.zeros((guess_num, bin_num), dtype=numpy.float64)
 
-
-        cal_chisq_cpp(g, nu, data_len, pdf_bin, bin_num, signal_guess, guess_num, count)
+        cal_chisq_cpp(g, nu, count_weight, data_len, pdf_bin, bin_num, signal_guess, guess_num, count)
 
 
         # for i in range(guess_num):
@@ -1139,6 +1145,7 @@ if platform.system() == 'Linux':
                         transform=fig_ax.transAxes, fontsize=15)
 
         return g_h, g_sig
+
 
 
     def find_shear_cpp_corr(g, nu, g_corr, nu_corr, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15,

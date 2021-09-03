@@ -6,6 +6,10 @@ from hk_plot_tool import Image_Plot
 import hk_tool_box
 import numpy
 import h5py
+from astropy.cosmology import FlatLambdaCDM
+from astropy.coordinates import SkyCoord
+from astropy import units
+import galsim
 
 
 import ctypes
@@ -25,6 +29,56 @@ hist2d_fast.argtypes = [ctl.ndpointer(numpy.float64, flags='aligned, c_contiguou
                                  ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous'),
                                  ctl.ndpointer(numpy.float64, flags='aligned, c_contiguous')]
 
+
+class Cosmos_flat:
+
+    def __init__(self, Omega_m0, H0):
+        self.Omega_m0 = Omega_m0
+        self.H0 = H0
+        self.h0 = H0/100
+        self.cosmos = FlatLambdaCDM(H0, Om0=Omega_m0)
+        self.nfw_profile = None
+        self.nfw_com_dist = None
+        self.nfw_z = None
+        self.delta_sigma_coeff_1 = 1662895.2081868195
+        self.delta_sigma_coeff_2 = None
+
+
+    def com_distance(self, z, h_unit=True):
+        if h_unit:
+            hu = self.h0
+        else:
+            hu = 1
+        return self.cosmos.comoving_distance(z).value * hu
+
+
+    def NFW(self, halo_position, Mass, conc, z, h_unit=True):
+        """
+
+        :param halo_position: (ra, dec) arcsec
+        :param Mass:
+        :param conc:
+        :param z:
+        :param h_unit:
+        :return:
+        """
+        self.nfw_profile = galsim.NFWHalo(Mass, conc, z, halo_position, self.Omega_m0, 1 - self.Omega_m0)
+        self.nfw_com_dist = self.com_distance(z, h_unit=h_unit)
+        self.nfw_z = z
+        self.delta_sigma_coeff_2 = self.delta_sigma_coeff_1/self.nfw_com_dist/(1 + self.nfw_z)
+
+
+    def get_shear(self, src_ra, src_dec, src_z, reduced=False):
+
+        com_dist_src = self.com_distance(src_z)
+        crit_coeff = self.delta_sigma_coeff_2*com_dist_src / (com_dist_src - self.nfw_com_dist)
+        gamma1, gamma2 = self.nfw_profile.getShear((src_ra, src_dec), src_z, reduced=reduced)
+        delta_sigma = numpy.sqrt(gamma1 ** 2 + gamma2 ** 2) * crit_coeff
+        return gamma1, gamma2, delta_sigma
+
+
+    def get_kappa(self, ra, dec, z):
+        return self.nfw_profile.getConvergence((ra, dec), z)
 
 
 
@@ -69,11 +123,13 @@ def get_shear(nfw, ra, dec, source_z):
         shear_data[4, i] = g2
     return shear_data
 
+
 def get_shear_point(nfw,ra, dec,source_z):
     kappa = nfw.getConvergence((ra, dec), source_z)
     gamma1, gamma2 = nfw.getShear((ra, dec),source_z,reduced=False)
     g1,g2 = gamma1/(1-kappa), gamma2/(1-kappa)
     return kappa, gamma1, gamma2, g1, g2
+
 
 def get_delta_sigma(nfw, com_dist_len, len_z, com_dist_src, src_z, theta,reduced=False):
     delta_sigma = numpy.zeros_like(theta)

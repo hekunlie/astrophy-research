@@ -539,12 +539,12 @@ extern "C"
         }
     }
 
-    double search_shear_range_chi2(double *mg, double *mnu, int data_num, double signal, 
-                                    double *mg_bin, int mg_bin_num)
+    double search_shear_range_chi2(float *mg, float *mnu, float *count_weight, int data_num, float signal, 
+                                    float *mg_bin, int mg_bin_num)
     {
         int i, bin_num2;
         int xst, xed, xmid;
-        double mgh;
+        float mgh;
         double chisq, n1, n2;
 
         double *count = new double[mg_bin_num];
@@ -563,7 +563,7 @@ extern "C"
                 if(mgh >= mg_bin[xmid]){xst = xmid;}
                 else{xed = xmid;}
             }
-            count[xst] += 1;
+            count[xst] += count_weight[i];
         }
 
         chisq = 0;
@@ -580,13 +580,13 @@ extern "C"
         return chisq;
     }
 
-    void search_shear_range(double *mg, double *mnu, int data_num, double *mg_bin, int mg_bin_num, 
-                            double left_shear_guess, double right_shear_guess, int max_iters, double chi2_gap, 
-                            double *fit_shear_range, double *fit_chi2, int fit_shear_num)
+    void search_shear_range(float *mg, float *mnu, float *count_weight, int data_num, float *mg_bin, int mg_bin_num, 
+                            float left_shear_guess, float right_shear_guess, int max_iters, float chi2_gap, 
+                            float *fit_shear_range, float *fit_chi2, int fit_shear_num)
     {
         int i, j, change, iters;
-        double mc, mcl, mcr, left, right;
-        double fmc, fmcl, fmcr, temp;
+        float mc, mcl, mcr, left, right;
+        float fmc, fmcl, fmcr, temp;
 
         left = left_shear_guess;
         right = right_shear_guess;
@@ -599,9 +599,9 @@ extern "C"
             mcl = left;
             mcr = right;
 
-            fmc = search_shear_range_chi2(mg, mnu, data_num, mc, mg_bin, mg_bin_num);
-            fmcl = search_shear_range_chi2(mg, mnu, data_num, mcl, mg_bin, mg_bin_num);
-            fmcr = search_shear_range_chi2(mg, mnu, data_num, mcr, mg_bin, mg_bin_num);
+            fmc = search_shear_range_chi2(mg, mnu, count_weight, data_num, mc, mg_bin, mg_bin_num);
+            fmcl = search_shear_range_chi2(mg, mnu, count_weight, data_num, mcl, mg_bin, mg_bin_num);
+            fmcr = search_shear_range_chi2(mg, mnu, count_weight, data_num, mcr, mg_bin, mg_bin_num);
 
             temp = fmc + chi2_gap;
 
@@ -626,7 +626,7 @@ extern "C"
         for(i=0;i<fit_shear_num;i++)
         {
             fit_shear_range[i] = left + i*temp;
-            fit_chi2[i] = search_shear_range_chi2(mg, mnu, data_num, fit_shear_range[i], mg_bin, mg_bin_num);
+            fit_chi2[i] = search_shear_range_chi2(mg, mnu, count_weight, data_num, fit_shear_range[i], mg_bin, mg_bin_num);
         }
 
     }
@@ -755,7 +755,7 @@ extern "C"
     }
     
 
-    void cal_chisq(float *mg, float*mu, int data_num, float *pdf_bin, int bin_num, float *guess, int guess_num,  double*count)
+    void cal_chisq(float *mg, float*mu, float*count_weight, int data_num, float *pdf_bin, int bin_num, float *guess, int guess_num,  double*count)
     {
         int i, j, k;
         float temp;
@@ -772,7 +772,7 @@ extern "C"
                 hist1d_fq(temp, pdf_bin, bin_num, pre_bin_tag, bin_tag);
 
                 tag = j*bin_num + bin_tag;
-                count[tag] += 1;
+                count[tag] += count_weight[i];
 
                 pre_bin_tag = bin_tag;                
             }
