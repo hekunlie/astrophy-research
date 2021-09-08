@@ -547,7 +547,9 @@ extern "C"
         float mgh;
         double chisq, n1, n2;
 
-        double *count = new double[mg_bin_num];
+        double *count = new double[mg_bin_num]{};
+        double *count_num = new double[mg_bin_num]{};
+        double *count_denorm = new double[mg_bin_num]{};
 
         for(i=0;i<mg_bin_num;i++){count[i] = 0;}
 
@@ -563,21 +565,29 @@ extern "C"
                 if(mgh >= mg_bin[xmid]){xst = xmid;}
                 else{xed = xmid;}
             }
-            count[xst] += count_weight[i];
-        }
+            count[xst] += 1;
+            count_num[xst] += count_weight[i];
+            count_denorm[xst] += count_weight[i]*count_weight[i];
+            // std::cout<<count_weight[i]<<std::endl;
+        }   
 
         chisq = 0;
         bin_num2 = mg_bin_num/2;
         for(i=0;i<bin_num2; i++)
         {   
-            n1 = count[i] - count[mg_bin_num-i-1];
-            n2 = count[i] + count[mg_bin_num-i-1];
+            // n1 = count[i] - count[mg_bin_num-i-1];
+            // n2 = count[i] + count[mg_bin_num-i-1];
+            n1 = count_num[i] - count_num[mg_bin_num-i-1];
+            n2 = count_denorm[i] + count_denorm[mg_bin_num-i-1];
             chisq += n1*n1/n2;
         }
         chisq = chisq/2;
 
         delete[] count;
+        delete[] count_num;
+        delete[] count_denorm;
         return chisq;
+
     }
 
     void search_shear_range(float *mg, float *mnu, float *count_weight, int data_num, float *mg_bin, int mg_bin_num, 

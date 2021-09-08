@@ -52,6 +52,8 @@ for nm_tag, nm in enumerate(names):
     src_ra = numpy.zeros((total_data_len,), dtype=numpy.float32)
     src_dec = numpy.zeros((total_data_len,), dtype=numpy.float32)
     src_z = numpy.zeros((total_data_len,), dtype=numpy.float32)
+    src_g1 = numpy.zeros((total_data_len,), dtype=numpy.float32)
+    src_g2 = numpy.zeros((total_data_len,), dtype=numpy.float32)
     stack_tag = 0
     for i in range(file_num[nm_tag]):
         param_path = parent_path + "/params/%s_para_%d.hdf5"% (nm, i)
@@ -65,6 +67,8 @@ for nm_tag, nm in enumerate(names):
         src_ra[st:ed] = h5f["/ra"][()] / 3600
         src_dec[st:ed] = h5f["/dec"][()] / 3600
         src_z[st:ed] = h5f["/z"][()]
+        src_g1[st:ed] = h5f["/gamma2"][()]
+        src_g2[st:ed] = h5f["/gamma1"][()]
         h5f.close()
         stack_tag += 1
 
@@ -74,5 +78,7 @@ for nm_tag, nm in enumerate(names):
         h5f["/ra"] = src_ra
         h5f["/dec"] = src_dec
         h5f["/z"] = src_z
+        h5f["/g1"] = src_g1
+        h5f["/g2"] = src_g2
         h5f.close()
         print("Stack param, ", stack_param_path)

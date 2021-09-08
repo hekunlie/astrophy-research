@@ -667,7 +667,11 @@ class Fourier_Quad:
                     break
             fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
-        coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+
+        coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+        coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
+
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
         g_corr = -coeff[1] / 2. / coeff[2]
         if pic_path:
@@ -839,7 +843,9 @@ def find_shear(g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_nu
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+    coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -932,7 +938,9 @@ def find_shear_corr(g, nu, g_corr, nu_corr, bin_num, ig_num=0, scale=1.1, left=-
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+    coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+    coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1018,12 +1026,14 @@ if platform.system() == 'Linux':
     def find_shear_cpp(g, nu, count_weight, bin_num, scale=100, left=-0.1, right=0.1, fit_num=15, fit_scale=100, chi_gap=40.,
                        max_iters=40, fig_ax=False):
 
-        g = numpy.ascontiguousarray(g, dtype=numpy.float32)
-        nu = numpy.ascontiguousarray(nu, dtype=numpy.float32)
-        count_weight = numpy.ascontiguousarray(count_weight, dtype=numpy.float32)
-
         data_num = g.shape[0]
-        bins = numpy.ascontiguousarray(set_bin_(g, bin_num, scale), dtype=numpy.float32)
+        bins = set_bin_(g, bin_num, scale)
+
+        g = numpy.ascontiguousarray(g.astype(dtype=numpy.float32), dtype=numpy.float32)
+        nu = numpy.ascontiguousarray(nu.astype(dtype=numpy.float32), dtype=numpy.float32)
+        count_weight = numpy.ascontiguousarray(count_weight.astype(dtype=numpy.float32), dtype=numpy.float32)
+
+        bins = numpy.ascontiguousarray(bins.astype(dtype=numpy.float32), dtype=numpy.float32)
 
         fit_shear_range = numpy.zeros((fit_num,), dtype=numpy.float32)
         fit_chisq = numpy.zeros((fit_num,), dtype=numpy.float32)
@@ -1032,7 +1042,9 @@ if platform.system() == 'Linux':
                            fit_shear_range, fit_chisq, fit_num)
 
         fit_shear_range *= fit_scale
-        coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+        # coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+        coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
+        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
 
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1041,8 +1053,7 @@ if platform.system() == 'Linux':
 
         chisq_min = coeff[0] - coeff[1] ** 2 / 4 / coeff[2]
 
-        #     n1, n2 = self.get_chisq(g, nu, g_h, bins, bin_num2, inverse, ig_num)[1:3]
-        #     fit_shear_range = fit_shear_range
+
         if fig_ax:
             fig_ax.scatter(fit_shear_range, fit_chisq, alpha=0.7, s=10, c="C1")
 
@@ -1068,7 +1079,7 @@ if platform.system() == 'Linux':
             fig_ax.text(0.1, 0.80, text_str, color='C3', ha='left', va='center',
                         transform=fig_ax.transAxes, fontsize=15)
 
-        return g_h, g_sig, coeff, chisq_min, bins
+        return g_h, g_sig, coeff, chisq_min, bins, fit_shear_range, fit_chisq
 
 
     def find_shear_cpp_guess(g, nu, count_weight, pdf_bin, signal_guess, chi_gap=40, fig_ax=False,fit_scale=1):
@@ -1108,8 +1119,9 @@ if platform.system() == 'Linux':
         fit_range, fit_chisq = signal_guess[idx], chisq[idx]
 
         fit_range *= fit_scale
-        coeff = hk_tool_box.fit_1d(fit_range, fit_chisq, 2, "scipy")
-
+        # coeff = hk_tool_box.fit_1d(fit_range, fit_chisq, 2, "scipy")
+        coeff_np = numpy.polyfit(fit_range, fit_chisq, 2)
+        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2] / fit_scale
@@ -1170,8 +1182,9 @@ if platform.system() == 'Linux':
 
 
         fit_shear_range *= fit_scale
-        coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
-
+        # coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
+        coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
+        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2] / fit_scale

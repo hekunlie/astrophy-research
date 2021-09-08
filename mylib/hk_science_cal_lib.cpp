@@ -248,10 +248,18 @@ void ggl_initialize(ggl_data_info *data_info)
 
     if(data_info->rank == 0)
     {  
-#ifdef GGL_DELTA_SIGMA
-        sprintf(data_info->ggl_log_inform,"\nCalculate DELTA_SIGMA. G bins %d. Guess: %d\n", data_info->mg_sigma_bin_num,data_info->pdf_sigma_num);
+
+        sprintf(data_info->ggl_log_inform,"\nSigma_c*G bins %d.\n", data_info->mg_sigma_bin_num);
         std::cout<<data_info->ggl_log_inform;
         show_arr(data_info->mg_sigma_bin,1,data_info->mg_sigma_bin_num+1);
+
+        sprintf(data_info->ggl_log_inform,"\nG bins %d.\n", data_info->mg_gt_bin_num);
+        std::cout<<data_info->ggl_log_inform;
+        show_arr(data_info->mg_gt_bin,1,data_info->mg_gt_bin_num+1);
+
+#ifdef GGL_DELTA_SIGMA
+        sprintf(data_info->ggl_log_inform,"\nCalculate DELTA_SIGMA.\n");
+        std::cout<<data_info->ggl_log_inform;
         // std::cout<<std::endl;
         // show_arr(data_info->delta_sigma_guess,1,data_info->pdf_sigma_num);
         // std::cout<<std::endl;
@@ -264,10 +272,11 @@ void ggl_initialize(ggl_data_info *data_info)
         std::cout<<data_info->ggl_log_inform;
         std::cout<<"2D hist: "<<data_info->hist2d_len<<" bins. "<<data_info->hist2d_total_len<<std::endl;
 #endif 
+
+
 #ifdef GGL_GAMMA_T
-        sprintf(data_info->ggl_log_inform,"\nCalculate Tangential shear. G bins %d. Guess: %d\n", data_info->mg_gt_bin_num, data_info->pdf_gt_num);
+        sprintf(data_info->ggl_log_inform,"\nCalculate Tangential shear.\n");
         std::cout<<data_info->ggl_log_inform;
-        show_arr(data_info->mg_gt_bin,1,data_info->mg_gt_bin_num+1);
         // std::cout<<std::endl;
         // show_arr(data_info->gt_guess,1,data_info->pdf_gt_num);
         // std::cout<<std::endl;
@@ -482,7 +491,7 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     initialize_arr(data_info->worker_total_signal_count, data_info->total_signal_count_len, 0);
 
 
-#ifdef GGL_DELTA_SIGMA
+
     // read G bins for delta sigma
     sprintf(data_info->set_name,"/mg_sigma_bin");
     read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->mg_sigma_bin_num);
@@ -490,7 +499,7 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->mg_sigma_bin);
     data_info->mg_sigma_bin_num = data_info->mg_sigma_bin_num - 1;
 
-
+#ifdef GGL_DELTA_SIGMA
 
     // read hist2d bins
     sprintf(data_info->set_name,"/hist2d_mg_sigma_bin");
@@ -541,14 +550,14 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
 
 #endif
 
-
-#ifdef GGL_GAMMA_T
     sprintf(data_info->set_name,"/mg_gt_bin");
     read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->mg_gt_bin_num);
     data_info->mg_gt_bin = new MY_FLOAT[data_info->mg_gt_bin_num];
     read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->mg_gt_bin);
     data_info->mg_gt_bin_num = data_info->mg_gt_bin_num - 1;
 
+
+#ifdef GGL_GAMMA_T
     // read gt guesses
     sprintf(data_info->set_name,"/gt_guess");
     read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->pdf_gt_num);
@@ -872,8 +881,9 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
 #ifdef GGL_DELTA_SIGMA
 
-                    src_mg1_rot *= sigma_crit;
-                    src_mg2_rot *= sigma_crit;
+                    // src_mg1_rot *= sigma_crit;
+                    // src_mg2_rot *= sigma_crit;
+
 
                     // ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
                     // ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
@@ -900,21 +910,16 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     { 
                         // \Delta\Sigma(R) & \Delta\Sigma(R)_x
                         chi_sigma_pos_i = chi_sigma_pos + i*data_info->mg_sigma_bin_num;
-                        temp_mgt = src_mg1_rot - data_info->delta_sigma_guess[i]*temp_mnut;
-                        temp_mgx = src_mg2_rot - data_info->delta_sigma_guess[i]*temp_mnux;
+                        temp_mgt = src_mg1_rot - data_info->delta_sigma_guess[i]/sigma_crit*temp_mnut;
+                        temp_mgx = src_mg2_rot - data_info->delta_sigma_guess[i]/sigma_crit*temp_mnux;
 
-                        // if(temp_mgt < data_info->mg_sigma_bin[0] or temp_mgt > data_info->mg_sigma_bin[data_info->mg_sigma_bin_num])
-                        // {
-                        //     std::cout<<"gt "<<temp_mgt<<" "<<src_mg1_rot<<" "<<data_info->delta_sigma_guess[i]<<" "<<temp_mnut<<std::endl;
-                        // }
 
-                        // if(temp_mgx < data_info->mg_sigma_bin[0] or temp_mgx > data_info->mg_sigma_bin[data_info->mg_sigma_bin_num])
-                        // {
-                        //     std::cout<<"gx "<<temp_mgx<<" "<<src_mg2_rot<<" "<<data_info->delta_sigma_guess[i]<<" "<<temp_mnux<<std::endl;
-                        // }
+                        // ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
+                        // ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
 
-                        ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
-                        ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
+
+                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
+                        ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
 
 
                         // std::cout<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1+1]<<std::endl;

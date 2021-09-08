@@ -36,12 +36,19 @@ class Cosmos_flat:
         self.Omega_m0 = Omega_m0
         self.H0 = H0
         self.h0 = H0/100
+        self.H_z = 0
         self.cosmos = FlatLambdaCDM(H0, Om0=Omega_m0)
-        self.nfw_profile = None
+        self.nfw_galsim = None
         self.nfw_com_dist = None
         self.nfw_z = None
         self.delta_sigma_coeff_1 = 1662895.2081868195
-        self.delta_sigma_coeff_2 = None
+        self.delta_sigma_coeff_2 = 0
+
+        self.NFW_rho_profile_delta_c = 0
+        self.NFW_rho_profile_concentration = 0
+        self.uni_crit_dens_z = 0
+        self.density_radius_scale = 0
+        self.NFW_radius = 0
 
 
     def com_distance(self, z, h_unit=True):
@@ -52,7 +59,7 @@ class Cosmos_flat:
         return self.cosmos.comoving_distance(z).value * hu
 
 
-    def NFW(self, halo_position, Mass, conc, z, h_unit=True):
+    def NFW_profile_galsim(self, halo_position, Mass, conc, z, h_unit=True):
         """
 
         :param halo_position: (ra, dec) arcsec
@@ -62,24 +69,44 @@ class Cosmos_flat:
         :param h_unit:
         :return:
         """
-        self.nfw_profile = galsim.NFWHalo(Mass, conc, z, halo_position, self.Omega_m0, 1 - self.Omega_m0)
+        self.nfw_galsim = galsim.NFWHalo(Mass, conc, z, halo_position, self.Omega_m0, 1 - self.Omega_m0)
         self.nfw_com_dist = self.com_distance(z, h_unit=h_unit)
         self.nfw_z = z
         self.delta_sigma_coeff_2 = self.delta_sigma_coeff_1/self.nfw_com_dist/(1 + self.nfw_z)
+        self.H_z = self.cosmos.H(z)
+
+    def NFW_rho_profile(self, log_10_Mass, conc, z, density_radius_scale=200, h_unit=True):
+        # rho(r) = delta_c*rho_c(z)/(r/r_s)/(1+r/r_s)^2
+
+        # H(z)
+        self.H_z = self.cosmos.H(z)
+        # to define the halo radius above n*critical_mass_density(z)
+        self.density_radius_scale = density_radius_scale
+        # concentration
+        self.NFW_rho_profile_concentration = conc
+        # delta_c
+        self.NFW_rho_profile_delta_c = density_radius_scale*conc**3/3/(numpy.log(1+conc) - conc/(1+conc))
+        # h_0^2 * M_sum / Mpc^{-3}
+        self.uni_crit_dens_z = 3*3.085677581/8/numpy.pi/6.67408/1.9885*self.H_z/100
+
+        self.nfw_com_dist = self.com_distance(z, h_unit=h_unit)
 
 
     def get_shear(self, src_ra, src_dec, src_z, reduced=False):
 
         com_dist_src = self.com_distance(src_z)
         crit_coeff = self.delta_sigma_coeff_2*com_dist_src / (com_dist_src - self.nfw_com_dist)
-        gamma1, gamma2 = self.nfw_profile.getShear((src_ra, src_dec), src_z, reduced=reduced)
+        gamma1, gamma2 = self.nfw_galsim.getShear((src_ra, src_dec), src_z, reduced=reduced)
         delta_sigma = numpy.sqrt(gamma1 ** 2 + gamma2 ** 2) * crit_coeff
         return gamma1, gamma2, delta_sigma
 
 
     def get_kappa(self, ra, dec, z):
-        return self.nfw_profile.getConvergence((ra, dec), z)
+        return self.nfw_galsim.getConvergence((ra, dec), z)
 
+    def get_sigma_crit(self, src_z, h_unit=True):
+        com_dist_src = self.com_distance(src_z, h_unit)
+        return self.delta_sigma_coeff_2*com_dist_src / (com_dist_src - self.nfw_com_dist)
 
 
 def bin2grid(xbin, ybin):

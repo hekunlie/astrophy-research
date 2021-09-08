@@ -14,7 +14,7 @@ from mpi4py import MPI
 
 
 # data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_1"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_6"
 
 
 cmd = int(argv[1])
@@ -40,7 +40,7 @@ halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
 
-Rmin, Rmax = 0.3, 12 # Mpc/h
+Rmin, Rmax = 0.3, 8 # Mpc/h
 separation_min, separation_max = Rmin/com_dist_len/numpy.pi*180*3600, Rmax/com_dist_len/numpy.pi*180*3600
 
 
@@ -88,7 +88,7 @@ if cmd == 0:
     # galactic radius
     radius_s, radius_e = 0.35, 1.0
 
-    radius = (hk_tool_box.radii_from_mags(mag, radius_s, radius_e) + 0.8)/0.187
+    radius = ((hk_tool_box.radii_from_mags(mag, radius_s, radius_e) + 0.8)/0.187).astype(dtype=numpy.float32)
 
 
     seed = rng.randint(1, 2000000000, int(total_src_num/10000))
@@ -114,7 +114,7 @@ if cmd == 0:
         h5f["/seed"] = seed
         h5f.close()
 
-    else:
+    elif fore_or_back == 1:
         # true background sources
         # src_z = len_z + 0.1 + numpy.abs(rng.normal(0, 0.25, total_src_num).astype(dtype=numpy.float32))
         # idx = src_z > 0.9
@@ -144,6 +144,53 @@ if cmd == 0:
 
         h5f.close()
 
+    else:
+        zmax = 1.3
+        h5f = h5py.File("/home/hklee/work/DECALS/DECALS_shear_catalog_old/cat_inform/data_hist/hist.hdf5", "r")
+        hist = h5f["/z_hist"][()][0]
+        zbin = h5f["/z_bin"][()]
+        h5f.close()
+        zbin_mid = (zbin[1:] + zbin[:-1]) / 2
+        idx = zbin_mid <= zmax
+        zbin_mid = zbin_mid[idx]
+        hist = hist[idx]
+
+        zbin_new = numpy.linspace(0, zmax, 1001)
+        zbin_new_mid = (zbin_new[1:] + zbin_new[:-1]) / 2
+
+        hist_new = numpy.interp(zbin_new_mid, zbin_mid, hist)
+
+        hist_new = hist_new / hist_new.sum()
+        rn = numpy.linspace(0, zmax, 100000001)
+        src_z = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
+
+        shear_data = numpy.zeros((5, total_src_num), dtype=numpy.float32)
+        idx = src_z > len_z
+        shear_data_ = hk_gglensing_tool.get_shear(nfw, ra[idx], dec[idx], src_z[idx])
+        for i in range(5):
+            shear_data[i][idx] = shear_data_[i]
+
+        print("Z: ", src_z.max(), src_z.min())
+        print("g: ", shear_data[1].min(), shear_data[1].max(), shear_data[2].min(), shear_data[2].max())
+        h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5" % rank, "w")
+        h5f["/z"] = src_z
+        h5f["/ra"] = ra
+        h5f["/dec"] = dec
+
+        h5f["/flux"] = flux
+        h5f["/radius"] = radius
+
+        h5f["/kappa"] = shear_data[0]
+        h5f["/gamma1"] = shear_data[1]
+        h5f["/gamma2"] = shear_data[2]
+        h5f["/g1"] = shear_data[3]
+        h5f["/g2"] = shear_data[4]
+
+        h5f["/seed"] = seed
+
+        h5f.close()
+
+
 else:
     separation_bin_num = int(argv[2])
     separation_bin = hk_tool_box.set_bin_log(Rmin, Rmax, separation_bin_num+1)
@@ -152,7 +199,7 @@ else:
     src_nums = numpy.zeros((separation_bin_num,))
 
     data_type = ["noise_free", "noisy_cpp"]
-    shear_type = ["sheared", "non_sheared"]
+    shear_type = ["sheared"]
 
 
     for st_tag, st in enumerate(shear_type):
@@ -161,6 +208,8 @@ else:
         src_z = h5f["/z"][()]
         src_ra = h5f["/ra"][()]
         src_dec = h5f["/dec"][()]
+        src_g1 = h5f["/g1"][()]
+        src_g2 = h5f["/g2"][()]
         h5f.close()
 
         # position and separation angle
@@ -206,6 +255,8 @@ else:
                 h5f['/%d/z'%ir] = src_z[idx]
                 h5f['/%d/ra'%ir] = src_ra[idx]
                 h5f['/%d/dec'%ir] = src_dec[idx]
+                h5f['/%d/g1'%ir] = src_g1[idx]
+                h5f['/%d/g2'%ir] = src_g2[idx]
                 h5f['/%d/sep_radius'%ir] = separation_radius[idx]
                 h5f['/%d/sep_radian'%ir] = separation_radian[idx]
 
