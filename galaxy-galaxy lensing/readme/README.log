@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2019.9.9)  23 JAN 2021 12:16
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/W32TeX) (preloaded format=pdflatex 2019.9.9)  9 OCT 2021 14:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -130,11 +130,7 @@ File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
 \Gin@req@height=\dimen120
 \Gin@req@width=\dimen121
 )
-(./README.aux
-
-LaTeX Warning: Label `rotation' multiply defined.
-
-)
+(./README.aux)
 \openout1 = `README.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 7.
@@ -252,32 +248,32 @@ Underfull \hbox (badness 10000) in paragraph at lines 66--68
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 74--76
+Underfull \hbox (badness 10000) in paragraph at lines 75--77
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 82--84
+Underfull \hbox (badness 10000) in paragraph at lines 83--85
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 95--97
+Underfull \hbox (badness 10000) in paragraph at lines 96--98
 
  []
 
 [2]
-Underfull \hbox (badness 10000) in paragraph at lines 103--105
+Underfull \hbox (badness 10000) in paragraph at lines 104--106
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 111--113
+Underfull \hbox (badness 10000) in paragraph at lines 112--114
 
  []
 
 
-Overfull \hbox (9.63661pt too wide) detected at line 116
+Overfull \hbox (9.63661pt too wide) detected at line 117
 \OML/cmm/m/it/12 c[] \OT1/cmr/m/n/12 = 2\OML/cmm/m/it/12 :\OT1/cmr/m/n/12 99 79
 2 458;  \OML/cmm/m/it/12 l[] \OT1/cmr/m/n/12 = 3\OML/cmm/m/it/12 :\OT1/cmr/m/n/
 12 085 677 581;  \OML/cmm/m/it/12 m[] \OT1/cmr/m/n/12 = 1\OML/cmm/m/it/12 :\OT1
@@ -286,10 +282,13 @@ T1/cmr/m/n/12 9885 \OMS/cmsy/m/n/12 ^^B \OT1/cmr/m/n/12 10[] [];  G[] = 6\OML/c
 mm/m/it/12 :\OT1/cmr/m/n/12 67 408 313
  []
 
+
+LaTeX Warning: Reference `rotation' on page 3 undefined on input line 121.
+
 <sphere.PNG, id=18, 532.99126pt x 518.6878pt>
 File: sphere.PNG Graphic file (type png)
 <use sphere.PNG>
-Package pdftex.def Info: sphere.PNG  used on input line 125.
+Package pdftex.def Info: sphere.PNG  used on input line 126.
 (pdftex.def)             Requested size: 256.07481pt x 249.20476pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
@@ -297,35 +296,38 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 <rotation.png, id=20, 1553.05219pt x 1326.45563pt>
 File: rotation.png Graphic file (type png)
 <use rotation.png>
-Package pdftex.def Info: rotation.png  used on input line 142.
+Package pdftex.def Info: rotation.png  used on input line 143.
 (pdftex.def)             Requested size: 409.72125pt x 349.93034pt.
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 156--158
+Underfull \hbox (badness 10000) in paragraph at lines 157--159
 
  []
 
 [3] [4 <./sphere.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 220--222
+Underfull \hbox (badness 10000) in paragraph at lines 221--223
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 223--225
+Underfull \hbox (badness 10000) in paragraph at lines 224--226
 
  []
 
 [5 <./rotation.png>] [6] (./README.aux)
 
-LaTeX Warning: There were multiply-defined labels.
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
  ) 
 Here is how much of TeX's memory you used:
  2548 strings out of 492623
  35572 string characters out of 6126683
- 118849 words of memory out of 5000000
+ 118802 words of memory out of 5000000
  6438 multiletter control sequences out of 15000+600000
  9274 words of font info for 33 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -343,7 +345,7 @@ t/fonts/type1/public/amsfonts/cm/cmr8.pfb><d:/Program Files/texlive/2019/texmf-
 dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb><d:/Program Files/texlive/2019/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><d:/Program Files/texlive/20
 19/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on README.pdf (6 pages, 301485 bytes).
+Output written on README.pdf (6 pages, 301763 bytes).
 PDF statistics:
  75 PDF objects out of 1000 (max. 8388607)
  51 compressed objects within 1 object stream

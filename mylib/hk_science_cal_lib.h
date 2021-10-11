@@ -36,6 +36,9 @@ const double SCI_PI = 3.141592653589793;
 const double DEG2RAD = 0.017453292519943;// pi/180
 const double RAD2DEG = 57.295779513082323;
 
+void locate_f(float x, float *bins, int bin_num, int &bin_tag);
+void locate_d(double x, double *bins, int bin_num, int &bin_tag);
+
 
 void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);
 void separation_angle_1(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
@@ -182,6 +185,12 @@ struct ggl_data_info
     std::vector<int> task_len_expo_labels;
     std::vector<int> task_src_expo_labels;
     int task_expo_num;
+
+
+    ////////// dz ///////
+    MY_FLOAT *dz_bin;
+    double *dz_hist;
+    int dz_hist_bin_num;
 };
 
 void ggl_initialize(ggl_data_info *data_info);
@@ -216,5 +225,8 @@ void ggl_cache(ggl_data_info *data_info);
 void ggl_cal_signals(ggl_data_info * data_info);
 
 void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err, double *chisq_all, double *chisq_fit_coeff);
+
+void ggl_dz_hist(ggl_data_info *data_info, int len_expo_label);
+
 
 #endif

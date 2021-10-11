@@ -4707,6 +4707,21 @@ void linspace(const double start, const double end, const int num, double *bins)
 	}
 }
 
+void linspace(const float start, const float end, const int num, float *bins)
+{
+	int i, j, k;
+	float diff;
+	if (end <= start)
+	{
+		std::cout << "The end point must be larger than the start" << std::endl;
+		exit(0);
+	}
+	diff = (end - start) / (num - 1);
+	for (i = 0; i < num; i++)
+	{
+		bins[i] = start + i * diff;
+	}
+}
 
 /********************************************************************************************************************************************/
 /* fitting */

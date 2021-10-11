@@ -41,7 +41,7 @@ class Cosmos_flat:
         self.nfw_galsim = None
         self.nfw_com_dist = None
         self.nfw_z = None
-        self.delta_sigma_coeff_1 = 1662895.2081868195
+        self.delta_sigma_coeff_1 = 1662916.5401756007
         self.delta_sigma_coeff_2 = 0
 
         self.NFW_rho_profile_delta_c = 0
@@ -161,7 +161,7 @@ def get_shear_point(nfw,ra, dec,source_z):
 def get_delta_sigma(nfw, com_dist_len, len_z, com_dist_src, src_z, theta,reduced=False):
     delta_sigma = numpy.zeros_like(theta)
     theta_num = theta.shape[0]
-    crit_coeff = 1662895.2081868195*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
+    crit_coeff = 1662916.5401756007*com_dist_src/com_dist_len/(com_dist_src-com_dist_len)/(1+len_z)
     for i in range(theta_num):
         gamma1, gamma2 = nfw.getShear((theta[i],0),src_z,reduced=reduced)
         delta_sigma[i] = numpy.sqrt(gamma1**2 + gamma2**2)*crit_coeff

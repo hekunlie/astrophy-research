@@ -1,5 +1,41 @@
 #include<hk_science_cal_lib.h>
 
+
+
+void locate_f(float x, float *bins, int bin_num, int &bin_tag)
+{
+    int i,j,st,ed,mid;
+    st = 0;
+    ed = bin_num;
+
+    while(true)
+    {   
+        if(ed - st <= 1){break;}
+
+        mid = (st+ed)/2;
+        if(x >= bins[mid]){st = mid;}
+        else{ed = mid;}
+    }
+    bin_tag = st;
+}
+
+void locate_d(double x, double *bins, int bin_num, int &bin_tag)
+{
+    int i,j,st,ed,mid;
+    st = 0;
+    ed = bin_num;
+
+    while(true)
+    {   
+        if(ed - st <= 1){break;}
+
+        mid = (st+ed)/2;
+        if(x >= bins[mid]){st = mid;}
+        else{ed = mid;}
+    }
+    bin_tag = st;
+}
+
 void separation_angle_1(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian)
 {
     double diff_ra_rad = (RA1 - RA2)*DEG2RAD;
@@ -1192,6 +1228,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
     char set_name[50];
     int i, j, st_c, st_j;
+    int len_count = 0;
 
     double *theta = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
     double *radius = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
@@ -1202,6 +1239,8 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
     double *chisq_all = new double[data_info->signal_pts_num*data_info->pdf_sigma_num];
     double *chisq_fit_coeff = new double[data_info->signal_pts_num*3];
+
+    for(i=0; i<data_info->len_expo_num;i++){len_count += data_info->len_data_row[i];}
 
     for(i=0; i<data_info->jack_num+1; i++)
     { 
@@ -1223,11 +1262,13 @@ void ggl_cal_signals(ggl_data_info * data_info)
 
         if(i == data_info->jack_num)
         {   
+            std::cout<<"\n========================== Lens Count ==========================\n";
+            std::cout<<len_count<<std::endl;
             std::cout<<"\n========================== Count ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<count[st_c+j]<<" ";}
             std::cout<<std::endl;
-            std::cout<<"\n========================== Theta [armin] ==========================\n";
+            std::cout<<"\n========================== Theta [arcmin] ==========================\n";
             for(j=0;j<data_info->signal_pts_num;j++)
             {std::cout<<theta[st_c+j]/count[st_c+j]*60<<" ";}
             std::cout<<std::endl;
@@ -1248,6 +1289,9 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/count");
     write_h5(data_info->ggl_result_path, set_name, count,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+
+    sprintf(set_name,"/len_count");
+    write_h5(data_info->ggl_result_path, set_name, &len_count, 1, 1,  false);
 
     sprintf(set_name,"/delta_t_guess");
     write_h5(data_info->ggl_result_path, set_name, data_info->delta_sigma_guess,
@@ -1532,3 +1576,91 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
     delete[] temp;
     delete[] chisq;
 }
+
+
+void ggl_dz_hist(ggl_data_info *data_info, int len_expo_label)
+{
+    int ibkg, bkg, ibkg_row, ifg, ifg_row;
+    int ir, sep_bin_tag;
+    int i,j,k;
+    double st, ed;
+
+    MY_FLOAT len_ra, len_dec, len_cos_dec, src_ra, src_dec;
+    MY_FLOAT len_z, len_dist, src_z, src_dist;
+    MY_FLOAT src_z_err, len_z_dz;
+    MY_FLOAT dra, ddec, delta_radius;
+    MY_FLOAT sep_dist, sep_theta, sep_theta_;
+
+    int pair_count = 0;
+
+    st = clock();
+
+    ggl_read_len_exp(data_info, len_expo_label);
+
+    ggl_find_src_needed(data_info, len_expo_label);
+    
+    for(bkg=0; bkg<data_info->src_expo_num; bkg++)
+    {   
+        if(data_info->src_expo_needed_tag[bkg]< 1){continue;}
+
+        ggl_read_src_exp(data_info, bkg);
+        
+        // std::cout<<data_info->rank<<" "<<bkg<<" start... "<<std::endl;
+
+        for(ifg=0; ifg<data_info->len_data_row[len_expo_label]; ifg++)
+        {    
+            ifg_row = ifg*data_info->len_data_col;
+
+            len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
+            len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
+            len_cos_dec = data_info->len_expo_data[ifg_row + data_info->len_cos_dec_col];
+
+            len_z = data_info->len_expo_data[ifg_row + data_info->len_z_col];
+         
+            for(ibkg=0; ibkg<data_info->src_data_row[bkg]; ibkg++)
+            {   
+                ibkg_row = ibkg*data_info->src_data_col;
+                src_z = data_info->src_expo_data[ibkg_row + data_info->src_z_col];
+                src_ra = data_info->src_expo_data[ibkg_row + data_info->src_ra_col];
+                src_dec = data_info->src_expo_data[ibkg_row + data_info->src_dec_col];
+
+                separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
+
+#ifdef GGL_PROP_DIST_STACK
+                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]/(1+len_dist);
+#else
+                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
+#endif
+
+                sep_bin_tag = -1;
+                for(ir=0; ir<data_info->sep_bin_num; ir++)
+                {
+                    if(sep_dist >= data_info->separation_bin[ir] and sep_dist< data_info->separation_bin[ir+1])
+                    { sep_bin_tag = ir; break; }
+                }
+
+                if(sep_bin_tag > -1)
+                {   
+                    // std::cout<<bkg<<" "<<sep_bin_tag<<std::endl;
+                    pair_count ++;
+
+                    len_z_dz = src_z;// - len_z;
+                    if(len_z_dz < -2 or len_z_dz > 2){continue;}
+                    if(len_z_dz < 0.001){std::cout<<src_z<<std::endl;}
+
+                    locate_f(len_z_dz, data_info->dz_bin, data_info->dz_hist_bin_num, k);
+                    
+                    data_info->dz_hist[k + sep_bin_tag*data_info->dz_hist_bin_num] += 1;
+                    // std::cout<<sep_bin_tag<<" "<<sep_bin_tag*data_info->dz_hist_bin_num<<" "<<k<<" "<<data_info->dz_bin[k]<<" "<<len_z_dz<<" "<<data_info->dz_bin[k+1]<<std::endl;              
+                }
+            }
+        }
+    }
+ 
+    ed = clock();
+    char times[100];
+    sprintf(times,"worker %d. %dth Lens file, %dth jack. Finished in %.2f sec. %d Lenses, %d pairs",
+            data_info->rank, len_expo_label, data_info->len_expo_jackid[len_expo_label], (ed-st)/CLOCKS_PER_SEC, data_info->len_data_row[len_expo_label], pair_count);
+    std::cout<<times<<std::endl;
+}
+

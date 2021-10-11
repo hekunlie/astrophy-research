@@ -453,6 +453,7 @@ void log_bin(const double start, const double end, const int num, double * bins)
 	num: the number of bin borders
 */
 void linspace(const double start, const double end, const int num, double *bins);
+void linspace(const float start, const float end, const int num, float *bins);
 /* numpy.linspace(st, ed, num), include the end point*/
 
 
