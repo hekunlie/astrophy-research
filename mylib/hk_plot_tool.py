@@ -35,9 +35,10 @@ class Image_Plot:
     def set_style_default(self):
         matplotlib.style.use('default')
 
-    def set_style(self, font_style="serif"):
+    def set_style(self, font_style="serif", math_font="stix"):
         self.set_style_default()
         plt.rcParams['font.family'] = font_style
+        plt.rcParams['mathtext.fontset'] = math_font
 
     def subplots(self, ny, nx):
 

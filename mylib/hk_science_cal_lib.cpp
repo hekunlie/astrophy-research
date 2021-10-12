@@ -258,7 +258,7 @@ void ggl_initialize(ggl_data_info *data_info)
 
     data_info->pos_inform_num = 4;
 
-    data_info->crit_coeff = 1.6628952007121066*1.e6;
+    data_info->crit_coeff = 1.6629165401756007*1.e6;
 
     sprintf(data_info->ggl_log_path,"%s/log/log_%d.dat", data_info->ggl_total_path, data_info->rank);
     sprintf(data_info->ggl_result_path,"%s/result/result_cache_%d.hdf5", data_info->ggl_total_path, data_info->rank);
