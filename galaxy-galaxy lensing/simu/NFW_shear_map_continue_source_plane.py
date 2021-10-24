@@ -14,7 +14,7 @@ from mpi4py import MPI
 
 
 # data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_6"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_9"
 
 
 cmd = int(argv[1])
@@ -33,19 +33,21 @@ coeff_crit = C_0_hat ** 2 / 4 / numpy.pi / 6.674
 cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 
 # Halo parameters
-Mass = 3*10 ** 13.5  # M_sun/h
+Mass = 3*10 ** 13  # M_sun/h
 conc = 6  # concentration
-len_z = 0.3  # redshift
+len_z = 0.2  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
 
-Rmin, Rmax = 0.3, 8 # Mpc/h
+Rmin, Rmax = 0.05, 0.07 # Mpc/h
 separation_min, separation_max = Rmin/com_dist_len/numpy.pi*180*3600, Rmax/com_dist_len/numpy.pi*180*3600
 
 
 # lens profile
 nfw = galsim.NFWHalo(Mass, conc, len_z, halo_position, omega_m0, omega_lam0)
+CF = hk_gglensing_tool.Cosmos_flat(omega_m0, 100*h)
+CF.NFW_profile_galsim((0,0), Mass, conc, len_z)
 
 if cmd == 0:
 
@@ -122,7 +124,7 @@ if cmd == 0:
 
         src_z = rng.uniform(len_z + 0.1, 0.9, total_src_num).astype(dtype=numpy.float32)
 
-        shear_data = hk_gglensing_tool.get_shear(nfw, ra, dec, src_z).astype(dtype=numpy.float32)
+        shear_data = CF.get_shear(ra, dec, src_z).astype(dtype=numpy.float32)
 
         print("Z: ", src_z.max(), src_z.min())
         print("g: ", shear_data[1].min(), shear_data[1].max(), shear_data[2].min(), shear_data[2].max())
@@ -145,6 +147,7 @@ if cmd == 0:
         h5f.close()
 
     else:
+        sigz = float(argv[4])
         zmax = 1.3
         h5f = h5py.File("/home/hklee/work/DECALS/DECALS_shear_catalog_old/cat_inform/data_hist/hist.hdf5", "r")
         hist = h5f["/z_hist"][()][0]
@@ -162,29 +165,49 @@ if cmd == 0:
 
         hist_new = hist_new / hist_new.sum()
         rn = numpy.linspace(0, zmax, 100000001)
-        src_z = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
+
+        # src_z = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
+
+        # src_z_m = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
+        hist_new = numpy.exp(-(zbin_new_mid - sigz)**2/2/0.15**2)
+        hist_new = hist_new / hist_new.sum()
+        src_z_m = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
+        # src_z_m_err = numpy.random.normal(0, 0.1, total_src_num)
+        src_z_m_err = numpy.random.normal(0, (1+src_z_m)*0.05)
+        src_z = src_z_m + src_z_m_err
+
+        # src_z = numpy.zeros((total_src_num, ))
+        # test_z = numpy.linspace(len_z+ 0.05, zmax, 20)
+        # sub_num = int(total_src_num/20)
+        # for iz in range(len(test_z)):
+        #     st, ed = int(iz*sub_num), int((iz+1)*sub_num)
+        #     src_z[st:ed] = test_z[iz]
 
         shear_data = numpy.zeros((5, total_src_num), dtype=numpy.float32)
+
         idx = src_z > len_z
-        shear_data_ = hk_gglensing_tool.get_shear(nfw, ra[idx], dec[idx], src_z[idx])
-        for i in range(5):
-            shear_data[i][idx] = shear_data_[i]
+        # shear_data_ = hk_gglensing_tool.get_shear(nfw, ra[idx], dec[idx], src_z[idx])
+        g1, g2 = CF.get_shear(ra[idx], dec[idx], src_z[idx])[:2]
+
+        shear_data[1][idx] = g1
+        shear_data[2][idx] = g2
 
         print("Z: ", src_z.max(), src_z.min())
         print("g: ", shear_data[1].min(), shear_data[1].max(), shear_data[2].min(), shear_data[2].max())
         h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5" % rank, "w")
         h5f["/z"] = src_z
+        h5f["/z_m"] = src_z_m
         h5f["/ra"] = ra
         h5f["/dec"] = dec
 
         h5f["/flux"] = flux
         h5f["/radius"] = radius
 
-        h5f["/kappa"] = shear_data[0]
+        # h5f["/kappa"] = shear_data[0]
         h5f["/gamma1"] = shear_data[1]
         h5f["/gamma2"] = shear_data[2]
-        h5f["/g1"] = shear_data[3]
-        h5f["/g2"] = shear_data[4]
+        # h5f["/g1"] = shear_data[3]
+        # h5f["/g2"] = shear_data[4]
 
         h5f["/seed"] = seed
 

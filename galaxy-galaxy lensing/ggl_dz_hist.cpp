@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     initialize_arr(data_info.dz_hist, hist_total_len, 0);
     initialize_arr(dz_hist_buff, hist_total_len, 0);
 
-    linspace(0, 2, data_info.dz_hist_bin_num+1, data_info.dz_bin); 
+    linspace(0, 3, data_info.dz_hist_bin_num+1, data_info.dz_bin); 
 
     // if(rank == 0)
     // {

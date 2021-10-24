@@ -667,9 +667,9 @@ class Fourier_Quad:
                     break
             fit_range = numpy.linspace(left, right, 21)
         chi_sq = [self.G_bin2d(mgs, mnus, fit_range[i], bins, ig_nums=ig_nums) for i in range(len(fit_range))]
-        # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
+        # coeff = hk_tool_box.fit_1d(fit_range.astype(numpy.float64), chi_sq, 2, "scipy")
 
-        coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+        coeff_np = numpy.polyfit(fit_range.astype(numpy.float64), chi_sq, 2)
         coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
 
         corr_sig = numpy.sqrt(1 / 2. / coeff[2])
@@ -843,9 +843,9 @@ def find_shear(g, nu, bin_num, ig_num=0, scale=1.1, left=-0.1, right=0.1, fit_nu
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
-    coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
-    coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
+    coeff = hk_tool_box.fit_1d(fit_range.astype(numpy.float64), chi_sq, 2, "lsq")[0]
+    # coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+    # coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -938,9 +938,9 @@ def find_shear_corr(g, nu, g_corr, nu_corr, bin_num, ig_num=0, scale=1.1, left=-
         chi_sq = chi_sq[min_tag - loc_fit: min_tag+loc_fit]
         fit_range = fit_range[min_tag - loc_fit: min_tag+loc_fit]
 
-    # coeff = hk_tool_box.fit_1d(fit_range, chi_sq, 2, "scipy")
-    coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
-    coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
+    coeff = hk_tool_box.fit_1d(fit_range.astype(numpy.float64), chi_sq, 2, "scipy")[0]
+    # coeff_np = numpy.polyfit(fit_range, chi_sq, 2)
+    # coeff = [coeff_np[2], coeff_np[1], coeff_np[0]]
 
     # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
     # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1042,9 +1042,11 @@ if platform.system() == 'Linux':
                            fit_shear_range, fit_chisq, fit_num)
 
         fit_shear_range *= fit_scale
-        # coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
-        coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
-        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
+        coeff = hk_tool_box.fit_1d(fit_shear_range.astype(numpy.float64), fit_chisq, 2, "lsq")[0]
+        # coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
+        # coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
+
+        # numpy.savez("/home/hklee/work/test.npz", fit_shear_range, fit_chisq, coeff)
 
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
@@ -1119,9 +1121,9 @@ if platform.system() == 'Linux':
         fit_range, fit_chisq = signal_guess[idx], chisq[idx]
 
         fit_range *= fit_scale
-        # coeff = hk_tool_box.fit_1d(fit_range, fit_chisq, 2, "scipy")
-        coeff_np = numpy.polyfit(fit_range, fit_chisq, 2)
-        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
+        coeff = hk_tool_box.fit_1d(fit_range.astype(numpy.float64), fit_chisq, 2, "lsq")[0]
+        # coeff_np = numpy.polyfit(fit_range, fit_chisq, 2)
+        # coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2] / fit_scale
@@ -1182,9 +1184,9 @@ if platform.system() == 'Linux':
 
 
         fit_shear_range *= fit_scale
-        # coeff = hk_tool_box.fit_1d(fit_shear_range, fit_chisq, 2, "scipy")
-        coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
-        coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
+        coeff = hk_tool_box.fit_1d(fit_shear_range.astype(numpy.float64), fit_chisq, 2, "lsq")[0]
+        # coeff_np = numpy.polyfit(fit_shear_range, fit_chisq, 2)
+        # coeff = [coeff_np[2],coeff_np[1], coeff_np[0]]
         # y = a1 + a2*x + a3*x^2 = a3(x+a2/2/a3)^2 +...
         # gh = - a2/2/a3, gh_sig = 1/ sqrt(1/2/a3)
         g_h = -coeff[1] / 2. / coeff[2] / fit_scale
