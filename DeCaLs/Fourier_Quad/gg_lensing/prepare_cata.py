@@ -20,7 +20,7 @@ warnings.filterwarnings('error')
 
 # parameters
 # cosmological parameters
-omega_m0 = 0.31
+omega_m0 = 0.315
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 

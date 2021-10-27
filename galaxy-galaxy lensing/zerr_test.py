@@ -24,27 +24,16 @@ def integrate(fx, x):
 
 
 def get_f_tilde(sigma_z, int_z, inv_sigc, zm):
-    sig = sigma_z * (1 + zm)
+    sig = sigma_z# * (1 + zm)
     fx = numpy.exp(-(int_z - zm) ** 2 / 2 / sig ** 2) / numpy.sqrt(2 * numpy.pi) / sig
     ft = integrate(fx * inv_sigc, int_z)
-    dz = numpy.abs(int_z - zm)
-    # idx = dz == dz.min()
-    #
-    # #     print(ft, inv_sigc[idx])
-    # #     img = Image_Plot()
-    # #     img.subplots(1,1)
-    # #     img.axs[0][0].plot(int_z, fx)
-    # #     img.show_img()
-    # #     img.close_img()
     return ft
 
 
 def get_bias(sigma_z, dz, pdf_zm, zm, len_z, CF):
     numer = numpy.zeros_like(pdf_zm)
-    com_dist_src = CF.com_distance(zm)
 
     zt = numpy.linspace(0.001, 5, 501)
-    com_dist_t = CF.com_distance(zt)
 
     inv_sigc = 1. / CF.get_sigma_crit(zt)
     idx = zt <= len_z
@@ -184,10 +173,10 @@ zpts = numpy.linspace(0, 2, 301)
 zpts_mid = (zpts[1:] + zpts[:-1]) / 2
 # print(zpts)
 dz = 0.2
-sigma_z = 0.05
-files = ["segment_sheared_para_mean_0.4_errsig_z0.05.hdf5",
-         "segment_sheared_para_mean_0.6_errsig_z0.05.hdf5",
-         "segment_sheared_para_mean_0.8_errsig_z0.05.hdf5"]
+sigma_z = 0.05*(rank + 1)
+files = ["segment_sheared_para_decals_Pz_errsig_z0.05.hdf5",
+         "segment_sheared_para_decals_Pz_errsig_z0.10.hdf5",
+         "segment_sheared_para_decals_Pz_errsig_z0.15.hdf5"]
 
 ii = rank
 radius_tag = 0
@@ -205,20 +194,6 @@ pz_norm = pz / pz.sum() / (zpts[1] - zpts[0])
 pz_m = numpy.histogram(src_z_m, zpts)[0]
 pz_m_norm = pz_m / pz_m.sum() / (zpts[1] - zpts[0])
 
-# if radius_tag == 0:
-#     img = Image_Plot()
-#     img.subplots(1, 3)
-#     img.axs[0][0].hist(src_z, 100, histtype="step", label="$z$")
-#     img.axs[0][0].hist(src_z_m, 100, histtype="step", label="$z_m$")
-#     idx1 = src_z_m > 0.5
-#     idx2 = src_z_m < 0.51
-#     idx = idx1 & idx2
-#     img.axs[0][1].hist(src_z[idx], 100, histtype="step", label="$z_m$")
-#     img.axs[0][2].plot(zpts_mid, pz)
-#     img.axs[0][2].plot(zpts_mid, pz_m)
-#
-#     img.axs[0][0].legend()
-#     img.show_img()
 
 idx_z = src_z > len_z + dz
 idx_zm = src_z_m > len_z + dz
@@ -252,6 +227,6 @@ ds2, ds2_err = hk_FQlib.find_shear_cpp(src_et[idx_zm], numpy.ones_like(src_et[id
 print("True: %.4f. Measured: %.4f(%.4f). Ratio: %.4f(%.4f). Expected Bias: %.4f %.4f" % (
 ds_true, ds2, ds2_err, ds2 / ds_true, ds2_err / ds_true, bias, bias_approx))
 img.show_img()
-h5f = h5py.File(param_path + "/ratio_z_%s" % files[ii], "w")
+h5f = h5py.File(param_path + "/ratio_sig_%s" % files[ii], "w")
 h5f["/%d/result" % radius_tag] = numpy.array([ds_true, ds2, ds2_err, ds2 / ds_true, ds2_err / ds_true, bias, bias_approx])
 h5f.close()

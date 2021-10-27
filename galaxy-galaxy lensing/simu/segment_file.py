@@ -1,5 +1,5 @@
 import os
-from sys import path
+from sys import path, argv
 path.append("/home/hklee/work/mylib")
 from hk_plot_tool import Image_Plot
 import hk_tool_box
@@ -16,6 +16,11 @@ from astropy import units
 from astropy import constants as const
 
 
+param_path = argv[1]
+stack_file = argv[2]
+segment_file = argv[3]
+len_z = float(argv[4])  # redshift
+
 # cosmology
 omega_m0 = 0.31
 omega_lam0 = 1 - omega_m0
@@ -27,7 +32,7 @@ cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 # Halo parameters
 Mass = 3*10 ** 13  # M_sun/h
 conc = 6  # concentration
-len_z = 0.2  # redshift
+# len_z = 0.2  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
@@ -37,16 +42,15 @@ CF = hk_gglensing_tool.Cosmos_flat(omega_m0, 100*h)
 CF.NFW_profile_galsim((0,0), Mass, conc, len_z)
 
 
-param_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_9/params"
-separation_bin_num = 3
-Rmin, Rmax = 0.05, 0.15 # Mpc/h
+separation_bin_num = 1
+Rmin, Rmax = 0.05, 0.07 # Mpc/h
 
 separation_bin = hk_tool_box.set_bin_log(Rmin, Rmax, separation_bin_num+1)
 
 # read the parameters
-h5f = h5py.File(param_path + "/stack_sheared_para.hdf5", "r")
+h5f = h5py.File(param_path + "/%s"%stack_file, "r")
 src_z = h5f["/z"][()]
-src_z_m = h5f["/z_m"][()]
+# src_z_m = h5f["/z_m"][()]
 src_ra = h5f["/ra"][()]
 src_dec = h5f["/dec"][()]
 src_g1 = h5f["/gamma1"][()]
@@ -91,7 +95,7 @@ src_et = src_e1 * cos_2theta - src_e2 * sin_2theta
 src_ex = src_e1 * sin_2theta + src_e2 * cos_2theta
 
 
-h5f = h5py.File(param_path + "/segment_sheared_para.hdf5", "w")
+h5f = h5py.File(param_path + "/%s"%segment_file, "w")
 for i in range(separation_bin_num):
     idx1 = separation_radius >= separation_bin[i]
     idx2 = separation_radius < separation_bin[i+1]
@@ -99,7 +103,7 @@ for i in range(separation_bin_num):
     print("%.4f ~ %.4f Mpc/h %d"%(separation_bin[i], separation_bin[i+1], idx.sum()))
 
     h5f["/%d/z"%i] = src_z[idx]
-    h5f["/%d/z_m"%i] = src_z_m[idx]
+    # h5f["/%d/z_m"%i] = src_z_m[idx]
     h5f["/%d/ra"%i] = src_ra[idx]
     h5f["/%d/dec"%i] = src_dec[idx]
     h5f["/%d/gamma1"%i] = src_g1[idx]

@@ -1,8 +1,8 @@
 import os
-my_home = os.popen("echo $MYWORK_DIR").readlines()[0][:-1]
+my_home = os.popen("echo $HK_MYWORK_DIR").readlines()[0][:-1]
 from sys import path, argv
 path.append('%s/work/mylib/' % my_home)
-import tool_box
+import hk_tool_box
 import numpy
 from mpi4py import MPI
 import h5py
@@ -37,7 +37,7 @@ if rank == 0:
 
 if expos_num < 1:
     exit()
-my_sub_area_list = tool_box.alloc(expos, cpus)[rank]
+my_sub_area_list = hk_tool_box.alloc(expos, cpus)[rank]
 
 # print(rank, i, len(my_sub_area_list))
 
@@ -45,16 +45,16 @@ if len(my_sub_area_list) > 0:
     for tag, expo_path in enumerate(my_sub_area_list):
 
         h5f = h5py.File(expo_path, "r")
-        temp = h5f["/data"][()]
+        temp = h5f["/data"][()][:,2:8]
         h5f.close()
-        # Nan check
-        idx = numpy.isnan(temp)
-        if idx.sum() > 0:
-            num = temp.shape[0]
-            label = numpy.arange(0,num)
-            idx = numpy.isnan(temp[:,-2])
-            print(label[idx][:5])
-            print("Find Nan ", expo_path)
+        # # Nan check
+        # idx = numpy.isnan(temp)
+        # if idx.sum() > 0:
+        #     num = temp.shape[0]
+        #     label = numpy.arange(0,num)
+        #     idx = numpy.isnan(temp[:,-2])
+        #     print(label[idx][:5])
+        #     print("Find Nan ", expo_path)
         if tag == 0:
             stack_data = temp
         else:
@@ -79,7 +79,7 @@ else:
     h5f = h5py.File(dst_path + "/stack_data.hdf5", "w")
     h5f["/data"] = stack_data
     h5f.close()
-    h5f = h5py.File(dst_path + "/stack_data_ra_dec.hdf5", "w")
-    h5f["/data"] = stack_data[:,:2]
-    h5f.close()
+    # h5f = h5py.File(dst_path + "/stack_data_ra_dec.hdf5", "w")
+    # h5f["/data"] = stack_data[:,:2]
+    # h5f.close()
 comm.Barrier()

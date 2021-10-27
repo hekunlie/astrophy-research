@@ -14,7 +14,7 @@ from mpi4py import MPI
 
 
 # data_path = "/mnt/perc/hklee/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z"
-data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_9"
+data_path = "/home/hklee/work/Galaxy_Galaxy_lensing_test/cata/background/continue_source_z_10"
 
 
 cmd = int(argv[1])
@@ -35,7 +35,7 @@ cosmos = FlatLambdaCDM(H_0, Om0=omega_m0)
 # Halo parameters
 Mass = 3*10 ** 13  # M_sun/h
 conc = 6  # concentration
-len_z = 0.2  # redshift
+len_z = float(argv[2])#0.1  # redshift
 halo_position = galsim.PositionD(0, 0)  # arcsec
 com_dist_len = cosmos.comoving_distance(len_z).value * h  # Mpc/h
 print("Lens plane at z = %.2f, %.5f Mpc/h" % (len_z, com_dist_len))
@@ -56,8 +56,8 @@ if cmd == 0:
     numprocs = comm.Get_size()
 
 
-    total_src_num = int(argv[2])  # 20000000
-    fore_or_back = int(argv[3])
+    total_src_num = int(argv[3])  # 20000000
+    fore_or_back = int(argv[4])
 
     # initialize the RandomState
     seed_ini = numpy.random.randint(1, 100000, 1)
@@ -147,8 +147,7 @@ if cmd == 0:
         h5f.close()
 
     else:
-        sigz = float(argv[4])
-        zmax = 1.3
+        zmax = 2.0
         h5f = h5py.File("/home/hklee/work/DECALS/DECALS_shear_catalog_old/cat_inform/data_hist/hist.hdf5", "r")
         hist = h5f["/z_hist"][()][0]
         zbin = h5f["/z_bin"][()]
@@ -165,23 +164,16 @@ if cmd == 0:
 
         hist_new = hist_new / hist_new.sum()
         rn = numpy.linspace(0, zmax, 100000001)
-
         # src_z = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
-
         # src_z_m = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
-        hist_new = numpy.exp(-(zbin_new_mid - sigz)**2/2/0.15**2)
-        hist_new = hist_new / hist_new.sum()
-        src_z_m = numpy.random.choice(zbin_new_mid, total_src_num, p=hist_new)
-        # src_z_m_err = numpy.random.normal(0, 0.1, total_src_num)
-        src_z_m_err = numpy.random.normal(0, (1+src_z_m)*0.05)
-        src_z = src_z_m + src_z_m_err
-
-        # src_z = numpy.zeros((total_src_num, ))
-        # test_z = numpy.linspace(len_z+ 0.05, zmax, 20)
-        # sub_num = int(total_src_num/20)
-        # for iz in range(len(test_z)):
-        #     st, ed = int(iz*sub_num), int((iz+1)*sub_num)
-        #     src_z[st:ed] = test_z[iz]
+        # src_z_m_err = numpy.random.normal(0, (1+src_z_m)*0.1)
+        # src_z = src_z_m + src_z_m_err
+        src_z = numpy.zeros((total_src_num, ))
+        test_z = numpy.linspace(len_z + 0.05, zmax, 20)
+        sub_num = int(total_src_num/20)
+        for iz in range(len(test_z)):
+            st, ed = int(iz*sub_num), int((iz+1)*sub_num)
+            src_z[st:ed] = test_z[iz]
 
         shear_data = numpy.zeros((5, total_src_num), dtype=numpy.float32)
 
@@ -196,7 +188,7 @@ if cmd == 0:
         print("g: ", shear_data[1].min(), shear_data[1].max(), shear_data[2].min(), shear_data[2].max())
         h5f = h5py.File(data_path + "/params/sheared_para_%d.hdf5" % rank, "w")
         h5f["/z"] = src_z
-        h5f["/z_m"] = src_z_m
+        # h5f["/z_m"] = src_z_m
         h5f["/ra"] = ra
         h5f["/dec"] = dec
 

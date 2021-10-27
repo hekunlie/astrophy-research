@@ -1143,47 +1143,47 @@ void ggl_collect_chi(ggl_data_info *data_info)
     MPI_Barrier(MPI_COMM_WORLD);
 
 
-    if (data_info->rank > 0)
-    {MPI_Send(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    else
-    {
-        for(i=1;i<data_info->numprocs;i++)
-        {
-            MPI_Recv(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+    // if (data_info->rank > 0)
+    // {MPI_Send(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    // else
+    // {
+    //     for(i=1;i<data_info->numprocs;i++)
+    //     {
+    //         MPI_Recv(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
 
-            for(j=0;j<data_info->hist2d_total_len;j++)
-            {data_info->hist2d_count_total[j] += data_info->hist2d_count[j];}
-        }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    //         for(j=0;j<data_info->hist2d_total_len;j++)
+    //         {data_info->hist2d_count_total[j] += data_info->hist2d_count[j];}
+    //     }
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
 
-    if (data_info->rank > 0)
-    {MPI_Send(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    else
-    {
-        for(i=1;i<data_info->numprocs;i++)
-        {
-            MPI_Recv(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+    // if (data_info->rank > 0)
+    // {MPI_Send(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    // else
+    // {
+    //     for(i=1;i<data_info->numprocs;i++)
+    //     {
+    //         MPI_Recv(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
 
-            for(j=0;j<data_info->hist2d_total_len;j++)
-            {data_info->hist2d_x_total[j] += data_info->hist2d_x[j];}
-        }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    //         for(j=0;j<data_info->hist2d_total_len;j++)
+    //         {data_info->hist2d_x_total[j] += data_info->hist2d_x[j];}
+    //     }
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
 
-    if (data_info->rank > 0)
-    {MPI_Send(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    else
-    {
-        for(i=1;i<data_info->numprocs;i++)
-        {
-            MPI_Recv(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+    // if (data_info->rank > 0)
+    // {MPI_Send(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    // else
+    // {
+    //     for(i=1;i<data_info->numprocs;i++)
+    //     {
+    //         MPI_Recv(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
 
-            for(j=0;j<data_info->hist2d_total_len;j++)
-            {data_info->hist2d_y_total[j] += data_info->hist2d_y[j];}
-        }
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    //         for(j=0;j<data_info->hist2d_total_len;j++)
+    //         {data_info->hist2d_y_total[j] += data_info->hist2d_y[j];}
+    //     }
+    // }
+    // MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 #ifdef GGL_GAMMA_T
@@ -1401,21 +1401,21 @@ void ggl_cal_signals(ggl_data_info * data_info)
     write_h5(data_info->ggl_result_path, set_name, data_info->mg_sigma_bin,
             data_info->mg_sigma_bin_num+1, 1, false);
             
-    // save the 2d hist for more calculations later
-    for(i=0; i<data_info->signal_pts_num; i++)
-    {   
-        sprintf(set_name,"/delta_sigma_t_grid2d_count_%d", i);
-        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_count_total[i*data_info->hist2d_len], 
-        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+    // // save the 2d hist for more calculations later
+    // for(i=0; i<data_info->signal_pts_num; i++)
+    // {   
+    //     sprintf(set_name,"/delta_sigma_t_grid2d_count_%d", i);
+    //     write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_count_total[i*data_info->hist2d_len], 
+    //     data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
 
-        sprintf(set_name,"/delta_sigma_t_grid2d_x_%d", i);
-        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_x_total[i*data_info->hist2d_len], 
-        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+    //     sprintf(set_name,"/delta_sigma_t_grid2d_x_%d", i);
+    //     write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_x_total[i*data_info->hist2d_len], 
+    //     data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
 
-        sprintf(set_name,"/delta_sigma_t_grid2d_y_%d", i);
-        write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_y_total[i*data_info->hist2d_len], 
-        data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
-    }
+    //     sprintf(set_name,"/delta_sigma_t_grid2d_y_%d", i);
+    //     write_h5(data_info->ggl_result_path, set_name, &data_info->hist2d_y_total[i*data_info->hist2d_len], 
+    //     data_info->hist2d_mn_sigma_bin_num, data_info->hist2d_mg_sigma_bin_num, false);
+    // }
 
     delete[] temp_sigma;
     delete[] delta_sigma_tan;
