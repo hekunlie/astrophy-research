@@ -25,8 +25,8 @@ H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
 # separation bin, comoving or angular diameter distance in unit of Mpc/h
-sep_bin_num = 13
-bin_st, bin_ed = 0.1, 20
+sep_bin_num = 25
+bin_st, bin_ed = 0.02, 100
 separation_bin = hk_tool_box.set_bin_log(bin_st, bin_ed, sep_bin_num+1).astype(numpy.float32)
 
 # bin number for ra & dec of each exposure
@@ -35,16 +35,16 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 100
-num_m = 50
+delta_sigma_guess_num = 50
+num_m = 25
 num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.001, 500, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 300, num_p).astype(numpy.float64)
 
-delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.001, 500, num_m).astype(numpy.float64)
-delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.001, 500, num_p).astype(numpy.float64)
+delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.01, 300, num_m).astype(numpy.float64)
+delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.01, 300, num_p).astype(numpy.float64)
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 
@@ -62,7 +62,7 @@ tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
-mg_bin_num = 10
+mg_bin_num = 8
 
 hist2d_mg_num = 4
 hist2d_mg_num2 = int(hist2d_mg_num/2)
@@ -181,17 +181,20 @@ if cmd == "prepare_foreground":
         total_num = idx.sum()
         # total_num = data_src.shape[0]
 
-        total_data = numpy.zeros((total_num, 5), dtype=numpy.float32)
+        total_data = numpy.zeros((total_num, 8), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:,0] = data_src[:,fore_ra_idx][idx]
-            total_data[:,1] = data_src[:,fore_dec_idx][idx]
-            total_data[:,3] = data_src[:,fore_z_idx][idx]
+            total_data[:, 0] = data_src[:,fore_ra_idx][idx]
+            total_data[:, 1] = data_src[:,fore_ra_idx][idx]*deg2rad
+            total_data[:, 2] = data_src[:,fore_dec_idx][idx]
+            total_data[:, 3] = data_src[:,fore_dec_idx][idx]*deg2rad
+            total_data[:, 6] = data_src[:,fore_z_idx][idx]
             h5f.close()
 
-        total_data[:, 2] = numpy.cos(total_data[:, 1]*deg2rad)
-        total_data[:, 4] = cosmos.comoving_distance(total_data[:, 3]).value*H0/100
+        total_data[:, 4] = numpy.cos(total_data[:, 3])
+        total_data[:, 5] = numpy.sin(total_data[:, 3])
+        total_data[:, 7] = cosmos.comoving_distance(total_data[:, 6]).value*H0/100
 
         print(" %d galaxies" % (total_num))
         # Kmeans method for classification for jackknife
@@ -357,8 +360,8 @@ elif cmd == "prepare_background":
             expo_pos = numpy.array([ra_center, dec_center, cos_dec_center,
                                      numpy.sqrt((dra * cos_dec_center) ** 2 + ddec ** 2)], dtype=numpy.float32)
 
-            # G1, G2, N, U, V, RA, DEC, COS(DEC), Z, Z_ERR, COMOVING DISTANCE
-            dst_data = numpy.zeros((src_num, 11), dtype=numpy.float32)
+            # G1, G2, N, U, V, RA, RA_radian, DEC, DEC_radian, COS(DEC), SIN(DEC), Z, Z_ERR, COMOVING DISTANCE
+            dst_data = numpy.zeros((src_num, 14), dtype=numpy.float32)
 
             dst_data[:, 0] = src_data[:, mg1_idx]
             dst_data[:, 1] = src_data[:, mg2_idx]
@@ -368,9 +371,12 @@ elif cmd == "prepare_background":
             dst_data[:, 4] = -src_data[:, mv_idx]
             
             dst_data[:, 5] = src_data[:, ra_idx]
-            dst_data[:, 6] = src_data[:, dec_idx]
-            dst_data[:, 7] = numpy.cos(dst_data[:, 6] * deg2rad)
-            dst_data[:, 8] = src_data[:, Zp_idx]
+            dst_data[:, 6] = src_data[:, ra_idx]*deg2rad
+            dst_data[:, 7] = src_data[:, dec_idx]
+            dst_data[:, 8] = src_data[:, dec_idx]*deg2rad
+            dst_data[:, 9] = numpy.cos(dst_data[:, 8])
+            dst_data[:, 10] = numpy.sin(dst_data[:, 8])
+            dst_data[:, 11] = src_data[:, Zp_idx]
             # idx_z_select = dst_data[:,8] < 0.25
            # print(idx_z_select.sum(), src_num)
            #  dst_data[:,8][idx_z_select] = dst_data[:,8][idx_z_select] + 0.3
@@ -378,8 +384,8 @@ elif cmd == "prepare_background":
             # idxz = src_data[:, Zs_idx] > 0
             # dst_data[:, 8][idxz] = src_data[:, Zs_idx][idxz]
 
-            # dst_data[:, 9] = src_data[:, 3]*2#(src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
-            dst_data[:, 10] = cosmos.comoving_distance(dst_data[:, 8]).value*H0/100 # in unit of Mpc/h
+            # dst_data[:, 12] = src_data[:, 3]*2#(src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
+            dst_data[:, 13] = cosmos.comoving_distance(dst_data[:, 8]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")

@@ -22,16 +22,19 @@ cosmos = FlatLambdaCDM(H0, omega_m0)
 deg2arcmin = 60
 deg2rad = numpy.pi/180
 
-with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
+with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/file_list", "r") as f:
+# with open("/home/hklee/work/catalog/Haojie_cata/red_ngc/file_list", "r") as f:
     file_name = f.readlines()
 
 comm.Barrier()
 
-parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/lumin_z_bin_red_planck2018"
+# parent_path = "/home/hklee/work/catalog/Haojie_cata"
+parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
 parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
+# parent_path_pi2 = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729/gg_lensing/cata"
 
 for fnm in file_name:
-    total_path = "%s/%s"%(parent_path, fnm.split("\n")[0])
+    total_path = "%s/red_ngc/%s"%(parent_path, fnm.split("\n")[0])
     file_name = argv[1] + "_jkf.hdf5"
 
     final_path = parent_path_pi2 + "/%s_%s"%(argv[1],fnm.split("\n")[0])
@@ -48,14 +51,17 @@ for fnm in file_name:
     group_label = h5f["/jkf_label"][()] - 1
     h5f.close()
     src_num = src_data.shape[0]
-    total_data = numpy.zeros((src_num,  5), dtype=numpy.float32)
+    total_data = numpy.zeros((src_num,  8), dtype=numpy.float32)
     total_data[:, 0] = src_data[:, 1]   # RA
-    total_data[:, 1] = src_data[:, 2]   # Dec
-    total_data[:, 3] = src_data[:, 3]   # z
+    total_data[:, 1] = src_data[:, 1]*deg2rad   # RA_radian
+    total_data[:, 2] = src_data[:, 2]   # Dec
+    total_data[:, 3] = src_data[:, 2]*deg2rad   # Dec_radian
+    total_data[:, 6] = src_data[:, 3]   # z
     h5f.close()
 
-    total_data[:, 2] = numpy.cos(total_data[:, 2] * deg2rad) # Cos(DEC)
-    total_data[:, 4] = cosmos.comoving_distance(total_data[:, 3]).value * H0 / 100  # Distance
+    total_data[:, 4] = numpy.cos(total_data[:, 3]) # Cos(DEC)
+    total_data[:, 5] = numpy.sin(total_data[:, 3]) # SIN(DEC)
+    total_data[:, 7] = cosmos.comoving_distance(total_data[:, 6]).value * H0 / 100  # Distance
 
     # assign the source into the artificial exposures
     min_src_num = int(argv[2])

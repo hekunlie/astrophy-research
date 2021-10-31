@@ -7,9 +7,9 @@
 #include<hk_FQlib.h>
 #include<vector>
 
-#define MAX_THETA_NUM 200
+#define MAX_THETA_NUM 500
 #define MAX_JACK 2000
-#define MAX_EXPO_NUM 50000
+#define MAX_EXPO_NUM 100000
 #define MY_FLOAT float
 #define MY_MPI_TYPE MPI_FLOAT
 // #define GGL_PROP_DIST_STACK
@@ -45,6 +45,12 @@ void separation_angle_1(const float RA1, const float DEC1, const float RA2, cons
 
 void separation_angle_2(const double RA1, const double DEC1, const double RA2, const double DEC2, double &sep_radian);// checked
 void separation_angle_2(const float RA1, const float DEC1, const float RA2, const float DEC2, float &sep_radian);
+
+void separation_angle_2_fast(const double RA1_rad, const double DEC1_rad, const double COS_DEC1,const double SIN_DEC1, 
+                            const double RA2_rad, const double DEC2_rad, const double COS_DEC2,const double SIN_DEC2, double &sep_radian);
+void separation_angle_2_fast(const float RA1_rad, const float DEC1_rad, const float COS_DEC1,const float SIN_DEC1, 
+                            const float RA2_rad, const float DEC2_rad, const float COS_DEC2,const float SIN_DEC2, float &sep_radian);
+
 /* calculate the separation angle between two points on the sphere */
 /* RA & DEC in unit of degree */
 /* https://en.wikipedia.org/wiki/Great-circle_distance */
@@ -150,7 +156,10 @@ struct ggl_data_info
 
     int len_ra_col;
     int len_dec_col;
+    int len_ra_radian_col;
+    int len_dec_radian_col;
     int len_cos_dec_col;
+    int len_sin_dec_col;
     int len_z_col;
     int len_com_dist_col;
     int len_jackid_col;
@@ -175,7 +184,10 @@ struct ggl_data_info
 
     int src_ra_col;
     int src_dec_col;
+    int src_ra_radian_col;
+    int src_dec_radian_col;
     int src_cos_dec_col;
+    int src_sin_dec_col;
     int src_z_col;
     int src_zerr_col;
     int src_com_dist_col;

@@ -115,6 +115,50 @@ void separation_angle_2(const float RA1, const float DEC1, const float RA2, cons
 	sep_radian = fabs(atan2(m, n));
 }
 
+void separation_angle_2_fast(const double RA1_rad, const double DEC1_rad, const double COS_DEC1,const double SIN_DEC1, 
+                            const double RA2_rad, const double DEC2_rad, const double COS_DEC2,const double SIN_DEC2, double &sep_radian)
+{
+	double dec1_rad, dec2_rad, ra1_rad, ra2_rad;
+	double diff_dec_rad, diff_ra_rad;
+	double cos_diff_ra, sin_diff_ra;
+	double m, m1,m2, n;
+
+	diff_ra_rad = RA1_rad - RA2_rad;
+
+	sin_diff_ra = sin(diff_ra_rad);
+	cos_diff_ra = cos(diff_ra_rad);
+
+	m1 = COS_DEC2 * sin_diff_ra;
+	m2 = COS_DEC1 * SIN_DEC2 - SIN_DEC1 * COS_DEC2*cos_diff_ra;
+	m = sqrt(m1*m1 + m2 * m2);
+
+	n = SIN_DEC1 * SIN_DEC2 + COS_DEC1 * COS_DEC2*cos_diff_ra;
+
+	sep_radian = fabs(atan2(m, n));
+}
+
+void separation_angle_2_fast(const float RA1_rad, const float DEC1_rad, const float COS_DEC1,const float SIN_DEC1, 
+                            const float RA2_rad, const float DEC2_rad, const float COS_DEC2,const float SIN_DEC2, float &sep_radian)
+{
+	float dec1_rad, dec2_rad, ra1_rad, ra2_rad;
+	float diff_dec_rad, diff_ra_rad;
+	float cos_diff_ra, sin_diff_ra;
+	float m, m1,m2, n;
+
+	diff_ra_rad = RA1_rad - RA2_rad;
+
+	sin_diff_ra = sin(diff_ra_rad);
+	cos_diff_ra = cos(diff_ra_rad);
+
+	m1 = COS_DEC2 * sin_diff_ra;
+	m2 = COS_DEC1 * SIN_DEC2 - SIN_DEC1 * COS_DEC2*cos_diff_ra;
+	m = sqrt(m1*m1 + m2 * m2);
+
+	n = SIN_DEC1 * SIN_DEC2 + COS_DEC1 * COS_DEC2*cos_diff_ra;
+
+	sep_radian = fabs(atan2(m, n));
+}
+
 
 void com_distance(const double low_z, const double high_z, const double omg_m, const double omg_lam, 
 double &result, const double precision_thresh, const bool integ_only)
@@ -231,11 +275,16 @@ void ggl_initialize(ggl_data_info *data_info)
     int cal_tag = 0;
 
     data_info->len_ra_col = 0;
-    data_info->len_dec_col = 1;
-    data_info->len_cos_dec_col = 2;
-    data_info->len_z_col = 3;
-    data_info->len_com_dist_col = 4;
-    data_info->len_jackid_col = 5;
+    data_info->len_ra_radian_col = 1;
+    data_info->len_dec_col = 2;
+    data_info->len_dec_radian_col = 3;
+
+    data_info->len_cos_dec_col = 4;
+    data_info->len_sin_dec_col = 5;
+
+    data_info->len_z_col = 6;
+    data_info->len_com_dist_col = 7;
+    data_info->len_jackid_col = 8;
     
     data_info->src_mg1_col = 0;
     data_info->src_mg2_col = 1;
@@ -244,11 +293,16 @@ void ggl_initialize(ggl_data_info *data_info)
     data_info->src_mv_col = 4;
 
     data_info->src_ra_col = 5;
-    data_info->src_dec_col = 6;
-    data_info->src_cos_dec_col = 7;
-    data_info->src_z_col = 8;
-    data_info->src_zerr_col = 9;
-    data_info->src_com_dist_col = 10;
+    data_info->src_ra_radian_col = 6;
+    data_info->src_dec_col = 7;
+    data_info->src_dec_radian_col = 8;
+
+    data_info->src_cos_dec_col = 9;
+    data_info->src_sin_dec_col = 10;
+
+    data_info->src_z_col = 11;
+    data_info->src_zerr_col = 12;
+    data_info->src_com_dist_col = 13;
     
     if(data_info->jack_num <= 2){data_info->jack_num=0;}
 
@@ -537,32 +591,32 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
 
 #ifdef GGL_DELTA_SIGMA
 
-    // read hist2d bins
-    sprintf(data_info->set_name,"/hist2d_mg_sigma_bin");
-    read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->hist2d_mg_sigma_bin_num);
-    data_info->hist2d_mg_sigma_bin = new MY_FLOAT[data_info->hist2d_mg_sigma_bin_num];
+    // // read hist2d bins
+    // sprintf(data_info->set_name,"/hist2d_mg_sigma_bin");
+    // read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->hist2d_mg_sigma_bin_num);
+    // data_info->hist2d_mg_sigma_bin = new MY_FLOAT[data_info->hist2d_mg_sigma_bin_num];
 
-    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->hist2d_mg_sigma_bin);
-    data_info->hist2d_mg_sigma_bin_num = data_info->hist2d_mg_sigma_bin_num - 1;
+    // read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->hist2d_mg_sigma_bin);
+    // data_info->hist2d_mg_sigma_bin_num = data_info->hist2d_mg_sigma_bin_num - 1;
 
-    sprintf(data_info->set_name,"/hist2d_mn_sigma_bin");
-    read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->hist2d_mn_sigma_bin_num);
-    data_info->hist2d_mn_sigma_bin = new MY_FLOAT[data_info->hist2d_mn_sigma_bin_num];
+    // sprintf(data_info->set_name,"/hist2d_mn_sigma_bin");
+    // read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name,data_info->hist2d_mn_sigma_bin_num);
+    // data_info->hist2d_mn_sigma_bin = new MY_FLOAT[data_info->hist2d_mn_sigma_bin_num];
 
-    read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->hist2d_mn_sigma_bin);
-    data_info->hist2d_mn_sigma_bin_num = data_info->hist2d_mn_sigma_bin_num - 1;
+    // read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->hist2d_mn_sigma_bin);
+    // data_info->hist2d_mn_sigma_bin_num = data_info->hist2d_mn_sigma_bin_num - 1;
 
-    data_info->hist2d_len = data_info->hist2d_mn_sigma_bin_num*data_info->hist2d_mg_sigma_bin_num;
-    data_info->hist2d_total_len = data_info->hist2d_len*data_info->signal_pts_num;
-    // there are "signal_pts_num" blocks, each one is a 2d array (1d actually in the memory)
-    data_info->hist2d_count = new double[data_info->hist2d_total_len];
-    initialize_arr(data_info->hist2d_count, data_info->hist2d_total_len, 0);
+    // data_info->hist2d_len = data_info->hist2d_mn_sigma_bin_num*data_info->hist2d_mg_sigma_bin_num;
+    // data_info->hist2d_total_len = data_info->hist2d_len*data_info->signal_pts_num;
+    // // there are "signal_pts_num" blocks, each one is a 2d array (1d actually in the memory)
+    // data_info->hist2d_count = new double[data_info->hist2d_total_len];
+    // initialize_arr(data_info->hist2d_count, data_info->hist2d_total_len, 0);
 
-    data_info->hist2d_x = new double[data_info->hist2d_total_len];
-    initialize_arr(data_info->hist2d_x, data_info->hist2d_total_len, 0);
+    // data_info->hist2d_x = new double[data_info->hist2d_total_len];
+    // initialize_arr(data_info->hist2d_x, data_info->hist2d_total_len, 0);
 
-    data_info->hist2d_y = new double[data_info->hist2d_total_len];
-    initialize_arr(data_info->hist2d_y, data_info->hist2d_total_len, 0);
+    // data_info->hist2d_y = new double[data_info->hist2d_total_len];
+    // initialize_arr(data_info->hist2d_y, data_info->hist2d_total_len, 0);
 
 
 
@@ -746,12 +800,13 @@ void ggl_fast_hist(MY_FLOAT *bins, int bin_num, MY_FLOAT val, int pre_bin_tag, i
 void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 {
     int ibkg, bkg, ibkg_row, ifg, ifg_row;
-    int ir, sep_bin_tag;
+    int ir, sep_bin_tag, sep_bin_tag_;
     int chi_sigma_pos, chi_gt_pos, chi_sigma_pos_i, chi_gt_pos_i;
     int i,j,k;
     double st, ed;
 
-    MY_FLOAT len_ra, len_dec, len_cos_dec, src_ra, src_dec;
+    MY_FLOAT len_ra, len_dec, len_ra_radian, len_dec_radian, len_cos_dec, len_sin_dec;
+    MY_FLOAT src_ra, src_dec, src_ra_radian, src_dec_radian, src_cos_dec, src_sin_dec;
     MY_FLOAT len_z, len_dist, src_z, src_dist;
     MY_FLOAT src_z_err, len_z_dz;
     MY_FLOAT dra, ddec, delta_radius;
@@ -769,7 +824,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     hist2d_mn_sigma_bin_mid = data_info->hist2d_mn_sigma_bin_num/2;
 
     MY_FLOAT rotation_mat[6];
-    int pair_count = 0;
+    long int pair_count = 0;
 
     st = clock();
 
@@ -806,7 +861,12 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
             len_ra = data_info->len_expo_data[ifg_row + data_info->len_ra_col];
             len_dec = data_info->len_expo_data[ifg_row + data_info->len_dec_col];
+
+            len_ra_radian = data_info->len_expo_data[ifg_row + data_info->len_ra_radian_col];
+            len_dec_radian = data_info->len_expo_data[ifg_row + data_info->len_dec_radian_col];
+
             len_cos_dec = data_info->len_expo_data[ifg_row + data_info->len_cos_dec_col];
+            len_sin_dec = data_info->len_expo_data[ifg_row + data_info->len_sin_dec_col];
 
             len_z = data_info->len_expo_data[ifg_row + data_info->len_z_col];
             len_z_dz = len_z + data_info->back_dz;
@@ -828,6 +888,13 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 src_ra = data_info->src_expo_data[ibkg_row + data_info->src_ra_col];
                 src_dec = data_info->src_expo_data[ibkg_row + data_info->src_dec_col];
+
+                src_ra_radian = data_info->src_expo_data[ibkg_row + data_info->src_ra_radian_col];
+                src_dec_radian = data_info->src_expo_data[ibkg_row + data_info->src_dec_radian_col];
+                
+                src_cos_dec = data_info->src_expo_data[ibkg_row + data_info->src_cos_dec_col];
+                src_sin_dec = data_info->src_expo_data[ibkg_row + data_info->src_sin_dec_col];
+
                 src_dist = data_info->src_expo_data[ibkg_row + data_info->src_com_dist_col];
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
@@ -835,21 +902,37 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                 // dra = (len_ra - src_ra)*len_cos_dec;
                 // ddec = len_dec - src_dec;
                 // sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
-                separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
+                // separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
+                separation_angle_2_fast(len_ra_radian, len_dec_radian, len_cos_dec, len_sin_dec, src_ra_radian, src_dec_radian, src_cos_dec, src_sin_dec, sep_theta);
+                
+                // std::cout<<len_ra<<" "<<len_dec<<" "<<len_ra_radian/SCI_PI*180<<" "<<len_dec_radian/SCI_PI*180<<
+                // " "<<src_ra<<" "<<src_dec<<" "<<src_ra_radian/SCI_PI*180<<" "<<src_dec_radian/SCI_PI*180<<" "
+                // <<sep_theta<<" "<<sep_theta_<<" "<<sep_theta - sep_theta_<<std::endl;
+                
                 // sprintf
                 // std::cout<<sep_theta_<<" "<<sep_theta<<std::endl;
 #ifdef GGL_PROP_DIST_STACK
-                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col]/(1+len_dist);
+                sep_dist = sep_theta*len_dist/(1+len_z);
 #else
-                sep_dist = sep_theta*data_info->len_expo_data[ifg_row + data_info->len_com_dist_col];
-#endif
-
-                sep_bin_tag = -1;
-                for(ir=0; ir<data_info->sep_bin_num; ir++)
+                sep_dist = sep_theta*len_dist;
+#endif                
+                if(sep_dist < data_info->separation_bin[0] or sep_dist >= data_info->separation_bin[data_info->sep_bin_num])
+                {sep_bin_tag = -1;}
+                else
                 {
-                    if(sep_dist >= data_info->separation_bin[ir] and sep_dist< data_info->separation_bin[ir+1])
-                    { sep_bin_tag = ir; break; }
+                    locate_f(sep_dist, data_info->separation_bin, data_info->sep_bin_num, sep_bin_tag);
                 }
+
+                // sep_bin_tag_ = -1;
+
+                // for(ir=0; ir<data_info->sep_bin_num; ir++)
+                // {
+                //     if(sep_dist >= data_info->separation_bin[ir] and sep_dist< data_info->separation_bin[ir+1])
+                //     { sep_bin_tag_ = ir; break; }
+                // }
+                // if(sep_bin_tag != sep_bin_tag_)
+                // {std::cout<<sep_dist<<" "<<sep_bin_tag<<" "<<sep_bin_tag_<<" "<<sep_bin_tag - sep_bin_tag_<<std::endl;}
+
                 // if(sep_bin_tag<2 and sep_bin_tag> -1)
                 // {sprintf(data_info->ggl_log_inform,"%f %f %f %f %f %f %f %f %d\n",
                 // len_ra, len_dec, src_ra, src_dec, sep_theta,data_info->len_expo_data[ifg_row + data_info->len_com_dist_col],len_z, sep_dist,sep_bin_tag);
@@ -880,8 +963,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     // std::cout<<"Gr "<<src_mg1_rot<<" "<<src_mg2_rot<<" "<<src_mn<<" "<<src_mu_rot<<std::endl;
                     // std::cout<<std::endl;
                     
-                    temp_mnut = src_mn + src_mu_rot;
-                    temp_mnux = src_mn - src_mu_rot;
+                    temp_mnut = (src_mn + src_mu_rot)/sigma_crit;
+                    temp_mnux = (src_mn - src_mu_rot)/sigma_crit;
                     // pdf
 #ifdef GGL_GAMMA_T 
 
@@ -916,29 +999,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 #endif 
 
 #ifdef GGL_DELTA_SIGMA
-
-                    // src_mg1_rot *= sigma_crit;
-                    // src_mg2_rot *= sigma_crit;
-
-
-                    // ggl_fast_hist(data_info->hist2d_mg_sigma_bin, data_info->hist2d_mg_sigma_bin_num, src_mg1_rot, hist2d_mg_sigma_bin_mid, pdf_bin_tag1);
-                    // ggl_fast_hist(data_info->hist2d_mn_sigma_bin, data_info->hist2d_mn_sigma_bin_num, temp_mnut, hist2d_mn_sigma_bin_mid, pdf_bin_tag2);
-                    // // // x: mgt*sigma_crit, y: N+U
-                    // hist2d_total_tag = sep_bin_tag*data_info->hist2d_len + pdf_bin_tag2*data_info->hist2d_mg_sigma_bin_num + pdf_bin_tag1;
-                    
-                    // // std::cout<<data_info->rank<<" "<<hist2d_total_tag<<"("<<data_info->hist2d_total_len<<") "<<len_expo_label<<" "<<bkg<<std::endl;
-                    // // if(hist2d_total_tag > data_info->hist2d_total_len - 1 or hist2d_total_tag < 0)
-                    // // {
-                    // //     std::cout<<data_info->rank<<" "<<len_expo_label<<" "<<bkg<<" "<<pdf_bin_tag1<<" "<<pdf_bin_tag2<<" "<<hist2d_total_tag<<std::endl;
-                    // // }
-
-                    // data_info->hist2d_count[hist2d_total_tag] += 1;
-                    // data_info->hist2d_x[hist2d_total_tag] += src_mg1_rot;
-                    // data_info->hist2d_y[hist2d_total_tag] += temp_mnut;
-
-
                     chi_sigma_pos = sep_bin_tag*data_info->chi_sigma_theta_block_len_sub;
-
+                    
                     pre_pdf_bin_tag1 = 0;
                     pre_pdf_bin_tag2 = 0;
 
@@ -946,33 +1008,22 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     { 
                         // \Delta\Sigma(R) & \Delta\Sigma(R)_x
                         chi_sigma_pos_i = chi_sigma_pos + i*data_info->mg_sigma_bin_num;
-                        temp_mgt = src_mg1_rot - data_info->delta_sigma_guess[i]/sigma_crit*temp_mnut;
-                        temp_mgx = src_mg2_rot - data_info->delta_sigma_guess[i]/sigma_crit*temp_mnux;
-
+                        temp_mgt = src_mg1_rot - data_info->delta_sigma_guess[i]*temp_mnut;
+                        temp_mgx = src_mg2_rot - data_info->delta_sigma_guess[i]*temp_mnux;
 
                         // ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
                         // ggl_fast_hist(data_info->mg_sigma_bin, data_info->mg_sigma_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
 
-
                         ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgt, pre_pdf_bin_tag1, pdf_bin_tag1);
                         ggl_fast_hist(data_info->mg_gt_bin, data_info->mg_gt_bin_num, temp_mgx, pre_pdf_bin_tag2, pdf_bin_tag2);
-
-
-                        // std::cout<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1+1]<<std::endl;
-                        // std::cout<<pre_pdf_bin_tag2<<" "<<pdf_bin_tag2<<" "<<data_info->mg_sigma_bin[pdf_bin_tag2]<<" "<<temp_mgx<<" "<<data_info->mg_sigma_bin[pdf_bin_tag2+1]<<std::endl;
 
                         data_info->worker_sub_chi_sigma_tan[chi_sigma_pos_i + pdf_bin_tag1] +=1;
                         data_info->worker_sub_chi_sigma_cross[chi_sigma_pos_i + pdf_bin_tag2] +=1;
 
-                        //show_arr(data_info->mg_sigma_bin, 1, data_info->mg_sigma_bin_num+1);
-                        // std::cout<<sigma_crit<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<temp_mgt<<" "<<data_info->mg_sigma_bin[pdf_bin_tag1]<<" "<<pre_pdf_bin_tag1<<" "<<pdf_bin_tag1<<std::endl;
-
                         pre_pdf_bin_tag1 = pdf_bin_tag1;
                         pre_pdf_bin_tag2 = pdf_bin_tag2;
                     }
-#endif
-
-                 
+#endif                 
                 }
             }
         }
@@ -1006,7 +1057,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
     ed = clock();
     char times[100];
-    sprintf(times,"worker %d. %dth Lens file, %dth jack. Finished in %.2f sec. %d Lenses, %d pairs",
+    sprintf(times,"worker %d. %dth Lens file, %dth jack. Finished in %.2f sec. %d Lenses, %ld pairs",
             data_info->rank, len_expo_label, data_info->len_expo_jackid[len_expo_label], (ed-st)/CLOCKS_PER_SEC, data_info->len_data_row[len_expo_label], pair_count);
     std::cout<<times<<std::endl;
 }
