@@ -13,6 +13,7 @@ from astropy.cosmology import FlatLambdaCDM
 from astropy.coordinates import SkyCoord
 from astropy import units
 import time
+import hk_healpy_tool
 
 
 warnings.filterwarnings('error')
@@ -20,7 +21,7 @@ warnings.filterwarnings('error')
 
 # parameters
 # cosmological parameters
-omega_m0 = 0.315
+omega_m0 = float(argv[2])#0.315
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
@@ -108,12 +109,13 @@ Zp_idx = 4 # photo Z
 # result_cata_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS/gg_lensing"
 # foreground_path_ori = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/Yang_group"
 
-fourier_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729"
-result_cata_path = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729/gg_lensing/cata"
+fourier_cata_path = "/home/hklee/work/DECALS/DECALS_v210729"
+result_cata_path = "/home/hklee/work/DECALS/DECALS_v210729/gg_lensing/cata"
 # foreground_path_ori = "/home/hklee/work/catalog/Yang_group"
 # foreground_path_ori = "/home/hklee/work/catalog/SDSS"
 # foreground_path_ori = "/home/hklee/work/catalog/Jesse_cata/hdf5"
-foreground_path_ori = "/home/hklee/work/catalog/Yang_group/DESI_CLUSTER_DR9"
+# foreground_path_ori = "/home/hklee/work/catalog/Yang_group/DESI_CLUSTER_DR9"
+foreground_path_ori = "/home/hklee/work/catalog/Haojie_cata"
 fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_rz_band.dat"
 
 cmd = argv[1]
@@ -132,11 +134,14 @@ if cmd == "prepare_foreground":
     fore_mass_idx = 4  # log M
 
     fore_richness_thresh = 4
-    fore_z_min = float(argv[2])#0.3
-    fore_z_max = float(argv[3])#0.4
+    fore_z_min = 0#float(argv[2])#0.3
+    fore_z_max = 10#float(argv[3])#0.4
     fore_mass_min = 12#float(argv[4])#13.5
     fore_mass_max = 20#float(argv[5])#13
     if rank == 0:
+        log_inform = "H0: %.4f. Omega_m0: %.4f"%(H0, omega_m0)
+        print(log_inform)
+
         log_inform = "Foreground selection: richness>=%d, " \
                      "Z: %.2f~%.2f, Mass: %.2f~%.2f"%(fore_richness_thresh, fore_z_min,fore_z_max,fore_mass_min,fore_mass_max)
         print(log_inform)
@@ -147,10 +152,10 @@ if cmd == "prepare_foreground":
     # files = ["DESI_NGC_group_DECALS_overlap.hdf5","DESI_SGC_group_DECALS_overlap.hdf5"]
     # files = ["lowz_DECALS_overlap.hdf5","cmass_DECALS_overlap.hdf5"]
     # files = ["lowz_DECALS_overlap.hdf5"]
-    files = [argv[4]]
+    files = ["gal_jkf_dr9.hdf5"]
 
     # for kmeans to build jackknife labels
-    cent_num = 200#int(argv[5])#200
+    cent_num = 150
 
     if rank == 0:
         if os.path.exists(result_cata_path + "/foreground"):
@@ -163,6 +168,8 @@ if cmd == "prepare_foreground":
 
             h5f = h5py.File(fore_path, "r")
             temp = h5f["/data"][()]
+
+            # pix_ra_dec, pixel_count, src_pix_label = h5f["/pix_ra_dec"][()], h5f["/pix_count"][()], h5f["/data_pix_label"][()]
             h5f.close()
 
             if i == 0:
@@ -174,22 +181,22 @@ if cmd == "prepare_foreground":
         idx_z1 = data_src[:,fore_z_idx] >= fore_z_min
         idx_z2 = data_src[:,fore_z_idx] < fore_z_max
         # idx_r = data_src[:, fore_richness_idx] >= fore_richness_thresh
-        idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
-        idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
-        idx = idx_z1 & idx_z2 & idx_m1 & idx_m2#& idx_r & idx_m1 & idx_m2
+        # idx_m1 = data_src[:,fore_mass_idx] >= fore_mass_min
+        # idx_m2 = data_src[:,fore_mass_idx] < fore_mass_max
+        idx = idx_z1 & idx_z2 #& idx_m1 & idx_m2#& idx_r & idx_m1 & idx_m2
 
         total_num = idx.sum()
         # total_num = data_src.shape[0]
-
+        total_num = 450000
         total_data = numpy.zeros((total_num, 8), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
             h5f = h5py.File(foreground_path_ori + "/" + fn, "r")
-            total_data[:, 0] = data_src[:,fore_ra_idx][idx]
-            total_data[:, 1] = data_src[:,fore_ra_idx][idx]*deg2rad
-            total_data[:, 2] = data_src[:,fore_dec_idx][idx]
-            total_data[:, 3] = data_src[:,fore_dec_idx][idx]*deg2rad
-            total_data[:, 6] = data_src[:,fore_z_idx][idx]
+            total_data[:, 0] = data_src[:,fore_ra_idx][idx][:total_num]
+            total_data[:, 1] = data_src[:,fore_ra_idx][idx][:total_num]*deg2rad
+            total_data[:, 2] = data_src[:,fore_dec_idx][idx][:total_num]
+            total_data[:, 3] = data_src[:,fore_dec_idx][idx][:total_num]*deg2rad
+            total_data[:, 6] = data_src[:,fore_z_idx][idx][:total_num]
             h5f.close()
 
         total_data[:, 4] = numpy.cos(total_data[:, 3])
@@ -201,7 +208,22 @@ if cmd == "prepare_foreground":
         t1 = time.time()
 
         rs = numpy.random.randint(1, 100000)
-        group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,:2])
+
+        # eff_pix_num = len(pixel_count)
+        # group_label, group_label_pixel = hk_healpy_tool.kmeans_pix(pix_ra_dec, pixel_count, src_pix_label, eff_pix_num,
+        #                                                            cent_num, rs)
+
+        if not os.path.exists(foreground_path_ori + "/jkf_label.hdf5"):
+            group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,[0,2]])
+            h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "w")
+            h5f["/group_label"] = group_label.astype(dtype=numpy.intc)
+            h5f.close()
+        else:
+            h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "r")
+            group_label = h5f["/group_label"][()]
+            h5f.close()
+
+
         idx_1 = group_label >= 0
         idx_2 = group_label < cent_num
         idx_label = idx_1 & idx_2
@@ -215,6 +237,7 @@ if cmd == "prepare_foreground":
         h5f["/group_label"] = group_label.astype(dtype=numpy.intc)
         h5f.close()
 
+
         print("Time: %.2f sec. %d galaxies"%(t2-t1, total_num))
     comm.Barrier()
 
@@ -225,7 +248,7 @@ if cmd == "prepare_foreground":
         h5f.close()
 
     # assign the source into the artificial exposures
-    min_src_num = 100
+    min_src_num = 300
 
     expos_avail_sub = []
     expos_count = 0
@@ -297,13 +320,17 @@ elif cmd == "prepare_background":
     rank = comm.Get_rank()
     cpus = comm.Get_size()
 
-    backz_min = float(argv[2])
-    backz_max = float(argv[3])
+    backz_min = 0#float(argv[2])
+    backz_max = 3#float(argv[3])
 
     if rank == 0:
         if os.path.exists(result_cata_path + "/background"):
             shutil.rmtree(result_cata_path + "/background")
         os.makedirs(result_cata_path + "/background")
+
+        log_inform = "H0: %.4f. Omega_m0: %.4f"%(H0, omega_m0)
+        print(log_inform)
+
     comm.Barrier()
 
     total_expos = []
@@ -374,8 +401,8 @@ elif cmd == "prepare_background":
             dst_data[:, 6] = src_data[:, ra_idx]*deg2rad
             dst_data[:, 7] = src_data[:, dec_idx]
             dst_data[:, 8] = src_data[:, dec_idx]*deg2rad
-            dst_data[:, 9] = numpy.cos(dst_data[:, 8])
-            dst_data[:, 10] = numpy.sin(dst_data[:, 8])
+            dst_data[:, 9] = numpy.cos(src_data[:, dec_idx]*deg2rad)
+            dst_data[:, 10] = numpy.sin(src_data[:, dec_idx]*deg2rad)
             dst_data[:, 11] = src_data[:, Zp_idx]
             # idx_z_select = dst_data[:,8] < 0.25
            # print(idx_z_select.sum(), src_num)
@@ -385,7 +412,7 @@ elif cmd == "prepare_background":
             # dst_data[:, 8][idxz] = src_data[:, Zs_idx][idxz]
 
             # dst_data[:, 12] = src_data[:, 3]*2#(src_data[:, Z_B_MAX_idx] - src_data[:,Z_B_MIN_idx])/2
-            dst_data[:, 13] = cosmos.comoving_distance(dst_data[:, 8]).value*H0/100 # in unit of Mpc/h
+            dst_data[:, 13] = cosmos.comoving_distance(src_data[:, Zp_idx]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
             h5f_dst = h5py.File(expo_dst_path,"w")
@@ -463,7 +490,7 @@ if cmd == "prepare_pdf":
         NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
-        with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
+        with open(result_cata_path + "/background_omg_0.25/background_source_list.dat", "r") as f:
             back_contents = f.readlines()
         back_expo_num = len(back_contents)
         back_expo_cent = numpy.zeros((back_expo_num, 2),dtype=numpy.float32)
@@ -476,7 +503,7 @@ if cmd == "prepare_pdf":
         back_expo_skypos = SkyCoord(ra=back_expo_cent[:,0]*units.deg, dec=back_expo_cent[:,1]*units.deg,frame="fk5")
 
 
-        with open(result_cata_path + "/foreground/foreground_source_list.dat", "r") as f:
+        with open(result_cata_path + "/foreground_omg_0.25/foreground_source_list.dat", "r") as f:
             fore_contents = f.readlines()
 
         foreground_num = len(fore_contents)
@@ -497,9 +524,9 @@ if cmd == "prepare_pdf":
             for ic in range(fore_c_num):
                 if Gt_num >= Gts_total_num:
                     break
-                ic_z = fore_data[ic,3]
-                ic_com_dist = fore_data[ic, 4]
-                ic_skypos = SkyCoord(ra=fore_data[ic,0]*units.deg, dec=fore_data[ic,1]*units.deg, frame="fk5")
+                ic_z = fore_data[ic,6] # redshift
+                ic_com_dist = fore_data[ic, 7] # com_dist
+                ic_skypos = SkyCoord(ra=fore_data[ic,0]*units.deg, dec=fore_data[ic,2]*units.deg, frame="fk5")
                 separation_angle = ic_skypos.separation(back_expo_skypos).deg
                 idx = separation_angle < 1
                 if idx.sum() > 0:
@@ -512,11 +539,11 @@ if cmd == "prepare_pdf":
                         back_data = h5f["/data"][()]
                         h5f.close()
 
-                        idxz = back_data[:,8] > ic_z + 0.1
+                        idxz = back_data[:,11] > ic_z + 0.1
                         sub_num = idxz.sum()
                         if sub_num > 0:
                             sub_data = back_data[idxz]
-                            ib_skypos = SkyCoord(ra=sub_data[:,5]*units.deg, dec=sub_data[:,6]*units.deg,frame="fk5")
+                            ib_skypos = SkyCoord(ra=sub_data[:,5]*units.deg, dec=sub_data[:,7]*units.deg,frame="fk5")
                             position_ang = 2*ic_skypos.position_angle(ib_skypos).radian
                             mgt = sub_data[:,0]*numpy.cos(position_ang) - sub_data[:,1]*numpy.sin(position_ang)
                             mnu = sub_data[:,2] + sub_data[:,3]*numpy.cos(2*position_ang) - sub_data[:,4]*numpy.sin(2*position_ang)
@@ -524,9 +551,9 @@ if cmd == "prepare_pdf":
                             # print(ic_com_dist, sub_data[:, 10] - ic_com_dist)
                             # 1662895.2007121066 = c^2/4/pi/G  [M_sum/pc] /10^6 [h/pc]
                             # idx_zero = sub_data[:,10]-ic_com_dist == 0
-                            
+
                             # print(idx_zero.sum(),ic_z, sub_data[:,10][idx_zero],sub_data[:,8][idx_zero])
-                            mgt = mgt*sub_data[:,10]/ic_com_dist/(sub_data[:,10]-ic_com_dist)*1662895.2007121066
+                            mgt = mgt*sub_data[:,13]/ic_com_dist/(sub_data[:,13]-ic_com_dist)*1662895.2007121066
 
                             if Gt_num + sub_num > Gts_total_num:
                                 Gts[Gt_num: Gts_total_num] = mgt[Gts_total_num-Gt_num]
@@ -547,36 +574,37 @@ if cmd == "prepare_pdf":
         # print(delta_sigma_guess)
         print(mg_bin)
         print(mg_sigma_bin)
+        # print(Gts)
         # print(Gts[:100],Gts[-100:])
         # print(numpy.abs(Gts).min())
-        h5f = h5py.File(result_cata_path + "/data4bin.hdf5", "w")
-        h5f["/Gt_sigma"] = Gts
-        h5f["/NU"] = NU
-        h5f["/Gt"] = src_data[:, 0]
-        h5f.close()
+        # h5f = h5py.File(result_cata_path + "/data4bin.hdf5", "w")
+        # h5f["/Gt_sigma"] = Gts
+        # h5f["/NU"] = NU
+        # h5f["/Gt"] = src_data[:, 0]
+        # h5f.close()
 
-        hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
-        hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
-
-        hist2d_mg_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
-        hist2d_mg_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
-
-        hist2d_mnu_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
-        hist2d_mnu_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
-
-        hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
-        hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
-
-        hist2d_mg_bin[0] = hist2d_mg_bin[0]*bin_scale
-        hist2d_mg_bin[-1] = hist2d_mg_bin[-1]*bin_scale
-        hist2d_mnu_bin[0] = hist2d_mnu_bin[0]*bin_scale
-        hist2d_mnu_bin[-1] = hist2d_mnu_bin[-1]*bin_scale
+        # hist2d_mg_bin = numpy.zeros((hist2d_mg_num+1,))
+        # hist2d_mnu_bin = numpy.zeros((hist2d_mg_num+1,))
+        #
+        # hist2d_mg_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
+        # hist2d_mg_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, Gts.max()*500, hist2d_mg_num2)
+        #
+        # hist2d_mnu_bin[:hist2d_mg_num2] = -hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
+        # hist2d_mnu_bin[hist2d_mg_num2+1:] = hk_tool_box.set_bin_log(0.001, NU.max()*500, hist2d_mg_num2)
+        #
+        # hist2d_mg_bin = numpy.sort(hist2d_mg_bin)
+        # hist2d_mnu_bin = numpy.sort(hist2d_mnu_bin)
+        #
+        # hist2d_mg_bin[0] = hist2d_mg_bin[0]*bin_scale
+        # hist2d_mg_bin[-1] = hist2d_mg_bin[-1]*bin_scale
+        # hist2d_mnu_bin[0] = hist2d_mnu_bin[0]*bin_scale
+        # hist2d_mnu_bin[-1] = hist2d_mnu_bin[-1]*bin_scale
 
 
         h5f = h5py.File(result_cata_path + "/pdf_inform.hdf5", "w")
 
-        h5f["/hist2d_mg_sigma_bin"] = hist2d_mg_bin.astype(dtype=numpy.float32)
-        h5f["/hist2d_mn_sigma_bin"] = hist2d_mnu_bin.astype(dtype=numpy.float32)
+        # h5f["/hist2d_mg_sigma_bin"] = hist2d_mg_bin.astype(dtype=numpy.float32)
+        # h5f["/hist2d_mn_sigma_bin"] = hist2d_mnu_bin.astype(dtype=numpy.float32)
 
         h5f["/mg_sigma_bin"] = mg_sigma_bin.astype(dtype=numpy.float32)
         h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)

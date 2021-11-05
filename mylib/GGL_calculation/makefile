@@ -16,6 +16,13 @@ clean:
 	rm ${FINAL_NAME}
 
 
+
+CODE_NAME_RAND=GGL_cal.cpp
+FINAL_NAME_RAND=GGL_cal_rand
+compile_rand:
+	mpicxx -I.  ${CODE_NAME_RAND}  ${HK_FQLIB_PATH} ${HK_MPILIB_PATH} ${HK_IOLIB_PATH} ${HK_GGL_FUNCTIONS_PATH} -o ${FINAL_NAME_RAND} -std=c++11
+clean_rand:
+	rm ${FINAL_NAME_RAND}
 # CODE_NAME=test.cpp
 # FINAL_NAME=test
 

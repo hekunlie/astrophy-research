@@ -23,18 +23,21 @@ deg2arcmin = 60
 deg2rad = numpy.pi/180
 
 with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/file_list", "r") as f:
-# with open("/home/hklee/work/catalog/Haojie_cata/red_ngc/file_list", "r") as f:
-    file_name = f.readlines()
+# with open("/home/hklee/work/catalog/Haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
+    folder_name = f.readlines()
 
 comm.Barrier()
 
 # parent_path = "/home/hklee/work/catalog/Haojie_cata"
+# parent_path_pi2 = "/home/hklee/work/DECALS/DECALS_v210729/gg_lensing/cata"
 parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
 parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
-# parent_path_pi2 = "/home/hklee/work/DECALS/DECALS_shear_catalog_v210729/gg_lensing/cata"
 
-for fnm in file_name:
-    total_path = "%s/red_ngc/%s"%(parent_path, fnm.split("\n")[0])
+
+min_src_num = 200#int(argv[2])
+
+for fnm in folder_name:
+    total_path = "%s/lumin_z_bin_red_planck2018/%s"%(parent_path, fnm.split("\n")[0])
     file_name = argv[1] + "_jkf.hdf5"
 
     final_path = parent_path_pi2 + "/%s_%s"%(argv[1],fnm.split("\n")[0])
@@ -48,8 +51,14 @@ for fnm in file_name:
 
     h5f = h5py.File("%s/%s"%(total_path, file_name), "r")
     src_data = h5f["/data"][()]
-    group_label = h5f["/jkf_label"][()] - 1
+    pix_ra_dec = h5f["/pix_ra_dec"][()]
+    pixel_count = h5f["/pix_count"][()]
+    src_pix_label = h5f["/data_pix_label"][()]
+    group_label = h5f["/jkf_label"][()]
     h5f.close()
+    cent_num = group_label.max() + 1
+
+    # src_num = total_data.shape[0]
     src_num = src_data.shape[0]
     total_data = numpy.zeros((src_num,  8), dtype=numpy.float32)
     total_data[:, 0] = src_data[:, 1]   # RA
@@ -63,14 +72,13 @@ for fnm in file_name:
     total_data[:, 5] = numpy.sin(total_data[:, 3]) # SIN(DEC)
     total_data[:, 7] = cosmos.comoving_distance(total_data[:, 6]).value * H0 / 100  # Distance
 
-    # assign the source into the artificial exposures
-    min_src_num = int(argv[2])
-    cent_num = group_label.max() + 1
 
+    # assign the source into the artificial exposures
     expos_avail_sub = []
     expos_count = 0
 
     group_list = [i for i in range(cent_num)]
+    print(group_list, cent_num)
 
     sub_group_list = hk_tool_box.alloc(group_list, cpus)[rank]
 

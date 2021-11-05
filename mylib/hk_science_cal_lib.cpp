@@ -321,20 +321,21 @@ void ggl_initialize(ggl_data_info *data_info)
 
     ggl_read_list(data_info);
 
-    ggl_read_pdf_inform(data_info);
+    ggl_read_pdf_inform(data_info); 
 
-#ifdef GGL_DELTA_SIGMA
-    cal_tag ++;
-#endif 
-#ifdef GGL_GAMMA_T
-    cal_tag ++;
-#endif
-    if(cal_tag == 0)
-    {   
-        sprintf(data_info->ggl_log_inform,"Nothing to do.\n");
-        std::cout<<data_info->ggl_log_inform;
-        exit(0);
-    }
+
+// #ifdef GGL_DELTA_SIGMA
+//     cal_tag ++;
+// #endif 
+// #ifdef GGL_GAMMA_T
+//     cal_tag ++;
+// #endif
+//     if(cal_tag == 0)
+//     {   
+//         sprintf(data_info->ggl_log_inform,"Nothing to do.\n");
+//         std::cout<<data_info->ggl_log_inform;
+//         exit(0);
+//     }
 
     if(data_info->rank == 0)
     {  
@@ -588,6 +589,15 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     data_info->mg_sigma_bin = new MY_FLOAT[data_info->mg_sigma_bin_num];
     read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->mg_sigma_bin);
     data_info->mg_sigma_bin_num = data_info->mg_sigma_bin_num - 1;
+
+
+    // // read the z hist parameters
+    // sprintf(data_info->set_name,"/zhist");
+    // read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->src_z_hist_bin_num);
+    // data_info->src_z_hist_bin = new double[data_info->src_z_hist_bin_num];
+    // read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->src_z_hist_bin);
+    // data_info->src_z_hist_bin_num = data_info->src_z_hist_bin_num - 1;
+
 
 #ifdef GGL_DELTA_SIGMA
 

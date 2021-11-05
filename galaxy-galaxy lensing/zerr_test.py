@@ -60,6 +60,35 @@ def get_bias(sigma_z, dz, pdf_zm, zm, len_z, CF):
     #     print(denorm)
     return bias
 
+def get_bias_new(pzt_zphoto, zt_pts, zphoto_pts, back_dz, pdf_zphoto, zphoto, len_z, CF):
+    numer = numpy.zeros_like(pdf_zphoto)
+
+    inv_sigc = 1. / CF.get_sigma_crit(zt_pts)
+    idx = zt_pts <= len_z
+    inv_sigc[idx] = 0
+
+    for i in range(len(zphoto)):
+        pts_tag = hk_tool_box.find_near(zphoto_pts,  zphoto[i])
+        numer[i] = integrate(pzt_zphoto[pts_tag]*inv_sigc, zt_pts) * pdf_zphoto[i]
+
+    inv_sigc_zm = 1. / CF.get_sigma_crit(zphoto)
+    idx = zphoto <= len_z
+    inv_sigc_zm[idx] = 0
+    denorm = pdf_zphoto * inv_sigc_zm
+
+    idx = zphoto <= len_z + back_dz
+    numer[idx] = 0
+    denorm[idx] = 0
+    numer_int = integrate(numer, zphoto)
+    denorm_int = integrate(denorm, zphoto)
+    #     print(denorm_int)
+
+    bias = numer_int / denorm_int
+
+    #     print(numer)
+    #     print(denorm)
+    return bias
+
 
 def get_inv_sigma_2prime(len_z, com_dist_len, src_z, com_dist_src, omega_m):
     beta = (1 + len_z) * com_dist_len ** 2 / 1662916.5401756007
@@ -113,7 +142,7 @@ def get_bias_approx(sigma_z, dz, pdf_zm, zm, len_z, CF):
     return bias
 
 
-def get_bias_approx_new(sigma_z, dz, pdf_zm, zm, len_z, CF):
+def get_bias_approx_new(sigma_z, back_dz, pdf_zm, zm, len_z, CF):
     numer = numpy.zeros_like(pdf_zm)
 
     zt = numpy.linspace(0.001, 5, 501)
@@ -127,7 +156,7 @@ def get_bias_approx_new(sigma_z, dz, pdf_zm, zm, len_z, CF):
 
     denorm = pdf_zm * inv_sigc_zm
 
-    idx = zm <= len_z + dz
+    idx = zm <= len_z + back_dz
     numer[idx] = 0
     denorm[idx] = 0
     numer_int = integrate(numer, zm)
@@ -172,7 +201,7 @@ result = numpy.zeros((6, separation_bin_num))
 zpts = numpy.linspace(0, 2, 301)
 zpts_mid = (zpts[1:] + zpts[:-1]) / 2
 # print(zpts)
-dz = 0.2
+back_dz = 0.2
 sigma_z = 0.05*(rank + 1)
 files = ["segment_sheared_para_decals_Pz_errsig_z0.05.hdf5",
          "segment_sheared_para_decals_Pz_errsig_z0.10.hdf5",
@@ -195,11 +224,23 @@ pz_m = numpy.histogram(src_z_m, zpts)[0]
 pz_m_norm = pz_m / pz_m.sum() / (zpts[1] - zpts[0])
 
 
-idx_z = src_z > len_z + dz
-idx_zm = src_z_m > len_z + dz
+h5f = h5py.File("/home/hklee/work/DECALS/DECALS_shear_catalog_v210729/cat_inform/pzt_zm.hdf5","r")
+pzt_zm_rp = h5f["/pzt_zm_rp"][()]
+sigzt_zm_rp = h5f["/sigzt_zm_rp"][()]
 
-bias_approx = get_bias_approx(sigma_z, dz, pz_m_norm, zpts_mid, len_z, CF)
-bias = get_bias(sigma_z, dz, pz_m_norm, zpts_mid, len_z, CF)
+pzt_zm_zh = h5f["/pzt_zm_zh"][()]
+sigzt_zm_zh = h5f["/sigzt_zm_zh"][()]
+
+zm_pzt = h5f["/zm"][()]
+zt_pzt = h5f["/zt"][()]
+h5f.close()
+
+
+idx_z = src_z > len_z + back_dz
+idx_zm = src_z_m > len_z + back_dz
+
+bias_approx = get_bias_approx(sigma_z, back_dz, pz_m_norm, zpts_mid, len_z, CF)
+bias = get_bias(sigma_z, back_dz, pz_m_norm, zpts_mid, len_z, CF)
 
 src_num = src_et.shape[0]
 

@@ -5,7 +5,7 @@ import ctypes
 import numpy.ctypeslib as ctl
 libc4py = ctypes.cdll.LoadLibrary("%s/work/mylib/libc4py.so"%my_home)
 import hk_tool_box
-
+import healpy
 
 
 deblend_c = libc4py.deblend

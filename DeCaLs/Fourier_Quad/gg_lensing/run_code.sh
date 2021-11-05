@@ -1,58 +1,35 @@
-data_path=/home/hklee/work/DECALS/gg_lensing
+data_path=/home/hklee/work/DECALS/DECALS_v210729/gg_lensing
 core_num=55
-jack_num=100
+jack_num=150
+dz=0.2
 
 
-dz=0.0001
+for om in 0.20 0.25 0.30 0.35 0.4;
+    do
+        mpirun -np 5 python prepare_cata.py prepare_foreground $om
 
-z1=0.4
-z2=0.5
+        mpirun -np 20 python prepare_cata.py prepare_background $om
 
-mpirun -np 1 python prepare_cata.py prepare_foreground lowz_DECALS_overlap.hdf5
-mpirun -np 10 python prepare_cata.py prepare_background ${z1} ${z2}
+        mpirun -np ${core_num} ./GGL_cal ${data_path} cata/background cata/foreground $jack_num ${dz}
 
-mpirun -np 1 python prepare_cata.py prepare_pdf 
+        mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${om}.hdf5
+    done
+# for n in 200;
+#     do
+#         mpirun -np 5 python prepare_cata.py prepare_foreground 0.0 10 gal_jkf_dr9.hdf5 $n
 
-mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_lowz.hdf5
+#         mpirun -np ${core_num} ./GGL_cal ${data_path} cata/background cata/foreground $n ${dz}
 
-z1=0.5
-z2=0.6
-mpirun -np 10 python prepare_cata.py prepare_background ${z1} ${z2}
-
-mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_lowz.hdf5
-
-
-z1=0.6
-z2=0.7
-mpirun -np 10 python prepare_cata.py prepare_background ${z1} ${z2}
-
-mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_lowz.hdf5
+#         mv ${data_path}/result/result.hdf5 ${data_path}/result/jkf_compare/dr9_${n}.hdf5
+#     done
 
 
-z1=0.7
-z2=0.8
-mpirun -np 10 python prepare_cata.py prepare_background ${z1} ${z2}
+# for n in 200;
+#     do
+#         mpirun -np 5 python prepare_cata.py prepare_foreground 0.0 10 gal_jkf_dr8.hdf5 $n
 
-mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_lowz.hdf5
+#         mpirun -np ${core_num} ./GGL_cal ${data_path} cata/background cata/foreground $n ${dz}
 
+#         mv ${data_path}/result/result.hdf5 ${data_path}/result/jkf_compare/dr8_${n}.hdf5
+#     done
 
-# z1=0.4
-# z2=0.55
-# mpirun -np 1 python prepare_cata.py prepare_foreground ${z1} ${z2} cmass_DECALS_overlap.hdf5
-# mpirun -np 1 python prepare_cata.py prepare_pdf 
-
-# dz=0.3
-# mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-# mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_dz_${dz}_cmass.hdf5
-
-# dz=0.15
-# mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-# mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_dz_${dz}_cmass.hdf5
-
-# dz=0.001
-# mpirun -np ${core_num} ./GGL_cal /home/hklee/work/DECALS/gg_lensing ${jack_num} ${dz}
-# mv ${data_path}/result/result.hdf5 ${data_path}/result/result_${z1}_${z2}_dz_${dz}_cmass.hdf5

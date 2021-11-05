@@ -133,6 +133,13 @@ struct ggl_data_info
     double *worker_sub_signal_count;
     double *worker_total_signal_count;
 
+    int src_z_hist_bin_num;
+    double *src_z_hist_bin;
+    double *worker_sub_src_z_hist;
+    double *worker_total_src_z_hist;
+    // double *worker_sub_src_z_accum;
+    // double *worker_total_src_z_accum;
+
 
     MY_FLOAT crit_coeff;
     
