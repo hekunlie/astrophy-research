@@ -137,9 +137,14 @@ struct ggl_data_info
     double *src_z_hist_bin;
     double *worker_sub_src_z_hist;
     double *worker_total_src_z_hist;
-    // double *worker_sub_src_z_accum;
-    // double *worker_total_src_z_accum;
+    // len z & src z in each radius bin
 
+    int len_z_accum_len;
+    int src_z_accum_len;
+    double *worker_sub_src_z_accum;
+    double *worker_total_src_z_accum;
+    double *worker_sub_len_z_accum;
+    double *worker_total_len_z_accum;
 
     MY_FLOAT crit_coeff;
     

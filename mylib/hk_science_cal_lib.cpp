@@ -591,12 +591,14 @@ void ggl_read_pdf_inform(ggl_data_info *data_info)
     data_info->mg_sigma_bin_num = data_info->mg_sigma_bin_num - 1;
 
 
-    // // read the z hist parameters
-    // sprintf(data_info->set_name,"/zhist");
-    // read_h5_datasize(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->src_z_hist_bin_num);
-    // data_info->src_z_hist_bin = new double[data_info->src_z_hist_bin_num];
-    // read_h5(data_info->ggl_pdf_inform_path, data_info->set_name, data_info->src_z_hist_bin);
-    // data_info->src_z_hist_bin_num = data_info->src_z_hist_bin_num - 1;
+    // read the z hist parameters
+    data_info->src_z_accum_len = data_info->sep_bin_num;
+    data_info->worker_sub_src_z_accum = new double[data_info->sep_bin_num];
+    data_info->worker_total_src_z_accum = new double[data_info->sep_bin_num];
+
+
+    initialize_arr(data_info->worker_sub_src_z_accum, data_info->sep_bin_num,0);
+    initialize_arr(data_info->worker_total_src_z_accum, data_info->sep_bin_num,0);
 
 
 #ifdef GGL_DELTA_SIGMA
@@ -815,6 +817,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int i,j,k;
     double st, ed;
 
+    double sub_len_z_accum;
     MY_FLOAT len_ra, len_dec, len_ra_radian, len_dec_radian, len_cos_dec, len_sin_dec;
     MY_FLOAT src_ra, src_dec, src_ra_radian, src_dec_radian, src_cos_dec, src_sin_dec;
     MY_FLOAT len_z, len_dist, src_z, src_dist;
@@ -830,6 +833,7 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     int pre_pdf_bin_tag2, pdf_bin_tag2;
     int hist2d_mg_sigma_bin_mid, hist2d_mn_sigma_bin_mid, hist2d_total_tag;
     
+
     hist2d_mg_sigma_bin_mid = data_info->hist2d_mg_sigma_bin_num/2;
     hist2d_mn_sigma_bin_mid = data_info->hist2d_mn_sigma_bin_num/2;
 
@@ -843,7 +847,9 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     initialize_arr(data_info->worker_sub_chi_g_tan, data_info->chi_g_theta_block_len, 0);
     initialize_arr(data_info->worker_sub_chi_g_cross, data_info->chi_g_theta_block_len, 0);
     initialize_arr(data_info->worker_sub_signal_count, data_info->sub_signal_count_len, 0);
+    initialize_arr(data_info->worker_sub_src_z_accum, data_info->sep_bin_num, 0);
 
+    // sub_len_z_accum = 0;
 
     ggl_read_len_exp(data_info, len_expo_label);
 
@@ -957,6 +963,8 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
                     data_info->worker_sub_signal_count[data_info->signal_pts_num + sep_bin_tag] += sep_dist;
                     data_info->worker_sub_signal_count[data_info->signal_pts_num*2 + sep_bin_tag] += 1;
 
+                    data_info->worker_sub_src_z_accum[sep_bin_tag] += src_z;
+
                     // if(sep_bin_tag == 0)std::cout<<"Find 0 pairs "<<sep_bin_tag<<" "<<len_expo_label<<std::endl;
                     // rotation, sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta
                     ggl_rotation_matrix(len_ra,len_dec, len_cos_dec, src_ra, src_dec, rotation_mat);
@@ -1040,6 +1048,9 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
     }
     
     // add the count to the total count array, according to the jack id
+    for(i=0;i<data_info->sep_bin_num;i++)
+    {data_info->worker_total_src_z_accum[i] += data_info->worker_sub_src_z_accum[i];}
+
     for(i=0; i<data_info->jack_num+1; i++)
     {   
         if(data_info->jack_num > 2)
@@ -1174,6 +1185,21 @@ void ggl_collect_chi(ggl_data_info *data_info)
             {data_info->total_signal_count[j] += data_info->worker_total_signal_count[j];}
         }
     }
+
+
+    if (data_info->rank > 0)
+    {MPI_Send(data_info->worker_total_src_z_accum, data_info->sep_bin_num, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
+    else
+    {
+        for(i=1;i<data_info->numprocs;i++)
+        {
+            MPI_Recv(data_info->worker_sub_src_z_accum, data_info->sep_bin_num, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
+        
+            for(j=0;j<data_info->sep_bin_num;j++)
+            {data_info->worker_total_src_z_accum[j] += data_info->worker_sub_src_z_accum[j];}
+        }
+    }
+
 
 #ifdef GGL_DELTA_SIGMA
     if (data_info->rank > 0)
@@ -1350,6 +1376,9 @@ void ggl_cal_signals(ggl_data_info * data_info)
     sprintf(set_name,"/count");
     write_h5(data_info->ggl_result_path, set_name, count,
             data_info->jack_num+1,data_info->signal_pts_num, false);
+    sprintf(set_name,"/src_z");
+    write_h5(data_info->ggl_result_path, set_name, data_info->worker_total_src_z_accum,
+            1,data_info->sep_bin_num, false);
 
     sprintf(set_name,"/len_count");
     write_h5(data_info->ggl_result_path, set_name, &len_count, 1, 1,  false);
