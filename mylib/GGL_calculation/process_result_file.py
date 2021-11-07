@@ -8,7 +8,14 @@ from hk_plot_tool import Image_Plot
 
 data_path = "D:/TEMP/hjxu_cata/dr9/new"
 file_name_rand = None #"result_rand_z_0.1_0.3_absz_-21.0_-22.0.hdf5"
-file_name = "result_gal_z_0.2_0.4_absz_-20.5_-21.0.hdf5"
+file_name = "result_gal_z_0.1_0.3_absz_-20.0_-21.0.hdf5"
+
+
+zhang_data = numpy.loadtxt(data_path + "/corr_2021.dat")
+zhang_radius = zhang_data[:,5]
+zhang_esd = zhang_data[:,2]
+zhang_esd_err = zhang_data[:,3]
+
 # for file_name in ["result_gal_z_0.1_0.3_absz_-20.0_-21.0.hdf5", "result_rand_z_0.1_0.3_absz_-20.0_-21.0.hdf5"]:
 h5f = h5py.File(data_path + "/%s"%file_name,"r")
 delta_sigmat_jkf = h5f["/delta_sigma_t"][()]
@@ -64,12 +71,14 @@ results[:,6] = dilution_ratio
 header = "Radius\tRadius_err\tDelta_Sigma\tDelta_Sigma_err\tDelta_Sigma_x\tDelta_Sigma_x_err\tDilution_ratio"
 numpy.savetxt(data_path + "/%s.txt"%file_name, X=results, header=header)
 
+
 img = Image_Plot(xpad=0.3,ypad=0.15)
 img.subplots(1,2)
 img.axs[0][0].errorbar(radius, delta_sigmat, delta_sigmat_err, fmt=" ", marker="s", capsize=3)
-img.axs[0][1].errorbar(radius, delta_sigmat*radius, delta_sigmat_err*radius, fmt=" ", marker="s", capsize=3)
+img.axs[0][0].errorbar(zhang_radius, zhang_esd, zhang_esd_err, fmt=" ", marker="s", capsize=3)
+# img.axs[0][1].errorbar(radius, delta_sigmat*radius, delta_sigmat_err*radius, fmt=" ", marker="s", capsize=3)
 # img.axs[0][2].errorbar(radius, delta_sigmax, delta_sigmax_err, fmt=" ", marker="s", capsize=3)
-for i in range(2):
+for i in range(1):
     img.axs[0][i].set_xscale("log")
     img.set_label(0,i,1, "Radius [Mpc/h]")
 img.set_label(0,0,0,"$\Delta\Sigma$")
@@ -79,5 +88,5 @@ img.set_label(0,1,0,"$R\\times\Delta\Sigma$")
 img.axs[0][0].set_ylim(0.005,200)
 img.axs[0][0].set_xlim(0.02, 100)
 img.axs[0][0].set_yscale("log")
-img.save_img(data_path + "/%s.png"%file_name)
+# img.save_img(data_path + "/%s.png"%file_name)
 img.show_img()

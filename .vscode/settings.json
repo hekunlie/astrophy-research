@@ -53,5 +53,6 @@
         "complex": "cpp",
         "valarray": "cpp",
         "bit": "cpp"
-    }
+    },
+    "python.pythonPath": "D:\\ProgramData\\Anaconda3\\python.exe"
 }

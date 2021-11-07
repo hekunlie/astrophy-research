@@ -78,7 +78,7 @@ nstar_thresh = 20
 
 # selection function
 flux2_alt_idx = 7
-flux2_alt_thresh = 3
+flux2_alt_thresh = 2
 
 
 # field distortion
@@ -117,6 +117,9 @@ result_cata_path = "/home/hklee/work/DECALS/DECALS_v210729/gg_lensing/cata"
 # foreground_path_ori = "/home/hklee/work/catalog/Yang_group/DESI_CLUSTER_DR9"
 foreground_path_ori = "/home/hklee/work/catalog/Haojie_cata"
 fourier_avail_expo_path = fourier_cata_path + "/cat_inform/exposure_avail_rz_band.dat"
+
+parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
+
 
 cmd = argv[1]
 
@@ -415,13 +418,14 @@ elif cmd == "prepare_background":
             dst_data[:, 13] = cosmos.comoving_distance(src_data[:, Zp_idx]).value*H0/100 # in unit of Mpc/h
 
             expo_dst_path = result_cata_path + "/background/%s" %expo_name
+            expo_dst_path_pi2 = parent_path_pi2 + "/background_omg_%.3f/%s" %(omega_m0, expo_name)
             h5f_dst = h5py.File(expo_dst_path,"w")
             h5f_dst["/pos"] = expo_pos
             h5f_dst["/data"] = dst_data
             h5f_dst.close()
 
             expo_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\n"
-                                   %(expo_dst_path, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
+                                   %(expo_dst_path_pi2, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
                                      expo_pos[3]))
         # exit()
     comm.Barrier()
