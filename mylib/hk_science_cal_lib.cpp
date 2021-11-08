@@ -915,11 +915,11 @@ void ggl_find_pair(ggl_data_info *data_info, int len_expo_label)
 
                 sigma_crit = coeff*src_dist/(src_dist - len_dist);
 
-                // dra = (len_ra - src_ra)*len_cos_dec;
-                // ddec = len_dec - src_dec;
-                // sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
+                dra = (len_ra - src_ra)*len_cos_dec;
+                ddec = len_dec - src_dec;
+                sep_theta = sqrt(dra*dra + ddec*ddec)*DEG2RAD;
                 // separation_angle_2(len_ra, len_dec, src_ra, src_dec, sep_theta);
-                separation_angle_2_fast(len_ra_radian, len_dec_radian, len_cos_dec, len_sin_dec, src_ra_radian, src_dec_radian, src_cos_dec, src_sin_dec, sep_theta);
+                // separation_angle_2_fast(len_ra_radian, len_dec_radian, len_cos_dec, len_sin_dec, src_ra_radian, src_dec_radian, src_cos_dec, src_sin_dec, sep_theta);
                 
                 // std::cout<<len_ra<<" "<<len_dec<<" "<<len_ra_radian/SCI_PI*180<<" "<<len_dec_radian/SCI_PI*180<<
                 // " "<<src_ra<<" "<<src_dec<<" "<<src_ra_radian/SCI_PI*180<<" "<<src_dec_radian/SCI_PI*180<<" "

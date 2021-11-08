@@ -16,23 +16,24 @@ rank = comm.Get_rank()
 cpus = comm.Get_size()
 
 # cosmological parameters
-omega_m0 = 0.315
+omega_m0 = float(argv[2])
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 deg2arcmin = 60
 deg2rad = numpy.pi/180
 
-with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/file_list", "r") as f:
-# with open("/home/hklee/work/catalog/Haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
-    folder_name = f.readlines()
+# with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/file_list", "r") as f:
+# # with open("/home/hklee/work/catalog/Haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
+#     folder_name = f.readlines()
 
 comm.Barrier()
 
-# parent_path = "/home/hklee/work/catalog/Haojie_cata"
+parent_path = "/home/hklee/work/catalog/Haojie_cata"
 # parent_path_pi2 = "/home/hklee/work/DECALS/DECALS_v210729/gg_lensing/cata"
-parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
+# parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
 parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
 
+folder_name = ["z_0.1_0.3_absz_-21.0_-22.0\n"]
 
 min_src_num = 200#int(argv[2])
 
@@ -54,7 +55,7 @@ for fnm in folder_name:
     pix_ra_dec = h5f["/pix_ra_dec"][()]
     pixel_count = h5f["/pix_count"][()]
     src_pix_label = h5f["/data_pix_label"][()]
-    group_label = h5f["/jkf_label"][()]
+    group_label = h5f["/jkf_label_120"][()]
     h5f.close()
     cent_num = group_label.max() + 1
 
