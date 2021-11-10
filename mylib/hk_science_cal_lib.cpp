@@ -1654,7 +1654,7 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
         // show_arr(chisq, 1, pdf_guess_num);
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, 100);
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, 100000000);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
 

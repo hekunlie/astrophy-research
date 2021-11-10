@@ -36,16 +36,16 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 50
-num_m = 25
+delta_sigma_guess_num = 100
+num_m = 50
 num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 300, num_p).astype(numpy.float64)
-
-delta_sigma_guess[:num_m] = -hk_tool_box.set_bin_log(0.01, 300, num_m).astype(numpy.float64)
-delta_sigma_guess[num_m:] = hk_tool_box.set_bin_log(0.01, 300, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 400, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_p = 10**numpy.linspace(0,numpy.log10(1000), num_p + 1)[1:]
+delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_p
+delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
 
 
@@ -63,7 +63,7 @@ tan_shear_guess[num_p:] = tan_shear_guess_bin_p
 tan_shear_guess = numpy.sort(tan_shear_guess)
 
 
-mg_bin_num = 8
+mg_bin_num = 10
 
 hist2d_mg_num = 4
 hist2d_mg_num2 = int(hist2d_mg_num/2)
@@ -84,8 +84,9 @@ flux2_alt_thresh = 2
 # field distortion
 gf1_idx = 8
 gf2_idx = 9
-gf1_thresh = 0.0015
-gf2_thresh = 0.0015
+gf1_thresh = 0.002
+gf2_thresh = 0.002
+gf_thresh = 0.002
 
 # shear estimators
 mg1_idx = 10
@@ -362,9 +363,10 @@ elif cmd == "prepare_background":
         idx5_1 = data[:, Zp_idx] >= backz_min
         idx5_2 = data[:, Zp_idx] <= backz_max
         idx5 = idx5_0 & idx5_1 & idx5_2
+        idx6 = numpy.sqrt(data[:, gf1_idx]**2 + data[:, gf2_idx]**2) <= gf_thresh
         # idx6 = numpy.abs(data[:,dist_idx]) <= dist_thresh
 
-        idx = idx1 & idx2 & idx3 & idx4 & idx5# & idx6
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
 
         src_num = idx.sum()
 
@@ -425,7 +427,7 @@ elif cmd == "prepare_background":
             h5f_dst.close()
 
             expo_avail_sub.append("%s\t%s\t%d\t%f\t%f\t%f\t%f\n"
-                                   %(expo_dst_path_pi2, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
+                                   %(expo_dst_path, expo_name.split(".")[0], src_num, expo_pos[0],expo_pos[1], expo_pos[2],
                                      expo_pos[3]))
         # exit()
     comm.Barrier()
@@ -472,7 +474,7 @@ if cmd == "prepare_pdf":
         file_list = numpy.arange(0, len(field_name),dtype=numpy.intc)
         numpy.random.shuffle(file_list)
 
-        for tag, i in enumerate(file_list[:20]):
+        for tag, i in enumerate(file_list[:100]):
 
             # print(field_name[i])
             h5f_src = h5py.File(field_name[i], "r")
@@ -494,7 +496,7 @@ if cmd == "prepare_pdf":
         NU = numpy.zeros((Gts_total_num,), dtype=numpy.float32)
         Gt_num = 0
 
-        with open(result_cata_path + "/background_omg_0.25/background_source_list.dat", "r") as f:
+        with open(result_cata_path + "/background/background_source_list.dat", "r") as f:
             back_contents = f.readlines()
         back_expo_num = len(back_contents)
         back_expo_cent = numpy.zeros((back_expo_num, 2),dtype=numpy.float32)
@@ -507,7 +509,7 @@ if cmd == "prepare_pdf":
         back_expo_skypos = SkyCoord(ra=back_expo_cent[:,0]*units.deg, dec=back_expo_cent[:,1]*units.deg,frame="fk5")
 
 
-        with open(result_cata_path + "/foreground_omg_0.25/foreground_source_list.dat", "r") as f:
+        with open(result_cata_path + "/foreground/foreground_source_list.dat", "r") as f:
             fore_contents = f.readlines()
 
         foreground_num = len(fore_contents)
@@ -614,7 +616,7 @@ if cmd == "prepare_pdf":
         h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin.astype(dtype=numpy.float32)
+        h5f["/separation_bin"] = separation_bin[:19].astype(dtype=numpy.float32)
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
 
         h5f.close()

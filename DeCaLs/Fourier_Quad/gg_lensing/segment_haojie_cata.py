@@ -33,9 +33,9 @@ parent_path = "/home/hklee/work/catalog/Haojie_cata"
 # parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
 parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
 
-folder_name = ["z_0.1_0.3_absz_-21.0_-22.0\n"]
+folder_name = ["z_0.1_0.3_absz_-22.0_-23.0\n"]
 
-min_src_num = 200#int(argv[2])
+min_src_num = 50#int(argv[2])
 
 for fnm in folder_name:
     total_path = "%s/lumin_z_bin_red_planck2018/%s"%(parent_path, fnm.split("\n")[0])
@@ -55,7 +55,7 @@ for fnm in folder_name:
     pix_ra_dec = h5f["/pix_ra_dec"][()]
     pixel_count = h5f["/pix_count"][()]
     src_pix_label = h5f["/data_pix_label"][()]
-    group_label = h5f["/jkf_label_120"][()]
+    group_label = h5f["/jkf_label_200"][()]
     h5f.close()
     cent_num = group_label.max() + 1
 

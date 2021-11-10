@@ -40,13 +40,13 @@ deg2rad = numpy.pi/180
 
 cata_path = argv[1]
 with open(cata_path + "/file_list", "r") as f:
-    ff = f.readlines()
-ff_sub = hk_tool_box.alloc(ff, cpus)[rank]
+    lines = f.readlines()
+lines_sub = hk_tool_box.alloc(lines, cpus)[rank]
 
 NSIDE = 256
 
-cent_num = 200
-for fnm in ff_sub:
+# cent_num = 200
+for fnm in lines_sub:
     fnm = fnm.split("\n")[0]
 
     for tag, ff in enumerate(["gal_jkf"]):
@@ -90,7 +90,7 @@ for fnm in ff_sub:
         eff_pix_num = len(pixel_count)
         for cent_num in [120, 200]:
             if src_num <= int(eff_pix_num*2):
-                group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(sub_data[:,[1,2]])
+                group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(data_overlap[:,[1,2]])
             else:
                 group_label, group_label_pixel = hk_healpy_tool.kmeans_pix(pix_ra_dec, pixel_count, src_pix_label, eff_pix_num, cent_num, rs)
 
