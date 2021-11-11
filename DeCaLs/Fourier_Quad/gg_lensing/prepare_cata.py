@@ -36,14 +36,14 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 100
-num_m = 50
+delta_sigma_guess_num = 20
+num_m = 10
 num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 400, num_p).astype(numpy.float64)
-# delta_sigma_guess_bin_p = 10**numpy.linspace(0,numpy.log10(1000), num_p + 1)[1:]
+# delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 400, num_p).astype(numpy.float64)
+delta_sigma_guess_bin_p = 10**numpy.linspace(0,numpy.log10(1000), num_p + 1)[1:]
 delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
@@ -84,9 +84,9 @@ flux2_alt_thresh = 2
 # field distortion
 gf1_idx = 8
 gf2_idx = 9
-gf1_thresh = 0.002
-gf2_thresh = 0.002
-gf_thresh = 0.002
+gf1_thresh = 0.0015
+gf2_thresh = 0.0015
+gf_thresh = 0.05
 
 # shear estimators
 mg1_idx = 10
@@ -616,7 +616,7 @@ if cmd == "prepare_pdf":
         h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin[:19].astype(dtype=numpy.float32)
+        h5f["/separation_bin"] = separation_bin.astype(dtype=numpy.float32)
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
 
         h5f.close()

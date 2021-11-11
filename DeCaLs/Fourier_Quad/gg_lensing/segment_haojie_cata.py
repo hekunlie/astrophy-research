@@ -23,22 +23,24 @@ deg2arcmin = 60
 deg2rad = numpy.pi/180
 
 # with open("/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata/file_list", "r") as f:
-# # with open("/home/hklee/work/catalog/Haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
+# with open("/home/hklee/work/catalog/Haojie_cata/lumin_z_bin_red_planck2018/file_list", "r") as f:
 #     folder_name = f.readlines()
 
 comm.Barrier()
 
-parent_path = "/home/hklee/work/catalog/Haojie_cata"
+# parent_path = "/home/hklee/work/catalog/Haojie_cata"
 # parent_path_pi2 = "/home/hklee/work/DECALS/DECALS_v210729/gg_lensing/cata"
-# parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
+parent_path = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/haojie_cata"
 parent_path_pi2 = "/lustre/home/acct-phyzj/phyzj-sirius/hklee/work/DECALS_v210729/gg_lensing/cata"
 
-folder_name = ["z_0.1_0.3_absz_-22.0_-23.0\n"]
+folder_name = ["z_0.6_0.8_absz_-21.5_-22.0\n",
+               "z_0.6_0.8_absz_-22.0_-23.0\n",
+               "z_0.1_0.3_absz_-21.0_-22.0\n"]
 
-min_src_num = 50#int(argv[2])
+min_src_num = 200#int(argv[2])
 
 for fnm in folder_name:
-    total_path = "%s/lumin_z_bin_red_planck2018/%s"%(parent_path, fnm.split("\n")[0])
+    total_path = "%s/red_ngc/%s"%(parent_path, fnm.split("\n")[0])
     file_name = argv[1] + "_jkf.hdf5"
 
     final_path = parent_path_pi2 + "/%s_%s"%(argv[1],fnm.split("\n")[0])
@@ -55,7 +57,7 @@ for fnm in folder_name:
     pix_ra_dec = h5f["/pix_ra_dec"][()]
     pixel_count = h5f["/pix_count"][()]
     src_pix_label = h5f["/data_pix_label"][()]
-    group_label = h5f["/jkf_label_200"][()]
+    group_label = h5f["/jkf_label_120"][()]
     h5f.close()
     cent_num = group_label.max() + 1
 

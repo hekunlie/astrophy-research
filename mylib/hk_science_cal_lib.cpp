@@ -758,8 +758,8 @@ void ggl_rotation_matrix(MY_FLOAT cent_ra, MY_FLOAT cent_dec, MY_FLOAT cent_cos_
     MY_FLOAT sin_theta, cos_theta, sin_2theta, cos_2theta, sin_4theta, cos_4theta;
     MY_FLOAT dra, ddec, delta_radius;
     
-    dra = src_ra - cent_ra;
-    ddec = (src_dec - cent_dec)*cent_cos_dec;
+    dra = (src_ra - cent_ra)*cent_cos_dec;
+    ddec = (src_dec - cent_dec);
     delta_radius = sqrt(dra*dra + ddec*ddec);
 
     // theta is position angle
