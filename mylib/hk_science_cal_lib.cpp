@@ -1270,7 +1270,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
 {   
     sprintf(data_info->ggl_log_inform,"\n========================== start calculate ==========================\n");
     std::cout<<data_info->ggl_log_inform;
-
+    char temp_path[600];
     char set_name[50];
     int i, j, st_c, st_j;
     int len_count = 0;
@@ -1324,14 +1324,6 @@ void ggl_cal_signals(ggl_data_info * data_info)
         }           
     }
 
-    sprintf(data_info->ggl_result_path,"%s/result/chi_master.hdf5", data_info->ggl_total_path);
-    sprintf(set_name,"/chi_sigma_tan");
-    write_h5(data_info->ggl_result_path, set_name, data_info->total_chi_sigma_tan, data_info->jack_num+1, data_info->chi_sigma_theta_block_len, true);
-    sprintf(set_name,"/chi_sigma_cross");
-    write_h5(data_info->ggl_result_path, set_name, data_info->total_chi_sigma_cross, data_info->jack_num+1, data_info->chi_sigma_theta_block_len, false);
-    
-
-
     sprintf(data_info->ggl_result_path,"%s/result/result.hdf5", data_info->ggl_total_path);
     sprintf(set_name,"/theta");
     write_h5(data_info->ggl_result_path, set_name, theta,
@@ -1376,21 +1368,26 @@ void ggl_cal_signals(ggl_data_info * data_info)
     double *delta_sigma_cross_err = new double[(data_info->jack_num+1)*data_info->signal_pts_num];
 
 
+    sprintf(temp_path,"%s/result/chi_master.hdf5", data_info->ggl_total_path);
+  
     for(i=0; i<data_info->jack_num+1; i++)
     {   
         st_j = i*data_info->signal_pts_num;
         
-
         // delta_sigma_t
         st_c = i*data_info->chi_sigma_theta_block_len;
         for(j=0; j<data_info->chi_sigma_theta_block_len; j++)
         { temp_sigma[j] = data_info->total_chi_sigma_tan[st_c+j];
         }
-        std::cout<<"Jack sigma_t"<<i<<std::endl;
+        sprintf(set_name,"/chi_sigma_tan_%d", i);
+        if(i == 0){write_h5(temp_path, set_name, temp_sigma, 1, data_info->chi_sigma_theta_block_len, true);}
+        else{write_h5(temp_path, set_name, temp_sigma, 1, data_info->chi_sigma_theta_block_len, false);}
+
+
         // show_arr(temp_count, 1, data_info->chi_signal_block_len);
         ggl_pdf_signals(temp_sigma, data_info->delta_sigma_guess, data_info->pdf_sigma_num, 
                         data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err, chisq_all, chisq_fit_coeff);
-        std::cout<<"Jack sigma_t"<<i<<std::endl;
+
         for(j=0; j<data_info->signal_pts_num; j++)
         {
             delta_sigma_tan[st_j + j] = signals[j];
@@ -1441,7 +1438,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
             std::cout<<std::endl;
         } 
     }
-    std::cout<<"Finish calculation"<<std::endl;
+    // std::cout<<"Finish calculation"<<std::endl;
     sprintf(set_name,"/delta_sigma_t");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan,
             data_info->jack_num+1,data_info->signal_pts_num, false);
@@ -1615,17 +1612,21 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             {
                 temp[k] = chi_count[st+k];
             }
+            // std::cout<<"pts "<<i<<" "<<j<<" ";
             // show_arr(temp, 1, mg_bin_num);
+
             cal_chisq_1d(temp, mg_bin_num, chisq_i);
             chisq[j] = chisq_i;
             
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
-        show_arr(chisq, 1, pdf_guess_num);
-        std::cout<<"pts "<<i<<std::endl;
-        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, 100000000);
+        // show_arr(chisq, 1, pdf_guess_num);
+ 
+        fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, -1);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
+
+        // std::cout<<signal_i<<" "<<signal_err_i<<std::endl;
 
         chisq_fit_coeff[3*i] = fit_coeff[0];
         chisq_fit_coeff[3*i + 1] = fit_coeff[1];
@@ -1723,3 +1724,70 @@ void ggl_dz_hist(ggl_data_info *data_info, int len_expo_label)
     std::cout<<times<<std::endl;
 }
 
+
+void ggl_search(ggl_data_info * data_info)
+{   
+    int foreground_expo_label = -1;
+    int thread_live;
+    int task_label;
+    int numprocs = data_info->numprocs;
+
+    MPI_Status status;
+    MPI_Request request;
+
+    char log_inform[600];
+
+    if(data_info->rank > 0)
+    {
+       while(true)
+       {    
+            foreground_expo_label = -1;
+            // then thread 0 will send the task, epxo_pair label, to it.
+            MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, data_info->rank, MPI_COMM_WORLD);
+            MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+
+            sprintf(log_inform,"%d. receive %d th foreground exposure\n", data_info->rank, foreground_expo_label);
+            // std::cout<<data_info.ggl_log_inform;
+
+            if(foreground_expo_label > -1)
+            {
+                ggl_find_pair(data_info, foreground_expo_label);
+            }
+            else
+            {
+                sprintf(log_inform,"%d Break. receive %d th foreground exposure\n", data_info->rank, foreground_expo_label);
+                std::cout<<log_inform;
+                break;
+            }
+       } 
+    }
+    else
+    {   
+        // CPU 0 is the master for task distribution
+        thread_live = numprocs - 1;
+        task_label = 0;
+
+        sprintf(log_inform,"Start\n");
+        std::cout<<log_inform;
+
+        while (thread_live>0)
+        {
+            MPI_Irecv(&foreground_expo_label, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+            MPI_Wait(&request, &status);
+
+            if(task_label < data_info->len_expo_num)
+            {
+                foreground_expo_label = task_label;
+                task_label ++;
+            }
+            else
+            {
+                foreground_expo_label = -1;
+                thread_live --;
+            }
+            MPI_Send(&foreground_expo_label, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD); 
+            sprintf(log_inform,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
+            // std::cout<<data_info.ggl_log_inform; 
+        }
+    }
+}

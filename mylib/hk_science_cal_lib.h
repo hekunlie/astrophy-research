@@ -219,6 +219,8 @@ struct ggl_data_info
 
 void ggl_initialize(ggl_data_info *data_info);
 
+void ggl_search(ggl_data_info * data_info);
+
 // void ggl_task_prepare(ggl_data_info *data_info);
 
 void ggl_read_list(ggl_data_info *data_info);
@@ -251,6 +253,7 @@ void ggl_cal_signals(ggl_data_info * data_info);
 void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_num, int mg_bin_num, int signal_pts_num, double *signal, double *signal_err, double *chisq_all, double *chisq_fit_coeff);
 
 void ggl_dz_hist(ggl_data_info *data_info, int len_expo_label);
+
 
 
 #endif

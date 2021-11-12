@@ -4133,8 +4133,9 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	// y = ax^2 + bx + c
 
 	int i, count = 0;
-	double min_chi = 10000;
+	double min_chi = chisq[0], max_chi = chisq[0];
 	double coeff[3];
+
 	if (d_chi > 0)
 	{
 		int *mask = new int[num] {};
@@ -4144,7 +4145,7 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			if (chisq[i] < min_chi and chisq[i] >=0)
 			{
 				min_chi = chisq[i];
-			}
+			}			
 		}
 		// find the width for fitting
 		for (i = 0; i < num; i++)
@@ -4155,8 +4156,8 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 				mask[i] = 1;
 			}
 		}
-		//std::cout << min_chi << std::endl;
-		//show_arr(chisq, 1, num);
+		// std::cout << min_chi << std::endl;
+		// show_arr(chisq, 1, num);
 		// for fitting
 		if (count < 5)
 		{	
@@ -4206,9 +4207,24 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			}
 		}
 
+		for (i = 0; i < count; i++)
+		{
+			if (new_chisq[i] > max_chi)
+			{
+				max_chi = new_chisq[i];
+			}			
+		}
+		for (i = 0; i < count; i++)
+		{
+			new_chisq[i] = new_chisq[i]/max_chi;
+		}
+		// show_arr(new_shear, 1, count);
+		// show_arr(new_chisq, 1, count);
+
 		// g`= a1 + a2*g + a3*g^2
 		poly_fit_1d(new_shear, new_chisq, count, 2, coeff);
-
+		// show_arr(coeff, 1,3);
+		// std::cout<<std::endl;
 		if (coeff[2] < 0)
 		{
 			char err_log[35];
@@ -4226,7 +4242,20 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 	}
 	else
 	{
-		poly_fit_1d(shear, chisq, num, 2, coeff);
+		double *new_chisq = new double[num] {};
+		for (i = 0; i < num; i++)
+		{
+			if (chisq[i] > max_chi)
+			{
+				max_chi = chisq[i];
+			}			
+		}
+		for (i = 0; i < num; i++)
+		{
+			new_chisq[i] = chisq[i]/max_chi;
+		}
+
+		poly_fit_1d(shear, new_chisq, num, 2, coeff);
 
 		if (coeff[2] < 0)
 		{
@@ -4236,15 +4265,16 @@ void fit_shear(const double *shear, const double *chisq, const int num, double &
 			std::cout<<err_log<<std::endl;
 			throw err_log;
 		}
+		delete[] new_chisq;
 	}
 
 	gh = -coeff[1] / coeff[2]*0.5;
-	gh_sig = sqrt(0.5 / coeff[2]);
-
-	chisq_min_fit = coeff[0] + coeff[1]*gh + coeff[2]*gh*gh;
-	chisq_fit_coeff[0] = coeff[0];
-	chisq_fit_coeff[1] = coeff[1];
-	chisq_fit_coeff[2] = coeff[2];
+	gh_sig = sqrt(0.5 / coeff[2]/max_chi);
+	
+	chisq_min_fit = (coeff[0] + coeff[1]*gh + coeff[2]*gh*gh)*max_chi;
+	chisq_fit_coeff[0] = coeff[0]*max_chi;
+	chisq_fit_coeff[1] = coeff[1]*max_chi;
+	chisq_fit_coeff[2] = coeff[2]*max_chi;
 
 }
 

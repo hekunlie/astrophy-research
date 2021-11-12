@@ -37,69 +37,70 @@ int main(int argc, char *argv[])
     // and somethings for PDF_SYM
     ggl_initialize(&data_info);
 
-
     MPI_Barrier(MPI_COMM_WORLD);
     
-    if(rank > 0)
-    {
-       while(true)
-       {    
-            foreground_expo_label = -1;
-            // then thread 0 will send the task, epxo_pair label, to it.
-            MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, rank, MPI_COMM_WORLD);
-            MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+    ggl_search(&data_info);
 
-            sprintf(data_info.ggl_log_inform,"%d. receive %d th foreground exposure\n", rank, foreground_expo_label);
-            // std::cout<<data_info.ggl_log_inform;
+    // if(rank > 0)
+    // {
+    //    while(true)
+    //    {    
+    //         foreground_expo_label = -1;
+    //         // then thread 0 will send the task, epxo_pair label, to it.
+    //         MPI_Send(&foreground_expo_label, 1, MPI_INT, 0, rank, MPI_COMM_WORLD);
+    //         MPI_Recv(&foreground_expo_label, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
-            if(foreground_expo_label > -1)
-            {
-                ggl_find_pair(&data_info, foreground_expo_label);
-            }
-            else
-            {
-                sprintf(data_info.ggl_log_inform,"%d Break. receive %d th foreground exposure\n", rank, foreground_expo_label);
-                std::cout<<data_info.ggl_log_inform;
-                break;
-            }
-       } 
-    }
-    else
-    {   
-        // CPU 0 is the master for task distribution
-        thread_live = numprocs - 1;
-        task_label = 0;
+    //         sprintf(data_info.ggl_log_inform,"%d. receive %d th foreground exposure\n", rank, foreground_expo_label);
+    //         // std::cout<<data_info.ggl_log_inform;
 
-        sprintf(data_info.ggl_log_inform,"Start\n");
-        std::cout<<data_info.ggl_log_inform;
+    //         if(foreground_expo_label > -1)
+    //         {
+    //             ggl_find_pair(&data_info, foreground_expo_label);
+    //         }
+    //         else
+    //         {
+    //             sprintf(data_info.ggl_log_inform,"%d Break. receive %d th foreground exposure\n", rank, foreground_expo_label);
+    //             std::cout<<data_info.ggl_log_inform;
+    //             break;
+    //         }
+    //    } 
+    // }
+    // else
+    // {   
+    //     // CPU 0 is the master for task distribution
+    //     thread_live = numprocs - 1;
+    //     task_label = 0;
 
-        while (thread_live>0)
-        {
-            MPI_Irecv(&foreground_expo_label, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
-            MPI_Wait(&request, &status);
+    //     sprintf(data_info.ggl_log_inform,"Start\n");
+    //     std::cout<<data_info.ggl_log_inform;
 
-            if(task_label < data_info.len_expo_num)
-            {
-                foreground_expo_label = task_label;
-                task_label ++;
-            }
-            else
-            {
-                foreground_expo_label = -1;
-                thread_live --;
-            }
-            MPI_Send(&foreground_expo_label, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD); 
-            sprintf(data_info.ggl_log_inform,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
-            // std::cout<<data_info.ggl_log_inform; 
-        }
-    }
+    //     while (thread_live>0)
+    //     {
+    //         MPI_Irecv(&foreground_expo_label, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &request);
+    //         MPI_Wait(&request, &status);
+
+    //         if(task_label < data_info.len_expo_num)
+    //         {
+    //             foreground_expo_label = task_label;
+    //             task_label ++;
+    //         }
+    //         else
+    //         {
+    //             foreground_expo_label = -1;
+    //             thread_live --;
+    //         }
+    //         MPI_Send(&foreground_expo_label, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD); 
+    //         sprintf(data_info.ggl_log_inform,"send %d th foreground exposure to %d worker %d\n", foreground_expo_label,status.MPI_SOURCE, thread_live);
+    //         // std::cout<<data_info.ggl_log_inform; 
+    //     }
+    // }
     MPI_Barrier(MPI_COMM_WORLD);
     
     ggl_collect_chi(&data_info);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    ggl_cache(&data_info);
+    // ggl_cache(&data_info);
     
     time_ed = clock();
 
