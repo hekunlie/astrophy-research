@@ -2,12 +2,12 @@
     "configurations": [
         {
             "name": "Win32",
-            "compilerPath":"D:/ProgramData/MinGW/mingw64/bin/gcc.exe",
+            "compilerPath":"D:/ProgramData/MinGW/bin/gcc.exe",
             "includePath": [
                 "${workspaceFolder}/**",
                 "D:/GitHub/astrophy-research/**",
                 "D:/GitHub/astrophy-research/mylib/**",
-                "D:/ProgramData/MinGW/mingw64/**",
+                "D:/ProgramData/MinGW/**",
                 "D:/ProgramData/MinGW/**"
             ],
             "defines": [

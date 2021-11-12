@@ -21,7 +21,7 @@ warnings.filterwarnings('error')
 
 # parameters
 # cosmological parameters
-omega_m0 = float(argv[2])#0.315
+omega_m0 = 0.315
 H0 = 67.5
 cosmos = FlatLambdaCDM(H0, omega_m0)
 
@@ -36,14 +36,14 @@ deg2rad = numpy.pi/180
 
 
 # chi guess bin for PDF_SYM
-delta_sigma_guess_num = 20
-num_m = 10
+delta_sigma_guess_num = 50
+num_m = 25
 num_p = delta_sigma_guess_num - num_m
 
 delta_sigma_guess = numpy.zeros((delta_sigma_guess_num, ), dtype=numpy.float64)
 
-# delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 400, num_p).astype(numpy.float64)
-delta_sigma_guess_bin_p = 10**numpy.linspace(0,numpy.log10(1000), num_p + 1)[1:]
+delta_sigma_guess_bin_p = hk_tool_box.set_bin_log(0.01, 400, num_p).astype(numpy.float64)
+# delta_sigma_guess_bin_p = numpy.array([1000/1.3**i for i in range(num_p)])#
 delta_sigma_guess[:num_m] = -delta_sigma_guess_bin_p
 delta_sigma_guess[num_m:] = delta_sigma_guess_bin_p
 delta_sigma_guess = numpy.sort(delta_sigma_guess)
@@ -159,7 +159,7 @@ if cmd == "prepare_foreground":
     files = ["gal_jkf_dr9.hdf5"]
 
     # for kmeans to build jackknife labels
-    cent_num = 150
+    cent_num = 200
 
     if rank == 0:
         if os.path.exists(result_cata_path + "/foreground"):
@@ -172,7 +172,7 @@ if cmd == "prepare_foreground":
 
             h5f = h5py.File(fore_path, "r")
             temp = h5f["/data"][()]
-
+            group_label = h5f["/jkf_label_200"][()]
             # pix_ra_dec, pixel_count, src_pix_label = h5f["/pix_ra_dec"][()], h5f["/pix_count"][()], h5f["/data_pix_label"][()]
             h5f.close()
 
@@ -191,7 +191,7 @@ if cmd == "prepare_foreground":
 
         total_num = idx.sum()
         # total_num = data_src.shape[0]
-        total_num = 450000
+        # total_num = 450000
         total_data = numpy.zeros((total_num, 8), dtype=numpy.float32)
 
         for i, fn in enumerate(files):
@@ -217,15 +217,15 @@ if cmd == "prepare_foreground":
         # group_label, group_label_pixel = hk_healpy_tool.kmeans_pix(pix_ra_dec, pixel_count, src_pix_label, eff_pix_num,
         #                                                            cent_num, rs)
 
-        if not os.path.exists(foreground_path_ori + "/jkf_label.hdf5"):
-            group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,[0,2]])
-            h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "w")
-            h5f["/group_label"] = group_label.astype(dtype=numpy.intc)
-            h5f.close()
-        else:
-            h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "r")
-            group_label = h5f["/group_label"][()]
-            h5f.close()
+        # if not os.path.exists(foreground_path_ori + "/jkf_label.hdf5"):
+        #     group_label = KMeans(n_clusters=cent_num, random_state=rs).fit_predict(total_data[:,[0,2]])
+        #     h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "w")
+        #     h5f["/group_label"] = group_label.astype(dtype=numpy.intc)
+        #     h5f.close()
+        # else:
+        #     h5f = h5py.File(foreground_path_ori + "/jkf_label.hdf5", "r")
+        #     group_label = h5f["/group_label"][()]
+        #     h5f.close()
 
 
         idx_1 = group_label >= 0
@@ -250,9 +250,10 @@ if cmd == "prepare_foreground":
         total_data = h5f["/data"][()]
         group_label = h5f["/group_label"][()]
         h5f.close()
+    cent_num = group_label.max() + 1
 
     # assign the source into the artificial exposures
-    min_src_num = 300
+    min_src_num = 50
 
     expos_avail_sub = []
     expos_count = 0
@@ -357,16 +358,16 @@ elif cmd == "prepare_background":
         # selection
         idx1 = data[:, nstar_idx] >= nstar_thresh
         idx2 = data[:, flux2_alt_idx] >= flux2_alt_thresh
-        idx3 = data[:, gf1_idx] <= gf1_thresh
-        idx4 = data[:, gf2_idx] <= gf2_thresh
+        idx3 = numpy.abs(data[:, gf1_idx]) <= gf1_thresh
+        idx4 = numpy.abs(data[:, gf2_idx]) <= gf2_thresh
         idx5_0 = data[:, Zp_idx] > 0
         idx5_1 = data[:, Zp_idx] >= backz_min
         idx5_2 = data[:, Zp_idx] <= backz_max
         idx5 = idx5_0 & idx5_1 & idx5_2
-        idx6 = numpy.sqrt(data[:, gf1_idx]**2 + data[:, gf2_idx]**2) <= gf_thresh
+        # idx6 = numpy.sqrt(data[:, gf1_idx]**2 + data[:, gf2_idx]**2) <= gf_thresh
         # idx6 = numpy.abs(data[:,dist_idx]) <= dist_thresh
 
-        idx = idx1 & idx2 & idx3 & idx4 & idx5 & idx6
+        idx = idx1 & idx2 & idx3 & idx4 & idx5 #& idx6
 
         src_num = idx.sum()
 
@@ -474,7 +475,7 @@ if cmd == "prepare_pdf":
         file_list = numpy.arange(0, len(field_name),dtype=numpy.intc)
         numpy.random.shuffle(file_list)
 
-        for tag, i in enumerate(file_list[:100]):
+        for tag, i in enumerate(file_list[:1000]):
 
             # print(field_name[i])
             h5f_src = h5py.File(field_name[i], "r")
@@ -616,7 +617,7 @@ if cmd == "prepare_pdf":
         h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin.astype(dtype=numpy.float32)
+        h5f["/separation_bin"] = separation_bin[:25].astype(dtype=numpy.float32)
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
 
         h5f.close()
