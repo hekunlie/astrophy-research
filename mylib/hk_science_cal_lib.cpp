@@ -1324,6 +1324,14 @@ void ggl_cal_signals(ggl_data_info * data_info)
         }           
     }
 
+    sprintf(data_info->ggl_result_path,"%s/result/chi_master.hdf5", data_info->ggl_total_path);
+    sprintf(set_name,"/chi_sigma_tan");
+    write_h5(data_info->ggl_result_path, set_name, data_info->total_chi_sigma_tan, data_info->jack_num+1, data_info->chi_sigma_theta_block_len, true);
+    sprintf(set_name,"/chi_sigma_cross");
+    write_h5(data_info->ggl_result_path, set_name, data_info->total_chi_sigma_cross, data_info->jack_num+1, data_info->chi_sigma_theta_block_len, false);
+    
+
+
     sprintf(data_info->ggl_result_path,"%s/result/result.hdf5", data_info->ggl_total_path);
     sprintf(set_name,"/theta");
     write_h5(data_info->ggl_result_path, set_name, theta,
@@ -1376,7 +1384,8 @@ void ggl_cal_signals(ggl_data_info * data_info)
         // delta_sigma_t
         st_c = i*data_info->chi_sigma_theta_block_len;
         for(j=0; j<data_info->chi_sigma_theta_block_len; j++)
-        { temp_sigma[j] = data_info->total_chi_sigma_tan[st_c+j];}
+        { temp_sigma[j] = data_info->total_chi_sigma_tan[st_c+j];
+        }
         std::cout<<"Jack sigma_t"<<i<<std::endl;
         // show_arr(temp_count, 1, data_info->chi_signal_block_len);
         ggl_pdf_signals(temp_sigma, data_info->delta_sigma_guess, data_info->pdf_sigma_num, 
