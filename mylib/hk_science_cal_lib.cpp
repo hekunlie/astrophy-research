@@ -1229,48 +1229,6 @@ void ggl_collect_chi(ggl_data_info *data_info)
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
-
-    // if (data_info->rank > 0)
-    // {MPI_Send(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    // else
-    // {
-    //     for(i=1;i<data_info->numprocs;i++)
-    //     {
-    //         MPI_Recv(data_info->hist2d_count, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-
-    //         for(j=0;j<data_info->hist2d_total_len;j++)
-    //         {data_info->hist2d_count_total[j] += data_info->hist2d_count[j];}
-    //     }
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
-
-    // if (data_info->rank > 0)
-    // {MPI_Send(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    // else
-    // {
-    //     for(i=1;i<data_info->numprocs;i++)
-    //     {
-    //         MPI_Recv(data_info->hist2d_x, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-
-    //         for(j=0;j<data_info->hist2d_total_len;j++)
-    //         {data_info->hist2d_x_total[j] += data_info->hist2d_x[j];}
-    //     }
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
-
-    // if (data_info->rank > 0)
-    // {MPI_Send(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, 0, data_info->rank, MPI_COMM_WORLD);}
-    // else
-    // {
-    //     for(i=1;i<data_info->numprocs;i++)
-    //     {
-    //         MPI_Recv(data_info->hist2d_y, data_info->hist2d_total_len, MPI_DOUBLE, i, i, MPI_COMM_WORLD, &status);
-
-    //         for(j=0;j<data_info->hist2d_total_len;j++)
-    //         {data_info->hist2d_y_total[j] += data_info->hist2d_y[j];}
-    //     }
-    // }
-    // MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
 #ifdef GGL_GAMMA_T
@@ -1413,16 +1371,17 @@ void ggl_cal_signals(ggl_data_info * data_info)
     for(i=0; i<data_info->jack_num+1; i++)
     {   
         st_j = i*data_info->signal_pts_num;
+        
 
         // delta_sigma_t
         st_c = i*data_info->chi_sigma_theta_block_len;
         for(j=0; j<data_info->chi_sigma_theta_block_len; j++)
         { temp_sigma[j] = data_info->total_chi_sigma_tan[st_c+j];}
-
+        std::cout<<"Jack sigma_t"<<i<<std::endl;
         // show_arr(temp_count, 1, data_info->chi_signal_block_len);
         ggl_pdf_signals(temp_sigma, data_info->delta_sigma_guess, data_info->pdf_sigma_num, 
                         data_info->mg_sigma_bin_num, data_info->signal_pts_num, signals, signals_err, chisq_all, chisq_fit_coeff);
-        
+        std::cout<<"Jack sigma_t"<<i<<std::endl;
         for(j=0; j<data_info->signal_pts_num; j++)
         {
             delta_sigma_tan[st_j + j] = signals[j];
@@ -1473,7 +1432,7 @@ void ggl_cal_signals(ggl_data_info * data_info)
             std::cout<<std::endl;
         } 
     }
-
+    std::cout<<"Finish calculation"<<std::endl;
     sprintf(set_name,"/delta_sigma_t");
     write_h5(data_info->ggl_result_path, set_name, delta_sigma_tan,
             data_info->jack_num+1,data_info->signal_pts_num, false);
@@ -1653,7 +1612,8 @@ void ggl_pdf_signals(double *chi_count, double*pdf_signal_guess, int pdf_guess_n
             
             chisq_all[i*pdf_guess_num + j] = chisq_i;
         }
-        // show_arr(chisq, 1, pdf_guess_num);
+        show_arr(chisq, 1, pdf_guess_num);
+        std::cout<<"pts "<<i<<std::endl;
         fit_shear(pdf_signal_guess, chisq, pdf_guess_num, signal_i, signal_err_i, chisq_i, fit_coeff,1, 100000000);
         signal[i] = signal_i;
         signal_err[i] = signal_err_i;
