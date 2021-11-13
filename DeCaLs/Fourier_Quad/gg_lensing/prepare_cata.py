@@ -253,7 +253,7 @@ if cmd == "prepare_foreground":
     cent_num = group_label.max() + 1
 
     # assign the source into the artificial exposures
-    min_src_num = 50
+    min_src_num = 100
 
     expos_avail_sub = []
     expos_count = 0
@@ -617,7 +617,7 @@ if cmd == "prepare_pdf":
         h5f["/mg_gt_bin"] = mg_bin.astype(dtype=numpy.float32)
         h5f["/gt_guess"] = tan_shear_guess
         h5f["/delta_sigma_guess"] = delta_sigma_guess
-        h5f["/separation_bin"] = separation_bin[:25].astype(dtype=numpy.float32)
+        h5f["/separation_bin"] = separation_bin[:19].astype(dtype=numpy.float32)
         h5f["/cosmological_params"] = numpy.array([H0, omega_m0], dtype=numpy.float32)
 
         h5f.close()
